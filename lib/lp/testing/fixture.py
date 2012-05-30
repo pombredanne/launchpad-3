@@ -8,6 +8,7 @@ __all__ = [
     'CaptureOops',
     'DemoMode',
     'PGBouncerFixture',
+    'PGNotReadyError',
     'Urllib2Fixture',
     'ZopeAdapterFixture',
     'ZopeEventHandlerFixture',
@@ -16,6 +17,7 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 import os.path
+import socket
 import time
 
 import amqplib.client_0_8 as amqp
@@ -54,6 +56,10 @@ from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.errorlog import ErrorReportEvent
+
+
+class PGNotReadyError(Exception):
+    pass
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -120,6 +126,22 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
             )
         if is_ca_available():
             reconnect_stores()
+
+    def start(self, retries=20, sleep=0.5):
+        """Start PGBouncer, waiting for it to accept connections if neccesary.
+        """
+        super(PGBouncerFixture, self).start()
+        for i in xrange(retries):
+            try:
+                socket.create_connection((self.host, self.port))
+            except socket.error:
+                # Try again.
+                pass
+            else:
+                break
+            time.sleep(sleep)
+        else:
+            raise PGNotReadyError("Not ready after %d attempts." % retries)
 
 
 class ZopeAdapterFixture(Fixture):

@@ -10,26 +10,34 @@ __all__ = [
 
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
     InformationType,
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
-    IAccessPolicySource,
+    IAccessArtifactSource,
     IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
-from lp.registry.interfaces.sharingservice import ISharingService
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sharingservice import ISharingService
+from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
+from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -51,6 +59,34 @@ class SharingService:
     def write_enabled(self):
         return bool(getFeatureFlag(
             'disclosure.enhanced_sharing.writable'))
+
+    def getSharedArtifacts(self, pillar, person, user):
+        """See `ISharingService`."""
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+        flat_source = getUtility(IAccessPolicyGrantFlatSource)
+        bug_ids = set()
+        branch_ids = set()
+        for artifact in flat_source.findArtifactsByGrantee(person, policies):
+            if artifact.bug_id:
+                bug_ids.add(artifact.bug_id)
+            elif artifact.branch_id:
+                branch_ids.add(artifact.branch_id)
+
+        # Load the bugs.
+        bugtasks = []
+        if bug_ids:
+            param = BugTaskSearchParams(user=user, bug=any(*bug_ids))
+            param.setTarget(pillar)
+            bugtasks = list(getUtility(IBugTaskSet).search(param))
+        # Load the branches.
+        branches = []
+        if branch_ids:
+            all_branches = getUtility(IAllBranches)
+            wanted_branches = all_branches.visibleByUser(user).withIds(
+                *branch_ids)
+            branches = list(wanted_branches.getBranches())
+
+        return bugtasks, branches
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
@@ -76,42 +112,67 @@ class SharingService:
 
     def getSharingPermissions(self):
         """See `ISharingService`."""
+        # We want the permissions displayed in the following order.
+        ordered_permissions = [
+            SharingPermission.ALL,
+            SharingPermission.SOME,
+            SharingPermission.NOTHING
+        ]
         sharing_permissions = []
-        for permission in SharingPermission:
+        for x, permission in enumerate(ordered_permissions):
             item = dict(
-                value=permission.token,
+                index=x,
+                value=permission.name,
                 title=permission.title,
-                description=permission.value.description
+                description=permission.description
             )
             sharing_permissions.append(item)
         return sharing_permissions
 
     @available_with_permission('launchpad.Driver', 'pillar')
-    def getPillarSharees(self, pillar, grantees=None):
+    def getPillarSharees(self, pillar):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        grant_permissions = ap_grant_flat.findGranteesByPolicy(
-            policies, grantees).order_by(
-                "person_sort_key(Person.displayname, Person.name)")
+        # XXX 2012-03-22 wallyworld bug 961836
+        # We want to use person_sort_key(Person.displayname, Person.name) but
+        # StormRangeFactory doesn't support that yet.
+        grant_permissions = ap_grant_flat.findGranteePermissionsByPolicy(
+            policies).order_by(Person.displayname, Person.name)
+        return grant_permissions
 
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getPillarShareeData(self, pillar):
+        """See `ISharingService`."""
+        grant_permissions = list(self.getPillarSharees(pillar))
+        if not grant_permissions:
+            return None
+        return self.jsonShareeData(grant_permissions)
+
+    def jsonShareeData(self, grant_permissions):
+        """See `ISharingService`."""
         result = []
-        person_by_id = {}
         request = get_current_web_service_request()
-        for (grantee, policy, sharing_permission) in grant_permissions:
-            if not grantee.id in person_by_id:
-                person_data = {
-                    'name': grantee.name,
-                    'meta': 'team' if grantee.is_team else 'person',
-                    'display_name': grantee.displayname,
-                    'self_link': absoluteURL(grantee, request),
-                    'permissions': {}}
-                browser_request = IWebBrowserOriginatingRequest(request)
-                person_data['web_link'] = absoluteURL(grantee, browser_request)
-                person_by_id[grantee.id] = person_data
-                result.append(person_data)
-            person_data = person_by_id[grantee.id]
-            person_data['permissions'][policy.type.name] = sharing_permission
+        browser_request = IWebBrowserOriginatingRequest(request)
+        details_enabled = bool((getFeatureFlag(
+            'disclosure.enhanced_sharing_details.enabled')))
+        for (grantee, permissions, shared_artifact_types) in grant_permissions:
+            some_things_shared = (
+                details_enabled and len(shared_artifact_types) > 0)
+            sharee_permissions = {}
+            for (policy, permission) in permissions.iteritems():
+                sharee_permissions[policy.type.name] = permission.name
+            shared_artifact_type_names = [
+                info_type.name for info_type in shared_artifact_types]
+            result.append({
+                'name': grantee.name,
+                'meta': 'team' if grantee.is_team else 'person',
+                'display_name': grantee.displayname,
+                'self_link': absoluteURL(grantee, request),
+                'web_link': absoluteURL(grantee, browser_request),
+                'permissions': sharee_permissions,
+                'shared_artifact_types': shared_artifact_type_names,
+                'shared_items_exist': some_things_shared})
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
@@ -176,10 +237,13 @@ class SharingService:
             self.deletePillarSharee(pillar, sharee, info_types_for_nothing)
 
         # Return sharee data to the caller.
-        sharees = self.getPillarSharees(pillar, [sharee])
-        if not sharees:
+        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        grant_permissions = list(ap_grant_flat.findGranteePermissionsByPolicy(
+            all_pillar_policies, [sharee]))
+        if not grant_permissions:
             return None
-        return sharees[0]
+        [sharee] = self.jsonShareeData(grant_permissions)
+        return sharee
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def deletePillarSharee(self, pillar, sharee,
@@ -211,9 +275,29 @@ class SharingService:
 
         # Second delete any access artifact grants.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        to_delete = ap_grant_flat.findArtifactsByGrantee(
-            sharee, pillar_policies)
-        if to_delete.count() > 0:
+        to_delete = list(ap_grant_flat.findArtifactsByGrantee(
+            sharee, pillar_policies))
+        if len(to_delete) > 0:
             accessartifact_grant_source = getUtility(
                 IAccessArtifactGrantSource)
             accessartifact_grant_source.revokeByArtifact(to_delete)
+
+    @available_with_permission('launchpad.Edit', 'pillar')
+    def revokeAccessGrants(self, pillar, sharee, branches=None, bugs=None):
+        """See `ISharingService`."""
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
+
+        artifacts = []
+        if branches:
+            artifacts.extend(branches)
+        if bugs:
+            artifacts.extend(bugs)
+        # Find the access artifacts associated with the bugs and branches.
+        accessartifact_source = getUtility(IAccessArtifactSource)
+        artifacts_to_delete = accessartifact_source.find(artifacts)
+        # Revoke access to bugs/branches for the specified sharee.
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        accessartifact_grant_source.revokeByArtifact(
+            artifacts_to_delete, [sharee])

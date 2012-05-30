@@ -144,40 +144,37 @@ class BugTaskImportance(DBEnumeratedType):
     CRITICAL = DBItem(50, """
         Critical
 
-        This bug must be fixed as soon as possible.
+        Fix now or as soon as possible.
         """)
 
     HIGH = DBItem(40, """
         High
 
-        This bug is important, but doesn't need to be done immediately. It
-        should be scheduled for work soon.
+        Schedule to be fixed soon.
         """)
 
     MEDIUM = DBItem(30, """
         Medium
 
-        This bug should be fixed, but can wait until more serious bugs have
-        been dealt with.
+        Fix when convenient, or schedule to fix later.
         """)
 
     LOW = DBItem(20, """
         Low
 
-        This is a minor bug and can be fixed when it's convenient. For
-        example, it might be a typo.
+        Fix when convenient.
         """)
 
     WISHLIST = DBItem(10, """
         Wishlist
 
-        This is not a bug. It's a request for an enhancement or new feature.
+        Not a bug. It's an enhancement/new feature.
         """)
 
     UNDECIDED = DBItem(5, """
         Undecided
 
-        This bug's importance has not yet been decided.
+        Not decided yet. Maybe needs more discussion.
         """)
 
 
@@ -190,7 +187,7 @@ class BugTaskStatus(DBEnumeratedType):
     NEW = DBItem(10, """
         New
 
-        This is a new bug. It hasn't been looked at yet.
+        Not looked at yet.
         """)
 
     # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
@@ -201,28 +198,25 @@ class BugTaskStatus(DBEnumeratedType):
     INCOMPLETE = DBItem(15, """
         Incomplete
 
-        The reporter of this bug needs to provide more information before it
-        can be confirmed.
+        Cannot be verified, the reporter needs to give more info.
         """)
 
     OPINION = DBItem(16, """
         Opinion
 
-        The bug remains open for discussion only; there is disagreement over
-        whether the bug is relevant and whether it should be fixed.
+        Doesn't fit with the project, but can be discussed.
         """)
 
     INVALID = DBItem(17, """
         Invalid
 
-        This is not a bug. It might be a support request or spam.
+        Not a bug. May be a support request or spam.
         """)
 
     WONTFIX = DBItem(18, """
         Won't Fix
 
-        This bug will not be fixed. It doesn't mean the bug isn't valid, it
-        just doesn't fit with the project's plans.
+        Doesn't fit with the project plans, sorry.
         """)
 
     EXPIRED = DBItem(19, """
@@ -234,34 +228,31 @@ class BugTaskStatus(DBEnumeratedType):
     CONFIRMED = DBItem(20, """
         Confirmed
 
-        This bug has been reviewed and verified by someone other than the
-        reporter.
+        Verified by someone other than the reporter.
         """)
 
     TRIAGED = DBItem(21, """
         Triaged
 
-        This bug has been reviewed and verified by a bug supervisor.
+        Verified by the bug supervisor.
         """)
 
     INPROGRESS = DBItem(22, """
         In Progress
 
-        The person assigned to fix this bug is working on it.
+        The assigned person is working on it.
         """)
 
     FIXCOMMITTED = DBItem(25, """
         Fix Committed
 
-        A fix for this bug has been created but is not yet available in a
-        released or deployed version of the affected software.
+        Fixed, but not available until next release.
         """)
 
     FIXRELEASED = DBItem(30, """
         Fix Released
 
-        The fix for this bug is available in a released or deployed version of
-        the affected software.
+        The fix was released.
         """)
 
     UNKNOWN = DBItem(999, """
@@ -1185,7 +1176,8 @@ class BugTaskSearchParams:
                  linked_branches=None, linked_blueprints=None,
                  structural_subscriber=None, modified_since=None,
                  created_since=None, exclude_conjoined_tasks=False, cve=None,
-                 upstream_target=None):
+                 upstream_target=None, milestone_dateexpected_before=None,
+                 milestone_dateexpected_after=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1236,6 +1228,8 @@ class BugTaskSearchParams:
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
         self.cve = cve
         self.upstream_target = upstream_target
+        self.milestone_dateexpected_before = milestone_dateexpected_before
+        self.milestone_dateexpected_after = milestone_dateexpected_after
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1481,6 +1475,12 @@ class IBugTaskSet(Interface):
         Return a dict mapping from bugtask to tag.
         """
 
+    def getBugTaskPeople(bugtasks):
+        """Return a set of people related to bugtasks.
+
+        Return a dict mapping from Person.id to Person.
+        """
+
     def getBugTaskBadgeProperties(bugtasks):
         """Return whether the bugtasks should have badges.
 
@@ -1522,9 +1522,6 @@ class IBugTaskSet(Interface):
 
         :param search_params: a BugTaskSearchParams object
         :param args: any number of BugTaskSearchParams objects
-        :param prejoins: (keyword) A sequence of tuples
-            (table, table_join) which should be pre-joined in addition
-            to the default prejoins.
 
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the
@@ -1563,6 +1560,10 @@ class IBugTaskSet(Interface):
         :param product_series: ProductSeries object.
         :return: A list of tuples containing (status_id, count).
         """
+
+    def createManyTasks(bug, owner, targets, status=None, importance=None,
+                   assignee=None, milestone=None):
+        """Create a series of bug tasks and return them."""
 
     def createTask(bug, owner, target, status=None, importance=None,
                    assignee=None, milestone=None):

@@ -143,7 +143,6 @@ class ForkedProcessTransport(process.BaseProcess):
         """
         assert executable == 'bzr', executable # Maybe .endswith()
         assert args[0] == 'bzr', args[0]
-        command_str = ' '.join(args[1:])
         message = ['fork-env %s\n' % (' '.join(args[1:]),)]
         for key, value in environment.iteritems():
             # XXX: Currently we only pass BZR_EMAIL, should we be passing

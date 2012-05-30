@@ -54,7 +54,7 @@ regular users, and the project owner all are denied.
     >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
     False
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
     False
 
@@ -205,13 +205,13 @@ If the original subscription has not expired the start date is not affected.
     >>> print subscription.date_starts
     2008-01-15...
 
-The commercial_subscription_is_due attribute is true if the license
+The commercial_subscription_is_due attribute is true if the licence
 does not qualify for free hosting and the commercial subscription
 is inactive or about to expire.  The is_permitted attribute is
-true if the project either has a qualifying license or has an active
+true if the project either has a qualifying licence or has an active
 commercial subscription. The qualifies_for_free_hosting attribute is
-true, if automatically qualifying licenses are the only ones selected,
-or if the license has been reviewed and been manually approved.
+true, if automatically qualifying licences are the only ones selected,
+or if the licence has been reviewed and been manually approved.
 
 The commercial subscription is about to expire here.
 
@@ -219,7 +219,6 @@ The commercial subscription is about to expire here.
     >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
     >>> bzr.licenses
     ()
-    >>> # The commercial subscription is due within 30 days of expiration.
     >>> subscription.date_expires = (
     ...     datetime.now(UTC) + timedelta(29))
     >>> bzr.qualifies_for_free_hosting
@@ -241,7 +240,6 @@ subscription is not due yet.
 
 Make the subscription no longer active.
 
-    >>> # Make the subscription last 0 seconds.
     >>> subscription.date_expires = subscription.date_starts
     >>> bzr.commercial_subscription.is_active
     False
@@ -262,10 +260,10 @@ if the product has License.OTHER_PROPRIETARY.
     True
 
 The license_approved attribute is used to manually approve an
-OTHER_OPEN_SOURCE license or a project with additional license info
+OTHER_OPEN_SOURCE licence or a project with additional licence info
 as being "good enough" to use Launchpad. The license_approved property
 can only be set on a product that does not have OTHER_PROPRIETARY
-included as one of the licenses.
+included as one of the licences.
 
     >>> bzr.license_info = 'bar'
     >>> bzr.project_reviewed = True
@@ -278,7 +276,7 @@ included as one of the licenses.
     >>> bzr.license_approved
     True
 
-Setting license_approved implies that the license has been reviewed,
+Setting license_approved implies that the licence has been reviewed,
 so project_reviewed is set automatically.
 
     >>> bzr.project_reviewed = False
@@ -286,7 +284,7 @@ so project_reviewed is set automatically.
     >>> bzr.project_reviewed
     True
 
-Set the bzr license to Other/Open Source and Other/Proprietary.  It
+Set the bzr licence to Other/Open Source and Other/Proprietary.  It
 may not be approved because Other/Proprietary requires a commercial
 subscription.
 
@@ -295,10 +293,10 @@ subscription.
     >>> bzr.license_approved = True
     Traceback (most recent call last):
     ...
-    ValueError: Projects without a license or have 'Other/Proprietary'
+    ValueError: Projects without a licence or have 'Other/Proprietary'
     may not be approved.
 
-A project with an Other/Open Source license or additional license info that
+A project with an Other/Open Source licence or additional licence info that
 is reviewed, but not approved requires a commercial subscription.
 
     >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
@@ -306,16 +304,16 @@ is reviewed, but not approved requires a commercial subscription.
     >>> bzr.qualifies_for_free_hosting
     False
 
-When the products license is OTHER_OPEN_SOURCE or the license_info
-attribute contains a description of another license, the product
+When the products licence is OTHER_OPEN_SOURCE or the license_info
+attribute contains a description of another licence, the product
 requires approval for free hosting. The qualifies_for_free_hosting
-attribute is false for products that have licenses that required
+attribute is false for products that have licences that required
 approval, but were not approved.
 
 However, qualifies_for_free_hosting remains true until
 it has been reviewed (project_reviewed is set to true). The
-OTHER_PROPRIETARY license does not need to be reviewed as do the
-OTHER_OPEN_SOURCE license or an unknown license in license_info.
+OTHER_PROPRIETARY Licence does not need to be reviewed as do the
+OTHER_OPEN_SOURCE licence or an unknown licence in license_info.
 
     >>> bzr.license_approved
     False
@@ -336,7 +334,7 @@ OTHER_OPEN_SOURCE license or an unknown license in license_info.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (False, True)
 
-When the license is manually approved, a product qualifies for free
+When the licence is manually approved, a product qualifies for free
 hosting; there is no commercial subscription due.
 
     >>> bzr.license_approved = True
@@ -344,10 +342,10 @@ hosting; there is no commercial subscription due.
     (True, False)
 
 =======================
-Product License Reviews
+Product Licence Reviews
 =======================
 
-The forReview() method allows searching for products whose license needs to
+The forReview() method allows searching for products whose licence needs to
 be reviewed. You can search by text in the Product table's full text index
 as well as the license_info field. The results are ordered by date ceated
 then display name.
@@ -366,7 +364,7 @@ then display name.
 
 The license_info field is also searched for matching search_text:
 
-    >>> bzr.license_info = 'Code in /contrib is under a mit-like license.'
+    >>> bzr.license_info = 'Code in /contrib is under a mit-like licence.'
     >>> for product in product_set.forReview(search_text='mit'):
     ...     print product.name
     bzr
@@ -397,8 +395,8 @@ You can search for whether the product is marked reviewed or not.
     alsa-utils
     obsolete-junk
 
-You can search for products by license. This will match products with
-any one of the licenses listed.
+You can search for products by licence. This will match products with
+any one of the licences listed.
 
     >>> for product in product_set.forReview(
     ...     licenses=[License.GNU_GPL_V2, License.BSD]):
@@ -542,7 +540,7 @@ access it.
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
@@ -577,7 +575,7 @@ IProduct and IProjectGroup objects and access an IProjectGroupSet.
     >>> product = factory.makeProduct(name='dog')
     >>> project = factory.makeProject(name='cat')
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', project_set)
     True
     >>> check_permission('launchpad.Moderate', project)

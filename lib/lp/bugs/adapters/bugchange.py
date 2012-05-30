@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations for bug changes."""
@@ -23,6 +23,8 @@ __all__ = [
     'BugConvertedToQuestion',
     'BugDescriptionChange',
     'BugDuplicateChange',
+    'BugInformationTypeChange',
+    'BugSecurityChange',
     'BugTagsChange',
     'BugTaskAdded',
     'BugTaskAssigneeChange',
@@ -56,7 +58,9 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.product import IProduct
+from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.publisher import canonical_url
 
@@ -102,10 +106,13 @@ def get_bug_changes(bug_delta):
     # The order of the field names in this list is important; this is
     # the order in which changes will appear both in the bug activity
     # log and in notification emails.
-    bug_change_field_names = [
-        'duplicateof', 'title', 'description', 'private', 'security_related',
-        'tags', 'attachment',
-        ]
+    bug_change_field_names = ['duplicateof', 'title', 'description']
+    if bool(getFeatureFlag(
+        'disclosure.information_type_notifications.enabled')):
+        bug_change_field_names.append('information_type')
+    else:
+        bug_change_field_names.extend(('private', 'security_related'))
+    bug_change_field_names.extend(('tags', 'attachment'))
     for field_name in bug_change_field_names:
         field_delta = getattr(bug_delta, field_name)
         if field_delta is not None:
@@ -540,6 +547,33 @@ class BugTitleChange(AttributeChange):
         return {'text': notification_text}
 
 
+class BugInformationTypeChange(AttributeChange):
+    """Used to represent a change to the information_type of an `IBug`."""
+
+    def title(self, value):
+        # This function is unnecessary when display_userdata_as_private is
+        # removed.
+        show_userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        title = value.title
+        if value == InformationType.USERDATA and show_userdata_as_private:
+            title = 'Private'
+        return title
+
+    def getBugActivity(self):
+        return {
+            'newvalue': self.title(self.new_value),
+            'oldvalue': self.title(self.old_value),
+            'whatchanged': 'information type'
+             }
+
+    def getBugNotification(self):
+        return {
+            'text': "** Information type changed from %s to %s" % (
+                self.title(self.old_value), self.title(self.new_value))}
+
+
+# XXX: This can be deleted when information_type_notifications is removed.
 class BugVisibilityChange(AttributeChange):
     """Describes a change to a bug's visibility."""
 
@@ -571,6 +605,7 @@ class BugVisibilityChange(AttributeChange):
         return {'text': "** Visibility changed to: %s" % visibility_string}
 
 
+# XXX: This can be deleted when information_type_notifications is removed.
 class BugSecurityChange(AttributeChange):
     """Describes a change to a bug's security setting."""
 
@@ -918,6 +953,7 @@ BUG_CHANGE_LOOKUP = {
     'description': BugDescriptionChange,
     'private': BugVisibilityChange,
     'security_related': BugSecurityChange,
+    'information_type': BugInformationTypeChange,
     'tags': BugTagsChange,
     'title': BugTitleChange,
     'attachment': BugAttachmentChange,

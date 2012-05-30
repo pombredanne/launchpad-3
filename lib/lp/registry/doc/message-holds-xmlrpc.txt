@@ -36,7 +36,7 @@ approve or reject.
 
     >>> mailinglist_api.holdMessage('team-one', message_anne.as_string())
     True
-    >>> commit()
+    >>> transaction.commit()
 
 This message is now in Launchpad's librarian and accessible through the
 IMessageApprovalSet interface.
@@ -104,7 +104,7 @@ There are no messages waiting to be handled by Mailman yet.
 Anne's message is on-topic so the list administrator approves it.
 
     >>> held_message_anne.approve(team_one.teamowner)
-    >>> commit()
+    >>> transaction.commit()
     >>> held_message_anne.status
     <DBItem PostedMessageStatus.APPROVAL_PENDING, (20) Approval pending>
 
@@ -126,7 +126,7 @@ the list administrator rejects it.
     True
     >>> held_message_bart = message_set.getMessageByMessageID('<second-post>')
     >>> held_message_bart.reject(team_one.teamowner)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> held_message_bart.status
     <DBItem PostedMessageStatus.REJECTION_PENDING, (30) Decline pending>
@@ -148,7 +148,7 @@ Cris sends spam to the mailing list, which is simply discarded.
     True
     >>> held_message_cris = message_set.getMessageByMessageID('<third-post>')
     >>> held_message_cris.discard(team_one.teamowner)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> held_message_cris.status
     <DBItem PostedMessageStatus.DISCARD_PENDING, (60) Discard pending>
@@ -192,7 +192,7 @@ for moderator approval.
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> list_private = getUtility(IMailingListSet).new(team_private)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> ignore = mail_helpers.pop_notifications()
     >>> private_message = message_from_string("""\
@@ -208,7 +208,7 @@ for moderator approval.
     >>> mailinglist_api.holdMessage(
     ...     'team-private', private_message.as_string())
     True
-    >>> commit()
+    >>> transaction.commit()
 
 Once the message is approved in Launchpad, Mailman will allow it to be posted
 to the mailing list.
@@ -216,7 +216,7 @@ to the mailing list.
     >>> held_message_private = message_set.getMessageByMessageID(
     ...     '<fourth-post>')
     >>> held_message_private.approve(team_private.teamowner)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> dispositions = mailinglist_api.getMessageDispositions()
     >>> print_dispositions(dispositions)
@@ -247,7 +247,7 @@ characters are replaced.
     ...     'team-one',
     ...     xmlrpclib.Binary(spam_message.as_string()))
     True
-    >>> commit()
+    >>> transaction.commit()
 
     >>> held_message_spam = message_set.getMessageByMessageID(
     ...     '<fifth-post\\xa9>')

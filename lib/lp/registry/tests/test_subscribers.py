@@ -8,11 +8,10 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
-
 from zope.security.proxy import removeSecurityProxy
-from lazr.lifecycle.event import ObjectModifiedEvent
 
 from lp.registry.interfaces.product import License
+from lp.registry.model.product import LicensesModifiedEvent
 from lp.registry.subscribers import (
     LicenseNotification,
     product_licenses_modified,
@@ -27,48 +26,68 @@ from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 
 
+class LicensesModifiedEventTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        event = LicensesModifiedEvent(product)
+        self.assertEqual(product.owner, event.user.person)
+        self.assertEqual(product, event.object)
+        self.assertEqual(product, event.object_before_modification)
+        self.assertEqual([], event.edited_fields)
+
+    def test_init_with_user(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        event = LicensesModifiedEvent(product, user=product.owner)
+        self.assertEqual(product.owner, event.user)
+
+
 class ProductLicensesModifiedTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def make_product_event(self, licenses, edited_fields='licenses'):
+    def make_product_event(self, licenses):
         product = self.factory.makeProduct(licenses=licenses)
         pop_notifications()
         login_person(product.owner)
-        event = ObjectModifiedEvent(
-            product, product, edited_fields, user=product.owner)
+        event = LicensesModifiedEvent(product, user=product.owner)
         return product, event
-
-    def test_product_licenses_modified_licenses_not_edited(self):
-        product, event = self.make_product_event(
-            [License.OTHER_PROPRIETARY], edited_fields='_owner')
-        product_licenses_modified(product, event)
-        notifications = pop_notifications()
-        self.assertEqual(0, len(notifications))
 
     def test_product_licenses_modified_licenses_common_license(self):
         product, event = self.make_product_event([License.MIT])
         product_licenses_modified(product, event)
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(0, len(request.response.notifications))
 
     def test_product_licenses_modified_licenses_other_proprietary(self):
         product, event = self.make_product_event([License.OTHER_PROPRIETARY])
         product_licenses_modified(product, event)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(1, len(request.response.notifications))
 
     def test_product_licenses_modified_licenses_other_open_source(self):
         product, event = self.make_product_event([License.OTHER_OPEN_SOURCE])
         product_licenses_modified(product, event)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(0, len(request.response.notifications))
 
     def test_product_licenses_modified_licenses_other_dont_know(self):
         product, event = self.make_product_event([License.DONT_KNOW])
         product_licenses_modified(product, event)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(0, len(request.response.notifications))
 
 
 class LicenseNotificationTestCase(TestCaseWithFactory):
@@ -92,12 +111,12 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         entries = naked_product.reviewer_whiteboard.split('\n')
         whiteboard, stamp = entries[-1].rsplit(' ', 1)
         self.assertEqual(
-            'User notified of license policy on', whiteboard)
+            'User notified of licence policy on', whiteboard)
 
     def verify_user_email(self, notification):
-        # Verify that the user was sent an email about the license change.
+        # Verify that the user was sent an email about the licence change.
         self.assertEqual(
-            'License information for ball in Launchpad',
+            'Licence information for ball in Launchpad',
             notification['Subject'])
         self.assertEqual(
             'Registrant <registrant@launchpad.dev>',
@@ -107,7 +126,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
             notification['Reply-To'])
 
     def test_send_known_license(self):
-        # A known license does not generate an email.
+        # A known licence does not generate an email.
         product, user = self.make_product_user([License.GNU_GPL_V2])
         notification = LicenseNotification(product, user)
         result = notification.send()
@@ -115,7 +134,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(0, len(pop_notifications()))
 
     def test_send_other_dont_know(self):
-        # An Other/I don't know license sends one email.
+        # An Other/I don't know licence sends one email.
         product, user = self.make_product_user([License.DONT_KNOW])
         notification = LicenseNotification(product, user)
         result = notification.send()
@@ -126,7 +145,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.verify_user_email(notifications.pop())
 
     def test_send_other_open_source(self):
-        # An Other/Open Source license sends one email.
+        # An Other/Open Source licence sends one email.
         product, user = self.make_product_user([License.OTHER_OPEN_SOURCE])
         notification = LicenseNotification(product, user)
         result = notification.send()
@@ -137,7 +156,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.verify_user_email(notifications.pop())
 
     def test_send_other_proprietary(self):
-        # An Other/Proprietary license sends one email.
+        # An Other/Proprietary licence sends one email.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
         notification = LicenseNotification(product, user)
         result = notification.send()

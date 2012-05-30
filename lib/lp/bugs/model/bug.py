@@ -89,6 +89,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -153,11 +154,14 @@ from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscribers,
     get_structural_subscriptions,
-    get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -230,11 +234,10 @@ def snapshot_bug_params(bug_params):
     return Snapshot(
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
-            "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename",
-            "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by", "importance",
-            "milestone", "assignee", "cve"])
+            "datecreated", "information_type", "distribution",
+            "sourcepackagename", "product", "status", "subscribers", "tags",
+            "subscribe_owner", "filed_by", "importance", "milestone",
+            "assignee", "cve"])
 
 
 class BugTag(SQLBase):
@@ -347,14 +350,12 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    private = BoolCol(notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    security_related = BoolCol(notNull=True, default=False)
     information_type = EnumCol(
-        enum=InformationType, default=InformationType.PUBLIC)
+        enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
@@ -388,6 +389,14 @@ class Bug(SQLBase):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def private(self):
+        return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    @property
+    def security_related(self):
+        return self.information_type in SECURITY_INFORMATION_TYPES
 
     @cachedproperty
     def _subscriber_cache(self):
@@ -1697,118 +1706,84 @@ class Bug(SQLBase):
 
         return bugtask
 
-    def _setInformationType(self):
-        if self.private and self.security_related:
-            self.information_type = InformationType.EMBARGOEDSECURITY
-        elif self.private:
-            self.information_type = InformationType.USERDATA
-        elif self.security_related:
-            self.information_type = InformationType.UNEMBARGOEDSECURITY
-        else:
-            self.information_type = InformationType.PUBLIC
-
-    def setPrivacyAndSecurityRelated(self, private, security_related, who):
-        """ See `IBug`."""
-        private_changed = False
-        security_related_changed = False
-        bug_before_modification = Snapshot(self, providing=providedBy(self))
-
-        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
-        f_flag = bool(getFeatureFlag(f_flag_str))
-        if f_flag:
-            # Before we update the privacy or security_related status, we
-            # need to reconcile the subscribers to avoid leaking private
-            # information.
-            if (self.private != private
-                    or self.security_related != security_related):
-                self.reconcileSubscribers(private, security_related, who)
-
-        if self.private != private:
-            # We do not allow multi-pillar private bugs except for those teams
-            # who want to shoot themselves in the foot.
-            if private:
-                allow_multi_pillar_private = bool(getFeatureFlag(
-                    'disclosure.allow_multipillar_private_bugs.enabled'))
-                if (not allow_multi_pillar_private
-                        and len(self.affected_pillars) > 1):
-                    raise BugCannotBePrivate(
-                        "Multi-pillar bugs cannot be private.")
-            private_changed = True
-            self.private = private
-
-            if private:
-                self.who_made_private = who
-                self.date_made_private = UTC_NOW
-            else:
-                self.who_made_private = None
-                self.date_made_private = None
-
-            # XXX: This should be a bulk update. RBC 20100827
-            # bug=https://bugs.launchpad.net/storm/+bug/625071
-            for attachment in self.attachments_unpopulated:
-                attachment.libraryfile.restricted = private
-
-        if self.security_related != security_related:
-            security_related_changed = True
-            self.security_related = security_related
-
-        if private_changed or security_related_changed:
-            # Correct the heat for the bug immediately, so that we don't have
-            # to wait for the next calculation job for the adjusted heat.
-            self.updateHeat()
-
-        self._setInformationType()
-
-        if private_changed or security_related_changed:
-            changed_fields = []
-
-            if private_changed:
-                changed_fields.append('private')
-                if not f_flag and private:
-                    # If we didn't call reconcileSubscribers, we may have
-                    # bug supervisors who should be on this bug, but aren't.
-                    supervisors = set()
-                    for bugtask in self.bugtasks:
-                        supervisors.add(bugtask.pillar.bug_supervisor)
-                    if None in supervisors:
-                        supervisors.remove(None)
-                    for s in supervisors:
-                        subscriptions = get_structural_subscriptions_for_bug(
-                                            self, s)
-                        if subscriptions != []:
-                            self.subscribe(s, who)
-
-            if security_related_changed:
-                changed_fields.append('security_related')
-                if not f_flag and security_related:
-                    # The bug turned out to be security-related, subscribe the
-                    # security contact. We do it here only if the feature flag
-                    # is not set, otherwise it's done in
-                    # reconcileSubscribers().
-                    for pillar in self.affected_pillars:
-                        if pillar.security_contact is not None:
-                            self.subscribe(pillar.security_contact, who)
-
-            notify(ObjectModifiedEvent(
-                    self, bug_before_modification, changed_fields, user=who))
-
-        return private_changed, security_related_changed
-
     def setPrivate(self, private, who):
         """See `IBug`.
 
         We also record who made the change and when the change took
         place.
         """
-        return self.setPrivacyAndSecurityRelated(
-            private, self.security_related, who)[0]
+        return self.transitionToInformationType(
+            convert_to_information_type(private, self.security_related), who)
 
     def setSecurityRelated(self, security_related, who):
         """Setter for the `security_related` property."""
-        return self.setPrivacyAndSecurityRelated(
-            self.private, security_related, who)[1]
+        return self.transitionToInformationType(
+            convert_to_information_type(self.private, security_related), who)
 
-    def getRequiredSubscribers(self, for_private, for_security_related, who):
+    def transitionToInformationType(self, information_type, who,
+                                    from_api=False):
+        """See `IBug`."""
+        if from_api and information_type == InformationType.PROPRIETARY:
+            raise BugCannotBePrivate(
+                "Cannot transition the information type to proprietary.")
+        if self.information_type == information_type:
+            return False
+        if (information_type == InformationType.PROPRIETARY and
+            len(self.affected_pillars) > 1):
+            raise BugCannotBePrivate(
+                "Multi-pillar bugs cannot be proprietary.")
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            self.who_made_private = who
+            self.date_made_private = UTC_NOW
+            missing_subscribers = set([who, self.owner])
+        else:
+            self.who_made_private = None
+            self.date_made_private = None
+            missing_subscribers = set()
+        # XXX: This should be a bulk update. RBC 20100827
+        # bug=https://bugs.launchpad.net/storm/+bug/625071
+        for attachment in self.attachments_unpopulated:
+            attachment.libraryfile.restricted = (
+                information_type in PRIVATE_INFORMATION_TYPES)
+
+        # There are several people we need to ensure are subscribed.
+        # If the information type is userdata, we need to check for bug
+        # supervisors who aren't subscribed and should be. If there is no
+        # bug supervisor, we need to subscribe the maintainer.
+        pillars = self.affected_pillars
+        if information_type == InformationType.USERDATA:
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            for pillar in pillars:
+                # Ubuntu is special cased; no one else should be added in the
+                # USERDATA case.
+                if pillar != ubuntu:
+                    if pillar.bug_supervisor is not None:
+                        missing_subscribers.add(pillar.bug_supervisor)
+                    else:
+                        missing_subscribers.add(pillar.owner)
+
+        # If the information type is security related, we need to ensure
+        # the security contacts are subscribed. If there is no security
+        # contact, we need to subscribe the maintainer.
+        if information_type in SECURITY_INFORMATION_TYPES:
+            for pillar in pillars:
+                if pillar.security_contact is not None:
+                    missing_subscribers.add(pillar.security_contact)
+                else:
+                    missing_subscribers.add(pillar.owner)
+
+        for s in missing_subscribers:
+            # Don't subscribe someone if they're already subscribed via a
+            # team.
+            already_subscribed_teams = self.getSubscribersForPerson(s)
+            if already_subscribed_teams.is_empty():
+                self.subscribe(s, who)
+
+        self.information_type = information_type
+        self.updateHeat()
+        return True
+
+    def getRequiredSubscribers(self, information_type, who):
         """Return the mandatory subscribers for a bug with given attributes.
 
         When a bug is marked as private or security related, it is required
@@ -1824,23 +1799,23 @@ class Bug(SQLBase):
         If bug supervisor or security contact is unset, fallback to bugtask
         reporter/owner.
         """
-        if not for_private and not for_security_related:
+        if information_type == InformationType.PUBLIC:
             return set()
         result = set()
         result.add(self.owner)
         for bugtask in self.bugtasks:
             maintainer = bugtask.pillar.owner
-            if for_security_related:
+            if information_type in SECURITY_INFORMATION_TYPES:
                 result.add(bugtask.pillar.security_contact or maintainer)
-            if for_private:
+            if information_type in PRIVATE_INFORMATION_TYPES:
                 result.add(bugtask.pillar.bug_supervisor or maintainer)
-        if for_private:
+        if information_type in PRIVATE_INFORMATION_TYPES:
             subscribers_for_who = self.getSubscribersForPerson(who)
             if subscribers_for_who.is_empty():
                 result.add(who)
         return result
 
-    def getAutoRemovedSubscribers(self, for_private, for_security_related):
+    def getAutoRemovedSubscribers(self, information_type):
         """Return the to be removed subscribers for bug with given attributes.
 
         When a bug's privacy or security related attributes change, some
@@ -1854,6 +1829,8 @@ class Bug(SQLBase):
         """
         bug_supervisors = []
         security_contacts = []
+        for_security_related = information_type in SECURITY_INFORMATION_TYPES
+        for_private = information_type in PRIVATE_INFORMATION_TYPES
         for pillar in self.affected_pillars:
             if (self.security_related and not for_security_related
                 and pillar.security_contact):
@@ -1862,80 +1839,6 @@ class Bug(SQLBase):
                 and pillar.bug_supervisor):
                     bug_supervisors.append(pillar.bug_supervisor)
         return bug_supervisors, security_contacts
-
-    def reconcileSubscribers(self, for_private, for_security_related, who):
-        """ Ensure only appropriate people are subscribed to private bugs.
-
-        When a bug is marked as either private = True or security_related =
-        True, we need to ensure that only people who are authorised to know
-        about the privileged contents of the bug remain directly subscribed
-        to it. So we:
-          1. Get the required subscribers depending on the bug status.
-          2. Get the auto removed subscribers depending on the bug status.
-             eg security contacts when a bug is updated to security related =
-             false.
-          3. Get the allowed subscribers = required subscribers
-                                            + bugtask owners
-          4. Remove any current direct subscribers who are not allowed or are
-             to be auto removed.
-          5. Add any subscribers who are required.
-        """
-        current_direct_subscribers = (
-            self.getSubscriptionInfo().direct_subscribers)
-        required_subscribers = self.getRequiredSubscribers(
-            for_private, for_security_related, who)
-        removed_bug_supervisors, removed_security_contacts = (
-            self.getAutoRemovedSubscribers(for_private, for_security_related))
-        for subscriber in removed_bug_supervisors:
-            recipients = BugNotificationRecipients()
-            recipients.addBugSupervisor(subscriber)
-            notification_text = ("This bug is no longer private so the bug "
-                "supervisor was unsubscribed. They will no longer be "
-                "notified of changes to this bug for privacy related "
-                "reasons, but may receive notifications about this bug from "
-                "other subscriptions.")
-            self.unsubscribe(
-                subscriber, who, ignore_permissions=True,
-                send_notification=True,
-                notification_text=notification_text,
-                recipients=recipients)
-        for subscriber in removed_security_contacts:
-            recipients = BugNotificationRecipients()
-            recipients.addSecurityContact(subscriber)
-            notification_text = ("This bug is no longer security related so "
-                "the security contact was unsubscribed. They will no longer "
-                "be notified of changes to this bug for security related "
-                "reasons, but may receive notifications about this bug "
-                "from other subscriptions.")
-            self.unsubscribe(
-                subscriber, who, ignore_permissions=True,
-                send_notification=True,
-                notification_text=notification_text,
-                recipients=recipients)
-
-        # If this bug is for a project that is marked as having private bugs
-        # by default, and the bug is private or security related, we will
-        # unsubscribe any unauthorised direct subscribers.
-        pillar = self.default_bugtask.pillar
-        private_project = IProduct.providedBy(pillar) and pillar.private_bugs
-        if private_project and (for_private or for_security_related):
-            allowed_subscribers = set()
-            allowed_subscribers.add(self.owner)
-            for bugtask in self.bugtasks:
-                allowed_subscribers.add(bugtask.owner)
-                allowed_subscribers.add(bugtask.pillar.owner)
-                allowed_subscribers.update(set(bugtask.pillar.drivers))
-            allowed_subscribers = required_subscribers.union(
-                allowed_subscribers)
-            subscribers_to_remove = (
-                current_direct_subscribers.difference(allowed_subscribers))
-            for subscriber in subscribers_to_remove:
-                self.unsubscribe(subscriber, who, ignore_permissions=True)
-
-        subscribers_to_add = (
-            required_subscribers.difference(current_direct_subscribers))
-        for subscriber in subscribers_to_add:
-            self.subscribe(subscriber, who)
 
     def getBugTask(self, target):
         """See `IBug`."""
@@ -2118,7 +2021,7 @@ class Bug(SQLBase):
         """A set of known persons able to view this bug.
 
         This method must return an empty set or bug searches will trigger late
-        evaluation. Any 'should be set on load' propertis must be done by the
+        evaluation. Any 'should be set on load' properties must be done by the
         bug search.
 
         If you are tempted to change this method, don't. Instead see
@@ -2140,9 +2043,9 @@ class Bug(SQLBase):
 
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
-        Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
+        bugtasksearch's get_bug_privacy_filter.
         """
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+        from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
         if not self.private:
             # This is a public bug.
@@ -2154,11 +2057,8 @@ class Bug(SQLBase):
         if user.id in self._known_viewers:
             return True
 
-        filter = get_bug_privacy_filter(user)
-        store = Store.of(self)
-        store.flush()
-        if (not filter or
-            not store.find(Bug, Bug.id == self.id, filter).is_empty()):
+        params = BugTaskSearchParams(user=user, bug=self)
+        if not getUtility(IBugTaskSet).search(params).is_empty():
             self._known_viewers.add(user.id)
             return True
         return False
@@ -2760,27 +2660,6 @@ class BugSet:
                     "Unable to locate bug with nickname %s." % bugid)
         return bug
 
-    def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
-        """See `IBugSet`."""
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
-
-        where_clauses = []
-        if duplicateof:
-            where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
-
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            where_clauses.append(privacy_filter)
-
-        other_params = {}
-        if orderBy:
-            other_params['orderBy'] = orderBy
-        if limit:
-            other_params['limit'] = limit
-
-        return Bug.select(
-            ' AND '.join(where_clauses), **other_params)
-
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See `IBugSet`."""
         bug = Bug.selectFirst("""
@@ -2802,13 +2681,12 @@ class BugSet:
         if params.product and params.product.private_bugs:
             # If the private_bugs flag is set on a product, then
             # force the new bug report to be private.
-            params.private = True
+            if params.information_type == InformationType.PUBLIC:
+                params.information_type = InformationType.USERDATA
 
         bug, event = self.createBugWithoutTarget(params)
 
-        if params.security_related:
-            assert params.private, (
-                "A security related bug should always be private by default.")
+        if params.information_type in SECURITY_INFORMATION_TYPES:
             if params.product:
                 context = params.product
             else:
@@ -2829,9 +2707,6 @@ class BugSet:
                 bug.subscribe(params.product.bug_supervisor, params.owner)
             else:
                 bug.subscribe(params.product.owner, params.owner)
-        else:
-            # nothing to do
-            pass
 
         # Create the task on a product if one was passed.
         if params.product:
@@ -2857,8 +2732,6 @@ class BugSet:
         # Tell everyone.
         if notify_event:
             notify(event)
-
-        bug._setInformationType()
 
         # Calculate the bug's initial heat.
         bug.updateHeat()
@@ -2899,18 +2772,22 @@ class BugSet:
             params.description = params.msg.text_contents
 
         extra_params = {}
-        if params.private:
+        if params.information_type in PRIVATE_INFORMATION_TYPES:
             # We add some auditing information. After bug creation
             # time these attributes are updated by Bug.setPrivate().
             extra_params.update(
                 date_made_private=params.datecreated,
                 who_made_private=params.owner)
 
+        # Set the legacy attributes for now.
+        private = params.information_type in PRIVATE_INFORMATION_TYPES
+        security_related = (
+            params.information_type in SECURITY_INFORMATION_TYPES)
         bug = Bug(
             title=params.title, description=params.description,
-            private=params.private, owner=params.owner,
-            datecreated=params.datecreated,
-            security_related=params.security_related,
+            owner=params.owner, datecreated=params.datecreated,
+            information_type=params.information_type,
+            _private=private, _security_related=security_related,
             **extra_params)
 
         if params.subscribe_owner:

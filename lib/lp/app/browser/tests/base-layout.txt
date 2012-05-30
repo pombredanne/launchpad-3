@@ -39,7 +39,8 @@ main and side content are positioned using the "yui-t4", "yui-main",
     >>> view = MainSideView(user, request)
     >>> html = view.render()
     >>> print html
-    <!DOCTYPE html ...
+    <!DOCTYPE html>
+    ...
       <!--
         Facet name: overview
         Page type: main_side
@@ -62,7 +63,7 @@ content to take up all the horizontal space.
     >>> view = MainOnlyView(user, request)
     >>> html = view.render()
     >>> print html
-    <!DOCTYPE html ...
+    <!DOCTYPE html>
     ...
       <!--
         Facet name: overview
@@ -85,7 +86,8 @@ slots are rendered, as are the application tabs.
     >>> view = SearchlessView(user, request)
     >>> html = view.render()
     >>> print html
-    <!DOCTYPE html ...
+    <!DOCTYPE html>
+    ...
     ...
       <!--
         Facet name: overview
@@ -155,9 +157,13 @@ Page Footers
 Public and private presentation
 -------------------------------
 
-The base-layout master templates uses the fmt:public-private-css formatter to
-add the 'public' or 'private' CSS class to the body tag. When the context is
-private, the 'private' class is added to the body's class attribute.
+The base-layout master templates uses the fmt:global-css formatter to
+add the 'public' or 'private' CSS class to the body tag as well as the
+'global-notification-visible' tag, if needed.
+
+When the context is private, the 'private' class is added to the body's class
+attribute. If the context is private or there are beta features,
+'global-notification-visible' is added to the body's class attribute.
 
     >>> from lp.registry.interfaces.person import PersonVisibility
 
@@ -168,7 +174,7 @@ private, the 'private' class is added to the body's class attribute.
     >>> view = MainOnlyView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview main_only private yui3-skin-sam
+    tab-overview main_only global-notification-visible private yui3-skin-sam
 
 When the context is public, the 'public' class is in the class attribute.
 

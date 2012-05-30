@@ -397,13 +397,6 @@ indicates the anonymous user.
 
 If one of the bugs is set to private, anonymous users can no longer see
 it as being marked for expiration.
-We need a feature flag so that multi-pillar bugs can be made private.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
 
     >>> private_bug = ubuntu_bugtask.bug
     >>> private_bug.title
@@ -458,10 +451,6 @@ even the private bugs are returned.
     True
     >>> reset_bug_modified_date(private_bug, 351)
 
-Clean up the feature flag.
-    >>> flags.cleanUp()
-
-
 The default expiration age
 --------------------------
 
@@ -486,7 +475,8 @@ There are no Expired Bugtasks in sampledata, from the tests above.
     >>> BugTask.selectBy(status=BugTaskStatus.EXPIRED).count()
     0
 
-    >>> # We want to check the hoary bugtask messages later.
+We want to check the hoary bugtask messages later.
+
     >>> starting_bug_messages_count = (hoary_bugtask.bug.messages.count())
 
 The script 'expire-bugtasks.py' writes its report to stdout. It makes
@@ -499,7 +489,7 @@ config.malone.expiration_dbuser.
     # Commit the current transaction because the script will run in
     # another transaction, and thus it won't see the changes done on
     # this test unless we commit.
-    >>> commit()
+    >>> transaction.commit()
 
     >>> import subprocess
     >>> process = subprocess.Popen(

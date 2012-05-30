@@ -100,9 +100,9 @@ from lp.services.messages.interfaces.message import IMessage
 class CreateBugParams:
     """The parameters used to create a bug."""
 
-    def __init__(self, owner, title, comment=None, description=None, msg=None,
-                 status=None, datecreated=None, security_related=False,
-                 private=False, subscribers=(),
+    def __init__(self, owner, title, comment=None, description=None,
+                 msg=None, status=None, datecreated=None,
+                 information_type=InformationType.PUBLIC, subscribers=(),
                  tags=None, subscribe_owner=True, filed_by=None,
                  importance=None, milestone=None, assignee=None, cve=None):
         self.owner = owner
@@ -112,8 +112,7 @@ class CreateBugParams:
         self.msg = msg
         self.status = status
         self.datecreated = datecreated
-        self.security_related = security_related
-        self.private = private
+        self.information_type = information_type
         self.subscribers = subscribers
         self.product = None
         self.distribution = None
@@ -215,7 +214,7 @@ class IBugPublic(IPrivacy):
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,
-            required=False, readonly=True,
+            required=True, readonly=True, default=InformationType.PUBLIC,
             description=_(
                 'The type of information contained in this bug report.')))
 
@@ -891,20 +890,16 @@ class IBugEdit(Interface):
         """
 
     @operation_parameters(
-        private=copy_field(IBugPublic['private']),
-        security_related=copy_field(IBugView['security_related']),
+        information_type=copy_field(IBugPublic['information_type']),
         )
-    @call_with(who=REQUEST_USER)
+    @call_with(who=REQUEST_USER, from_api=True)
     @export_write_operation()
     @operation_for_version("devel")
-    def setPrivacyAndSecurityRelated(private, security_related, who):
-        """Set bug privacy and security .
+    def transitionToInformationType(information_type, who, from_api=False):
+        """Set the information type for this bug.
 
-            :private: True/False.
-            :security_related: True/False.
-            :who: The IPerson who is making the change.
-
-        Return (private_changed, security_related_changed) tuple.
+        :information_type: The `InformationType` to transition to.
+        :who: The `IPerson` who is making the change.
         """
 
     @operation_parameters(
@@ -1080,18 +1075,20 @@ class IBugDelta(Interface):
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
 
-    # fields on the bug itself
+    # Fields on the bug itself.
     title = Attribute("A dict with two keys, 'old' and 'new', or None.")
     description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     security_related = Attribute(
+        "A dict with two keys, 'old' and 'new', or None.")
+    information_type = Attribute(
         "A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBug's")
 
-    # other things linked to the bug
+    # Other things linked to the bug.
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")
@@ -1200,13 +1197,6 @@ class IBugSet(Interface):
         """Get a specific bug by its ID or nickname
 
         If it can't be found, NotFoundError will be raised.
-        """
-
-    def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
-        """Find bugs matching the search criteria provided.
-
-        To search as an anonymous user, the user argument passed
-        should be None.
         """
 
     def queryByRemoteBug(bugtracker, remotebug):

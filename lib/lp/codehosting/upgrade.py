@@ -18,7 +18,10 @@ import os
 from shutil import rmtree
 from tempfile import mkdtemp
 
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.errors import UpToDateFormat
 from bzrlib.plugins.loom.formats import (
     NotALoom,
@@ -27,7 +30,6 @@ from bzrlib.plugins.loom.formats import (
 from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2aSubtree
 from bzrlib.upgrade import upgrade
 
-from lp.services.database.lpstorm import IStore
 from lp.code.bzr import (
     branch_changed,
     RepositoryFormat,
@@ -35,6 +37,7 @@ from lp.code.bzr import (
 from lp.code.model.branch import Branch
 from lp.codehosting.bzrutils import read_locked
 from lp.codehosting.vfs.branchfs import get_real_branch_path
+from lp.services.database.lpstorm import IStore
 
 
 class AlreadyUpgraded(Exception):

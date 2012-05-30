@@ -45,6 +45,8 @@ from subprocess import (
     Popen,
     )
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
@@ -58,11 +60,13 @@ from zope.app.form.browser import (
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import Fields
 from zope.interface import (
     implementer,
     Interface,
+    providedBy,
     )
 from zope.schema import (
     Bool,
@@ -110,6 +114,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.services.config import config
+from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -690,6 +695,12 @@ class SpecificationEditSchema(ISpecification):
             "The state of progress being made on the actual "
             "implementation or delivery of this feature."))
 
+    workitems_text = WorkItemsText(
+        title=_('Work Items'), required=True,
+        description=_(
+            "Work items for this specification input in a text format. "
+            "Your changes will override the current work items."))
+
 
 class SpecificationEditView(LaunchpadEditFormView):
 
@@ -728,6 +739,14 @@ class SpecificationEditWorkItemsView(SpecificationEditView):
     label = 'Edit specification work items'
     field_names = ['workitems_text']
     custom_widget('workitems_text', TextAreaWidget, height=15)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        old_spec = Snapshot(self.context, providing=providedBy(self.context))
+        self.context.setWorkItems(data['workitems_text'])
+        notify(ObjectModifiedEvent(
+            self.context, old_spec, edited_fields=['workitems_text']))
+        self.next_url = canonical_url(self.context)
 
 
 class SpecificationEditPeopleView(SpecificationEditView):

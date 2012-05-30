@@ -104,7 +104,7 @@ class TestYUITestFixtureController(TestCase):
             path_info='/+yuitest/lp/testing/tests/test_yuixhr_fixture')
         view.initialize()
         content = view.renderHTML()
-        self.assertTrue(content.startswith('<!DOCTYPE HTML'))
+        self.assertTrue(content.startswith('<!DOCTYPE html>'))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             re.escape(
                 'src="/+yuitest/lp/testing/tests/test_yuixhr_fixture.js"'),
@@ -158,7 +158,7 @@ class TestYUITestFixtureController(TestCase):
         view = create_traversed_view(
             path_info='/+yuitest/lp/testing/tests/test_yuixhr_fixture')
         content = view()
-        self.assertTrue(content.startswith('<!DOCTYPE HTML'))
+        self.assertTrue(content.startswith('<!DOCTYPE html>'))
         self.assertEqual(
             'text/html',
             view.request.response.getHeader('Content-Type'))

@@ -5,15 +5,13 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from testtools.matchers import (
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.blueprints.workitemmigration import (
     extractWorkItemsFromWhiteboard,
-    WorkitemParser,
     WorkItemParseError,
+    WorkitemParser,
     )
 from lp.testing import (
     TestCase,

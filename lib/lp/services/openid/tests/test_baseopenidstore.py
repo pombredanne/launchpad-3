@@ -115,9 +115,9 @@ class BaseStormOpenIDStoreTestsMixin:
         self.assertEqual(
             self.store.useNonce('server-url', timestamp, 'salt'), True)
         storm_store = IMasterStore(self.store.Nonce)
-        nonce = storm_store.get(
+        new_nonce = storm_store.get(
             self.store.Nonce, (u'server-url', timestamp, u'salt'))
-        self.assertIsNot(None, nonce)
+        self.assertIsNot(None, new_nonce)
 
         self.assertEqual(
             self.store.useNonce('server-url', timestamp, 'salt'), False)

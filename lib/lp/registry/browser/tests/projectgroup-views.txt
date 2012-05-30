@@ -21,7 +21,7 @@ with less than 10 projects is considered not have many projects.
     ...         product.project = projectgroup
 
     >>> owner = projectgroup.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> add_daughter(projectgroup, 'a')
     >>> projectgroup.products.count()
     1

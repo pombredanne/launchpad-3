@@ -16,7 +16,7 @@ admins and members of that team can see the team.
     ...     visibility=PersonVisibility.PRIVATE)
     >>> person_set = getUtility(IPersonSet)
     >>> cprov = person_set.getByName('cprov')
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> ignored = priv_team.addMember(cprov, reviewer=owner)
     >>> logout()
 
@@ -56,6 +56,18 @@ An anonymous user cannot see the team.
 The team can take on a restricted set of roles, such as being
 subscribed to a bug, etc.
 
+A regular user cannot subscribe a private team to a bug.
+They get an error indicating the team is NotFound.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/13')
+    >>> user_browser.getLink('Subscribe someone else').click()
+    >>> user_browser.getControl(name='field.person').value = 'private-team'
+    >>> user_browser.getControl('Subscribe user').click()
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    Invalid value
+
 A member of the team or an admin can subscribe a private team to a bug.
 
     >>> cprov_browser.open('http://launchpad.dev/bugs/15')
@@ -66,13 +78,15 @@ A member of the team or an admin can subscribe a private team to a bug.
     ...     print message
     Private Team team has been subscribed to this bug.
 
-A regular user gets an error indicating the team is NotFound.
+The private team has been subscribed to a bug and although a regular user is
+allowed to know of the team's existence, they cannot subscribe that team to
+another bug.
 
-    >>> user_browser.open('http://launchpad.dev/bugs/13')
+    >>> user_browser.open('http://launchpad.dev/bugs/5')
     >>> user_browser.getLink('Subscribe someone else').click()
     >>> user_browser.getControl(name='field.person').value = 'private-team'
     >>> user_browser.getControl('Subscribe user').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
-    Invalid value
+    Constraint not satisfied

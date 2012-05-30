@@ -4,7 +4,7 @@
 """XML-RPC interface for extracting real time stats from the appserver."""
 
 __metaclass__ = type
-__all__ = ["OpStats", "IOpStats"]
+__all__ = ["OpStats"]
 
 from cStringIO import StringIO
 from time import time

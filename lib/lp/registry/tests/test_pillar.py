@@ -10,7 +10,6 @@ from lp.registry.interfaces.pillar import (
     IPillarPerson,
     )
 from lp.registry.model.pillar import PillarPerson
-
 from lp.testing import (
     login,
     TestCaseWithFactory,

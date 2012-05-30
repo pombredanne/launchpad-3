@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -11,7 +11,6 @@ import unittest
 
 from lp.code.tests.test_doc import branchscannerSetUp
 from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
@@ -104,7 +103,6 @@ def noPrivSetUp(test):
 def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
     setUp(test)
-    test.globs['commit'] = commit
     login('test@canonical.com')
 
 

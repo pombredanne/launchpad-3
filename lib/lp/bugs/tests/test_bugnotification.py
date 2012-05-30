@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug notifications."""
@@ -32,6 +32,7 @@ from lp.bugs.model.bugnotification import (
     BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
+from lp.registry.enums import InformationType
 from lp.services.config import config
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.messages.model.message import MessageSet
@@ -67,7 +68,8 @@ class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
         self.bug_subscriber = factory.makePerson(name="bug-subscriber")
         self.bug_owner = factory.makePerson(name="bug-owner")
         self.private_bug = factory.makeBug(
-            product=self.product, private=True, owner=self.bug_owner)
+            product=self.product, owner=self.bug_owner,
+            information_type=InformationType.USERDATA)
         self.reporter = self.private_bug.owner
         self.private_bug.subscribe(self.bug_subscriber, self.reporter)
         [self.product_bugtask] = self.private_bug.bugtasks

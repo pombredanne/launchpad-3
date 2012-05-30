@@ -14,7 +14,7 @@ method accepts a single parameter; an BugTaskSearchParams instance.
 
     >>> from lp.bugs.model.bugtask import BugTask
     >>> all_public_bugtasks = BugTask.select(
-    ...     "BugTask.bug = Bug.id AND Bug.private = false",
+    ...     "BugTask.bug = Bug.id AND Bug.information_type IN (1, 2)",
     ...     clauseTables=['Bug'])
     >>> found_bugtasks.count() == all_public_bugtasks.count()
     True
@@ -138,7 +138,7 @@ expensive search on other related information.
 
 For example, there are no bugs with the word 'Fnord' in Firefox.
 
-    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext='Fnord')
+    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext=u'Fnord')
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> found_bugtasks.count()
     0
@@ -1059,11 +1059,11 @@ a "second level" sort order to ensure reliable sorting).
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     print bugTaskInfo(bugtask)
-    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    23 9 thunderbird (Ubuntu) Thunderbird crashes
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    26 2 Ubuntu Blackhole Trash folder
     41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    26 2 Ubuntu Blackhole Trash folder
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
 
 If we add a patch attachment to bug 2 and bug 10, they are listed first.
 
@@ -1079,9 +1079,9 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
     ...     print bugTaskInfo(bugtask)
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    23 9 thunderbird (Ubuntu) Thunderbird crashes
     41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
 
 
 == Searching using a flat interface ==
@@ -1135,7 +1135,7 @@ Or we can search a certain milestone (only getting bugs targeted to it).
 We can restrict our search for firefox bugs with a text search.
 
     >>> print_bugtasks(firefox.searchTasks(
-    ...     None, user=None, search_text='instructions'))
+    ...     None, user=None, search_text=u'instructions'))
     5 Mozilla Firefox Firefox install instructions should be complete NEW CRITICAL
 
 Or restrict our search (over the mozilla project this time) to a list of

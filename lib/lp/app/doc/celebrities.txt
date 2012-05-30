@@ -133,7 +133,7 @@ commercial_admin
 ----------------
 
 There is a 'Commercial Subscription Admins' team that has administrative
-power over the license review process and has the ability to de-activate
+power over the licence review process and has the ability to de-activate
 projects.
 
     >>> commercial_admin = personset.getByName('commercial-admins')

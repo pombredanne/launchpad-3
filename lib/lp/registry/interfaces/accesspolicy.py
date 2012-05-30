@@ -33,6 +33,8 @@ class IAccessArtifact(Interface):
 
     id = Attribute("ID")
     concrete_artifact = Attribute("Concrete artifact")
+    bug_id = Attribute("bug_id")
+    branch_id = Attribute("branch_id")
 
 
 class IAccessArtifactGrant(Interface):
@@ -124,11 +126,21 @@ class IAccessArtifactGrantSource(Interface):
             pairs.
         """
 
-    def findByArtifact(artifacts):
-        """Return all `IAccessArtifactGrant` objects for the artifacts."""
+    def findByArtifact(artifacts, grantees=None):
+        """Return `IAccessArtifactGrant` objects for the artifacts.
 
-    def revokeByArtifact(artifacts):
-        """Delete all `IAccessArtifactGrant` objects for the artifacts."""
+        :param artifacts: the artifacts for which to find any grants.
+        :param grantees: find grants for the specified grantees only,
+            else find all grants.
+        """
+
+    def revokeByArtifact(artifacts, grantees=None):
+        """Delete `IAccessArtifactGrant` objects for the artifacts.
+
+        :param artifacts: the artifacts to which revoke access.
+        :param grantees: revoke access for the specified grantees only,
+            else delete all grants.
+        """
 
 
 class IAccessPolicyArtifactSource(Interface):
@@ -214,7 +226,16 @@ class IAccessPolicyGrantSource(Interface):
 class IAccessPolicyGrantFlatSource(Interface):
     """Experimental query utility to search through the flattened schema."""
 
-    def findGranteesByPolicy(policies, grantees=None):
+    def findGranteesByPolicy(policies):
+        """Find teams or users with access grants for the policies.
+
+        This includes grants for artifacts in the policies.
+
+        :param policies: a collection of `IAccesPolicy`s.
+        :return: a collection of `IPerson`.
+        """
+
+    def findGranteePermissionsByPolicy(policies, grantees=None):
         """Find teams or users with access grants for the policies.
 
         This includes grants for artifacts in the policies.
@@ -222,11 +243,15 @@ class IAccessPolicyGrantFlatSource(Interface):
         :param policies: a collection of `IAccesPolicy`s.
         :param grantees: if not None, the result only includes people in the
             specified list of grantees.
-        :return: a collection of (`IPerson`, `IAccessPolicy`, permission)
-            where permission is a SharingPermission value.
-            'ALL' means the person has an access policy grant and can see all
+        :return: a collection of
+            (`IPerson`, `IAccessPolicy`, permission, shared_artifact_types)
+            where permission is a SharingPermission enum value.
+            ALL means the person has an access policy grant and can see all
             artifacts for the associated pillar.
-            'SOME' means the person only has specified access artifact grants.
+            SOME means the person only has specified access artifact grants.
+            shared_artifact_types contains the information_types for which the
+            user has been granted access for one or more artifacts of that
+            type.
         """
 
     def findArtifactsByGrantee(grantee, policies):

@@ -38,10 +38,8 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
             '/%s/+spec/%s' % (spec_object.target.name, spec_object.name))
 
     def getPillarOnWebservice(self, pillar_obj):
-        # XXX: 2010-11-26, salgado, bug=681767: Can't use relative URLs here.
         launchpadlib = self.getLaunchpadlib()
-        return launchpadlib.load(
-            str(launchpadlib._root_uri) + '/' + pillar_obj.name)
+        return launchpadlib.load(pillar_obj.name)
 
 
 class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):

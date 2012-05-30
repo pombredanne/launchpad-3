@@ -1,23 +1,19 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from unittest import TestCase
-
-from lazr.enum._enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
-
-from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
-from lp.services.features.testing import FeatureFixture
-
 
 __metaclass__ = type
 
+
 import doctest
+from unittest import TestCase
 
 from lazr.enum import (
     EnumeratedType,
     Item,
+    )
+from lazr.enum._enum import (
+    DBEnumeratedType,
+    DBItem,
     )
 from testtools.matchers import DocTestMatches
 from zope.schema import Choice
@@ -26,12 +22,15 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     PlainMultiCheckBoxWidget,
     )
+from lp.registry.vocabularies import InformationTypeVocabulary
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.menu import structured
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
@@ -222,6 +221,19 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
             '<div class="hint_class">Hello World</div>')
         hint_html = self.widget.renderExtraHint()
         self.assertEqual(expected, hint_html)
+
+    def test_renderDescription(self):
+        # If the vocabulary provides a description property, it is used over
+        # the one provided by the enum.
+        feature_flag = {
+            'disclosure.display_userdata_as_private.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            vocab = InformationTypeVocabulary()
+            widget = LaunchpadRadioWidgetWithDescription(
+                self.field, vocab, self.request)
+            self.assertRenderItem(
+                "... containing private information...", widget.renderItem,
+                vocab.getTermByToken('USERDATA'))
 
 
 class TestVocabularyToChoiceEditItems(TestCase):

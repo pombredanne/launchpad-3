@@ -171,12 +171,12 @@ Similarly, references to private PPAs are not rendered unless the user has
 a subscription to the PPA.
 
     >>> ppa_user = factory.makePerson(name="jake", displayname="Jake Smith")
-    >>> login_person(ppa_user)
+    >>> ignored = login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> ignore = private_ppa.newSubscription(ppa_user, owner)
-    >>> login_person(ppa_user)
+    >>> ignored = login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
     ppa:joe/pppa
 
@@ -287,7 +287,7 @@ Add manual word breaks to long words in a string:
 
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
-    '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>...<wbr></wbr>launchpad&gt;'
+    '&lt;http:/<wbr />/launchpad.<wbr />...<wbr />launchpad&gt;'
 
 To get a int with its thousands separated by a comma, use fmt:intcomma.
 
@@ -496,7 +496,7 @@ The bzr-link formatter uses the bzr identity.
     <a href="http://code.launchpad.dev/~eric/fooix/bar"
       class="sprite branch">lp://dev/~eric/fooix/bar</a>
 
-    >>> login_person(fooix.owner, LaunchpadTestRequest())
+    >>> ignored = login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.branch = branch
     >>> from lp.services.propertycache import clear_property_cache
     >>> clear_property_cache(branch)
@@ -556,7 +556,7 @@ adequate permissions, a link is not generated.
 
 But if we log in as the subscriber, a link is presented.
 
-    >>> login_person(subscription.person)
+    >>> ignored = login_person(subscription.person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'<a href="http://.../+subscription/michael">Subscription
       of Michael the Viking to lp://dev/~eric/fooix/my-branch</a>'
@@ -924,8 +924,8 @@ a foldable span.
     Version: GnuPG v1.4.1 (GNU/Linux)<br />
     Comment: Using GnuPG with Thunderbird<br />
     <br />
-    iD8DBQFED60Y0F+<wbr></wbr>nu1YWqI0RAqrNAJ<wbr></wbr>...
-    T2PIWy0CUJsX8RX<wbr></wbr>St/M51WE=<br />
+    iD8DBQFED60Y0F+<wbr />nu1YWqI0RAqrNAJ<wbr />...
+    T2PIWy0CUJsX8RX<wbr />St/M51WE=<br />
     =J2S5<br />
     -----END PGP SIGNATURE-----
     </span></p>
@@ -942,7 +942,7 @@ span.
     Raise your hand if you can read this.</p>
     <p><span class="foldable"...>--<br />
     __C U R T I S  C.  H O V E Y_______<br />
-    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    sinzui.<wbr />is@example.<wbr />org<br />
     Guilty of stealing everything I am.
     </span></p>
 
@@ -1012,7 +1012,7 @@ must markup. We can format the three examples at the same time.
     </span></p>
     <p><span class="foldable"...>--<br />
     __C U R T I S  C.  H O V E Y_______<br />
-    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    sinzui.<wbr />is@example.<wbr />org<br />
     Guilty of stealing everything I am.
     </span></p>
 
@@ -1533,7 +1533,7 @@ Any object can be converted to the 'public' CSS class. The object does
 not need to implement IPrivacy.
 
     >>> thing = object()
-    >>> print test_tales('context/fmt:public-private-css', context=thing)
+    >>> print test_tales('context/fmt:global-css', context=thing)
     public
 
 The CSS class honors the state of the object's privacy if the object
@@ -1544,18 +1544,18 @@ is 'public'.
     >>> print bug.private
     False
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
+    >>> print test_tales('context/fmt:global-css', context=bug)
     public
 
 If the private attribute is True, the class is 'private'.
 
     >>> owner = bug.bugtasks[0].target.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> bug.setPrivate(True, owner)
     True
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
-    private
+    >>> print test_tales('context/fmt:global-css', context=bug)
+    global-notification-visible private
 
     >>> login(ANONYMOUS)
 

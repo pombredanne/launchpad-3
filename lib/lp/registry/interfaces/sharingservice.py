@@ -28,6 +28,8 @@ from zope.schema import (
 
 from lp import _
 from lp.app.interfaces.services import IService
+from lp.bugs.interfaces.bug import IBug
+from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     InformationType,
     SharingPermission,
@@ -43,18 +45,50 @@ class ISharingService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
+    def getSharedArtifacts(pillar, person, user):
+        """Return the artifacts shared between the pillar and person.
+
+        The result includes bugtasks rather than bugs since this is what the
+        pillar filtering is applied to and is what the calling code uses.
+        The shared bug can be obtained simply by reading the bugtask.bug
+        attribute.
+
+        :param user: the user making the request. Only artifacts visible to the
+             user will be included in the result.
+        :return: a (bugtasks, branches) tuple
+        """
+
     def getInformationTypes(pillar):
         """Return the allowed information types for the given pillar."""
 
     def getSharingPermissions():
         """Return the information sharing permissions."""
 
+    def getPillarSharees(pillar):
+        """Return people/teams who can see pillar artifacts."""
+
     @export_read_operation()
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True))
     @operation_for_version('devel')
-    def getPillarSharees(pillar):
-        """Return people/teams who can see pillar artifacts."""
+    def getPillarShareeData(pillar):
+        """Return people/teams who can see pillar artifacts.
+
+        The result records are json data which includes:
+            - person name
+            - permissions they have for each information type.
+        """
+
+    def jsonShareeData(grant_permissions):
+        """Return people/teams who can see pillar artifacts.
+
+        :param grant_permissions: a list of (grantee, accesspolicy, permission)
+            tuples.
+
+        The result records are json data which includes:
+            - person name
+            - permissions they have for each information type.
+        """
 
     @export_write_operation()
     @call_with(user=REQUEST_USER)
@@ -92,4 +126,22 @@ class ISharingService(IService):
         :param sharee: the person or team to remove
         :param information_types: if None, remove all access, otherwise just
                                    remove the specified access_policies
+        """
+
+    @export_write_operation()
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        sharee=Reference(IPerson, title=_('Sharee'), required=True),
+        bugs=List(
+            Reference(schema=IBug), title=_('Bugs'), required=False),
+        branches=List(
+            Reference(schema=IBranch), title=_('Branches'), required=False))
+    @operation_for_version('devel')
+    def revokeAccessGrants(pillar, sharee, branches=None, bugs=None):
+        """Remove a sharee's access to the specified artifacts.
+
+        :param pillar: the pillar from which to remove access
+        :param sharee: the person or team for whom to revoke access
+        :param bugs: the bugs for which to revoke access
+        :param branches: the branches for which to revoke access
         """

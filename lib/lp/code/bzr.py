@@ -18,6 +18,7 @@ __all__ = [
 # FIRST Ensure correct plugins are loaded. Do not delete this comment or the
 # line below this comment.
 import lp.codehosting
+
 # Silence lint warning.
 lp.codehosting
 

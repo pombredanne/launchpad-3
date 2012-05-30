@@ -2,7 +2,7 @@
      ^^^^^^^^^^^^^^^^^^^^^^^
 
 Component refers to a group of packages within a DistroSeries that
-are related by their need, shipment condition and/or license.
+are related by their need, shipment condition and/or licence.
 
 Zope auxiliary test toolchain:
 

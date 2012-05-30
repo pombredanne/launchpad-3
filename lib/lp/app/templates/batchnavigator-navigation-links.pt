@@ -6,7 +6,8 @@
     next_page_url context/nextBatchURL;
     last_page_url context/lastBatchURL;
     total context/batch/total;
-    size context/batch/size"
+    size context/batch/size;
+    hide_counts context/hide_counts|nothing"
   style="width: 100%;"
   tal:attributes="class view/css_class"
 >
@@ -14,14 +15,16 @@
     <tr>
       <td style="white-space: nowrap"
           class="batch-navigation-index">
-        <strong tal:content="context/batch/startNumber">1</strong>
-        <tal:block condition="python: size > 1">
-          &rarr;
-          <strong tal:content="context/batch/endNumber">10</strong>
-        </tal:block>
-        of
-        <tal:total replace="total">42</tal:total>
-        <tal:heading content="context/heading">results</tal:heading>
+        <tal:batch_counts condition='not:hide_counts'>
+            <strong tal:content="context/batch/startNumber">1</strong>
+            <tal:block condition="python: size > 1">
+              &rarr;
+              <strong tal:content="context/batch/endNumber">10</strong>
+            </tal:block>
+            of
+            <tal:total replace="total">42</tal:total>
+            <tal:heading content="context/heading">results</tal:heading>
+        </tal:batch_counts>
       </td>
       <td style="text-align: right; white-space: nowrap"
           class="batch-navigation-links">

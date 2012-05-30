@@ -1,7 +1,7 @@
 /* ===========
    Beta banner
 */
-.beta-banner {
+.yui3-betabanner-content .global-notification {
     position: fixed;
     z-index: 9;
     top: 0;
@@ -17,6 +17,7 @@
     text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5);
     font-size: 14px;
     line-height: 21px;
+    text-align: left;
     }
 .beta-banner .info-link {
     color: #4884ef;
@@ -40,8 +41,8 @@
 .beta-feature {
     font-weight: bold;
     }
-.beta-banner .global-notification-close,
-.beta-banner .global-notification-close:active,
-.beta-banner .global-notification-close:visited {
+.yui3-betabanner-content .global-notification-close,
+.yui3-betabanner-content .global-notification-close:active,
+.yui3-betabanner-content .global-notification-close:visited {
     color: #fff;
     }

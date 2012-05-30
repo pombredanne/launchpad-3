@@ -69,7 +69,11 @@
        YUI.GlobalConfig = {
            debug: ${yui_console_debug},
            fetchCSS: false,
-           timeout: 50
+           timeout: 50,
+           ignore: [
+               'yui2-yahoo', 'yui2-event', 'yui2-dom',
+               'yui2-calendar','yui2-dom-event'
+           ]
         }
        ">
     </script>
@@ -80,7 +84,7 @@
 
   <tal:js-loader condition="request/features/js.combo_loader.enabled">
    <script type="text/javascript"
-        tal:attributes="src string:${combo_url}/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+        tal:attributes="src string:${combo_url}/?yui/yui/yui-min.js&amp;lp/meta.js&amp;yui/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
         YUI.GlobalConfig = {
             combine: true,
@@ -139,8 +143,7 @@
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
-      devmode modules/lp.services.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/lp.services.config/config/google/maps_api_key};">
+      devmode modules/lp.services.config/config/devmode;">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
@@ -149,8 +152,8 @@
 
     <script id="base-layout-load-scripts" type="text/javascript">
         LPJS.use('base', 'node', 'console', 'event',
-            'oop', 'lp', 'lp.app.privacy',
-            'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
+            'oop', 'lp', 'lp.app.banner.privacy',
+            'lp.app.banner.beta', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
             'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
             'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
@@ -158,10 +161,10 @@
 
             Y.on("domready", function () {
                 if (Y.one(document.body).hasClass('private')) {
-                    Y.lp.app.privacy.setup_privacy_notification();
-                    Y.lp.app.privacy.display_privacy_notification();
+                    banner = Y.lp.app.banner.privacy.getPrivacyBanner();
+                    banner.show();
                 }
-                Y.lp.app.beta_features.display_beta_notification();
+                Y.lp.app.banner.beta.show_beta_if_needed();
                 Y.lp.app.sorttable.SortTable.init();
                 Y.lp.app.inlinehelp.init_help();
                 Y.lp.activate_collapsibles();
@@ -186,37 +189,6 @@
          //<![CDATA[
         // This code is pulled from lp.js that needs to be available on every
         // request. Pulling here to get it outside the scope of the YUI block.
-        // Lint-safe scripting URL.
-        var VOID_URL = '_:void(0);'.replace('_', 'javascript');
-
-        function registerLaunchpadFunction(func) {
-            // registers a function to fire onload.
-            // Use this for initilaizing any javascript that should fire once the page
-            // has been loaded.
-            LPJS.use('node', function(Y) {
-                Y.on('load', function(e) {
-                    func();
-                }, window);
-            });
-        }
-
-        // Enable or disable the beta.launchpad.net redirect
-        function setBetaRedirect(enable) {
-            var expire = new Date();
-            if (enable) {
-                expire.setTime(expire.getTime() + 1000);
-                document.cookie = ('inhibit_beta_redirect=0; Expires=' +
-                                   expire.toGMTString() + cookie_scope);
-                alert('Redirection to the beta site has been enabled');
-            } else {
-                expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000);
-                document.cookie = ('inhibit_beta_redirect=1; Expires=' +
-                                   expire.toGMTString() + cookie_scope);
-                alert('You will not be redirected to the beta site for 2 hours');
-            }
-            return false;
-        }
-
         function setFocusByName(name) {
             // Focus the first element matching the given name which can be focused.
             var nodes = document.getElementsByName(name);
@@ -240,24 +212,6 @@
             }
         }
 
-        function popup_window(url, name, width, height) {
-            var iframe = document.getElementById('popup_iframe_' + name);
-            if (!iframe.src || iframe.src === VOID_URL) {
-                // The first time this handler runs the window may not have been
-                // set up yet; sort that out.
-                iframe.style.width = width + 'px';
-                iframe.style.height = height + 'px';
-                iframe.style.position = 'absolute';
-                iframe.style.background = 'white';
-                iframe.src = url;
-            }
-            iframe.style.display = 'inline';
-            // I haven't found a way of making the search form focus again when
-            // the popup window is redisplayed. I tried doing an
-            //    iframe.contentDocument.searchform.search.focus()
-            // but nothing happens.. -- kiko, 2007-03-12
-        }
-
         function selectWidget(widget_name, event) {
           if (event && (event.keyCode === 9 || event.keyCode === 13)) {
               // Avoid firing if user is tabbing through or simply pressing
@@ -265,65 +219,6 @@
               return;
           }
           document.getElementById(widget_name).checked = true;
-        }
-
-        function switchBugBranchFormAndWhiteboard(id) {
-            var div = document.getElementById('bugbranch' + id);
-            var wb = document.getElementById('bugbranch' + id + '-wb');
-
-            if (div.style.display === "none") {
-                /* Expanding the form */
-                if (wb !== null) {
-                    wb.style.display = "none";
-                }
-                div.style.display = "block";
-                /* Use two focus calls to get the browser to scroll to the end of the
-                 * form first, then focus back to the first field of the form.
-                 */
-                document.getElementById('field'+id+'.actions.update').focus();
-                document.getElementById('field'+id+'.whiteboard').focus();
-            } else {
-                if (wb !== null) {
-                    wb.style.display = "block";
-                }
-                div.style.display = "none";
-            }
-            return false;
-        }
-
-        function switchSpecBranchFormAndSummary(id) {
-            /* The document has two identifiable elements for each
-             * spec-branch link:
-             *    'specbranchX' which is the div containing the edit form
-             *    'specbranchX-summary' which is the div contining the sumary
-             * where X is the database id of the link.
-             */
-            var div = document.getElementById('specbranch' + id);
-            var wb = document.getElementById('specbranch' + id + '-summary');
-
-            if (div.style.display === "none") {
-                /* Expanding the form */
-                if (wb !== null) {
-                    wb.style.display = "none";
-                }
-                div.style.display = "block";
-                /* Use two focus calls to get the browser to scroll to the end of the
-                 * form first, then focus back to the first field of the form.
-                 */
-                document.getElementById('field' + id + '.actions.change').focus();
-                document.getElementById('field' + id + '.summary').focus();
-            } else {
-                if (wb !== null) {
-                    wb.style.display = "block";
-                }
-                div.style.display = "none";
-            }
-            return false;
-        }
-
-        function updateField(field, enabled)
-        {
-            field.disabled = !enabled;
         }
         //]]>
     </script>

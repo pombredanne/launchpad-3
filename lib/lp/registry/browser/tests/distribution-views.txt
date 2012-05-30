@@ -272,7 +272,7 @@ not appear.
     >>> from lp.testing.pages import find_tag_by_id
 
     >>> owner = distribution.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> distribution.official_malone = False
     >>> question = factory.makeQuestion(target=distribution)
     >>> faq = factory.makeFAQ(target=distribution)

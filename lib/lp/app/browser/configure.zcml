@@ -33,6 +33,13 @@
         />
     <browser:page
         for="*"
+        name="+banner-macros"
+        template="../templates/banner-macros.pt"
+        permission="zope.Public"
+        class="lp.app.browser.launchpad.Macro"
+        />
+    <browser:page
+        for="*"
         name="launchpad_form"
         layer="lp.layers.LaunchpadLayer"
         permission="zope.Public"
@@ -149,15 +156,6 @@
       attribute="__call__"
       permission="zope.Public"
       />
-
-    <!-- A page to list all the icons in LP -->
-    <browser:page
-        for="lp.services.webapp.interfaces.ILaunchpadApplication"
-        name="+graphics"
-        class="lp.app.browser.launchpad.LaunchpadGraphics"
-        template="../templates/launchpad-graphics.pt"
-        permission="zope.Public"
-        />
 
     <facet facet="overview">
       <!-- Common menus -->

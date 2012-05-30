@@ -10,11 +10,13 @@ __metaclass__ = type
 __all__ = [
     'AbstractYUITestCase',
     'ANONYMOUS',
+    'admin_logged_in',
     'anonymous_logged_in',
     'api_url',
     'BrowserTestCase',
     'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'clean_up_reactor',
     'ExpectedException',
     'extract_lp_cache',
     'FakeAdapterMixin',
@@ -156,6 +158,7 @@ from lp.services.webapp.servers import (
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
+    admin_logged_in,
     anonymous_logged_in,
     celebrity_logged_in,
     login,
@@ -182,6 +185,7 @@ from lp.testing.karma import KarmaRecorder
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
+admin_logged_in
 anonymous_logged_in
 api_url
 celebrity_logged_in
@@ -445,7 +449,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
-        return self.useContext(temp_dir())
+        return self.useFixture(fixtures.TempDir()).path
 
     def installKarmaRecorder(self, *args, **kwargs):
         """Set up and return a `KarmaRecorder`.
@@ -646,6 +650,11 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
+        # Remove all log handlers, tests should not depend on global logging
+        # config but should make their own config instead.
+        logger = logging.getLogger()
+        for handler in list(logger.handlers):
+            logger.removeHandler(handler)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
@@ -1069,6 +1078,12 @@ class ZopeTestInSubProcess:
         assert isinstance(result, ZopeTestResult), (
             "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
+        # We flush stdout and stderror at this point in order to avoid
+        # bug 986429; it appears that stdout and stderror get copied in
+        # full when we fork, which means that we end up with repeated
+        # output, resulting in repeated subunit output.
+        sys.stdout.flush()
+        sys.stderr.flush()
         pid = os.fork()
         if pid == 0:
             # Child.
@@ -1385,14 +1400,6 @@ class NestedTempfile(fixtures.Fixture):
 
 
 @contextmanager
-def temp_dir(dir=None):
-    """Provide a temporary directory as a ContextManager."""
-    tempdir = tempfile.mkdtemp(dir=dir)
-    yield tempdir
-    shutil.rmtree(tempdir, ignore_errors=True)
-
-
-@contextmanager
 def monkey_patch(context, **kwargs):
     """In the ContextManager scope, monkey-patch values.
 
@@ -1535,3 +1542,12 @@ class FakeAdapterMixin:
             self.addCleanup(
                 site_manager.registerUtility, current_commponent,
                 for_interface, name)
+
+
+def clean_up_reactor():
+    # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+    # calls around.  They need to be updated to use Twisted correctly.
+    # For the meantime, just blat the reactor.
+    from twisted.internet import reactor
+    for delayed_call in reactor.getDelayedCalls():
+        delayed_call.cancel()

@@ -23,7 +23,10 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
@@ -61,9 +64,15 @@ class DistributionJob(StormBase):
         self.job_type = job_type
         self.metadata = metadata
 
+    def makeDerived(self):
+        return DistributionJobDerived.makeSubclass(self)
+
 
 class DistributionJobDerived(BaseRunnableJob):
     """Abstract class for deriving from DistributionJob."""
+
+    __metaclass__ = EnumeratedSubclass
+
     delegates(IDistributionJob)
 
     def __init__(self, job):

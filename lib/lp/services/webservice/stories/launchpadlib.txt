@@ -126,7 +126,7 @@ temp directory.
     >>> launchpad = launchpadlib_for(
     ...     'launchpadlib test', 'salgado', 'WRITE_PUBLIC')
 
-    >>> launchpad._browser._connection.cache.cache
+    >>> launchpad._browser._connection.cache._cache_dir
     '/.../launchpadlib-cache-...'
 
 If we create another Launchpad object, it'll get its own cache directory.
@@ -134,8 +134,8 @@ If we create another Launchpad object, it'll get its own cache directory.
     >>> launchpad_2 = launchpadlib_for(
     ...     'launchpadlib test', 'salgado', 'WRITE_PUBLIC')
 
-    >>> cache_dir_1 = launchpad._browser._connection.cache.cache
-    >>> cache_dir_2 = launchpad_2._browser._connection.cache.cache
+    >>> cache_dir_1 = launchpad._browser._connection.cache._cache_dir
+    >>> cache_dir_2 = launchpad_2._browser._connection.cache._cache_dir
 
     >>> cache_dir_2 != cache_dir_1
     True

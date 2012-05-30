@@ -117,7 +117,7 @@ Reviewing a project's licensing
 ===============================
 
 Launchpad admins and members of the registry experts team can review a
-project's licenses.
+project's licences.
 
 The Commercial Admin user is not in the registry admins team so he
 cannot access the page.
@@ -150,7 +150,7 @@ him access.
     Review project
 
 The view allow the reviewer to see and change project privileges and
-judge the licenses.
+judge the licences.
 
     >>> view.field_names
     ['project_reviewed', 'license_approved', 'active', 'private_bugs',
@@ -217,7 +217,7 @@ also reactivate the project at the same time.
     >>> print firefox.reviewer_whiteboard
     Reinstated old project
 
-A project with proprietary license cannot be approved; the owner must
+A project with proprietary licence cannot be approved; the owner must
 purchase a commercial subscription.
 
     >>> from lp.registry.interfaces.product import License
@@ -247,7 +247,7 @@ purchase a commercial subscription.
     >>> print firefox.reviewer_whiteboard
     None
 
-A project with additional license information must be approved by a reviewer.
+A project with additional licence information must be approved by a reviewer.
 If the reviewer does not approve the project, just review, the project does
 not qualify for free hosting. The owner must purchase a commercial
 subscription.
@@ -277,7 +277,7 @@ subscription.
     >>> firefox.qualifies_for_free_hosting
     False
 
-The owner can correct the license information and have it re-reviewed for
+The owner can correct the licence information and have it re-reviewed for
 approval.
 
     >>> login('test@canonical.com')
@@ -290,7 +290,7 @@ approval.
 
     >>> form = {
     ...     'field.active': 'on',
-    ...     'field.reviewer_whiteboard': 'This is not a free license',
+    ...     'field.reviewer_whiteboard': 'This is not a free licence',
     ...     'field.license_approved': 'on',
     ...     'field.actions.change': 'Change',
     ...     }
@@ -305,7 +305,7 @@ approval.
     >>> firefox.qualifies_for_free_hosting
     True
 
-If the owner updated the license by adding an Other/Open Source licenses,
+If the owner updated the licence by adding an Other/Open Source licences,
 the project must be reviewed again
 
     >>> login('test@canonical.com')
@@ -342,13 +342,13 @@ Drivers, which include project driver and owners can access the
 
     >>> from lp.services.webapp.authorization import check_permission
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> view = create_view(firefox, name='+addseries')
     >>> check_permission('launchpad.Driver', view)
     True
 
     >>> firefox.driver = factory.makePerson()
-    >>> login_person(firefox.driver)
+    >>> ignored = login_person(firefox.driver)
     >>> view = create_view(firefox, name='+addseries')
     >>> check_permission('launchpad.Driver', view)
     True
@@ -423,7 +423,7 @@ officially supports.
 
     >>> product = factory.makeProduct(name='cucumber')
     >>> owner = product.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> question = factory.makeQuestion(target=product)
     >>> faq = factory.makeFAQ(target=product)
     >>> bug = factory.makeBug(product=product)

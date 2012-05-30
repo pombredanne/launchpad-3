@@ -1,5 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-  "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
 <!--
 Copyright 2012 Canonical Ltd.  This software is licensed under the
 GNU Affero General Public License version 3 (see the file LICENSE).
@@ -90,5 +89,21 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           </div>
         </script>
 
+        <script type="text/x-template" id="build-schedule-template">
+            <form action="+request-daily-build"
+                  method="post" id="request-daily-build-form">
+                <input type="submit" name="field.actions.build"
+                    id="field.actions.build" value="Build now" />
+            </form>
+            <a id="request-daily-build"
+                 class="sprite source-package-recipe js-action unseen"
+                 href="+build-now">Build now</a>
+            <div id="builds-target">
+                <div>
+                    <a id="request-builds"
+                        class="" href="#">Request build(s)</a>
+                </div>
+            </div>
+        </script>
     </body>
 </html>

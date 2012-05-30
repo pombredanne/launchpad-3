@@ -228,8 +228,7 @@ First, update the cache tables for Celso's PPA:
     ...
 
     >>> cprov.archive.updateArchiveCache()
-    >>> from lp.services.database.sqlbase import commit
-    >>> commit()
+    >>> transaction.commit()
     >>> flush_database_updates()
 
 Then, supersede all pmount publications in warty for pmount (this sets
@@ -252,7 +251,7 @@ us up to demonstrate bug 208233).
     >>> for p in pubs:
     ...      if p.binarypackagerelease.binarypackagename == pmount_name:
     ...          s = p.supersede()
-    >>> commit()
+    >>> transaction.commit()
     >>> flush_database_updates()
     >>> switch_dbuser(config.statistician.dbuser)
 

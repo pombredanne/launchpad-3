@@ -16,6 +16,7 @@ from lp.registry.browser.team import (
     TeamMailingListArchiveView,
     TeamOverviewMenu,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -30,7 +31,6 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
@@ -369,7 +369,9 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         # the team is subscribed to a private bug.
 
         def setup_team(team):
-            bug = self.factory.makeBug(owner=team.teamowner, private=True)
+            bug = self.factory.makeBug(
+                owner=team.teamowner,
+                information_type=InformationType.USERDATA)
             with person_logged_in(team.teamowner):
                 bug.default_bugtask.transitionToAssignee(team)
 
@@ -477,7 +479,6 @@ class TestTeamAddView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
     view_name = '+newteam'
-    feature_flag = {'disclosure.show_visibility_for_team_add.enabled': 'on'}
 
     def test_random_does_not_see_visibility_field(self):
         personset = getUtility(IPersonSet)
@@ -495,30 +496,18 @@ class TestTeamAddView(TestCaseWithFactory):
         self.assertIn(
             'visibility', [field.__name__ for field in view.form_fields])
 
-    def test_random_does_not_see_visibility_field_with_flag(self):
-        personset = getUtility(IPersonSet)
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            with FeatureFixture(self.feature_flag):
-                view = create_initialized_view(
-                    personset, name=self.view_name, principal=person)
-                self.assertNotIn(
-                    'visibility',
-                    [field.__name__ for field in view.form_fields])
-
-    def test_person_with_cs_sees_visibility_field_with_flag(self):
+    def test_person_with_cs_sees_visibility_field(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
         self.factory.makeCommercialSubscription(product)
         with person_logged_in(team.teamowner):
-            with FeatureFixture(self.feature_flag):
-                view = create_initialized_view(
-                    personset, name=self.view_name, principal=team.teamowner)
-                self.assertIn(
-                    'visibility',
-                    [field.__name__ for field in view.form_fields])
+            view = create_initialized_view(
+                personset, name=self.view_name, principal=team.teamowner)
+            self.assertIn(
+                'visibility',
+                [field.__name__ for field in view.form_fields])
 
     def test_person_with_cs_can_create_private_team(self):
         personset = getUtility(IPersonSet)
@@ -535,10 +524,9 @@ class TestTeamAddView(TestCaseWithFactory):
             'field.actions.create': 'Create',
             }
         with person_logged_in(team.teamowner):
-            with FeatureFixture(self.feature_flag):
-                create_initialized_view(
-                    personset, name=self.view_name, principal=team.teamowner,
-                    form=form)
+            create_initialized_view(
+                personset, name=self.view_name, principal=team.teamowner,
+                form=form)
             team = personset.getByName(team_name)
             self.assertIsNotNone(team)
             self.assertEqual(PersonVisibility.PRIVATE, team.visibility)
@@ -550,12 +538,11 @@ class TestTeamAddView(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=team)
         self.factory.makeCommercialSubscription(product, expired=True)
         with person_logged_in(team.teamowner):
-            with FeatureFixture(self.feature_flag):
-                view = create_initialized_view(
-                    personset, name=self.view_name, principal=team.teamowner)
-                self.assertNotIn(
-                    'visibility',
-                    [field.__name__ for field in view.form_fields])
+            view = create_initialized_view(
+                personset, name=self.view_name, principal=team.teamowner)
+            self.assertNotIn(
+                'visibility',
+                [field.__name__ for field in view.form_fields])
 
     def test_visibility_is_correct_during_edit(self):
         owner = self.factory.makePerson()
@@ -566,12 +553,11 @@ class TestTeamAddView(TestCaseWithFactory):
         self.factory.makeCommercialSubscription(product)
         with person_logged_in(owner):
             url = canonical_url(team)
-        with FeatureFixture(self.feature_flag):
-            browser = self.getUserBrowser(url, user=owner)
-            browser.getLink('Change details').click()
-            self.assertEqual(
-                ['PRIVATE'],
-                browser.getControl(name="field.visibility").value)
+        browser = self.getUserBrowser(url, user=owner)
+        browser.getLink('Change details').click()
+        self.assertEqual(
+            ['PRIVATE'],
+            browser.getControl(name="field.visibility").value)
 
 
 class TestTeamMenu(TestCaseWithFactory):

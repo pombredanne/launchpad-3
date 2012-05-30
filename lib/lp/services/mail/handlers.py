@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 from lp.answers.mail.handler import AnswerTrackerHandler
-from lp.blueprints.mail.handler import BlueprintHandler
 from lp.bugs.mail.handler import MaloneHandler
 from lp.code.mail.codehandler import CodeHandler
 from lp.services.config import config
@@ -18,7 +17,6 @@ class MailHandlers:
 
     DEFAULT = (
         (config.launchpad.bugs_domain, MaloneHandler),
-        (config.launchpad.specs_domain, BlueprintHandler),
         (config.answertracker.email_domain, AnswerTrackerHandler),
         # XXX flacoste 2007-04-23 Backward compatibility for old domain.
         # We probably want to remove it in the future.

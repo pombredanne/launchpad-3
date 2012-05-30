@@ -84,16 +84,16 @@ comments. Calling importBugComments() and passing it our new
 comment-importing ExternalBugTracker instance will result in the three
 comments in the comment_dict being imported into Launchpad.
 
-    >>> from lp.services.scripts.logger import log
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
     >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
     ...     make_bug_watch_updater)
 
     >>> bugwatch_updater = make_bug_watch_updater(
-    ...     CheckwatchesMaster(transaction), bug_watch,
-    ...     external_bugtracker)
+    ...     CheckwatchesMaster(transaction, logger=FakeLogger()),
+    ...     bug_watch, external_bugtracker)
     >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 3 comments for remote bug 123456 on ...
+    INFO Imported 3 comments for remote bug 123456 on ...
 
 These three comments will be linked to the bug watch from which they
 were imported. They also have the remote_comment_id attribute set.
@@ -123,7 +123,7 @@ process is run again only the new comment will be imported.
     >>> transaction.commit()
 
     >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 1 comments for remote bug 123456 on ...
+    INFO Imported 1 comments for remote bug 123456 on ...
 
 Once again, the newly-imported comment will be linked to the bug watch
 form which it was imported.
@@ -174,7 +174,7 @@ is associated with the existing person.
     >>> transaction.commit()
 
     >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 1 comments for remote bug 123456 on ...
+    INFO Imported 1 comments for remote bug 123456 on ...
 
     >>> bug.messages[-1].owner.name
     u'no-priv'
@@ -192,7 +192,7 @@ used to create a Person based on the displayname alone.
     >>> transaction.commit()
 
     >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 1 comments for remote bug 123456 on ...
+    INFO Imported 1 comments for remote bug 123456 on ...
 
     >>> bug.messages[-1].owner.name
     u'noemail-bugzilla-checkwatches-1'
@@ -217,9 +217,9 @@ imported.
     >>> transaction.commit()
 
     >>> bugwatch_updater.importBugComments()
-    WARNING:...:Unable to import remote comment author. No email address
+    WARNING Unable to import remote comment author. No email address
     or display name found. (OOPS-...)
-    INFO:...:Imported 0 comments for remote bug 123456 on ...
+    INFO Imported 0 comments for remote bug 123456 on ...
 
     >>> print bug.messages[-1].text_contents
     Yet another comment.
@@ -387,10 +387,10 @@ Launchpad but will result in no Karma records being created.
     >>> external_bugtracker.remote_comments = {
     ...     '5':"A comment containing a CVE entry: CVE-1991-9911."}
     >>> bugwatch_updater = make_bug_watch_updater(
-    ...     CheckwatchesMaster(transaction), bug_watch,
-    ...     external_bugtracker)
+    ...     CheckwatchesMaster(transaction, logger=FakeLogger()),
+    ...     bug_watch, external_bugtracker)
     >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 1 comments for remote bug 123456...
+    INFO Imported 1 comments for remote bug 123456...
 
     >>> for cve in bug_watch.bug.cves:
     ...     print cve.displayname
@@ -412,7 +412,7 @@ Once again, CVE links are created but no karma is assigned.
     >>> transaction.commit()
 
     >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 1 comments for remote bug 123456...
+    INFO Imported 1 comments for remote bug 123456...
 
     >>> for cve in sorted([cve.displayname for cve in bug_watch.bug.cves]):
     ...     print cve
@@ -460,10 +460,10 @@ comments.
     >>> transaction.commit()
 
     >>> bugwatch_updater = make_bug_watch_updater(
-    ...     CheckwatchesMaster(transaction), bug_watch,
-    ...     external_bugtracker)
+    ...     CheckwatchesMaster(transaction, logger=FakeLogger()),
+    ...     bug_watch, external_bugtracker)
     >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 2 comments for remote bug 42 ...
+    INFO Imported 2 comments for remote bug 42 ...
 
     >>> notifications = get_new_notifications(bug=bug_watch.bug)
     >>> len(notifications)
@@ -519,7 +519,7 @@ more than one.
     >>> transaction.commit()
 
     >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 2 comments for remote bug 42 ...
+    INFO Imported 2 comments for remote bug 42 ...
 
     >>> notifications = get_new_notifications(bug_watch.bug)
     >>> len(notifications)

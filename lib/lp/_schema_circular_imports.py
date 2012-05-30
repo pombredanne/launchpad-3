@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -370,6 +370,8 @@ patch_reference_property(
 patch_reference_property(
     ISourcePackagePublishingHistory, 'ancestor',
     ISourcePackagePublishingHistory)
+patch_reference_property(
+    ISourcePackagePublishingHistory, 'packageupload', IPackageUpload)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -470,8 +472,6 @@ patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
     IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
-patch_collection_return_type(
-    IDistribution, 'getCommercialPPAs', IArchive)
 patch_reference_property(
     IDistribution, 'main_archive', IArchive)
 IDistribution['all_distro_archives'].value_type.schema = IArchive
@@ -861,9 +861,9 @@ patch_entry_explicit_version(ICve, 'beta')
 
 # IDistribution
 patch_operations_explicit_version(
-    IDistribution, 'beta', "getArchive", "getCommercialPPAs",
-    "getCountryMirror", "getDevelopmentSeries", "getMirrorByName",
-    "getSeries", "getSourcePackage", "searchSourcePackages")
+    IDistribution, 'beta', "getArchive", "getCountryMirror",
+    "getDevelopmentSeries", "getMirrorByName", "getSeries",
+    "getSourcePackage", "searchSourcePackages")
 
 # IDistributionMirror
 patch_entry_explicit_version(IDistributionMirror, 'beta')

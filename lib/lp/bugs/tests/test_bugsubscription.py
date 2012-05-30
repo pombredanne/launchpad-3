@@ -5,11 +5,7 @@
 
 __metaclass__ = type
 
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    MatchesAny,
-    )
+from testtools.matchers import LessThan
 from zope.security.interfaces import Unauthorized
 
 from lp.bugs.enums import BugNotificationLevel

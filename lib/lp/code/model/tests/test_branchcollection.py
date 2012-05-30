@@ -30,6 +30,7 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.tests.helpers import remove_all_sample_data_branches
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -429,6 +430,18 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             sorted([branch1, branch3, branch4]),
             sorted(collection.getBranches()))
 
+    def test_withIds(self):
+        # 'withIds' returns a new collection that only has branches with the
+        # given ids.
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        self.factory.makeAnyBranch()
+        ids = [branch1.id, branch2.id]
+        collection = self.all_branches.withIds(*ids)
+        self.assertEqual(
+            sorted([branch1, branch2]),
+            sorted(collection.getBranches()))
+
     def test_registeredBy(self):
         # 'registeredBy' returns a new collection that only has branches that
         # were registered by the given user.
@@ -768,11 +781,13 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
         linked_bugtasks = []
         with person_logged_in(branch.owner):
             for x in range(0, 4):
-                private = x % 2
+                information_type = InformationType.PUBLIC
+                if x % 2:
+                    information_type = InformationType.USERDATA
                 bug = self.factory.makeBug(
-                    owner=branch.owner, private=private)
+                    owner=branch.owner, information_type=information_type)
                 merge_proposals[0].source_branch.linkBug(bug, branch.owner)
-                if not private:
+                if information_type == InformationType.PUBLIC:
                     linked_bugtasks.append(bug.default_bugtask)
         expected_rev_details[0]['linked_bugtasks'] = linked_bugtasks
 

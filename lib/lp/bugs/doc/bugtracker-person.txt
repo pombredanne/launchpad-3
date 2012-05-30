@@ -1,4 +1,5 @@
-= The BugTrackerPerson interface =
+The BugTrackerPerson interface
+==============================
 
 The IBugTrackerPerson interfaces allows Launchpad to link Persons to
 bugtrackers. BugTrackerPersons are created using the
@@ -18,7 +19,6 @@ linkPersonToSelf() method of IBugTracker.
 
 We'll rename the bugtracker to make the tests more readable.
 
-    >>> from lp.services.database.sqlbase import commit
     >>> from lp.testing.dbuser import lp_dbuser
 
     >>> with lp_dbuser():
@@ -60,7 +60,8 @@ be retrieved by calling BugTracker.getLinkedPersonByName().
     name12
 
 
-== ensurePersonForSelf() ==
+ensurePersonForSelf()
+---------------------
 
 IBugTracker has a method, ensurePersonForSelf(), which is
 responsible for returning the correct BugTrackerPerson for a given
@@ -149,7 +150,7 @@ We'll create a person, 'noemail,' on our example bugtracker.
     >>> print bugtracker_person.person.name
     noemail-bugzilla-checkwatches
 
-    >>> commit()
+    >>> transaction.commit()
 
 If we rename the BugTracker and then create another with the same name,
 calling ensurePersonForSelf() for 'noemail' on that BugTracker

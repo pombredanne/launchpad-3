@@ -294,7 +294,9 @@ to the host. You use the IRestrictedLibrarianClient to access this
 librarian.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from lp.services.librarian.interfaces.client import IRestrictedLibrarianClient
+    >>> from lp.services.librarian.interfaces.client import (
+    ...     IRestrictedLibrarianClient,
+    ...     )
     >>> restricted_client = getUtility(IRestrictedLibrarianClient)
     >>> verifyObject(IRestrictedLibrarianClient, restricted_client)
     True
@@ -589,8 +591,7 @@ We need some files to test different ways of accessing them.
 
 Commit the just-created files.
 
-    >>> from lp.services.database.sqlbase import commit
-    >>> commit()
+    >>> transaction.commit()
 
     >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
     >>> print deleted_file.deleted

@@ -57,9 +57,16 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import NoCanonicalUrl
 from lp.services.webapp.menu import (
     enabled_with_permission,
@@ -459,6 +466,19 @@ def expose_user_administered_teams_to_js(request, user, context,
             # filters can only be edited by the subscriber.
             # This can happen if the user is an owner but not a member.
             administers_and_in = membership.intersection(administrated_teams)
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                [team.id for team in administers_and_in],
+                need_preferred_email=True))
+
+            # If the requester is the user, they're at least an admin in
+            # all of these teams. Precache launchpad.(Limited)View so we
+            # can see the necessary attributes.
+            current_user = IPerson(get_current_principal(), None)
+            if current_user is not None and user == current_user:
+                for perm in ('launchpad.View', 'launchpad.LimitedView'):
+                    precache_permission_for_objects(
+                        None, perm, administers_and_in)
+
             for team in administers_and_in:
                 if (bug_supervisor is not None and
                     not team.inTeam(bug_supervisor)):

@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = ["main"]
 
 import itertools
-import os
 import subprocess
 import sys
 import tempfile

@@ -1487,11 +1487,12 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         displayname=TextLine(required=False),
         description=TextLine(required=False),
         private=Bool(required=False),
+        suppress_subscription_notifications=Bool(required=False),
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
     def createPPA(name=None, displayname=None, description=None,
-                  private=False):
+                  private=False, suppress_subscription_notifications=False):
         """Create a PPA.
 
         :param name: A string with the name of the new PPA to create. If
@@ -1500,6 +1501,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :param description: The description for the new PPA.
         :param private: Whether or not to create a private PPA. Defaults to
             False, which means the PPA will be public.
+        :param suppress_subscription_notifications: Whether or not to suppress
+            emails to new subscribers about their subscriptions.  Only
+            meaningful for private PPAs.
         :raises: `PPACreationError` if an error is encountered
 
         :return: a PPA `IArchive` record.
@@ -1518,6 +1522,20 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: a boolean.
         """
 
+    def getAssignedSpecificationWorkItemsDueBefore(date):
+        """Return SpecificationWorkItems assigned to this person (or members
+        of this team) and whose milestone is due between today and the given
+        date (inclusive).
+        """
+
+    def getAssignedBugTasksDueBefore(date, user):
+        """Get all BugTasks assigned to this person (or members of this team)
+        and whose milestone is due between today and the given date
+        (inclusive).
+        """
+
+    participant_ids = List(
+        title=_("The DB IDs of this team's participants"), value_type=Int())
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
@@ -1795,6 +1813,17 @@ class IPersonEditRestricted(Interface):
         The given team's renewal policy must be ONDEMAND and the membership
         must be active (APPROVED or ADMIN) and set to expire in less than
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+
+    def security_field_changed(subject, change_description,
+        recipient_emails=None):
+        """Trigger email when a secured field like preferredemail changes.
+        
+        :param recipient_emails: If supplied custom email addresses to notify.
+            This is used when a new preferred email address is set.
+        :param subject: The subject to use.
+        :param change_description: A textual description to use when notifying
+            about the change.
         """
 
 
@@ -2123,6 +2152,18 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
+    @operation_parameters(identifier=TextLine(required=True))
+    @operation_returns_entry(IPerson)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getByOpenIDIdentifier(identifier):
+        """Get the person for a given OpenID identifier.
+
+        :param openid_identifier: full OpenID identifier URL for the user.
+        :return: the corresponding `IPerson` or None if the identifier is
+            unknown
+        """
+
     def getOrCreateByOpenIDIdentifier(openid_identifier, email,
                                       full_name, creation_rationale, comment):
         """Get or create a person for a given OpenID identifier.
@@ -2137,7 +2178,8 @@ class IPersonSet(Interface):
         If there is no existing Launchpad person for the account, we
         create it.
 
-        :param openid_identifier: representing the authenticated user.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
         :param email_address: the email address of the user.
         :param full_name: the full name of the user.
         :param creation_rationale: When an account or person needs to

@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test publish-ftpmaster cron script."""
@@ -63,9 +63,9 @@ def path_exists(*path_components):
     return file_exists(os.path.join(*path_components))
 
 
-def name_spph_suite(spph):
-    """Return name of `spph`'s suite."""
-    return spph.distroseries.name + pocketsuffix[spph.pocket]
+def name_pph_suite(pph):
+    """Return name of `pph`'s suite."""
+    return pph.distroseries.name + pocketsuffix[pph.pocket]
 
 
 def get_pub_config(distro):
@@ -86,11 +86,6 @@ def get_dists_root(pub_config):
 def get_distscopy_root(pub_config):
     """Return the "distscopy" root for the given publishing config."""
     return get_archive_root(pub_config) + "-distscopy"
-
-
-def get_run_parts_path():
-    """Get relative path to run-parts location the Launchpad source."""
-    return os.path.join("cronscripts", "publishing", "distro-parts")
 
 
 def write_marker_file(path, contents):
@@ -133,12 +128,15 @@ class HelpersMixin:
     def enableRunParts(self, parts_directory=None):
         """Set up for run-parts execution.
 
-        :param parts_directory: Base location for the run-parts
-            directories.  If omitted, the run-parts directory from the
-            Launchpad source tree will be used.
+        :param parts_directory: Base location for the run-parts directories.
+            If omitted, a temporary directory will be used.
         """
         if parts_directory is None:
-            parts_directory = get_run_parts_path()
+            parts_directory = self.makeTemporaryDirectory()
+            os.makedirs(os.path.join(
+                parts_directory, "ubuntu", "publish-distro.d"))
+            os.makedirs(os.path.join(parts_directory, "ubuntu", "finalize.d"))
+        self.parts_directory = parts_directory
 
         config.push("run-parts", dedent("""\
             [archivepublisher]
@@ -213,21 +211,13 @@ class TestPublishFTPMasterHelpers(TestCase):
 class TestFindRunPartsDir(TestCaseWithFactory, HelpersMixin):
     layer = ZopelessDatabaseLayer
 
-    def test_find_run_parts_dir_finds_relative_runparts_directory(self):
+    def test_find_run_parts_dir_finds_runparts_directory(self):
         self.enableRunParts()
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.assertEqual(
             os.path.join(
-                config.root, get_run_parts_path(), "ubuntu", "finalize.d"),
+                config.root, self.parts_directory, "ubuntu", "finalize.d"),
             find_run_parts_dir(ubuntu, "finalize.d"))
-
-    def test_find_run_parts_dir_finds_absolute_runparts_directory(self):
-        self.enableRunParts(os.path.join(config.root, get_run_parts_path()))
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.assertEqual(
-            os.path.join(
-                config.root, get_run_parts_path(), "ubuntu", "finalize.d"),
-                find_run_parts_dir(ubuntu, "finalize.d"))
 
     def test_find_run_parts_dir_ignores_blank_config(self):
         self.enableRunParts("")
@@ -400,8 +390,8 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         distro = spph.distroseries.distribution
         script = self.makeScript(spph.distroseries.distribution)
         script.setUp()
-        self.assertEqual(
-            [name_spph_suite(spph)], script.getDirtySuites(distro))
+        self.assertContentEqual(
+            [name_pph_suite(spph)], script.getDirtySuites(distro))
 
     def test_getDirtySuites_returns_suites_with_pending_publications(self):
         distro = self.makeDistroWithPublishDirectory()
@@ -414,7 +404,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         self.assertContentEqual(
-            [name_spph_suite(spph) for spph in spphs],
+            [name_pph_suite(spph) for spph in spphs],
             script.getDirtySuites(distro))
 
     def test_getDirtySuites_ignores_suites_without_pending_publications(self):
@@ -423,7 +413,15 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         distro = spph.distroseries.distribution
         script = self.makeScript(spph.distroseries.distribution)
         script.setUp()
-        self.assertEqual([], script.getDirtySuites(distro))
+        self.assertContentEqual([], script.getDirtySuites(distro))
+
+    def test_getDirtySuites_returns_suites_with_pending_binaries(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        distro = bpph.distroseries.distribution
+        script = self.makeScript(bpph.distroseries.distribution)
+        script.setUp()
+        self.assertContentEqual(
+            [name_pph_suite(bpph)], script.getDirtySuites(distro))
 
     def test_getDirtySecuritySuites_returns_security_suites(self):
         distro = self.makeDistroWithPublishDirectory()
@@ -437,7 +435,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         self.assertContentEqual(
-            [name_spph_suite(spph) for spph in spphs],
+            [name_pph_suite(spph) for spph in spphs],
             script.getDirtySecuritySuites(distro))
 
     def test_getDirtySecuritySuites_ignores_non_security_suites(self):
@@ -601,7 +599,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         command_line, = args
         self.assertIn("run-parts", command_line)
         self.assertIn(
-            "cronscripts/publishing/distro-parts/ubuntu/finalize.d",
+            os.path.join(self.parts_directory, "ubuntu/finalize.d"),
             command_line)
 
     def test_runParts_passes_parameters(self):

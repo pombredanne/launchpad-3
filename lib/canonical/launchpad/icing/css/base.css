@@ -6,10 +6,6 @@ body {
     }
 body.private {
     /* It must be obvious to the user that the context is private */
-    background: url("/@@/private-y-bg") top left repeat-y;
-    }
-/* Override for when the feature flag is active */
-body.feature-flag-bugs-private-notification-enabled.private {
     background-image: none;
     }
 body.private .private-disallow {

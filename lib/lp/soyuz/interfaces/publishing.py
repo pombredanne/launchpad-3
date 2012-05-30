@@ -499,7 +499,17 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         Reference(
             IPerson,
             title=_('Publication sponsor'),
-            description=_('The IPerson who sponsored the creation of'
+            description=_('The IPerson who sponsored the creation of '
+                'this publication.'),
+            required=False, readonly=True
+        ))
+
+    packageupload = exported(
+        Reference(
+            # Really IPackageUpload, fixed in _schema_circular_imports.
+            Interface,
+            title=_('Package upload'),
+            description=_('The Package Upload that caused the creation of '
                 'this publication.'),
             required=False, readonly=True
         ))
@@ -637,6 +647,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             `IOverridePolicy`.
         :param creator: the `IPerson` to use as the creator for the copied
             publication.
+        :param packageupload: The `IPackageUpload` that caused this
+            publication to be created.
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -721,6 +733,9 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         required=False, readonly=False)
     binarypackagerelease = Attribute(
         "The binary package release being published")
+    distroarchseriesID = Int(
+        title=_("The DB id for the distroarchseries."),
+        required=False, readonly=False)
     distroarchseries = exported(
         Reference(
             # Really IDistroArchSeries (fixed in
@@ -1020,6 +1035,8 @@ class IPublishingSet(Interface):
             sourcepackagerelease's creator will be used.
         :param sponsor: An optional `IPerson` indicating the sponsor of this
             publication.
+        :param packageupload: An optional `IPackageUpload` that caused this
+            publication to be created.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING

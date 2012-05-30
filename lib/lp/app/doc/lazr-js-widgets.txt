@@ -42,7 +42,7 @@ In addition, when the logged in user can edit the value, there is a link to
 the edit view that appears as well as a <script> tag that will change that
 link into an AJAX control when JS is available:
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> print widget()
     <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt;
         important</span>
@@ -90,7 +90,7 @@ of the object being edited.  This can be overridden in two ways:
     http://launchpad.dev/widget/+edit-people
     >>> print diff_view.edit_title
     Change the product title
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> print diff_view()
     <h1...
     <a class="yui3-editable_text-trigger sprite edit"
@@ -142,11 +142,13 @@ With no-one logged in, there are no edit buttons.
 
     >>> login(ANONYMOUS)
     >>> print widget()
-    <div id="edit-description" class="lazr-multiline-edit">
-      <div class="clearfix">
-        <h3>A title</h3>
+    <div>
+      <div id="edit-description" class="lazr-multiline-edit">
+        <div class="clearfix">
+          <h3>A title</h3>
+        </div>
+        <div class="yui3-editable_text-text"><p>short description</p></div>
       </div>
-      <div class="yui3-editable_text-text"><p>short description</p></div>
     </div>
 
 The initial text defaults to the value of the attribute, which is then passed
@@ -157,19 +159,21 @@ When the logged in user has edit permission, the edit button is shown, and
 javascript is written to the page to hook up the links to show the multiline
 editor.
 
-    >>> login_person(eric)
+    >>> ignored = login_person(eric)
     >>> print widget()
-    <div id="edit-description" class="lazr-multiline-edit">
-      <div class="clearfix">
-        <div class="edit-controls">
-          &nbsp;
-          <a class="yui3-editable_text-trigger sprite edit"
-             href="http://launchpad.dev/~eric/+archive/ppa/+edit"
-             title=""></a>
+    <div>
+      <div id="edit-description" class="lazr-multiline-edit">
+        <div class="clearfix">
+          <div class="edit-controls">
+            &nbsp;
+            <a class="yui3-editable_text-trigger sprite edit"
+               href="http://launchpad.dev/~eric/+archive/ppa/+edit"
+               title=""></a>
+          </div>
+          <h3>A title</h3>
         </div>
-        <h3>A title</h3>
+        <div class="yui3-editable_text-text"><p>short description</p></div>
       </div>
-      <div class="yui3-editable_text-text"><p>short description</p></div>
       <script>...</script>
     </div>
 
@@ -197,6 +201,7 @@ tag.
     >>> from lp.services.propertycache import clear_property_cache
     >>> clear_property_cache(widget)
     >>> print widget()
+    <div>
     <div id="edit-description" class="lazr-multiline-edit unseen">
     ...
 
@@ -206,6 +211,7 @@ False.
     >>> widget = TextAreaEditorWidget(
     ...     archive, description, 'A title', hide_empty=False)
     >>> print widget()
+    <div>
     <div id="edit-description" class="lazr-multiline-edit">
     ...
 
@@ -249,18 +255,20 @@ entry field to allow the user to search for an item.  If the vocabulary is not
 huge, the different items are shown in the normal paginated way for the user
 to select.
 
-    >>> owner = IArchive['owner']
-    >>> widget = InlineEditPickerWidget(archive, owner, default_text)
+    >>> ignore = login_person(product.owner)
+    >>> owner = IProduct['owner']
+    >>> widget = InlineEditPickerWidget(product, owner, default_text)
     >>> print widget()
     <span id="edit-owner">
       <span class="yui3-activator-data-box">
-        <a...>Eric</a>
+        <a href="/~eric" class="sprite person">Eric</a>
       </span>
-      <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
-        Edit
-      </button>
-      <div class="yui3-activator-message-box yui3-activator-hidden"></div>
-    </span>
+      <span>
+        <a class="sprite edit lazr-btn yui3-activator-act"
+          href="http://launchpad.dev/widget/+edit"
+          title="">&nbsp;<span class="invisible-link">Edit</span></a>
+        <div class="yui3-activator-message-box yui3-activator-hidden"></div>
+    </span> ...
 
 
 Picker headings
@@ -319,7 +327,7 @@ on the current value of the field on the object:
 If the user has edit rights, an edit icon is rendered and some javascript is
 rendered to hook up the widget.
 
-    >>> login_person(eric)
+    >>> ignored = login_person(eric)
     >>> print widget()
     <span id="edit-hide_email_addresses">
     My email: <span class="value">Don't hide it</span>
@@ -379,7 +387,7 @@ on the current value of the field on the object:
 If the user has edit rights, an edit icon is rendered and some javascript is
 rendered to hook up the widget.
 
-    >>> login_person(branch.owner)
+    >>> ignored = login_person(branch.owner)
     >>> print widget()
     <span id="edit-lifecycle_status">
         <span class="value branchstatusDEVELOPMENT">Development</span>
@@ -457,20 +465,15 @@ on the current value of the field on the object:
 If the user has edit rights, an edit icon is rendered and some javascript is
 rendered to hook up the widget.
 
-    >>> login_person(eric)
+    >>> ignored = login_person(eric)
     >>> print widget()
     <span id="edit-distroseries">
       <dt>
         Recipe distro series
-          <button class="lazr-btn yui3-activator-act yui3-activator-hidden"
-                  id="edit-distroseries-btn">
-            Edit
-          </button>
-        <noscript>
-          <a class="sprite edit"
+          <a class="sprite edit lazr-btn yui3-activator-act"
              href="http://code.launchpad.dev/~eric/+recipe/cake_recipe/+edit"
-             title=""></a>
-        </noscript>
+             id="edit-distroseries-btn"
+             title="">&nbsp;<span class="invisible-link">Edit</span></a>
       </dt>
       <span class="yui3-activator-data-box">
         <dl id='edit-distroseries-items'>

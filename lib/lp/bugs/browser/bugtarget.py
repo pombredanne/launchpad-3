@@ -30,14 +30,15 @@ import urllib
 from urlparse import urljoin
 
 from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
 from pytz import timezone
 from simplejson import dumps
 from sqlobject import SQLObjectNotFound
 from z3c.ptcompat import ViewPageTemplateFile
-from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
+from zope.formlib.form import Fields
 from zope.interface import (
     alsoProvides,
     implements,
@@ -45,15 +46,11 @@ from zope.interface import (
     )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import (
-    Bool,
-    Choice,
-    )
+from zope.schema import Choice
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
-from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -72,6 +69,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     )
 from lp.app.validators.name import valid_name_pattern
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
     GhostCheckBoxWidget,
     GhostWidget,
@@ -117,6 +115,11 @@ from lp.registry.browser.product import (
     ProductConfigureBase,
     ProductPrivateBugsMixin,
     )
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -127,8 +130,12 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.registry.vocabularies import (
+    InformationTypeVocabulary,
+    ValidPersonOrTeamVocabulary,
+    )
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty
@@ -237,7 +244,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin,
 class FileBugReportingGuidelines(LaunchpadFormView):
     """Provides access to common bug reporting attributes.
 
-    Attributes provided are: security_related and bug_reporting_guidelines.
+    Attributes provided are: information_type and bug_reporting_guidelines.
 
     This view is a superclass of `FileBugViewBase` so that non-ajax browsers
     can load the file bug form, and it is also invoked directly via an XHR
@@ -247,21 +254,61 @@ class FileBugReportingGuidelines(LaunchpadFormView):
     schema = IBug
 
     @property
+    def show_information_type_in_ui(self):
+        return bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled'))
+
+    @property
     def field_names(self):
         """Return the list of field names to display."""
-        return ['security_related']
+        if self.show_information_type_in_ui:
+            return ['information_type']
+        else:
+            return ['security_related']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    def initialize(self):
+        super(FileBugReportingGuidelines, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['private_types'] = [
+            type.name for type in PRIVATE_INFORMATION_TYPES]
+        cache.objects['show_information_type_in_ui'] = (
+            self.show_information_type_in_ui)
+        cache.objects['bug_private_by_default'] = (
+            IProduct.providedBy(self.context) and self.context.private_bugs)
+        cache.objects['enable_bugfiling_duplicate_search'] = (
+            IProjectGroup.providedBy(self.context)
+            or self.context.enable_bugfiling_duplicate_search)
 
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugReportingGuidelines, self).setUpFields()
 
-        security_related_field = Bool(
-            __name__='security_related',
-            title=_("This bug is a security vulnerability"),
-            required=False, default=False)
+        if self.show_information_type_in_ui:
+            information_type_field = copy_field(
+                IBug['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary())
+            self.form_fields = self.form_fields.omit('information_type')
+            self.form_fields += Fields(information_type_field)
+        else:
+            security_related_field = copy_field(
+                IBug['security_related'], readonly=False)
+            self.form_fields = self.form_fields.omit('security_related')
+            self.form_fields += Fields(security_related_field)
 
-        self.form_fields = self.form_fields.omit('security_related')
-        self.form_fields += formlib.form.Fields(security_related_field)
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
+        if self.show_information_type_in_ui:
+            value = InformationType.PUBLIC
+            if (
+                self.context and IProduct.providedBy(self.context) and
+                self.context.private_bugs):
+                value = InformationType.USERDATA
+            return {'information_type': value}
+        else:
+            return {}
 
     @property
     def bug_reporting_guidelines(self):
@@ -338,8 +385,11 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if self.redirect_ubuntu_filebug:
             pass
         LaunchpadFormView.initialize(self)
-        if (not self.redirect_ubuntu_filebug and
-            self.extra_data_token is not None and
+        cache = IJSONRequestCache(self.request)
+        cache.objects['enable_bugfiling_duplicate_search'] = (
+            IProjectGroup.providedBy(self.context)
+            or self.context.enable_bugfiling_duplicate_search)
+        if (self.extra_data_token is not None and
             not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
@@ -382,9 +432,15 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags', 'security_related',
-                       'bug_already_reported_as', 'filecontent', 'patch',
-                       'attachment_description', 'subscribe_to_existing_bug']
+        field_names = ['title', 'comment', 'tags']
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            field_names.append('information_type')
+        else:
+            field_names.append('security_related')
+        field_names.extend([
+            'bug_already_reported_as', 'filecontent', 'patch',
+            'attachment_description', 'subscribe_to_existing_bug'])
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -417,10 +473,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             return {}
 
         return {'packagename': self.context.name}
-
-    def isPrivate(self):
-        """Whether bug reports on this target are private by default."""
-        return IProduct.providedBy(self.context) and self.context.private_bugs
 
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
@@ -532,7 +584,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             required=True, default=False)
 
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
-        self.form_fields += formlib.form.Fields(subscribe_field)
+        self.form_fields += Fields(subscribe_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
@@ -561,7 +613,12 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
-        security_related = data.get("security_related", False)
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            information_type = data.get(
+                "information_type", InformationType.PUBLIC)
+        else:
+            security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
 
@@ -580,12 +637,14 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if self.request.form.get("packagename_option") == "none":
             packagename = None
 
-        # Security bugs are always private when filed, but can be disclosed
-        # after they've been reported.
-        if security_related:
-            private = True
-        else:
-            private = False
+        if not bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            # If the old UI is enabled, security bugs are always embargoed
+            # when filed, but can be disclosed after they've been reported.
+            if security_related:
+                information_type = InformationType.EMBARGOEDSECURITY
+            else:
+                information_type = InformationType.PUBLIC
 
         linkified_ack = structured(FormattersAPI(
             self.getAcknowledgementMessage(self.context)).text_to_html(
@@ -593,7 +652,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
-            security_related=security_related, private=private,
+            information_type=information_type,
             tags=data.get('tags'))
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
@@ -622,8 +681,11 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             notifications.append(
                 'Additional information was added to the bug description.')
 
-        if extra_data.private:
-            params.private = extra_data.private
+        if (not bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')) and
+            extra_data.private):
+            if params.information_type == InformationType.PUBLIC:
+                params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
         if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):
@@ -713,14 +775,14 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
             self.request.response.addNotification(notification)
-        if bug.security_related:
+        if bug.information_type in SECURITY_INFORMATION_TYPES:
             self.request.response.addNotification(
                 structured(
                 'Security-related bugs are by default private '
                 '(visible only to their direct subscribers). '
                 'You may choose to <a href="+secrecy">publicly '
                 'disclose</a> this bug.'))
-        if bug.private and not bug.security_related:
+        elif bug.information_type in PRIVATE_INFORMATION_TYPES:
             self.request.response.addNotification(
                 structured(
                 'This bug report has been marked private '
@@ -942,11 +1004,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             return False
         else:
             return True
-
-
-class FileBugInlineFormView(FileBugViewBase):
-    """A browser view for displaying the inline filebug form."""
-    schema = IBugAddForm
 
 
 class FileBugAdvancedView(FileBugViewBase):

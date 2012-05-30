@@ -713,10 +713,10 @@ Privileged users are offered several extra options when filing bugs.
     >>> person = factory.makePerson()
     >>> product = factory.makeProduct(owner=owner)
 
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> normal_fields = set(filebug_view.field_names)
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> owner_fields = set(filebug_view.field_names)
     >>> product.setBugSupervisor(owner, owner)
