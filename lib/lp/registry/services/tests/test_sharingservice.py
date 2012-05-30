@@ -70,12 +70,12 @@ class TestSharingService(TestCaseWithFactory):
         request = get_current_web_service_request()
         sprite_css = 'sprite ' + ('team' if sharee.is_team else 'person')
         if sharee.icon:
-            image_url = sharee.icon.getURL()
+            icon_url = sharee.icon.getURL()
         else:
-            image_url = ''
+            icon_url = None
         sharee_data = {
             'name': sharee.name,
-            'image_url': image_url,
+            'icon_url': icon_url,
             'sprite_css': sprite_css,
             'display_name': sharee.displayname,
             'self_link': absoluteURL(sharee, request),
