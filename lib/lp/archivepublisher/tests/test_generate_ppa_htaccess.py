@@ -39,7 +39,10 @@ from lp.testing.dbuser import (
     lp_dbuser,
     switch_dbuser,
     )
-from lp.testing.layers import LaunchpadZopelessLayer, ZopelessDatabaseLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -701,7 +704,7 @@ class TestPerformance(TestCaseWithFactory):
         return open(filename).read()
 
 
-    def disabled_test_initial_ppa_creation(self):
+    def test_initial_ppa_creation(self):
         ppa = self.factory.makeArchive(private=True)
         print 'adding subscribers'
         self.add_subscribers(ppa, 5000)
