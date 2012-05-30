@@ -25,6 +25,7 @@ from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -392,9 +393,9 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         bug = self.filebug_via_view(private_bugs=True)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
-    def test_filebug_information_type_vocabulary(self):
+    def test_filebug_information_type_vocabulary_userdata_private(self):
         # The vocabulary for information_type when filing a bug is created
-        # correctly.
+        # correctly when 'User Data' is to be replaced by 'Private'.
         feature_flags = {
             'disclosure.show_information_type_in_ui.enabled': 'on',
             'disclosure.proprietary_information_type.disabled': 'on',
@@ -407,8 +408,41 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
                 html = view.render()
                 soup = BeautifulSoup(html)
         self.assertEqual(u'Private', soup.find('label', text="Private"))
-        self.assertIs(None, soup.find('label', text="User Data"))
-        self.assertIs(None, soup.find('label', text="Proprietary"))
+        self.assertIsNone(soup.find('label', text="User Data"))
+        self.assertIsNone(soup.find('label', text="Proprietary"))
+
+    def test_filebug_information_type_vocabulary(self):
+        # The vocabulary for information_type when filing a bug is created
+        # correctly.
+        feature_flags = {
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
+        product = self.factory.makeProduct(official_malone=True)
+        with FeatureFixture(feature_flags):
+            with person_logged_in(product.owner):
+                view = create_initialized_view(
+                    product, '+filebug', principal=product.owner)
+                html = view.render()
+                soup = BeautifulSoup(html)
+        for info_type in InformationType:
+            self.assertIsNotNone(soup.find('label', text=info_type.title))
+
+    def test_filebug_information_type_vocabulary_private_projects(self):
+        # The vocabulary for information_type when filing a bug only has
+        # private info types for private bug projects.
+        feature_flags = {
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
+        product = self.factory.makeProduct(
+            official_malone=True, private_bugs=True)
+        with FeatureFixture(feature_flags):
+            with person_logged_in(product.owner):
+                view = create_initialized_view(
+                    product, '+filebug', principal=product.owner)
+                html = view.render()
+                soup = BeautifulSoup(html)
+        for info_type in PRIVATE_INFORMATION_TYPES:
+            self.assertIsNotNone(soup.find('label', text=info_type.title))
+        for info_type in PUBLIC_INFORMATION_TYPES:
+            self.assertIsNone(soup.find('label', text=info_type.title))
 
 
 class TestFileBugSourcePackage(TestCaseWithFactory):

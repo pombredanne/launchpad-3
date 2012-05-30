@@ -288,7 +288,7 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         if self.show_information_type_in_ui:
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary())
+                vocabulary=InformationTypeVocabulary(self.context))
             self.form_fields = self.form_fields.omit('information_type')
             self.form_fields += Fields(information_type_field)
         else:

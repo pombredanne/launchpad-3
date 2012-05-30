@@ -947,7 +947,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None,
+        translations_usage=None, bug_supervisor=None, private_bugs=False,
         driver=None, security_contact=None, icon=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
@@ -989,6 +989,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.driver = driver
         if security_contact is not None:
             naked_product.security_contact = security_contact
+        if private_bugs:
+            naked_product.private_bugs = private_bugs
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
