@@ -8,7 +8,10 @@ from email import message_from_string
 import os
 import shutil
 
-from lazr.restfulclient.errors import Unauthorized
+from lazr.restfulclient.errors import (
+    BadRequest,
+    Unauthorized,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -925,6 +928,20 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertEqual("New", ws_upload.status)
         ws_upload.acceptFromQueue()
         self.assertEqual("Done", ws_upload.status)
+
+    def test_double_accept_raises_BadRequest(self):
+        # Trying to accept an upload twice returns 400 instead of OOPSing.
+        self.makeDistroSeries()
+        person = self.makeQueueAdmin([self.main])
+        with person_logged_in(person):
+            upload = self.factory.makeSourcePackageUpload(
+                distroseries=self.distroseries, component=self.main)
+            upload.setAccepted()
+        transaction.commit()
+
+        ws_upload = self.load(upload, person)
+        self.assertEqual("Accepted", ws_upload.status)
+        self.assertRaises(BadRequest, ws_upload.acceptFromQueue)
 
     def test_rejectFromQueue_archive_admin(self):
         # rejectFromQueue as an archive admin rejects the upload.

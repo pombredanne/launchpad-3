@@ -22,8 +22,11 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
+import httplib
+
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
+    error_status,
     export_as_webservice_entry,
     export_write_operation,
     exported,
@@ -55,6 +58,7 @@ class QueueStateWriteProtectedError(Exception):
     """
 
 
+@error_status(httplib.BAD_REQUEST)
 class QueueInconsistentStateError(Exception):
     """Queue state machine error.
 
