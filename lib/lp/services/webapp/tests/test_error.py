@@ -66,6 +66,24 @@ class TestDatabaseErrorViews(TestCase):
         else:
             self.fail("We should have gotten an HTTP error")
 
+    def retryConnection(self, url, retries=10):
+        """Retry to connect to *url* for *retries* times.
+
+        Return the file-like object returned by *urllib2.urlopen(url)*.
+        Raise a TimeoutException if the connection can not be established.
+        """
+        for i in xrange(retries):
+            try:
+                return urllib2.urlopen(url)
+            except urllib2.HTTPError as e:
+                if e.code != httplib.SERVICE_UNAVAILABLE:
+                    raise
+            time.sleep(1)
+        else:
+            raise TimeoutException(
+                "Launchpad did not come up after {0} attempts."
+                    .format(retries))
+
     def test_disconnectionerror_view_integration(self):
         # Test setup.
         self.useFixture(Urllib2Fixture())
@@ -94,7 +112,7 @@ class TestDatabaseErrorViews(TestCase):
         self.assertEqual(503, self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
         bouncer.start()
-        urllib2.urlopen(url)
+        self.retryConnection(url)
 
     def test_disconnectionerror_view(self):
         request = LaunchpadTestRequest()
@@ -118,25 +136,9 @@ class TestDatabaseErrorViews(TestCase):
         # We keep seeing the correct exception on subsequent requests.
         self.assertEqual(httplib.SERVICE_UNAVAILABLE,
                          self.getHTTPError(url).code)
-        # When the database is available again...
+        # When the database is available again, requests succeed.
         bouncer.start()
-        # ...and Launchpad has succesfully connected to it...
-        retries = 10
-        for i in xrange(retries):
-            try:
-                urllib2.urlopen(url)
-            except urllib2.HTTPError as e:
-                if e.code != httplib.SERVICE_UNAVAILABLE:
-                    raise
-            else:
-                break
-            time.sleep(1)
-        else:
-            raise TimeoutException(
-                "Launchpad did not come up after {0} attempts."
-                    .format(retries))
-        # ...requests succeed again.
-        urllib2.urlopen(url)
+        self.retryConnection(url)
 
     def test_operationalerror_view(self):
         request = LaunchpadTestRequest()
