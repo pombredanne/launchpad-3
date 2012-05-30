@@ -308,24 +308,36 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         self.logger.info('Starting the PPA .htaccess generation')
         self.expireSubscriptions()
         affected_ppas = self.deactivateInvalidTokens(send_email=True)
+        current_ppa_count = len(affected_ppas)
         self.logger.debug(
-            '%s PPAs with deactivated tokens' % len(affected_ppas))
+            '%s PPAs with deactivated tokens' % current_ppa_count)
 
         # In addition to the ppas that are affected by deactivated
         # tokens, we also want to include any ppas that have tokens
         # created since the last time we ran.
+        num_tokens = 0
         for token in self.getNewTokensSinceLastRun():
             affected_ppas.add(token.archive)
+            num_tokens += 1
+
+        new_ppa_count = len(affected_ppas)
+        self.logger.debug(
+            "%s new tokens since last run, %s PPAs affected"
+            % (num_tokens, new_ppa_count - current_ppa_count))
+        new_ppa_count = current_ppa_count
 
         affected_ppas.update(self.getNewPrivatePPAs())
+        new_ppa_count = len(affected_ppas)
+        self.logger.debug(
+            "%s new private PPAs since last run"
+            % (new_ppa_count - current_ppa_count))
 
         affected_ppas_with_tokens = {}
         if affected_ppas:
             affected_ppas_with_tokens = self._getValidTokensForPPAs(
                 affected_ppas)
 
-        self.logger.debug(
-            '%s PPAs require updating' % (len(affected_ppas_with_tokens),))
+        self.logger.debug('%s PPAs require updating' % new_ppa_count)
         for ppa, valid_tokens in affected_ppas_with_tokens.iteritems():
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
             # files.
@@ -333,20 +345,23 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 ppa.owner.name, [])
             if ppa.name in blacklisted_ppa_names_for_owner:
                 self.logger.info(
-                    "Skipping htacess updates for blacklisted PPA "
+                    "Skipping htaccess updates for blacklisted PPA "
                     " '%s' owned by %s.",
                         ppa.name,
                         ppa.owner.displayname)
                 continue
             elif ppa.status == ArchiveStatus.DELETED or ppa.enabled is False:
                 self.logger.info(
-                    "Skipping htacess updates for deleted or disabled PPA "
+                    "Skipping htaccess updates for deleted or disabled PPA "
                     " '%s' owned by %s.",
                         ppa.name,
                         ppa.owner.displayname)
                 continue
 
             self.ensureHtaccess(ppa)
+            self.logger.debug(
+                "Writing htpasswd for '%s': %s tokens"
+                % (ppa.name, len(valid_tokens)))
             temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens)
             if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
                 os.remove(temp_htpasswd)
