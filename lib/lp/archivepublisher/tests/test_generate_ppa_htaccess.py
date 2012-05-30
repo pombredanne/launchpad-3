@@ -269,7 +269,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Initially, nothing is eligible for deactivation.
         script = self.getScript()
-        script.deactivateTokens()
+        script.deactivateInvalidTokens()
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
@@ -280,7 +280,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # Clear out emails generated when leaving a team.
         pop_notifications()
 
-        script.deactivateTokens(send_email=True)
+        script.deactivateInvalidTokens(send_email=True)
         self.assertDeactivated(tokens[team1_person])
         del tokens[team1_person]
         for person in tokens:
@@ -298,7 +298,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             promiscuous_person.leave(team1)
         # Clear out emails generated when leaving a team.
         pop_notifications()
-        script.deactivateTokens(send_email=True)
+        script.deactivateInvalidTokens(send_email=True)
         self.assertNotDeactivated(tokens[promiscuous_person])
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
@@ -317,7 +317,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             parent_team.setMembershipData(
                 team2, TeamMembershipStatus.DEACTIVATED, name12)
             self.assertFalse(team2.inTeam(parent_team))
-        script.deactivateTokens()
+        script.deactivateInvalidTokens()
         for person in persons2:
             self.assertDeactivated(tokens[person])
 

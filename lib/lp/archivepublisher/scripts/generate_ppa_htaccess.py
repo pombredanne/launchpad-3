@@ -187,7 +187,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         return all_active_tokens.difference(valid_tokens)
 
-    def _deactivateTokens(self, tokens, send_email=False):
+    def deactivateTokens(self, tokens, send_email=False):
         """Deactivate the given tokens.
 
         :return: A set of PPAs affected by the deactivations.
@@ -202,11 +202,11 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             affected_ppas.add(token.archive)
         return affected_ppas
 
-    def deactivateTokens(self, send_email=False):
+    def deactivateInvalidTokens(self, send_email=False):
         """Deactivate tokens as necessary.
 
-        If a subscriber no longer has an active token for the PPA, we
-        deactivate it.
+        If an active token for a PPA no longer has any subscribers,
+        we deactivate the token.
 
         :param send_email: Whether to send a cancellation email to the owner
             of the token.  This defaults to False to speed up the test
@@ -215,7 +215,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             can later update their htpasswd files.
         """
         invalid_tokens = self._getInvalidTokens()
-        return self._deactivateTokens(invalid_tokens, send_email=send_email)
+        return self.deactivateTokens(invalid_tokens, send_email=send_email)
 
     def expireSubscriptions(self):
         """Expire subscriptions as necessary.
@@ -302,7 +302,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         """Script entry point."""
         self.logger.info('Starting the PPA .htaccess generation')
         self.expireSubscriptions()
-        affected_ppas = self.deactivateTokens(send_email=True)
+        affected_ppas = self.deactivateInvalidTokens(send_email=True)
         self.logger.debug(
             '%s PPAs with deactivated tokens' % len(affected_ppas))
 
