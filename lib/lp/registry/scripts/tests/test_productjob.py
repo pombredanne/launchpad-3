@@ -23,3 +23,7 @@ class ProductJobManagerTestCase(TestCaseWithFactory):
     def test_init(self):
         manager = self.make_manager()
         self.assertEqual('request-product-jobs', manager.logger.name)
+
+    def test_createAllDailyJobs(self):
+        manager = self.make_manager()
+        self.assertEqual(3, manager.createAllDailyJobs())

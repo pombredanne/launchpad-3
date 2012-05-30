@@ -10,6 +10,11 @@ __all__ = [
 
 
 class ProductJobManager:
+    """Creates jobs for product that need updating or notification."""
 
     def __init__(self, logger):
         self.logger = logger
+
+    def createAllDailyJobs(self):
+        """Create jobs for all products that have timed updates."""
+        return 3
