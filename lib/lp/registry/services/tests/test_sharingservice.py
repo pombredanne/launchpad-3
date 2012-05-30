@@ -43,7 +43,7 @@ from lp.testing import (
     )
 from lp.testing.layers import (
     AppServerLayer,
-    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
@@ -58,7 +58,7 @@ DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 class TestSharingService(TestCaseWithFactory):
     """Tests for the SharingService."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestSharingService, self).setUp()
@@ -68,9 +68,15 @@ class TestSharingService(TestCaseWithFactory):
                         shared_artifact_types):
         # Unpack a sharee into its attributes and add in permissions.
         request = get_current_web_service_request()
+        sprite_css = 'sprite ' + ('team' if sharee.is_team else 'person')
+        if sharee.icon:
+            image_url = sharee.icon.getURL()
+        else:
+            image_url = ''
         sharee_data = {
             'name': sharee.name,
-            'meta': 'team' if sharee.is_team else 'person',
+            'image_url': image_url,
+            'sprite_css': sprite_css,
             'display_name': sharee.displayname,
             'self_link': absoluteURL(sharee, request),
             'permissions': {}}
@@ -185,6 +191,24 @@ class TestSharingService(TestCaseWithFactory):
         [policy1, policy2] = getUtility(IAccessPolicySource).findByPillar(
             [product])
         grantee = self.factory.makePerson()
+        with FeatureFixture(DETAILS_FLAG):
+            sharees = self.service.jsonShareeData(
+                [(grantee, {
+                    policy1: SharingPermission.ALL}, [])])
+        expected_data = self._makeShareeData(
+            grantee,
+            [(policy1.type, SharingPermission.ALL)], [])
+        self.assertContentEqual([expected_data], sharees)
+
+    def test_jsonShareeData_with_icon(self):
+        # jsonShareeData returns the expected data for a grantee with has an
+        # icon.
+        product = self.factory.makeProduct()
+        [policy1, policy2] = getUtility(IAccessPolicySource).findByPillar(
+            [product])
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        grantee = self.factory.makeTeam(icon=icon)
         with FeatureFixture(DETAILS_FLAG):
             sharees = self.service.jsonShareeData(
                 [(grantee, {
