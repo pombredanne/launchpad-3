@@ -255,7 +255,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             ppa_tokens = store.find(
                 ArchiveAuthToken,
                 ArchiveAuthToken.date_deactivated == None,
-                ArchiveAuthToken.archive_id == ppa.id)
+                ArchiveAuthToken.archive_id == ppa.id).order_by(
+                    ArchiveAuthToken.id)
             yield (ppa, ppa_tokens)
 
     def getNewPrivatePPAs(self):
