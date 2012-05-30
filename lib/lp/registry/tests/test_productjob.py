@@ -393,6 +393,7 @@ class CommericialExpirationMixin:
     layer = DatabaseFunctionalLayer
 
     EXPIRE_SUBSCRIPTION = False
+    EXPECTED_PRODUCT = None
 
     def make_notification_data(self, licenses=[License.MIT]):
         product = self.factory.makeProduct(licenses=licenses)
@@ -401,6 +402,29 @@ class CommericialExpirationMixin:
             self.factory.makeCommercialSubscription(product)
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         return product, reviewer
+
+    def make_expiring_product(self, date_expires):
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        removeSecurityProxy(
+            product.commercial_subscription).date_expires = date_expires
+        return product
+
+    def make_test_products(self):
+        products = {}
+        now = datetime.now(pytz.utc)
+        products['approved'] = self.factory.makeProduct(licenses=[License.MIT])
+        products['expired'] = self.make_expiring_product(now - timedelta(1))
+        products['seven'] = self.make_expiring_product(now + timedelta(6))
+        products['thirty'] = self.make_expiring_product(now + timedelta(29))
+        products['sixty'] = self.make_expiring_product(now + timedelta(60))
+        return products
+
+    def test_getExpiringProducts(self):
+        test_products = self.make_test_products()
+        products = list(self.JOB_CLASS.getExpiringProducts())
+        self.assertEqual(1, len(products))
+        self.assertEqual(test_products[self.EXPECTED_PRODUCT], products[0])
 
     def test_create(self):
         # Create an instance of an commercial expiration job that stores
@@ -459,6 +483,7 @@ class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
                                               TestCaseWithFactory):
     """Test case for the SevenDayCommercialExpirationJob class."""
 
+    EXPECTED_PRODUCT = 'seven'
     JOB_INTERFACE = ISevenDayCommercialExpirationJob
     JOB_SOURCE_INTERFACE = ISevenDayCommercialExpirationJobSource
     JOB_CLASS = SevenDayCommercialExpirationJob
@@ -469,6 +494,7 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
                                                TestCaseWithFactory):
     """Test case for the SevenDayCommercialExpirationJob class."""
 
+    EXPECTED_PRODUCT = 'thirty'
     JOB_INTERFACE = IThirtyDayCommercialExpirationJob
     JOB_SOURCE_INTERFACE = IThirtyDayCommercialExpirationJobSource
     JOB_CLASS = ThirtyDayCommercialExpirationJob
@@ -480,6 +506,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
     """Test case for the CommercialExpiredJob class."""
 
     EXPIRE_SUBSCRIPTION = True
+    EXPECTED_PRODUCT = 'expired'
     JOB_INTERFACE = ICommercialExpiredJob
     JOB_SOURCE_INTERFACE = ICommercialExpiredJobSource
     JOB_CLASS = CommercialExpiredJob

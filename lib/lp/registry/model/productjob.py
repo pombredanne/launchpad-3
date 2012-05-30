@@ -11,6 +11,11 @@ __all__ = [
     'ThirtyDayCommercialExpirationJob',
     ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from pytz import utc
 from lazr.delegates import delegates
 import simplejson
 from storm.expr import And
@@ -44,6 +49,7 @@ from lp.registry.interfaces.productjob import (
     IThirtyDayCommercialExpirationJob,
     IThirtyDayCommercialExpirationJobSource,
     )
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -305,11 +311,23 @@ class CommericialExpirationMixin:
 
     @classmethod
     def create(cls, product, reviewer):
-        """Create a job."""
+        """See `ExpirationSourceMixin`."""
         subject = cls._subject_template % product.name
         return super(CommericialExpirationMixin, cls).create(
             product, cls._email_template_name, subject, reviewer,
             reply_to_commercial=True)
+
+    @classmethod
+    def getExpiringProducts(cls):
+        """See `ExpirationSourceMixin`."""
+        earliest_date, latest_date = cls._get_expiration_dates()
+        conditions = [
+            Product.active == True,
+            CommercialSubscription.productID == Product.id,
+            CommercialSubscription.date_expires >= earliest_date,
+            CommercialSubscription.date_expires < latest_date,
+            ]
+        return IStore(Product).find(Product, *conditions)
 
     @cachedproperty
     def message_data(self):
@@ -332,6 +350,12 @@ class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
     classProvides(ISevenDayCommercialExpirationJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
 
+    @staticmethod
+    def _get_expiration_dates():
+        now = datetime.now(utc)
+        in_seven_days = now + timedelta(days=7)
+        return now, in_seven_days
+
 
 class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
                                        ProductNotificationJob):
@@ -340,6 +364,14 @@ class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
     implements(IThirtyDayCommercialExpirationJob)
     classProvides(IThirtyDayCommercialExpirationJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+    @staticmethod
+    def _get_expiration_dates():
+        now = datetime.now(utc)
+        # Avoid overlay with the seven day notification.
+        in_twenty_three_days = now + timedelta(days=23)
+        in_thirty_days = now + timedelta(days=30)
+        return in_twenty_three_days, in_thirty_days
 
 
 class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
@@ -352,6 +384,12 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     _email_template_name = ''  # email_template_name does not need this.
     _subject_template = (
         'The commercial subscription for %s in Launchpad expired')
+
+    @staticmethod
+    def _get_expiration_dates():
+        now = datetime.now(utc)
+        ten_years_ago = now - timedelta(days=3650)
+        return ten_years_ago, now
 
     @property
     def _is_proprietary(self):
