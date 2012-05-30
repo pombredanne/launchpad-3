@@ -15,7 +15,11 @@ class ProductJobManagerTestCase(TestCaseWithFactory):
     # Test the ProductJobManager class.
     layer = DatabaseFunctionalLayer
 
-    def test_init(self):
+    @staticmethod
+    def make_manager():
         logger = logging.getLogger('request-product-jobs')
-        manager = ProductJobManager(logger)
-        self.assertIs(logger, manager.logger)
+        return ProductJobManager(logger)
+
+    def test_init(self):
+        manager = self.make_manager()
+        self.assertEqual('request-product-jobs', manager.logger.name)
