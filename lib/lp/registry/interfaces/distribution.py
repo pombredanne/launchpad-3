@@ -347,7 +347,7 @@ class IDistributionPublic(
 
     upstream_report_excluded_packages = Attribute(
         "A list of the source packages that should not be shown on the "
-        "upstream bug report for this Distribution.")
+        "upstream report for this Distribution.")
 
     has_published_binaries = Bool(
         title=_("Has Published Binaries"),

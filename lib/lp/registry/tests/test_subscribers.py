@@ -116,7 +116,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def verify_user_email(self, notification):
         # Verify that the user was sent an email about the licence change.
         self.assertEqual(
-            'License information for ball in Launchpad',
+            'Licence information for ball in Launchpad',
             notification['Subject'])
         self.assertEqual(
             'Registrant <registrant@launchpad.dev>',

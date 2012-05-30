@@ -2,12 +2,14 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lp.code.model.branchjob import BranchScanJob
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import (
     drain_celery_queues,
     monitor_celery,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import ZopelessAppServerLayer
 
 
@@ -42,7 +44,9 @@ class TestRunMissingJobs(TestCaseWithFactory):
         """run_missing_ready does nothing if the class isn't enabled."""
         self.createMissingJob()
         with monitor_celery() as responses:
-            self.run_missing_ready(_no_init=True)
+            with dbuser('run_missing_ready'):
+                with TransactionFreeOperation.require():
+                    self.run_missing_ready(_no_init=True)
         self.assertEqual([], responses)
 
     def test_run_missing_ready(self):
@@ -51,5 +55,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.useFixture(
             FeatureFixture({'jobs.celery.enabled_classes': 'BranchScanJob'}))
         with monitor_celery() as responses:
-            self.run_missing_ready(_no_init=True)
+            with dbuser('run_missing_ready'):
+                with TransactionFreeOperation.require():
+                    self.run_missing_ready(_no_init=True)
         self.assertEqual(1, len(responses))

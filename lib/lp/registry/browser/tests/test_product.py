@@ -191,7 +191,7 @@ class TestProductView(TestCaseWithFactory):
         login_celebrity('registry_experts')
         view = create_initialized_view(self.product, '+index')
         text = view.license_approved_widget
-        self.assertEqual('License required', text)
+        self.assertEqual('Licence required', text)
 
     def test_widget_id_for_name_dots(self):
         # Dots are replaced with dashes to make a valid CSS Id.

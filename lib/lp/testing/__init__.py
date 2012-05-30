@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'AbstractYUITestCase',
     'ANONYMOUS',
+    'admin_logged_in',
     'anonymous_logged_in',
     'api_url',
     'BrowserTestCase',
@@ -157,6 +158,7 @@ from lp.services.webapp.servers import (
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
+    admin_logged_in,
     anonymous_logged_in,
     celebrity_logged_in,
     login,
@@ -183,6 +185,7 @@ from lp.testing.karma import KarmaRecorder
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
+admin_logged_in
 anonymous_logged_in
 api_url
 celebrity_logged_in
@@ -650,7 +653,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         # Remove all log handlers, tests should not depend on global logging
         # config but should make their own config instead.
         logger = logging.getLogger()
-        for handler in logger.handlers:
+        for handler in list(logger.handlers):
             logger.removeHandler(handler)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):

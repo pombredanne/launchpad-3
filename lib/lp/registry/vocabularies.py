@@ -2231,10 +2231,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self):
+    def __init__(self, context=None):
         types = [
-            InformationType.PUBLIC,
-            InformationType.UNEMBARGOEDSECURITY,
             InformationType.EMBARGOEDSECURITY,
             InformationType.USERDATA]
         proprietary_disabled = bool(getFeatureFlag(
@@ -2243,6 +2241,12 @@ class InformationTypeVocabulary(SimpleVocabulary):
             'disclosure.display_userdata_as_private.enabled'))
         if not proprietary_disabled:
             types.append(InformationType.PROPRIETARY)
+        if (context is None or
+            not IProduct.providedBy(context) or
+            not context.private_bugs):
+            types.insert(0, InformationType.UNEMBARGOEDSECURITY)
+            types.insert(0, InformationType.PUBLIC)
+
         terms = []
         for type in types:
             title = type.title
