@@ -25,7 +25,9 @@ __all__ = [
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    operation_for_version,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -98,9 +100,10 @@ class IPackageUpload(Interface):
 
     export_as_webservice_entry(publish_web_link=False)
 
-    id = Int(
+    id = exported(
+        Int(
             title=_("ID"), required=True, readonly=True,
-            )
+            ))
 
     status = exported(
         Choice(
@@ -258,6 +261,8 @@ class IPackageUpload(Interface):
             has no sources associated to it.
         """
 
+    @export_write_operation()
+    @operation_for_version("devel")
     def acceptFromQueue(logger=None, dry_run=False):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
@@ -266,6 +271,8 @@ class IPackageUpload(Interface):
         :raises: AssertionError if the context is a delayed-copy.
         """
 
+    @export_write_operation()
+    @operation_for_version("devel")
     def rejectFromQueue(logger=None, dry_run=False):
         """Call setRejected, do a syncUpdate, and send notification email."""
 

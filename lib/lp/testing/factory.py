@@ -3509,14 +3509,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return package_upload
 
     def makeSourcePackageUpload(self, distroseries=None,
-                                sourcepackagename=None):
+                                sourcepackagename=None, component=None):
         """Make a `PackageUpload` with a `PackageUploadSource` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         upload = self.makePackageUpload(
             distroseries=distroseries, archive=distroseries.main_archive)
         upload.addSource(self.makeSourcePackageRelease(
-            sourcepackagename=sourcepackagename))
+            sourcepackagename=sourcepackagename, component=component))
         return upload
 
     def makeBuildPackageUpload(self, distroseries=None,
