@@ -11,7 +11,7 @@ import os
 
 import transaction
 
-from lp.archivepublisher.debian_installer import DebianInstallerAlreadyExists
+from lp.archivepublisher.customupload import CustomUploadAlreadyExists
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
@@ -69,6 +69,6 @@ class TestDistroSeriesQueueDebianInstaller(TestNativePublishingBase):
             "main", "installer-i386", "20070214ubuntu1"))
         self.assertFalse(upload.queue_root.realiseUpload(self.logger))
         self.assertRaises(
-            DebianInstallerAlreadyExists,
+            CustomUploadAlreadyExists,
             upload.queue_root.customfiles[0].publish, self.logger)
         self.assertEqual("ACCEPTED", upload.queue_root.status.name)
