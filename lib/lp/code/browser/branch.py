@@ -731,8 +731,7 @@ class BranchEditSchema(Interface):
     explicitly_private = copy_field(
         IBranch['explicitly_private'], readonly=False)
     information_type = copy_field(
-        IBranch['information_type'], readonly=False,
-        vocabulary=InformationTypeVocabulary())
+        IBranch['information_type'], readonly=False)
     reviewer = copy_field(IBranch['reviewer'], required=True)
     owner = copy_field(IBranch['owner'], readonly=False)
 
@@ -1054,6 +1053,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         branch = self.context
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
+
+        if self.show_information_type_in_ui:
+            self.form_fields = self.form_fields.omit('information_type')
+            information_type_field = copy_field(
+                IBranch['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary())
+            self.form_fields += form.Fields(information_type_field)
 
         policy = IBranchNamespacePolicy(branch.namespace)
         if branch.private:
