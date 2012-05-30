@@ -47,6 +47,7 @@ from lp.services.features import (
 from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.scripts.logger import OopsHandler
+from lp.services.utils import total_seconds
 from lp.services.webapp.errorlog import globalErrorUtility
 from lp.services.webapp.interaction import (
     ANONYMOUS,
@@ -430,18 +431,6 @@ class LaunchpadCronScript(LaunchpadScript):
         seconds_taken = total_seconds(date_completed - date_started)
         self.logger.debug(
             "%s ran in %ss (excl. load & lock)" % (self.name, seconds_taken))
-
-
-def total_seconds(duration):
-    """The number of total seconds in a timedelta.
-
-    In Python 2.7, spell this as duration.total_seconds().  Only needed for
-    Python 2.6 or earlier.
-    """
-    return (
-        (duration.microseconds +
-         (duration.seconds + duration.days * 24 * 3600) * 1e6)
-        / 1e6)
 
 
 @contextmanager

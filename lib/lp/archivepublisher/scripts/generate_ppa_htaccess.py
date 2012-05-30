@@ -33,6 +33,7 @@ from lp.services.mail.sendmail import (
     )
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.utils import total_seconds
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import (
     ArchiveStatus,
@@ -362,12 +363,15 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 continue
 
             self.ensureHtaccess(ppa)
-            self.logger.debug(
-                "Writing htpasswd for '%s': %s tokens"
-                % (ppa.name, len(valid_tokens)))
+            htpasswd_write_start = datetime.now()
             temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens)
             if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
                 os.remove(temp_htpasswd)
+            htpasswd_write_duration = datetime.now() - htpasswd_write_start
+            self.logger.debug(
+                "Wrote htpasswd for '%s': %s tokens, %ss"
+                % (ppa.name, len(valid_tokens),
+                   total_seconds(htpasswd_write_duration)))
 
         if self.options.no_deactivation or self.options.dryrun:
             self.logger.info('Dry run, so not committing transaction.')

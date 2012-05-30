@@ -26,6 +26,7 @@ __all__ = [
     'save_bz2_pickle',
     'synchronize',
     'text_delta',
+    'total_seconds',
     'traceback_info',
     'utc_now',
     'value_string',
@@ -383,3 +384,16 @@ def obfuscate_structure(o):
             for key, value in o.iteritems())
     else:
         return o
+
+
+def total_seconds(duration):
+    """The number of total seconds in a timedelta.
+
+    In Python 2.7, spell this as duration.total_seconds().  Only needed for
+    Python 2.6 or earlier.
+    """
+    # XXX: jml didn't TDD this. Naughty, naughty.
+    return (
+        (duration.microseconds +
+         (duration.seconds + duration.days * 24 * 3600) * 1e6)
+        / 1e6)
