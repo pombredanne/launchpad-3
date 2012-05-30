@@ -702,6 +702,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def recommended_canonical_url(self):
         return canonical_url(self.context.bug, rootsite='bugs')
 
+    @property
+    def information_type(self):
+        return self.context.bug.information_type.title
+
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
