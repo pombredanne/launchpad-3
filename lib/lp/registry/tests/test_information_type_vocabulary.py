@@ -73,16 +73,16 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
             vocab = InformationTypeVocabulary()
             term = vocab.getTermByToken('USERDATA')
             self.assertEqual('Private', term.title)
-            self.assertEqual(
-                "Visible only to users with whom the project has shared "
-                "information\ncontaining private information.\n",
+            self.assertTextMatchesExpressionIgnoreWhitespace(
+                "Visible only to users with whom the project has "
+                "shared private information.",
                 term.description)
 
     def test_userdata(self):
         vocab = InformationTypeVocabulary()
         term = vocab.getTermByToken('USERDATA')
         self.assertEqual('User Data', term.title)
-        self.assertEqual(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             "Visible only to users with whom the project has shared "
-            "information\ncontaining user data.\n",
+            "information containing user data.",
             term.description)
