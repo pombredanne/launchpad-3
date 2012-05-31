@@ -243,23 +243,25 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             self.logger.info(
                 "Expired subscriptions: %s" % ", ".join(subscription_names))
 
+    def _getLastRunWithSkew(self):
+        # NTP is running on our servers and therefore we can assume
+        # only minimal skew, we include a fudge-factor of 1s so that
+        # even the minimal skew cannot demonstrate bug 627608.
+        last_activity = self.get_last_activity()
+        if not last_activity:
+            return
+        return last_activity.date_started - timedelta(seconds=1)
+
     def getNewTokensSinceLastRun(self):
         """Return result set of new tokens created since the last run."""
         store = IStore(ArchiveAuthToken)
         # If we don't know when we last ran, we include all active
         # tokens by default.
-        last_success = self.get_last_activity()
+        last_success = self._getLastRunWithSkew()
         extra_expr = []
         if last_success:
-            # NTP is running on our servers and therefore we can assume
-            # only minimal skew, we include a fudge-factor of 1s so that
-            # even the minimal skew cannot demonstrate bug 627608.
-            #
             # XXX: Pass date_started in.
-            last_script_start_with_skew = last_success.date_started - (
-                timedelta(seconds=1))
-            extra_expr = [
-                ArchiveAuthToken.date_created >= last_script_start_with_skew]
+            extra_expr = [ArchiveAuthToken.date_created >= last_success]
 
         new_ppa_tokens = store.find(
             ArchiveAuthToken,
@@ -275,11 +277,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         store = IStore(Archive)
         # If we don't know when we last ran, we include all active
         # tokens by default.
-        last_success = self.get_last_activity()
+        last_success = self._getLastRunWithSkew()
         extra_expr = []
         if last_success:
-            extra_expr = [
-                Archive.date_created >= last_success.date_started]
+            extra_expr = [Archive.date_created >= last_success]
 
         return store.find(
             Archive, Archive._private == True, *extra_expr)
