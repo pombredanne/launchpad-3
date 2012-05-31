@@ -1087,6 +1087,7 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         archive_admin = self.factory.makePerson()
         bug = self.factory.makeBug(
             sourcepackagename=spr.sourcepackagename,
+            distribution=spr.upload_distroseries.distribution,
             information_type=InformationType.USERDATA)
         changes = StringIO(changes_file_template % bug.id)
 
