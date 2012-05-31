@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'ProductJob',
+    'ProductJobManager',
     'CommercialExpiredJob',
     'SevenDayCommercialExpirationJob',
     'ThirtyDayCommercialExpirationJob',
@@ -77,6 +78,17 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.webapp.publisher import canonical_url
+
+
+class ProductJobManager:
+    """Creates jobs for product that need updating or notification."""
+
+    def __init__(self, logger):
+        self.logger = logger
+
+    def createAllDailyJobs(self):
+        """Create jobs for all products that have timed updates."""
+        return 3
 
 
 class ProductJob(StormBase):

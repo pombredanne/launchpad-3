@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import logging
 
 import pytz
 from zope.component import getUtility
@@ -39,6 +40,7 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
+    ProductJobManager,
     ProductNotificationJob,
     CommercialExpiredJob,
     SevenDayCommercialExpirationJob,
@@ -54,6 +56,24 @@ from lp.testing.layers import (
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.webapp.publisher import canonical_url
+
+
+class ProductJobManagerTestCase(TestCaseWithFactory):
+    # Test the ProductJobManager class.
+    layer = DatabaseFunctionalLayer
+
+    @staticmethod
+    def make_manager():
+        logger = logging.getLogger('request-product-jobs')
+        return ProductJobManager(logger)
+
+    def test_init(self):
+        manager = self.make_manager()
+        self.assertEqual('request-product-jobs', manager.logger.name)
+
+    def test_createAllDailyJobs(self):
+        manager = self.make_manager()
+        self.assertEqual(3, manager.createAllDailyJobs())
 
 
 class ProductJobTestCase(TestCaseWithFactory):
