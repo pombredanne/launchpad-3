@@ -20,7 +20,7 @@ class RequestProductJobs(LaunchpadCronScript):
     """Create `ProductJobs` for products that need updating."""
 
     def __init__(self):
-        name = 'create_product_jobs'
+        name = 'daily_product_jobs'
         dbuser = config.product_job.dbuser
         LaunchpadCronScript.__init__(self, name, dbuser)
 
