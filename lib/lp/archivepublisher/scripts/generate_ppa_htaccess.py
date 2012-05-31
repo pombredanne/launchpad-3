@@ -338,8 +338,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             self.ensureHtaccess(ppa)
             htpasswd_write_start = datetime.now()
             temp_htpasswd = self.generateHtpasswd(ppa)
-            if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
-                os.remove(temp_htpasswd)
+            self.replaceUpdatedHtpasswd(ppa, temp_htpasswd)
             htpasswd_write_duration = datetime.now() - htpasswd_write_start
             self.logger.debug(
                 "Wrote htpasswd for '%s': %ss"
