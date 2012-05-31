@@ -12,7 +12,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import time
 
 import pytz
 import transaction
@@ -39,10 +38,7 @@ from lp.testing.dbuser import (
     lp_dbuser,
     switch_dbuser,
     )
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -671,52 +667,3 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertTrue(os.path.isfile(htpasswd))
         os.remove(htaccess)
         os.remove(htpasswd)
-
-
-
-class TestPerformance(TestCaseWithFactory):
-
-    layer = ZopelessDatabaseLayer
-
-    def add_subscribers(self, ppa, num_subscribers):
-        for i in range(num_subscribers):
-            dude = self.factory.makePerson()
-            ppa.newSubscription(dude, ppa.owner)
-            ppa.newAuthToken(dude)
-        print 'Added %s subscribers to %s' % (num_subscribers, ppa.name)
-
-    def run_script(self):
-        """Run the expiry script.
-
-        :return: a tuple of return code, stdout and stderr.
-        """
-        script = os.path.join(
-            config.root, "cronscripts", "generate-ppa-htaccess.py")
-        temp_dir = self.makeTemporaryDirectory()
-        filename = os.path.join(temp_dir, 'debug.log')
-        args = [
-            sys.executable, script, "-q", "--log-file=DEBUG:%s" % (filename,)]
-        process = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        if process.returncode:
-            raise RuntimeError(stderr)
-        return open(filename).read()
-
-
-    def test_initial_ppa_creation(self):
-        ppa = self.factory.makeArchive(private=True)
-        print 'adding subscribers'
-        self.add_subscribers(ppa, 5000)
-        transaction.commit()
-        print 'running script'
-        self.run_script()
-        print 'adding single subscriber to popular ppa'
-        self.add_subscribers(ppa, 1)
-        transaction.commit()
-        print 'running script again'
-        start_time = time.time()
-        output = self.run_script()
-        print output
-        duration = time.time() - start_time
-        print "Script took %ss" % (duration,)
