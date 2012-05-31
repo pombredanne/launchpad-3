@@ -392,7 +392,6 @@ def total_seconds(duration):
     In Python 2.7, spell this as duration.total_seconds().  Only needed for
     Python 2.6 or earlier.
     """
-    # XXX: jml didn't TDD this. Naughty, naughty.
     return (
         (duration.microseconds +
          (duration.seconds + duration.days * 24 * 3600) * 1e6)
