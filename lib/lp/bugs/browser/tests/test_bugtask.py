@@ -2436,7 +2436,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual(item.bug_heat_html, model['bug_heat_html'])
             self.assertEqual(
                 '<span alt="private" title="Private" class="sprite private">'
-                '&nbsp;</span>', model['badges'])
+                '</span>', model['badges'])
             self.assertEqual(None, model['milestone_name'])
             item.bugtask.milestone = self.factory.makeMilestone(
                 product=item.bugtask.target)
