@@ -94,14 +94,14 @@ class ProductJobManager:
         """
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         total = 0
-        total += self._createDailyJobs(CommercialExpiredJob, reviewer)
-        total += self._createDailyJobs(
+        total += self.createDailyJobs(CommercialExpiredJob, reviewer)
+        total += self.createDailyJobs(
             SevenDayCommercialExpirationJob, reviewer)
-        total += self._createDailyJobs(
+        total += self.createDailyJobs(
             ThirtyDayCommercialExpirationJob, reviewer)
         return total
 
-    def _createDailyJobs(self, job_class, reviewer):
+    def createDailyJobs(self, job_class, reviewer):
         """Create jobs for products that have timed updates.
 
         :param job_class: A JobSource class that provides `ExpirationSource`.

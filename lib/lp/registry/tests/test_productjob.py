@@ -97,13 +97,27 @@ class ProductJobManagerTestCase(TestCaseWithFactory, CommercialHelpers):
         return ProductJobManager(logger)
 
     def test_init(self):
+        # Verify the logger was set.
         manager = self.make_manager()
         self.assertIsInstance(manager.logger, BufferLogger)
 
     def test_createAllDailyJobs(self):
-        test_products = self.make_test_products()
+        # Verfify that the 3 kinds of commercial expiration jobs are created.
+        self.make_test_products()
         manager = self.make_manager()
         self.assertEqual(3, manager.createAllDailyJobs())
+        log = manager.logger.getLogBuffer()
+        self.assertIn(CommercialExpiredJob.__class__.__name__, log)
+        self.assertIn(SevenDayCommercialExpirationJob.__class__.__name__, log)
+        self.assertIn(ThirtyDayCommercialExpirationJob.__class__.__name__, log)
+
+    def test_createDailyJobs(self):
+        # Verify that commercial expiration jobs are created.
+        test_products = self.make_test_products()
+        manager = self.make_manager()
+        reviewer = self.factory.makePerson()
+        total = manager._createDailyJobs(CommercialExpiredJob, reviewer)
+        self.assertEqual(1, total)
         self.assertIn(
             'DEBUG Creating a %s for %s' %
             (CommercialExpiredJob.__class__.__name__,
