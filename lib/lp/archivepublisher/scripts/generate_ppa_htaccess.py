@@ -252,16 +252,17 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             return
         return last_activity.date_started - timedelta(seconds=1)
 
-    def getNewTokensSinceLastRun(self):
+    def getNewTokensSinceLastRun(self, since=None):
         """Return result set of new tokens created since the last run."""
         store = IStore(ArchiveAuthToken)
         # If we don't know when we last ran, we include all active
         # tokens by default.
-        last_success = self._getLastRunWithSkew()
+        if since is None:
+            since = self._getLastRunWithSkew()
         extra_expr = []
-        if last_success:
+        if since:
             # XXX: Pass date_started in.
-            extra_expr = [ArchiveAuthToken.date_created >= last_success]
+            extra_expr = [ArchiveAuthToken.date_created >= since]
 
         new_ppa_tokens = store.find(
             ArchiveAuthToken,
@@ -270,17 +271,18 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         return new_ppa_tokens
 
-    def getNewPrivatePPAs(self):
+    def getNewPrivatePPAs(self, since=None):
         """Return the recently created private PPAs."""
         # Avoid circular import.
         from lp.soyuz.model.archive import Archive
         store = IStore(Archive)
         # If we don't know when we last ran, we include all active
         # tokens by default.
-        last_success = self._getLastRunWithSkew()
+        if since is None:
+            since = self._getLastRunWithSkew()
         extra_expr = []
-        if last_success:
-            extra_expr = [Archive.date_created >= last_success]
+        if since:
+            extra_expr = [Archive.date_created >= since]
 
         return store.find(
             Archive, Archive._private == True, *extra_expr)
@@ -294,11 +296,13 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         self.logger.debug(
             '%s PPAs with deactivated tokens' % current_ppa_count)
 
+        last_success = self._getLastRunWithSkew()
+
         # In addition to the ppas that are affected by deactivated
         # tokens, we also want to include any ppas that have tokens
         # created since the last time we ran.
         num_tokens = 0
-        for token in self.getNewTokensSinceLastRun():
+        for token in self.getNewTokensSinceLastRun(since=last_success):
             affected_ppas.add(token.archive)
             num_tokens += 1
 
@@ -308,7 +312,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             % (num_tokens, new_ppa_count - current_ppa_count))
         current_ppa_count = new_ppa_count
 
-        affected_ppas.update(self.getNewPrivatePPAs())
+        affected_ppas.update(self.getNewPrivatePPAs(since=last_success))
         new_ppa_count = len(affected_ppas)
         self.logger.debug(
             "%s new private PPAs since last run"
