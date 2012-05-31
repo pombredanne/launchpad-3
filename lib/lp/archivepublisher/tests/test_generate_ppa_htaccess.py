@@ -617,41 +617,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         new_tokens = script.getNewTokens(since=last_start)
         self.assertContentEqual(tokens[1:], new_tokens)
 
-    def test_getNewTokens_includes_tokens_during_last_run(self):
-        """Tokens created during the last ppa run will be included."""
-        now = datetime.now(pytz.UTC)
-        script_start_time = now - timedelta(seconds=2)
-        script_end_time = now
-        in_between = now - timedelta(seconds=1)
-
-        getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', script_start_time, script_end_time)
-        tokens = self.setupDummyTokens()[1]
-        # This token will be included because it's been created during
-        # the previous script run.
-        removeSecurityProxy(tokens[0]).date_created = in_between
-
-        script = self.getScript()
-        self.assertContentEqual(tokens, script.getNewTokens())
-
-    def test_getNewTokens_handles_ntp_skew(self):
-        """An ntp-skew of up to one second will not affect the results."""
-        now = datetime.now(pytz.UTC)
-        script_start_time = now - timedelta(seconds=2)
-        script_end_time = now
-        earliest_with_ntp_skew = script_start_time - timedelta(
-            milliseconds=500)
-
-        tokens = self.setupDummyTokens()[1]
-        getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', date_started=script_start_time,
-            date_completed=script_end_time)
-        # This token will still be included in the results.
-        removeSecurityProxy(tokens[0]).date_created = earliest_with_ntp_skew
-
-        script = self.getScript()
-        self.assertContentEqual(tokens, script.getNewTokens())
-
     def test_getNewTokens_only_active_tokens(self):
         """Only active tokens are returned."""
         tokens = self.setupDummyTokens()[1]
