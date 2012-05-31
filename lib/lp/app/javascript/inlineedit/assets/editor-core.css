@@ -22,24 +22,3 @@
 .yui3-ieditor-input textarea:focus {
     outline: none;
 }
-
-/* Konqueror doesn't render the multiline editor's button if there's
- * no apparent content in it (the sprite we use is a background image).
- * This bit of CSS is meaningless; it sets the edit link's content to
- * a zero-width non-joiner (an invisible, odorless Unicode character).
- *
- * Browsers should ignore the content attribute for :link and :visited
- * pseudo-classes, but Konqueror doesn't.  Setting non-empty text
- * content here tricks it into rendering the button.
- *
- * Other things we tried instead of this hack:
- *  - Insert an HTML comment in the <a>.  No effect.
- *  - Insert a &nbsp; in the <a>.  No effect.
- *  - Insert whitespace in the <a>.  No effect.
- *  - Insert a span or div in the <a>.  No effect.
- *  - Use a regular <img> tag instead of a sprite.  Ugly in all browsers.
- *  - Set the content to ".".  Ugly in Konqueror.
- */
-.yui3-editable_text-trigger:link, .yui3-editable_text-trigger:visited {
-    content: "\200c";
-}

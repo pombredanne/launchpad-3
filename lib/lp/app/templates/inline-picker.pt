@@ -10,14 +10,12 @@
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
          class="sprite edit lazr-btn yui3-activator-act"
-         >&nbsp;<span class="invisible-link">Edit</span></a>
+         ><span class="invisible-link">Edit</span></a>
 
       <a tal:condition="view/help_link"
          tal:attributes="href view/help_link"
          target="help"
-         class="sprite maybe">&nbsp;
-         <span class="invisible-link">Driver help</span>
-      </a>
+         class="sprite maybe"><span class="invisible-link">Driver help</span></a>
       <div class="yui3-activator-message-box yui3-activator-hidden"></div>
     </span>
   </span>

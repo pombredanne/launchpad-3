@@ -109,13 +109,15 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
         self.ppa.newSubscription(name12, self.ppa.owner)
         self.ppa.newSubscription(name16, self.ppa.owner)
         first_created_token = self.ppa.newAuthToken(name16)
-        tokens = [self.ppa.newAuthToken(name12), first_created_token]
+        tokens = [
+            (token.person_id, token.token)
+            for token in [self.ppa.newAuthToken(name12), first_created_token]]
 
         credentials = list(htpasswd_credentials_for_archive(self.ppa, tokens))
 
         self.assertContentEqual(
             credentials, [
                 ("buildd", "geheim", "bu"),
-                ("name12", tokens[0].token, "na"),
-                ("name16", tokens[1].token, "na")
+                ("name12", tokens[0][1], "na"),
+                ("name16", tokens[1][1], "na")
                 ])
