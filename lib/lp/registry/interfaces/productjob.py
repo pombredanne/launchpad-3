@@ -130,7 +130,7 @@ class IProductNotificationJobSource(IProductJobSource):
         """
 
 
-class ExpirationSourceMixin(Interface):
+class ExpirationSource(Interface):
 
     def create(product, reviewer):
         """Create a new job.
@@ -155,7 +155,7 @@ class ISevenDayCommercialExpirationJob(IProductNotificationJob):
 
 
 class ISevenDayCommercialExpirationJobSource(IProductNotificationJobSource,
-                                             ExpirationSourceMixin):
+                                             ExpirationSource):
     """An interface for creating `ISevenDayCommercialExpirationJob`s."""
 
 
@@ -164,7 +164,7 @@ class IThirtyDayCommercialExpirationJob(IProductNotificationJob):
 
 
 class IThirtyDayCommercialExpirationJobSource(IProductNotificationJobSource,
-                                              ExpirationSourceMixin):
+                                              ExpirationSource):
     """An interface for creating `IThirtyDayCommercialExpirationJob`s."""
 
 
@@ -178,5 +178,5 @@ class ICommercialExpiredJob(IProductNotificationJob):
 
 
 class ICommercialExpiredJobSource(IProductNotificationJobSource,
-                                  ExpirationSourceMixin):
+                                  ExpirationSource):
     """An interface for creating `IThirtyDayCommercialExpirationJob`s."""
