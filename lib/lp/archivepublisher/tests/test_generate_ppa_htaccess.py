@@ -8,7 +8,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import attrgetter
 import os
 import subprocess
 import sys
@@ -35,7 +34,10 @@ from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
-from lp.services.osutils import remove_if_exists
+from lp.services.osutils import (
+    ensure_directory_exists,
+    remove_if_exists,
+    )
 from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
@@ -161,8 +163,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
         # Write out a dummy .htpasswd
-        if not os.path.exists(pub_config.htaccessroot):
-            os.makedirs(pub_config.htaccessroot)
+        ensure_directory_exists(pub_config.htaccessroot)
         file = open(filename, "w")
         file.write(FILE_CONTENT)
         file.close()
