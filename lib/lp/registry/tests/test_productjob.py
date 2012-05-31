@@ -58,7 +58,36 @@ from lp.testing.mail_helpers import pop_notifications
 from lp.services.webapp.publisher import canonical_url
 
 
-class ProductJobManagerTestCase(TestCaseWithFactory):
+class CommercialHelpers:
+
+    def make_expiring_product(self, date_expires, job_class=None):
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        removeSecurityProxy(
+            product.commercial_subscription).date_expires = date_expires
+        if job_class:
+            reviewer = getUtility(ILaunchpadCelebrities).janitor
+            job_class.create(product, reviewer)
+        return product
+
+    def make_test_products(self):
+        products = {}
+        now = datetime.now(pytz.utc)
+        products['approved'] = self.factory.makeProduct(licenses=[License.MIT])
+        products['expired'] = self.make_expiring_product(now - timedelta(1))
+        products['expired_with_job'] = self.make_expiring_product(
+            now - timedelta(1), job_class=CommercialExpiredJob)
+        products['seven'] = self.make_expiring_product(now + timedelta(6))
+        products['seven_with_job'] = self.make_expiring_product(
+            now + timedelta(6), job_class=SevenDayCommercialExpirationJob)
+        products['thirty'] = self.make_expiring_product(now + timedelta(29))
+        products['thirty_with_job'] = self.make_expiring_product(
+            now + timedelta(29), job_class=ThirtyDayCommercialExpirationJob)
+        products['sixty'] = self.make_expiring_product(now + timedelta(60))
+        return products
+
+
+class ProductJobManagerTestCase(TestCaseWithFactory, CommercialHelpers):
     # Test the ProductJobManager class.
     layer = DatabaseFunctionalLayer
 
@@ -72,6 +101,7 @@ class ProductJobManagerTestCase(TestCaseWithFactory):
         self.assertEqual('request-product-jobs', manager.logger.name)
 
     def test_createAllDailyJobs(self):
+        self.make_test_products()
         manager = self.make_manager()
         self.assertEqual(3, manager.createAllDailyJobs())
 
@@ -408,7 +438,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             'Launchpad <noreply@launchpad.net>', notifications[0]['From'])
 
 
-class CommericialExpirationMixin:
+class CommericialExpirationMixin(CommercialHelpers):
 
     layer = DatabaseFunctionalLayer
 
@@ -422,32 +452,6 @@ class CommericialExpirationMixin:
             self.factory.makeCommercialSubscription(product)
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         return product, reviewer
-
-    def make_expiring_product(self, date_expires, with_job=False):
-        product = self.factory.makeProduct(
-            licenses=[License.OTHER_PROPRIETARY])
-        removeSecurityProxy(
-            product.commercial_subscription).date_expires = date_expires
-        if with_job:
-            reviewer = getUtility(ILaunchpadCelebrities).janitor
-            self.JOB_CLASS.create(product, reviewer)
-        return product
-
-    def make_test_products(self):
-        products = {}
-        now = datetime.now(pytz.utc)
-        products['approved'] = self.factory.makeProduct(licenses=[License.MIT])
-        products['expired'] = self.make_expiring_product(now - timedelta(1))
-        products['expired_with_job'] = self.make_expiring_product(
-            now - timedelta(1), with_job=True)
-        products['seven'] = self.make_expiring_product(now + timedelta(6))
-        products['seven_with_job'] = self.make_expiring_product(
-            now + timedelta(6), with_job=True)
-        products['thirty'] = self.make_expiring_product(now + timedelta(29))
-        products['thirty_with_job'] = self.make_expiring_product(
-            now + timedelta(29), with_job=True)
-        products['sixty'] = self.make_expiring_product(now + timedelta(60))
-        return products
 
     def test_getExpiringProducts(self):
         # Get the products with an expiring commercial subscription in

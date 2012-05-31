@@ -36,6 +36,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
@@ -88,7 +89,18 @@ class ProductJobManager:
 
     def createAllDailyJobs(self):
         """Create jobs for all products that have timed updates."""
-        return 3
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        total = 0
+        for product in CommercialExpiredJob.getExpiringProducts():
+            CommercialExpiredJob.create(product, reviewer)
+            total += 1
+        for product in SevenDayCommercialExpirationJob.getExpiringProducts():
+            SevenDayCommercialExpirationJob.create(product, reviewer)
+            total += 1
+        for product in ThirtyDayCommercialExpirationJob.getExpiringProducts():
+            ThirtyDayCommercialExpirationJob.create(product, reviewer)
+            total += 1
+        return total
 
 
 class ProductJob(StormBase):
