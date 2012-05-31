@@ -543,6 +543,12 @@ class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
     JOB_CLASS = SevenDayCommercialExpirationJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
 
+    def test_get_expiration_dates(self):
+        dates = SevenDayCommercialExpirationJob._get_expiration_dates()
+        earliest_date, latest_date, past_date = dates
+        self.assertEqual(timedelta(days=7), latest_date - earliest_date)
+        self.assertEqual(timedelta(days=14), latest_date - past_date)
+
 
 class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
                                                TestCaseWithFactory):
@@ -553,6 +559,12 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
     JOB_SOURCE_INTERFACE = IThirtyDayCommercialExpirationJobSource
     JOB_CLASS = ThirtyDayCommercialExpirationJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+    def test_get_expiration_dates(self):
+        dates = ThirtyDayCommercialExpirationJob._get_expiration_dates()
+        earliest_date, latest_date, past_date = dates
+        self.assertEqual(timedelta(days=23), latest_date - earliest_date)
+        self.assertEqual(timedelta(days=60), latest_date - past_date)
 
 
 class CommercialExpiredJobTestCase(CommericialExpirationMixin,
@@ -565,6 +577,12 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
     JOB_SOURCE_INTERFACE = ICommercialExpiredJobSource
     JOB_CLASS = CommercialExpiredJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
+
+    def test_get_expiration_dates(self):
+        dates = CommercialExpiredJob._get_expiration_dates()
+        earliest_date, latest_date, past_date = dates
+        self.assertEqual(timedelta(days=3650), latest_date - earliest_date)
+        self.assertEqual(timedelta(days=30), latest_date - past_date)
 
     def test_is_proprietary_open_source(self):
         product, reviewer = self.make_notification_data(licenses=[License.MIT])

@@ -421,7 +421,7 @@ class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
     def _get_expiration_dates():
         now = datetime.now(utc)
         # Avoid overlay with the seven day notification.
-        in_twenty_three_days = now + timedelta(days=23)
+        in_twenty_three_days = now + timedelta(days=7)
         in_thirty_days = now + timedelta(days=30)
         thirty_days_ago = now - timedelta(days=30)
         return in_twenty_three_days, in_thirty_days, thirty_days_ago
