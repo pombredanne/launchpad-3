@@ -557,6 +557,20 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertEqual(
             num_emails, 0, "Expected 0 emails, got %s" % num_emails)
 
+    def test_getTimeToSyncFrom(self):
+        # Sync from 1s before previous start to catch anything made during the
+        # last script run, and to handle NTP clock skew.
+        now = datetime.now(pytz.UTC)
+        script_start_time = now - timedelta(seconds=2)
+        script_end_time = now
+
+        getUtility(IScriptActivitySet).recordSuccess(
+            self.SCRIPT_NAME, script_start_time, script_end_time)
+        script = self.getScript()
+        self.assertEqual(
+            script_start_time - timedelta(seconds=1),
+            script.getTimeToSyncFrom())
+
     def test_getNewPrivatePPAs_no_previous_run(self):
         # All private PPAs are returned if there was no previous run.
         # This happens even if they have no tokens.
