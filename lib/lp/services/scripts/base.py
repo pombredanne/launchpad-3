@@ -415,6 +415,10 @@ class LaunchpadCronScript(LaunchpadScript):
         # overriding the name property.
         logging.getLogger().addHandler(OopsHandler(self.name))
 
+    def get_last_activity(self):
+        """Return the last activity, if any."""
+        return getUtility(IScriptActivitySet).getLastActivity(self.name)
+
     @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""

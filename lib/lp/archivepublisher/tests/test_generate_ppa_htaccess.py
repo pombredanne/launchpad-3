@@ -53,6 +53,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
     dbuser = config.generateppahtaccess.dbuser
 
+    SCRIPT_NAME = 'test tokens'
+
     def setUp(self):
         super(TestPPAHtaccessTokenGeneration, self).setUp()
         self.owner = self.factory.makePerson(
@@ -69,7 +71,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         """Return a HtaccessTokenGenerator instance."""
         if test_args is None:
             test_args = []
-        script = HtaccessTokenGenerator("test tokens", test_args=test_args)
+        script = HtaccessTokenGenerator(self.SCRIPT_NAME, test_args=test_args)
         script.logger = BufferLogger()
         script.txn = self.layer.txn
         switch_dbuser(self.dbuser)
@@ -568,10 +570,9 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     def test_getNewPrivatePPAs_only_those_since_last_run(self):
         # Only private PPAs created since the last run are returned.
         # This happens even if they have no tokens.
-
         now = datetime.now(pytz.UTC)
         getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', now, now - timedelta(minutes=3))
+            self.SCRIPT_NAME, now, now - timedelta(minutes=3))
         removeSecurityProxy(self.ppa).date_created = (
             now - timedelta(minutes=4))
 
@@ -598,7 +599,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         before_previous_start = script_start_time - timedelta(seconds=30)
 
         getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', date_started=script_start_time,
+            self.SCRIPT_NAME, date_started=script_start_time,
             date_completed=script_end_time)
         tokens = self.setupDummyTokens()[1]
         # This token will not be included.

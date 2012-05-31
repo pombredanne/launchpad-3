@@ -14,7 +14,6 @@ import os
 import tempfile
 
 import pytz
-from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.htaccess import (
@@ -32,7 +31,6 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.scripts.base import LaunchpadCronScript
-from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.utils import total_seconds
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import (
@@ -250,8 +248,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         store = IStore(ArchiveAuthToken)
         # If we don't know when we last ran, we include all active
         # tokens by default.
-        last_success = getUtility(IScriptActivitySet).getLastActivity(
-            'generate-ppa-htaccess')
+        last_success = self.get_last_activity()
         extra_expr = []
         if last_success:
             # NTP is running on our servers and therefore we can assume
@@ -278,8 +275,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         store = IStore(Archive)
         # If we don't know when we last ran, we include all active
         # tokens by default.
-        last_success = getUtility(IScriptActivitySet).getLastActivity(
-            'generate-ppa-htaccess')
+        last_success = self.get_last_activity()
         extra_expr = []
         # XXX: This uses date_completed, other point uses date_started.
         if last_success:
