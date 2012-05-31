@@ -9,7 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-
+import transaction
 import pytz
 from zope.component import getUtility
 from zope.interface import (
@@ -52,9 +52,11 @@ from lp.testing import (
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.log.logger import BufferLogger
+from lp.services.scripts.tests import run_script
 from lp.services.webapp.publisher import canonical_url
 
 
@@ -123,6 +125,21 @@ class ProductJobManagerTestCase(TestCaseWithFactory, CommercialHelpers):
             (CommercialExpiredJob.__class__.__name__,
              test_products['expired'].name),
             manager.logger.getLogBuffer())
+
+
+class DailyProductJobsTestCase(TestCaseWithFactory, CommercialHelpers):
+    """Test case for the ProductJobManager class."""
+    layer = ZopelessAppServerLayer
+
+    def test_run(self):
+        # The script called ProductJobManager.createAllDailyJobs().
+        # This test uses the same setup as
+        # ProductJobManagerTestCase.test_createAllDailyJobs
+        self.make_test_products()
+        transaction.commit()
+        retcode, stdout, stderr = run_script(
+            'cronscripts/daily_product_jobs.py', [])
+        self.assertIn('Requested 3 total product jobs.', stderr)
 
 
 class ProductJobTestCase(TestCaseWithFactory):
