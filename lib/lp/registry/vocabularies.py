@@ -2254,7 +2254,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
             if type == InformationType.USERDATA and show_userdata_as_private:
                 title = 'Private'
                 description = (
-                    description.replace('user data', 'private information'))
+                    'Visible only to users with whom the project has '
+                    'shared private information.')
             term = SimpleTerm(type, type.name, title)
             term.name = type.name
             term.description = description
