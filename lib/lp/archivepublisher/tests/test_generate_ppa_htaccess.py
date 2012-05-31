@@ -37,6 +37,7 @@ from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.osutils import (
     ensure_directory_exists,
     remove_if_exists,
+    write_file,
     )
 from lp.soyuz.enums import (
     ArchiveStatus,
@@ -164,9 +165,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Write out a dummy .htpasswd
         ensure_directory_exists(pub_config.htaccessroot)
-        file = open(filename, "w")
-        file.write(FILE_CONTENT)
-        file.close()
+        write_file(filename, FILE_CONTENT)
 
         # Write the same contents in a temp file.
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
@@ -180,9 +179,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             script.replaceUpdatedHtpasswd(self.ppa, temp_filename))
 
         # Writing a different .htpasswd should see it get replaced.
-        file = open(filename, "w")
-        file.write("Come to me, son of Jor-El!")
-        file.close()
+        write_file(filename, "Come to me, son of Jor-El!")
 
         self.assertTrue(
             script.replaceUpdatedHtpasswd(self.ppa, temp_filename))
