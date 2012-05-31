@@ -104,6 +104,7 @@ from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     Equals,
     MatchesRegex,
+    MatchesSetwise,
     )
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
@@ -566,7 +567,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def assertContentEqual(self, iter1, iter2):
         """Assert that 'iter1' has the same content as 'iter2'."""
-        self.assertThat(set(iter1), Equals(set(iter2)))
+        self.assertThat(iter1, MatchesSetwise(*(map(Equals, iter2))))
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
