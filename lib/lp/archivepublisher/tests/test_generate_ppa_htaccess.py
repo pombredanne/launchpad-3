@@ -33,6 +33,7 @@ from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.osutils import remove_if_exists
 from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
@@ -94,8 +95,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         pub_config = getPubConfig(self.ppa)
 
         filename = os.path.join(pub_config.htaccessroot, ".htaccess")
-        if os.path.isfile(filename):
-            os.remove(filename)
+        remove_if_exists(filename)
         script = self.getScript()
         script.ensureHtaccess(self.ppa)
         self.assertThat(filename, FileExists())
@@ -350,10 +350,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         pub_config = getPubConfig(self.ppa)
         htaccess = os.path.join(pub_config.htaccessroot, ".htaccess")
         htpasswd = os.path.join(pub_config.htaccessroot, ".htpasswd")
-        if os.path.isfile(htaccess):
-            os.remove(htaccess)
-        if os.path.isfile(htpasswd):
-            os.remove(htpasswd)
+        remove_if_exists(htaccess)
+        remove_if_exists(htpasswd)
         return htaccess, htpasswd
 
     def testSubscriptionExpiry(self):
