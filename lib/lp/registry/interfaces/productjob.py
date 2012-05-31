@@ -142,7 +142,11 @@ class ExpirationSourceMixin(Interface):
     def getExpiringProducts():
         """Return the products that require a job to update them.
 
-        The product returned can passed to create() to make the job.
+        The products returned can passed to create() to make the job.
+        The products have a commercial subscription that expires within
+        the job's effective date range. The products returned do not
+        have a recent job; once the job is created, the product is
+        excluded from the future calls to this method.
         """
 
 
