@@ -403,11 +403,14 @@ class CommericialExpirationMixin:
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         return product, reviewer
 
-    def make_expiring_product(self, date_expires):
+    def make_expiring_product(self, date_expires, with_job=False):
         product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
         removeSecurityProxy(
             product.commercial_subscription).date_expires = date_expires
+        if with_job:
+            reviewer = getUtility(ILaunchpadCelebrities).janitor
+            self.JOB_CLASS.create(product, reviewer)
         return product
 
     def make_test_products(self):
@@ -415,12 +418,20 @@ class CommericialExpirationMixin:
         now = datetime.now(pytz.utc)
         products['approved'] = self.factory.makeProduct(licenses=[License.MIT])
         products['expired'] = self.make_expiring_product(now - timedelta(1))
+        products['expired_with_job'] = self.make_expiring_product(
+            now - timedelta(1), with_job=True)
         products['seven'] = self.make_expiring_product(now + timedelta(6))
+        products['seven_with_job'] = self.make_expiring_product(
+            now + timedelta(6), with_job=True)
         products['thirty'] = self.make_expiring_product(now + timedelta(29))
+        products['thirty_with_job'] = self.make_expiring_product(
+            now + timedelta(29), with_job=True)
         products['sixty'] = self.make_expiring_product(now + timedelta(60))
         return products
 
     def test_getExpiringProducts(self):
+        # Get the products with an expiring commercial subscription in
+        # the job type's date range that do not already have a recent job.
         test_products = self.make_test_products()
         products = list(self.JOB_CLASS.getExpiringProducts())
         self.assertEqual(1, len(products))

@@ -18,7 +18,11 @@ from datetime import (
 from pytz import utc
 from lazr.delegates import delegates
 import simplejson
-from storm.expr import And
+from storm.expr import (
+    And,
+    Not,
+    Select,
+    )
 from storm.locals import (
     Int,
     Reference,
@@ -320,12 +324,20 @@ class CommericialExpirationMixin:
     @classmethod
     def getExpiringProducts(cls):
         """See `ExpirationSourceMixin`."""
-        earliest_date, latest_date = cls._get_expiration_dates()
+        earliest_date, latest_date, past_date = cls._get_expiration_dates()
+        recent_jobs = And(
+            ProductJob.job_type == cls.class_job_type,
+            ProductJob.job_id == Job.id,
+            Job.date_created > past_date,
+            )
         conditions = [
             Product.active == True,
             CommercialSubscription.productID == Product.id,
             CommercialSubscription.date_expires >= earliest_date,
             CommercialSubscription.date_expires < latest_date,
+            Not(Product.id.is_in(Select(
+                ProductJob.product_id,
+                tables=[ProductJob, Job], where=recent_jobs))),
             ]
         return IStore(Product).find(Product, *conditions)
 
@@ -354,7 +366,8 @@ class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
     def _get_expiration_dates():
         now = datetime.now(utc)
         in_seven_days = now + timedelta(days=7)
-        return now, in_seven_days
+        seven_days_ago = now - timedelta(days=7)
+        return now, in_seven_days, seven_days_ago
 
 
 class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
@@ -371,7 +384,8 @@ class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
         # Avoid overlay with the seven day notification.
         in_twenty_three_days = now + timedelta(days=23)
         in_thirty_days = now + timedelta(days=30)
-        return in_twenty_three_days, in_thirty_days
+        thirty_days_ago = now - timedelta(days=30)
+        return in_twenty_three_days, in_thirty_days, thirty_days_ago
 
 
 class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
@@ -389,7 +403,8 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     def _get_expiration_dates():
         now = datetime.now(utc)
         ten_years_ago = now - timedelta(days=3650)
-        return ten_years_ago, now
+        thirty_days_ago = now - timedelta(days=30)
+        return ten_years_ago, now, thirty_days_ago
 
     @property
     def _is_proprietary(self):
