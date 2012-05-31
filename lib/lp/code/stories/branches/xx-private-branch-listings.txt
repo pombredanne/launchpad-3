@@ -25,16 +25,16 @@ Adding a private branch that is only visible by No Privileges Person
     >>> from zope.component import getUtility
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.code.enums import BranchType
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
-    >>> branch = factory.makePersonalBranch(
-    ...     branch_type=BranchType.HOSTED, name='testing-branch',
-    ...     owner=no_priv, title='A Private Branch', private=True)
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(branch).product = landscape
+    >>> branch = factory.makeBranch(
+    ...     product=landscape, branch_type=BranchType.HOSTED,
+    ...     name='testing-branch', owner=no_priv,
+    ...     information_type=InformationType.USERDATA)
     >>> flush_database_updates()
     >>> logout()
 

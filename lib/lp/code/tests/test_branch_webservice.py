@@ -10,6 +10,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     api_url,
@@ -55,7 +56,8 @@ class TestBranchOperations(TestCaseWithFactory):
         owner = self.factory.makePerson()
         visible_branch = self.factory.makeBranch()
         visible_name = visible_branch.unique_name
-        invisible_branch = self.factory.makeBranch(owner=owner, private=True)
+        invisible_branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         invisible_name = removeSecurityProxy(invisible_branch).unique_name
         branches = [
             visible_branch.unique_name,

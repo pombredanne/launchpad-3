@@ -1074,7 +1074,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=None, information_type=None, stacked_on=None,
+                   information_type=None, stacked_on=None,
                    sourcepackage=None, reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -1121,12 +1121,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         branch = namespace.createBranch(
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
-        assert information_type is None or private is None, (
-            "Can not specify both information_type and private")
-        if private is not None:
-            information_type = (
-                InformationType.USERDATA if private else
-                InformationType.PUBLIC)
         if information_type is not None:
             removeSecurityProxy(branch).transitionToInformationType(
                 information_type, registrant, verify_policy=False)
