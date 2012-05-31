@@ -121,13 +121,11 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     def testGenerateHtpasswd(self):
         """Given some `ArchiveAuthToken`s, test generating htpasswd."""
         # Make some subscriptions and tokens.
-        name12 = getUtility(IPersonSet).getByName("name12")
-        name16 = getUtility(IPersonSet).getByName("name16")
-        self.ppa.newSubscription(name12, self.ppa.owner)
-        self.ppa.newSubscription(name16, self.ppa.owner)
-        tokens = [
-            self.ppa.newAuthToken(name12),
-            self.ppa.newAuthToken(name16)]
+        tokens = []
+        for name in ['name12', 'name16']:
+            person = getUtility(IPersonSet).getByName(name)
+            self.ppa.newSubscription(person, self.ppa.owner)
+            tokens.append(self.ppa.newAuthToken(person))
         token_usernames = [token.person.name for token in tokens]
 
         # Generate the passwd file.
