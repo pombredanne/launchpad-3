@@ -14,6 +14,10 @@ import sys
 import tempfile
 
 import pytz
+from testtools.matchers import (
+    FileExists,
+    Not,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -94,9 +98,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             os.remove(filename)
         script = self.getScript()
         script.ensureHtaccess(self.ppa)
-        self.assertTrue(
-            os.path.isfile(filename),
-            "%s is not present when it should be" % filename)
+        self.assertThat(filename, FileExists())
 
         contents = [
             "",
@@ -384,8 +386,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertEqual(
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
                 (return_code, stderr))
-        self.assertTrue(os.path.isfile(htaccess))
-        self.assertTrue(os.path.isfile(htpasswd))
+        self.assertThat(htaccess, FileExists())
+        self.assertThat(htpasswd, FileExists())
         os.remove(htaccess)
         os.remove(htpasswd)
 
@@ -407,8 +409,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script.main()
 
         # Assert no files were written.
-        self.assertFalse(os.path.isfile(htaccess))
-        self.assertFalse(os.path.isfile(htpasswd))
+        self.assertThat(htaccess, Not(FileExists()))
+        self.assertThat(htpasswd, Not(FileExists()))
 
         # Assert that the cancelled subscription did not cause the token
         # to get deactivated.
@@ -443,8 +445,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertEqual(subs[0].status, ArchiveSubscriberStatus.EXPIRED)
 
         # But the htaccess is not touched.
-        self.assertFalse(os.path.isfile(htaccess))
-        self.assertFalse(os.path.isfile(htpasswd))
+        self.assertThat(htaccess, Not(FileExists()))
+        self.assertThat(htpasswd, Not(FileExists()))
 
     def testSkippingOfDisabledPPAs(self):
         """Test that the htaccess for disabled PPAs are not touched."""
@@ -464,8 +466,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script.main()
 
         # The htaccess and htpasswd files should not be generated.
-        self.assertFalse(os.path.isfile(htaccess))
-        self.assertFalse(os.path.isfile(htpasswd))
+        self.assertThat(htaccess, Not(FileExists()))
+        self.assertThat(htpasswd, Not(FileExists()))
 
     def testSkippingOfDeletedPPAs(self):
         """Test that the htaccess for deleted PPAs are not touched."""
@@ -484,8 +486,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script.main()
 
         # The htaccess and htpasswd files should not be generated.
-        self.assertFalse(os.path.isfile(htaccess))
-        self.assertFalse(os.path.isfile(htpasswd))
+        self.assertThat(htaccess, Not(FileExists()))
+        self.assertThat(htpasswd, Not(FileExists()))
 
     def testSendingCancellationEmail(self):
         """Test that when a token is deactivated, its user gets an email.
@@ -663,7 +665,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertEqual(
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
                 (return_code, stderr))
-        self.assertTrue(os.path.isfile(htaccess))
-        self.assertTrue(os.path.isfile(htpasswd))
+        self.assertThat(htaccess, FileExists())
+        self.assertThat(htpasswd, FileExists())
         os.remove(htaccess)
         os.remove(htpasswd)
