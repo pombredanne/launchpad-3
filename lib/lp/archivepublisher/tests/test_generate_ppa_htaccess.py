@@ -126,7 +126,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Generate the passwd file.
         script = self.getScript()
-        filename = script.generateHtpasswd(self.ppa, tokens)
+        filename = script.generateHtpasswd(self.ppa)
 
         # It should be a temp file in the same directory as the intended
         # target file when it's renamed, so that os.rename() won't

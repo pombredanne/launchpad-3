@@ -79,11 +79,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             write_htaccess(htaccess_filename, pub_config.htaccessroot)
             self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
-    def generateHtpasswd(self, ppa, tokens):
+    def generateHtpasswd(self, ppa):
         """Generate a htpasswd file for `ppa`s `tokens`.
 
         :param ppa: The context PPA (an `IArchive`).
-        :param tokens: A iterable containing `IArchiveAuthToken`s.
         :return: The filename of the htpasswd file that was generated.
         """
         # Create a temporary file that will be a new .htpasswd.
@@ -94,7 +93,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         os.close(fd)
 
         write_htpasswd(
-            temp_filename, htpasswd_credentials_for_archive(ppa, tokens))
+            temp_filename, htpasswd_credentials_for_archive(ppa))
 
         return temp_filename
 
@@ -248,23 +247,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         return new_ppa_tokens
 
-    def _getValidTokensForPPAs(self, ppas):
-        """Returns a dict keyed by archive with all the tokens for each."""
-        affected_ppas_with_tokens = dict([
-            (ppa, []) for ppa in ppas])
-
-        store = IStore(ArchiveAuthToken)
-        affected_ppa_tokens = store.find(
-            ArchiveAuthToken,
-            ArchiveAuthToken.date_deactivated == None,
-            ArchiveAuthToken.archive_id.is_in(
-                [ppa.id for ppa in ppas]))
-
-        for token in affected_ppa_tokens:
-            affected_ppas_with_tokens[token.archive].append(token)
-
-        return affected_ppas_with_tokens
-
     def getNewPrivatePPAs(self):
         """Return the recently created private PPAs."""
         # Avoid circular import.
@@ -296,12 +278,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         affected_ppas.update(self.getNewPrivatePPAs())
 
-        affected_ppas_with_tokens = {}
-        if affected_ppas:
-            affected_ppas_with_tokens = self._getValidTokensForPPAs(
-                affected_ppas)
-
-        for ppa, valid_tokens in affected_ppas_with_tokens.iteritems():
+        for ppa in affected_ppas:
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
             # files.
             blacklisted_ppa_names_for_owner = self.blacklist.get(
@@ -322,7 +299,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 continue
 
             self.ensureHtaccess(ppa)
-            temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens)
+            temp_htpasswd = self.generateHtpasswd(ppa)
             if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
                 os.remove(temp_htpasswd)
 

@@ -15,6 +15,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.app.browser.tales import ObjectImageDisplayAPI
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -31,7 +32,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sharingservice import ISharingService
@@ -156,6 +157,10 @@ class SharingService:
         browser_request = IWebBrowserOriginatingRequest(request)
         details_enabled = bool((getFeatureFlag(
             'disclosure.enhanced_sharing_details.enabled')))
+        # We need to precache icon and validity information for the batch.
+        grantee_ids = [grantee[0].id for grantee in grant_permissions]
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            grantee_ids, need_icon=True, need_validity=True))
         for (grantee, permissions, shared_artifact_types) in grant_permissions:
             some_things_shared = (
                 details_enabled and len(shared_artifact_types) > 0)
@@ -164,9 +169,13 @@ class SharingService:
                 sharee_permissions[policy.type.name] = permission.name
             shared_artifact_type_names = [
                 info_type.name for info_type in shared_artifact_types]
+            display_api = ObjectImageDisplayAPI(grantee)
+            icon_url = display_api.custom_icon_url()
+            sprite_css = display_api.sprite_css()
             result.append({
                 'name': grantee.name,
-                'meta': 'team' if grantee.is_team else 'person',
+                'icon_url': icon_url,
+                'sprite_css': sprite_css,
                 'display_name': grantee.displayname,
                 'self_link': absoluteURL(grantee, request),
                 'web_link': absoluteURL(grantee, browser_request),
