@@ -191,12 +191,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         :return: A set of PPAs affected by the deactivations.
         """
         affected_ppas = set()
-        # XXX: Perhaps we can do this with one call, rather than looping
-        # through everything.
         num_tokens = 0
         for token in tokens:
             if send_email:
                 self.sendCancellationEmail(token)
+            # Deactivate tokens one at a time, as 'tokens' is the result of a
+            # set expression and storm does not allow setting on such things.
             token.deactivate()
             affected_ppas.add(token.archive)
             num_tokens += 1
