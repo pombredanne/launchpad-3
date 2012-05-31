@@ -15,7 +15,6 @@ from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
-    IPersonSet,
     OPEN_TEAM_POLICY,
     PersonVisibility,
     TeamSubscriptionPolicy,
