@@ -260,18 +260,13 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
     def getNewTokens(self, since=None):
         """Return result set of new tokens created since the given time."""
         store = IStore(ArchiveAuthToken)
-        # If we don't know when we last ran, we include all active
-        # tokens by default.
         extra_expr = []
         if since:
-            # XXX: Pass date_started in.
             extra_expr = [ArchiveAuthToken.date_created >= since]
-
         new_ppa_tokens = store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.date_deactivated == None,
             *extra_expr)
-
         return new_ppa_tokens
 
     def getNewPrivatePPAs(self, since=None):
@@ -279,8 +274,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # Avoid circular import.
         from lp.soyuz.model.archive import Archive
         store = IStore(Archive)
-        # If we don't know when we last ran, we include all active
-        # tokens by default.
         extra_expr = []
         if since:
             extra_expr = [Archive.date_created >= since]
