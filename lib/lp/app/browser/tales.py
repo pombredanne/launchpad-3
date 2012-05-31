@@ -2407,10 +2407,7 @@ class DurationFormatterAPI:
         return "%d weeks" % weeks
 
     def millisecondduration(self):
-        return str(
-            (self._duration.days * 24 * 3600
-             + self._duration.seconds * 1000
-             + self._duration.microseconds // 1000)) + 'ms'
+        return '%sms' % (total_seconds(self._duration) * 1000,)
 
 
 class LinkFormatterAPI(ObjectFormatterAPI):
