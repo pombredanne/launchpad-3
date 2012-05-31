@@ -388,10 +388,9 @@ def obfuscate_structure(o):
 
 def total_seconds(duration):
     """The number of total seconds in a timedelta.
-
-    In Python 2.7, spell this as duration.total_seconds().  Only needed for
-    Python 2.6 or earlier.
     """
+    # XXX: JonathanLange 2012-05-12: In Python 2.7, spell this as
+    # duration.total_seconds().  Only needed for Python 2.6 or earlier.
     return (
         (duration.microseconds +
          (duration.seconds + duration.days * 24 * 3600) * 1e6)

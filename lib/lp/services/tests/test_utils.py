@@ -392,8 +392,8 @@ class TestObfuscateStructure(TestCase):
 
 class TestTotalSeconds(TestCase):
 
-    # Remove this when Python 2.6 support is dropped.  Replace calls with
-    # timedelta.total_seconds.
+    # XXX: JonathanLange 2012-05-31: Remove this when Python 2.6 support is
+    # dropped.  Replace calls with timedelta.total_seconds.
 
     def test_total_seconds(self):
         # Numbers are arbitrary.
