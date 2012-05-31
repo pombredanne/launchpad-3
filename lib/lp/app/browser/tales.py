@@ -71,6 +71,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.utils import total_seconds
 from lp.services.webapp import (
     canonical_url,
     urlappend,
@@ -2307,11 +2308,7 @@ class DurationFormatterAPI:
         # a useful name. It's also unlikely that these numbers will be
         # changed.
 
-        # Calculate the total number of seconds in the duration,
-        # including the decimal part.
-        seconds = self._duration.days * (3600 * 24)
-        seconds += self._duration.seconds
-        seconds += (float(self._duration.microseconds) / 10 ** 6)
+        seconds = total_seconds(self._duration)
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
