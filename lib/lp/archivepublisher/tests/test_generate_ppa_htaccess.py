@@ -15,6 +15,7 @@ import tempfile
 
 import pytz
 from testtools.matchers import (
+    FileContains,
     FileExists,
     Not,
     )
@@ -100,7 +101,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         remove_if_exists(filename)
         script = self.getScript()
         script.ensureHtaccess(self.ppa)
-        self.assertThat(filename, FileExists())
+        self.addCleanup(remove_if_exists, filename)
 
         contents = [
             "",
@@ -108,14 +109,9 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "AuthName           \"Token Required\"",
             "AuthUserFile       %s/.htpasswd" % pub_config.htaccessroot,
             "Require            valid-user",
+            "",
             ]
-
-        file = open(filename, "r")
-        file_contents = file.read().splitlines()
-        file.close()
-        os.remove(filename)
-
-        self.assertEqual(contents, file_contents)
+        self.assertThat(filename, FileContains('\n'.join(contents)))
 
     def testGenerateHtpasswd(self):
         """Given some `ArchiveAuthToken`s, test generating htpasswd."""
