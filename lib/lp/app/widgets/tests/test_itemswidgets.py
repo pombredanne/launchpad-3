@@ -232,7 +232,7 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
             widget = LaunchpadRadioWidgetWithDescription(
                 self.field, vocab, self.request)
             self.assertRenderItem(
-                "... containing private information...", widget.renderItem,
+                "...has shared private information...", widget.renderItem,
                 vocab.getTermByToken('USERDATA'))
 
 
