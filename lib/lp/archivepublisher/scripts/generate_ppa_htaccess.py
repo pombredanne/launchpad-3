@@ -243,7 +243,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             self.logger.info(
                 "Expired subscriptions: %s" % ", ".join(subscription_names))
 
-    def _getLastRunWithSkew(self):
+    def getTimeToSyncFrom(self):
+        """Return the time we'll synchronize from.
+
+        Any new PPAs or tokens created since this time will be used to
+        generate passwords.
+        """
         # NTP is running on our servers and therefore we can assume
         # only minimal skew, we include a fudge-factor of 1s so that
         # even the minimal skew cannot demonstrate bug 627608.
@@ -291,7 +296,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         self.logger.debug(
             '%s PPAs with deactivated tokens' % current_ppa_count)
 
-        last_success = self._getLastRunWithSkew()
+        last_success = self.getTimeToSyncFrom()
 
         # In addition to the ppas that are affected by deactivated
         # tokens, we also want to include any ppas that have tokens
