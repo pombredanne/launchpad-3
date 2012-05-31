@@ -252,8 +252,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             return
         return last_activity.date_started - timedelta(seconds=1)
 
-    def getNewTokensSinceLastRun(self, since=None):
-        """Return result set of new tokens created since the last run."""
+    def getNewTokens(self, since=None):
+        """Return result set of new tokens created since the given time."""
         store = IStore(ArchiveAuthToken)
         # If we don't know when we last ran, we include all active
         # tokens by default.
@@ -297,7 +297,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # tokens, we also want to include any ppas that have tokens
         # created since the last time we ran.
         num_tokens = 0
-        for token in self.getNewTokensSinceLastRun(since=last_success):
+        for token in self.getNewTokens(since=last_success):
             affected_ppas.add(token.archive)
             num_tokens += 1
 

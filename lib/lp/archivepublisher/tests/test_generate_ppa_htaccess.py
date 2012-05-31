@@ -581,16 +581,16 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         new_ppas = script.getNewPrivatePPAs(since=last_start)
         self.assertContentEqual([new_ppa], new_ppas)
 
-    def test_getNewTokensSinceLastRun_no_previous_run(self):
+    def test_getNewTokens_no_previous_run(self):
         """All valid tokens returned if there is no record of previous run."""
         tokens = self.setupDummyTokens()[1]
 
         # If there is no record of the script running previously, all
         # valid tokens are returned.
         script = self.getScript()
-        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
+        self.assertContentEqual(tokens, script.getNewTokens())
 
-    def test_getNewTokensSinceLastRun_only_those_since_last_run(self):
+    def test_getNewTokens_only_those_since_last_run(self):
         """Only tokens created since the last run are returned."""
         last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
         before_last_start = last_start - timedelta(seconds=30)
@@ -600,10 +600,10 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         removeSecurityProxy(tokens[0]).date_created = before_last_start
 
         script = self.getScript()
-        new_tokens = script.getNewTokensSinceLastRun(since=last_start)
+        new_tokens = script.getNewTokens(since=last_start)
         self.assertContentEqual(tokens[1:], new_tokens)
 
-    def test_getNewTokensSinceLastRun_includes_tokens_during_last_run(self):
+    def test_getNewTokens_includes_tokens_during_last_run(self):
         """Tokens created during the last ppa run will be included."""
         now = datetime.now(pytz.UTC)
         script_start_time = now - timedelta(seconds=2)
@@ -618,9 +618,9 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         removeSecurityProxy(tokens[0]).date_created = in_between
 
         script = self.getScript()
-        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
+        self.assertContentEqual(tokens, script.getNewTokens())
 
-    def test_getNewTokensSinceLastRun_handles_ntp_skew(self):
+    def test_getNewTokens_handles_ntp_skew(self):
         """An ntp-skew of up to one second will not affect the results."""
         now = datetime.now(pytz.UTC)
         script_start_time = now - timedelta(seconds=2)
@@ -636,15 +636,15 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         removeSecurityProxy(tokens[0]).date_created = earliest_with_ntp_skew
 
         script = self.getScript()
-        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
+        self.assertContentEqual(tokens, script.getNewTokens())
 
-    def test_getNewTokensSinceLastRun_only_active_tokens(self):
+    def test_getNewTokens_only_active_tokens(self):
         """Only active tokens are returned."""
         tokens = self.setupDummyTokens()[1]
         tokens[0].deactivate()
 
         script = self.getScript()
-        self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
+        self.assertContentEqual(tokens[1:], script.getNewTokens())
 
     def test_processes_PPAs_without_subscription(self):
         # A .htaccess file is written for Private PPAs even if they don't have
