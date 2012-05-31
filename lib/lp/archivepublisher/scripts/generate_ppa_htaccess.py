@@ -277,10 +277,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # tokens by default.
         last_success = self.get_last_activity()
         extra_expr = []
-        # XXX: This uses date_completed, other point uses date_started.
         if last_success:
             extra_expr = [
-                Archive.date_created >= last_success.date_completed]
+                Archive.date_created >= last_success.date_started]
 
         return store.find(
             Archive, Archive._private == True, *extra_expr)

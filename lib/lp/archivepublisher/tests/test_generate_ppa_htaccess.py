@@ -571,10 +571,12 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # Only private PPAs created since the last run are returned.
         # This happens even if they have no tokens.
         now = datetime.now(pytz.UTC)
+        script_start_time = now - timedelta(seconds=2)
+        script_end_time = now
+        before_previous_start = script_start_time - timedelta(seconds=30)
         getUtility(IScriptActivitySet).recordSuccess(
-            self.SCRIPT_NAME, now, now - timedelta(minutes=3))
-        removeSecurityProxy(self.ppa).date_created = (
-            now - timedelta(minutes=4))
+            self.SCRIPT_NAME, script_start_time, script_end_time)
+        removeSecurityProxy(self.ppa).date_created = before_previous_start
 
         # Create a new PPA that should show up.
         new_ppa = self.factory.makeArchive(private=True)
