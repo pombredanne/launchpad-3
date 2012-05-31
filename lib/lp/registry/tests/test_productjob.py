@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import logging
 
 import pytz
 from zope.component import getUtility
@@ -55,6 +54,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.services.log.logger import BufferLogger
 from lp.services.webapp.publisher import canonical_url
 
 
@@ -88,22 +88,27 @@ class CommercialHelpers:
 
 
 class ProductJobManagerTestCase(TestCaseWithFactory, CommercialHelpers):
-    # Test the ProductJobManager class.
+    """Test case for the ProductJobManager class."""
     layer = DatabaseFunctionalLayer
 
     @staticmethod
     def make_manager():
-        logger = logging.getLogger('request-product-jobs')
+        logger = BufferLogger()
         return ProductJobManager(logger)
 
     def test_init(self):
         manager = self.make_manager()
-        self.assertEqual('request-product-jobs', manager.logger.name)
+        self.assertIsInstance(manager.logger, BufferLogger)
 
     def test_createAllDailyJobs(self):
-        self.make_test_products()
+        test_products = self.make_test_products()
         manager = self.make_manager()
         self.assertEqual(3, manager.createAllDailyJobs())
+        self.assertIn(
+            'DEBUG Creating a %s for %s' %
+            (CommercialExpiredJob.__class__.__name__,
+             test_products['expired'].name),
+            manager.logger.getLogBuffer())
 
 
 class ProductJobTestCase(TestCaseWithFactory):

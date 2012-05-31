@@ -88,7 +88,10 @@ class ProductJobManager:
         self.logger = logger
 
     def createAllDailyJobs(self):
-        """Create jobs for all products that have timed updates."""
+        """Create jobs for all products that have timed updates.
+
+        :return: The count of jobs that were created.
+        """
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         total = 0
         total += self._createDailyJobs(CommercialExpiredJob, reviewer)
@@ -107,6 +110,9 @@ class ProductJobManager:
         """
         total = 0
         for product in job_class.getExpiringProducts():
+            self.logger.debug(
+                'Creating a %s for %s' %
+                (job_class.__class__.__name__, product.name))
             job_class.create(product, reviewer)
             total += 1
         return total
