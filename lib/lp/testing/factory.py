@@ -80,7 +80,6 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
@@ -1725,8 +1724,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None, publish=True,
-                    private=False):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -1740,8 +1738,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             one will be created.
         :param target: The `IBugTarget`, to which the bug will be
             targeted to.
-        :param private: If a bug is not specified, the privacy state to use
-            when creating the bug for the bug task..
         """
 
         # Find and return the existing target if one exists.
@@ -1792,33 +1788,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     bug, prerequisite_target, publish=publish)
                 bug = prerequisite.bug
 
-        # Private (and soon all) bugs cannot affect multiple projects
-        # so we ensure that if a bug has not been specified and one is
-        # created, it is for the same pillar as that of the specified target.
-        result_bug_task = None
-        if bug is None and private:
-            product = distribution = sourcepackagename = None
-            pillar = target.pillar
-            if IProduct.providedBy(pillar):
-                product = pillar
-            elif IDistribution.providedBy(pillar):
-                distribution = pillar
-            if (IDistributionSourcePackage.providedBy(target)
-                or ISourcePackage.providedBy(target)):
-                    sourcepackagename = target.sourcepackagename
-            bug = self.makeBug(
-                private=private, product=product, distribution=distribution,
-                sourcepackagename=sourcepackagename)
-            if not ISeriesBugTarget.providedBy(target):
-                result_bug_task = bug.default_bugtask
-        # We keep the existing behaviour for public bugs because
-        # test_bugtask_search breaks spectacularly otherwise. Almost all other
-        # tests pass.
         if bug is None:
             bug = self.makeBug()
 
-        if result_bug_task is not None:
-            return result_bug_task
         if owner is None:
             owner = self.makePerson()
         return removeSecurityProxy(bug).addTask(owner, target)

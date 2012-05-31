@@ -702,6 +702,19 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def recommended_canonical_url(self):
         return canonical_url(self.context.bug, rootsite='bugs')
 
+    @property
+    def information_type(self):
+        use_private_flag = getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled')
+        info_type_enabled_flag = getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')
+        value = None
+        if info_type_enabled_flag:
+            value = self.context.bug.information_type.title
+            if (use_private_flag and value == InformationType.USERDATA.title):
+                value = "Private"
+        return value
+
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug

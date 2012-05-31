@@ -292,6 +292,21 @@ class TestBugTaskView(TestCaseWithFactory):
             'href="/foobar/+bugs?field.tag=depends-on%2B987"',
             browser.contents)
 
+    def test_information_type_with_flags(self):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner,
+            information_type=InformationType.USERDATA)
+        login_person(owner)
+        bugtask = self.factory.makeBugTask(bug=bug)
+        features = {'disclosure.show_information_type_in_ui.enabled': True}
+        with FeatureFixture(features):
+            view = create_initialized_view(bugtask, name="+index")
+            self.assertEqual('User Data', view.information_type)
+        features['disclosure.display_userdata_as_private.enabled'] = True
+        with FeatureFixture(features):
+            view = create_initialized_view(bugtask, name="+index")
+            self.assertEqual('Private', view.information_type)
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
@@ -2421,7 +2436,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual(item.bug_heat_html, model['bug_heat_html'])
             self.assertEqual(
                 '<span alt="private" title="Private" class="sprite private">'
-                '&nbsp;</span>', model['badges'])
+                '</span>', model['badges'])
             self.assertEqual(None, model['milestone_name'])
             item.bugtask.milestone = self.factory.makeMilestone(
                 product=item.bugtask.target)

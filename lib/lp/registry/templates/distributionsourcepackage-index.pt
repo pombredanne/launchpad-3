@@ -150,9 +150,7 @@
         <td style="white-space: nowrap">
           <a class="expander"
              tal:attributes="id string:pub${pubid}-expander;
-                             href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra">
-            &nbsp;
-          </a>
+                             href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra"></a>
           <a tal:attributes="href row/version">
             <img src="/@@/package-source" />
             <tal:version content="row/version"/>

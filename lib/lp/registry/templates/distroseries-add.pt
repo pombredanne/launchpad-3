@@ -11,9 +11,8 @@
         <p metal:fill-slot="extra_info">
           This page allows you to add a new distribution series.
           <a href="/+help-registry/distribution-add-series.html"
-             target="help" class="sprite maybe">
-            &nbsp;<span class="invisible-link">(?)</span>
-          </a>
+             target="help"
+             class="sprite maybe"><span class="invisible-link">(?)</span></a>
         </p>
       </div>
     </div>

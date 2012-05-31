@@ -132,7 +132,7 @@
                 <tal:no condition="not: context/active">
                   No.  Drivers cannot target bugs and blueprints to this milestone.
                 </tal:no>
-                &nbsp; <a tal:replace="structure milestone_menu/edit/fmt:icon" />
+                &nbsp;<a tal:replace="structure milestone_menu/edit/fmt:icon" />
               </dd>
             </dl>
 
