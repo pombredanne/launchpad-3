@@ -8,6 +8,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 import os
 import subprocess
 import sys
@@ -120,13 +121,15 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         name16 = getUtility(IPersonSet).getByName("name16")
         self.ppa.newSubscription(name12, self.ppa.owner)
         self.ppa.newSubscription(name16, self.ppa.owner)
-        tokens = []
-        tokens.append(self.ppa.newAuthToken(name12))
-        tokens.append(self.ppa.newAuthToken(name16))
+        tokens = [
+            self.ppa.newAuthToken(name12),
+            self.ppa.newAuthToken(name16)]
+        token_usernames = [token.person.name for token in tokens]
 
         # Generate the passwd file.
         script = self.getScript()
         filename = script.generateHtpasswd(self.ppa)
+        self.addCleanup(remove_if_exists, filename)
 
         # It should be a temp file in the same directory as the intended
         # target file when it's renamed, so that os.rename() won't
@@ -136,31 +139,18 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             pub_config.htaccessroot, os.path.dirname(filename))
 
         # Read it back in.
-        file = open(filename, "r")
-        file_contents = file.read().splitlines()
+        file_contents = [
+            line.strip().split(':', 1) for line in open(filename, 'r')]
 
-        # The first line should be the buildd_secret.
-        [user, password] = file_contents[0].split(":", 1)
-        self.assertEqual(user, "buildd")
+        # First entry is buildd secret, rest are from tokens.
+        usernames = list(zip(*file_contents)[0])
+        self.assertEqual(['buildd'] + token_usernames, usernames)
+
         # We can re-encrypt the buildd_secret and it should match the
         # one in the .htpasswd file.
+        password = file_contents[0][1]
         encrypted_secret = crypt.crypt(self.ppa.buildd_secret, password)
         self.assertEqual(encrypted_secret, password)
-
-        # Finally, there should be two more lines in the file, one for
-        # each of the tokens generated above.
-        self.assertEqual(len(file_contents), 3)
-        [user1, password1] = file_contents[1].split(":", 1)
-        [user2, password2] = file_contents[2].split(":", 1)
-        self.assertEqual(user1, "name12")
-        self.assertEqual(user2, "name16")
-
-        # For the names to appear in the order above, the dabatase IDs
-        # for the tokens have to be in that order.  (To ensure a
-        # consistent ordering)
-        self.assertTrue(tokens[0].id < tokens[1].id)
-
-        os.remove(filename)
 
     def testReplaceUpdatedHtpasswd(self):
         """Test that the htpasswd file is only replaced if it changes."""
