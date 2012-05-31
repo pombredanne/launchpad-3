@@ -15,9 +15,7 @@
       <a tal:condition="view/help_link"
          tal:attributes="href view/help_link"
          target="help"
-         class="sprite maybe">&nbsp;
-         <span class="invisible-link">Driver help</span>
-      </a>
+         class="sprite maybe"><span class="invisible-link">Driver help</span></a>
       <div class="yui3-activator-message-box yui3-activator-hidden"></div>
     </span>
   </span>

@@ -672,7 +672,6 @@ class ObjectFormatterAPI:
             css_classes.add('global-notification-visible')
         return ' '.join(list(css_classes))
 
-
     def _getSaneBreadcrumbDetail(self, breadcrumb):
         text = breadcrumb.detail
         if len(text) > 64:
@@ -883,7 +882,7 @@ class ObjectImageDisplayAPI:
         else:
             icon = 'no'
         markup = (
-            '<span class="sprite %(icon)s">&nbsp;'
+            '<span class="sprite %(icon)s">'
             '<span class="invisible-link">%(icon)s</span></span>')
         return markup % dict(icon=icon)
 
@@ -906,10 +905,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
+        '<span alt="%s" title="%s" class="%s"></span>')
 
     linked_icon_template = (
-        '<a href="%s" alt="%s" title="%s" class="%s">&nbsp;</a>')
+        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""

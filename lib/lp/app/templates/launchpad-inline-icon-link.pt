@@ -5,5 +5,5 @@
   tal:attributes="
     class string:menu-link-${context/name} sprite ${context/icon};
     href context/url;
-    title context/summary;"
-><span class="invisible-link" tal:content="context/text"></span></a></tal:link-enabled>
+    title context/summary;"><span class="invisible-link"
+              tal:content="context/text"></span></a></tal:link-enabled>
