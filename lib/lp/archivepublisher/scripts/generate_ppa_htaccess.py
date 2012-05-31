@@ -257,8 +257,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         store = IStore(ArchiveAuthToken)
         # If we don't know when we last ran, we include all active
         # tokens by default.
-        if since is None:
-            since = self._getLastRunWithSkew()
         extra_expr = []
         if since:
             # XXX: Pass date_started in.
@@ -278,12 +276,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         store = IStore(Archive)
         # If we don't know when we last ran, we include all active
         # tokens by default.
-        if since is None:
-            since = self._getLastRunWithSkew()
         extra_expr = []
         if since:
             extra_expr = [Archive.date_created >= since]
-
         return store.find(
             Archive, Archive._private == True, *extra_expr)
 

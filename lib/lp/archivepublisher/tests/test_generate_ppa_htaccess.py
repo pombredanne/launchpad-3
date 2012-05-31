@@ -570,19 +570,16 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     def test_getNewPrivatePPAs_only_those_since_last_run(self):
         # Only private PPAs created since the last run are returned.
         # This happens even if they have no tokens.
-        now = datetime.now(pytz.UTC)
-        script_start_time = now - timedelta(seconds=2)
-        script_end_time = now
-        before_previous_start = script_start_time - timedelta(seconds=30)
-        getUtility(IScriptActivitySet).recordSuccess(
-            self.SCRIPT_NAME, script_start_time, script_end_time)
-        removeSecurityProxy(self.ppa).date_created = before_previous_start
+        last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
+        before_last_start = last_start - timedelta(seconds=30)
+        removeSecurityProxy(self.ppa).date_created = before_last_start
 
         # Create a new PPA that should show up.
         new_ppa = self.factory.makeArchive(private=True)
 
         script = self.getScript()
-        self.assertContentEqual([new_ppa], script.getNewPrivatePPAs())
+        new_ppas = script.getNewPrivatePPAs(since=last_start)
+        self.assertContentEqual([new_ppa], new_ppas)
 
     def test_getNewTokensSinceLastRun_no_previous_run(self):
         """All valid tokens returned if there is no record of previous run."""
@@ -595,20 +592,16 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
     def test_getNewTokensSinceLastRun_only_those_since_last_run(self):
         """Only tokens created since the last run are returned."""
-        now = datetime.now(pytz.UTC)
-        script_start_time = now - timedelta(seconds=2)
-        script_end_time = now
-        before_previous_start = script_start_time - timedelta(seconds=30)
+        last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
+        before_last_start = last_start - timedelta(seconds=30)
 
-        getUtility(IScriptActivitySet).recordSuccess(
-            self.SCRIPT_NAME, date_started=script_start_time,
-            date_completed=script_end_time)
         tokens = self.setupDummyTokens()[1]
         # This token will not be included.
-        removeSecurityProxy(tokens[0]).date_created = before_previous_start
+        removeSecurityProxy(tokens[0]).date_created = before_last_start
 
         script = self.getScript()
-        self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
+        new_tokens = script.getNewTokensSinceLastRun(since=last_start)
+        self.assertContentEqual(tokens[1:], new_tokens)
 
     def test_getNewTokensSinceLastRun_includes_tokens_during_last_run(self):
         """Tokens created during the last ppa run will be included."""
