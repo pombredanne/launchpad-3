@@ -23,7 +23,10 @@ from lp.bugs.enums import (
     )
 from lp.bugs.errors import BugCannotBePrivate
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bug import (
     BugNotification,
@@ -47,7 +50,11 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.dbtriggers import triggers_disabled
+from lp.testing.dbtriggers import (
+    disable_trigger,
+    triggers_disabled,
+    )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
@@ -1095,3 +1102,81 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
                 duplicate_bug = self.factory.makeBug(owner=bug.owner)
                 duplicate_bug.markAsDuplicate(bug)
             self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
+
+
+class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugUpdateAccessPolicyArtifacts, self).setUp()
+
+        # Disable the transitional triggers that the app code is to
+        # replace.
+        with dbuser('postgres'):
+            for table, trigger in LEGACY_ACCESS_TRIGGERS:
+                disable_trigger(table, trigger)
+
+    def assertPoliciesForBug(self, policy_tuples, bug):
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(policy_tuples),
+            get_policies_for_bug(bug))
+
+    def test_adds_missing(self):
+        # updateAccessPolicyArtifacts adds missing links.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([bug])
+
+        self.assertPoliciesForBug([], get_policies_for_bug(bug))
+        bug.updateAccessPolicyArtifacts()
+        self.assertPoliciesForBug(
+            [(product, InformationType.USERDATA)], get_policies_for_bug(bug))
+
+    def test_removes_extra(self):
+        # updateAccessPolicyArtifacts removes excess links.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+
+        other_product = self.factory.makeProduct()
+        [other_policy] = getUtility(IAccessPolicySource).find(
+            [(other_product, InformationType.USERDATA)])
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).create(
+            [(artifact, other_policy)])
+
+        self.assertPoliciesForBug(
+            [(product, InformationType.USERDATA)
+             (other_product, InformationType.USERDATA)],
+            get_policies_for_bug(bug))
+        bug.updateAccessPolicyArtifacts()
+        self.assertPoliciesForBug(
+            [(product, InformationType.USERDATA)], get_policies_for_bug(bug))
+
+    def test_all_target_types_work(self):
+        # updateAccessPolicyArtifacts gets the pillar from any task
+        # type.
+        product = self.factory.makeProduct()
+        productseries = self.factory.makeProductSeries()
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage()
+        sp = self.factory.makeSourcePackage()
+
+        targets = [product, productseries, distro, distroseries, dsp, sp]
+        pillars = [
+            product, productseries.product, distro, distroseries.distribution,
+            dsp.distribution, sp.distribution]
+
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+        for target in targets[1:]:
+            self.factory.makeBugTask(bug, target=target)
+
+        self.assertPoliciesForBug([], get_policies_for_bug(bug))
+        bug.updateAccessPolicyArtifacts()
+        self.assertPoliciesForBug(
+            [(pillar, InformationType.USERDATA) for pillar in pillars],
+            get_policies_for_bug(bug))
