@@ -472,7 +472,8 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
 
         # Make a branch the reviewer cannot see.
         owner = self.factory.makePerson()
-        target_branch = self._makeTargetBranch(owner=owner, private=True)
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         request = LaunchpadTestRequest(
@@ -498,7 +499,8 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         # Ajax submits where there is a validation error in the submitted data
         # return the expected json response containing the error info.
         owner = self.factory.makePerson()
-        target_branch = self._makeTargetBranch(owner=owner, private=True)
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
@@ -670,7 +672,7 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         # notification message is displayed.
         owner = self.factory.makePerson()
         target_branch = self._makeTargetBranch(
-            private=True, owner=owner)
+            owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         with person_logged_in(owner):
             view = self._createView()

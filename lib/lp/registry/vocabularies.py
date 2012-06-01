@@ -180,7 +180,9 @@ from lp.services.helpers import (
     ensure_unicode,
     shortlist,
     )
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
     cachedproperty,
@@ -701,6 +703,7 @@ class ValidPersonOrTeamVocabulary(
                 SQL("MatchingPerson"),
                 Person,
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+                LeftJoin(Account, Account.id == Person.accountID),
                 ]
 
             # If private_tables is empty, we are searching for all private
@@ -720,6 +723,9 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 And(
                     SQL("Person.id = MatchingPerson.id"),
+                    Or(
+                        Account.status == AccountStatus.ACTIVE,
+                        Person.teamowner != None),
                     Or(
                         And(  # A public person or team
                             Person.visibility == PersonVisibility.PUBLIC,
@@ -2254,7 +2260,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
             if type == InformationType.USERDATA and show_userdata_as_private:
                 title = 'Private'
                 description = (
-                    description.replace('user data', 'private information'))
+                    'Visible only to users with whom the project has '
+                    'shared private information.')
             term = SimpleTerm(type, type.name, title)
             term.name = type.name
             term.description = description

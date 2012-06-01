@@ -122,6 +122,7 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import (
@@ -1067,9 +1068,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # If the branch is private, and can be public, show the field.
             show_private_field = policy.canBranchesBePublic()
 
-            # If this branch is public but is deemed private because it is
-            # stacked on a private branch, disable the field.
-            if not branch.explicitly_private:
+            # If this branch is stacked on a private branch, disable the
+            # field.
+            if (branch.stacked_on and branch.stacked_on.information_type in
+                PRIVATE_INFORMATION_TYPES):
                 show_private_field = False
                 private_info = Bool(
                     __name__="private",

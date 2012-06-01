@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -11,6 +11,7 @@ from mechanize import LinkNotFoundError
 import soupmatchers
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.enums import InformationType
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
@@ -49,7 +50,7 @@ class MergeQueuesTestMixin:
             mergequeues = [
                 self.factory.makeBranchMergeQueue(
                     owner=self.branch_owner, branches=self._makeBranches())
-                for i in range(nr_queues-nr_with_private_branches)]
+                for i in range(nr_queues - nr_with_private_branches)]
             mergequeues_with_private_branches = [
                 self.factory.makeBranchMergeQueue(
                     owner=self.branch_owner,
@@ -65,7 +66,8 @@ class MergeQueuesTestMixin:
 
         private_branches = [
             self.factory.makeProductBranch(
-                owner=self.branch_owner, private=True)
+                owner=self.branch_owner,
+                information_type=InformationType.USERDATA)
             for i in range(nr_private)]
 
         branches.extend(private_branches)

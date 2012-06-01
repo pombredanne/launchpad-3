@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Revisions."""
@@ -26,6 +26,7 @@ from lp.code.model.revision import (
     RevisionCache,
     RevisionSet,
     )
+from lp.registry.enums import InformationType
 from lp.registry.model.karma import Karma
 from lp.scripts.garbo import RevisionAuthorEmailLinker
 from lp.services.database.lpstorm import IMasterObject
@@ -847,7 +848,8 @@ class TestUpdateRevisionCacheForBranch(RevisionCacheTestCase):
     def test_revisions_for_private_branch_marked_private(self):
         # If the branch is private, then the revisions in the cache will be
         # marked private too.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         revision = self.factory.makeRevision()
         branch.createBranchRevision(1, revision)
         RevisionSet.updateRevisionCacheForBranch(branch)
@@ -858,7 +860,8 @@ class TestUpdateRevisionCacheForBranch(RevisionCacheTestCase):
     def test_revisions_for_transitive_private_branch_marked_private(self):
         # If the branch is stacked on a private branch, then the revisions in
         # the cache will be marked private too.
-        private_branch = self.factory.makeAnyBranch(private=True)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         branch = self.factory.makeAnyBranch(stacked_on=private_branch)
         revision = self.factory.makeRevision()
         branch.createBranchRevision(1, revision)
@@ -929,8 +932,9 @@ class TestUpdateRevisionCacheForBranch(RevisionCacheTestCase):
     def test_existing_private_revisions_with_public_branch(self):
         # If a revision is in both public and private branches, there is a
         # revision cache row for both public and private.
-        private_branch = self.factory.makeAnyBranch(private=True)
-        public_branch = self.factory.makeAnyBranch(private=False)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
+        public_branch = self.factory.makeAnyBranch()
         revision = self.factory.makeRevision()
         private_branch.createBranchRevision(1, revision)
         RevisionSet.updateRevisionCacheForBranch(private_branch)
@@ -947,10 +951,11 @@ class TestUpdateRevisionCacheForBranch(RevisionCacheTestCase):
         # If a revision is in both public and private branches, there is a
         # revision cache row for both public and private. A branch is private
         # if it is stacked on a private branch.
-        stacked_on_branch = self.factory.makeAnyBranch(private=True)
+        stacked_on_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         private_branch = self.factory.makeAnyBranch(
             stacked_on=stacked_on_branch)
-        public_branch = self.factory.makeAnyBranch(private=False)
+        public_branch = self.factory.makeAnyBranch()
         revision = self.factory.makeRevision()
         private_branch.createBranchRevision(1, revision)
         RevisionSet.updateRevisionCacheForBranch(private_branch)

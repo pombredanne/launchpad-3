@@ -685,7 +685,8 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
         branch = self.factory.makeBranch(
-            product=product, owner=owner, private=True)
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
         self._assert_revokeAccessGrants(product, None, [branch])
 
     def _assert_revokeAccessGrantsUnauthorized(self):
@@ -741,7 +742,8 @@ class TestSharingService(TestCaseWithFactory):
         branches = []
         for x in range(0, 10):
             branch = self.factory.makeBranch(
-                product=product, owner=owner, private=True)
+                product=product, owner=owner,
+                information_type=InformationType.USERDATA)
             branches.append(branch)
 
         # Grant access to grantee as well as the person who will be doing the

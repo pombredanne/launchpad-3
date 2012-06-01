@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductJobs."""
@@ -19,31 +19,33 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import ProductJobType
-from lp.registry.interfaces.product import (
-    License,
+from lp.registry.enums import (
+    InformationType,
+    ProductJobType,
     )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.product import License
 from lp.registry.interfaces.productjob import (
+    ICommercialExpiredJob,
+    ICommercialExpiredJobSource,
     IProductJob,
     IProductJobSource,
     IProductNotificationJobSource,
-    ICommercialExpiredJob,
-    ICommercialExpiredJobSource,
     ISevenDayCommercialExpirationJob,
     ISevenDayCommercialExpirationJobSource,
     IThirtyDayCommercialExpirationJob,
     IThirtyDayCommercialExpirationJobSource,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.productjob import (
+    CommercialExpiredJob,
     ProductJob,
     ProductJobDerived,
     ProductNotificationJob,
-    CommercialExpiredJob,
     SevenDayCommercialExpirationJob,
     ThirtyDayCommercialExpirationJob,
     )
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -53,7 +55,6 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.webapp.publisher import canonical_url
 
 
 class ProductJobTestCase(TestCaseWithFactory):
@@ -529,7 +530,8 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         public_branch = self.factory.makeBranch(
             owner=product.owner, product=product)
         private_branch = self.factory.makeBranch(
-            owner=product.owner, product=product, private=True)
+            owner=product.owner, product=product,
+            information_type=InformationType.USERDATA)
         with person_logged_in(product.owner):
             product.setPrivateBugs(True, product.owner)
             public_series = product.development_focus
