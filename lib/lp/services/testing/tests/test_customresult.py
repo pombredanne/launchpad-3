@@ -39,7 +39,8 @@ class TestFilterTests(TestCase):
             fd.write(line + NEWLINE)
         fd.flush()
 
-    def make_suites(self):
+    @staticmethod
+    def make_suites():
         """Make two suites.
 
         The first has 'a'..'m' and the second 'n'..'z'.
@@ -53,6 +54,15 @@ class TestFilterTests(TestCase):
         for letter in string.lowercase[13:]:
             suite_nz.addTest(FakeTestCase(letter))
         return suite_am, suite_nz
+
+    @staticmethod
+    def make_repeated_suite(testnames):
+        suite = unittest.TestSuite()
+        for t in testnames:
+            # Each test will be repeated equal to the number represented.
+            for i in range(int(t)):
+                suite.addTest(FakeTestCase(t))
+        return suite
 
     def test_ordering(self):
         # Tests should be returned in the order seen in the testfile.
@@ -90,11 +100,7 @@ class TestFilterTests(TestCase):
         # collapsed and lost.
         layername = 'layer-1'
         testnames = ['1', '2', '3']
-        suite = unittest.TestSuite()
-        for t in testnames:
-            # Each test will be repeated equal to the number represented.
-            for i in range(int(t)):
-                suite.addTest(FakeTestCase(t))
+        suite = self.make_repeated_suite(testnames)
         with tempfile.NamedTemporaryFile() as fd:
             self.writeFile(fd, testnames)
             do_filter = filter_tests(fd.name)
@@ -104,6 +110,26 @@ class TestFilterTests(TestCase):
         suite = results[layername]
         expected = ['1', '2', '2', '3', '3', '3']
         self.assertEqual(expected, [t.id() for t in suite])
+
+    def test_repeated_names_different_layers(self):
+        # Some doctests are run repeatedly with different scenarios, including
+        # being included in different layers.
+        testnames = ['a', 'b', 'c']
+        suite = self.make_suites()[0]
+
+        with tempfile.NamedTemporaryFile() as fd:
+            self.writeFile(fd, testnames)
+            do_filter = filter_tests(fd.name)
+            results = do_filter({'layer1': suite,
+                                 'layer2': suite,
+                                 'layer3': suite})
+
+        self.assertEqual(3, len(results))
+        self.assertEqual(
+            ['layer1', 'layer2', 'layer3'], sorted(results.keys()))
+        self.assertEqual(['a', 'b', 'c'], [t.id() for t in results['layer1']])
+        self.assertEqual(['a', 'b', 'c'], [t.id() for t in results['layer2']])
+        self.assertEqual(['a', 'b', 'c'], [t.id() for t in results['layer3']])
 
     def test_no_layer(self):
         # If tests have no layer (None) work.
