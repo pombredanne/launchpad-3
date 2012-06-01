@@ -2184,7 +2184,7 @@ class Bug(SQLBase):
                 for pillar in self.affected_pillars))
         existing_links = set([
             (apa.abstract_artifact, apa.policy)
-            for apa in apasource.findByArtifact[artifact]])
+            for apa in apasource.findByArtifact([artifact])])
         apasource.create(wanted_links - existing_links)
         apasource.delete(existing_links - wanted_links)
 

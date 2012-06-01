@@ -1151,7 +1151,8 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
             product=product, information_type=InformationType.USERDATA)
-        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([bug])
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
 
         self.assertPoliciesForBug([], bug)
         removeSecurityProxy(bug).updateAccessPolicyArtifacts()
@@ -1196,6 +1197,8 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
             product=product, information_type=InformationType.USERDATA)
         for target in targets[1:]:
             self.factory.makeBugTask(bug, target=target)
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
 
         self.assertPoliciesForBug([], bug)
         removeSecurityProxy(bug).updateAccessPolicyArtifacts()
