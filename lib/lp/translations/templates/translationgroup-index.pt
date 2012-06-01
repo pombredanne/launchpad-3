@@ -84,7 +84,7 @@
                   </span>
                   <tal:notadmin
                      condition="not:view/user_can_edit">
-                    &nbsp;<a tal:condition="
+                    <a tal:condition="
                          translator/context/required:launchpad.Edit"
                          tal:attributes="href string:${translator/code}/+edit"
                          class="edit sprite"></a>

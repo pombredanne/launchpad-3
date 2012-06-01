@@ -4,7 +4,6 @@
                        class view/tag_class">
   <div class="clearfix">
     <div class="edit-controls" tal:condition="view/can_write">
-      &nbsp;
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
          class="yui3-editable_text-trigger sprite edit"></a>

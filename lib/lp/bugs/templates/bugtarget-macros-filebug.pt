@@ -387,9 +387,8 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  &nbsp;&nbsp;
                   <a class="sprite new-window view-bug-link" target="_blank"
-		      tal:attributes="href bug/fmt:url"
+                  tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>
               </div>
