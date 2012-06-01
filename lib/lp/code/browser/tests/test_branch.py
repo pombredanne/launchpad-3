@@ -934,7 +934,7 @@ class TestBranchEditView(TestCaseWithFactory):
             self.assertRaises(LookupError, browser.getControl, "Proprietary")
 
     def test_can_not_change_privacy_of_stacked_on_private(self):
-        # The privacy field is not shown if the branch is stacked on a 
+        # The privacy field is not shown if the branch is stacked on a
         # private branch.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
