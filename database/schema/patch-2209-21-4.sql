@@ -108,4 +108,3 @@ CREATE OR REPLACE FUNCTION update_database_disk_utilization() RETURNS void
 $$;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 21, 4);
-
