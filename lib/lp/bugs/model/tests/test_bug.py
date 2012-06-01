@@ -1130,7 +1130,7 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
 
         self.assertTrue(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
-        bug.updateAccessPolicyArtifacts()
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
         self.assertFalse(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
 
@@ -1142,7 +1142,7 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
 
         self.assertFalse(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
-        bug.updateAccessPolicyArtifacts()
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
         self.assertTrue(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
 
@@ -1154,9 +1154,8 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
         getUtility(IAccessPolicyArtifactSource).deleteByArtifact([bug])
 
         self.assertPoliciesForBug([], get_policies_for_bug(bug))
-        bug.updateAccessPolicyArtifacts()
-        self.assertPoliciesForBug(
-            [(product, InformationType.USERDATA)], get_policies_for_bug(bug))
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
 
     def test_removes_extra_accesspolicyartifacts(self):
         # updateAccessPolicyArtifacts removes excess links.
@@ -1172,10 +1171,10 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
             [(artifact, other_policy)])
 
         self.assertPoliciesForBug(
-            [(product, InformationType.USERDATA)
+            [(product, InformationType.USERDATA),
              (other_product, InformationType.USERDATA)],
-            get_policies_for_bug(bug))
-        bug.updateAccessPolicyArtifacts()
+            bug)
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
         self.assertPoliciesForBug(
             [(product, InformationType.USERDATA)], get_policies_for_bug(bug))
 
@@ -1200,7 +1199,7 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
             self.factory.makeBugTask(bug, target=target)
 
         self.assertPoliciesForBug([], get_policies_for_bug(bug))
-        bug.updateAccessPolicyArtifacts()
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
         self.assertPoliciesForBug(
             [(pillar, InformationType.USERDATA) for pillar in pillars],
-            get_policies_for_bug(bug))
+            bug)
