@@ -31,10 +31,11 @@ Adding a private branch that is only visible by No Privileges Person
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
-    >>> branch = factory.makeBranch(
-    ...     product=landscape, branch_type=BranchType.HOSTED,
-    ...     name='testing-branch', owner=no_priv,
-    ...     information_type=InformationType.USERDATA)
+    >>> branch = factory.makePersonalBranch(
+    ...     branch_type=BranchType.HOSTED, name='testing-branch',
+    ...     owner=no_priv, information_type=InformationType.USERDATA)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(branch).product = landscape
     >>> flush_database_updates()
     >>> logout()
 
