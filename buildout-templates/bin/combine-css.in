@@ -40,7 +40,7 @@ names = [
     'build/ordering/assets/ordering-core.css',
     'build/gallery-accordion/assets/gallery-accordion-core.css',
     'build/gallery-accordion/assets/skins/sam/gallery-accordion-skin.css',
-    'build/sprite.css',
+    'build/inline-sprites-1.css',
     # Include our main stylesheets at the end so they
     # take precedence over the others.
     'css/base.css',
