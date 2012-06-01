@@ -978,7 +978,8 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         # With the show_information_type_in_branch_ui feature flag on, the
         # privacy portlet shows the information_type.
         owner = self.factory.makePerson()
-        branch = self.factory.makeBranch(private=True, owner=owner)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         feature_flag = {
             'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
         with FeatureFixture(feature_flag):
@@ -998,7 +999,8 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         # display_userdata_as_private, the information_type is shown with
         # User Data masked as Private.
         owner = self.factory.makePerson()
-        branch = self.factory.makeBranch(private=True, owner=owner)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         feature_flags = {
             'disclosure.show_information_type_in_branch_ui.enabled': 'on',
             'disclosure.display_userdata_as_private.enabled': 'on'}
