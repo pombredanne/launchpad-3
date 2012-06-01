@@ -29,6 +29,10 @@
     background-image: url(/@@/question.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.faq {
+    background-image: url(/@@/faq.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .download-icon {
     background-image: url(/@@/download.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
