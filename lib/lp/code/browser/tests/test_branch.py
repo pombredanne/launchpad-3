@@ -949,6 +949,7 @@ class TestBranchEditView(TestCaseWithFactory):
         self.assertRaises(
             LookupError, browser.getControl, "Keep branch confidential")
 
+
 class TestBranchUpgradeView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
