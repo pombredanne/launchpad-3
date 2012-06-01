@@ -1153,7 +1153,7 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
             product=product, information_type=InformationType.USERDATA)
         getUtility(IAccessPolicyArtifactSource).deleteByArtifact([bug])
 
-        self.assertPoliciesForBug([], get_policies_for_bug(bug))
+        self.assertPoliciesForBug([], bug)
         removeSecurityProxy(bug).updateAccessPolicyArtifacts()
         self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
 
@@ -1175,8 +1175,7 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
              (other_product, InformationType.USERDATA)],
             bug)
         removeSecurityProxy(bug).updateAccessPolicyArtifacts()
-        self.assertPoliciesForBug(
-            [(product, InformationType.USERDATA)], get_policies_for_bug(bug))
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
 
     def test_all_target_types_work(self):
         # updateAccessPolicyArtifacts gets the pillar from any task
@@ -1198,8 +1197,7 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
         for target in targets[1:]:
             self.factory.makeBugTask(bug, target=target)
 
-        self.assertPoliciesForBug([], get_policies_for_bug(bug))
+        self.assertPoliciesForBug([], bug)
         removeSecurityProxy(bug).updateAccessPolicyArtifacts()
         self.assertPoliciesForBug(
-            [(pillar, InformationType.USERDATA) for pillar in pillars],
-            bug)
+            [(pillar, InformationType.USERDATA) for pillar in pillars], bug)
