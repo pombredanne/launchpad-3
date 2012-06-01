@@ -26,6 +26,7 @@ from storm.properties import (
     Int,
     )
 from storm.references import Reference
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -176,7 +177,7 @@ class AccessPolicy(StormBase):
         """See `IAccessPolicySource`."""
         pillars_and_types = list(pillars_and_types)
         if len(pillars_and_types) == 0:
-            return []
+            return EmptyResultSet()
         return IStore(cls).find(
             cls,
             Or(*(
@@ -225,6 +226,9 @@ class AccessPolicyArtifact(StormBase):
     @classmethod
     def find(cls, links):
         """See `IAccessArtifactGrantSource`."""
+        links = list(links)
+        if len(links) == 0:
+            return EmptyResultSet()
         return IStore(cls).find(
             cls,
             Or(*(
