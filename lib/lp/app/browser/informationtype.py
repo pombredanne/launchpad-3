@@ -29,6 +29,8 @@ class InformationTypePortletMixin:
             type.title for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['show_information_type_in_ui'] = (
             self.show_information_type_in_ui)
+        cache.objects['show_userdata_as_private'] = (
+            self.show_userdata_as_private)
 
     @property
     def show_information_type_in_ui(self):

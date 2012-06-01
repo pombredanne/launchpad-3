@@ -8,23 +8,15 @@
 
 __metaclass__ = type
 
-__all__ = ['process_debian_installer']
+__all__ = [
+    'DebianInstallerUpload',
+    'process_debian_installer',
+    ]
 
 import os
 import shutil
 
-from lp.archivepublisher.customupload import (
-    CustomUpload,
-    CustomUploadError,
-    )
-
-
-class DebianInstallerAlreadyExists(CustomUploadError):
-    """A build for this type, architecture, and version already exists."""
-    def __init__(self, arch, version):
-        message = ('installer build %s for architecture %s already exists' %
-                   (arch, version))
-        CustomUploadError.__init__(self, message)
+from lp.archivepublisher.customupload import CustomUpload
 
 
 class DebianInstallerUpload(CustomUpload):
@@ -46,20 +38,24 @@ class DebianInstallerUpload(CustomUpload):
 
     A 'current' symbolic link points to the most recent version.
     """
-    def __init__(self, archive_root, tarfile_path, distroseries):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
+    custom_type = "installer"
 
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         tarfile_base = os.path.basename(tarfile_path)
-        components = tarfile_base.split('_')
-        self.version = components[1]
-        self.arch = components[2].split('.')[0]
+        _, self.version, self.arch = tarfile_base.split("_")
+        self.arch = self.arch.split(".")[0]
 
         self.targetdir = os.path.join(
             archive_root, 'dists', distroseries, 'main',
             'installer-%s' % self.arch)
 
-        if os.path.exists(os.path.join(self.targetdir, self.version)):
-            raise DebianInstallerAlreadyExists(self.arch, self.version)
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
+        try:
+            _, _, arch = os.path.basename(tarfile_path).split("_")
+            return arch.split(".")[0]
+        except ValueError:
+            return None
 
     def extract(self):
         CustomUpload.extract(self)
@@ -81,5 +77,5 @@ def process_debian_installer(archive_root, tarfile_path, distroseries):
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = DebianInstallerUpload(archive_root, tarfile_path, distroseries)
-    upload.process()
+    upload = DebianInstallerUpload()
+    upload.process(archive_root, tarfile_path, distroseries)

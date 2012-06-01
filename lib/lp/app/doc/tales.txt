@@ -212,19 +212,19 @@ But the 'failed to build' build is 16x14:
 All objects can be represented as a boolean icon.
 
     >>> print test_tales("context/image:boolean", context=None)
-    <span class="sprite no">&nbsp;<span
+    <span class="sprite no"><span
       class="invisible-link">no</span></span>
 
     >>> print test_tales("context/image:boolean", context=False)
-    <span class="sprite no">&nbsp;<span
+    <span class="sprite no"><span
       class="invisible-link">no</span></span>
 
     >>> print test_tales("context/image:boolean", context=object())
-    <span class="sprite yes">&nbsp;<span
+    <span class="sprite yes"><span
       class="invisible-link">yes</span></span>
 
     >>> print test_tales("context/image:boolean", context=True)
-    <span class="sprite yes">&nbsp;<span
+    <span class="sprite yes"><span
       class="invisible-link">yes</span></span>
 
 

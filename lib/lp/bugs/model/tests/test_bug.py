@@ -456,7 +456,8 @@ class TestBug(TestCaseWithFactory):
         bug = self.factory.makeBug()
         private_branch_owner = self.factory.makePerson()
         private_branch = self.factory.makeBranch(
-            owner=private_branch_owner, private=True)
+            owner=private_branch_owner,
+            information_type=InformationType.USERDATA)
         with person_logged_in(private_branch_owner):
             bug.linkBranch(private_branch, private_branch.registrant)
         public_branch_owner = self.factory.makePerson()

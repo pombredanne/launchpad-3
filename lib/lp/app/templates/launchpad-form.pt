@@ -106,9 +106,8 @@
         <input tal:replace="structure widget" />
         <tal:help-link condition="widget_help_link">
           <a tal:attributes="href widget_help_link"
-             target="help" class="sprite maybe">
-            &nbsp;<span class="invisible-link">(?)</span>
-          </a>
+             target="help"
+             class="sprite maybe"><span class="invisible-link">(?)</span></a>
         </tal:help-link>
       </div>
       <div class="message" tal:condition="error"
@@ -128,9 +127,8 @@
       </tal:label>
       <tal:help-link condition="widget_help_link">
         <a tal:attributes="href widget_help_link"
-           target="help" class="sprite maybe">
-          &nbsp;<span class="invisible-link">(?)</span>
-        </a>
+           target="help"
+           class="sprite maybe"><span class="invisible-link">(?)</span></a>
       </tal:help-link>
       <div tal:condition="error" tal:content="structure error"
            class="message">Error message</div>
@@ -148,9 +146,8 @@
              tal:content="widget/label">Label</label>
       <tal:help-link condition="widget_help_link">
         <a tal:attributes="href widget_help_link"
-           target="help" class="sprite maybe">
-          &nbsp;<span class="invisible-link">(?)</span>
-        </a>
+           target="help"
+           class="sprite maybe"><span class="invisible-link">(?)</span></a>
       </tal:help-link>
       <div tal:condition="error" tal:content="structure error"
            class="message">Error message</div>

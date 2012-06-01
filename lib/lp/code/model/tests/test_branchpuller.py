@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the branch puller model code."""
@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchpuller import IBranchPuller
+from lp.registry.enums import InformationType
 from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     login_person,
@@ -218,7 +219,8 @@ class AcquireBranchToPullTests:
         # If there is a private branch that needs mirroring,
         # acquireBranchToPull returns that.
         branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.MIRRORED, private=True)
+            branch_type=BranchType.MIRRORED,
+            information_type=InformationType.USERDATA)
         removeSecurityProxy(branch).requestMirror()
         self.assertBranchIsAcquired(branch)
 

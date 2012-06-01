@@ -186,7 +186,7 @@
           </p>
           <div>
             <input type="submit" name="import" value="Import Key"/>
-            or&nbsp; <a tal:attributes="href view/cancel_url">Cancel</a>
+            or&nbsp;<a tal:attributes="href view/cancel_url">Cancel</a>
           </div>
 
       </form>

@@ -151,6 +151,7 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script id="base-layout-load-scripts" type="text/javascript">
+        //<![CDATA[
         LPJS.use('base', 'node', 'console', 'event',
             'oop', 'lp', 'lp.app.banner.privacy',
             'lp.app.banner.beta', 'lp.app.foldables','lp.app.sorttable',
@@ -163,6 +164,9 @@
                 if (Y.one(document.body).hasClass('private')) {
                     banner = Y.lp.app.banner.privacy.getPrivacyBanner();
                     banner.show();
+                }
+                if (Y.UA.webkit > 0 && Y.UA.webkit < 533) {
+                    Y.one(document.body).addClass('old-webkit');
                 }
                 Y.lp.app.banner.beta.show_beta_if_needed();
                 Y.lp.app.sorttable.SortTable.init();
@@ -184,6 +188,7 @@
                   window.location = e.new_value;
             });
         });
+        //]]>
     </script>
     <script id="base-helper-functions" type="text/javascript">
          //<![CDATA[

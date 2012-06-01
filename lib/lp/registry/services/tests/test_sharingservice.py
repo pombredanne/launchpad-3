@@ -43,7 +43,7 @@ from lp.testing import (
     )
 from lp.testing.layers import (
     AppServerLayer,
-    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
@@ -58,7 +58,7 @@ DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 class TestSharingService(TestCaseWithFactory):
     """Tests for the SharingService."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestSharingService, self).setUp()
@@ -68,9 +68,15 @@ class TestSharingService(TestCaseWithFactory):
                         shared_artifact_types):
         # Unpack a sharee into its attributes and add in permissions.
         request = get_current_web_service_request()
+        sprite_css = 'sprite ' + ('team' if sharee.is_team else 'person')
+        if sharee.icon:
+            icon_url = sharee.icon.getURL()
+        else:
+            icon_url = None
         sharee_data = {
             'name': sharee.name,
-            'meta': 'team' if sharee.is_team else 'person',
+            'icon_url': icon_url,
+            'sprite_css': sprite_css,
             'display_name': sharee.displayname,
             'self_link': absoluteURL(sharee, request),
             'permissions': {}}
@@ -194,6 +200,24 @@ class TestSharingService(TestCaseWithFactory):
             [(policy1.type, SharingPermission.ALL)], [])
         self.assertContentEqual([expected_data], sharees)
 
+    def test_jsonShareeData_with_icon(self):
+        # jsonShareeData returns the expected data for a grantee with has an
+        # icon.
+        product = self.factory.makeProduct()
+        [policy1, policy2] = getUtility(IAccessPolicySource).findByPillar(
+            [product])
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        grantee = self.factory.makeTeam(icon=icon)
+        with FeatureFixture(DETAILS_FLAG):
+            sharees = self.service.jsonShareeData(
+                [(grantee, {
+                    policy1: SharingPermission.ALL}, [])])
+        expected_data = self._makeShareeData(
+            grantee,
+            [(policy1.type, SharingPermission.ALL)], [])
+        self.assertContentEqual([expected_data], sharees)
+
     def _assert_getPillarShareeData(self, pillar):
         # getPillarShareeData returns the expected data.
         access_policy = self.factory.makeAccessPolicy(
@@ -233,7 +257,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(driver)
         self._assert_getPillarShareeData(distro)
 
-    def _assert_QueryCount(self, func):
+    def _assert_QueryCount(self, func, count):
         """ getPillarSharees[Data] only should use 3 queries.
 
         1. load access policies for pillar
@@ -265,20 +289,20 @@ class TestSharingService(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             sharees = list(func(product))
         self.assertEqual(10, len(sharees))
-        self.assertThat(recorder, HasQueryCount(Equals(3)))
+        self.assertThat(recorder, HasQueryCount(Equals(count)))
         # Make some more grants and check again.
         for x in range(5):
             makeGrants()
         with StormStatementRecorder() as recorder:
             sharees = list(func(product))
         self.assertEqual(20, len(sharees))
-        self.assertThat(recorder, HasQueryCount(Equals(3)))
+        self.assertThat(recorder, HasQueryCount(Equals(count)))
 
     def test_getPillarShareesQueryCount(self):
-        self._assert_QueryCount(self.service.getPillarSharees)
+        self._assert_QueryCount(self.service.getPillarSharees, 3)
 
     def test_getPillarShareeDataQueryCount(self):
-        self._assert_QueryCount(self.service.getPillarShareeData)
+        self._assert_QueryCount(self.service.getPillarShareeData, 4)
 
     def _assert_getPillarShareeDataUnauthorized(self, pillar):
         # getPillarShareeData raises an Unauthorized exception if the user is
@@ -661,7 +685,8 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
         branch = self.factory.makeBranch(
-            product=product, owner=owner, private=True)
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
         self._assert_revokeAccessGrants(product, None, [branch])
 
     def _assert_revokeAccessGrantsUnauthorized(self):
@@ -717,7 +742,8 @@ class TestSharingService(TestCaseWithFactory):
         branches = []
         for x in range(0, 10):
             branch = self.factory.makeBranch(
-                product=product, owner=owner, private=True)
+                product=product, owner=owner,
+                information_type=InformationType.USERDATA)
             branches.append(branch)
 
         # Grant access to grantee as well as the person who will be doing the
