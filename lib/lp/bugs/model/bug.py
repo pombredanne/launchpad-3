@@ -159,9 +159,11 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.enums import (
     InformationType,
+    PUBLIC_INFORMATION_TYPES,
     PRIVATE_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
+from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -1780,6 +1782,7 @@ class Bug(SQLBase):
                 self.subscribe(s, who)
 
         self.information_type = information_type
+        self.updateAccessPolicyArtifacts()
         self.updateHeat()
         return True
 
@@ -2158,6 +2161,12 @@ class Bug(SQLBase):
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
         store.flush()
+
+    def updateAccessPolicyArtifacts(self):
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            getUtility(IAccessArtifactSource).delete([self])
+            return
+        [artifact] = getUtility(IAccessArtifactSource).ensure([self])
 
     def _attachments_query(self):
         """Helper for the attachments* properties."""
@@ -2728,6 +2737,8 @@ class BugSet:
             bug_task.transitionToImportance(params.importance, params.owner)
         if params.milestone:
             bug_task.transitionToMilestone(params.milestone, params.owner)
+
+        bug.updateAccessPolicyArtifacts()
 
         # Tell everyone.
         if notify_event:
