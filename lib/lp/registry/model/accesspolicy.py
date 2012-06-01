@@ -174,6 +174,7 @@ class AccessPolicy(StormBase):
     @classmethod
     def find(cls, pillars_and_types):
         """See `IAccessPolicySource`."""
+        pillars_and_types = list(pillars_and_types)
         if len(pillars_and_types) == 0:
             return []
         return IStore(cls).find(

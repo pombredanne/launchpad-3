@@ -163,7 +163,11 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
-from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessPolicySource,
+    IAccessPolicyArtifactSource,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -2164,9 +2168,25 @@ class Bug(SQLBase):
 
     def updateAccessPolicyArtifacts(self):
         if self.information_type in PUBLIC_INFORMATION_TYPES:
+            # If it's public we can delete all the access information.
+            # IAccessArtifactSource handles the cascade.
             getUtility(IAccessArtifactSource).delete([self])
             return
         [artifact] = getUtility(IAccessArtifactSource).ensure([self])
+
+        # Now determine the existing and desired links, and make them
+        # match.
+        apasource = getUtility(IAccessPolicyArtifactSource)
+        wanted_links = set(
+            (artifact, policy) for policy in
+            getUtility(IAccessPolicySource).find(
+                (pillar, self.information_type)
+                for pillar in self.affected_pillars))
+        existing_links = set([
+            (apa.abstract_artifact, apa.policy)
+            for apa in apasource.findByArtifact[artifact]])
+        apasource.create(wanted_links - existing_links)
+        apasource.delete(existing_links - wanted_links)
 
     def _attachments_query(self):
         """Helper for the attachments* properties."""
