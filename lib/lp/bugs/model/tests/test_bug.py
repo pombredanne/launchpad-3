@@ -1122,7 +1122,31 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
             getUtility(IAccessPolicySource).find(policy_tuples),
             get_policies_for_bug(bug))
 
-    def test_adds_missing(self):
+    def test_creates_missing_accessartifact(self):
+        # updateAccessPolicyArtifacts creates an AccessArtifact for a
+        # private bug if there isn't one already.
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
+        getUtility(IAccessArtifactSource).delete([bug])
+
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        bug.updateAccessPolicyArtifacts()
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_removes_extra_accessartifact(self):
+        # updateAccessPolicyArtifacts creates an AccessArtifact for a
+        # private bug if there isn't one already.
+        bug = self.factory.makeBug(information_type=InformationType.PUBLIC)
+        getUtility(IAccessArtifactSource).ensure([bug])
+
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        bug.updateAccessPolicyArtifacts()
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_adds_missing_accesspolicyartifacts(self):
         # updateAccessPolicyArtifacts adds missing links.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
@@ -1134,7 +1158,7 @@ class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
         self.assertPoliciesForBug(
             [(product, InformationType.USERDATA)], get_policies_for_bug(bug))
 
-    def test_removes_extra(self):
+    def test_removes_extra_accesspolicyartifacts(self):
         # updateAccessPolicyArtifacts removes excess links.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
