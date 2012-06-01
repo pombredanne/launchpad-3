@@ -117,6 +117,22 @@
     background-image: url(/@@/mail.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.notification-private {
+    background-image: url(/@@/notification-private.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.notification-close {
+    background-image: url(/@@/notification-close.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.order-ascending {
+    background-image: url(/@@/order-ascending.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.order-descending {
+    background-image: url(/@@/order-descending.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .cve {
     background-image: url(/@@/cve.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -362,10 +378,6 @@
     background-image: url(/@@/tour-icon); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.large-branch {
-    background-image: url(/@@/branch-large.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
 .large-warning {
     background-image: url(/@@/warning-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -376,21 +388,5 @@
     }
 .large-info {
     background-image: url(/@@/info-large.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.notification-private {
-    background-image: url(/@@/notification-private.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.notification-close {
-    background-image: url(/@@/notification-close.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.order-ascending {
-    background-image: url(/@@/order-ascending.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.order-descending {
-    background-image: url(/@@/order-descending.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
