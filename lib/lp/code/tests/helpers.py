@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -38,6 +38,7 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.sqlbase import cursor
@@ -266,7 +267,12 @@ def make_project_branch_with_revisions(factory, date_generator, product=None,
     """Make a new branch with revisions."""
     if revision_count is None:
         revision_count = 5
-    branch = factory.makeProductBranch(product=product, private=private)
+    if private:
+        information_type = InformationType.USERDATA
+    else:
+        information_type = InformationType.PUBLIC
+    branch = factory.makeProductBranch(
+        product=product, information_type=information_type)
     naked_branch = removeSecurityProxy(branch)
     factory.makeRevisionsForBranch(
         naked_branch, count=revision_count, date_generator=date_generator)

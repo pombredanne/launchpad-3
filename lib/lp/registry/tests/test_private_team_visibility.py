@@ -177,8 +177,12 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         the branch (and hence team) to be visible.
         """
         login_person(self.priv_owner)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
         private_team_branch = self.factory.makeBranch(
-            owner=self.priv_team, private=private)
+            owner=self.priv_team, information_type=information_type)
         some_person = self.factory.makePerson()
         # All users can see public branches, so in that case, the team is
         # now visible, else team is still not visible.
@@ -202,8 +206,12 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         the private team will be granted limited view permission on the team.
         """
         branch_owner = self.factory.makePerson()
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
         private_branch = self.factory.makeBranch(
-            owner=branch_owner, private=private)
+            owner=branch_owner, information_type=information_type)
         some_person = self.factory.makePerson()
         # Initially no visibility.
         self._check_permission(some_person, False)
@@ -236,8 +244,13 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # Make the merge proposal.
         login_person(self.priv_owner)
         product = self.factory.makeProduct()
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
         target_branch = self.factory.makeBranch(
-            owner=self.priv_owner, private=private, product=product)
+            owner=self.priv_owner, product=product,
+            information_type=information_type)
         source_branch = self.factory.makeBranch(
             owner=self.priv_owner, product=product)
         self.factory.makeBranchMergeProposal(

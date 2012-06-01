@@ -277,8 +277,10 @@ Imports are not mentioned until a series branch has been set.
 If the branch is private, though the page pretends to non-privileged users
 that no synchronization has been set up.
 
+    >>> from lp.registry.enums import InformationType
     >>> login('foo.bar@canonical.com')
-    >>> private_branch = factory.makeBranch(product=frobnicator, private=True)
+    >>> private_branch = factory.makeBranch(
+    ...     product=frobnicator, information_type=InformationType.USERDATA)
     >>> frobnicator_trunk.translations_branch = private_branch
     >>> logout()
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
@@ -159,7 +159,8 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         for i in range(branch_number):
             branches.append(
                 self.factory.makeStackedOnBranchChain(
-                    owner=person, private=True, depth=depth))
+                    owner=person, depth=depth,
+                    information_type=InformationType.USERDATA))
         with person_logged_in(person):
             all_branches = (
                 GenericBranchCollection.preloadVisibleStackedOnBranches(
@@ -173,8 +174,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branches = []
         for i in range(branch_number):
             branches.append(
-                self.factory.makeStackedOnBranchChain(
-                    private=False, depth=depth))
+                self.factory.makeStackedOnBranchChain(depth=depth))
         all_branches = (
             GenericBranchCollection.preloadVisibleStackedOnBranches(branches))
         self.assertEqual(len(all_branches), branch_number * depth)
@@ -188,7 +188,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         for i in range(branch_number):
             branches.append(
                 self.factory.makeStackedOnBranchChain(
-                    owner=person, private=False, depth=depth))
+                    owner=person, depth=depth))
         with person_logged_in(person):
             all_branches = (
                 GenericBranchCollection.preloadVisibleStackedOnBranches(
@@ -222,7 +222,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # IBranchCollection.count() returns the number of branches that
         # getBranches() yields, even when the visibleByUser filter is applied.
         branch = self.factory.makeAnyBranch()
-        self.factory.makeAnyBranch(private=True)
+        self.factory.makeAnyBranch(information_type=InformationType.USERDATA)
         collection = self.all_branches.visibleByUser(branch.owner)
         self.assertEqual(1, collection.getBranches().count())
         self.assertEqual(1, len(list(collection.getBranches())))
@@ -588,13 +588,13 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # We make private branch by stacking a public branch on top of a
         # private one.
         self.private_stacked_on_branch = self.factory.makeAnyBranch(
-            private=True)
+            information_type=InformationType.USERDATA)
         self.public_stacked_on_branch = self.factory.makeAnyBranch(
             stacked_on=self.private_stacked_on_branch)
         self.private_branch1 = self.factory.makeAnyBranch(
             stacked_on=self.public_stacked_on_branch, name='private1')
         self.private_branch2 = self.factory.makeAnyBranch(
-            private=True, name='private2')
+            name='private2', information_type=InformationType.USERDATA)
         self.all_branches = getUtility(IAllBranches)
 
     def test_all_branches(self):
@@ -685,7 +685,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # branch, even if it's private.
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
-        private_branch = self.factory.makeAnyBranch(private=True)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         # Subscribe the team.
         removeSecurityProxy(private_branch).subscribe(
             team, BranchSubscriptionNotificationLevel.NOEMAIL,
@@ -973,7 +974,8 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         # Don't include proposals if the target branch is private for
         # anonymous views.
         reviewer = self.factory.makePerson()
-        target_branch = self.factory.makeAnyBranch(private=True)
+        target_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch)
         proposal.nominateReviewer(reviewer, reviewer)
@@ -987,7 +989,7 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         reviewer = self.factory.makePerson()
         product = self.factory.makeProduct()
         source_branch = self.factory.makeProductBranch(
-            product=product, private=True)
+            product=product, information_type=InformationType.USERDATA)
         target_branch = self.factory.makeProductBranch(product=product)
         proposal = self.factory.makeBranchMergeProposal(
             source_branch=source_branch, target_branch=target_branch)

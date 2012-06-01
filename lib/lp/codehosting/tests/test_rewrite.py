@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the dynamic RewriteMap used to serve branches over HTTP."""
@@ -16,6 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.interfaces.codehosting import branch_id_alias
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
+from lp.registry.enums import InformationType
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
@@ -85,7 +86,8 @@ class TestBranchRewriter(TestCaseWithFactory):
         # rewritten to codebrowse, which will then redirect them to https and
         # handle them there.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         unique_name = removeSecurityProxy(branch).unique_name
         transaction.commit()
         output = [
@@ -102,9 +104,9 @@ class TestBranchRewriter(TestCaseWithFactory):
         # branches are served from by ID if they are public.
         rewriter = self.makeRewriter()
         branches = [
-            self.factory.makeProductBranch(private=False),
-            self.factory.makePersonalBranch(private=False),
-            self.factory.makePackageBranch(private=False)]
+            self.factory.makeProductBranch(),
+            self.factory.makePersonalBranch(),
+            self.factory.makePackageBranch()]
         transaction.commit()
         output = [
             rewriter.rewriteLine(
@@ -120,7 +122,8 @@ class TestBranchRewriter(TestCaseWithFactory):
         # All requests for /+branch-id/$id/... for private branches return
         # 'NULL'.  This is translated by apache to a 404.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         path = branch_id_alias(removeSecurityProxy(branch))
         transaction.commit()
         output = [

@@ -88,7 +88,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
 
         if with_branch and self.pillar_type == 'product':
             branch = self.factory.makeBranch(
-                product=self.pillar, owner=self.pillar.owner, private=True)
+                product=self.pillar, owner=self.pillar.owner,
+                information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
 

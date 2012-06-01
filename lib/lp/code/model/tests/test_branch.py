@@ -1125,7 +1125,8 @@ class TestBzrIdentity(TestCaseWithFactory):
 
     def test_private_linked_to_product(self):
         # Private branches also have a short lp:url.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         with celebrity_logged_in('admin'):
             product = branch.product
             ICanHasLinkedBranch(product).setBranch(branch)
@@ -1881,7 +1882,8 @@ class TestLandingCandidates(TestCaseWithFactory):
 
     def test_private_branch(self):
         """landing_candidates works for private branches."""
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         with person_logged_in(removeSecurityProxy(branch).owner):
             mp = self.factory.makeBranchMergeProposal(target_branch=branch)
             self.assertContentEqual([mp], branch.landing_candidates)
@@ -2162,7 +2164,8 @@ class TestCodebrowse(TestCaseWithFactory):
     def test_private(self):
         # The codebrowse URL for a private branch is a 'https' url.
         owner = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(private=True, owner=owner)
+        branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         login_person(owner)
         self.assertEqual(
             'https://bazaar.launchpad.dev/' + branch.unique_name,
@@ -2334,9 +2337,9 @@ class TestBranchPrivacy(TestCaseWithFactory):
 
     def test_public_stacked_on_private_is_private(self):
         # A public branch stacked on a private branch is private.
-        stacked_on = self.factory.makeBranch(private=True)
-        branch = self.factory.makeBranch(
-            stacked_on=stacked_on, private=False)
+        stacked_on = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(stacked_on=stacked_on)
         self.assertTrue(branch.private)
         self.assertEqual(
             stacked_on.information_type, branch.information_type)
@@ -2345,8 +2348,9 @@ class TestBranchPrivacy(TestCaseWithFactory):
 
     def test_private_stacked_on_public_is_private(self):
         # A private branch stacked on a public branch is private.
-        stacked_on = self.factory.makeBranch(private=False)
-        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
+        stacked_on = self.factory.makeBranch()
+        branch = self.factory.makeBranch(
+            stacked_on=stacked_on, information_type=InformationType.USERDATA)
         self.assertTrue(branch.private)
         self.assertNotEqual(
             stacked_on.information_type, branch.information_type)
@@ -2412,7 +2416,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_private_to_private(self):
         # Setting a private branch to be private is a no-op.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         self.assertTrue(branch.private)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
@@ -2422,7 +2427,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
     def test_private_to_public_allowed(self):
         # If the namespace policy allows public branches, then changing from
         # private to public is allowed.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
         self.assertFalse(removeSecurityProxy(branch).transitively_private)
@@ -2432,7 +2438,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
         # to change the branch to be public raises BranchCannotBePublic.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
@@ -2445,7 +2452,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
     def test_cannot_transition_with_private_stacked_on(self):
         # If a public branch is stacked on a private branch, it can not
         # change its information_type to public.
-        stacked_on = self.factory.makeBranch(private=True)
+        stacked_on = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         branch = self.factory.makeBranch(stacked_on=stacked_on)
         self.assertRaises(
             BranchCannotChangeInformationType,
@@ -2456,7 +2464,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         # If a private branch is stacked on a public branch, it can change
         # its information_type.
         stacked_on = self.factory.makeBranch()
-        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
+        branch = self.factory.makeBranch(
+            stacked_on=stacked_on, information_type=InformationType.USERDATA)
         branch.transitionToInformationType(
             InformationType.UNEMBARGOEDSECURITY, branch.owner)
         self.assertEqual(
