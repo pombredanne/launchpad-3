@@ -33,11 +33,7 @@
     background-image: url(/@@/faq.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.download-icon {
-    background-image: url(/@@/download.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.download {
+.download, .download-icon {
     background-image: url(/@@/download.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
@@ -201,11 +197,7 @@
     background-image: url(/@@/person-inactive.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.undecided {
-    background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.maybe {
+.maybe, .undecided {
     background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
