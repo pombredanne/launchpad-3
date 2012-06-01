@@ -231,6 +231,10 @@ class AccessPolicyArtifact(StormBase):
                 for (artifact, policy) in links)))
 
     @classmethod
+    def delete(cls, links):
+        cls.find(links).remove()
+
+    @classmethod
     def findByArtifact(cls, artifacts):
         """See `IAccessPolicyArtifactSource`."""
         ids = [artifact.id for artifact in artifacts]
