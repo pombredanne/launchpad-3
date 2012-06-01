@@ -34,10 +34,10 @@ class TestFilterTests(TestCase):
 
     layer = BaseLayer
 
-    def writeFile(self, fd, contents):
+    def writeFile(self, f, contents):
         for line in contents:
-            fd.write(line + NEWLINE)
-        fd.flush()
+            f.write(line + NEWLINE)
+        f.flush()
 
     @staticmethod
     def make_suites():
@@ -71,9 +71,9 @@ class TestFilterTests(TestCase):
         suite = unittest.TestSuite()
         for letter in string.lowercase:
             suite.addTest(FakeTestCase(letter))
-        with tempfile.NamedTemporaryFile() as fd:
-            self.writeFile(fd, testnames)
-            do_filter = filter_tests(fd.name)
+        with tempfile.NamedTemporaryFile() as f:
+            self.writeFile(f, testnames)
+            do_filter = filter_tests(f.name)
             results = do_filter({layername: suite})
         self.assertEqual(1, len(results))
         self.assertIn(layername, results)
@@ -84,9 +84,9 @@ class TestFilterTests(TestCase):
         # Tests must be kept in their layer.
         suite1, suite2 = self.make_suites()
         testnames = ['a', 'b', 'c', 'z', 'y', 'x']
-        with tempfile.NamedTemporaryFile() as fd:
-            self.writeFile(fd, testnames)
-            do_filter = filter_tests(fd.name)
+        with tempfile.NamedTemporaryFile() as f:
+            self.writeFile(f, testnames)
+            do_filter = filter_tests(f.name)
             results = do_filter({'layer1': suite1,
                                  'layer2': suite2})
         self.assertEqual(2, len(results))
@@ -101,9 +101,9 @@ class TestFilterTests(TestCase):
         layername = 'layer-1'
         testnames = ['1', '2', '3']
         suite = self.make_repeated_suite(testnames)
-        with tempfile.NamedTemporaryFile() as fd:
-            self.writeFile(fd, testnames)
-            do_filter = filter_tests(fd.name)
+        with tempfile.NamedTemporaryFile() as f:
+            self.writeFile(f, testnames)
+            do_filter = filter_tests(f.name)
             results = do_filter({layername: suite})
         self.assertEqual(1, len(results))
         self.assertIn(layername, results)
@@ -117,9 +117,9 @@ class TestFilterTests(TestCase):
         testnames = ['a', 'b', 'c']
         suite = self.make_suites()[0]
 
-        with tempfile.NamedTemporaryFile() as fd:
-            self.writeFile(fd, testnames)
-            do_filter = filter_tests(fd.name)
+        with tempfile.NamedTemporaryFile() as f:
+            self.writeFile(f, testnames)
+            do_filter = filter_tests(f.name)
             results = do_filter({'layer1': suite,
                                  'layer2': suite,
                                  'layer3': suite})
@@ -135,9 +135,9 @@ class TestFilterTests(TestCase):
         # If tests have no layer (None) work.
         testnames = ['a', 'b', 'y', 'z']
         suite1, suite2 = self.make_suites()
-        with tempfile.NamedTemporaryFile() as fd:
-            self.writeFile(fd, testnames)
-            do_filter = filter_tests(fd.name)
+        with tempfile.NamedTemporaryFile() as f:
+            self.writeFile(f, testnames)
+            do_filter = filter_tests(f.name)
             results = do_filter({'layer1': suite1,
                                  None: suite2})
         self.assertEqual(2, len(results))
