@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """In-memory doubles of core codehosting objects."""
@@ -50,6 +50,11 @@ from lp.code.model.branchtarget import (
     ProductBranchTarget,
     )
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.errors import InvalidName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
@@ -214,8 +219,8 @@ class FakeBranch(FakeDatabaseObject):
     """Fake branch object."""
 
     def __init__(self, branch_type, name, owner, url=None, product=None,
-                 stacked_on=None, private=False, registrant=None,
-                 distroseries=None, sourcepackagename=None):
+                 stacked_on=None, information_type=InformationType.PUBLIC,
+                 registrant=None, distroseries=None, sourcepackagename=None):
         self.branch_type = branch_type
         self.last_mirror_attempt = None
         self.last_mirrored = None
@@ -228,7 +233,7 @@ class FakeBranch(FakeDatabaseObject):
         self.stacked_on = None
         self.mirror_status_message = None
         self.stacked_on = stacked_on
-        self.private = private
+        self.information_type = information_type
         self.product = product
         self.registrant = registrant
         self._mirrored = False
@@ -395,7 +400,8 @@ class FakeObjectFactory(ObjectFactory):
         self._distroseries_set = distroseries_set
         self._sourcepackagename_set = sourcepackagename_set
 
-    def makeBranch(self, branch_type=None, stacked_on=None, private=False,
+    def makeBranch(self, branch_type=None, stacked_on=None,
+                   information_type=InformationType.PUBLIC,
                    product=DEFAULT_PRODUCT, owner=None, name=None,
                    registrant=None, sourcepackage=None):
         if branch_type is None:
@@ -421,9 +427,9 @@ class FakeObjectFactory(ObjectFactory):
         IBranch['name'].validate(unicode(name))
         branch = FakeBranch(
             branch_type, name=name, owner=owner, url=url,
-            stacked_on=stacked_on, product=product, private=private,
-            registrant=registrant, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
+            stacked_on=stacked_on, product=product,
+            information_type=information_type, registrant=registrant,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
         self._branch_set._add(branch)
         return branch
 
@@ -563,7 +569,8 @@ class FakeCodehosting:
             if default_branch is None:
                 default_branch_name = ''
             elif (branch.branch_type == BranchType.MIRRORED
-                  and default_branch.private):
+                  and default_branch.information_type in
+                  PRIVATE_INFORMATION_TYPES):
                 default_branch_name = ''
             else:
                 default_branch_name = '/' + default_branch.unique_name
@@ -754,8 +761,8 @@ class FakeCodehosting:
         if person_id == LAUNCHPAD_SERVICES:
             return True
         if person_id == LAUNCHPAD_ANONYMOUS:
-            return not branch.private
-        if not branch.private:
+            return branch.information_type in PUBLIC_INFORMATION_TYPES
+        if branch.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         person = self._person_set.get(person_id)
         return person.inTeam(branch.owner)

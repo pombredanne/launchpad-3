@@ -173,7 +173,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
     def test_private_branch(self):
         # If an attempt is made to access a private branch, display an error.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         branch_unique_name = removeSecurityProxy(branch).unique_name
         login(ANONYMOUS)
         requiredMessage = "No such branch: '%s'." % branch_unique_name
@@ -251,7 +252,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # message telling the user there is no linked branch.
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(
-            sourcepackage=sourcepackage, private=True)
+            sourcepackage=sourcepackage,
+            information_type=InformationType.USERDATA)
         distro_package = sourcepackage.distribution_sourcepackage
         registrant = distro_package.distribution.owner
         with person_logged_in(registrant):
@@ -298,7 +300,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_private_branch_for_series(self):
         # If the development focus of a product series is private, display a
         # message telling the user there is no linked branch.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         series = self.factory.makeProductSeries(branch=branch)
         login(ANONYMOUS)
         path = ICanHasLinkedBranch(series).bzr_path
