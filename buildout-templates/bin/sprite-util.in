@@ -27,14 +27,16 @@ else:
         sys.exit(2)
 
 icing = ${buildout:directory/lib/canonical/launchpad/icing|path-repr}
-positioning_file = os.path.join(icing, 'icon-sprites.positioning')
-css_template_file = os.path.join(icing, 'sprite.css.in')
 sprite_groups = [
     ('inline-sprites-1', 100),
+    ('inline-sprites-2', 100),
+    ('block-sprites-1', 300),
     ]
 
 for group_name, margin in sprite_groups:
+    css_template_file = os.path.join(icing, '%s.css.in' % group_name)
     combined_image_file = os.path.join(icing, '%s.png' % group_name)
+    positioning_file = os.path.join(icing, '%s.positioning' % group_name)
     css_file = os.path.join(icing, 'build/%s.css' % group_name)
 
     sprite_util = SpriteUtil(

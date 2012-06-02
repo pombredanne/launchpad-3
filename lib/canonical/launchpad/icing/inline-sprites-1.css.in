@@ -189,10 +189,6 @@
     background-image: url(/@@/blueprint-not.png); /* sprite-ref: inline-sprites-1 */
     background-repeat: no-repeat;
     }
-.rss {
-    background-image: url(/@@/rss.png); /* sprite-ref: inline-sprites-1 */
-    background-repeat: no-repeat;
-    }
 .ubuntu-logo {
     background-image: url(/@@/ubuntu-icon.png); /* sprite-ref: inline-sprites-1 */
     background-repeat: no-repeat;
@@ -305,22 +301,6 @@
     background-image: url(/@@/stop.png); /* sprite-ref: inline-sprites-1 */
     background-repeat: no-repeat;
     }
-.list {
-    background-image: url(/@@/list.png); /* sprite-ref: inline-sprites-1 */
-    background-repeat: no-repeat;
-    }
-.bullet {
-    background-image: url(/@@/bullet.png); /* sprite-ref: inline-sprites-1 */
-    background-repeat: no-repeat;
-    }
-.zoom-in {
-    background-image: url(/@@/zoom-in.png); /* sprite-ref: inline-sprites-1 */
-    background-repeat: no-repeat;
-    }
-.zoom-out {
-    background-image: url(/@@/zoom-out.png); /* sprite-ref: inline-sprites-1 */
-    background-repeat: no-repeat;
-    }
 .architecture {
     background-image: url(/@@/architecture.png); /* sprite-ref: inline-sprites-1 */
     background-repeat: no-repeat;
@@ -374,15 +354,5 @@
     background-image: url(/@@/tour-icon); /* sprite-ref: inline-sprites-1 */
     background-repeat: no-repeat;
     }
-.large-warning {
-    background-image: url(/@@/warning-large.png); /* sprite-ref: inline-sprites-1 */
-    background-repeat: no-repeat;
-    }
-.large-error {
-    background-image: url(/@@/error-large.png); /* sprite-ref: inline-sprites-1 */
-    background-repeat: no-repeat;
-    }
-.large-info {
-    background-image: url(/@@/info-large.png); /* sprite-ref: inline-sprites-1 */
-    background-repeat: no-repeat;
-    }
+
+/* This file/image is full. Add sprites to inline-sprites-1.css.in */

@@ -78,3 +78,10 @@ lib/canonical/launchpad/icing/yui
 callgrind.out.*
 scripts/mlist-sync.py
 ./celerybeat-schedule
+lib/canonical/launchpad/icing/inline-sprites-1.png
+lib/canonical/launchpad/icing/block-sprites-1.png
+lib/canonical/launchpad/icing/block-sprites-1.positioning
+lib/canonical/launchpad/icing/inline-sprites-1.positioning
+lib/canonical/launchpad/icing/inline-sprites-2.positioning
+lib/canonical/launchpad/icing/inline-sprites-2.png
+lib/canonical/launchpad/icing/inline-sprites-2.css.in
