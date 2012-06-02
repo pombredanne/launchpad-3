@@ -28,10 +28,8 @@ else:
 
 icing = ${buildout:directory/lib/canonical/launchpad/icing|path-repr}
 sprite_groups = [
-    'inline-sprites-1',
-    'inline-sprites-2',
-    'block-sprites-1',
-    ]
+    file_name.replace('.css.in', '')
+    for file_name in os.listdir(icing) if file_name.endswith('.css.in')]
 
 for group_name in sprite_groups:
     css_template_file = os.path.join(icing, '%s.css.in' % group_name)
