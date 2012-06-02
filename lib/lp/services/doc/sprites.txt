@@ -82,7 +82,7 @@ is currently zero.
     >>> sprite_util.savePNG(new_png_file.name)
     >>> image = Image.open(new_png_file.name)
     >>> print image.size
-    (32, 87)
+    (14, 55)
 
 The height will increase when the margin is increased.
 
@@ -91,7 +91,7 @@ The height will increase when the margin is increased.
     >>> sprite_util.savePNG(new_png_file.name)
     >>> image = Image.open(new_png_file.name)
     >>> print image.size
-    (32, 587)
+    (14, 455)
 
 
 Positioning File
