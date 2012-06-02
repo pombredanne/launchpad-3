@@ -59,6 +59,10 @@ from lp.bugs.model.bugtasksearch import (
     _build_status_clause,
     _build_tag_search_clause,
     )
+from lp.bugs.model.tests.test_bug import (
+    get_policies_for_bug,
+    LEGACY_ACCESS_TRIGGERS,
+    )
 from lp.bugs.scripts.bugtasktargetnamecaches import (
     BugTaskTargetNameCacheUpdater)
 from lp.bugs.tests.bug import create_old_bug
@@ -101,6 +105,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     EventRecorder,
     feature_flags,
@@ -116,6 +121,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.dbtriggers import triggers_disabled
 from lp.testing.dbuser import (
     dbuser,
     switch_dbuser,
@@ -222,6 +228,27 @@ class TestBugTaskCreation(TestCaseWithFactory):
         self.assertEqual(tasks[0][2], warty)
         self.assertEqual(tasks[1][1], a_distro)
         self.assertEqual(tasks[2][0], evolution)
+
+    def test_accesspolicyartifacts_updated(self):
+        # createManyTasks updates the AccessPolicyArtifacts related
+        # to the bug.
+        new_product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
+
+        # There are also transitional triggers that do this. Disable
+        # them temporarily so we can be sure the application side works.
+        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+            with admin_logged_in():
+                old_product = bug.default_bugtask.product
+                getUtility(IBugTaskSet).createManyTasks(
+                    bug, bug.owner, [new_product])
+
+        expected_policies = getUtility(IAccessPolicySource).find([
+            (new_product, InformationType.USERDATA),
+            (old_product, InformationType.USERDATA),
+            ])
+        self.assertContentEqual(expected_policies, get_policies_for_bug(bug))
 
 
 class TestBugTaskCreationPackageComponent(TestCaseWithFactory):
@@ -2157,6 +2184,34 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         self.assertEqual([bugtask], bug.bugtasks)
         self.assertEqual(bugtask, bug.default_bugtask)
 
+    def test_accesspolicyartifacts_updated(self):
+        # delete() updates the AccessPolicyArtifacts related
+        # to the bug.
+        new_product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            old_product = bug.default_bugtask.product
+            task = getUtility(IBugTaskSet).createTask(
+                bug, bug.owner, new_product)
+
+        expected_policies = getUtility(IAccessPolicySource).find([
+            (old_product, InformationType.USERDATA),
+            (new_product, InformationType.USERDATA),
+            ])
+        self.assertContentEqual(expected_policies, get_policies_for_bug(bug))
+
+        # There are also transitional triggers that do this. Disable
+        # them temporarily so we can be sure the application side works.
+        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+            with admin_logged_in():
+                task.delete()
+
+        expected_policies = getUtility(IAccessPolicySource).find([
+            (old_product, InformationType.USERDATA),
+            ])
+        self.assertContentEqual(expected_policies, get_policies_for_bug(bug))
+
 
 class TestStatusCountsForProductSeries(TestCaseWithFactory):
     """Test BugTaskSet.getStatusCountsForProductSeries()."""
@@ -3217,6 +3272,22 @@ class TestTransitionToTarget(TestCaseWithFactory):
         self.assertEqual(
             new_product.bugtargetdisplayname,
             removeSecurityProxy(task).targetnamecache)
+
+    def test_accesspolicyartifacts_updated(self):
+        # transitionToTarget updates the AccessPolicyArtifacts related
+        # to the bug.
+        new_product = self.factory.makeProduct()
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
+
+        # There are also transitional triggers that do this. Disable
+        # them temporarily so we can be sure the application side works.
+        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+            with admin_logged_in():
+                bug.default_bugtask.transitionToTarget(new_product)
+
+        [expected_policy] = getUtility(IAccessPolicySource).find(
+            [(new_product, InformationType.USERDATA)])
+        self.assertContentEqual([expected_policy], get_policies_for_bug(bug))
 
     def test_matching_sourcepackage_tasks_updated_when_name_changed(self):
         # If the sourcepackagename is changed, it's changed on all tasks
