@@ -28,16 +28,20 @@ else:
 
 icing = ${buildout:directory/lib/canonical/launchpad/icing|path-repr}
 sprite_groups = [
-    ('inline-sprites-1', 100),
-    ('inline-sprites-2', 100),
-    ('block-sprites-1', 300),
+    'inline-sprites-1',
+    'inline-sprites-2',
+    'block-sprites-1',
     ]
 
-for group_name, margin in sprite_groups:
+for group_name in sprite_groups:
     css_template_file = os.path.join(icing, '%s.css.in' % group_name)
     combined_image_file = os.path.join(icing, '%s.png' % group_name)
     positioning_file = os.path.join(icing, '%s.positioning' % group_name)
     css_file = os.path.join(icing, 'build/%s.css' % group_name)
+    if group_name.startswith('block-'):
+        margin = 300
+    else:
+        margin = 100
 
     sprite_util = SpriteUtil(
         css_template_file, group_name,
