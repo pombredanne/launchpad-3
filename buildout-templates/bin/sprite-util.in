@@ -42,7 +42,7 @@ for group_name in sprite_groups:
         margin = 100
 
     sprite_util = SpriteUtil(
-        css_template_file, group_name,
+        css_template_file, 'icon-sprites',
         url_prefix_substitutions={'/@@/': '../images/'},
         margin=margin)
 

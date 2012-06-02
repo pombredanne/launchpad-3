@@ -10,14 +10,14 @@
    will fail to display the sprites.
 */
 .large-warning {
-    background-image: url(/@@/warning-large.png); /* sprite-ref: block-sprites-1 */
+    background-image: url(/@@/warning-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .large-error {
-    background-image: url(/@@/error-large.png); /* sprite-ref: block-sprites-1 */
+    background-image: url(/@@/error-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .large-info {
-    background-image: url(/@@/info-large.png); /* sprite-ref: block-sprites-1 */
+    background-image: url(/@@/info-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }

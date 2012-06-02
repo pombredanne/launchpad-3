@@ -10,22 +10,22 @@
    will fail to display the sprites.
 */
 .list {
-    background-image: url(/@@/list.png); /* sprite-ref: inline-sprites-2 */
+    background-image: url(/@@/list.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .bullet {
-    background-image: url(/@@/bullet.png); /* sprite-ref: inline-sprites-2 */
+    background-image: url(/@@/bullet.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .rss {
-    background-image: url(/@@/rss.png); /* sprite-ref: inline-sprites-2 */
+    background-image: url(/@@/rss.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .zoom-in {
-    background-image: url(/@@/zoom-in.png); /* sprite-ref: inline-sprites-2 */
+    background-image: url(/@@/zoom-in.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .zoom-out {
-    background-image: url(/@@/zoom-out.png); /* sprite-ref: inline-sprites-2 */
+    background-image: url(/@@/zoom-out.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
