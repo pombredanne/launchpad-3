@@ -57,16 +57,18 @@ def filter_tests(list_name):
         # must be tracked separately.
         for layer_name, suite in tests_by_layer_name.iteritems():
             for testcase in suite:
-                layer, testlist = test_lookup.setdefault(
-                    testcase.id(), (layer_name, []))
-                testlist.append(testcase)
+                layer_to_tests = test_lookup.setdefault(
+                    testcase.id(), {})
+                testcases = layer_to_tests.setdefault(
+                    layer_name, [])
+                testcases.append(testcase)
 
         result = {}
         for testname in tests:
-            layer, testcases = test_lookup.get(testname, (None, None))
-            if testcases is not None:
-                suite = result.setdefault(layer, TestSuite())
-                for testcase in testcases:
-                    suite.addTest(testcase)
+            layer_to_tests = test_lookup.get(testname, {})
+            for layer_name, testcases in layer_to_tests.items():
+                if testcases is not None:
+                    suite = result.setdefault(layer_name, TestSuite())
+                    suite.addTests(testcases)
         return result
     return do_filter
