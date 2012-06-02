@@ -392,6 +392,11 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         cache.objects['enable_bugfiling_duplicate_search'] = (
             IProjectGroup.providedBy(self.context)
             or self.context.enable_bugfiling_duplicate_search)
+        cache.objects['information_type_data'] = [
+            {'value': term.name, 'description': term.description,
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in InformationTypeVocabulary(self.context)]
         bugtask_status_data = vocabulary_to_choice_edit_items(
             BugTaskStatus, include_description=True, css_class_prefix='status',
             excluded_items=[
