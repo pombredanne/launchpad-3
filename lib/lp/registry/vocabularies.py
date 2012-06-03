@@ -2250,8 +2250,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
         if (context is None or
             not IProduct.providedBy(context) or
             not context.private_bugs):
-            types.insert(0, InformationType.UNEMBARGOEDSECURITY)
-            types.insert(0, InformationType.PUBLIC)
+            types = [InformationType.PUBLIC,
+                     InformationType.UNEMBARGOEDSECURITY] + types
 
         terms = []
         for type in types:
