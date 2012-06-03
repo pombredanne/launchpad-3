@@ -1,11 +1,13 @@
-= Hosted files =
+Hosted files
+============
 
 In Launchpad, hosted file resources are managed by the Launchpad
 library. This test illustrates the Launchpad-specific behavior of
 hosted file resources.
 
 
-== The librarian manages hosted files ==
+The librarian manages hosted files
+----------------------------------
 
 Firefox starts out with a link to branding images, but no actual images.
 
@@ -38,15 +40,15 @@ We can upload branding images with PUT.
     ...     return open(image_file).read()
 
     >>> print webservice.put(project['icon_link'], 'image/png',
-    ...                      load_image('nyet-icon.png'))
+    ...                      load_image('team.png'))
     HTTP/1.1 200 Ok
     ...
     >>> print webservice.put(project['logo_link'], 'image/png',
-    ...                      load_image('nyet-logo.png'))
+    ...                      load_image('team-logo.png'))
     HTTP/1.1 200 Ok
     ...
     >>> print webservice.put(project['brand_link'], 'image/png',
-    ...                      load_image('nyet-mugshot.png'))
+    ...                      load_image('team-mugshot.png'))
     HTTP/1.1 200 Ok
     ...
 
@@ -75,7 +77,8 @@ by the librarian.
     ...
 
 
-== Error handling ==
+Error handling
+--------------
 
 Launchpad's ImageUpload classes enforce restrictions on uploaded
 images. You can't upload an image that's the wrong type.
@@ -90,7 +93,7 @@ images. You can't upload an image that's the wrong type.
 You also can't upload an image that's the wrong size.
 
     >>> print webservice.put(project['brand_link'], 'image/png',
-    ...                      load_image('nyet-logo.png'))
+    ...                      load_image('team-logo.png'))
     HTTP/1.1 400 Bad Request
     ...
     This image is not exactly 192x192 pixels in size.
