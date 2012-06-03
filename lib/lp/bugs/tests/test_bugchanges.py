@@ -502,7 +502,8 @@ class TestBugChanges(TestCaseWithFactory):
     def test_link_private_branch(self):
         # Linking a *private* branch to a bug adds *nothing* to the
         # activity log and does *not* send an e-mail notification.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         self.bug.linkBranch(branch, self.user)
         self.assertRecordedChange()
 
@@ -555,7 +556,8 @@ class TestBugChanges(TestCaseWithFactory):
     def test_unlink_private_branch(self):
         # Unlinking a *private* branch from a bug adds *nothing* to
         # the activity log and does *not* send an e-mail notification.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
         self.bug.unlinkBranch(branch, self.user)

@@ -88,7 +88,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
 
         if with_branch and self.pillar_type == 'product':
             branch = self.factory.makeBranch(
-                product=self.pillar, owner=self.pillar.owner, private=True)
+                product=self.pillar, owner=self.pillar.owner,
+                information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
 
@@ -369,7 +370,7 @@ class PillarSharingViewTestMixin:
             view = create_view(self.pillar, name='+sharing')
             with StormStatementRecorder() as recorder:
                 view.initialize()
-            self.assertThat(recorder, HasQueryCount(LessThan(6)))
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.

@@ -334,6 +334,12 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.show_information_type_in_branch_ui.enabled',
+     'boolean',
+     'If true, displays the information_type directly on branch pages.',
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.

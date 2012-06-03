@@ -513,8 +513,8 @@ class InlineMultiCheckboxWidget(WidgetBase):
 
 def vocabulary_to_choice_edit_items(
     vocab, include_description=False, css_class_prefix=None,
-    disabled_items=None, as_json=False, name_fn=None, value_fn=None,
-    description_fn=None):
+    disabled_items=None, excluded_items=None,
+    as_json=False, name_fn=None, value_fn=None, description_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
 
     :vocab: The enumeration to iterate over.
@@ -532,6 +532,8 @@ def vocabulary_to_choice_edit_items(
         # SimpleTerm objects have the object itself at item.value.
         if safe_hasattr(item, 'value'):
             item = item.value
+        if excluded_items and item in excluded_items:
+            continue
         if name_fn is not None:
             name = name_fn(item)
         else:

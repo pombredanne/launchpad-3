@@ -65,7 +65,7 @@
           tal:attributes="title context/subscriptionpolicy/description">
           <span tal:replace="context/subscriptionpolicy/title" />
           <a class="sprite maybe" href="/+help-registry/team-subscription-policy.html"
-            target="help">&nbsp;</a>
+            target="help"></a>
         </dd>
       </dl>
 

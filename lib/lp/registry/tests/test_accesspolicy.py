@@ -366,6 +366,15 @@ class TestAccessPolicyArtifactSource(TestCaseWithFactory):
             getUtility(IAccessPolicyArtifactSource).find(
                 [(link.abstract_artifact, link.policy) for link in links]))
 
+    def test_delete(self):
+        links = [self.factory.makeAccessPolicyArtifact() for i in range(3)]
+        getUtility(IAccessPolicyArtifactSource).delete([
+            (links[0].abstract_artifact, links[0].policy)])
+        self.assertContentEqual(
+            links[1:],
+            getUtility(IAccessPolicyArtifactSource).find([
+                (link.abstract_artifact, link.policy) for link in links]))
+
     def test_findByArtifact(self):
         # findByArtifact() finds only the relevant links.
         artifact = self.factory.makeAccessArtifact()

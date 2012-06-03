@@ -160,12 +160,15 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.enums import (
     InformationType,
+    PUBLIC_INFORMATION_TYPES,
     PRIVATE_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicySource,
+    IAccessPolicyArtifactSource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -1805,6 +1808,7 @@ class Bug(SQLBase):
                 self.subscribe(s, who)
 
         self.information_type = information_type
+        self.updateAccessPolicyArtifacts()
         self.updateHeat()
 
         # As a result of the transition, some subscribers may no longer have
@@ -2189,6 +2193,28 @@ class Bug(SQLBase):
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
         store.flush()
+
+    def updateAccessPolicyArtifacts(self):
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            # If it's public we can delete all the access information.
+            # IAccessArtifactSource handles the cascade.
+            getUtility(IAccessArtifactSource).delete([self])
+            return
+        [artifact] = getUtility(IAccessArtifactSource).ensure([self])
+
+        # Now determine the existing and desired links, and make them
+        # match.
+        apasource = getUtility(IAccessPolicyArtifactSource)
+        wanted_links = set(
+            (artifact, policy) for policy in
+            getUtility(IAccessPolicySource).find(
+                (pillar, self.information_type)
+                for pillar in self.affected_pillars))
+        existing_links = set([
+            (apa.abstract_artifact, apa.policy)
+            for apa in apasource.findByArtifact([artifact])])
+        apasource.create(wanted_links - existing_links)
+        apasource.delete(existing_links - wanted_links)
 
     def _attachments_query(self):
         """Helper for the attachments* properties."""
@@ -2759,6 +2785,8 @@ class BugSet:
             bug_task.transitionToImportance(params.importance, params.owner)
         if params.milestone:
             bug_task.transitionToMilestone(params.milestone, params.owner)
+
+        bug.updateAccessPolicyArtifacts()
 
         # Tell everyone.
         if notify_event:

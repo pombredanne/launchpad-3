@@ -23,16 +23,25 @@ from lp.bugs.enums import (
     )
 from lp.bugs.errors import BugCannotBePrivate
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
 from lp.bugs.model.bugnotification import BugNotificationRecipient
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessPolicySource,
+    IAccessPolicyArtifactSource,
+    )
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    admin_logged_in,
     feature_flags,
     login_person,
     person_logged_in,
@@ -41,12 +50,31 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbtriggers import (
+    disable_trigger,
+    triggers_disabled,
+    )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
     HasQueryCount,
     LessThan,
     )
+
+
+def get_policies_for_bug(bug):
+    [artifact] = getUtility(IAccessArtifactSource).find([bug])
+    return [
+        apa.policy for apa in
+        getUtility(IAccessPolicyArtifactSource).findByArtifact([artifact])]
+
+
+LEGACY_ACCESS_TRIGGERS = [
+    ('bug', 'bug_mirror_legacy_access_t'),
+    ('bugtask', 'bugtask_mirror_legacy_access_t'),
+    ('bugsubscription', 'bugsubscription_mirror_legacy_access_t'),
+    ]
 
 
 class TestBug(TestCaseWithFactory):
@@ -456,7 +484,8 @@ class TestBug(TestCaseWithFactory):
         bug = self.factory.makeBug()
         private_branch_owner = self.factory.makePerson()
         private_branch = self.factory.makeBranch(
-            owner=private_branch_owner, private=True)
+            owner=private_branch_owner,
+            information_type=InformationType.USERDATA)
         with person_logged_in(private_branch_owner):
             bug.linkBranch(private_branch, private_branch.registrant)
         public_branch_owner = self.factory.makePerson()
@@ -811,6 +840,24 @@ class TestBugPrivacy(TestCaseWithFactory):
             )
         [self.assertEqual(m[1], m[0].information_type) for m in mapping]
 
+    def test_accesspolicyartifacts_updated(self):
+        # transitionToTarget updates the AccessPolicyArtifacts related
+        # to the bug.
+        bug = self.factory.makeBug(
+            information_type=InformationType.EMBARGOEDSECURITY)
+
+        # There are also transitional triggers that do this. Disable
+        # them temporarily so we can be sure the application side works.
+        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+            with admin_logged_in():
+                product = bug.default_bugtask.product
+                bug.transitionToInformationType(
+                    InformationType.USERDATA, bug.owner)
+
+        [expected_policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        self.assertContentEqual([expected_policy], get_policies_for_bug(bug))
+
     def test_private_to_public_information_type(self):
         # A private bug transitioning to public has the correct information
         # type.
@@ -1056,3 +1103,105 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
                 duplicate_bug = self.factory.makeBug(owner=bug.owner)
                 duplicate_bug.markAsDuplicate(bug)
             self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
+
+
+class TestBugUpdateAccessPolicyArtifacts(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugUpdateAccessPolicyArtifacts, self).setUp()
+
+        # Disable the transitional triggers that the app code is to
+        # replace.
+        with dbuser('postgres'):
+            for table, trigger in LEGACY_ACCESS_TRIGGERS:
+                disable_trigger(table, trigger)
+
+    def assertPoliciesForBug(self, policy_tuples, bug):
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(policy_tuples),
+            get_policies_for_bug(bug))
+
+    def test_creates_missing_accessartifact(self):
+        # updateAccessPolicyArtifacts creates an AccessArtifact for a
+        # private bug if there isn't one already.
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
+        getUtility(IAccessArtifactSource).delete([bug])
+
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_removes_extra_accessartifact(self):
+        # updateAccessPolicyArtifacts creates an AccessArtifact for a
+        # private bug if there isn't one already.
+        bug = self.factory.makeBug(information_type=InformationType.PUBLIC)
+        getUtility(IAccessArtifactSource).ensure([bug])
+
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_adds_missing_accesspolicyartifacts(self):
+        # updateAccessPolicyArtifacts adds missing links.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
+
+        self.assertPoliciesForBug([], bug)
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
+
+    def test_removes_extra_accesspolicyartifacts(self):
+        # updateAccessPolicyArtifacts removes excess links.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+
+        other_product = self.factory.makeProduct()
+        [other_policy] = getUtility(IAccessPolicySource).find(
+            [(other_product, InformationType.USERDATA)])
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).create(
+            [(artifact, other_policy)])
+
+        self.assertPoliciesForBug(
+            [(product, InformationType.USERDATA),
+             (other_product, InformationType.USERDATA)],
+            bug)
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
+
+    def test_all_target_types_work(self):
+        # updateAccessPolicyArtifacts gets the pillar from any task
+        # type.
+        product = self.factory.makeProduct()
+        productseries = self.factory.makeProductSeries()
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage()
+        sp = self.factory.makeSourcePackage()
+
+        targets = [product, productseries, distro, distroseries, dsp, sp]
+        pillars = [
+            product, productseries.product, distro, distroseries.distribution,
+            dsp.distribution, sp.distribution]
+
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+        for target in targets[1:]:
+            self.factory.makeBugTask(bug, target=target)
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
+
+        self.assertPoliciesForBug([], bug)
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
+        self.assertPoliciesForBug(
+            [(pillar, InformationType.USERDATA) for pillar in pillars], bug)
