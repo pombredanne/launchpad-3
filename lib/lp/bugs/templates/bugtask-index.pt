@@ -101,9 +101,10 @@
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
       </p>
 
-      <p id="bug-is-question" class="sprite info"
+      <p id="bug-is-question"
          tal:condition="context/bug/getQuestionCreatedFromBug"
          tal:define="question context/bug/getQuestionCreatedFromBug">
+        <span class="sprite info"></span>
         This bug report was converted into a question:
         question #<tal:question-id replace="question/id" />:
         <a href=""
