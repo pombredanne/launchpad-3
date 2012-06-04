@@ -26,8 +26,13 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    And,
+    In,
+    Select,
+    )
 from storm.locals import (
+    ClassAlias,
     Max,
     Min,
     SQL,
@@ -1168,6 +1173,7 @@ class PopulateSourcePackagePublishingHistoryPackageUpload(TunableLoop):
 
     def __call__(self, chunk_size):
         ids = [spph_id for spph_id in self.findSPPHs()[:chunk_size]]
+        matching_spph = ClassAlias(SourcePackagePublishingHistory)
         packageuploads = self.store.find(
             (SourcePackagePublishingHistory, PackageUpload),
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -1175,6 +1181,17 @@ class PopulateSourcePackagePublishingHistoryPackageUpload(TunableLoop):
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
             PackageUploadSource.packageuploadID == PackageUpload.id,
+            # If the changesfile is not None, it is an original upload
+            # (IE. not a delayed copy, or package copy job.)
+            PackageUpload.changesfile != None,
+            # Make sure we grab the minimum SPPH, just in case the
+            # publication has had overrides changed.
+            SourcePackagePublishingHistory.id == Select(
+                Min(matching_spph.id), tables=matching_spph, where=And(
+                    SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                        matching_spph.sourcepackagereleaseID,
+                    SourcePackagePublishingHistory.archiveID ==
+                        matching_spph.archiveID)),
             SourcePackagePublishingHistory.archiveID ==
                 PackageUpload.archiveID,
             SourcePackagePublishingHistory.distroseriesID ==
