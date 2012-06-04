@@ -118,7 +118,11 @@ class TestRetryJobsViaCelery(TestCaseWithFactory):
                     dbjob.status == JobStatus.COMPLETED and
                     dbjob.attempt_count == 2)
             count = 0
-            while count < 50 and not job_finished():
+            while count < 300 and not job_finished():
+                # We have a maximum wait of one minute.  We should not get
+                # anywhere close to that on developer machines (10 seconds was
+                # working fine), but when the test suite is run in parallel we
+                # can need a lot more time (see bug 1007576).
                 sleep(0.2)
                 count += 1
 
