@@ -103,6 +103,7 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
     )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -1157,7 +1158,7 @@ class PopulateSourcePackagePublishingHistoryPackageUpload(TunableLoop):
 
     def findSPPHs(self):
         return self.store.find(
-            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.id,
             SourcePackagePublishingHistory.packageuploadID == None,
             SourcePackagePublishingHistory.id >= self.start_at).order_by(
                 SourcePackagePublishingHistory.id)
@@ -1166,16 +1167,28 @@ class PopulateSourcePackagePublishingHistoryPackageUpload(TunableLoop):
         return self.findSPPHs().is_empty()
 
     def __call__(self, chunk_size):
-        for spph in self.findSPPHs()[:chunk_size]:
-            pu = self.store.find(
-                PackageUpload,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+        ids = [spph_id for spph_id in self.findSPPHs()[:chunk_size]]
+        packageuploads = self.store.find(
+            (SourcePackagePublishingHistory, PackageUpload),
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 PackageUploadSource.sourcepackagereleaseID,
-                PackageUploadSource.packageuploadID == PackageUpload.id,
-                SourcePackagePublishingHistory.id == spph.id).one()
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                SourcePackageRelease.id,
+            PackageUploadSource.packageuploadID == PackageUpload.id,
+            SourcePackagePublishingHistory.archiveID ==
+                PackageUpload.archiveID,
+            SourcePackagePublishingHistory.distroseriesID ==
+                PackageUpload.distroseriesID,
+            SourcePackagePublishingHistory.pocket == PackageUpload.pocket,
+            SourcePackagePublishingHistory.componentID ==
+                SourcePackageRelease.componentID,
+            SourcePackagePublishingHistory.sectionID ==
+                SourcePackageRelease.sectionID,
+            SourcePackagePublishingHistory.id.is_in(ids))
+        for (spph, pu) in packageuploads:
             if pu is not None:
                 spph.packageupload = pu
-            self.start_at = spph.id + 1
+        self.start_at = ids[-1] + 1
         result = getUtility(IMemcacheClient).set(
             self.memcache_key, self.start_at)
         if not result:

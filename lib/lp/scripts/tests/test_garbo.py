@@ -1149,10 +1149,22 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertEqual((task.id,), get_flat())
 
-    def test_PopulateSourcePackagePublishingHistoryPackageUpload(self):
+    def test_PopulateSPPHPU_no_pu(self):
         with dbuser('testadmin'):
             spph = self.factory.makeSourcePackagePublishingHistory()
-            pu = self.factory.makePackageUpload()
+        self.runHourly()
+        with dbuser('testadmin'):
+            self.assertIs(None, spph.packageupload)
+
+    def test_PopulateSourcePackagePublishingHistoryPackageUpload(self):
+        with dbuser('testadmin'):
+            distroseries = self.factory.makeDistroSeries()
+            spph = self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries, archive=distroseries.main_archive,
+                pocket=self.factory.getAnyPocket())
+            pu = self.factory.makePackageUpload(
+                distroseries=distroseries, archive=distroseries.main_archive,
+                pocket=self.factory.getAnyPocket())
             pu.addSource(spph.sourcepackagerelease)
             self.assertIs(None, spph.packageupload)
         self.runHourly()
