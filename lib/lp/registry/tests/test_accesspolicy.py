@@ -639,62 +639,60 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
     def test_creates_missing_accessartifact(self):
         # updateAccessPolicyArtifacts creates an AccessArtifact for a
         # private bug if there isn't one already.
-        bug = removeSecurityProxy(
-            self.factory.makeBug(information_type=InformationType.USERDATA))
+        bug = self.factory.makeBug()
         getUtility(IAccessArtifactSource).delete([bug])
 
         self.assertTrue(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
         reconcile_access_for_artifact(
-            bug, bug.information_type, bug.affected_pillars)
+            bug, InformationType.USERDATA, bug.affected_pillars)
         self.assertFalse(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
 
     def test_removes_extra_accessartifact(self):
-        # updateAccessPolicyArtifacts creates an AccessArtifact for a
-        # private bug if there isn't one already.
-        bug = self.factory.makeBug(information_type=InformationType.PUBLIC)
+        # updateAccessPolicyArtifacts removes an AccessArtifact for a
+        # public bug if there's one left over.
+        bug = self.factory.makeBug()
         getUtility(IAccessArtifactSource).ensure([bug])
 
         self.assertFalse(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
         reconcile_access_for_artifact(
-            bug, bug.information_type, bug.affected_pillars)
+            bug, InformationType.PUBLIC, bug.affected_pillars)
         self.assertTrue(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
 
     def test_adds_missing_accesspolicyartifacts(self):
         # updateAccessPolicyArtifacts adds missing links.
         product = self.factory.makeProduct()
-        bug = removeSecurityProxy(self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA))
-        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        bug = self.factory.makeBug(product=product)
+        [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
         getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
 
         self.assertPoliciesForBug([], bug)
         reconcile_access_for_artifact(
-            bug, bug.information_type, bug.affected_pillars)
+            bug, InformationType.USERDATA, bug.affected_pillars)
         self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
 
     def test_removes_extra_accesspolicyartifacts(self):
         # updateAccessPolicyArtifacts removes excess links.
         product = self.factory.makeProduct()
-        bug = removeSecurityProxy(self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA))
+        bug = self.factory.makeBug(product=product)
 
         other_product = self.factory.makeProduct()
-        [other_policy] = getUtility(IAccessPolicySource).find(
-            [(other_product, InformationType.USERDATA)])
-        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
+        policies = getUtility(IAccessPolicySource).find(
+            [(other_product, InformationType.USERDATA),
+             (product, InformationType.USERDATA)])
         getUtility(IAccessPolicyArtifactSource).create(
-            [(artifact, other_policy)])
+            [(artifact, policy) for policy in policies])
 
         self.assertPoliciesForBug(
             [(product, InformationType.USERDATA),
              (other_product, InformationType.USERDATA)],
             bug)
         reconcile_access_for_artifact(
-            bug, bug.information_type, bug.affected_pillars)
+            bug, InformationType.USERDATA, bug.affected_pillars)
         self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
 
     def test_all_target_types_work(self):
@@ -712,15 +710,14 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
             product, productseries.product, distro, distroseries.distribution,
             dsp.distribution, sp.distribution]
 
-        bug = removeSecurityProxy(self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA))
+        bug = self.factory.makeBug(product=product)
         for target in targets[1:]:
             self.factory.makeBugTask(bug, target=target)
-        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
         getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
 
         self.assertPoliciesForBug([], bug)
         reconcile_access_for_artifact(
-            bug, bug.information_type, bug.affected_pillars)
+            bug, InformationType.USERDATA, bug.affected_pillars)
         self.assertPoliciesForBug(
             [(pillar, InformationType.USERDATA) for pillar in pillars], bug)
