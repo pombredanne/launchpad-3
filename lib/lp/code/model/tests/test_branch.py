@@ -119,6 +119,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
@@ -2374,24 +2375,20 @@ class TestBranchPrivacy(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
-        apasource = getUtility(IAccessPolicyArtifactSource)
-        apasource.deleteByArtifact([artifact])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
         removeSecurityProxy(branch).reconcileAccess()
         self.assertContentEqual(
             getUtility(IAccessPolicySource).find(
                 [(branch.product, InformationType.USERDATA)]),
-            [apa.policy for apa in apasource.findByArtifact([artifact])])
+            get_policies_for_artifact(branch))
 
     def test_reconcileAccess_for_distro_branch(self):
         # Branch privacy isn't yet supported for distributions, so no
         # AccessPolicyArtifact is created for a distro branch.
         branch = self.factory.makePackageBranch(
             information_type=InformationType.USERDATA)
-        [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
         removeSecurityProxy(branch).reconcileAccess()
-        self.assertTrue(
-            getUtility(IAccessPolicyArtifactSource).findByArtifact(
-                [artifact]).is_empty())
+        self.assertEqual([], get_policies_for_artifact(branch))
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):
@@ -2510,10 +2507,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             branch.transitionToInformationType(
                 InformationType.EMBARGOEDSECURITY, branch.owner,
                 verify_policy=False)
-        [artifact] = getUtility(IAccessArtifactSource).find([branch])
-        [apa] = getUtility(IAccessPolicyArtifactSource).findByArtifact(
-            [artifact])
-        self.assertEqual(InformationType.EMBARGOEDSECURITY, apa.policy.type)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY,
+            get_policies_for_artifact(branch)[0].type)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
@@ -2857,10 +2853,8 @@ class TestBranchSetTarget(TestCaseWithFactory):
         new_product = self.factory.makeProduct()
         with admin_logged_in():
             branch.setTarget(user=branch.owner, project=new_product)
-        [artifact] = getUtility(IAccessArtifactSource).find([branch])
-        [apa] = getUtility(IAccessPolicyArtifactSource).findByArtifact(
-            [artifact])
-        self.assertEqual(new_product, apa.policy.pillar)
+        self.assertEqual(
+            new_product, get_policies_for_artifact(branch)[0].pillar)
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):
