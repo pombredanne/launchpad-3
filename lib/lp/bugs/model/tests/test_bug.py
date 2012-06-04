@@ -903,8 +903,8 @@ class TestBugPrivacy(TestCaseWithFactory):
         self.assertEqual(
             [reporter], [recipient.person for recipient in recipients])
 
-    def test_reconcileAccess_handles_all_targets(self):
-        # reconcileAccess gets the pillar from any task
+    def test__reconcileAccess_handles_all_targets(self):
+        # _reconcileAccess gets the pillar from any task
         # type.
         product = self.factory.makeProduct()
         productseries = self.factory.makeProductSeries()
@@ -924,7 +924,7 @@ class TestBugPrivacy(TestCaseWithFactory):
             self.factory.makeBugTask(bug, target=target)
         [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
         getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
-        removeSecurityProxy(bug).reconcileAccess()
+        removeSecurityProxy(bug)._reconcileAccess()
         self.assertContentEqual(
             getUtility(IAccessPolicySource).find(
                 (pillar, InformationType.USERDATA) for pillar in pillars),

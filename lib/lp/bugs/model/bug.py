@@ -1781,7 +1781,7 @@ class Bug(SQLBase):
                 self.subscribe(s, who)
 
         self.information_type = information_type
-        self.reconcileAccess()
+        self._reconcileAccess()
         self.updateHeat()
         return True
 
@@ -2161,7 +2161,7 @@ class Bug(SQLBase):
         self.heat_last_updated = UTC_NOW
         store.flush()
 
-    def reconcileAccess(self):
+    def _reconcileAccess(self):
         reconcile_access_for_artifact(
             self, self.information_type, self.affected_pillars)
 
@@ -2735,7 +2735,7 @@ class BugSet:
         if params.milestone:
             bug_task.transitionToMilestone(params.milestone, params.owner)
 
-        bug.reconcileAccess()
+        bug._reconcileAccess()
 
         # Tell everyone.
         if notify_event:

@@ -2370,24 +2370,24 @@ class TestBranchPrivacy(TestCaseWithFactory):
         self.assertTrue(branch.private)
         self.assertEqual(InformationType.USERDATA, branch.information_type)
 
-    def test_reconcileAccess_for_product_branch(self):
-        # reconcileAccess uses a product policy for a product branch.
+    def test__reconcileAccess_for_product_branch(self):
+        # _reconcileAccess uses a product policy for a product branch.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
         getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
-        removeSecurityProxy(branch).reconcileAccess()
+        removeSecurityProxy(branch)._reconcileAccess()
         self.assertContentEqual(
             getUtility(IAccessPolicySource).find(
                 [(branch.product, InformationType.USERDATA)]),
             get_policies_for_artifact(branch))
 
-    def test_reconcileAccess_for_distro_branch(self):
+    def test__reconcileAccess_for_distro_branch(self):
         # Branch privacy isn't yet supported for distributions, so no
         # AccessPolicyArtifact is created for a distro branch.
         branch = self.factory.makePackageBranch(
             information_type=InformationType.USERDATA)
-        removeSecurityProxy(branch).reconcileAccess()
+        removeSecurityProxy(branch)._reconcileAccess()
         self.assertEqual([], get_policies_for_artifact(branch))
 
 
@@ -2499,7 +2499,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             InformationType.UNEMBARGOEDSECURITY, branch.information_type)
 
     def test_transition_reconciles_access(self):
-        # transitionToStatus calls reconcileAccess to make the sharing
+        # transitionToStatus calls _reconcileAccess to make the sharing
         # schema match the new value.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
@@ -2846,7 +2846,7 @@ class TestBranchSetTarget(TestCaseWithFactory):
         self.assertEqual(branch.owner, branch.target.context)
 
     def test_reconciles_access(self):
-        # setTarget calls reconcileAccess to make the sharing schema
+        # setTarget calls _reconcileAccess to make the sharing schema
         # match the new target.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)

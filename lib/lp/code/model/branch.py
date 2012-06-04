@@ -195,7 +195,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 
-    def reconcileAccess(self):
+    def _reconcileAccess(self):
         """Reconcile the branch's sharing information.
 
         Takes the information_type and target and makes the related
@@ -235,7 +235,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
         self.information_type = information_type
-        self.reconcileAccess()
+        self._reconcileAccess()
         # Set the legacy values for now.
         self.explicitly_private = private
         # If this branch is private, then it is also transitively_private
@@ -328,7 +328,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             # Person targets are always valid.
         namespace = target.getNamespace(self.owner)
         namespace.moveBranch(self, user, rename_if_necessary=True)
-        self.reconcileAccess()
+        self._reconcileAccess()
 
     @property
     def namespace(self):
