@@ -916,6 +916,33 @@ class TestBugPrivacy(TestCaseWithFactory):
         self.assertEqual(
             [reporter], [recipient.person for recipient in recipients])
 
+    def test_updateAccessPolicyArtifacts_handles_all_targets(self):
+        # updateAccessPolicyArtifacts gets the pillar from any task
+        # type.
+        product = self.factory.makeProduct()
+        productseries = self.factory.makeProductSeries()
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage()
+        sp = self.factory.makeSourcePackage()
+
+        targets = [product, productseries, distro, distroseries, dsp, sp]
+        pillars = [
+            product, productseries.product, distro, distroseries.distribution,
+            dsp.distribution, sp.distribution]
+
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+        for target in targets[1:]:
+            self.factory.makeBugTask(bug, target=target)
+        [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
+        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(
+                (pillar, InformationType.USERDATA) for pillar in pillars),
+            get_policies_for_bug(bug))
+
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
         TestBugPrivateAndSecurityRelatedUpdatesMixin, TestCaseWithFactory):

@@ -640,7 +640,6 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
         # updateAccessPolicyArtifacts creates an AccessArtifact for a
         # private bug if there isn't one already.
         bug = self.factory.makeBug()
-        getUtility(IAccessArtifactSource).delete([bug])
 
         self.assertTrue(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
@@ -667,57 +666,24 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
-        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
 
         self.assertPoliciesForBug([], bug)
         reconcile_access_for_artifact(
-            bug, InformationType.USERDATA, bug.affected_pillars)
+            bug, InformationType.USERDATA, [product])
         self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
 
     def test_removes_extra_accesspolicyartifacts(self):
         # updateAccessPolicyArtifacts removes excess links.
+        bug = self.factory.makeBug()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-
         other_product = self.factory.makeProduct()
-        [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
-        policies = getUtility(IAccessPolicySource).find(
-            [(other_product, InformationType.USERDATA),
-             (product, InformationType.USERDATA)])
-        getUtility(IAccessPolicyArtifactSource).create(
-            [(artifact, policy) for policy in policies])
+        reconcile_access_for_artifact(
+            bug, InformationType.USERDATA, [product, other_product])
 
         self.assertPoliciesForBug(
             [(product, InformationType.USERDATA),
              (other_product, InformationType.USERDATA)],
             bug)
         reconcile_access_for_artifact(
-            bug, InformationType.USERDATA, bug.affected_pillars)
+            bug, InformationType.USERDATA, [product])
         self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
-
-    def test_all_target_types_work(self):
-        # updateAccessPolicyArtifacts gets the pillar from any task
-        # type.
-        product = self.factory.makeProduct()
-        productseries = self.factory.makeProductSeries()
-        distro = self.factory.makeDistribution()
-        distroseries = self.factory.makeDistroSeries()
-        dsp = self.factory.makeDistributionSourcePackage()
-        sp = self.factory.makeSourcePackage()
-
-        targets = [product, productseries, distro, distroseries, dsp, sp]
-        pillars = [
-            product, productseries.product, distro, distroseries.distribution,
-            dsp.distribution, sp.distribution]
-
-        bug = self.factory.makeBug(product=product)
-        for target in targets[1:]:
-            self.factory.makeBugTask(bug, target=target)
-        [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
-        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
-
-        self.assertPoliciesForBug([], bug)
-        reconcile_access_for_artifact(
-            bug, InformationType.USERDATA, bug.affected_pillars)
-        self.assertPoliciesForBug(
-            [(pillar, InformationType.USERDATA) for pillar in pillars], bug)
