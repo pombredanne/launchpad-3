@@ -131,6 +131,7 @@ from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     celebrity_logged_in,
     launchpadlib_for,
@@ -2500,6 +2501,20 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertEqual(
             InformationType.UNEMBARGOEDSECURITY, branch.information_type)
 
+    def test_transition_reconciles_access(self):
+        # transitionToStatus calls reconcileAccess to make the sharing
+        # schema match the new value.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            branch.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, branch.owner,
+                verify_policy=False)
+        [artifact] = getUtility(IAccessArtifactSource).find([branch])
+        [apa] = getUtility(IAccessPolicyArtifactSource).findByArtifact(
+            [artifact])
+        self.assertEqual(InformationType.EMBARGOEDSECURITY, apa.policy.type)
+
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
     """Tests for `Branch.commitsForDays`."""
@@ -2833,6 +2848,19 @@ class TestBranchSetTarget(TestCaseWithFactory):
         login_person(branch.owner)
         branch.setTarget(user=branch.owner)
         self.assertEqual(branch.owner, branch.target.context)
+
+    def test_reconciles_access(self):
+        # setTarget calls reconcileAccess to make the sharing schema
+        # match the new target.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        new_product = self.factory.makeProduct()
+        with admin_logged_in():
+            branch.setTarget(user=branch.owner, project=new_product)
+        [artifact] = getUtility(IAccessArtifactSource).find([branch])
+        [apa] = getUtility(IAccessPolicyArtifactSource).findByArtifact(
+            [artifact])
+        self.assertEqual(new_product, apa.policy.pillar)
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):

@@ -148,6 +148,8 @@ class _BaseNamespace:
             CodeReviewNotificationLevel.FULL,
             registrant)
 
+        branch.reconcileAccess()
+
         notify(ObjectCreatedEvent(branch))
         return branch
 

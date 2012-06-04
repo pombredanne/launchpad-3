@@ -235,6 +235,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
         self.information_type = information_type
+        self.reconcileAccess()
         # Set the legacy values for now.
         self.explicitly_private = private
         # If this branch is private, then it is also transitively_private
@@ -327,6 +328,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             # Person targets are always valid.
         namespace = target.getNamespace(self.owner)
         namespace.moveBranch(self, user, rename_if_necessary=True)
+        self.reconcileAccess()
 
     @property
     def namespace(self):
