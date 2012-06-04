@@ -87,7 +87,8 @@ img, a img {
     /* No border on images that are links. */
     border: none;
     }
-body.old-webkit .sprite a.expander {
+body.old-webkit a.sprite:before,
+body.old-webkit a.expander:before {
     /* Old webkit browsers require a nbsp so sprites render. */
     content: "\00A0";
     }
