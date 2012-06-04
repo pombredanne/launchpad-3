@@ -137,7 +137,11 @@ class DefinedTagMixin:
 
     @property
     def open_tag(self):
-        return '<%s id="%s">' % (self.tag, self.content_box_id)
+        if self.css_class:
+            return '<%s id="%s" class="%s">' % (
+                self.tag, self.css_class, self.content_box_id)
+        else:
+            return '<%s id="%s">' % (self.tag, self.content_box_id)
 
     @property
     def close_tag(self):
@@ -149,7 +153,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
 
     __call__ = ViewPageTemplateFile('../templates/text-line-editor.pt')
 
-    def __init__(self, context, exported_field, title, tag,
+    def __init__(self, context, exported_field, title, tag, css_class=None,
                  content_box_id=None, edit_view="+edit", edit_url=None,
                  edit_title='',
                  default_text=None, initial_value_override=None, width=None):
@@ -177,6 +181,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             context, exported_field, title, content_box_id,
             edit_view, edit_url, edit_title)
         self.tag = tag
+        self.css_class = css_class,
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
         self.width = simplejson.dumps(width)
@@ -586,7 +591,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
     __call__ = ViewPageTemplateFile('../templates/boolean-choice-widget.pt')
 
     def __init__(self, context, exported_field,
-                 tag, false_text, true_text, prefix=None,
+                 tag, false_text, true_text, css_class=None, prefix=None,
                  edit_view="+edit", edit_url=None, edit_title='',
                  content_box_id=None, header='Select an item'):
         """Create a widget wrapper.
@@ -612,6 +617,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
             edit_view, edit_url, edit_title)
         self.header = header
         self.tag = tag
+        self.css_class = css_class,
         self.prefix = prefix
         self.true_text = true_text
         self.false_text = false_text

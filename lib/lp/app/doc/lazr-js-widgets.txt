@@ -165,7 +165,7 @@ editor.
       <div id="edit-description" class="lazr-multiline-edit">
         <div class="clearfix">
           <div class="edit-controls">
-            <a class="yui3-editable_text-trigger sprite edit"
+            <a class="yui3-editable_text-trigger sprite edit actionicon"
                href="http://launchpad.dev/~eric/+archive/ppa/+edit"
                title=""></a>
           </div>
@@ -331,7 +331,7 @@ rendered to hook up the widget.
     <span id="edit-hide_email_addresses">
     My email: <span class="value">Don't hide it</span>
       <span>
-        <a class="editicon sprite edit"
+        <a class="editicon sprite edit actionicon"
            href="http://launchpad.dev/~eric/+edit"
            title=""></a>
       </span>
@@ -390,7 +390,7 @@ rendered to hook up the widget.
     <span id="edit-lifecycle_status">
         <span class="value branchstatusDEVELOPMENT">Development</span>
         <span>
-          <a class="editicon sprite edit"
+          <a class="editicon sprite edit actionicon"
              href="http://.../+edit"
              title=""></a>
         </span>

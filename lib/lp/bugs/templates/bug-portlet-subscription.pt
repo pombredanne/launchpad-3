@@ -42,7 +42,7 @@
                   'hidden' if not view.user_should_see_mute_link else None"
             id="mute-link-container">
           <span tal:replace="structure context_menu/mute_subscription/render"
-          /><a target="help" class="sprite maybe mute-help"
+          /><a target="help" class="sprite maybe mute-help actionicon"
               href="/+help-bugs/subscription-mute.html"
             ><span class="invisible-link">Mute help</span></a>
         </div>

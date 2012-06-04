@@ -882,7 +882,7 @@ class ObjectImageDisplayAPI:
         else:
             icon = 'no'
         markup = (
-            '<span class="sprite %(icon)s">'
+            '<span class="sprite %(icon)s actionicon">'
             '<span class="invisible-link">%(icon)s</span></span>')
         return markup % dict(icon=icon)
 
