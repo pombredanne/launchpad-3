@@ -61,9 +61,8 @@ can be requested and a link to that page is provided.
     ...     '+translations-settings')
     >>> settings = find_tag_by_id(browser.contents, 'bzr-request-display')
     >>> print extract_text(settings)
-    If you only need a one-time import, please request it
-    here.
-    >>> browser.getLink('here').click()
+    You can request a one-time import.
+    >>> browser.getLink('request a one-time import').click()
     >>> print browser.url
     http://translations.l...d.dev/evolution/trunk/+request-bzr-import
 

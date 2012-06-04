@@ -79,7 +79,7 @@ class TestBugView(TestCaseWithFactory):
             self.assertEqual('Private', view.information_type)
             self.assertTextMatchesExpressionIgnoreWhitespace(
                 'Visible only to users with whom the project has shared '
-                'information containing private information',
+                'private information.',
                 view.information_type_description)
 
     def test_proprietary_hidden(self):
