@@ -1117,5 +1117,3 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
                 duplicate_bug = self.factory.makeBug(owner=bug.owner)
                 duplicate_bug.markAsDuplicate(bug)
             self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
-
-
