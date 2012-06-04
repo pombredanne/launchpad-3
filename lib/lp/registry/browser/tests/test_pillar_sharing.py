@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import get_current_web_service_request
 import simplejson
@@ -402,6 +403,9 @@ class TestProductSharingView(PillarSharingViewTestMixin,
         super(TestProductSharingView, self).setUp()
         self.setupSharing(self.grantees)
         login_person(self.driver)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,

@@ -10,6 +10,7 @@ from BeautifulSoup import (
     BeautifulSoup,
     SoupStrainer,
     )
+from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.checker import selectChecker
 
@@ -38,6 +39,9 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         self.root = getUtility(ILaunchpadRoot)
         self.admin = getUtility(IPersonSet).getByEmail(
             'foo.bar@canonical.com')
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def setUpRegistryExpert(self):
         """Create a registry expert and logs in as them."""
@@ -113,6 +117,12 @@ class TestLaunchpadRootNavigation(TestCaseWithFactory):
 class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(LaunchpadRootIndexViewTestCase, self).setUp()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_has_logo_without_watermark(self):
         root = getUtility(ILaunchpadRoot)
