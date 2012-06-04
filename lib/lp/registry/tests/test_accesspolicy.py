@@ -24,11 +24,19 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import Person
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Provides
+
+
+def get_policies_for_artifact(concrete_artifact):
+    [artifact] = getUtility(IAccessArtifactSource).find([concrete_artifact])
+    return [
+        apa.policy for apa in
+        getUtility(IAccessPolicyArtifactSource).findByArtifact([artifact])]
 
 
 class TestAccessPolicy(TestCaseWithFactory):
@@ -622,10 +630,6 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
             [artifact], apgfs.findArtifactsByGrantee(grantee, [policy]))
 
 
-from lp.bugs.model.tests.test_bug import get_policies_for_bug
-from lp.registry.model.accesspolicy import reconcile_access_for_artifact
-
-
 class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -633,7 +637,7 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
     def assertPoliciesForBug(self, policy_tuples, bug):
         self.assertContentEqual(
             getUtility(IAccessPolicySource).find(policy_tuples),
-            get_policies_for_bug(bug))
+            get_policies_for_artifact(bug))
 
     def test_creates_missing_accessartifact(self):
         # updateAccessPolicyArtifacts creates an AccessArtifact for a
