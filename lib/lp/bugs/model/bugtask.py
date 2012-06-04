@@ -639,7 +639,7 @@ class BugTask(SQLBase):
         notify(ObjectDeletedEvent(self, who))
         self.destroySelf()
         del get_property_cache(bug).bugtasks
-        self.bug.updateAccessPolicyArtifacts()
+        self.bug.reconcileAccess()
 
         # When a task is deleted, we also delete it's BugNomination entry
         # if there is one. Sadly, getNominationFor() can return None or
@@ -1175,7 +1175,7 @@ class BugTask(SQLBase):
         for name, value in new_key.iteritems():
             setattr(self, name, value)
         self.updateTargetNameCache()
-        self.bug.updateAccessPolicyArtifacts()
+        self.bug.reconcileAccess()
 
         # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
         # We also should see if we ought to auto-transition to the
@@ -1648,7 +1648,7 @@ class BugTaskSet:
             bugtask.updateTargetNameCache()
             if bugtask.conjoined_slave:
                 bugtask._syncFromConjoinedSlave()
-        removeSecurityProxy(bug).updateAccessPolicyArtifacts()
+        removeSecurityProxy(bug).reconcileAccess()
         return tasks
 
     def createTask(self, bug, owner, target, status=None, importance=None,

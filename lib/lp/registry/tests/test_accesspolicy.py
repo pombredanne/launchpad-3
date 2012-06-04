@@ -640,8 +640,8 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
             get_policies_for_artifact(bug))
 
     def test_creates_missing_accessartifact(self):
-        # updateAccessPolicyArtifacts creates an AccessArtifact for a
-        # private bug if there isn't one already.
+        # reconcile_access_for_artifact creates an AccessArtifact for a
+        # private artifact if there isn't one already.
         bug = self.factory.makeBug()
 
         self.assertTrue(
@@ -651,8 +651,8 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
 
     def test_removes_extra_accessartifact(self):
-        # updateAccessPolicyArtifacts removes an AccessArtifact for a
-        # public bug if there's one left over.
+        # reconcile_access_for_artifact removes an AccessArtifact for a
+        # public artifact if there's one left over.
         bug = self.factory.makeBug()
         reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
 
@@ -663,7 +663,7 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
 
     def test_adds_missing_accesspolicyartifacts(self):
-        # updateAccessPolicyArtifacts adds missing links.
+        # reconcile_access_for_artifact adds missing links.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
@@ -674,7 +674,7 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
         self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
 
     def test_removes_extra_accesspolicyartifacts(self):
-        # updateAccessPolicyArtifacts removes excess links.
+        # reconcile_access_for_artifact removes excess links.
         bug = self.factory.makeBug()
         product = self.factory.makeProduct()
         other_product = self.factory.makeProduct()
