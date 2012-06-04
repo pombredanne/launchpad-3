@@ -361,7 +361,7 @@ class SharingService:
         getUtility(IRemoveGranteeSubscriptionsJobSource).create(
             pillar, sharee, user, bugs=bugs, branches=branches)
 
-    def createAccessGrants(self, user, sharee, branches=None, bugs=None,
+    def ensureAccessGrants(self, user, sharee, branches=None, bugs=None,
                            **kwargs):
         """See `ISharingService`."""
 
@@ -384,6 +384,13 @@ class SharingService:
         # Ensure there are access artifacts associated with the bugs and
         # branches.
         artifacts = getUtility(IAccessArtifactSource).ensure(artifacts)
-        # Create access to bugs/branches for the specified sharee.
+        aagsource = getUtility(IAccessArtifactGrantSource)
+        artifacts_with_grants = [
+            artifact_grant.abstract_artifact
+            for artifact_grant in
+            aagsource.find([(artifact, sharee) for artifact in artifacts])]
+        # Create access to bugs/branches for the specified sharee for which a
+        # grant does not already exist.
+        missing_artifacts = set(artifacts) - set(artifacts_with_grants)
         getUtility(IAccessArtifactGrantSource).grant(
-            list(product(artifacts, [sharee], [user])))
+            list(product(missing_artifacts, [sharee], [user])))

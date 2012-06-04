@@ -814,11 +814,13 @@ class TestSharingService(TestCaseWithFactory):
             Unauthorized, self.service.revokeAccessGrants,
             product, product.owner, sharee, bugs=[bug])
 
-    def _assert_createAccessGrants(self, user, bugs, branches):
+    def _assert_ensureAccessGrants(self, user, bugs, branches,
+                                   grantee=None):
         # Creating access grants works as expected.
-        grantee = self.factory.makePerson()
+        if not grantee:
+            grantee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
-            self.service.createAccessGrants(
+            self.service.ensureAccessGrants(
                 user, grantee, bugs=bugs, branches=branches)
 
         # Check that grantee has expected access grants.
@@ -841,7 +843,7 @@ class TestSharingService(TestCaseWithFactory):
         self.assertContentEqual(bugs or [], shared_bugs)
         self.assertContentEqual(branches or [], shared_branches)
 
-    def test_createAccessGrantsBugs(self):
+    def test_ensureAccessGrantsBugs(self):
         # Access grants can be created for bugs.
         owner = self.factory.makePerson()
         distro = self.factory.makeDistribution(owner=owner)
@@ -849,19 +851,39 @@ class TestSharingService(TestCaseWithFactory):
         bug = self.factory.makeBug(
             distribution=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_createAccessGrants(owner, [bug], None)
+        self._assert_ensureAccessGrants(owner, [bug], None)
 
-    def test_createAccessGrantsBranches(self):
+    def test_ensureAccessGrantsBranches(self):
         # Access grants can be created for branches.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
         branch = self.factory.makeBranch(
-            product=product, owner=owner, private=True)
-        self._assert_createAccessGrants(owner, None, [branch])
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        self._assert_ensureAccessGrants(owner, None, [branch])
 
-    def _assert_createAccessGrantsUnauthorized(self, user):
-        # createAccessGrants raises an Unauthorized exception if the user
+    def test_ensureAccessGrantsExisting(self):
+        # Any existing access grants are retained and new ones created.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(owner=owner)
+        login_person(owner)
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner,
+            information_type=InformationType.USERDATA)
+        bug2 = self.factory.makeBug(
+            distribution=distro, owner=owner,
+            information_type=InformationType.USERDATA)
+        # Create an existing access grant.
+        grantee = self.factory.makePerson()
+        with FeatureFixture(WRITE_FLAG):
+            self.service.ensureAccessGrants(owner, grantee, bugs=[bug])
+        # Test with a new bug as well as the one for which access is already
+        # granted.
+        self._assert_ensureAccessGrants(owner, [bug, bug2], None, grantee)
+
+    def _assert_ensureAccessGrantsUnauthorized(self, user):
+        # ensureAccessGrants raises an Unauthorized exception if the user
         # is not permitted to do so.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
@@ -869,23 +891,23 @@ class TestSharingService(TestCaseWithFactory):
         sharee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
-                Unauthorized, self.service.createAccessGrants,
+                Unauthorized, self.service.ensureAccessGrants,
                 user, sharee, bugs=[bug])
 
-    def test_createAccessGrantsAnonymous(self):
+    def test_ensureAccessGrantsAnonymous(self):
         # Anonymous users are not allowed.
         with FeatureFixture(WRITE_FLAG):
             login(ANONYMOUS)
-            self._assert_createAccessGrantsUnauthorized(ANONYMOUS)
+            self._assert_ensureAccessGrantsUnauthorized(ANONYMOUS)
 
-    def test_createAccessGrantsAnyone(self):
+    def test_ensureAccessGrantsAnyone(self):
         # Unauthorized users are not allowed.
         with FeatureFixture(WRITE_FLAG):
             anyone = self.factory.makePerson()
             login_person(anyone)
-            self._assert_createAccessGrantsUnauthorized(anyone)
+            self._assert_ensureAccessGrantsUnauthorized(anyone)
 
-    def test_createAccessGrants_without_flag(self):
+    def test_ensureAccessGrants_without_flag(self):
         # The feature flag needs to be enabled.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
@@ -894,7 +916,7 @@ class TestSharingService(TestCaseWithFactory):
         sharee = self.factory.makePerson()
         login_person(owner)
         self.assertRaises(
-            Unauthorized, self.service.createAccessGrants,
+            Unauthorized, self.service.ensureAccessGrants,
             product.owner, sharee, bugs=[bug])
 
     def test_getSharedArtifacts(self):
@@ -972,7 +994,8 @@ class TestSharingService(TestCaseWithFactory):
         branches = []
         for x in range(0, 10):
             branch = self.factory.makeBranch(
-                product=product, owner=owner, private=True)
+                product=product, owner=owner,
+                information_type=InformationType.USERDATA)
             branches.append(branch)
 
         def grant_access(artifact):

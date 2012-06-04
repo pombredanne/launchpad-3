@@ -171,8 +171,8 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def createAccessGrants(user, sharee, branches=None, bugs=None):
-        """Grant a sharee access to the specified artifacts.
+    def ensureAccessGrants(user, sharee, branches=None, bugs=None):
+        """Ensure a sharee has an access grant to the specified artifacts.
 
         :param user: the user making the request
         :param sharee: the person or team for whom to grant access

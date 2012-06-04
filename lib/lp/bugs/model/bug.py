@@ -851,7 +851,7 @@ class Bug(SQLBase):
             service = getUtility(IService, 'sharing')
             bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
             if not bugs:
-                service.createAccessGrants(
+                service.ensureAccessGrants(
                     subscribed_by, person, bugs=[self],
                     ignore_permissions=True)
 
