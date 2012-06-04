@@ -27,21 +27,33 @@ else:
         sys.exit(2)
 
 icing = ${buildout:directory/lib/canonical/launchpad/icing|path-repr}
-combined_image_file = os.path.join(icing, 'icon-sprites.png')
-positioning_file = os.path.join(icing, 'icon-sprites.positioning')
-css_template_file = os.path.join(icing, 'sprite.css.in')
-css_file = os.path.join(icing, 'build/sprite.css')
+sprite_groups = [
+    file_name.replace('.css.in', '')
+    for file_name in os.listdir(icing) if file_name.endswith('.css.in')]
 
-sprite_util = SpriteUtil(
-    css_template_file, 'icon-sprites',
-    url_prefix_substitutions={'/@@/': '../images/'})
+for group_name in sprite_groups:
+    css_template_file = os.path.join(icing, '%s.css.in' % group_name)
+    combined_image_file = os.path.join(icing, '%s.png' % group_name)
+    positioning_file = os.path.join(icing, '%s.positioning' % group_name)
+    css_file = os.path.join(icing, 'build/%s.css' % group_name)
+    if group_name.startswith('block-'):
+        # 3 times the size of inline.
+        margin = 300
+    else:
+        # Inline is 2 lines to h1 text + %50 for zooming. 40px + 40px + 20px,
+        margin = 100
 
-if command == 'create-image':
-    sprite_util.combineImages(icing)
-    sprite_util.savePNG(combined_image_file)
-    sprite_util.savePositioning(positioning_file)
-elif command == 'create-css':
-    sprite_util.loadPositioning(positioning_file)
-    # The icing/icon-sprites.png file is relative to the css file
-    # in the icing/build/ directory.
-    sprite_util.saveConvertedCSS(css_file, '../icon-sprites.png')
+    sprite_util = SpriteUtil(
+        css_template_file, 'icon-sprites',
+        url_prefix_substitutions={'/@@/': '../images/'},
+        margin=margin)
+
+    if command == 'create-image':
+        sprite_util.combineImages(icing)
+        sprite_util.savePNG(combined_image_file)
+        sprite_util.savePositioning(positioning_file)
+    elif command == 'create-css':
+        sprite_util.loadPositioning(positioning_file)
+        # The icing/icon-sprites.png file is relative to the css file
+        # in the icing/build/ directory.
+        sprite_util.saveConvertedCSS(css_file, '../%s.png' % group_name)

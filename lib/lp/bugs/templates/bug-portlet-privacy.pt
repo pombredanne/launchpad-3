@@ -32,8 +32,10 @@
           This report is private
         </tal:unchangeable>
       </div>
-      <div class="sprite security" id="security-message"
-        tal:condition="context/security_related">Security vulnerability</div>
+      <div id="security-message"
+        tal:condition="context/security_related">
+        <span class="sprite security">Security vulnerability</span>
+      </div>
     </tal:privacy>
   </div>
 </div>

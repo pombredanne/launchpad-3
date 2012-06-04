@@ -933,6 +933,22 @@ class TestBranchEditView(TestCaseWithFactory):
                 canonical_url(branch) + '/+edit', user=admin)
             self.assertRaises(LookupError, browser.getControl, "Proprietary")
 
+    def test_can_not_change_privacy_of_stacked_on_private(self):
+        # The privacy field is not shown if the branch is stacked on a
+        # private branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        stacked_on = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner, stacked_on=stacked_on)
+        with person_logged_in(owner):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=owner)
+        self.assertRaises(
+            LookupError, browser.getControl, "Keep branch confidential")
+
 
 class TestBranchUpgradeView(TestCaseWithFactory):
 
@@ -962,7 +978,8 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         # With the show_information_type_in_branch_ui feature flag on, the
         # privacy portlet shows the information_type.
         owner = self.factory.makePerson()
-        branch = self.factory.makeBranch(private=True, owner=owner)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         feature_flag = {
             'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
         with FeatureFixture(feature_flag):
@@ -972,9 +989,9 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
         self.assertEqual('User Data', information_type.renderContents())
-        self.assertEqual(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             'Visible only to users with whom the project has shared '
-            'information\ncontaining user data.\n',
+            'information containing user data.',
             description.renderContents())
 
     def test_information_type_in_ui_with_display_as_private(self):
@@ -982,7 +999,8 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         # display_userdata_as_private, the information_type is shown with
         # User Data masked as Private.
         owner = self.factory.makePerson()
-        branch = self.factory.makeBranch(private=True, owner=owner)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         feature_flags = {
             'disclosure.show_information_type_in_branch_ui.enabled': 'on',
             'disclosure.display_userdata_as_private.enabled': 'on'}
@@ -993,7 +1011,7 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
         self.assertEqual('Private', information_type.renderContents())
-        self.assertEqual(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             'Visible only to users with whom the project has shared '
-            'information\ncontaining private information.\n',
+            'private information.',
             description.renderContents())
