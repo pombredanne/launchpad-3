@@ -6,7 +6,6 @@ __metaclass__ = type
 from storm.exceptions import LostObjectError
 from testtools.matchers import AllMatch
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import (
     InformationType,
@@ -643,8 +642,7 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
 
         self.assertTrue(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
-        reconcile_access_for_artifact(
-            bug, InformationType.USERDATA, bug.affected_pillars)
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
         self.assertFalse(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
 
@@ -652,12 +650,11 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
         # updateAccessPolicyArtifacts removes an AccessArtifact for a
         # public bug if there's one left over.
         bug = self.factory.makeBug()
-        getUtility(IAccessArtifactSource).ensure([bug])
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
 
         self.assertFalse(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
-        reconcile_access_for_artifact(
-            bug, InformationType.PUBLIC, bug.affected_pillars)
+        reconcile_access_for_artifact(bug, InformationType.PUBLIC, [])
         self.assertTrue(
             getUtility(IAccessArtifactSource).find([bug]).is_empty())
 
@@ -665,7 +662,7 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
         # updateAccessPolicyArtifacts adds missing links.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
-        [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
 
         self.assertPoliciesForBug([], bug)
         reconcile_access_for_artifact(
