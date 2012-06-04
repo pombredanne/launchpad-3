@@ -139,7 +139,7 @@ class DefinedTagMixin:
     def open_tag(self):
         if self.css_class:
             return '<%s id="%s" class="%s">' % (
-                self.tag, self.css_class, self.content_box_id)
+                self.tag, self.content_box_id, self.css_class)
         else:
             return '<%s id="%s">' % (self.tag, self.content_box_id)
 
