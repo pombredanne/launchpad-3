@@ -164,6 +164,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             a field from an interface of the form ISomeInterface['fieldname']
         :param title: The string to use as the link title.
         :param tag: The HTML tag to use.
+        :param css_class: The css class value to use.
         :param content_box_id: The HTML id to use for this widget.
             Defaults to edit-<attribute name>.
         :param edit_view: The view name to use to generate the edit_url if
@@ -181,7 +182,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             context, exported_field, title, content_box_id,
             edit_view, edit_url, edit_title)
         self.tag = tag
-        self.css_class = css_class,
+        self.css_class = css_class
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
         self.width = simplejson.dumps(width)
@@ -602,6 +603,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
         :param tag: The HTML tag to use.
         :param false_text: The string to show for a false value.
         :param true_text: The string to show for a true value.
+        :param css_class: The css class value to use.
         :param prefix: Optional text to show before the value.
         :param edit_view: The view name to use to generate the edit_url if
             one is not specified.
@@ -617,7 +619,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
             edit_view, edit_url, edit_title)
         self.header = header
         self.tag = tag
-        self.css_class = css_class,
+        self.css_class = css_class
         self.prefix = prefix
         self.true_text = true_text
         self.false_text = false_text
