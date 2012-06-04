@@ -6,6 +6,7 @@ __metaclass__ = type
 from storm.exceptions import LostObjectError
 from testtools.matchers import AllMatch
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import (
     InformationType,
@@ -620,3 +621,106 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
         self.assertContentEqual(
             [artifact], apgfs.findArtifactsByGrantee(grantee, [policy]))
+
+
+from lp.bugs.model.tests.test_bug import get_policies_for_bug
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
+
+
+class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertPoliciesForBug(self, policy_tuples, bug):
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(policy_tuples),
+            get_policies_for_bug(bug))
+
+    def test_creates_missing_accessartifact(self):
+        # updateAccessPolicyArtifacts creates an AccessArtifact for a
+        # private bug if there isn't one already.
+        bug = removeSecurityProxy(
+            self.factory.makeBug(information_type=InformationType.USERDATA))
+        getUtility(IAccessArtifactSource).delete([bug])
+
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        reconcile_access_for_artifact(
+            bug, bug.information_type, bug.affected_pillars)
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_removes_extra_accessartifact(self):
+        # updateAccessPolicyArtifacts creates an AccessArtifact for a
+        # private bug if there isn't one already.
+        bug = self.factory.makeBug(information_type=InformationType.PUBLIC)
+        getUtility(IAccessArtifactSource).ensure([bug])
+
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        reconcile_access_for_artifact(
+            bug, bug.information_type, bug.affected_pillars)
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_adds_missing_accesspolicyartifacts(self):
+        # updateAccessPolicyArtifacts adds missing links.
+        product = self.factory.makeProduct()
+        bug = removeSecurityProxy(self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA))
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
+
+        self.assertPoliciesForBug([], bug)
+        reconcile_access_for_artifact(
+            bug, bug.information_type, bug.affected_pillars)
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
+
+    def test_removes_extra_accesspolicyartifacts(self):
+        # updateAccessPolicyArtifacts removes excess links.
+        product = self.factory.makeProduct()
+        bug = removeSecurityProxy(self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA))
+
+        other_product = self.factory.makeProduct()
+        [other_policy] = getUtility(IAccessPolicySource).find(
+            [(other_product, InformationType.USERDATA)])
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).create(
+            [(artifact, other_policy)])
+
+        self.assertPoliciesForBug(
+            [(product, InformationType.USERDATA),
+             (other_product, InformationType.USERDATA)],
+            bug)
+        reconcile_access_for_artifact(
+            bug, bug.information_type, bug.affected_pillars)
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
+
+    def test_all_target_types_work(self):
+        # updateAccessPolicyArtifacts gets the pillar from any task
+        # type.
+        product = self.factory.makeProduct()
+        productseries = self.factory.makeProductSeries()
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage()
+        sp = self.factory.makeSourcePackage()
+
+        targets = [product, productseries, distro, distroseries, dsp, sp]
+        pillars = [
+            product, productseries.product, distro, distroseries.distribution,
+            dsp.distribution, sp.distribution]
+
+        bug = removeSecurityProxy(self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA))
+        for target in targets[1:]:
+            self.factory.makeBugTask(bug, target=target)
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
+
+        self.assertPoliciesForBug([], bug)
+        reconcile_access_for_artifact(
+            bug, bug.information_type, bug.affected_pillars)
+        self.assertPoliciesForBug(
+            [(pillar, InformationType.USERDATA) for pillar in pillars], bug)
