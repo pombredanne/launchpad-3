@@ -1189,7 +1189,7 @@ class BugTask(SQLBase):
         # As a result of the transition, some subscribers may no longer have
         # access to the parent bug. We need to run a job to remove any such
         # subscriptions.
-        getUtility(IRemoveBugSubscriptionsJobSource).create([self], user)
+        getUtility(IRemoveBugSubscriptionsJobSource).create([self.bug], user)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
