@@ -111,6 +111,11 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessPolicyArtifactSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
@@ -2362,6 +2367,30 @@ class TestBranchPrivacy(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)
         self.assertEqual(InformationType.USERDATA, branch.information_type)
+
+    def test_reconcileAccess_for_product_branch(self):
+        # reconcileAccess uses a product policy for a product branch.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
+        apasource = getUtility(IAccessPolicyArtifactSource)
+        apasource.deleteByArtifact([artifact])
+        removeSecurityProxy(branch).reconcileAccess()
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(
+                [(branch.product, InformationType.USERDATA)]),
+            [apa.policy for apa in apasource.findByArtifact([artifact])])
+
+    def test_reconcileAccess_for_distro_branch(self):
+        # Branch privacy isn't yet supported for distributions, so no
+        # AccessPolicyArtifact is created for a distro branch.
+        branch = self.factory.makePackageBranch(
+            information_type=InformationType.USERDATA)
+        [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
+        removeSecurityProxy(branch).reconcileAccess()
+        self.assertTrue(
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [artifact]).is_empty())
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):

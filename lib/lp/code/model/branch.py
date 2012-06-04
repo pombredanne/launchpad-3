@@ -138,6 +138,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
@@ -193,6 +194,20 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    def reconcileAccess(self):
+        """Reconcile the branch's sharing information.
+
+        Takes the information_type and target and makes the related
+        AccessArtifact and AccessPolicyArtifacts match.
+        """
+        # We haven't yet quite worked out how distribution privacy
+        # works, so only work for products for now.
+        if self.product is not None:
+            pillars = [self.product]
+        else:
+            pillars = []
+        reconcile_access_for_artifact(self, self.information_type, pillars)
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
