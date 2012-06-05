@@ -3292,7 +3292,8 @@ class TestTransitionToTarget(TestCaseWithFactory):
         # them temporarily so we can be sure the application side works.
         with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
             with admin_logged_in():
-                bug.default_bugtask.transitionToTarget(new_product)
+                bug.default_bugtask.transitionToTarget(
+                    new_product, new_product.owner)
 
         [expected_policy] = getUtility(IAccessPolicySource).find(
             [(new_product, InformationType.USERDATA)])
