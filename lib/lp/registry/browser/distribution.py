@@ -585,7 +585,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
     @property
     def has_exact_matches(self):
-        return self.exact_matches.count() > 0
+        return not self.exact_matches.is_empty()
 
     @property
     def has_matches(self):
