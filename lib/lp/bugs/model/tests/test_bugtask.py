@@ -59,10 +59,7 @@ from lp.bugs.model.bugtasksearch import (
     _build_status_clause,
     _build_tag_search_clause,
     )
-from lp.bugs.model.tests.test_bug import (
-    get_policies_for_bug,
-    LEGACY_ACCESS_TRIGGERS,
-    )
+from lp.bugs.model.tests.test_bug import LEGACY_ACCESS_TRIGGERS
 from lp.bugs.scripts.bugtasktargetnamecaches import (
     BugTaskTargetNameCacheUpdater)
 from lp.bugs.tests.bug import create_old_bug
@@ -92,6 +89,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
     flush_database_updates,
@@ -254,7 +252,8 @@ class TestBugTaskCreation(TestCaseWithFactory):
             (new_product, InformationType.USERDATA),
             (old_product, InformationType.USERDATA),
             ])
-        self.assertContentEqual(expected_policies, get_policies_for_bug(bug))
+        self.assertContentEqual(
+            expected_policies, get_policies_for_artifact(bug))
 
 
 class TestBugTaskCreationPackageComponent(TestCaseWithFactory):
@@ -2205,7 +2204,8 @@ class TestBugTaskDeletion(TestCaseWithFactory):
             (old_product, InformationType.USERDATA),
             (new_product, InformationType.USERDATA),
             ])
-        self.assertContentEqual(expected_policies, get_policies_for_bug(bug))
+        self.assertContentEqual(
+            expected_policies, get_policies_for_artifact(bug))
 
         # There are also transitional triggers that do this. Disable
         # them temporarily so we can be sure the application side works.
@@ -2216,7 +2216,8 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         expected_policies = getUtility(IAccessPolicySource).find([
             (old_product, InformationType.USERDATA),
             ])
-        self.assertContentEqual(expected_policies, get_policies_for_bug(bug))
+        self.assertContentEqual(
+            expected_policies, get_policies_for_artifact(bug))
 
 
 class TestStatusCountsForProductSeries(TestCaseWithFactory):
@@ -3295,7 +3296,8 @@ class TestTransitionToTarget(TestCaseWithFactory):
 
         [expected_policy] = getUtility(IAccessPolicySource).find(
             [(new_product, InformationType.USERDATA)])
-        self.assertContentEqual([expected_policy], get_policies_for_bug(bug))
+        self.assertContentEqual(
+            [expected_policy], get_policies_for_artifact(bug))
 
     def test_matching_sourcepackage_tasks_updated_when_name_changed(self):
         # If the sourcepackagename is changed, it's changed on all tasks

@@ -29,6 +29,7 @@ from lp.registry.interfaces.sharingjob import (
     ISharingJob,
     ISharingJobSource,
     )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.sharingjob import (
     RemoveBugSubscriptionsJob,
     RemoveGranteeSubscriptionsJob,
@@ -253,10 +254,11 @@ class RemoveGranteeSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertNotIn(
             grantee, removeSecurityProxy(bug).getDirectSubscribers())
 
-    def _make_subscribed_branch(self, pillar, grantee, private=False):
+    def _make_subscribed_branch(self, pillar, grantee,
+                                information_type=None):
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
-            owner=owner, product=pillar, private=private)
+            owner=owner, product=pillar, information_type=information_type)
         with person_logged_in(owner):
             branch.subscribe(grantee,
                 BranchSubscriptionNotificationLevel.NOEMAIL, None,
@@ -566,8 +568,9 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
 
         # Change bug bug attributes so that it can become inaccessible for
         # some users.
-        removeSecurityProxy(bug).information_type = (
-            InformationType.EMBARGOEDSECURITY)
+        change_callback(bug)
+        reconcile_access_for_artifact(
+            bug, bug.information_type, bug.affected_pillars)
 
         getUtility(IRemoveBugSubscriptionsJobSource).create([bug], owner)
         with block_on_job(self):

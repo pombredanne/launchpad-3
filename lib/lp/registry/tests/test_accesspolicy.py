@@ -24,11 +24,19 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import Person
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Provides
+
+
+def get_policies_for_artifact(concrete_artifact):
+    [artifact] = getUtility(IAccessArtifactSource).find([concrete_artifact])
+    return [
+        apa.policy for apa in
+        getUtility(IAccessPolicyArtifactSource).findByArtifact([artifact])]
 
 
 class TestAccessPolicy(TestCaseWithFactory):
@@ -900,3 +908,63 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
         self.assertContentEqual(
             [artifact], self.apgfs.findArtifactsByGrantee(grantee, [policy]))
+
+
+class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertPoliciesForBug(self, policy_tuples, bug):
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(policy_tuples),
+            get_policies_for_artifact(bug))
+
+    def test_creates_missing_accessartifact(self):
+        # reconcile_access_for_artifact creates an AccessArtifact for a
+        # private artifact if there isn't one already.
+        bug = self.factory.makeBug()
+
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_removes_extra_accessartifact(self):
+        # reconcile_access_for_artifact removes an AccessArtifact for a
+        # public artifact if there's one left over.
+        bug = self.factory.makeBug()
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
+
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        reconcile_access_for_artifact(bug, InformationType.PUBLIC, [])
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_adds_missing_accesspolicyartifacts(self):
+        # reconcile_access_for_artifact adds missing links.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
+
+        self.assertPoliciesForBug([], bug)
+        reconcile_access_for_artifact(
+            bug, InformationType.USERDATA, [product])
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
+
+    def test_removes_extra_accesspolicyartifacts(self):
+        # reconcile_access_for_artifact removes excess links.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        other_product = self.factory.makeProduct()
+        reconcile_access_for_artifact(
+            bug, InformationType.USERDATA, [product, other_product])
+
+        self.assertPoliciesForBug(
+            [(product, InformationType.USERDATA),
+             (other_product, InformationType.USERDATA)],
+            bug)
+        reconcile_access_for_artifact(
+            bug, InformationType.USERDATA, [product])
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)

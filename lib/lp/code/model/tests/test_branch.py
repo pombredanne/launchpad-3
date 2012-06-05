@@ -111,9 +111,15 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessPolicyArtifactSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
@@ -126,6 +132,7 @@ from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     celebrity_logged_in,
     launchpadlib_for,
@@ -2363,6 +2370,26 @@ class TestBranchPrivacy(TestCaseWithFactory):
         self.assertTrue(branch.private)
         self.assertEqual(InformationType.USERDATA, branch.information_type)
 
+    def test__reconcileAccess_for_product_branch(self):
+        # _reconcileAccess uses a product policy for a product branch.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
+        removeSecurityProxy(branch)._reconcileAccess()
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(
+                [(branch.product, InformationType.USERDATA)]),
+            get_policies_for_artifact(branch))
+
+    def test__reconcileAccess_for_distro_branch(self):
+        # Branch privacy isn't yet supported for distributions, so no
+        # AccessPolicyArtifact is created for a distro branch.
+        branch = self.factory.makePackageBranch(
+            information_type=InformationType.USERDATA)
+        removeSecurityProxy(branch)._reconcileAccess()
+        self.assertEqual([], get_policies_for_artifact(branch))
+
 
 class TestBranchSetPrivate(TestCaseWithFactory):
     """Test IBranch.setPrivate."""
@@ -2470,6 +2497,19 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             InformationType.UNEMBARGOEDSECURITY, branch.owner)
         self.assertEqual(
             InformationType.UNEMBARGOEDSECURITY, branch.information_type)
+
+    def test_transition_reconciles_access(self):
+        # transitionToStatus calls _reconcileAccess to make the sharing
+        # schema match the new value.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            branch.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, branch.owner,
+                verify_policy=False)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY,
+            get_policies_for_artifact(branch)[0].type)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
@@ -2804,6 +2844,17 @@ class TestBranchSetTarget(TestCaseWithFactory):
         login_person(branch.owner)
         branch.setTarget(user=branch.owner)
         self.assertEqual(branch.owner, branch.target.context)
+
+    def test_reconciles_access(self):
+        # setTarget calls _reconcileAccess to make the sharing schema
+        # match the new target.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        new_product = self.factory.makeProduct()
+        with admin_logged_in():
+            branch.setTarget(user=branch.owner, project=new_product)
+        self.assertEqual(
+            new_product, get_policies_for_artifact(branch)[0].pillar)
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):

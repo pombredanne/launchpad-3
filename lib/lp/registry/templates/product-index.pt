@@ -151,7 +151,7 @@
             <div id="project-admin-whiteboard" class="whiteboard"
               tal:condition="context/required:launchpad.Moderate">
               <div>
-                <strong>Whiteboard</strong>
+                <strong>Whiteboard</strong>&nbsp;
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
               </div>
               <tal:whiteboard replace="structure context/reviewer_whiteboard/fmt:text-to-html" />

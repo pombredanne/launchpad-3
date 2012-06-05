@@ -160,15 +160,12 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.enums import (
     InformationType,
-    PUBLIC_INFORMATION_TYPES,
     PRIVATE_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
-    IAccessPolicySource,
-    IAccessPolicyArtifactSource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -183,6 +180,7 @@ from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import (
     Person,
     person_sort_key,
@@ -1808,7 +1806,7 @@ class Bug(SQLBase):
                 self.subscribe(s, who)
 
         self.information_type = information_type
-        self.updateAccessPolicyArtifacts()
+        self._reconcileAccess()
         self.updateHeat()
 
         # As a result of the transition, some subscribers may no longer have
@@ -2194,27 +2192,17 @@ class Bug(SQLBase):
         self.heat_last_updated = UTC_NOW
         store.flush()
 
-    def updateAccessPolicyArtifacts(self):
-        if self.information_type in PUBLIC_INFORMATION_TYPES:
-            # If it's public we can delete all the access information.
-            # IAccessArtifactSource handles the cascade.
-            getUtility(IAccessArtifactSource).delete([self])
-            return
-        [artifact] = getUtility(IAccessArtifactSource).ensure([self])
-
-        # Now determine the existing and desired links, and make them
-        # match.
-        apasource = getUtility(IAccessPolicyArtifactSource)
-        wanted_links = set(
-            (artifact, policy) for policy in
-            getUtility(IAccessPolicySource).find(
-                (pillar, self.information_type)
-                for pillar in self.affected_pillars))
-        existing_links = set([
-            (apa.abstract_artifact, apa.policy)
-            for apa in apasource.findByArtifact([artifact])])
-        apasource.create(wanted_links - existing_links)
-        apasource.delete(existing_links - wanted_links)
+    def _reconcileAccess(self):
+        # reconcile_access_for_artifact will only use the pillar list if
+        # the information type is private. But affected_pillars iterates
+        # over the tasks immediately, which is needless expense for
+        # public bugs.
+        if self.information_type in PRIVATE_INFORMATION_TYPES:
+            pillars = self.affected_pillars
+        else:
+            pillars = []
+        reconcile_access_for_artifact(
+            self, self.information_type, pillars)
 
     def _attachments_query(self):
         """Helper for the attachments* properties."""
@@ -2786,7 +2774,7 @@ class BugSet:
         if params.milestone:
             bug_task.transitionToMilestone(params.milestone, params.owner)
 
-        bug.updateAccessPolicyArtifacts()
+        bug._reconcileAccess()
 
         # Tell everyone.
         if notify_event:

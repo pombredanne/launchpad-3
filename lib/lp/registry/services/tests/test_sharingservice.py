@@ -954,7 +954,6 @@ class TestSharingService(TestCaseWithFactory):
             if not grantee_only:
                 self.factory.makeAccessArtifactGrant(
                     artifact=access_artifact, grantee=user, grantor=owner)
-            return access_artifact
 
         for i, bug in enumerate(bugs):
             grant_access(bug, i == 9)
