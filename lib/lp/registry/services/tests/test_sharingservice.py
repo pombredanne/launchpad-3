@@ -760,7 +760,6 @@ class TestSharingService(TestCaseWithFactory):
             if not grantee_only:
                 self.factory.makeAccessArtifactGrant(
                     artifact=access_artifact, grantee=user, grantor=owner)
-            return access_artifact
 
         for i, bug in enumerate(bugs):
             grant_access(bug, i == 9)
@@ -768,7 +767,7 @@ class TestSharingService(TestCaseWithFactory):
         [policy] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)])
         for i, branch in enumerate(branches):
-            artifact = grant_access(branch, i == 9)
+            grant_access(branch, i == 9)
             # XXX for now we need to subscribe users to the branch in order
             # for the underlying BranchCollection to allow access. This will
             # no longer be the case when BranchCollection supports the new
@@ -779,8 +778,6 @@ class TestSharingService(TestCaseWithFactory):
                     BranchSubscriptionDiffSize.NODIFF,
                     CodeReviewNotificationLevel.NOEMAIL,
                     owner)
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact, policy=policy)
 
         # Check the results.
         shared_bugtasks, shared_branches = self.service.getSharedArtifacts(
