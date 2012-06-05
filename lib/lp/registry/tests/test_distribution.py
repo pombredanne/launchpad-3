@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import datetime
 
+from fixtures import FakeLogger
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import soupmatchers
@@ -433,6 +434,9 @@ class TestDistributionPage(TestCaseWithFactory):
         self.admin = getUtility(IPersonSet).getByEmail(
             'admin@canonical.com')
         self.simple_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_distributionpage_addseries_link(self):
         """ Verify that an admin sees the +addseries link."""
