@@ -71,6 +71,8 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -93,6 +95,8 @@ from lp.services.database.sqlbase import (
     flush_database_updates,
     flush_database_caches,
     )
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import block_on_job
 from lp.services.log.logger import FakeLogger
 from lp.services.searchbuilder import (
     all,
@@ -126,8 +130,10 @@ from lp.testing.dbuser import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import (
     AppServerLayer,
+    CeleryJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -739,7 +745,7 @@ class TestBugTaskDelta(TestCaseWithFactory):
             bug_task, providing=providedBy(bug_task))
 
         new_product = self.factory.makeProduct(owner=user)
-        bug_task.transitionToTarget(new_product)
+        bug_task.transitionToTarget(new_product, user)
 
         self.check_delta(bug_task_before_modification, bug_task,
                          target=dict(old=product, new=new_product))
@@ -2534,7 +2540,7 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             sourcepackagename=source_package_name)
         with person_logged_in(data.owner):
             data.generic_task.transitionToTarget(
-                data.distro.getSourcePackage(source_package_name))
+                data.distro.getSourcePackage(source_package_name), data.owner)
             self.assertEqual(source_package_name,
                              data.series_task.sourcepackagename)
 
@@ -2906,7 +2912,7 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
             with person_logged_in(person):
                 bug_task.maybeConfirm()
                 self.assertEqual(BugTaskStatus.NEW, bug_task.status)
-                bug_task.transitionToTarget(autoconfirm_product)
+                bug_task.transitionToTarget(autoconfirm_product, person)
                 self.assertEqual(BugTaskStatus.NEW, bug_task.status)
 
     def test_transitionToTarget(self):
@@ -2925,7 +2931,7 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
             with person_logged_in(person):
                 bug_task.maybeConfirm()
                 self.assertEqual(BugTaskStatus.NEW, bug_task.status)
-                bug_task.transitionToTarget(autoconfirm_product)
+                bug_task.transitionToTarget(autoconfirm_product, person)
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
 # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
@@ -3175,7 +3181,7 @@ class TestValidateTransitionToTarget(TestCaseWithFactory):
             self.assertRaisesWithContent(
                 IllegalTarget,
                 "A fix for this bug has already been requested for %s"
-                % p.displayname, task2.transitionToTarget, p)
+                % p.displayname, task2.transitionToTarget, p, task2.owner)
 
 
 class TestTransitionToTarget(TestCaseWithFactory):
@@ -3190,7 +3196,7 @@ class TestTransitionToTarget(TestCaseWithFactory):
         old_state = Snapshot(task, providing=providedBy(task))
         with person_logged_in(task.owner):
             task.bug.subscribe(p, p)
-            task.transitionToTarget(new)
+            task.transitionToTarget(new, p)
             notify(ObjectModifiedEvent(task, old_state, ["target"]))
         return task
 
@@ -3223,7 +3229,8 @@ class TestTransitionToTarget(TestCaseWithFactory):
         with person_logged_in(task.owner):
             self.assertRaisesWithContent(
                 IllegalTarget, msg,
-                task.transitionToTarget, self.factory.makeProduct())
+                task.transitionToTarget, self.factory.makeProduct(),
+                task.owner)
         self.assertEqual(p, task.target)
 
     def test_transition_to_same_is_noop(self):
@@ -3238,7 +3245,7 @@ class TestTransitionToTarget(TestCaseWithFactory):
         task = self.factory.makeBugTask(target=product)
         with person_logged_in(task.owner):
             task.milestone = self.factory.makeMilestone(product=product)
-            task.transitionToTarget(self.factory.makeProduct())
+            task.transitionToTarget(self.factory.makeProduct(), task.owner)
         self.assertIs(None, task.milestone)
 
     def test_milestone_preserved_if_transition_rejected(self):
@@ -3250,7 +3257,8 @@ class TestTransitionToTarget(TestCaseWithFactory):
                 product=product)
             self.assertRaises(
                 IllegalTarget,
-                task.transitionToTarget, self.factory.makeSourcePackage())
+                task.transitionToTarget, self.factory.makeSourcePackage(),
+                task.owner)
         self.assertEqual(milestone, task.milestone)
 
     def test_milestone_preserved_within_a_pillar(self):
@@ -3262,14 +3270,14 @@ class TestTransitionToTarget(TestCaseWithFactory):
         with person_logged_in(task.owner):
             task.milestone = milestone = self.factory.makeMilestone(
                 distribution=dsp.distribution)
-            task.transitionToTarget(dsp)
+            task.transitionToTarget(dsp, task.owner)
         self.assertEqual(milestone, task.milestone)
 
     def test_targetnamecache_updated(self):
         new_product = self.factory.makeProduct()
         task = self.factory.makeBugTask()
         with person_logged_in(task.owner):
-            task.transitionToTarget(new_product)
+            task.transitionToTarget(new_product, task.owner)
         self.assertEqual(
             new_product.bugtargetdisplayname,
             removeSecurityProxy(task).targetnamecache)
@@ -3284,7 +3292,8 @@ class TestTransitionToTarget(TestCaseWithFactory):
         # them temporarily so we can be sure the application side works.
         with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
             with admin_logged_in():
-                bug.default_bugtask.transitionToTarget(new_product)
+                bug.default_bugtask.transitionToTarget(
+                    new_product, new_product.owner)
 
         [expected_policy] = getUtility(IAccessPolicySource).find(
             [(new_product, InformationType.USERDATA)])
@@ -3309,10 +3318,98 @@ class TestTransitionToTarget(TestCaseWithFactory):
             [ds, ds.distribution, other_distro])
         sp = self.factory.makeSourcePackage(distroseries=ds, publish=True)
         with person_logged_in(ds_task.owner):
-            ds_task.transitionToTarget(sp)
+            ds_task.transitionToTarget(sp, ds_task.owner)
         self.assertContentEqual(
             (t.target for t in bug.bugtasks),
             [sp, sp.distribution_sourcepackage, other_distro])
+
+
+def disable_trigger_fixture():
+    # XXX 2012-05-22 wallyworld bug=1002596
+    # No need to use this fixture when triggers are removed.
+    return DisableTriggerFixture(
+            {'bugsubscription':
+                 'bugsubscription_mirror_legacy_access_t',
+             'bug': 'bug_mirror_legacy_access_t',
+             'bugtask': 'bugtask_mirror_legacy_access_t',
+        })
+
+
+class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
+    """Test that various bug transitions invoke RemoveBugSubscribers job."""
+
+    layer = CeleryJobLayer
+
+    def setUp(self):
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes':
+                'RemoveBugSubscriptionsJob',
+            'disclosure.access_mirror_triggers.removed': 'true',
+        }))
+        self.useFixture(disable_trigger_fixture())
+        super(TestTransitionsRemovesSubscribersJob, self).setUp()
+
+    def _assert_bug_change_unsubscribes(self, change_callback):
+        # Subscribers are unsubscribed if the bug becomes invisible due to a
+        # task being retargetted.
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        # The policy grantees will lose access.
+        policy_grantee = self.factory.makePerson()
+
+        self.factory.makeAccessPolicyGrant(policy, policy_grantee, owner)
+        login_person(owner)
+        bug = self.factory.makeBug(
+            owner=owner, product=product,
+            information_type=InformationType.USERDATA)
+
+        # The artifact grantees will not lose access when the job is run.
+        artifact_grantee = self.factory.makePerson()
+
+        bug.subscribe(policy_grantee, owner)
+        bug.subscribe(artifact_grantee, owner)
+        # Subscribing policy_grantee has created an artifact grant so we
+        # need to revoke that to test the job.
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            getUtility(IAccessArtifactSource).find(
+                [bug]), [policy_grantee])
+
+        # policy grantees are subscribed because the job has not been run yet.
+        subscribers = removeSecurityProxy(bug).getDirectSubscribers()
+        self.assertIn(policy_grantee, subscribers)
+
+        # Change bug bug attributes so that it can become inaccessible for
+        # some users.
+        change_callback(bug, owner)
+
+        with block_on_job(self):
+            transaction.commit()
+
+        # Check the result. Policy grantees will be unsubscribed.
+        subscribers = removeSecurityProxy(bug).getDirectSubscribers()
+        self.assertNotIn(policy_grantee, subscribers)
+        self.assertIn(artifact_grantee, subscribers)
+
+    def test_change_information_type(self):
+        # Changing the information type of a bug unsubscribes users who can no
+        # longer see the bug.
+        def change_information_type(bug, owner):
+            bug.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, owner)
+
+        self._assert_bug_change_unsubscribes(change_information_type)
+
+    def test_change_target(self):
+        # Changing the target of a bug unsubscribes users who can no
+        # longer see the bug.
+        def change_target(bug, owner):
+            another_product = self.factory.makeProduct()
+            removeSecurityProxy(bug).default_bugtask.transitionToTarget(
+                another_product, owner)
+
+        self._assert_bug_change_unsubscribes(change_target)
 
 
 class TestBugTargetKeys(TestCaseWithFactory):
@@ -3856,7 +3953,7 @@ class TestTargetNameCache(TestCase):
 
         thunderbird = getUtility(IProductSet).get(8)
         upstream_task_id = upstream_task.id
-        upstream_task.transitionToTarget(thunderbird)
+        upstream_task.transitionToTarget(thunderbird, bug_one.owner)
         self.assertEqual(upstream_task.bugtargetdisplayname,
                          u'Mozilla Thunderbird')
 

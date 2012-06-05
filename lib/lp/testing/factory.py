@@ -1120,15 +1120,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         branch = namespace.createBranch(
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
+        naked_branch = removeSecurityProxy(branch)
         if information_type is not None:
-            removeSecurityProxy(branch).transitionToInformationType(
+            naked_branch.transitionToInformationType(
                 information_type, registrant, verify_policy=False)
         if stacked_on is not None:
-            removeSecurityProxy(branch).branchChanged(
+            naked_branch.branchChanged(
                 removeSecurityProxy(stacked_on).unique_name, 'rev1', None,
                 None, None)
         if reviewer is not None:
-            removeSecurityProxy(branch).reviewer = reviewer
+            naked_branch.reviewer = reviewer
         return branch
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,
