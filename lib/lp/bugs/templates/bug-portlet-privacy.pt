@@ -10,12 +10,10 @@
 >
   <div id="privacy-text">
     <tal:information_type tal:condition="view/show_information_type_in_ui">
-      <span class="nowrap">
       This report contains <strong id="information-type"
                                    tal:content="view/information_type"></strong> information
-        <a class="sprite edit actionicon" id="privacy-link"
+        &nbsp;<a class="sprite edit" id="privacy-link"
            tal:attributes="href link/path" tal:condition="link/enabled"></a>
-      </span>
       <div id='information-type-description' style='padding-top: 5px'
                 tal:content="view/information_type_description"></div>
     </tal:information_type>
