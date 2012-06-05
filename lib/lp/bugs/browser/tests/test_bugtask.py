@@ -766,7 +766,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug = self.factory.makeBug(series=series)
         self.assertEqual(2, len(bug.bugtasks))
         new_prod = self.factory.makeProduct()
-        bug.getBugTask(series.product).transitionToTarget(new_prod)
+        bug.getBugTask(series.product).transitionToTarget(new_prod, bug.owner)
 
         view = create_initialized_view(bug, "+bugtasks-and-nominations-table")
         subviews = view.getBugTaskAndNominationViews()

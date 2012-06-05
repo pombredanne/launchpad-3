@@ -2,6 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource, IAccessPolicySource, IAccessArtifactSource
 
 __metaclass__ = type
 __all__ = [
@@ -856,13 +858,15 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
 
-    def unsubscribe(self, person, unsubscribed_by):
+    def unsubscribe(self, person, unsubscribed_by, **kwargs):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
         if subscription is None:
             # Silent success seems order of the day (like bugs).
             return
-        if not subscription.canBeUnsubscribedByUser(unsubscribed_by):
+        ignore_permissions = kwargs.get('ignore_permissions', False)
+        if (not ignore_permissions
+            and not subscription.canBeUnsubscribedByUser(unsubscribed_by)):
             raise UserCannotUnsubscribePerson(
                 '%s does not have permission to unsubscribe %s.' % (
                     unsubscribed_by.displayname,
