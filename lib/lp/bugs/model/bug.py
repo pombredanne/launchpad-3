@@ -2162,8 +2162,16 @@ class Bug(SQLBase):
         store.flush()
 
     def _reconcileAccess(self):
+        # reconcile_access_for_artifact will only use the pillar list if
+        # the information type is private. But affected_pillars iterates
+        # over the tasks immediately, which is needless expense for
+        # public bugs.
+        if self.information_type in PRIVATE_INFORMATION_TYPES:
+            pillars = self.affected_pillars
+        else:
+            pillars = []
         reconcile_access_for_artifact(
-            self, self.information_type, self.affected_pillars)
+            self, self.information_type, pillars)
 
     def _attachments_query(self):
         """Helper for the attachments* properties."""
