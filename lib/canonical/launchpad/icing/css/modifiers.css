@@ -200,6 +200,10 @@ table.diff,
     line-height: 18px;
     }
 
+.actionicon {
+    margin-left: 6px;
+    }
+
 .sprite-after {
     padding: 2px 18px 0 0;
     }
