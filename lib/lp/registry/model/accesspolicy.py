@@ -9,6 +9,7 @@ __all__ = [
     'AccessPolicy',
     'AccessPolicyArtifact',
     'AccessPolicyGrant',
+    'reconcile_access_for_artifact',
     ]
 
 from collections import defaultdict
@@ -32,16 +33,19 @@ from zope.interface import implements
 
 from lp.registry.enums import (
     InformationType,
+    PUBLIC_INFORMATION_TYPES,
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
+    IAccessArtifactSource,
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
+    IAccessPolicySource,
     )
 from lp.registry.model.person import Person
 from lp.services.database.bulk import create
@@ -49,6 +53,28 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
+
+
+def reconcile_access_for_artifact(artifact, information_type, pillars):
+    if information_type in PUBLIC_INFORMATION_TYPES:
+        # If it's public we can delete all the access information.
+        # IAccessArtifactSource handles the cascade.
+        getUtility(IAccessArtifactSource).delete([artifact])
+        return
+    [abstract_artifact] = getUtility(IAccessArtifactSource).ensure([artifact])
+
+    # Now determine the existing and desired links, and make them
+    # match.
+    apasource = getUtility(IAccessPolicyArtifactSource)
+    wanted_links = set(
+        (abstract_artifact, policy) for policy in
+        getUtility(IAccessPolicySource).find(
+            (pillar, information_type) for pillar in pillars))
+    existing_links = set([
+        (apa.abstract_artifact, apa.policy)
+        for apa in apasource.findByArtifact([abstract_artifact])])
+    apasource.create(wanted_links - existing_links)
+    apasource.delete(existing_links - wanted_links)
 
 
 class AccessArtifact(StormBase):
