@@ -13,6 +13,7 @@ from urllib import urlencode
 from urlparse import urlparse
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 from lxml import html
 import soupmatchers
@@ -269,6 +270,12 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     """Test the distroseries +index page."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroSeriesIndexFunctionalTestCase, self).setUp()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _setupDifferences(self, name, parent_names, nb_diff_versions,
                           nb_diff_child, nb_diff_parent):
