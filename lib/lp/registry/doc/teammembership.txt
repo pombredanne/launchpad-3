@@ -697,6 +697,7 @@ teams with automatic renewal don't need warnings.
     DEBUG   ...
     DEBUG   Sent warning email to name16 in launchpad-buildd-admins team.
     DEBUG   Sent warning email to name12 in landscape-developers team.
+    DEBUG   flag-expired-memberships ran in ...s (excl. load & lock)
     DEBUG   Removing lock file: ...launchpad-flag-expired-memberships.lock
     >>> process.returncode
     0
