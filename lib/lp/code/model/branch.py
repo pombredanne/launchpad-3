@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource, IAccessPolicySource, IAccessArtifactSource
 
 __metaclass__ = type
 __all__ = [
@@ -52,11 +50,15 @@ from zope.security.proxy import (
     )
 
 from lp import _
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.errors import (
+    SubscriptionPrivacyViolation,
+    UserCannotUnsubscribePerson,
+    )
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
     )
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -155,6 +157,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -817,6 +820,11 @@ class Branch(SQLBase, BzrIdentityMixin):
     def subscribe(self, person, notification_level, max_diff_lines,
                   code_review_level, subscribed_by):
         """See `IBranch`."""
+        if (person.is_team and self.information_type in
+            PRIVATE_INFORMATION_TYPES and person.anyone_can_join()):
+            raise SubscriptionPrivacyViolation(
+                "Open and delegated teams cannot be subscribed to private "
+                "branches.")
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
         subscription = self.getSubscription(person)
@@ -831,6 +839,17 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
             subscription.review_level = code_review_level
+        # Grant the subscriber access if they can't see the branch (if the
+        # database triggers aren't going to do it for us).
+        trigger_flag = 'disclosure.access_mirror_triggers.removed'
+        if bool(getFeatureFlag(trigger_flag)):
+            service = getUtility(IService, 'sharing')
+            branches, ignored = service.getVisibleArtifacts(
+                person, branches=[self])
+            if not branches:
+                service.ensureAccessGrants(
+                    subscribed_by, person, branches=[self],
+                    ignore_permissions=True)
         return subscription
 
     def getSubscription(self, person):
@@ -858,13 +877,12 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
 
-    def unsubscribe(self, person, unsubscribed_by, **kwargs):
+    def unsubscribe(self, person, unsubscribed_by, ignore_permissions=False):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
         if subscription is None:
             # Silent success seems order of the day (like bugs).
             return
-        ignore_permissions = kwargs.get('ignore_permissions', False)
         if (not ignore_permissions
             and not subscription.canBeUnsubscribedByUser(unsubscribed_by)):
             raise UserCannotUnsubscribePerson(
