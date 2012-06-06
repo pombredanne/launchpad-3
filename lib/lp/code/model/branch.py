@@ -839,8 +839,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
             subscription.review_level = code_review_level
-        # Grant the subscriber access if they can't see the branch (if the
-        # database triggers aren't going to do it for us).
+        # Grant the subscriber access if they can't see the branch.
         service = getUtility(IService, 'sharing')
         ignored, branches = service.getVisibleArtifacts(
             person, branches=[self])
