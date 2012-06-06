@@ -42,6 +42,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
+from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -303,7 +304,7 @@ class BranchLookup:
         result = store.find(
             (Branch.id),
             Branch.id == branch_id,
-            Branch.transitively_private == False).one()
+            Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES)).one()
         if result is None:
             return None, None
         else:
@@ -320,7 +321,7 @@ class BranchLookup:
         result = store.find(
             (Branch.id, Branch.unique_name),
             Branch.unique_name.is_in(prefixes),
-            Branch.transitively_private == False).one()
+            Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES)).one()
         if result is None:
             return None, None
         else:
