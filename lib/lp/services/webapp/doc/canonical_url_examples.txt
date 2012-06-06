@@ -221,10 +221,11 @@ An IBugTask on a distribution without a sourcepackage.
     >>> login("foo.bar@canonical.com")
 
     >>> temp_target = distro_task.target
-    >>> distro_task.transitionToTarget(distro_task.target.distribution)
+    >>> distro_task.transitionToTarget(
+    ...     distro_task.target.distribution, getUtility(ILaunchBag).user)
     >>> canonical_url(distro_task)
     u'http://bugs.launchpad.dev/debian/+bug/1'
-    >>> distro_task.transitionToTarget(temp_target)
+    >>> distro_task.transitionToTarget(temp_target, getUtility(ILaunchBag).user)
 
 An IBugTask on a distribution series source package.
 
@@ -236,10 +237,11 @@ An IBugTask on a distribution series without a sourcepackage.
 
     >>> temp_target = distro_series_task.target
     >>> distro_series_task.transitionToTarget(
-    ...     distro_series_task.target.distroseries)
+    ...     distro_series_task.target.distroseries, getUtility(ILaunchBag).user)
     >>> canonical_url(distro_series_task)
     u'http://bugs.launchpad.dev/debian/sarge/+bug/3'
-    >>> distro_series_task.transitionToTarget(temp_target)
+    >>> distro_series_task.transitionToTarget(
+    ...     temp_target, getUtility(ILaunchBag).user)
 
 A private bug, as an anonymous user! (We'll temporarily subscribe to the bug,
 to ensure that at least one person has the perms to edit it while it's set

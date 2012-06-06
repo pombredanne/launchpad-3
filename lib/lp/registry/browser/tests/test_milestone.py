@@ -469,7 +469,7 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
             self.factory.makeSourcePackagePublishingHistory(
                 distroseries=self.ubuntu.currentseries,
                 sourcepackagename=distrosourcepackage.sourcepackagename)
-            bug.bugtasks[0].transitionToTarget(distrosourcepackage)
+            bug.bugtasks[0].transitionToTarget(distrosourcepackage, self.owner)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.owner)
             # This is necessary to test precaching of assignees.

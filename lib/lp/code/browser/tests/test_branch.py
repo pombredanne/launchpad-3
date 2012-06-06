@@ -989,9 +989,9 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
         self.assertEqual('User Data', information_type.renderContents())
-        self.assertEqual(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             'Visible only to users with whom the project has shared '
-            'information\ncontaining user data.\n',
+            'information containing user data.',
             description.renderContents())
 
     def test_information_type_in_ui_with_display_as_private(self):
@@ -1011,7 +1011,7 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
         self.assertEqual('Private', information_type.renderContents())
-        self.assertEqual(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             'Visible only to users with whom the project has shared '
-            'information\ncontaining private information.\n',
+            'private information.',
             description.renderContents())

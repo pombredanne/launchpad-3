@@ -228,7 +228,7 @@ thunderbird to see how this works.
     >>> from lp.bugs.interfaces.bugtask import IBugTask
 
     >>> old_state = Snapshot(bug_in_evolution, providing=IBugTask)
-    >>> bug_in_evolution.transitionToTarget(thunderbird)
+    >>> bug_in_evolution.transitionToTarget(thunderbird, stub)
     >>> bug_product_changed = ObjectModifiedEvent(
     ...     bug_in_evolution, old_state, ["product"])
 

@@ -964,7 +964,9 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             product, title_field, title, 'h1')
         programming_lang = IProduct['programminglang']
         title = 'Edit programming languages'
-        additional_arguments = {'width': '9em'}
+        additional_arguments = {
+            'width': '9em',
+            'css_class': 'nowrap'}
         if self.context.programminglang is None:
             additional_arguments.update(dict(
                 default_text='Not yet specified',

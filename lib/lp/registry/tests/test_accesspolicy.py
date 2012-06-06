@@ -24,11 +24,19 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import Person
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Provides
+
+
+def get_policies_for_artifact(concrete_artifact):
+    [artifact] = getUtility(IAccessArtifactSource).find([concrete_artifact])
+    return [
+        apa.policy for apa in
+        getUtility(IAccessPolicyArtifactSource).findByArtifact([artifact])]
 
 
 class TestAccessPolicy(TestCaseWithFactory):
@@ -366,6 +374,15 @@ class TestAccessPolicyArtifactSource(TestCaseWithFactory):
             getUtility(IAccessPolicyArtifactSource).find(
                 [(link.abstract_artifact, link.policy) for link in links]))
 
+    def test_delete(self):
+        links = [self.factory.makeAccessPolicyArtifact() for i in range(3)]
+        getUtility(IAccessPolicyArtifactSource).delete([
+            (links[0].abstract_artifact, links[0].policy)])
+        self.assertContentEqual(
+            links[1:],
+            getUtility(IAccessPolicyArtifactSource).find([
+                (link.abstract_artifact, link.policy) for link in links]))
+
     def test_findByArtifact(self):
         # findByArtifact() finds only the relevant links.
         artifact = self.factory.makeAccessArtifact()
@@ -475,62 +492,102 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
 
 
 class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestAccessPolicyGrantFlatSource, self).setUp()
+        self.apgfs = getUtility(IAccessPolicyGrantFlatSource)
+
+    def _makePolicyGrants(self):
+        policy_with_no_grantees = self.factory.makeAccessPolicy()
+        policy = self.factory.makeAccessPolicy()
+        policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
+        return policy, policy_with_no_grantees, policy_grant
 
     def test_findGranteesByPolicy(self):
         # findGranteesByPolicy() returns anyone with a grant for any of
         # the policies or the policies' artifacts.
-        apgfs = getUtility(IAccessPolicyGrantFlatSource)
-
-        # People with grants on the policy show up.
-        policy_with_no_grantees = self.factory.makeAccessPolicy()
-        policy = self.factory.makeAccessPolicy()
-        policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
+        # This test checks that people with policy grants are returned.
+        (policy, policy_with_no_grantees,
+         policy_grant) = self._makePolicyGrants()
         self.assertContentEqual(
             [policy_grant.grantee],
-            apgfs.findGranteesByPolicy([policy, policy_with_no_grantees]))
+            self.apgfs.findGranteesByPolicy([policy, policy_with_no_grantees]))
 
-        # But not people with grants on artifacts.
+    def test_findGranteesByPolicyIgnoreArtifactGrants(self):
+        # findGranteesByPolicy() returns anyone with a grant for any of
+        # the policies or the policies' artifacts.
+        # This test checks that people with grants on artifacts which are not
+        # linked to the access policy are ignored.
+        (policy, policy_with_no_grantees,
+         policy_grant) = self._makePolicyGrants()
+        self.assertContentEqual(
+            [policy_grant.grantee],
+            self.apgfs.findGranteesByPolicy([policy, policy_with_no_grantees]))
+        self.factory.makeAccessArtifactGrant()
+        self.assertContentEqual(
+            [policy_grant.grantee],
+            self.apgfs.findGranteesByPolicy([policy, policy_with_no_grantees]))
+
+    def test_findGranteesByPolicyIncludeArtifactGrants(self):
+        # findGranteesByPolicy() returns anyone with a grant for any of
+        # the policies or the policies' artifacts.
+        # This test checks that people with grants on artifacts which are
+        # linked to the access policy are included.
+        (policy, policy_with_no_grantees,
+         policy_grant) = self._makePolicyGrants()
         artifact_grant = self.factory.makeAccessArtifactGrant()
         self.assertContentEqual(
             [policy_grant.grantee],
-            apgfs.findGranteesByPolicy([policy, policy_with_no_grantees]))
-
-        # Unless the artifacts are linked to the policy.
+            self.apgfs.findGranteesByPolicy([policy, policy_with_no_grantees]))
         another_policy = self.factory.makeAccessPolicy()
         self.factory.makeAccessPolicyArtifact(
             artifact=artifact_grant.abstract_artifact, policy=another_policy)
         self.assertContentEqual(
             [policy_grant.grantee, artifact_grant.grantee],
-            apgfs.findGranteesByPolicy([
+            self.apgfs.findGranteesByPolicy([
                 policy, another_policy, policy_with_no_grantees]))
 
     def test_findGranteePermissionsByPolicy(self):
         # findGranteePermissionsByPolicy() returns anyone with a grant for any
         # of the policies or the policies' artifacts.
-        apgfs = getUtility(IAccessPolicyGrantFlatSource)
-
-        # People with grants on the policy show up.
-        policy_with_no_grantees = self.factory.makeAccessPolicy()
-        policy = self.factory.makeAccessPolicy()
-        policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
+        # This test checks that people with policy grants are returned.
+        (policy, policy_with_no_grantees,
+         policy_grant) = self._makePolicyGrants()
         self.assertContentEqual(
             [(policy_grant.grantee, {policy: SharingPermission.ALL}, [])],
-            apgfs.findGranteePermissionsByPolicy(
+            self.apgfs.findGranteePermissionsByPolicy(
                 [policy, policy_with_no_grantees]))
 
-        # But not people with grants on artifacts.
+    def test_findGranteePermissionsIgnoreArtifactGrants(self):
+        # findGranteePermissionsByPolicy() returns anyone with a grant for any
+        # of the policies or the policies' artifacts.
+        # This test checks that people with grants on artifacts which are not
+        # linked to the access policy are ignored.
+        (policy, policy_with_no_grantees,
+         policy_grant) = self._makePolicyGrants()
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=policy_grant.grantee)
+        self.factory.makeAccessArtifactGrant(artifact=artifact)
+        self.assertContentEqual(
+            [(policy_grant.grantee, {policy: SharingPermission.ALL}, [])],
+            self.apgfs.findGranteePermissionsByPolicy(
+                [policy, policy_with_no_grantees]))
+
+    def test_findGranteePermissionsIncludeArtifactGrants(self):
+        # findGranteePermissionsByPolicy() returns anyone with a grant for any
+        # of the policies or the policies' artifacts.
+        # This test checks that people with grants on artifacts which are
+        # linked to the access policy are included.
+        (policy, policy_with_no_grantees,
+         policy_grant) = self._makePolicyGrants()
         artifact = self.factory.makeAccessArtifact()
         artifact_grant = self.factory.makeAccessArtifactGrant(
             artifact=artifact, grantee=policy_grant.grantee)
         other_artifact_grant = self.factory.makeAccessArtifactGrant(
             artifact=artifact)
-        self.assertContentEqual(
-            [(policy_grant.grantee, {policy: SharingPermission.ALL}, [])],
-            apgfs.findGranteePermissionsByPolicy(
-                [policy, policy_with_no_grantees]))
-
-        # Unless the artifacts are linked to the policy.
         another_policy = self.factory.makeAccessPolicy()
         self.factory.makeAccessPolicyArtifact(
             artifact=artifact_grant.abstract_artifact, policy=another_policy)
@@ -542,16 +599,21 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
              (other_artifact_grant.grantee, {
                  another_policy: SharingPermission.SOME},
               [another_policy.type])],
-            apgfs.findGranteePermissionsByPolicy([
+            self.apgfs.findGranteePermissionsByPolicy([
                 policy, another_policy, policy_with_no_grantees]))
 
-        # Slicing works by person, not by (person, policy).
+    def test_findGranteePermissionsByPolicySlicing(self):
+        # findGranteePermissionsByPolicy() returns anyone with a grant for any
+        # of the policies or the policies' artifacts.
+        # This test checks that slicing works by person, not by
+        # (person, policy).
+        (policy, policy_with_no_grantees,
+         policy_grant) = self._makePolicyGrants()
+        another_policy = self.factory.makeAccessPolicy()
         self.assertContentEqual(
             [(policy_grant.grantee, {
-                policy: SharingPermission.ALL,
-                another_policy: SharingPermission.SOME},
-             [another_policy.type])],
-            apgfs.findGranteePermissionsByPolicy([
+                policy: SharingPermission.ALL}, [])],
+            self.apgfs.findGranteePermissionsByPolicy([
                 policy, another_policy, policy_with_no_grantees]).order_by(
                     Person.id)[:1])
 
@@ -559,31 +621,24 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         # findGranteePermissionsByPolicy() returns all information types for
         # which grantees have been granted access one or more artifacts of that
         # type.
-        apgfs = getUtility(IAccessPolicyGrantFlatSource)
-
         policy_with_no_grantees = self.factory.makeAccessPolicy()
         policy = self.factory.makeAccessPolicy()
         policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
-
         artifact = self.factory.makeAccessArtifact()
         artifact_grant = self.factory.makeAccessArtifactGrant(
             artifact=artifact, grantee=policy_grant.grantee)
         self.factory.makeAccessPolicyArtifact(
             artifact=artifact_grant.abstract_artifact, policy=policy)
-
         self.assertContentEqual(
             [(policy_grant.grantee, {policy: SharingPermission.ALL},
               [policy.type])],
-            apgfs.findGranteePermissionsByPolicy(
+            self.apgfs.findGranteePermissionsByPolicy(
                 [policy, policy_with_no_grantees]))
 
     def test_findGranteePermissionsByPolicy_filter_grantees(self):
         # findGranteePermissionsByPolicy() returns anyone with a grant for any
         # of the policies or the policies' artifacts so long as the grantee is
         # in the specified list of grantees.
-        apgfs = getUtility(IAccessPolicyGrantFlatSource)
-
-        # People with grants on the policy show up.
         policy = self.factory.makeAccessPolicy()
         grantee_in_result = self.factory.makePerson()
         grantee_not_in_result = self.factory.makePerson()
@@ -593,21 +648,323 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
             policy=policy, grantee=grantee_not_in_result)
         self.assertContentEqual(
             [(policy_grant.grantee, {policy: SharingPermission.ALL}, [])],
-            apgfs.findGranteePermissionsByPolicy(
+            self.apgfs.findGranteePermissionsByPolicy(
                 [policy], [grantee_in_result]))
+
+    def _make_IndirectGrants(self):
+        policy_with_no_grantees = self.factory.makeAccessPolicy()
+        policy = self.factory.makeAccessPolicy()
+        indirect_person_grantee = self.factory.makePerson()
+        team_grantee = self.factory.makeTeam(members=[indirect_person_grantee])
+        self.factory.makeAccessPolicyGrant(policy=policy, grantee=team_grantee)
+        return (
+            policy, policy_with_no_grantees, team_grantee,
+            indirect_person_grantee)
+
+    def test_findIndirectGranteePermissionsByPolicy(self):
+        # findIndirectGranteePermissionsByPolicy() returns anyone with a grant
+        # for any of the policies or the policies' artifacts. The result
+        # includes members of teams with access and a list of teams via which
+        # they have gained access.
+        # This test checks that people with policy grants are returned.
+        (policy,
+         policy_with_no_grantees,
+         team_grantee, indirect_person_grantee) = self._make_IndirectGrants()
+        policy_info = {policy: SharingPermission.ALL}
+        expected_grantees = [
+            (member, policy_info, [team_grantee], [])
+            for member in team_grantee.activemembers]
+        expected_grantees.append(
+            (team_grantee, policy_info, None, []))
+        self.assertContentEqual(
+            expected_grantees,
+            self.apgfs.findIndirectGranteePermissionsByPolicy(
+                [policy, policy_with_no_grantees]))
+
+    def test_findIndirectGranteePermissionsIgnoreArtifactGrants(self):
+        # findIndirectGranteePermissionsByPolicy() returns anyone with a grant
+        # for any of the policies or the policies' artifacts. The result
+        # includes members of teams with access and a list of teams via which
+        # they have gained access.
+        # This test checks that people with grants on artifacts which are not
+        # linked to the access policy are ignored.
+        (policy,
+         policy_with_no_grantees,
+         team_grantee, indirect_person_grantee) = self._make_IndirectGrants()
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=team_grantee)
+        self.factory.makeAccessArtifactGrant(artifact=artifact)
+        policy_info = {policy: SharingPermission.ALL}
+        expected_grantees = [
+            (member, policy_info, [team_grantee], [])
+            for member in team_grantee.activemembers]
+        expected_grantees.append(
+            (team_grantee, policy_info, None, []))
+        self.assertContentEqual(
+            expected_grantees,
+            self.apgfs.findIndirectGranteePermissionsByPolicy(
+                [policy, policy_with_no_grantees]))
+
+    def test_findIndirectGranteePermissionsIncludeArtifactGrants(self):
+        # findIndirectGranteePermissionsByPolicy() returns anyone with a grant
+        # for any of the policies or the policies' artifacts. The result
+        # includes members of teams with access and a list of teams via which
+        # they have gained access.
+        # This test checks that people with grants on artifacts which are
+        # linked to the access policy are included.
+        (policy,
+         policy_with_no_grantees,
+         team_grantee, indirect_person_grantee) = self._make_IndirectGrants()
+        artifact = self.factory.makeAccessArtifact()
+        artifact_grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=team_grantee)
+        other_artifact_grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact)
+        another_policy = self.factory.makeAccessPolicy()
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact, policy=another_policy)
+        policy_info = {
+            policy: SharingPermission.ALL,
+            another_policy: SharingPermission.SOME}
+        expected_grantees = [
+            (member, policy_info, [team_grantee], [another_policy.type])
+            for member in team_grantee.activemembers]
+        expected_grantees.append(
+            (team_grantee, policy_info, None, [another_policy.type]))
+        expected_grantees.append(
+            (other_artifact_grant.grantee,
+             {another_policy: SharingPermission.SOME}, None,
+             [another_policy.type]))
+        self.assertContentEqual(
+            expected_grantees,
+            self.apgfs.findIndirectGranteePermissionsByPolicy([
+                policy, another_policy, policy_with_no_grantees]))
+
+    def test_findIndirectGranteePermissionsByPolicySlicing(self):
+        # findIndirectGranteePermissionsByPolicy() returns anyone with a grant
+        # for any of the policies or the policies' artifacts. The result
+        # includes members of teams with access and a list of teams via which
+        # they have gained access.
+        # This test checks that slicing works by person, not by
+        # (person, policy).
+        (policy,
+         policy_with_no_grantees,
+         team_grantee, indirect_person_grantee) = self._make_IndirectGrants()
+        another_policy = self.factory.makeAccessPolicy()
+        self.assertContentEqual(
+            [(indirect_person_grantee, {
+                policy: SharingPermission.ALL}, [team_grantee], [])],
+            self.apgfs.findIndirectGranteePermissionsByPolicy([
+                policy, another_policy, policy_with_no_grantees]).order_by(
+                    Person.id)[:1])
+
+    def test_findIndirectGranteePermissionsByPolicy_filter_grantees(
+                                                                        self):
+        # findIndirectGranteePermissionsByPolicy() returns anyone with a grant
+        # for any of the policies or the policies' artifacts so long as the
+        # grantee is in the specified list of grantees.
+        policy = self.factory.makeAccessPolicy()
+        grantee_not_in_result = self.factory.makePerson()
+        indirect_person_grantee = self.factory.makePerson()
+        team_grantee = self.factory.makeTeam(members=[indirect_person_grantee])
+        self.factory.makeAccessPolicyGrant(policy=policy, grantee=team_grantee)
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=grantee_not_in_result)
+        self.assertContentEqual(
+            [(indirect_person_grantee, {policy: SharingPermission.ALL},
+              [team_grantee], [])],
+            self.apgfs.findIndirectGranteePermissionsByPolicy(
+                [policy], [indirect_person_grantee]))
+
+    def test_findIndirectGranteePermissionsMultiTeam(self):
+        # Test that findIndirectGranteePermissionsByPolicy() works correctly
+        # when a user is granted access via membership of more than one team.
+        policy_with_no_grantees = self.factory.makeAccessPolicy()
+        policy = self.factory.makeAccessPolicy()
+        # Make an indirect grantee belonging to team1 and team2.
+        indirect_person_grantee = self.factory.makePerson()
+        team_grantee1 = self.factory.makeTeam(
+            members=[indirect_person_grantee])
+        # Make a team for indirect grantee which should not appear in the
+        # results.
+        self.factory.makeTeam(members=[indirect_person_grantee])
+        team_grantee2 = self.factory.makeTeam(
+            members=[indirect_person_grantee])
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=team_grantee1)
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=team_grantee2)
+        policy_info = {policy: SharingPermission.ALL}
+        # Indirect grantee has access.
+        expected_grantees = [
+            (indirect_person_grantee, policy_info,
+             sorted([team_grantee1, team_grantee2],
+                key=lambda x: x.displayname), [])]
+        # All other team members have access.
+        expected_grantees.extend([(member, policy_info, [team_grantee1], [])
+            for member in team_grantee1.activemembers
+            if member != indirect_person_grantee])
+        expected_grantees.extend([(member, policy_info, [team_grantee2], [])
+            for member in team_grantee2.activemembers
+            if member != indirect_person_grantee])
+        # The team itself has access also.
+        expected_grantees.append((team_grantee1, policy_info, None, []))
+        expected_grantees.append((team_grantee2, policy_info, None, []))
+        self.assertContentEqual(
+            expected_grantees,
+            self.apgfs.findIndirectGranteePermissionsByPolicy(
+                [policy, policy_with_no_grantees]))
+
+    def test_findIndirectGranteePermissionsDirect(self):
+        # Test that findIndirectGranteePermissionsByPolicy() works correctly
+        # when a user is granted access directly as well as via membership of a
+        # team.
+        policy_with_no_grantees = self.factory.makeAccessPolicy()
+        policy = self.factory.makeAccessPolicy()
+        # Make an direct grantee.
+        person_grantee = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=person_grantee)
+        # Make a team grantee with the person grantee as a member.
+        team_grantee = self.factory.makeTeam(owner=self.factory.makePerson(),
+            members=[person_grantee])
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=team_grantee)
+        # Make a team for indirect grantee which should not appear in the
+        # results.
+        self.factory.makeTeam(members=[person_grantee])
+        policy_info = {policy: SharingPermission.ALL}
+        # Direct grantee has access.
+        expected_grantees = [(person_grantee, policy_info, None, [])]
+        # All other team members have indirect access.
+        expected_grantees.extend([(member, policy_info, [team_grantee], [])
+            for member in team_grantee.activemembers
+            if member != person_grantee])
+        # The team itself has access also.
+        expected_grantees.append((team_grantee, policy_info, None, []))
+        self.assertContentEqual(
+            expected_grantees,
+            self.apgfs.findIndirectGranteePermissionsByPolicy(
+                [policy, policy_with_no_grantees]))
+
+    def test_findIndirectGranteePermissionsMultiTeamPermissions(self):
+        # Test that findIndirectGranteePermissionsByPolicy() works correctly
+        # when a user is granted access via membership of more than one team
+        # where each team has a different level of access. If an indirect
+        # grantee has both ALL and SOME, then ALL is shown.
+        policy_with_no_grantees = self.factory.makeAccessPolicy()
+        policy = self.factory.makeAccessPolicy()
+        indirect_person_grantee = self.factory.makePerson()
+
+        # One team has ALL access.
+        team_grantee1 = self.factory.makeTeam(
+            members=[indirect_person_grantee])
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=team_grantee1)
+
+        # Another team has SOME access.
+        indirect_person_grantee2 = self.factory.makePerson()
+        team_grantee2 = self.factory.makeTeam(
+            members=[indirect_person_grantee, indirect_person_grantee2])
+        artifact = self.factory.makeAccessArtifact()
+        artifact_grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=team_grantee2)
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact, policy=policy)
+
+        policy_info = {policy: SharingPermission.ALL}
+        expected_grantees = [
+            (indirect_person_grantee, policy_info,
+             sorted([team_grantee1, team_grantee2],
+                key=lambda x: x.displayname), [policy.type])]
+        expected_grantees.extend([(member, policy_info, [team_grantee1], [])
+            for member in team_grantee1.activemembers
+            if member != indirect_person_grantee])
+        expected_grantees.append((team_grantee1, policy_info, None, []))
+        policy_info = {policy: SharingPermission.SOME}
+        expected_grantees.extend(
+            [(member, policy_info, [team_grantee2], [policy.type])
+            for member in team_grantee2.activemembers
+            if member != indirect_person_grantee])
+        expected_grantees.append(
+            (team_grantee2, policy_info, None, [policy.type]))
+        self.assertContentEqual(
+            expected_grantees,
+            self.apgfs.findIndirectGranteePermissionsByPolicy(
+                [policy, policy_with_no_grantees]))
 
     def test_findArtifactsByGrantee(self):
         # findArtifactsByGrantee() returns the artifacts for grantee for any of
         # the policies.
-        apgfs = getUtility(IAccessPolicyGrantFlatSource)
         policy = self.factory.makeAccessPolicy()
         grantee = self.factory.makePerson()
         # Artifacts not linked to the policy do not show up.
         artifact = self.factory.makeAccessArtifact()
         self.factory.makeAccessArtifactGrant(artifact, grantee)
         self.assertContentEqual(
-            [], apgfs.findArtifactsByGrantee(grantee, [policy]))
+            [], self.apgfs.findArtifactsByGrantee(grantee, [policy]))
         # Artifacts linked to the policy do show up.
         self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
         self.assertContentEqual(
-            [artifact], apgfs.findArtifactsByGrantee(grantee, [policy]))
+            [artifact], self.apgfs.findArtifactsByGrantee(grantee, [policy]))
+
+
+class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def assertPoliciesForBug(self, policy_tuples, bug):
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(policy_tuples),
+            get_policies_for_artifact(bug))
+
+    def test_creates_missing_accessartifact(self):
+        # reconcile_access_for_artifact creates an AccessArtifact for a
+        # private artifact if there isn't one already.
+        bug = self.factory.makeBug()
+
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_removes_extra_accessartifact(self):
+        # reconcile_access_for_artifact removes an AccessArtifact for a
+        # public artifact if there's one left over.
+        bug = self.factory.makeBug()
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
+
+        self.assertFalse(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+        reconcile_access_for_artifact(bug, InformationType.PUBLIC, [])
+        self.assertTrue(
+            getUtility(IAccessArtifactSource).find([bug]).is_empty())
+
+    def test_adds_missing_accesspolicyartifacts(self):
+        # reconcile_access_for_artifact adds missing links.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        reconcile_access_for_artifact(bug, InformationType.USERDATA, [])
+
+        self.assertPoliciesForBug([], bug)
+        reconcile_access_for_artifact(
+            bug, InformationType.USERDATA, [product])
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
+
+    def test_removes_extra_accesspolicyartifacts(self):
+        # reconcile_access_for_artifact removes excess links.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        other_product = self.factory.makeProduct()
+        reconcile_access_for_artifact(
+            bug, InformationType.USERDATA, [product, other_product])
+
+        self.assertPoliciesForBug(
+            [(product, InformationType.USERDATA),
+             (other_product, InformationType.USERDATA)],
+            bug)
+        reconcile_access_for_artifact(
+            bug, InformationType.USERDATA, [product])
+        self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)

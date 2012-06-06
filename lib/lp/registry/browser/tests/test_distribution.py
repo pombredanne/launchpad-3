@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
 import soupmatchers
 from testtools.matchers import (
     MatchesAny,
@@ -31,6 +32,9 @@ class TestDistributionPage(TestCaseWithFactory):
         self.distro = self.factory.makeDistribution(
             name="distro", displayname=u'distro')
         self.simple_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_distributionpage_addseries_link(self):
         # An admin sees the +addseries link.

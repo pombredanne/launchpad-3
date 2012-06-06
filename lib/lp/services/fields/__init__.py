@@ -220,7 +220,7 @@ class IBaseImageUpload(IBytes):
         title=_('The default image'),
         description=_(
             'The URL of the zope3 resource of the default image that should '
-            'be used. Something of the form /@@/nyet-mugshot'))
+            'be used. Something of the form /@@/team-mugshot'))
 
     def getCurrentImage():
         """Return the value of the field for the object bound to it.
