@@ -841,15 +841,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.review_level = code_review_level
         # Grant the subscriber access if they can't see the branch (if the
         # database triggers aren't going to do it for us).
-        trigger_flag = 'disclosure.access_mirror_triggers.removed'
-        if bool(getFeatureFlag(trigger_flag)):
-            service = getUtility(IService, 'sharing')
-            branches, ignored = service.getVisibleArtifacts(
-                person, branches=[self])
-            if not branches:
-                service.ensureAccessGrants(
-                    subscribed_by, person, branches=[self],
-                    ignore_permissions=True)
+        service = getUtility(IService, 'sharing')
+        ignored, branches = service.getVisibleArtifacts(
+            person, branches=[self])
+        if not branches:
+            service.ensureAccessGrants(
+                subscribed_by, person, branches=[self],
+                ignore_permissions=True)
         return subscription
 
     def getSubscription(self, person):
