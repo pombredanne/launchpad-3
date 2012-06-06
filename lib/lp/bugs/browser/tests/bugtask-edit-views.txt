@@ -70,7 +70,8 @@ changed to the corresponding source package.
     ...     distroseries=
     ...         ubuntu_thunderbird_task.target.distribution.currentseries,
     ...     sourcepackagename='thunderbird')
-    >>> ubuntu_thunderbird_task.transitionToTarget(ubuntu_thunderbird)
+    >>> ubuntu_thunderbird_task.transitionToTarget(
+    ...     ubuntu_thunderbird, getUtility(ILaunchBag).user)
 
 If we try to change the source package to package name that doesn't
 exist in Launchpad. we'll get an error message.

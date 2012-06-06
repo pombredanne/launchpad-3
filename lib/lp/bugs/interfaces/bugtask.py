@@ -830,10 +830,11 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     @mutator_for(target)
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         target=copy_field(target))
     @export_write_operation()
-    def transitionToTarget(target):
+    def transitionToTarget(target, user):
         """Convert the bug task to a different bug target."""
 
     def updateTargetNameCache():

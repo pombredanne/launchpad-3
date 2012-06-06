@@ -64,10 +64,12 @@
               </li>
             </ul>
 
-            <p id="bzr-request-display"  class="info sprite">
-              If you only need a one-time import, please request it
-              <a tal:attributes="href view/request_bzr_import_url">here</a>.
+            <p id="bzr-request-display">
+              <a class="info sprite"
+                tal:attributes="href view/request_bzr_import_url">You can
+                request a one-time import</a>.
             </p>
+
             <p tal:condition="view/context/branch"
                tal:define="branch view/context/branch"
                id="branch-display">

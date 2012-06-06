@@ -1504,7 +1504,8 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         product = self.factory.makeProduct()
         # We make a source branch stacked on a private one.
         base_branch = self.factory.makeBranch(
-            owner=owner, private=True, product=product)
+            owner=owner, product=product,
+            information_type=InformationType.USERDATA)
         source_branch = self.factory.makeBranch(
             stacked_on=base_branch, product=product, owner=owner)
         target_branch = self.factory.makeBranch(owner=owner, product=product)

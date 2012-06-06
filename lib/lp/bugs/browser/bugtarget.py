@@ -58,6 +58,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -98,6 +99,8 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -275,6 +278,11 @@ class FileBugReportingGuidelines(LaunchpadFormView):
             type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['show_information_type_in_ui'] = (
             self.show_information_type_in_ui)
+        cache.objects['bug_private_by_default'] = (
+            IProduct.providedBy(self.context) and self.context.private_bugs)
+        cache.objects['enable_bugfiling_duplicate_search'] = (
+            IProjectGroup.providedBy(self.context)
+            or self.context.enable_bugfiling_duplicate_search)
 
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
@@ -283,7 +291,7 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         if self.show_information_type_in_ui:
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary())
+                vocabulary=InformationTypeVocabulary(self.context))
             self.form_fields = self.form_fields.omit('information_type')
             self.form_fields += Fields(information_type_field)
         else:
@@ -380,8 +388,31 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if self.redirect_ubuntu_filebug:
             pass
         LaunchpadFormView.initialize(self)
-        if (not self.redirect_ubuntu_filebug and
-            self.extra_data_token is not None and
+        cache = IJSONRequestCache(self.request)
+        cache.objects['enable_bugfiling_duplicate_search'] = (
+            IProjectGroup.providedBy(self.context)
+            or self.context.enable_bugfiling_duplicate_search)
+        cache.objects['information_type_data'] = [
+            {'value': term.name, 'description': term.description,
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in InformationTypeVocabulary(self.context)]
+        bugtask_status_data = vocabulary_to_choice_edit_items(
+            BugTaskStatus, include_description=True, css_class_prefix='status',
+            excluded_items=[
+                BugTaskStatus.UNKNOWN,
+                BugTaskStatus.EXPIRED,
+                BugTaskStatus.INVALID,
+                BugTaskStatus.OPINION,
+                BugTaskStatus.WONTFIX,
+                BugTaskStatus.INCOMPLETE])
+        cache.objects['bugtask_status_data'] = bugtask_status_data
+        bugtask_importance_data = vocabulary_to_choice_edit_items(
+            BugTaskImportance, include_description=True,
+            css_class_prefix='importance',
+            excluded_items=[BugTaskImportance.UNKNOWN])
+        cache.objects['bugtask_importance_data'] = bugtask_importance_data
+        if (self.extra_data_token is not None and
             not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
@@ -465,10 +496,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             return {}
 
         return {'packagename': self.context.name}
-
-    def isPrivate(self):
-        """Whether bug reports on this target are private by default."""
-        return IProduct.providedBy(self.context) and self.context.private_bugs
 
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
@@ -1000,11 +1027,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             return False
         else:
             return True
-
-
-class FileBugInlineFormView(FileBugViewBase):
-    """A browser view for displaying the inline filebug form."""
-    schema = IBugAddForm
 
 
 class FileBugAdvancedView(FileBugViewBase):

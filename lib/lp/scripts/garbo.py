@@ -26,8 +26,13 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    And,
+    In,
+    Select,
+    )
 from storm.locals import (
+    ClassAlias,
     Max,
     Min,
     SQL,
@@ -98,6 +103,12 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.queue import (
+    PackageUpload,
+    PackageUploadSource,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -1137,6 +1148,71 @@ class BugTaskFlattener(TunableLoop):
         transaction.commit()
 
 
+class PopulateSourcePackagePublishingHistoryPackageUpload(TunableLoop):
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(
+            PopulateSourcePackagePublishingHistoryPackageUpload,
+            self).__init__(log, abort_time)
+        self.store = IMasterStore(SourcePackagePublishingHistory)
+        self.memcache_key = '%s:populate-spph-pu' % config.instance_name
+        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+        self.start_at = watermark or 0
+
+    def findSPPHs(self):
+        return self.store.find(
+            SourcePackagePublishingHistory.id,
+            SourcePackagePublishingHistory.packageuploadID == None,
+            SourcePackagePublishingHistory.id >= self.start_at).order_by(
+                SourcePackagePublishingHistory.id)
+
+    def isDone(self):
+        return self.findSPPHs().is_empty()
+
+    def __call__(self, chunk_size):
+        ids = [spph_id for spph_id in self.findSPPHs()[:chunk_size]]
+        matching_spph = ClassAlias(SourcePackagePublishingHistory)
+        packageuploads = self.store.find(
+            (SourcePackagePublishingHistory, PackageUpload),
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                PackageUploadSource.sourcepackagereleaseID,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                SourcePackageRelease.id,
+            PackageUploadSource.packageuploadID == PackageUpload.id,
+            # If the changesfile is not None, it is an original upload
+            # (IE. not a delayed copy, or package copy job.)
+            PackageUpload.changesfile != None,
+            # Make sure we grab the minimum SPPH, just in case the
+            # publication has had overrides changed.
+            SourcePackagePublishingHistory.id == Select(
+                Min(matching_spph.id), tables=matching_spph, where=And(
+                    SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                        matching_spph.sourcepackagereleaseID,
+                    SourcePackagePublishingHistory.archiveID ==
+                        matching_spph.archiveID)),
+            SourcePackagePublishingHistory.archiveID ==
+                PackageUpload.archiveID,
+            SourcePackagePublishingHistory.distroseriesID ==
+                PackageUpload.distroseriesID,
+            SourcePackagePublishingHistory.pocket == PackageUpload.pocket,
+            SourcePackagePublishingHistory.componentID ==
+                SourcePackageRelease.componentID,
+            SourcePackagePublishingHistory.sectionID ==
+                SourcePackageRelease.sectionID,
+            SourcePackagePublishingHistory.id.is_in(ids))
+        for (spph, pu) in packageuploads:
+            if pu is not None:
+                spph.packageupload = pu
+        self.start_at = ids[-1] + 1
+        result = getUtility(IMemcacheClient).set(
+            self.memcache_key, self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1392,6 +1468,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         BugHeatUpdater,
         BugTaskFlattener,
+        PopulateSourcePackagePublishingHistoryPackageUpload,
         ]
     experimental_tunable_loops = []
 

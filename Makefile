@@ -150,7 +150,7 @@ inplace: build combobuild logs clean_logs codehosting-dir
 		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
 	fi
 
-build: compile apidoc jsbuild css_combine sprite_image
+build: compile apidoc jsbuild css_combine
 
 # LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
 # want the parent directory where the download-cache and eggs directory
@@ -164,20 +164,10 @@ else
 	@exit 1
 endif
 
-css_combine: sprite_css bin/combine-css
-	${SHHH} bin/combine-css
-
-sprite_css: ${LP_BUILT_JS_ROOT}/sprite.css
-
-${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
-		${ICING}/icon-sprites.positioning
-	${SHHH} bin/sprite-util create-css
-
-sprite_image: ${ICING}/icon-sprites.png ${ICING}/icon-sprites.positioning
-
-${ICING}/icon-sprites.positioning ${ICING}/icon-sprites.png: bin/sprite-util \
-		${ICING}/sprite.css.in
+css_combine:
 	${SHHH} bin/sprite-util create-image
+	${SHHH} bin/sprite-util create-css
+	${SHHH} bin/combine-css
 
 jsbuild_widget_css: bin/jsbuild
 	${SHHH} bin/jsbuild \
@@ -234,7 +224,7 @@ bin/buildout: download-cache eggs
 # and the other bits might run into problems like bug 575037.  This
 # target runs buildout, and then removes everything created except for
 # the eggs.
-build_eggs: $(BUILDOUT_BIN)
+build_eggs: $(BUILDOUT_BIN) clean_buildout
 
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout

@@ -247,9 +247,7 @@ javascript enabled, the information is shown in-place.
     >>> expander_url = find_tags_by_class(
     ...     user_browser.contents, 'expander')[0]
     >>> print expander_url
-    <a class="expander" href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra" id="pub26-expander">
-      &nbsp;
-    </a>
+    <a class="expander" href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra" id="pub26-expander"></a>
 
     >>> browser.open(user_browser.getLink(id="pub26-expander").url)
     >>> print extract_text(browser.contents)

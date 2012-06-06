@@ -232,7 +232,7 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
             widget = LaunchpadRadioWidgetWithDescription(
                 self.field, vocab, self.request)
             self.assertRenderItem(
-                "... containing private information...", widget.renderItem,
+                "...has shared private information...", widget.renderItem,
                 vocab.getTermByToken('USERDATA'))
 
 
@@ -297,4 +297,13 @@ class TestVocabularyToChoiceEditItems(TestCase):
             items = vocabulary_to_choice_edit_items(
                 self.ChoiceEnum, include_description=True)
         expected = [self._makeItemDict(e.value) for e in self.ChoiceEnum]
+        self.assertEqual(expected, items)
+
+    def test_vocabulary_to_choice_edit_items_excluded_items(self):
+        # Excluded items are not included.
+        items = vocabulary_to_choice_edit_items(
+            self.ChoiceEnum, include_description=True,
+            excluded_items=[self.ChoiceEnum.ITEM_B])
+        overrides = {'description': ''}
+        expected = [self._makeItemDict(self.ChoiceEnum.ITEM_A, overrides)]
         self.assertEqual(expected, items)

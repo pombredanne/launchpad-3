@@ -8,16 +8,40 @@ __metaclass__ = type
 
 from testtools.matchers import MatchesStructure
 
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.features.testing import FeatureFixture
-from lp.testing import TestCase
+from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestInformationTypeVocabulary(TestCase):
+class TestInformationTypeVocabulary(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_vocabulary_items(self):
+        vocab = InformationTypeVocabulary()
+        for info_type in InformationType:
+            self.assertIn(info_type.value, vocab)
+
+    def test_vocabulary_items_project(self):
+        # The vocab has all info types for a project without private_bugs set.
+        vocab = InformationTypeVocabulary()
+        for info_type in InformationType:
+            self.assertIn(info_type.value, vocab)
+
+    def test_vocabulary_items_private_bugs_project(self):
+        # The vocab has private info types for a project with private_bugs set.
+        product = self.factory.makeProduct(private_bugs=True)
+        vocab = InformationTypeVocabulary(product)
+        for info_type in PRIVATE_INFORMATION_TYPES:
+            self.assertIn(info_type, vocab)
+        for info_type in PUBLIC_INFORMATION_TYPES:
+            self.assertNotIn(info_type, vocab)
 
     def test_getTermByToken(self):
         vocab = InformationTypeVocabulary()
@@ -49,16 +73,16 @@ class TestInformationTypeVocabulary(TestCase):
             vocab = InformationTypeVocabulary()
             term = vocab.getTermByToken('USERDATA')
             self.assertEqual('Private', term.title)
-            self.assertEqual(
-                "Visible only to users with whom the project has shared "
-                "information\ncontaining private information.\n",
+            self.assertTextMatchesExpressionIgnoreWhitespace(
+                "Visible only to users with whom the project has "
+                "shared private information.",
                 term.description)
 
     def test_userdata(self):
         vocab = InformationTypeVocabulary()
         term = vocab.getTermByToken('USERDATA')
         self.assertEqual('User Data', term.title)
-        self.assertEqual(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             "Visible only to users with whom the project has shared "
-            "information\ncontaining user data.\n",
+            "information containing user data.",
             term.description)

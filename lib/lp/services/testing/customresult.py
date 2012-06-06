@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Support code for using a custom test result in test.py."""
@@ -53,15 +53,22 @@ def filter_tests(list_name):
         # Read the tests, filtering out any blank lines.
         tests = filter(None, [line.strip() for line in open(list_name, 'rb')])
         test_lookup = {}
+        # Multiple unique testcases can be represented by a single id and they
+        # must be tracked separately.
         for layer_name, suite in tests_by_layer_name.iteritems():
             for testcase in suite:
-                test_lookup[testcase.id()] = (testcase, layer_name)
+                layer_to_tests = test_lookup.setdefault(
+                    testcase.id(), {})
+                testcases = layer_to_tests.setdefault(
+                    layer_name, [])
+                testcases.append(testcase)
 
         result = {}
         for testname in tests:
-            testcase, layer = test_lookup.get(testname, (None, None))
-            if layer is not None:
-                suite = result.setdefault(layer, TestSuite())
-                suite.addTest(testcase)
+            layer_to_tests = test_lookup.get(testname, {})
+            for layer_name, testcases in layer_to_tests.items():
+                if testcases is not None:
+                    suite = result.setdefault(layer_name, TestSuite())
+                    suite.addTests(testcases)
         return result
     return do_filter

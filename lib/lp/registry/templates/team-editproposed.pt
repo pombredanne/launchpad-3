@@ -69,7 +69,7 @@
         </p>
 
         <input tal:replace="structure view/action_save/render" />
-        or&nbsp; <a tal:attributes="href view/cancel_url">Cancel</a>
+        or&nbsp;<a tal:attributes="href view/cancel_url">Cancel</a>
       </form>
       </div>
 

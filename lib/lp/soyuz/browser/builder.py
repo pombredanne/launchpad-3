@@ -321,12 +321,11 @@ class BuilderSetAddView(LaunchpadFormView):
     label = "Register a new build machine"
 
     field_names = [
-        'name', 'title', 'description', 'processor', 'url',
-        'active', 'virtualized', 'vm_host', 'owner'
+        'name', 'title', 'processor', 'url', 'active', 'virtualized',
+        'vm_host', 'owner'
         ]
 
     custom_widget('owner', HiddenUserWidget)
-    custom_widget('description', TextAreaWidget, height=3)
     custom_widget('url', TextWidget, displayWidth=30)
     custom_widget('vm_host', TextWidget, displayWidth=30)
 
@@ -338,7 +337,6 @@ class BuilderSetAddView(LaunchpadFormView):
             url=data.get('url'),
             name=data.get('name'),
             title=data.get('title'),
-            description=data.get('description'),
             owner=data.get('owner'),
             active=data.get('active'),
             virtualized=data.get('virtualized'),
@@ -364,9 +362,8 @@ class BuilderEditView(LaunchpadEditFormView):
     schema = IBuilder
 
     field_names = [
-        'name', 'title', 'description', 'processor', 'url', 'manual',
-        'owner', 'virtualized', 'builderok', 'failnotes', 'vm_host',
-        'active',
+        'name', 'title', 'processor', 'url', 'manual', 'owner',
+        'virtualized', 'builderok', 'failnotes', 'vm_host', 'active',
         ]
 
     @action(_('Change'), name='update')

@@ -35,6 +35,7 @@ from lp.code.browser.sourcepackagerecipebuild import (
     )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -322,7 +323,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_new_recipe_private_branch(self):
         # Recipes can't be created on private branches.
         with person_logged_in(self.chef):
-            branch = self.factory.makeBranch(private=True, owner=self.chef)
+            branch = self.factory.makeBranch(
+                owner=self.chef, information_type=InformationType.USERDATA)
             branch_url = canonical_url(branch)
 
         browser = self.getUserBrowser(branch_url, user=self.chef)
@@ -516,7 +518,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_recipe_private_branch(self):
         # If a user tries to create source package recipe with a private
         # base branch, they should get an error.
-        branch = self.factory.makeAnyBranch(private=True, owner=self.user)
+        branch = self.factory.makeAnyBranch(
+            owner=self.user, information_type=InformationType.USERDATA)
         with person_logged_in(self.user):
             bzr_identity = branch.bzr_identity
         recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
@@ -933,7 +936,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         # If a user tries to set source package recipe to use a private
         # branch, they should get an error.
         recipe = self.factory.makeSourcePackageRecipe(owner=self.user)
-        branch = self.factory.makeAnyBranch(private=True, owner=self.user)
+        branch = self.factory.makeAnyBranch(
+            owner=self.user, information_type=InformationType.USERDATA)
         with person_logged_in(self.user):
             bzr_identity = branch.bzr_identity
         recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity

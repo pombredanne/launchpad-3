@@ -71,6 +71,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.utils import total_seconds
 from lp.services.webapp import (
     canonical_url,
     urlappend,
@@ -672,7 +673,6 @@ class ObjectFormatterAPI:
             css_classes.add('global-notification-visible')
         return ' '.join(list(css_classes))
 
-
     def _getSaneBreadcrumbDetail(self, breadcrumb):
         text = breadcrumb.detail
         if len(text) > 64:
@@ -883,7 +883,7 @@ class ObjectImageDisplayAPI:
         else:
             icon = 'no'
         markup = (
-            '<span class="sprite %(icon)s">&nbsp;'
+            '<span class="sprite %(icon)s">'
             '<span class="invisible-link">%(icon)s</span></span>')
         return markup % dict(icon=icon)
 
@@ -906,10 +906,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
+        '<span alt="%s" title="%s" class="%s"></span>')
 
     linked_icon_template = (
-        '<a href="%s" alt="%s" title="%s" class="%s">&nbsp;</a>')
+        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
@@ -2308,11 +2308,7 @@ class DurationFormatterAPI:
         # a useful name. It's also unlikely that these numbers will be
         # changed.
 
-        # Calculate the total number of seconds in the duration,
-        # including the decimal part.
-        seconds = self._duration.days * (3600 * 24)
-        seconds += self._duration.seconds
-        seconds += (float(self._duration.microseconds) / 10 ** 6)
+        seconds = total_seconds(self._duration)
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
@@ -2411,10 +2407,7 @@ class DurationFormatterAPI:
         return "%d weeks" % weeks
 
     def millisecondduration(self):
-        return str(
-            (self._duration.days * 24 * 3600
-             + self._duration.seconds * 1000
-             + self._duration.microseconds // 1000)) + 'ms'
+        return '%sms' % (total_seconds(self._duration) * 1000,)
 
 
 class LinkFormatterAPI(ObjectFormatterAPI):

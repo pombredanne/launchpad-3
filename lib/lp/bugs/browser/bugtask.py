@@ -704,7 +704,16 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     @property
     def information_type(self):
-        return self.context.bug.information_type.title
+        use_private_flag = getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled')
+        info_type_enabled_flag = getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')
+        value = None
+        if info_type_enabled_flag:
+            value = self.context.bug.information_type.title
+            if (use_private_flag and value == InformationType.USERDATA.title):
+                value = "Private"
+        return value
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -1613,7 +1622,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         # from the form.
         if new_target is not missing and bugtask.target != new_target:
             changed = True
-            bugtask.transitionToTarget(new_target)
+            bugtask.transitionToTarget(new_target, self.user)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.

@@ -284,8 +284,8 @@
     </div>
 
     <div class="portlet">
-      <a href="/+help-blueprints/workitems-help.html" target="help" class="sprite maybe">&nbsp;
-        <span class="invisible-link">Tag help</span></a>
+      <a href="/+help-blueprints/workitems-help.html" target="help"
+         class="sprite maybe actionicon"><span class="invisible-link">Tag help</span></a>
       <div class="wide" tal:content="structure view/workitems_text_widget" />
     </div>
 

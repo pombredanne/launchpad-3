@@ -2,6 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource, IAccessPolicySource, IAccessArtifactSource
 
 __metaclass__ = type
 __all__ = [
@@ -138,6 +140,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
@@ -194,6 +197,20 @@ class Branch(SQLBase, BzrIdentityMixin):
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 
+    def _reconcileAccess(self):
+        """Reconcile the branch's sharing information.
+
+        Takes the information_type and target and makes the related
+        AccessArtifact and AccessPolicyArtifacts match.
+        """
+        # We haven't yet quite worked out how distribution privacy
+        # works, so only work for products for now.
+        if self.product is not None:
+            pillars = [self.product]
+        else:
+            pillars = []
+        reconcile_access_for_artifact(self, self.information_type, pillars)
+
     def setPrivate(self, private, user):
         """See `IBranch`."""
         if private:
@@ -220,6 +237,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
         self.information_type = information_type
+        self._reconcileAccess()
         # Set the legacy values for now.
         self.explicitly_private = private
         # If this branch is private, then it is also transitively_private
@@ -312,6 +330,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             # Person targets are always valid.
         namespace = target.getNamespace(self.owner)
         namespace.moveBranch(self, user, rename_if_necessary=True)
+        self._reconcileAccess()
 
     @property
     def namespace(self):
@@ -839,13 +858,15 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
 
-    def unsubscribe(self, person, unsubscribed_by):
+    def unsubscribe(self, person, unsubscribed_by, **kwargs):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
         if subscription is None:
             # Silent success seems order of the day (like bugs).
             return
-        if not subscription.canBeUnsubscribedByUser(unsubscribed_by):
+        ignore_permissions = kwargs.get('ignore_permissions', False)
+        if (not ignore_permissions
+            and not subscription.canBeUnsubscribedByUser(unsubscribed_by)):
             raise UserCannotUnsubscribePerson(
                 '%s does not have permission to unsubscribe %s.' % (
                     unsubscribed_by.displayname,
