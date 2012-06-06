@@ -51,9 +51,11 @@ def test_suite():
                ]
 
     for name, setUpMethod in targets:
-        test = LayeredDocFileSuite('buglinktarget.txt',
-                    setUp=setUpMethod, tearDown=tearDown,
-                    layer=LaunchpadFunctionalLayer)
+        test = LayeredDocFileSuite(
+            'buglinktarget.txt',
+            id_extensions=[name],
+            setUp=setUpMethod, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
     return suite
 
