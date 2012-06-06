@@ -47,6 +47,7 @@ from lp.services.features import (
 from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.scripts.logger import OopsHandler
+from lp.services.utils import total_seconds
 from lp.services.webapp.errorlog import globalErrorUtility
 from lp.services.webapp.interaction import (
     ANONYMOUS,
@@ -414,6 +415,10 @@ class LaunchpadCronScript(LaunchpadScript):
         # overriding the name property.
         logging.getLogger().addHandler(OopsHandler(self.name))
 
+    def get_last_activity(self):
+        """Return the last activity, if any."""
+        return getUtility(IScriptActivitySet).getLastActivity(self.name)
+
     @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
@@ -424,6 +429,12 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+        # date_started is recorded *after* the lock is acquired and we've
+        # initialized Zope components and the database.  Thus this time is
+        # only for the script proper, rather than total execution time.
+        seconds_taken = total_seconds(date_completed - date_started)
+        self.logger.debug(
+            "%s ran in %ss (excl. load & lock)" % (self.name, seconds_taken))
 
 
 @contextmanager
