@@ -628,3 +628,11 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         login_person(user)
         view = create_initialized_view(project, '+filebug', principal=user)
         self._assert_cache_values(view, True)
+
+    def test_filebug_reportinguidelines(self):
+        project = self.factory.makeProduct(official_malone=True)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(
+            project, '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, True)
