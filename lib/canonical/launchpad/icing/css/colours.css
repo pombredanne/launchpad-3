@@ -107,7 +107,7 @@
     }
 .statusINVALID, .statusINVALID a,
 .statusWONTFIX, .statusWONTFIX a {
-    color: gray;
+    color: lightgray;
     }
 .importanceCRITICAL, .importanceCRITICAL a {
     color: red;
