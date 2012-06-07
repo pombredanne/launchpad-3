@@ -1150,9 +1150,7 @@ class TestArchiveTokens(TestCaseWithFactory):
     def setUp(self):
         super(TestArchiveTokens, self).setUp()
         owner = self.factory.makePerson()
-        self.private_ppa = self.factory.makeArchive(owner=owner)
-        self.private_ppa.buildd_secret = 'blah'
-        self.private_ppa.private = True
+        self.private_ppa = self.factory.makeArchive(owner=owner, private=True)
         self.joe = self.factory.makePerson(name='joe')
         self.private_ppa.newSubscription(self.joe, owner)
 
