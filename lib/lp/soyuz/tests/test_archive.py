@@ -2635,7 +2635,7 @@ class TestPPANaming(TestCaseWithFactory):
         # IPerson to a single IArchive.
         person = self.factory.makePerson()
         ppa = self.factory.makeArchive(owner=person, name="ppa")
-        another_ppa = self.factory.makeArchive(owner=person, name="nightly")
+        self.factory.makeArchive(owner=person, name="nightly")
         self.assertEqual(ppa, person.archive)
 
     def test_non_default_ppas_have_different_displayname(self):
