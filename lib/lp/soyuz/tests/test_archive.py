@@ -523,11 +523,11 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         # Somebody unrelated does not
         self.assertFalse(archive.checkArchivePermission(somebody))
 
-    def makeArchiveAndActiveDistroSeries(self, purpose=ArchivePurpose.PRIMARY):
+    def makeArchiveAndActiveDistroSeries(self, purpose=ArchivePurpose.PRIMARY,
+                                         status=SeriesStatus.DEVELOPMENT):
         archive = self.factory.makeArchive(purpose=purpose)
         distroseries = self.factory.makeDistroSeries(
-            distribution=archive.distribution,
-            status=SeriesStatus.DEVELOPMENT)
+            distribution=archive.distribution, status=status)
         return archive, distroseries
 
     def makePersonWithComponentPermission(self, archive):
@@ -705,6 +705,21 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             person, sourcepackagename)
         self.assertCanUpload(
             archive, person, sourcepackagename, distroseries=distroseries)
+
+    def makePersonWithPocketPermission(self, archive, pocket):
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newPocketUploader(person, pocket)
+        return person
+
+    def test_checkUpload_pocket_permission(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY, status=SeriesStatus.CURRENT)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        pocket = PackagePublishingPocket.SECURITY
+        person = self.makePersonWithPocketPermission(archive, pocket)
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries,
+            pocket=pocket)
 
     def make_person_with_packageset_permission(self, archive, distroseries,
                                                packages=()):
@@ -1644,6 +1659,30 @@ class TestComponents(TestCaseWithFactory):
         ap = ap_set.newComponentUploader(archive, person, component)
         self.assertEqual(set([ap]),
             set(archive.getComponentsForUploader(person)))
+
+
+class TestPockets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_pockets_for_arbitrary_person(self):
+        # By default, a person cannot upload to any pocket of an archive.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        self.assertEqual(set(), set(archive.getPocketsForUploader(person)))
+
+    def test_pockets_for_person_with_permissions(self):
+        # If a person has been explicitly granted upload permissions to a
+        # particular pocket, then those pockets are included in
+        # IArchive.getPocketsForUploader.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        # Only admins or techboard members can add permissions normally. That
+        # restriction isn't relevant to this test.
+        ap_set = removeSecurityProxy(getUtility(IArchivePermissionSet))
+        ap = ap_set.newPocketUploader(
+            archive, person, PackagePublishingPocket.SECURITY)
+        self.assertEqual(set([ap]), set(archive.getPocketsForUploader(person)))
 
 
 class TestValidatePPA(TestCaseWithFactory):

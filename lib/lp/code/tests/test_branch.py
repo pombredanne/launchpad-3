@@ -274,7 +274,7 @@ class TestWriteToBranch(PermissionTest):
             None,
             archive.verifyUpload(
                 person, spn, component, distroseries,
-                strict_component))
+                strict_component=strict_component))
 
     def assertCannotUpload(
         self, reason, person, spn, archive, component, distroseries=None):

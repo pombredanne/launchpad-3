@@ -626,7 +626,7 @@ class IArchiveView(IHasBuildRecords):
         """
 
     def verifyUpload(person, sourcepackagename, component,
-                      distroseries, strict_component=True):
+                      distroseries, strict_component=True, pocket=None):
         """Can 'person' upload 'sourcepackagename' to this archive ?
 
         :param person: The `IPerson` trying to upload to the package. Referred
@@ -639,6 +639,8 @@ class IArchiveView(IHasBuildRecords):
         :param strict_component: True if access to the specific component for
             the package is needed to upload to it. If False, then access to
             any component will do.
+        :param pocket: The `PackagePublishingPocket` being uploaded to. If
+            None, then pocket permissions are not checked.
         :return: CannotUploadToArchive if 'person' cannot upload to the
             archive,
             None otherwise.
@@ -759,6 +761,21 @@ class IArchiveView(IHasBuildRecords):
 
         :param person: An `IPerson` wishing to upload to an archive.
         :return: A `set` of `IComponent`s that 'person' can upload to.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getPocketsForUploader(person):
+        """Return the pockets that 'person' can upload to this archive.
+
+        :param person: An `IPerson` wishing to upload to an archive.
+        :return: A `set` of `PackagePublishingPocket` items that 'person'
+            can upload to.
         """
 
     @operation_parameters(
@@ -1173,6 +1190,24 @@ class IArchiveView(IHasBuildRecords):
         :return: A list of `IArchivePermission` records.
         """
 
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        )
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getUploadersForPocket(pocket):
+        """Return `IArchivePermission` records for the pocket's uploaders.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :return: A list of `IArchivePermission` records.
+        """
+
     def hasAnyPermission(person):
         """Whether or not this person has any permission at all on this
         archive.
@@ -1507,6 +1542,30 @@ class IArchiveEdit(Interface):
 
     @operation_parameters(
         person=Reference(schema=IPerson),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        )
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    @operation_for_version("devel")
+    def newPocketUploader(person, pocket):
+        """Add permission for a person to upload to a pocket.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param component: A `PackagePublishingPocket`.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        :raises InvalidPocketForPartnerArchive: if this archive is a partner
+            archive and the pocket is not RELEASE or PROPOSED.
+        :raises InvalidPocketForPPA: if this archive is a PPA and the pocket
+            is not RELEASE.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
         component_name=TextLine(
             title=_("Component Name"), required=True))
     # Really IArchivePermission, set below to avoid circular import.
@@ -1569,6 +1628,23 @@ class IArchiveEdit(Interface):
 
         :param person: An `IPerson` whose permission should be revoked.
         :param component: An `IComponent` or textual component name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        )
+    @export_write_operation()
+    @operation_for_version("devel")
+    def deletePocketUploader(person, pocket):
+        """Revoke permission for the person to upload to the pocket.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param pocket: A `PackagePublishingPocket`.
         """
 
     @operation_parameters(
