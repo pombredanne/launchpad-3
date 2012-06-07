@@ -8,6 +8,7 @@ __metaclass__ = type
 import unittest
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from zope.component import getUtility
 
 from lp.bugs.browser.structuralsubscription import (
@@ -88,6 +89,9 @@ class _TestStructSubs(TestCaseWithFactory, _TestResultsMixin):
     def setUp(self):
         super(_TestStructSubs, self).setUp()
         self.regular_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _create_scenario(self, user):
         with person_logged_in(user):
@@ -244,6 +248,9 @@ class DistroView(BrowserTestCase, _TestResultsMixin):
         with person_logged_in(self.target.owner):
             self.target.official_malone = True
         self.regular_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _create_scenario(self, user):
         with person_logged_in(user):
@@ -635,7 +642,7 @@ class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):
 class ProductMilestoneDoesNotUseLPView(ProductMilestoneView):
 
     def setUp(self):
-        BrowserTestCase.setUp(self)
+        super(ProductMilestoneDoesNotUseLPView, self).setUp()
         self.product = self.factory.makeProduct()
         with person_logged_in(self.product.owner):
             self.product.official_malone = False

@@ -14,6 +14,12 @@ import sys
 import tempfile
 
 import pytz
+from testtools.matchers import (
+    AllMatch,
+    FileContains,
+    FileExists,
+    Not,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -29,6 +35,11 @@ from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.osutils import (
+    ensure_directory_exists,
+    remove_if_exists,
+    write_file,
+    )
 from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
@@ -48,6 +59,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
     dbuser = config.generateppahtaccess.dbuser
 
+    SCRIPT_NAME = 'test tokens'
+
     def setUp(self):
         super(TestPPAHtaccessTokenGeneration, self).setUp()
         self.owner = self.factory.makePerson(
@@ -64,7 +77,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         """Return a HtaccessTokenGenerator instance."""
         if test_args is None:
             test_args = []
-        script = HtaccessTokenGenerator("test tokens", test_args=test_args)
+        script = HtaccessTokenGenerator(self.SCRIPT_NAME, test_args=test_args)
         script.logger = BufferLogger()
         script.txn = self.layer.txn
         switch_dbuser(self.dbuser)
@@ -90,13 +103,10 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         pub_config = getPubConfig(self.ppa)
 
         filename = os.path.join(pub_config.htaccessroot, ".htaccess")
-        if os.path.isfile(filename):
-            os.remove(filename)
+        remove_if_exists(filename)
         script = self.getScript()
         script.ensureHtaccess(self.ppa)
-        self.assertTrue(
-            os.path.isfile(filename),
-            "%s is not present when it should be" % filename)
+        self.addCleanup(remove_if_exists, filename)
 
         contents = [
             "",
@@ -104,29 +114,24 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "AuthName           \"Token Required\"",
             "AuthUserFile       %s/.htpasswd" % pub_config.htaccessroot,
             "Require            valid-user",
+            "",
             ]
-
-        file = open(filename, "r")
-        file_contents = file.read().splitlines()
-        file.close()
-        os.remove(filename)
-
-        self.assertEqual(contents, file_contents)
+        self.assertThat(filename, FileContains('\n'.join(contents)))
 
     def testGenerateHtpasswd(self):
         """Given some `ArchiveAuthToken`s, test generating htpasswd."""
         # Make some subscriptions and tokens.
-        name12 = getUtility(IPersonSet).getByName("name12")
-        name16 = getUtility(IPersonSet).getByName("name16")
-        self.ppa.newSubscription(name12, self.ppa.owner)
-        self.ppa.newSubscription(name16, self.ppa.owner)
         tokens = []
-        tokens.append(self.ppa.newAuthToken(name12))
-        tokens.append(self.ppa.newAuthToken(name16))
+        for name in ['name12', 'name16']:
+            person = getUtility(IPersonSet).getByName(name)
+            self.ppa.newSubscription(person, self.ppa.owner)
+            tokens.append(self.ppa.newAuthToken(person))
+        token_usernames = [token.person.name for token in tokens]
 
         # Generate the passwd file.
         script = self.getScript()
         filename = script.generateHtpasswd(self.ppa)
+        self.addCleanup(remove_if_exists, filename)
 
         # It should be a temp file in the same directory as the intended
         # target file when it's renamed, so that os.rename() won't
@@ -136,31 +141,18 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             pub_config.htaccessroot, os.path.dirname(filename))
 
         # Read it back in.
-        file = open(filename, "r")
-        file_contents = file.read().splitlines()
+        file_contents = [
+            line.strip().split(':', 1) for line in open(filename, 'r')]
 
-        # The first line should be the buildd_secret.
-        [user, password] = file_contents[0].split(":", 1)
-        self.assertEqual(user, "buildd")
+        # First entry is buildd secret, rest are from tokens.
+        usernames = list(zip(*file_contents)[0])
+        self.assertEqual(['buildd'] + token_usernames, usernames)
+
         # We can re-encrypt the buildd_secret and it should match the
         # one in the .htpasswd file.
+        password = file_contents[0][1]
         encrypted_secret = crypt.crypt(self.ppa.buildd_secret, password)
         self.assertEqual(encrypted_secret, password)
-
-        # Finally, there should be two more lines in the file, one for
-        # each of the tokens generated above.
-        self.assertEqual(len(file_contents), 3)
-        [user1, password1] = file_contents[1].split(":", 1)
-        [user2, password2] = file_contents[2].split(":", 1)
-        self.assertEqual(user1, "name12")
-        self.assertEqual(user2, "name16")
-
-        # For the names to appear in the order above, the dabatase IDs
-        # for the tokens have to be in that order.  (To ensure a
-        # consistent ordering)
-        self.assertTrue(tokens[0].id < tokens[1].id)
-
-        os.remove(filename)
 
     def testReplaceUpdatedHtpasswd(self):
         """Test that the htpasswd file is only replaced if it changes."""
@@ -171,11 +163,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         filename = os.path.join(pub_config.htaccessroot, ".htpasswd")
 
         # Write out a dummy .htpasswd
-        if not os.path.exists(pub_config.htaccessroot):
-            os.makedirs(pub_config.htaccessroot)
-        file = open(filename, "w")
-        file.write(FILE_CONTENT)
-        file.close()
+        ensure_directory_exists(pub_config.htaccessroot)
+        write_file(filename, FILE_CONTENT)
 
         # Write the same contents in a temp file.
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
@@ -189,9 +178,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             script.replaceUpdatedHtpasswd(self.ppa, temp_filename))
 
         # Writing a different .htpasswd should see it get replaced.
-        file = open(filename, "w")
-        file.write("Come to me, son of Jor-El!")
-        file.close()
+        write_file(filename, "Come to me, son of Jor-El!")
 
         self.assertTrue(
             script.replaceUpdatedHtpasswd(self.ppa, temp_filename))
@@ -269,7 +256,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Initially, nothing is eligible for deactivation.
         script = self.getScript()
-        script.deactivateTokens()
+        script.deactivateInvalidTokens()
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
@@ -280,7 +267,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # Clear out emails generated when leaving a team.
         pop_notifications()
 
-        script.deactivateTokens(send_email=True)
+        script.deactivateInvalidTokens(send_email=True)
         self.assertDeactivated(tokens[team1_person])
         del tokens[team1_person]
         for person in tokens:
@@ -298,7 +285,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             promiscuous_person.leave(team1)
         # Clear out emails generated when leaving a team.
         pop_notifications()
-        script.deactivateTokens(send_email=True)
+        script.deactivateInvalidTokens(send_email=True)
         self.assertNotDeactivated(tokens[promiscuous_person])
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
@@ -317,7 +304,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             parent_team.setMembershipData(
                 team2, TeamMembershipStatus.DEACTIVATED, name12)
             self.assertFalse(team2.inTeam(parent_team))
-        script.deactivateTokens()
+        script.deactivateInvalidTokens()
         for person in persons2:
             self.assertDeactivated(tokens[person])
 
@@ -348,10 +335,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         pub_config = getPubConfig(self.ppa)
         htaccess = os.path.join(pub_config.htaccessroot, ".htaccess")
         htpasswd = os.path.join(pub_config.htaccessroot, ".htpasswd")
-        if os.path.isfile(htaccess):
-            os.remove(htaccess)
-        if os.path.isfile(htpasswd):
-            os.remove(htpasswd)
+        remove_if_exists(htaccess)
+        remove_if_exists(htpasswd)
         return htaccess, htpasswd
 
     def testSubscriptionExpiry(self):
@@ -384,8 +369,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertEqual(
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
                 (return_code, stderr))
-        self.assertTrue(os.path.isfile(htaccess))
-        self.assertTrue(os.path.isfile(htpasswd))
+        self.assertThat([htaccess, htpasswd], AllMatch(FileExists()))
         os.remove(htaccess)
         os.remove(htpasswd)
 
@@ -407,8 +391,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script.main()
 
         # Assert no files were written.
-        self.assertFalse(os.path.isfile(htaccess))
-        self.assertFalse(os.path.isfile(htpasswd))
+        self.assertThat([htaccess, htpasswd], AllMatch(Not(FileExists())))
 
         # Assert that the cancelled subscription did not cause the token
         # to get deactivated.
@@ -441,10 +424,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # The tokens will still be deactivated, and subscriptions expired.
         self.assertDeactivated(tokens[0])
         self.assertEqual(subs[0].status, ArchiveSubscriberStatus.EXPIRED)
-
         # But the htaccess is not touched.
-        self.assertFalse(os.path.isfile(htaccess))
-        self.assertFalse(os.path.isfile(htpasswd))
+        self.assertThat([htaccess, htpasswd], AllMatch(Not(FileExists())))
 
     def testSkippingOfDisabledPPAs(self):
         """Test that the htaccess for disabled PPAs are not touched."""
@@ -464,8 +445,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script.main()
 
         # The htaccess and htpasswd files should not be generated.
-        self.assertFalse(os.path.isfile(htaccess))
-        self.assertFalse(os.path.isfile(htpasswd))
+        self.assertThat([htaccess, htpasswd], AllMatch(Not(FileExists())))
 
     def testSkippingOfDeletedPPAs(self):
         """Test that the htaccess for deleted PPAs are not touched."""
@@ -484,8 +464,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script.main()
 
         # The htaccess and htpasswd files should not be generated.
-        self.assertFalse(os.path.isfile(htaccess))
-        self.assertFalse(os.path.isfile(htpasswd))
+        self.assertThat([htaccess, htpasswd], AllMatch(Not(FileExists())))
 
     def testSendingCancellationEmail(self):
         """Test that when a token is deactivated, its user gets an email.
@@ -555,6 +534,20 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertEqual(
             num_emails, 0, "Expected 0 emails, got %s" % num_emails)
 
+    def test_getTimeToSyncFrom(self):
+        # Sync from 1s before previous start to catch anything made during the
+        # last script run, and to handle NTP clock skew.
+        now = datetime.now(pytz.UTC)
+        script_start_time = now - timedelta(seconds=2)
+        script_end_time = now
+
+        getUtility(IScriptActivitySet).recordSuccess(
+            self.SCRIPT_NAME, script_start_time, script_end_time)
+        script = self.getScript()
+        self.assertEqual(
+            script_start_time - timedelta(seconds=1),
+            script.getTimeToSyncFrom())
+
     def test_getNewPrivatePPAs_no_previous_run(self):
         # All private PPAs are returned if there was no previous run.
         # This happens even if they have no tokens.
@@ -568,93 +561,51 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     def test_getNewPrivatePPAs_only_those_since_last_run(self):
         # Only private PPAs created since the last run are returned.
         # This happens even if they have no tokens.
-
-        now = datetime.now(pytz.UTC)
-        getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', now, now - timedelta(minutes=3))
-        removeSecurityProxy(self.ppa).date_created = (
-            now - timedelta(minutes=4))
+        last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
+        before_last_start = last_start - timedelta(seconds=30)
+        removeSecurityProxy(self.ppa).date_created = before_last_start
 
         # Create a new PPA that should show up.
         new_ppa = self.factory.makeArchive(private=True)
 
         script = self.getScript()
-        self.assertContentEqual([new_ppa], script.getNewPrivatePPAs())
+        new_ppas = script.getNewPrivatePPAs(since=last_start)
+        self.assertContentEqual([new_ppa], new_ppas)
 
-    def test_getNewTokensSinceLastRun_no_previous_run(self):
+    def test_getNewTokens_no_previous_run(self):
         """All valid tokens returned if there is no record of previous run."""
         tokens = self.setupDummyTokens()[1]
 
         # If there is no record of the script running previously, all
         # valid tokens are returned.
         script = self.getScript()
-        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
+        self.assertContentEqual(tokens, script.getNewTokens())
 
-    def test_getNewTokensSinceLastRun_only_those_since_last_run(self):
+    def test_getNewTokens_only_those_since_last_run(self):
         """Only tokens created since the last run are returned."""
-        now = datetime.now(pytz.UTC)
-        script_start_time = now - timedelta(seconds=2)
-        script_end_time = now
-        before_previous_start = script_start_time - timedelta(seconds=30)
+        last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
+        before_last_start = last_start - timedelta(seconds=30)
 
-        getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', date_started=script_start_time,
-            date_completed=script_end_time)
         tokens = self.setupDummyTokens()[1]
         # This token will not be included.
-        removeSecurityProxy(tokens[0]).date_created = before_previous_start
+        removeSecurityProxy(tokens[0]).date_created = before_last_start
 
         script = self.getScript()
-        self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
+        new_tokens = script.getNewTokens(since=last_start)
+        self.assertContentEqual(tokens[1:], new_tokens)
 
-    def test_getNewTokensSinceLastRun_includes_tokens_during_last_run(self):
-        """Tokens created during the last ppa run will be included."""
-        now = datetime.now(pytz.UTC)
-        script_start_time = now - timedelta(seconds=2)
-        script_end_time = now
-        in_between = now - timedelta(seconds=1)
-
-        getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', script_start_time, script_end_time)
-        tokens = self.setupDummyTokens()[1]
-        # This token will be included because it's been created during
-        # the previous script run.
-        removeSecurityProxy(tokens[0]).date_created = in_between
-
-        script = self.getScript()
-        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
-
-    def test_getNewTokensSinceLastRun_handles_ntp_skew(self):
-        """An ntp-skew of up to one second will not affect the results."""
-        now = datetime.now(pytz.UTC)
-        script_start_time = now - timedelta(seconds=2)
-        script_end_time = now
-        earliest_with_ntp_skew = script_start_time - timedelta(
-            milliseconds=500)
-
-        tokens = self.setupDummyTokens()[1]
-        getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', date_started=script_start_time,
-            date_completed=script_end_time)
-        # This token will still be included in the results.
-        removeSecurityProxy(tokens[0]).date_created = earliest_with_ntp_skew
-
-        script = self.getScript()
-        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
-
-    def test_getNewTokensSinceLastRun_only_active_tokens(self):
+    def test_getNewTokens_only_active_tokens(self):
         """Only active tokens are returned."""
         tokens = self.setupDummyTokens()[1]
         tokens[0].deactivate()
 
         script = self.getScript()
-        self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
+        self.assertContentEqual(tokens[1:], script.getNewTokens())
 
     def test_processes_PPAs_without_subscription(self):
         # A .htaccess file is written for Private PPAs even if they don't have
         # any subscriptions.
         htaccess, htpasswd = self.ensureNoFiles()
-
         transaction.commit()
 
         # Call the script and check that we have a .htaccess and a
@@ -663,7 +614,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.assertEqual(
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
                 (return_code, stderr))
-        self.assertTrue(os.path.isfile(htaccess))
-        self.assertTrue(os.path.isfile(htpasswd))
+        self.assertThat([htaccess, htpasswd], AllMatch(FileExists()))
         os.remove(htaccess)
         os.remove(htpasswd)

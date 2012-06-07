@@ -3,6 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX sourcepackagepublishinghistory__packageupload__idx ON sourcepackagepublishinghistory USING btree (id) WHERE packageupload IS NOT NULL;
+CREATE INDEX sourcepackagepublishinghistory__packageupload__idx ON sourcepackagepublishinghistory USING btree (id) WHERE packageupload IS NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 15, 3);
