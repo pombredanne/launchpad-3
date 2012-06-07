@@ -65,6 +65,7 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA,
     NoRightsForArchive,
     NoRightsForComponent,
+    NoSuchPPA,
     VersionRequiresName,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
@@ -2671,3 +2672,115 @@ class TestCountersAndSummaries(TestCaseWithFactory):
         e = self.assertRaises(
             Unauthorized, getattr, archive, "getBuildSummariesForSourceIds")
         self.assertEqual("launchpad.View", e.args[2])
+
+
+class TestPPANaming(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_unique_copy_archive_name(self):
+        # Non-PPA archive names must be unique for a given distribution.
+        uber = self.factory.makeDistribution()
+        self.factory.makeArchive(
+            purpose=ArchivePurpose.COPY, distribution=uber, name="uber-copy")
+        self.assertRaises(
+            AssertionError, self.factory.makeArchive,
+            purpose=ArchivePurpose.COPY, distribution=uber, name="uber-copy")
+
+    def test_unique_partner_archive_name(self):
+        # Partner archive names must be unique for a given distribution.
+        uber = self.factory.makeDistribution()
+        self.factory.makeArchive(
+            purpose=ArchivePurpose.PARTNER, distribution=uber,
+            name="uber-partner")
+        self.assertRaises(
+            AssertionError, self.factory.makeArchive,
+            purpose=ArchivePurpose.PARTNER, distribution=uber,
+            name="uber-partner")
+
+    def test_unique_ppa_name_per_owner_and_distribution(self):
+        person = self.factory.makePerson()
+        self.factory.makeArchive(owner=person, name="ppa")
+        self.assertEqual(
+            "PPA for %s" % person.displayname, person.archive.displayname)
+        self.assertEqual("ppa", person.archive.name)
+        self.assertRaises(
+            AssertionError, self.factory.makeArchive, owner=person, name="ppa")
+
+    def test_default_archive(self):
+        # Creating multiple PPAs does not affect the existing traversal from
+        # IPerson to a single IArchive.
+        person = self.factory.makePerson()
+        ppa = self.factory.makeArchive(owner=person, name="ppa")
+        another_ppa = self.factory.makeArchive(owner=person, name="nightly")
+        self.assertEqual(ppa, person.archive)
+
+    def test_non_default_ppas_have_different_displayname(self):
+        person = self.factory.makePerson()
+        another_ppa = self.factory.makeArchive(owner=person, name="nightly")
+        self.assertEqual(
+            "PPA named nightly for %s" % person.displayname,
+            another_ppa.displayname)
+
+    def test_archives_cannot_have_same_name_as_distribution(self):
+        boingolinux = self.factory.makeDistribution(name="boingolinux")
+        self.assertRaises(
+            AssertionError, getUtility(IArchiveSet).new,
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PRIMARY,
+            distribution=boingolinux, name=boingolinux.name)
+
+
+class TestPPALookup(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPPALookup, self).setUp()
+        self.person = self.factory.makePerson()
+        self.factory.makeArchive(owner=self.person, name="ppa")
+        self.nightly = self.factory.makeArchive(
+            owner=self.person, name="nightly")
+
+    def test_ppas(self):
+        # IPerson.ppas returns all owned PPAs ordered by name.
+        self.assertEqual(
+            ["nightly", "ppa"], [ppa.name for ppa in self.person.ppas])
+
+    def test_getPPAByName(self):
+        default_ppa = self.person.getPPAByName("ppa")
+        self.assertEqual(self.person.archive, default_ppa)
+        nightly_ppa = self.person.getPPAByName("nightly")
+        self.assertEqual(self.nightly, nightly_ppa)
+
+    def test_NoSuchPPA(self):
+        self.assertRaises(NoSuchPPA, self.person.getPPAByName, "not-found")
+
+
+class TestDisplayName(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default(self):
+        # If 'displayname' is omitted when creating the archive, there is a
+        # sensible default.
+        archive = self.factory.makeArchive(name="test-ppa")
+        self.assertEqual(
+            "PPA named test-ppa for %s" % archive.owner.displayname,
+            archive.displayname)
+
+    def test_provided(self):
+        # If 'displayname' is provided, it is used.
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.COPY,
+            displayname="Rock and roll with rebuilds!", name="test-rebuild")
+        self.assertEqual("Rock and roll with rebuilds!", archive.displayname)
+
+    def test_editable(self):
+        # Anyone with edit permission on the archive can change displayname.
+        archive = self.factory.makeArchive(name="test-ppa")
+        login("no-priv@canonical.com")
+        e = self.assertRaises(
+            Unauthorized, setattr, archive, "displayname", "No-way!")
+        self.assertEqual("launchpad.Edit", e.args[2])
+        with person_logged_in(archive.owner):
+            archive.displayname = "My testing packages"
