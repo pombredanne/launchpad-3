@@ -4,7 +4,7 @@ body {
     line-height: 18px; /* The same as the sprite height. */
     color: #333;
     }
-body.private {
+body.private, body.public {
     /* It must be obvious to the user that the context is private */
     background-image: none;
     }
