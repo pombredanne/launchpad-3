@@ -416,8 +416,7 @@
             set_attributes="authorized_size build_debug_symbols buildd_secret
                             enabled_restricted_families
                             external_dependencies private
-                            require_virtualized relative_build_score
-                            suppress_subscription_notifications"/>
+                            require_virtualized"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
