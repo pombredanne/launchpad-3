@@ -790,26 +790,6 @@ decreases.
     2
 
 
-Getting an Archive's source-package releases
---------------------------------------------
-
-The method getSourcePackageReleases() is provided to return the unique
-source-package releases for the archive. By default, all releases will
-be returned, but you can also ask for releases with builds in a certain
-state.
-
-    >>> from lp.buildmaster.enums import BuildStatus
-    >>> releases = cprov_archive.getSourcePackageReleases(
-    ...     build_status=BuildStatus.FULLYBUILT)
-    >>> for release in releases:
-    ...     print release.title
-    mozilla-firefox - 0.9
-    pmount - 0.1-1
-    iceweasel - 1.0
-
-For further details see the `TestGetSourcePackageReleases` unit-test.
-
-
 Sources available for deletions
 -------------------------------
 
@@ -916,6 +896,7 @@ This method can return build records for sources matching the given
 
 Or return build records in a specific status:
 
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> cprov_archive.getBuildRecords(
     ...     build_state=BuildStatus.FULLYBUILT).count()
     3
@@ -1946,24 +1927,6 @@ of juergen that is disabled.
     true-copy        copy-owner2   False    False
     ultimate-copy    copy-owner1   False    True
 
-
-Getting publishing records across a set of Archives
----------------------------------------------------
-
-The IArchiveSet utility provides a getPublicationsInArchives() method
-that can be used to find the current publishing records for a source
-package in the provided list of archives for a specific distribution.
-
-    >>> pubs = archive_set.getPublicationsInArchives(
-    ...     firefox_source_pub.sourcepackagerelease.sourcepackagename,
-    ...     [ubuntu.main_archive],
-    ...     firefox_source_pub.distroseries.distribution)
-    >>> for pub in pubs:
-    ...     print "%s - %s in %s" % (
-    ...         pub.source_package_name,
-    ...         pub.source_package_version,
-    ...         pub.archive.displayname)
-    mozilla-firefox - 0.9 in Primary Archive for Ubuntu Linux
 
 Archive Permission Checking
 ---------------------------
