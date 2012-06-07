@@ -276,24 +276,6 @@ class TestWriteToBranch(PermissionTest):
                 person, spn, component, distroseries,
                 strict_component=strict_component))
 
-    def assertCannotUpload(
-        self, reason, person, spn, archive, component, distroseries=None):
-        """Assert that 'person' cannot upload to the archive.
-
-        :param reason: The expected reason for not being able to upload. A
-            string.
-        :param person: The person trying to upload.
-        :param spn: The `ISourcePackageName` being uploaded to. None if the
-            package does not yet exist.
-        :param archive: The `IArchive` being uploaded to.
-        :param component: The IComponent to which the package belongs.
-        """
-        if distroseries is None:
-            distroseries = archive.distribution.currentseries
-        exception = archive.verifyUpload(
-            person, spn, component, distroseries)
-        self.assertEqual(reason, str(exception))
-
     def test_package_upload_permissions_grant_branch_edit(self):
         # If you can upload to the package, then you are also allowed to write
         # to the branch.
