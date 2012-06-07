@@ -66,6 +66,6 @@ class InformationTypePortletMixin:
     @property
     def information_type_css(self):
         if self.context.information_type in PRIVATE_INFORMATION_TYPES:
-            return 'private'
+            return 'sprite private'
         else:
-            return 'public'
+            return 'sprite public'

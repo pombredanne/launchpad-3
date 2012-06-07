@@ -70,10 +70,10 @@ class TestBugView(TestCaseWithFactory):
     def test_information_type_css_class(self):
         self.bug.transitionToInformationType(
             InformationType.USERDATA, self.bug.owner)
-        self.assertEqual('private', self.view.information_type_css)
+        self.assertEqual('sprite private', self.view.information_type_css)
         self.bug.transitionToInformationType(
             InformationType.UNEMBARGOEDSECURITY, self.bug.owner)
-        self.assertEqual('public', self.view.information_type_css)
+        self.assertEqual('sprite public', self.view.information_type_css)
 
     def test_userdata_shown_as_private(self):
         # When the display_userdata_as_private feature flag is enabled, the
