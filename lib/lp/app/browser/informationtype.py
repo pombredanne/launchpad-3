@@ -62,3 +62,10 @@ class InformationTypePortletMixin:
                     'Visible only to users with whom the project has '
                     'shared private information.')
         return description
+
+    @property
+    def information_type_css(self):
+        if self.context.information_type in PRIVATE_INFORMATION_TYPES:
+            return 'private'
+        else:
+            return 'public'
