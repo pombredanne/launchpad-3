@@ -2578,102 +2578,6 @@ class TestRemovingCopyNotifications(TestCaseWithFactory):
                 AssertionError, archive2.removeCopyNotification, job2.id)
 
 
-class TestCountersAndSummaries(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def assertDictEqual(self, one, two):
-        self.assertContentEqual(one.items(), two.items())
-
-    def test_cprov_build_counters_in_sampledata(self):
-        cprov_archive = getUtility(IPersonSet).getByName("cprov").archive
-        expected_counters = {
-            "failed": 1,
-            "pending": 0,
-            "succeeded": 3,
-            "superseded": 0,
-            "total": 4,
-            }
-        self.assertDictEqual(
-            expected_counters, cprov_archive.getBuildCounters())
-
-    def test_ubuntu_build_counters_in_sampledata(self):
-        ubuntu_archive = getUtility(IDistributionSet)["ubuntu"].main_archive
-        expected_counters = {
-            "failed": 5,
-            "pending": 2,
-            "succeeded": 8,
-            "superseded": 3,
-            "total": 18,
-            }
-        self.assertDictEqual(
-            expected_counters, ubuntu_archive.getBuildCounters())
-        # include_needsbuild=False excludes builds in status NEEDSBUILD.
-        expected_counters["pending"] -= 1
-        expected_counters["total"] -= 1
-        self.assertDictEqual(
-            expected_counters,
-            ubuntu_archive.getBuildCounters(include_needsbuild=False))
-
-    def assertBuildSummaryMatches(self, status, builds, summary):
-        self.assertEqual(status, summary["status"])
-        self.assertContentEqual(
-            builds, [build.title for build in summary["builds"]])
-
-    def test_build_summaries_in_sampledata(self):
-        ubuntu = getUtility(IDistributionSet)["ubuntu"]
-        firefox_source = ubuntu.getSourcePackage("mozilla-firefox")
-        firefox_source_pub = firefox_source.publishing_history[0]
-        foobar = ubuntu.getSourcePackage("foobar")
-        foobar_pub = foobar.publishing_history[0]
-        build_summaries = ubuntu.main_archive.getBuildSummariesForSourceIds(
-            [firefox_source_pub.id, foobar_pub.id])
-        self.assertEqual(2, len(build_summaries))
-        expected_firefox_builds = [
-            "hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE",
-            "i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE",
-            ]
-        self.assertBuildSummaryMatches(
-            BuildSetStatus.FULLYBUILT, expected_firefox_builds,
-            build_summaries[firefox_source_pub.id])
-        expected_foobar_builds = [
-            "i386 build of foobar 1.0 in ubuntu warty RELEASE",
-            ]
-        self.assertBuildSummaryMatches(
-            BuildSetStatus.FAILEDTOBUILD, expected_foobar_builds,
-            build_summaries[foobar_pub.id])
-
-    def test_private_archives_have_private_counters_and_summaries(self):
-        archive = self.factory.makeArchive()
-        distroseries = self.factory.makeDistroSeries(
-            distribution=archive.distribution)
-        with celebrity_logged_in("admin"):
-            archive.private = True
-            publisher = SoyuzTestPublisher()
-            publisher.setUpDefaultDistroSeries(distroseries)
-            publisher.addFakeChroots(distroseries)
-            publisher.getPubBinaries(archive=archive)
-            source_id = archive.getPublishedSources()[0].id
-
-            # An admin can see the counters and build summaries.
-            archive.getBuildCounters()["total"]
-            archive.getBuildSummariesForSourceIds([source_id])
-
-        # The archive owner can see the counters and build summaries.
-        with person_logged_in(archive.owner):
-            archive.getBuildCounters()["total"]
-            archive.getBuildSummariesForSourceIds([source_id])
-
-        # The public cannot.
-        login("no-priv@canonical.com")
-        e = self.assertRaises(
-            Unauthorized, getattr, archive, "getBuildCounters")
-        self.assertEqual("launchpad.View", e.args[2])
-        e = self.assertRaises(
-            Unauthorized, getattr, archive, "getBuildSummariesForSourceIds")
-        self.assertEqual("launchpad.View", e.args[2])
-
-
 class TestPublishFlag(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -2805,3 +2709,99 @@ class TestDisplayName(TestCaseWithFactory):
         self.assertEqual("launchpad.Edit", e.args[2])
         with person_logged_in(archive.owner):
             archive.displayname = "My testing packages"
+
+
+class TestCountersAndSummaries(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def assertDictEqual(self, one, two):
+        self.assertContentEqual(one.items(), two.items())
+
+    def test_cprov_build_counters_in_sampledata(self):
+        cprov_archive = getUtility(IPersonSet).getByName("cprov").archive
+        expected_counters = {
+            "failed": 1,
+            "pending": 0,
+            "succeeded": 3,
+            "superseded": 0,
+            "total": 4,
+            }
+        self.assertDictEqual(
+            expected_counters, cprov_archive.getBuildCounters())
+
+    def test_ubuntu_build_counters_in_sampledata(self):
+        ubuntu_archive = getUtility(IDistributionSet)["ubuntu"].main_archive
+        expected_counters = {
+            "failed": 5,
+            "pending": 2,
+            "succeeded": 8,
+            "superseded": 3,
+            "total": 18,
+            }
+        self.assertDictEqual(
+            expected_counters, ubuntu_archive.getBuildCounters())
+        # include_needsbuild=False excludes builds in status NEEDSBUILD.
+        expected_counters["pending"] -= 1
+        expected_counters["total"] -= 1
+        self.assertDictEqual(
+            expected_counters,
+            ubuntu_archive.getBuildCounters(include_needsbuild=False))
+
+    def assertBuildSummaryMatches(self, status, builds, summary):
+        self.assertEqual(status, summary["status"])
+        self.assertContentEqual(
+            builds, [build.title for build in summary["builds"]])
+
+    def test_build_summaries_in_sampledata(self):
+        ubuntu = getUtility(IDistributionSet)["ubuntu"]
+        firefox_source = ubuntu.getSourcePackage("mozilla-firefox")
+        firefox_source_pub = firefox_source.publishing_history[0]
+        foobar = ubuntu.getSourcePackage("foobar")
+        foobar_pub = foobar.publishing_history[0]
+        build_summaries = ubuntu.main_archive.getBuildSummariesForSourceIds(
+            [firefox_source_pub.id, foobar_pub.id])
+        self.assertEqual(2, len(build_summaries))
+        expected_firefox_builds = [
+            "hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE",
+            "i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE",
+            ]
+        self.assertBuildSummaryMatches(
+            BuildSetStatus.FULLYBUILT, expected_firefox_builds,
+            build_summaries[firefox_source_pub.id])
+        expected_foobar_builds = [
+            "i386 build of foobar 1.0 in ubuntu warty RELEASE",
+            ]
+        self.assertBuildSummaryMatches(
+            BuildSetStatus.FAILEDTOBUILD, expected_foobar_builds,
+            build_summaries[foobar_pub.id])
+
+    def test_private_archives_have_private_counters_and_summaries(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        with celebrity_logged_in("admin"):
+            archive.private = True
+            publisher = SoyuzTestPublisher()
+            publisher.setUpDefaultDistroSeries(distroseries)
+            publisher.addFakeChroots(distroseries)
+            publisher.getPubBinaries(archive=archive)
+            source_id = archive.getPublishedSources()[0].id
+
+            # An admin can see the counters and build summaries.
+            archive.getBuildCounters()["total"]
+            archive.getBuildSummariesForSourceIds([source_id])
+
+        # The archive owner can see the counters and build summaries.
+        with person_logged_in(archive.owner):
+            archive.getBuildCounters()["total"]
+            archive.getBuildSummariesForSourceIds([source_id])
+
+        # The public cannot.
+        login("no-priv@canonical.com")
+        e = self.assertRaises(
+            Unauthorized, getattr, archive, "getBuildCounters")
+        self.assertEqual("launchpad.View", e.args[2])
+        e = self.assertRaises(
+            Unauthorized, getattr, archive, "getBuildSummariesForSourceIds")
+        self.assertEqual("launchpad.View", e.args[2])
