@@ -944,6 +944,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.archive.updatePackageDownloadCount(
             self.bpr_1, day, self.australia, 10)
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertEqual(10, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_reuses_existing_entry(self):
         # A second update will simply add to the count on the existing
@@ -954,6 +955,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.archive.updatePackageDownloadCount(
             self.bpr_1, day, self.australia, 3)
         self.assertCount(13, self.archive, self.bpr_1, day, self.australia)
+        self.assertEqual(13, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_differentiates_between_countries(self):
         # A different country will cause a new entry to be created.
@@ -965,6 +967,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(3, self.archive, self.bpr_1, day, self.new_zealand)
+        self.assertEqual(13, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_country_can_be_none(self):
         # The country can be None, indicating that it is unknown.
@@ -976,6 +979,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(3, self.archive, self.bpr_1, day, None)
+        self.assertEqual(13, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_differentiates_between_days(self):
         # A different date will also cause a new entry to be created.
@@ -989,6 +993,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(
             3, self.archive, self.bpr_1, another_day, self.australia)
+        self.assertEqual(13, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_differentiates_between_bprs(self):
         # And even a different package will create a new entry.
@@ -1000,6 +1005,8 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(3, self.archive, self.bpr_2, day, self.australia)
+        self.assertEqual(10, self.archive.getPackageDownloadTotal(self.bpr_1))
+        self.assertEqual(3, self.archive.getPackageDownloadTotal(self.bpr_2))
 
 
 class TestEnabledRestrictedBuilds(TestCaseWithFactory):
