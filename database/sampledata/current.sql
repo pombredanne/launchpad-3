@@ -2303,8 +2303,8 @@ ALTER TABLE processor ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, true, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true, 0);
-INSERT INTO builder (id, processor, name, title, description, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true, 0);
+INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count) VALUES (1, 1, 'bob', 'Bob The Builder', 61, NULL, true, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true, 0);
+INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count) VALUES (2, 1, 'frog', 'The frog builder', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true, 0);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
