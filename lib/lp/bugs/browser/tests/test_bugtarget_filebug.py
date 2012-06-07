@@ -490,8 +490,6 @@ class TestFileBugGuidelinesRequestCache(TestCaseWithFactory):
         self.assertContentEqual(cache['private_types'], [
             type.name for type in PRIVATE_INFORMATION_TYPES])
         self.assertEqual(cache['bug_private_by_default'], private_bugs)
-        self.assertEqual(
-            cache['enable_bugfiling_duplicate_search'], duplicate_search)
 
     def test_product(self):
         project = self.factory.makeProduct(official_malone=True)
@@ -627,12 +625,4 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         user = self.factory.makePerson()
         login_person(user)
         view = create_initialized_view(project, '+filebug', principal=user)
-        self._assert_cache_values(view, True)
-
-    def test_filebug_reportinguidelines(self):
-        project = self.factory.makeProduct(official_malone=True)
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(
-            project, '+filebug-reporting-guidelines', principal=user)
         self._assert_cache_values(view, True)

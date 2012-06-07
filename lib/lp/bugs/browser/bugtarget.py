@@ -404,7 +404,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # either. It makes for better diagnosis of failing tests.
         if self.redirect_ubuntu_filebug:
             pass
-        super(FileBugReportingGuidelines, self).initialize()
+        super(FileBugViewBase, self).initialize()
         cache = IJSONRequestCache(self.request)
         cache.objects['enable_bugfiling_duplicate_search'] = (
             IProjectGroup.providedBy(self.context)
