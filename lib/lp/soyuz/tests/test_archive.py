@@ -816,11 +816,10 @@ class TestArchiveCanUpload(TestCaseWithFactory):
 
     def makePackageToUpload(self, distroseries):
         sourcepackagename = self.factory.makeSourcePackageName()
-        suitesourcepackage = self.factory.makeSuiteSourcePackage(
+        return self.factory.makeSuiteSourcePackage(
             pocket=PackagePublishingPocket.RELEASE,
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
-        return suitesourcepackage
 
     def test_canUploadSuiteSourcePackage_invalid_pocket(self):
         # Test that canUploadSuiteSourcePackage calls checkUpload for
@@ -1030,11 +1029,9 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         distro.main_archive.require_virtualized = False
         # Restricting to all restricted architectures is fine
         distro.main_archive.enabled_restricted_families = [self.arm]
-
-        def restrict():
-            distro.main_archive.enabled_restricted_families = []
-
-        self.assertRaises(CannotRestrictArchitectures, restrict)
+        self.assertRaises(
+            CannotRestrictArchitectures, setattr, distro.main_archive,
+            "enabled_restricted_families", [])
 
     def test_main_virtualized_archive_can_be_restricted(self):
         # A main archive can be restricted to certain architectures
@@ -1643,8 +1640,7 @@ class TestComponents(TestCaseWithFactory):
         # By default, a person cannot upload to any component of an archive.
         archive = self.factory.makeArchive()
         person = self.factory.makePerson()
-        self.assertEqual(set(),
-            set(archive.getComponentsForUploader(person)))
+        self.assertFalse(set(archive.getComponentsForUploader(person)))
 
     def test_components_for_person_with_permissions(self):
         # If a person has been explicitly granted upload permissions to a
