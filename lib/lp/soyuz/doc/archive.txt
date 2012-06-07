@@ -64,6 +64,14 @@ records to disk, including configuration and indexes.
     >>> cprov_archive.failed_count
     1
 
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, name='myprivateppa',
+    ...     distribution=cprov_archive.distribution)
+    >>> login("foo.bar@canonical.com")
+    >>> cprov_private_ppa.buildd_secret = 'really secret'
+    >>> cprov_private_ppa.private = True
+    >>> login(ANONYMOUS)
+
 external_dependencies is a property that can be set only by LP admins and
 read by anyone.  It is a text field that should contain a comma-separated
 list of sources.list entries in the format:
@@ -86,63 +94,6 @@ As a Launchpad admin, setting this property will work.
 
     >>> login("admin@canonical.com")
     >>> cprov_archive.external_dependencies = "deb http://foo hardy bar"
-
-The buildd_secret is used by the slave scanner when generating a
-sources.list entry for the builder to access a private archive.  It is
-essentially the password to the archive for the builder.
-
-It can only be set by users with launchpad.Commercial permission in the
-archive, i.e. an admin or a commercial admin. We create a new PPA for
-cprov here as changing privacy of a PPA is not allowed when sources have
-already been published.
-
-    >>> cprov_private_ppa = factory.makeArchive(
-    ...     owner=cprov, name='myprivateppa',
-    ...     distribution=cprov_archive.distribution)
-    >>> login(ANONYMOUS)
-    >>> cprov_private_ppa.buildd_secret = 'boing'
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (..., 'buildd_secret', 'launchpad.Commercial')
-
-Commercial Member, a commercial admin but not an admin, can set
-'buildd_secret'.
-
-    >>> login("commercial-member@canonical.com")
-    >>> cprov_private_ppa.buildd_secret = 'not so secret at all'
-
-Foo Bar, an admin, can set 'buildd_secret'.
-
-    >>> login("foo.bar@canonical.com")
-    >>> cprov_archive.buildd_secret = 'not so secret'
-
-In a public PPA, 'buildd_secret' still visible to anyone.
-
-    >>> login(ANONYMOUS)
-    >>> print cprov_archive.private
-    False
-
-    >>> print cprov_archive.buildd_secret
-    not so secret
-
-Once made private, 'buildd_secret' content can only be read by users with
-'launchpad.View' in the archive.
-
-    >>> login("foo.bar@canonical.com")
-    >>> cprov_private_ppa.buildd_secret = 'really secret'
-    >>> cprov_private_ppa.private = True
-
-    >>> login(ANONYMOUS)
-    >>> print cprov_private_ppa.buildd_secret
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (..., 'buildd_secret', 'launchpad.View')
-
-Celso can read 'buildd_secret' contents for his PPA.
-
-    >>> login('celso.providelo@canonical.com')
-    >>> print cprov_private_ppa.buildd_secret
-    really secret
 
 Useful properties:
 
@@ -526,160 +477,6 @@ and 'exact_match' flag:
     ...     status=active_status, exact_match=True)
     >>> status_lookup.count()
     2
-
-getBuildCounters
-----------------
-
-IArchive.getBuildCounters() allows callsites to quickly present
-the number of builds in a pre-defined status for a given IArchive.
-
-    >>> def print_build_counters(build_counters):
-    ...     sorted_keys = sorted(build_counters)
-    ...     for key in sorted_keys:
-    ...         print key, build_counters[key]
-
-Build counters for Celso's PPA.
-
-    >>> print_build_counters(cprov_archive.getBuildCounters())
-    failed     1
-    pending    0
-    succeeded  3
-    superseded 0
-    total      4
-
-Build counters for ubuntu primary archive.
-
-    >>> print_build_counters(ubuntu.main_archive.getBuildCounters())
-    failed     5
-    pending    2
-    succeeded  8
-    superseded 3
-    total      18
-
-An option argument can be used to exclude any builds that have the status
-`NEEDSBUILD`:
-
-    >>> print_build_counters(
-    ...     ubuntu.main_archive.getBuildCounters(include_needsbuild=False))
-    failed 5
-    pending 1
-    succeeded 8
-    superseded 3
-    total 17
-
-
-getBuildSummariesForSourceIds()
--------------------------------
-
-IArchive.getBuildSummariesForSourceIds() allows callsites to get an update
-on the build statuses for a set of source publishing record ids. This
-is useful for dynamically updating a page which displays a small batch of
-source packages, such as the PPA/Archive pages.
-
-Create a small function for displaying the results:
-
-    >>> def print_build_summary(summary):
-    ...     print "%s\n%s\nRelevant builds:\n%s" % (
-    ...         summary['status'].title,
-    ...         summary['status'].description,
-    ...         "\n".join(
-    ...             " - %s" % build.title for build in summary['builds'])
-    ...     )
-
-    >>> def print_build_summaries(summaries):
-    ...     for source_id, summary in sorted(summaries.items()):
-    ...         print "Source ID: %s" % source_id
-    ...         print_build_summary(summary)
-
-Now print the build summaries for firefox and foo_bar:
-
-    >>> firefox_source = ubuntu.getSourcePackage('mozilla-firefox')
-    >>> firefox_source_pub = firefox_source.publishing_history[0]
-    >>> foobar = ubuntu.getSourcePackage('foobar')
-    >>> foo_pub = foobar.publishing_history[0]
-
-    >>> build_summaries = \
-    ...     ubuntu.main_archive.getBuildSummariesForSourceIds(
-    ...         [firefox_source_pub.id, foo_pub.id])
-    >>> print_build_summaries(build_summaries)
-    Source ID: 18
-    FULLYBUILT
-    All builds were built successfully.
-    Relevant builds:
-     - hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-     - i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    Source ID: 22
-    FAILEDTOBUILD
-    There were build failures.
-    Relevant builds:
-     - i386 build of foobar 1.0 in ubuntu warty RELEASE
-
-
-No public access to IArchiveView methods
-----------------------------------------
-
-Both the getBuildCounters() and getBuildSummariesForSourceIds() methods are
-not publically available, but available only to users who have permission to
-view the archive:
-
-    # First we create some source/binary packages in cprov's private
-    # PPA so that we'll have some results to view.
-    >>> login('admin@canonical.com')
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> ignore = test_publisher.setUpDefaultDistroSeries(warty)
-    >>> test_publisher.addFakeChroots(warty)
-    >>> ignore = test_publisher.getPubBinaries(archive=cprov_private_ppa)
-
-    # Grab some source IDs from the archive that we can use for calls to
-    # getBuildSummariesForSourceIds():
-    >>> source_ids = [cprov_private_ppa.getPublishedSources()[0].id]
-
-Then verify that an admin can see the counters and build summaries:
-
-    >>> print_build_counters(cprov_private_ppa.getBuildCounters())
-    failed     0
-    ...
-    succeeded  1
-    ...
-    total      1
-    >>> print_build_summaries(cprov_private_ppa.getBuildSummariesForSourceIds(
-    ...     source_ids))
-    Source ID:...
-    FULLYBUILT_PENDING
-    All builds were built successfully but have not yet been published.
-    Relevant builds:
-      - i386 build of foo 666 in ubuntu warty RELEASE
-
-Next veryify that cprov can still access the build counters:
-
-    >>> login('celso.providelo@canonical.com')
-    >>> print_build_counters(cprov_private_ppa.getBuildCounters())
-    failed     0
-    ...
-    succeeded  1
-    ...
-    total      1
-    >>> print_build_summaries(cprov_private_ppa.getBuildSummariesForSourceIds(
-    ...     source_ids))
-    Source ID:...
-    ...
-      - i386 build of foo 666 in ubuntu warty RELEASE
-
-But the public cannot:
-
-    >>> login('no-priv@canonical.com')
-    >>> print_build_counters(cprov_private_ppa.getBuildCounters())
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (..., 'getBuildCounters', 'launchpad.View')
-    >>> print_build_summaries(cprov_private_ppa.getBuildSummariesForSourceIds(
-    ...     source_ids))
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (..., 'getBuildSummariesForSourceIds', 'launchpad.View')
-
 
 Package Counters
 ----------------
@@ -2204,6 +2001,9 @@ provide a list of sources that can be copied to the context archive.
 First we use the SoyuzTestPublisher to make some test publications in
 hoary:
 
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> discard = test_publisher.getPubSource(
