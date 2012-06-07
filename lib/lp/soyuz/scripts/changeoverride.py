@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Soyuz publication override script."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveOverriderError',
     'ChangeOverride',
     ]
 
@@ -20,13 +19,6 @@ from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
     )
-
-
-class ArchiveOverriderError(SoyuzScriptError):
-    """ArchiveOverrider specific exception.
-
-    Mostly used to describe errors in the initialization of this object.
-    """
 
 
 class ChangeOverride(SoyuzScript):
@@ -192,4 +184,3 @@ class ChangeOverride(SoyuzScript):
 
         for binary_name in sorted(binary_names):
             self.processBinaryChange(binary_name)
-

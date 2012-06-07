@@ -21,14 +21,18 @@ __all__ = [
     'ISourcePackagePublishingHistoryPublic',
     'MissingSymlinkInPool',
     'NotInPool',
+    'OverrideError',
     'PoolFileOverwriteError',
     'active_publishing_status',
     'inactive_publishing_status',
     'name_priority_map',
     ]
 
+import httplib
+
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_operation_as,
     export_read_operation,
@@ -65,6 +69,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 
 #
 # Exceptions
@@ -94,6 +99,14 @@ class MissingSymlinkInPool(Exception):
     The corresponding record is marked as removed and the process
     continues.
     """
+
+
+@error_status(httplib.BAD_REQUEST)
+# XXX cjwatson 2012-06-07: SoyuzScriptError should be changed to Exception
+# once lp.soyuz.scripts.changeoverride is removed.
+class OverrideError(SoyuzScriptError):
+    """Raised when an attempt to change an override fails."""
+
 
 name_priority_map = {
     'required': PackagePublishingPriority.REQUIRED,

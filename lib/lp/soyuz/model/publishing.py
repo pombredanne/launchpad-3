@@ -94,6 +94,7 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory,
+    OverrideError,
     PoolFileOverwriteError,
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -108,7 +109,6 @@ from lp.soyuz.model.files import (
     )
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.pas import determineArchitecturesToBuild
-from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
 def makePoolPath(source_name, component_name):
@@ -806,7 +806,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         new_archive = distribution.getArchiveByComponent(
             new_component.name)
         if new_archive != None and new_archive != current.archive:
-            raise ArchiveOverriderError(
+            raise OverrideError(
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
@@ -1223,7 +1223,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         new_archive = distribution.getArchiveByComponent(
             new_component.name)
         if new_archive != None and new_archive != self.archive:
-            raise ArchiveOverriderError(
+            raise OverrideError(
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
