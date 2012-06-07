@@ -2674,6 +2674,27 @@ class TestCountersAndSummaries(TestCaseWithFactory):
         self.assertEqual("launchpad.View", e.args[2])
 
 
+class TestPublishFlag(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_primary_archive_published_by_default(self):
+        distribution = self.factory.makeDistribution()
+        self.assertTrue(distribution.main_archive.publish)
+
+    def test_partner_archive_published_by_default(self):
+        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertTrue(partner.publish)
+
+    def test_ppa_published_by_default(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertTrue(ppa.publish)
+
+    def test_copy_archive_not_published_by_default(self):
+        copy = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        self.assertFalse(copy.publish)
+
+
 class TestPPANaming(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

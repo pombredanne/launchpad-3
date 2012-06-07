@@ -2231,46 +2231,6 @@ the one published in 'python' section, will be used.
     python
 
 
-Publish flag
-------------
-
-Every archive has a "publish" flag that governs whether it should be
-published or not. Upon creation that flag is false for copy archives but
-true for all other archive types.
-
-    >>> uber = getUtility(IDistributionSet).new(
-    ... 'uberdistro', 'The uberdistro', 'The mother of all distros',
-    ... 'All you would want from a distro', 'zero', 'uberdistro.org',
-    ... mark, cprov, cprov)
-
-The primary archive for the Überdistro was created by the
-IDistributionSet.new() method. Let's check its publish flag.
-
-    >>> uber_primary = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     uber, ArchivePurpose.PRIMARY)
-    >>> uber_primary.publish
-    True
-
-    >>> uber_partner = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.PARTNER,
-    ...     distribution=uber, name='uber-partner')
-    >>> uber_partner.publish
-    True
-
-The 'sandbox archive' is a PPA that was newly created above.
-
-    >>> sandbox_archive.is_ppa
-    True
-    >>> sandbox_archive.publish
-    True
-
-    >>> uber_copy = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.COPY,
-    ...     distribution=uber, name='uber-copy')
-    >>> uber_copy.publish
-    False
-
-
 Signing-key propagation
 -----------------------
 
