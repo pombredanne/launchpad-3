@@ -271,6 +271,7 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     InvalidEmailAddress,
+    VALID_EMAIL_STATUSES,
     )
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import (
@@ -3623,6 +3624,7 @@ class PersonSet:
             Join(EmailAddress, EmailAddress.personID == Person.id)
         ).find(
             (EmailAddress, Person),
+            EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
             EmailAddress.email.lower().is_in(addresses), extra_query)
 
     def _merge_person_decoration(self, to_person, from_person, skip,
