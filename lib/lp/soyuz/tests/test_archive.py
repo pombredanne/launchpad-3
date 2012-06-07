@@ -2711,6 +2711,28 @@ class TestDisplayName(TestCaseWithFactory):
             archive.displayname = "My testing packages"
 
 
+class TestSigningKeyPropagation(TestCaseWithFactory):
+    """Signing keys are shared between PPAs owned by the same person/team."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_ppa_created_with_no_signing_key(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertIsNone(ppa.signing_key)
+
+    def test_default_signing_key_propagated_to_new_ppa(self):
+        person = self.factory.makePerson()
+        ppa = self.factory.makeArchive(
+            owner=person, purpose=ArchivePurpose.PPA, name="ppa")
+        self.assertEqual(ppa, person.archive)
+        self.factory.makeGPGKey(person)
+        with celebrity_logged_in("admin"):
+            person.archive.signing_key = person.gpg_keys[0]
+        ppa_with_key = self.factory.makeArchive(
+            owner=person, purpose=ArchivePurpose.PPA)
+        self.assertEqual(person.gpg_keys[0], ppa_with_key.signing_key)
+
+
 class TestCountersAndSummaries(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
