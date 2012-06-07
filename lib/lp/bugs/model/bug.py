@@ -1811,8 +1811,8 @@ class Bug(SQLBase):
 
         flag = 'disclosure.enhanced_sharing.writable'
         if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer have
-            # access to the bug. We need to run a job to remove any such
+            # As a result of the transition, some subscribers may no longer
+            # have access to the bug. We need to run a job to remove any such
             # subscriptions.
             getUtility(IRemoveBugSubscriptionsJobSource).create([self], who)
 
