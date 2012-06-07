@@ -21,7 +21,7 @@ class RequestProductJobs(LaunchpadCronScript):
 
     def __init__(self):
         name = 'daily_product_jobs'
-        dbuser = config.ICommercialExpiredJob
+        dbuser = config.ICommercialExpiredJob.dbuser
         LaunchpadCronScript.__init__(self, name, dbuser)
 
     def main(self):
