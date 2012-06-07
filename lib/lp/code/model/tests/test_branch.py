@@ -2350,19 +2350,9 @@ class TestBranchPrivacy(TestCaseWithFactory):
         self.assertTrue(branch.private)
         self.assertEqual(
             stacked_on.information_type, branch.information_type)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
-
-    def test_private_stacked_on_public_is_private(self):
-        # A private branch stacked on a public branch is private.
-        stacked_on = self.factory.makeBranch()
-        branch = self.factory.makeBranch(
-            stacked_on=stacked_on, information_type=InformationType.USERDATA)
-        self.assertTrue(branch.private)
-        self.assertNotEqual(
-            stacked_on.information_type, branch.information_type)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
+        self.assertEqual(
+            InformationType.USERDATA,
+            removeSecurityProxy(branch).information_type)
 
     def test_personal_branches_for_private_teams_are_private(self):
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
@@ -2406,8 +2396,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertFalse(branch.private)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
-        self.assertFalse(removeSecurityProxy(branch).transitively_private)
-        self.assertFalse(branch.explicitly_private)
+        self.assertEqual(InformationType.PUBLIC, branch.information_type)
 
     def test_public_to_private_allowed(self):
         # If there is a privacy policy allowing the branch owner to have
@@ -2417,8 +2406,6 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             branch.owner, BranchVisibilityRule.PRIVATE)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
         self.assertEqual(InformationType.USERDATA, branch.information_type)
 
     def test_public_to_private_not_allowed(self):
@@ -2438,8 +2425,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         admins = getUtility(ILaunchpadCelebrities).admin
         branch.setPrivate(True, admins.teamowner)
         self.assertTrue(branch.private)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
+        self.assertEqual(
+            InformationType.USERDATA,
+            removeSecurityProxy(branch).information_type)
 
     def test_private_to_private(self):
         # Setting a private branch to be private is a no-op.
@@ -2448,8 +2436,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertTrue(branch.private)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
+        self.assertEqual(
+            InformationType.USERDATA,
+            removeSecurityProxy(branch).information_type)
 
     def test_private_to_public_allowed(self):
         # If the namespace policy allows public branches, then changing from
@@ -2458,8 +2447,6 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
-        self.assertFalse(removeSecurityProxy(branch).transitively_private)
-        self.assertFalse(branch.explicitly_private)
         self.assertEqual(InformationType.PUBLIC, branch.information_type)
 
     def test_private_to_public_not_allowed(self):

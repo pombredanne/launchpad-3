@@ -1160,7 +1160,9 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         # proposals that the logged in user is able to see.
         proposal = self._make_merge_proposal('albert', 'november', 'work')
         # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).explicitly_private = True
+        proposal.source_branch.transitionToInformationType(
+            InformationType.USERDATA, proposal.source_branch.owner,
+            verify_policy=False)
         self._make_merge_proposal('albert', 'mike', 'work')
 
         albert = getUtility(IPersonSet).getByName('albert')
@@ -1198,10 +1200,10 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
         proposal = self._make_merge_proposal(
             'xray', 'november', 'work', registrant=albert)
-        # Mark the source branch private by making it's stacked on branch
-        # private.
-        removeSecurityProxy(
-            proposal.source_branch.stacked_on).explicitly_private = True
+        # Mark the source branch private.
+        proposal.source_branch.transitionToInformationType(
+            InformationType.USERDATA, proposal.source_branch.owner,
+            verify_policy=False)
 
         november = getUtility(IProductSet).getByName('november')
         # The proposal is visible to charles.
