@@ -18,7 +18,7 @@
        </span>&nbsp;<a
            class="sprite edit" id="privacy-link"
            tal:attributes="href link/path" tal:condition="link/enabled"></a>
-      <div id='information-type-description' style='padding-top: 5px'
+      <div id="information-type-description" style="padding-top: 5px"
                 tal:content="view/information_type_description"></div>
     </tal:information_type>
     <tal:privacy tal:condition="not:view/show_information_type_in_ui">
