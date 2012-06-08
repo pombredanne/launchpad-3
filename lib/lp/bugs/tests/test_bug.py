@@ -297,8 +297,3 @@ class TestBugCreation(TestCaseWithFactory):
         params.setBugTarget(product=target)
         bug = getUtility(IBugSet).createBug(params)
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
-
-    def test_noise(self):
-        import sys
-        sys.stdout.write("Hey, look at me!")
-        sys.stderr.write("No, look at me!")
