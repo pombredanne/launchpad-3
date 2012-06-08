@@ -205,9 +205,16 @@ def install_feature_controller(controller):
     per_thread.features = controller
 
 
+def uninstall_feature_controller():
+    """Remove the current feature controller from this thread.
+
+    This function is used to create a pristine environment in tests.
+    """
+    del per_thread.features
+
+
 def get_relevant_feature_controller():
     """Get a `FeatureController` for this thread."""
-
     # The noncommittal name "relevant" is because this function may change to
     # look things up from the current request or some other mechanism in
     # future.
