@@ -323,6 +323,10 @@ class Archive(SQLBase):
         dbName='external_dependencies', notNull=False, default=None,
         storm_validator=storm_validate_external_dependencies)
 
+    suppress_subscription_notifications = BoolCol(
+        dbName='suppress_subscription_notifications',
+        notNull=True, default=False)
+
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -334,57 +338,6 @@ class Archive(SQLBase):
             alsoProvides(self, IPPA)
         else:
             alsoProvides(self, IDistributionArchive)
-
-    # Here we provide manual properties instead of declaring the column in
-    # storm.  This is to handle a transition period where we rename the
-    # 'commercial' column to 'suppress_subscription_notifications'.  During
-    # the transition period, the code needs to work with both column names.
-    #
-    # The approach taken here only works because we never use 'commercial' in
-    # a WHERE clause or anything like that.
-    #
-    # Once the database change has taken place, these properties should be
-    # deleted, and replaced with a class variable declaration that looks
-    # something like:
-    #
-    #   suppress_subscription_notifications = BoolCol(
-    #       dbName='suppress_subscription_notifications',
-    #       notNull=True, default=False)
-
-    def _get_suppress_column_name(self):
-        """Get the name of the column for suppressing notifications.
-
-        Older versions of the database call it 'commercial', newer ones call
-        it 'suppress_subscription_notifications'.
-
-        Works by interrogating PostgreSQL's own records.
-        """
-        # Chose this look-before-you-leap implementation so as to avoid
-        # invalidating the query by forcing a ProgrammingError.
-        cur = cursor()
-        has_old_column = table_has_column(cur, 'archive', 'commercial')
-        if has_old_column:
-            return 'commercial'
-        else:
-            return 'suppress_subscription_notifications'
-
-    @property
-    def suppress_subscription_notifications(self):
-        """See `IArchive`."""
-        store = Store.of(self)
-        store.flush()
-        suppress_column = self._get_suppress_column_name()
-        query = "SELECT %s FROM archive WHERE id=%%s" % (suppress_column,)
-        return store.execute(query, (self.id,)).get_one()[0]
-
-    @suppress_subscription_notifications.setter
-    def suppress_subscription_notifications(self, suppress):
-        """See `IArchive`."""
-        store = Store.of(self)
-        store.flush()
-        suppress_column = self._get_suppress_column_name()
-        query = "UPDATE archive SET %s=%%s WHERE id=%%s" % (suppress_column,)
-        store.execute(query, (bool(suppress), self.id))
 
     # Note: You may safely ignore lint when it complains about this
     # declaration.  As of Python 2.6, this is a perfectly valid way
