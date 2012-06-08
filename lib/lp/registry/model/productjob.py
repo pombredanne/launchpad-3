@@ -470,7 +470,7 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
             for series in self.product.series:
                 if series.branch.private:
                     removeSecurityProxy(series).branch = None
-        self.product.commercial_subscription.delete()
+            self.product.commercial_subscription.delete()
 
     def run(self):
         """See `ProductNotificationJob`."""

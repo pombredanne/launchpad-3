@@ -645,7 +645,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         job._deactivateCommercialFeatures()
         clear_property_cache(product)
         self.assertIs(False, product.active)
-        self.assertIs(None, product.commercial_subscription)
+        self.assertIsNot(None, product.commercial_subscription)
 
     def test_deactivateCommercialFeatures_open_source(self):
         # When the project is open source, the product's commercial features
