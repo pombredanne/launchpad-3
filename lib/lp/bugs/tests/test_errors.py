@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bugs errors."""
@@ -15,7 +15,6 @@ from httplib import (
 from lp.bugs.errors import (
     InvalidBugTargetType,
     InvalidDuplicateValue,
-    SubscriptionPrivacyViolation,
     )
 from lp.testing import TestCase
 from lp.testing.layers import FunctionalLayer
@@ -35,8 +34,3 @@ class TestWebServiceErrors(TestCase):
         error_view = create_webservice_error_view(
             InvalidDuplicateValue("Dup"))
         self.assertEqual(EXPECTATION_FAILED, error_view.status)
-
-    def test_SubscriptionPrivacyViolation_bad_request(self):
-        error_view = create_webservice_error_view(
-            SubscriptionPrivacyViolation())
-        self.assertEqual(BAD_REQUEST, error_view.status)

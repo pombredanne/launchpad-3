@@ -657,7 +657,7 @@ class TestPersonBranchesPage(BrowserTestCase):
         member = self.factory.makePerson(email='member@example.com')
         with person_logged_in(owner):
             private_team.addMember(member, owner)
-        branch = self.factory.makeProductBranch(owner=private_team)
+            branch = self.factory.makeProductBranch(owner=private_team)
         return private_team, member, branch
 
     def test_private_team_membership_for_team_member(self):

@@ -1,15 +1,19 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the BranchSubscrptions model object.."""
 
 __metaclass__ = type
 
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.errors import (
+    SubscriptionPrivacyViolation,
+    UserCannotUnsubscribePerson,
+    )
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
+from lp.registry.enums import InformationType
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -66,6 +70,30 @@ class TestBranchSubscriptions(TestCaseWithFactory):
             branch.unsubscribe,
             subscription.person,
             self.factory.makePerson())
+
+    def test_cannot_subscribe_open_team_to_private_branch(self):
+        """It is forbidden to subscribe a open team to a private branch."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA, owner=owner)
+        team = self.factory.makeTeam()
+        with person_logged_in(owner):
+            self.assertRaises(
+                SubscriptionPrivacyViolation, branch.subscribe, team, None,
+                None, None, owner)
+
+    def test_subscribe_gives_access(self):
+        """Subscribing a user to a branch gives them access."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA, owner=owner)
+        subscribee = self.factory.makePerson()
+        with person_logged_in(owner):
+            self.assertFalse(branch.visibleByUser(subscribee))
+            branch.subscribe(
+                subscribee, BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, owner)
+            self.assertTrue(branch.visibleByUser(subscribee))
 
 
 class TestBranchSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):
