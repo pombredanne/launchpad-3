@@ -717,8 +717,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             """ % dict(
                 base_query=base_query,
                 user=quote(user.id),
-                private_branches=sqlvalues(PRIVATE_INFORMATION_TYPES),
-                public_branches=sqlvalues(PUBLIC_INFORMATION_TYPES))
+                private_branches=quote(PRIVATE_INFORMATION_TYPES),
+                public_branches=quote(PUBLIC_INFORMATION_TYPES))
 
         data = Store.of(self).execute(query + ';')
 
