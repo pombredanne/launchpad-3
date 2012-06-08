@@ -490,8 +490,6 @@ class TestFileBugGuidelinesRequestCache(TestCaseWithFactory):
         self.assertContentEqual(cache['private_types'], [
             type.name for type in PRIVATE_INFORMATION_TYPES])
         self.assertEqual(cache['bug_private_by_default'], private_bugs)
-        self.assertEqual(
-            cache['enable_bugfiling_duplicate_search'], duplicate_search)
 
     def test_product(self):
         project = self.factory.makeProduct(official_malone=True)
