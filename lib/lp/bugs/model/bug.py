@@ -85,6 +85,7 @@ from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
+    SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -105,7 +106,6 @@ from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.errors import (
     BugCannotBePrivate,
     InvalidDuplicateValue,
-    SubscriptionPrivacyViolation,
     )
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -177,8 +177,8 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import (
