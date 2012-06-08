@@ -79,7 +79,6 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import ISlaveStore
-from lp.services.database.postgresql import table_has_column
 from lp.services.database.sqlbase import (
     cursor,
     quote,
