@@ -1187,7 +1187,7 @@ class BugTask(SQLBase):
             self.maybeConfirm()
         # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-        flag = 'disclosure.enhanced_sharing.writable'
+        flag = 'disclosure.unsubscribe_jobs.enabled'
         if bool(getFeatureFlag(flag)):
             # As a result of the transition, some subscribers may no longer
             # have access to the parent bug. We need to run a job to remove any

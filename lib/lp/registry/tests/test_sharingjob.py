@@ -412,9 +412,6 @@ class TestRunViaCron(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        self.useFixture(FeatureFixture({
-            'disclosure.access_mirror_triggers.removed': 'true',
-        }))
         self.useFixture(disable_trigger_fixture())
         super(TestRunViaCron, self).setUp()
 
@@ -490,7 +487,6 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes':
                 'RemoveBugSubscriptionsJob',
-            'disclosure.access_mirror_triggers.removed': 'true',
         }))
         self.useFixture(disable_trigger_fixture())
         super(RemoveBugSubscriptionsJobTestCase, self).setUp()

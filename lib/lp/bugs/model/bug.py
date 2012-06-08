@@ -842,16 +842,13 @@ class Bug(SQLBase):
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
-        # Grant the subscriber access if they can't see the bug (if the
-        # database triggers aren't going to do it for us).
-        trigger_flag = 'disclosure.access_mirror_triggers.removed'
-        if bool(getFeatureFlag(trigger_flag)):
-            service = getUtility(IService, 'sharing')
-            bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
-            if not bugs:
-                service.ensureAccessGrants(
-                    subscribed_by, person, bugs=[self],
-                    ignore_permissions=True)
+        # Grant the subscriber access if they can't see the bug.
+        service = getUtility(IService, 'sharing')
+        bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+        if not bugs:
+            service.ensureAccessGrants(
+                person, subscribed_by, bugs=[self],
+                ignore_permissions=True)
 
         # In some cases, a subscription should be created without
         # email notifications.  suppress_notify determines if
@@ -1809,7 +1806,7 @@ class Bug(SQLBase):
         self._reconcileAccess()
         self.updateHeat()
 
-        flag = 'disclosure.enhanced_sharing.writable'
+        flag = 'disclosure.unsubscribe_jobs.enabled'
         if bool(getFeatureFlag(flag)):
             # As a result of the transition, some subscribers may no longer
             # have access to the bug. We need to run a job to remove any such

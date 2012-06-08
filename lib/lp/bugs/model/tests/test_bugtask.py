@@ -3342,10 +3342,9 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'disclosure.enhanced_sharing.writable': 'true',
+            'disclosure.unsubscribe_jobs.enabled': 'true',
             'jobs.celery.enabled_classes':
                 'RemoveBugSubscriptionsJob',
-            'disclosure.access_mirror_triggers.removed': 'true',
         }))
         self.useFixture(disable_trigger_fixture())
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
