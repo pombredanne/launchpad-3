@@ -49,7 +49,7 @@ class TestArchiveArch(TestCaseWithFactory):
             self.archive_arch_set.getRestrictedFamilies(self.ppa))
         results = dict(
             (row[0].name, row[1] is not None) for row in result_set)
-        self.assertEquals(
+        self.assertEqual(
             {'arm': False, 'cell-proc': True, 'omap': False},
             results)
 
@@ -62,7 +62,7 @@ class TestArchiveArch(TestCaseWithFactory):
             self.archive_arch_set.getRestrictedFamilies(self.ppa))
         results = dict(
             (row[0].name, row[1] is not None) for row in result_set)
-        self.assertEquals(
+        self.assertEqual(
             {'arm': False, 'cell-proc': True, 'omap': False},
             results)
 
@@ -71,9 +71,9 @@ class TestArchiveArch(TestCaseWithFactory):
         self.archive_arch_set.new(self.ppa, self.cell_proc)
         self.archive_arch_set.new(self.ubuntu_archive, self.omap)
         result_set = list(self.archive_arch_set.getByArchive(self.ppa))
-        self.assertEquals(1, len(result_set))
-        self.assertEquals(self.ppa, result_set[0].archive)
-        self.assertEquals(self.cell_proc, result_set[0].processorfamily)
+        self.assertEqual(1, len(result_set))
+        self.assertEqual(self.ppa, result_set[0].archive)
+        self.assertEqual(self.cell_proc, result_set[0].processorfamily)
 
     def test_getByArchive_follows_creation_order(self):
         # The result of ArchiveArchSet.getByArchive follows the order in
@@ -82,9 +82,9 @@ class TestArchiveArch(TestCaseWithFactory):
         self.archive_arch_set.new(self.ppa, self.omap)
         result_set = list(self.archive_arch_set.getByArchive(self.ppa))
         self.assertEqual(2, len(result_set))
-        self.assertEquals(self.ppa, result_set[0].archive)
+        self.assertEqual(self.ppa, result_set[0].archive)
         self.assertEqual(self.cell_proc, result_set[0].processorfamily)
-        self.assertEquals(self.ppa, result_set[1].archive)
+        self.assertEqual(self.ppa, result_set[1].archive)
         self.assertEqual(self.omap, result_set[1].processorfamily)
 
     def test_getByArchive_specific_architecture(self):
@@ -94,6 +94,6 @@ class TestArchiveArch(TestCaseWithFactory):
         self.archive_arch_set.new(self.ppa, self.omap)
         result_set = list(
             self.archive_arch_set.getByArchive(self.ppa, self.cell_proc))
-        self.assertEquals(1, len(result_set))
-        self.assertEquals(self.ppa, result_set[0].archive)
-        self.assertEquals(self.cell_proc, result_set[0].processorfamily)
+        self.assertEqual(1, len(result_set))
+        self.assertEqual(self.ppa, result_set[0].archive)
+        self.assertEqual(self.cell_proc, result_set[0].processorfamily)
