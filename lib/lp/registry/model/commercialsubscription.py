@@ -54,3 +54,4 @@ class CommercialSubscription(SQLBase):
         if self.is_active:
             raise CannotDeleteCommercialSubscription(
                 "This CommercialSubscription is still active.")
+        self.destroySelf()
