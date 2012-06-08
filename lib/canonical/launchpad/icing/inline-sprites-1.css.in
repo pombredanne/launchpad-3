@@ -277,6 +277,10 @@
     background-image: url(/@@/private.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.public {
+    background-image: url(/@@/public.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .meeting {
     background-image: url(/@@/meeting.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
