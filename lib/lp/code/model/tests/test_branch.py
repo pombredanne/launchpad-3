@@ -116,7 +116,10 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
@@ -2365,7 +2368,9 @@ class TestBranchPrivacy(TestCaseWithFactory):
         self.assertTrue(branch.explicitly_private)
 
     def test_personal_branches_for_private_teams_are_private(self):
-        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)
         self.assertEqual(InformationType.USERDATA, branch.information_type)
