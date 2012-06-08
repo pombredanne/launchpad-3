@@ -325,7 +325,7 @@ class IArchivePublic(IPrivacy, IHasOwner):
             required=True,
             description=_(
                 "Whether subscribers to private PPAs get emails about their "
-                "subscriptions.")))
+                "subscriptions. Has no effect on a public PPA.")))
 
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.

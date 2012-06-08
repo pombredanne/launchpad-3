@@ -2023,10 +2023,9 @@ class Archive(SQLBase):
         self.enabled_restricted_families = restricted
 
     @classmethod
-    def validatePPA(self, person, proposed_name, private=False,
-                    suppress_subscription_notifications=False):
+    def validatePPA(self, person, proposed_name, private=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if private or suppress_subscription_notifications:
+        if private:
             # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
             # which says that one needs 'launchpad.Commercial' permission to
             # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
@@ -2034,13 +2033,7 @@ class Archive(SQLBase):
             # permissions.
             role = IPersonRoles(person)
             if not (role.in_admin or role.in_commercial_admin):
-                if private:
-                    return (
-                        '%s is not allowed to make private PPAs' % person.name)
-                if suppress_subscription_notifications:
-                    return (
-                        '%s is not allowed to make PPAs that suppress '
-                        'subscription notifications' % person.name)
+                return '%s is not allowed to make private PPAs' % person.name
         if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
