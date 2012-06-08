@@ -331,19 +331,27 @@ class RemoveGranteeSubscriptionsJob(SharingJobDerived):
         logger = logging.getLogger()
         logger.info(self.getOperationDescription())
 
-        # Unsubscribe grantee from the specified bugs.
+        # Unsubscribe grantee from the specified bugs if they can't see the
+        # bug.
         if self.bug_ids:
             bugs = getUtility(IBugSet).getByNumbers(self.bug_ids)
-            for bug in bugs:
+            inaccessible_bugs = [
+                bug for bug in bugs if not bug.userCanView(self.grantee)]
+            for bug in inaccessible_bugs:
                 bug.unsubscribe(
                     self.grantee, self.requestor, ignore_permissions=True)
 
-        # Unsubscribe grantee from the specified branches.
+        # Unsubscribe grantee from the specified branches if they can't see the
+        # branch.
         if self.branch_names:
             branches = [
                 getUtility(IBranchLookup).getByUniqueName(branch_name)
                 for branch_name in self.branch_names]
-            for branch in branches:
+            inaccessible_branches = [
+                branch for branch in branches
+                if not branch.visibleByUser(self.grantee)
+            ]
+            for branch in inaccessible_branches:
                 branch.unsubscribe(
                     self.grantee, self.requestor, ignore_permissions=True)
 
@@ -360,6 +368,11 @@ class RemoveGranteeSubscriptionsJob(SharingJobDerived):
 
         # Do the bugs.
         privacy_filter = get_bug_privacy_filter(self.grantee)
+
+        # Admins can see all bugs so there's nothing to do.
+        if not privacy_filter:
+            return
+
         bug_filter = Not(In(
             Bug.id,
             Select(
@@ -440,7 +453,8 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
         logger = logging.getLogger()
         logger.info(self.getOperationDescription())
 
-        # Unsubscribe grantee from the specified bugs.
+        # Find all bug subscriptions for which the subscriber cannot see the
+        # bug.
         constraints = [
             BugTaskFlat.bug_id.is_in(self.bug_ids),
             Not(Coalesce(
