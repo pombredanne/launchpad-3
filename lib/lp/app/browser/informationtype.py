@@ -59,5 +59,13 @@ class InformationTypePortletMixin:
         if (self.context.information_type == InformationType.USERDATA and
             self.show_userdata_as_private):
                 description = (
-                    description.replace('user data', 'private information'))
+                    'Visible only to users with whom the project has '
+                    'shared private information.')
         return description
+
+    @property
+    def information_type_css(self):
+        if self.context.information_type in PRIVATE_INFORMATION_TYPES:
+            return 'sprite private'
+        else:
+            return 'sprite public'

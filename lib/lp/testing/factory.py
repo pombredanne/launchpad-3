@@ -1073,7 +1073,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=None, information_type=None, stacked_on=None,
+                   information_type=None, stacked_on=None,
                    sourcepackage=None, reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -1120,21 +1120,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         branch = namespace.createBranch(
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
-        assert information_type is None or private is None, (
-            "Can not specify both information_type and private")
-        if private is not None:
-            information_type = (
-                InformationType.USERDATA if private else
-                InformationType.PUBLIC)
+        naked_branch = removeSecurityProxy(branch)
         if information_type is not None:
-            removeSecurityProxy(branch).transitionToInformationType(
+            naked_branch.transitionToInformationType(
                 information_type, registrant, verify_policy=False)
         if stacked_on is not None:
-            removeSecurityProxy(branch).branchChanged(
+            naked_branch.branchChanged(
                 removeSecurityProxy(stacked_on).unique_name, 'rev1', None,
                 None, None)
         if reviewer is not None:
-            removeSecurityProxy(branch).reviewer = reviewer
+            naked_branch.reviewer = reviewer
         return branch
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,
@@ -1303,19 +1298,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             series_branch_info = []
 
             # Add some product series
-            def makeSeriesBranch(name, is_private=False):
+            def makeSeriesBranch(name, information_type):
                 branch = self.makeBranch(
                     name=name,
                     product=naked_product, owner=related_branch_owner,
-                    private=is_private)
+                    information_type=information_type)
                 series = self.makeProductSeries(
                     product=naked_product, branch=branch)
                 return branch, series
             for x in range(4):
-                is_private = x == 0 and with_private_branches
+                information_type = InformationType.PUBLIC
+                if x == 0 and with_private_branches:
+                    information_type = InformationType.USERDATA
                 (branch, series) = makeSeriesBranch(
-                        name=("series_branch_%s" % x), is_private=is_private)
-                if not is_private:
+                        ("series_branch_%s" % x), information_type)
+                if information_type == InformationType.PUBLIC:
                     series_branch_info.append((branch, series))
 
             # Sort them
@@ -1338,7 +1335,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # associated with a product.
             if naked_product is not None:
 
-                def makePackageBranch(name, is_private=False):
+                def makePackageBranch(name, information_type):
                     distro = self.makeDistribution()
                     distroseries = self.makeDistroSeries(
                         distribution=distro)
@@ -1354,7 +1351,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     branch = self.makePackageBranch(
                         name=name, owner=related_branch_owner,
                         sourcepackagename=sourcepackagename,
-                        distroseries=distroseries, private=is_private)
+                        distroseries=distroseries,
+                        information_type=information_type)
                     linked_branch = ICanHasLinkedBranch(naked_sourcepackage)
                     with celebrity_logged_in('admin'):
                         linked_branch.setBranch(branch, related_branch_owner)
@@ -1366,11 +1364,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     return branch, distroseries
 
                 for x in range(5):
-                    is_private = x == 0 and with_private_branches
+                    information_type = InformationType.PUBLIC
+                    if x == 0 and with_private_branches:
+                        information_type = InformationType.USERDATA
                     branch, distroseries = makePackageBranch(
-                            name=("product_package_branch_%s" % x),
-                            is_private=is_private)
-                    if not is_private:
+                            ("product_package_branch_%s" % x),
+                            information_type)
+                    if information_type == InformationType.PUBLIC:
                         related_package_branch_info.append(
                                 (branch, distroseries))
 
@@ -1514,7 +1514,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
         if subscribed_by is None:
             subscribed_by = person
-        return branch.subscribe(person,
+        return branch.subscribe(removeSecurityProxy(person),
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 

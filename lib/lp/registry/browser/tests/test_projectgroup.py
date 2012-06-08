@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
 from testtools.matchers import Not
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -31,6 +32,9 @@ class TestProjectGroupEditView(TestCaseWithFactory):
     def setUp(self):
         super(TestProjectGroupEditView, self).setUp()
         self.project_group = self.factory.makeProject(name='grupo')
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_links_admin(self):
         # An admin can change details and administer a project group.

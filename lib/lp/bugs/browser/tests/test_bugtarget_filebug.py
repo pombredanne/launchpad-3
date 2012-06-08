@@ -490,8 +490,6 @@ class TestFileBugGuidelinesRequestCache(TestCaseWithFactory):
         self.assertContentEqual(cache['private_types'], [
             type.name for type in PRIVATE_INFORMATION_TYPES])
         self.assertEqual(cache['bug_private_by_default'], private_bugs)
-        self.assertEqual(
-            cache['enable_bugfiling_duplicate_search'], duplicate_search)
 
     def test_product(self):
         project = self.factory.makeProduct(official_malone=True)
@@ -540,7 +538,7 @@ class TestFileBugRequestCache(TestCaseWithFactory):
             'disclosure.enhanced_choice_popup.enabled': 'true'
         }))
 
-    def _assert_cache_values(self, view, duplicate_search):
+    def _assert_cache_values(self, view, duplicate_search, private_only=False):
         cache = IJSONRequestCache(view.request).objects
         self.assertEqual(
             duplicate_search, cache['enable_bugfiling_duplicate_search'])
@@ -587,6 +585,17 @@ class TestFileBugRequestCache(TestCaseWithFactory):
             bugtask_importance_data.append(new_item)
         self.assertEqual(
             bugtask_importance_data, cache['bugtask_importance_data'])
+        bugtask_info_type_data = []
+        information_types = list(PRIVATE_INFORMATION_TYPES)
+        if not private_only:
+            information_types.extend(PUBLIC_INFORMATION_TYPES)
+        for item in information_types:
+            new_item = {'name': item.title, 'value': item.name,
+                        'description': item.description,
+                        'description_css_class': 'choice-description'}
+            bugtask_info_type_data.append(new_item)
+        self.assertContentEqual(
+            bugtask_info_type_data, cache['information_type_data'])
 
     def test_product(self):
         project = self.factory.makeProduct(official_malone=True)
@@ -594,6 +603,14 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         login_person(user)
         view = create_initialized_view(project, '+filebug', principal=user)
         self._assert_cache_values(view, True)
+
+    def test_product_private_bugs(self):
+        project = self.factory.makeProduct(
+            official_malone=True, private_bugs=True)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project, '+filebug', principal=user)
+        self._assert_cache_values(view, True, True)
 
     def test_product_no_duplicate_search(self):
         product = self.factory.makeProduct(official_malone=True)

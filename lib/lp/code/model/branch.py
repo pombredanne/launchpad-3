@@ -50,11 +50,15 @@ from zope.security.proxy import (
     )
 
 from lp import _
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.errors import (
+    SubscriptionPrivacyViolation,
+    UserCannotUnsubscribePerson,
+    )
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
     )
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -138,6 +142,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
@@ -152,6 +157,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -194,6 +200,20 @@ class Branch(SQLBase, BzrIdentityMixin):
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 
+    def _reconcileAccess(self):
+        """Reconcile the branch's sharing information.
+
+        Takes the information_type and target and makes the related
+        AccessArtifact and AccessPolicyArtifacts match.
+        """
+        # We haven't yet quite worked out how distribution privacy
+        # works, so only work for products for now.
+        if self.product is not None:
+            pillars = [self.product]
+        else:
+            pillars = []
+        reconcile_access_for_artifact(self, self.information_type, pillars)
+
     def setPrivate(self, private, user):
         """See `IBranch`."""
         if private:
@@ -220,6 +240,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
         self.information_type = information_type
+        self._reconcileAccess()
         # Set the legacy values for now.
         self.explicitly_private = private
         # If this branch is private, then it is also transitively_private
@@ -312,6 +333,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             # Person targets are always valid.
         namespace = target.getNamespace(self.owner)
         namespace.moveBranch(self, user, rename_if_necessary=True)
+        self._reconcileAccess()
 
     @property
     def namespace(self):
@@ -798,6 +820,11 @@ class Branch(SQLBase, BzrIdentityMixin):
     def subscribe(self, person, notification_level, max_diff_lines,
                   code_review_level, subscribed_by):
         """See `IBranch`."""
+        if (person.is_team and self.information_type in
+            PRIVATE_INFORMATION_TYPES and person.anyone_can_join()):
+            raise SubscriptionPrivacyViolation(
+                "Open and delegated teams cannot be subscribed to private "
+                "branches.")
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
         subscription = self.getSubscription(person)
@@ -812,6 +839,14 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
             subscription.review_level = code_review_level
+        # Grant the subscriber access if they can't see the branch.
+        service = getUtility(IService, 'sharing')
+        ignored, branches = service.getVisibleArtifacts(
+            person, branches=[self])
+        if not branches:
+            service.ensureAccessGrants(
+                subscribed_by, person, branches=[self],
+                ignore_permissions=True)
         return subscription
 
     def getSubscription(self, person):
@@ -839,13 +874,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
 
-    def unsubscribe(self, person, unsubscribed_by):
+    def unsubscribe(self, person, unsubscribed_by, ignore_permissions=False):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
         if subscription is None:
             # Silent success seems order of the day (like bugs).
             return
-        if not subscription.canBeUnsubscribedByUser(unsubscribed_by):
+        if (not ignore_permissions
+            and not subscription.canBeUnsubscribedByUser(unsubscribed_by)):
             raise UserCannotUnsubscribePerson(
                 '%s does not have permission to unsubscribe %s.' % (
                     unsubscribed_by.displayname,

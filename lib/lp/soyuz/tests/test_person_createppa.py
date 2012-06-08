@@ -36,13 +36,6 @@ class TestCreatePPA(TestCaseWithFactory):
                 PPACreationError, person.createPPA, private=True)
 
     def test_suppress_subscription_notifications(self):
-        with celebrity_logged_in('commercial_admin') as person:
-            ppa = person.createPPA(suppress_subscription_notifications=True)
-            self.assertEqual(True, ppa.suppress_subscription_notifications)
-
-    def test_suppress_without_permission(self):
         person = self.factory.makePerson()
-        with person_logged_in(person):
-            self.assertRaises(
-                PPACreationError, person.createPPA,
-                suppress_subscription_notifications=True)
+        ppa = person.createPPA(suppress_subscription_notifications=True)
+        self.assertEqual(True, ppa.suppress_subscription_notifications)

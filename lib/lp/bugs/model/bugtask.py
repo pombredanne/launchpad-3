@@ -41,7 +41,6 @@ from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import (
     ForeignKey,
-    IntCol,
     SQLObjectNotFound,
     StringCol,
     )
@@ -120,6 +119,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
@@ -143,6 +143,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
@@ -639,6 +640,7 @@ class BugTask(SQLBase):
         notify(ObjectDeletedEvent(self, who))
         self.destroySelf()
         del get_property_cache(bug).bugtasks
+        self.bug._reconcileAccess()
 
         # When a task is deleted, we also delete it's BugNomination entry
         # if there is one. Sadly, getNominationFor() can return None or
@@ -683,7 +685,7 @@ class BugTask(SQLBase):
         """See `IBugTask`."""
         return self.bug.isSubscribed(person)
 
-    def _syncSourcePackages(self, new_spn):
+    def _syncSourcePackages(self, new_spn, user):
         """Synchronize changes to source packages with other distrotasks.
 
         If one distroseriestask's source package is changed, all the
@@ -706,6 +708,7 @@ class BugTask(SQLBase):
                 key['sourcepackagename'] = new_spn
                 bugtask.transitionToTarget(
                     bug_target_from_key(**key),
+                    user,
                     _sync_sourcepackages=False)
 
     def getContributorInfo(self, user, person):
@@ -1140,7 +1143,7 @@ class BugTask(SQLBase):
 
         validate_target(self.bug, target)
 
-    def transitionToTarget(self, target, _sync_sourcepackages=True):
+    def transitionToTarget(self, target, user, _sync_sourcepackages=True):
         """See `IBugTask`.
 
         If _sync_sourcepackages is True (the default) and the
@@ -1169,11 +1172,12 @@ class BugTask(SQLBase):
         # sourcepackagename. This keeps series tasks consistent.
         if (_sync_sourcepackages and
             new_key['sourcepackagename'] != self.sourcepackagename):
-            self._syncSourcePackages(new_key['sourcepackagename'])
+            self._syncSourcePackages(new_key['sourcepackagename'], user)
 
         for name, value in new_key.iteritems():
             setattr(self, name, value)
         self.updateTargetNameCache()
+        self.bug._reconcileAccess()
 
         # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
         # We also should see if we ought to auto-transition to the
@@ -1182,6 +1186,14 @@ class BugTask(SQLBase):
             self.bug.shouldConfirmBugtasks()):
             self.maybeConfirm()
         # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+
+        flag = 'disclosure.enhanced_sharing.writable'
+        if bool(getFeatureFlag(flag)):
+            # As a result of the transition, some subscribers may no longer
+            # have access to the parent bug. We need to run a job to remove any
+            # such subscriptions.
+            getUtility(IRemoveBugSubscriptionsJobSource).create(
+                [self.bug], user)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1646,6 +1658,7 @@ class BugTaskSet:
             bugtask.updateTargetNameCache()
             if bugtask.conjoined_slave:
                 bugtask._syncFromConjoinedSlave()
+        removeSecurityProxy(bug)._reconcileAccess()
         return tasks
 
     def createTask(self, bug, owner, target, status=None, importance=None,

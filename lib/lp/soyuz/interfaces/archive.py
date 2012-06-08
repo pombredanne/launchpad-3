@@ -319,21 +319,13 @@ class IArchivePublic(IPrivacy, IHasOwner):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
-    commercial = Bool(
-        title=_("Commercial"),
-        required=True,
-        description=_(
-            "True if the archive is for commercial applications in the "
-            "Ubuntu Software Centre.  Governs whether subscribers or "
-            "uploaders get mail from Launchpad about archive events."))
-
     suppress_subscription_notifications = exported(
         Bool(
             title=_("Suppress subscription notifications"),
             required=True,
             description=_(
                 "Whether subscribers to private PPAs get emails about their "
-                "subscriptions.")))
+                "subscriptions. Has no effect on a public PPA.")))
 
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Cross application type errors for launchpad."""
@@ -9,6 +9,7 @@ __all__ = [
     'NameLookupFailed',
     'NotFoundError',
     'POSTToNonCanonicalURL',
+    'SubscriptionPrivacyViolation',
     'TranslationUnavailable',
     'UnexpectedFormData',
     'UserCannotUnsubscribePerson',
@@ -73,6 +74,11 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 @error_status(httplib.UNAUTHORIZED)
 class UserCannotUnsubscribePerson(Unauthorized):
     """User does not have permission to unsubscribe person or team."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class SubscriptionPrivacyViolation(Exception):
+    """The subscription would violate privacy policies."""
 
 
 # Slam a 401 response code onto all ForbiddenAttribute errors.

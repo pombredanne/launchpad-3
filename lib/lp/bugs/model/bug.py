@@ -85,9 +85,11 @@ from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
+    SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
@@ -104,7 +106,6 @@ from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.errors import (
     BugCannotBePrivate,
     InvalidDuplicateValue,
-    SubscriptionPrivacyViolation,
     )
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -162,6 +163,10 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -173,7 +178,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import (
     Person,
     person_sort_key,
@@ -835,6 +842,17 @@ class Bug(SQLBase):
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
+        # Grant the subscriber access if they can't see the bug (if the
+        # database triggers aren't going to do it for us).
+        trigger_flag = 'disclosure.access_mirror_triggers.removed'
+        if bool(getFeatureFlag(trigger_flag)):
+            service = getUtility(IService, 'sharing')
+            bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+            if not bugs:
+                service.ensureAccessGrants(
+                    subscribed_by, person, bugs=[self],
+                    ignore_permissions=True)
+
         # In some cases, a subscription should be created without
         # email notifications.  suppress_notify determines if
         # notifications are sent.
@@ -877,6 +895,14 @@ class Bug(SQLBase):
                 store.flush()
                 self.updateHeat()
                 del get_property_cache(self)._known_viewers
+
+                # Revoke access to bug if feature flag is on.
+                flag = 'disclosure.legacy_subscription_visibility.enabled'
+                if bool(getFeatureFlag(flag)):
+                    artifacts_to_delete = getUtility(
+                        IAccessArtifactSource).find([self])
+                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                        artifacts_to_delete, [person])
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1780,65 +1806,17 @@ class Bug(SQLBase):
                 self.subscribe(s, who)
 
         self.information_type = information_type
+        self._reconcileAccess()
         self.updateHeat()
+
+        flag = 'disclosure.enhanced_sharing.writable'
+        if bool(getFeatureFlag(flag)):
+            # As a result of the transition, some subscribers may no longer
+            # have access to the bug. We need to run a job to remove any such
+            # subscriptions.
+            getUtility(IRemoveBugSubscriptionsJobSource).create([self], who)
+
         return True
-
-    def getRequiredSubscribers(self, information_type, who):
-        """Return the mandatory subscribers for a bug with given attributes.
-
-        When a bug is marked as private or security related, it is required
-        that certain people be subscribed so they can access details about the
-        bug. The rules are:
-            security=true, private=true/false ->
-                subscribers = the reporter + security contact for each task
-            security=false, private=true ->
-                subscribers = the reporter + bug supervisor for each task
-            security=false, private=false ->
-                subscribers = ()
-
-        If bug supervisor or security contact is unset, fallback to bugtask
-        reporter/owner.
-        """
-        if information_type == InformationType.PUBLIC:
-            return set()
-        result = set()
-        result.add(self.owner)
-        for bugtask in self.bugtasks:
-            maintainer = bugtask.pillar.owner
-            if information_type in SECURITY_INFORMATION_TYPES:
-                result.add(bugtask.pillar.security_contact or maintainer)
-            if information_type in PRIVATE_INFORMATION_TYPES:
-                result.add(bugtask.pillar.bug_supervisor or maintainer)
-        if information_type in PRIVATE_INFORMATION_TYPES:
-            subscribers_for_who = self.getSubscribersForPerson(who)
-            if subscribers_for_who.is_empty():
-                result.add(who)
-        return result
-
-    def getAutoRemovedSubscribers(self, information_type):
-        """Return the to be removed subscribers for bug with given attributes.
-
-        When a bug's privacy or security related attributes change, some
-        existing subscribers may need to be automatically removed.
-        The rules are:
-            security=false ->
-                auto removed subscribers = (bugtask security contacts)
-            privacy=false ->
-                auto removed subscribers = (bugtask bug supervisors)
-
-        """
-        bug_supervisors = []
-        security_contacts = []
-        for_security_related = information_type in SECURITY_INFORMATION_TYPES
-        for_private = information_type in PRIVATE_INFORMATION_TYPES
-        for pillar in self.affected_pillars:
-            if (self.security_related and not for_security_related
-                and pillar.security_contact):
-                    security_contacts.append(pillar.security_contact)
-            if (self.private and not for_private
-                and pillar.bug_supervisor):
-                    bug_supervisors.append(pillar.bug_supervisor)
-        return bug_supervisors, security_contacts
 
     def getBugTask(self, target):
         """See `IBug`."""
@@ -2158,6 +2136,18 @@ class Bug(SQLBase):
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
         store.flush()
+
+    def _reconcileAccess(self):
+        # reconcile_access_for_artifact will only use the pillar list if
+        # the information type is private. But affected_pillars iterates
+        # over the tasks immediately, which is needless expense for
+        # public bugs.
+        if self.information_type in PRIVATE_INFORMATION_TYPES:
+            pillars = self.affected_pillars
+        else:
+            pillars = []
+        reconcile_access_for_artifact(
+            self, self.information_type, pillars)
 
     def _attachments_query(self):
         """Helper for the attachments* properties."""
@@ -2728,6 +2718,8 @@ class BugSet:
             bug_task.transitionToImportance(params.importance, params.owner)
         if params.milestone:
             bug_task.transitionToMilestone(params.milestone, params.owner)
+
+        bug._reconcileAccess()
 
         # Tell everyone.
         if notify_event:

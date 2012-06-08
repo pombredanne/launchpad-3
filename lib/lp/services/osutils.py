@@ -204,3 +204,9 @@ def remove_if_exists(path):
     except OSError, e:
         if e.errno != errno.ENOENT:
             raise
+
+
+def write_file(path, content):
+    f = open(path, 'w')
+    f.write(content)
+    f.close()
