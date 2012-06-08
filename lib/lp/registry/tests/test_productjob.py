@@ -649,7 +649,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
 
     def test_deactivateCommercialFeatures_open_source(self):
         # When the project is open source, the product's commercial features
-        # are deactivated.
+        # are deactivated and the commercial subscription is deleted.
         product, reviewer = self.make_notification_data(licenses=[License.MIT])
         public_branch = self.factory.makeBranch(
             owner=product.owner, product=product)

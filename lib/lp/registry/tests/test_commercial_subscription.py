@@ -20,6 +20,7 @@ class CommecialSubscriptionTestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_delete_raises_error_when_active(self):
+        # Active commercial subscriptions cannot be deleted.
         product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
         cs = product.commercial_subscription
@@ -28,6 +29,7 @@ class CommecialSubscriptionTestCase(TestCaseWithFactory):
             CannotDeleteCommercialSubscription, cs.delete)
 
     def test_delete(self):
+        # Inactive commercial subscriptions can be deleted.
         product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
         cs = product.commercial_subscription
