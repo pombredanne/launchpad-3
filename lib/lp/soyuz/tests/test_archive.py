@@ -1656,20 +1656,22 @@ class TestValidatePPA(TestCaseWithFactory):
     def test_open_teams(self):
         team = self.factory.makeTeam()
         self.assertEqual(
-            'Open teams cannot have PPAs.', validate_ppa(team, None))
+            'Open teams cannot have PPAs.',
+            validate_ppa(team.teamowner, team, None))
 
     def test_distribution_name(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
-            validate_ppa(ppa_owner, 'ubuntu'))
+            validate_ppa(ppa_owner, ppa_owner, 'ubuntu'))
 
     def test_private_ppa_non_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
             validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+                ppa_owner, ppa_owner, self.factory.getUniqueString(),
+                private=True))
 
     def test_private_ppa_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
@@ -1678,18 +1680,21 @@ class TestValidatePPA(TestCaseWithFactory):
             comm.addMember(ppa_owner, comm.teamowner)
         self.assertIsNone(
             validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+                ppa_owner, ppa_owner, self.factory.getUniqueString(),
+                private=True))
 
     def test_private_ppa_admin(self):
         ppa_owner = self.factory.makeAdministrator()
         self.assertIsNone(
             validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+                ppa_owner, ppa_owner, self.factory.getUniqueString(),
+                private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
         self.assertEqual(
-            "You already have a PPA named 'ppa'.", validate_ppa(ppa.owner, 'ppa'))
+            "You already have a PPA named 'ppa'.",
+            validate_ppa(ppa.owner, ppa.owner, 'ppa'))
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
@@ -1697,11 +1702,11 @@ class TestValidatePPA(TestCaseWithFactory):
         self.factory.makeArchive(owner=team, name='ppa')
         self.assertEqual(
             "%s already has a PPA named 'ppa'." % team.displayname,
-            validate_ppa(team, 'ppa'))
+            validate_ppa(team.teamowner, team, 'ppa'))
 
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
-        self.assertIsNone(validate_ppa(ppa_owner, None))
+        self.assertIsNone(validate_ppa(ppa_owner, ppa_owner, None))
 
 
 class TestGetComponentsForSeries(TestCaseWithFactory):

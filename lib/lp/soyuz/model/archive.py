@@ -2054,15 +2054,14 @@ class Archive(SQLBase):
         job.destroySelf()
 
 
-def validate_ppa(owner, proposed_name, private=False):
+def validate_ppa(creator, owner, proposed_name, private=False):
     """Can 'person' create a PPA called 'proposed_name'?
 
-    :param owner: The owner *and* creator.
+    :param creator: The person creating the PPA.
+    :param owner: The proposed owner of the PPA.
     :param proposed_name: The proposed name.
     :param private: Whether or not to make it private.
     """
-    # XXX: Make this a separate parameter.
-    creator = owner
     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     if private:
         # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
