@@ -2172,13 +2172,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
 
-        if (data.get('suppress_subscription_notifications') is True
-            and not data['private']):
-            self.setFieldError(
-                'suppress_subscription_notifications',
-                'Can only suppress subscription notifications for private '
-                'archives.')
-
         enabled_restricted_families = data.get('enabled_restricted_families')
         require_virtualized = data.get('require_virtualized')
         proc_family_set = getUtility(IProcessorFamilySet)
