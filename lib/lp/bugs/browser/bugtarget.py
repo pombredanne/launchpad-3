@@ -1114,7 +1114,7 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
           - There are no widget errors.
         """
         return (
-            self.contextUsesMalone and
+            self.contextUsesMalone() and
             len(self.similar_bugs) > 0 and
             len(self.widget_errors) == 0)
 
