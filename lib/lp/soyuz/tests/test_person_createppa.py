@@ -35,6 +35,13 @@ class TestCreatePPA(TestCaseWithFactory):
             self.assertRaises(
                 PPACreationError, person.createPPA, private=True)
 
+    def test_different_person(self):
+        # You cannot make a PPA on another person.
+        owner = self.factory.makePerson()
+        creator = self.factory.makePerson()
+        with person_logged_in(creator):
+            self.assertRaises(PPACreationError, owner.createPPA)
+
     def test_suppress_subscription_notifications(self):
         person = self.factory.makePerson()
         ppa = person.createPPA(suppress_subscription_notifications=True)

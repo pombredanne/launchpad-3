@@ -1704,6 +1704,15 @@ class TestValidatePPA(TestCaseWithFactory):
             "%s already has a PPA named 'ppa'." % team.displayname,
             validate_ppa(team, 'ppa'))
 
+    def test_different_person(self):
+        owner = self.factory.makePerson()
+        creator = self.factory.makePerson()
+        with person_logged_in(creator):
+            errors = validate_ppa(owner, 'ppa')
+        self.assertEqual(
+            '%s cannot create PPAs for %s' % (creator.name, owner.name),
+            errors)
+
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
         self.assertIsNone(validate_ppa(ppa_owner, None))
