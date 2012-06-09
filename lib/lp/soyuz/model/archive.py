@@ -2055,6 +2055,12 @@ class Archive(SQLBase):
 
 
 def validate_ppa(person, proposed_name, private=False):
+    """Can 'person' create a PPA called 'proposed_name'?
+
+    :param person: The owner *and* creator.
+    :param proposed_name: The proposed name.
+    :param private: Whether or not to make it private.
+    """
     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     if private:
         # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
