@@ -830,7 +830,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
                 self.setFieldError(
                     'ppa_name', 'You need to specify a name for the PPA.')
             else:
-                error = validate_ppa(self.user, owner, ppa_name)
+                error = validate_ppa(owner, ppa_name)
                 if error is not None:
                     self.setFieldError('ppa_name', error)
 

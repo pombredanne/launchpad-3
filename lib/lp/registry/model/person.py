@@ -2978,8 +2978,7 @@ class Person(
     def createPPA(self, name=None, displayname=None, description=None,
                   private=False, suppress_subscription_notifications=False):
         """See `IPerson`."""
-        logged_in_user = getUtility(ILaunchBag).user
-        errors = validate_ppa(logged_in_user, self, name, private)
+        errors = validate_ppa(self, name, private)
         if errors:
             raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
