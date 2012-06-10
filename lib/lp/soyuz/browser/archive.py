@@ -1994,6 +1994,7 @@ class ArchiveActivateView(LaunchpadFormView):
         # PPA name.
         name = data.get('name', None)
 
+        # XXX: jml: I think this ought to call createPPA.
         # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
         # for Ubuntu distribution. PPA creation should be revisited when we
         # start supporting other distribution (debian, mainly).
