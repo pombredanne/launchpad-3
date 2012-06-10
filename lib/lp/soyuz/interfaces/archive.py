@@ -882,13 +882,6 @@ class IArchiveView(IHasBuildRecords):
     def getPackageDownloadTotal(bpr):
         """Get the total download count for a given package."""
 
-    def validatePPA(person, proposed_name):
-        """Check if a proposed name for a PPA is valid.
-
-        :param person: A Person identifying the requestor.
-        :param proposed_name: A String identifying the proposed PPA name.
-        """
-
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 

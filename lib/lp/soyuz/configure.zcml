@@ -408,7 +408,7 @@
            NOTE: The 'private' permission controls who can turn a public
            archive into a private one, and vice versa. The logic that says this
            requires launchpad.Commercial permissions is duplicated in
-           IArchive.validatePPA.
+           validate_ppa.
           -->
         <require
             permission="launchpad.Commercial"
