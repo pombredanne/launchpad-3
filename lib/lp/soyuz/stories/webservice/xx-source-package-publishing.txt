@@ -90,13 +90,10 @@ Each source publication exposes a number of properties.  We'll create a new
 publication to play with first.
 
     >>> login("foo.bar@canonical.com")
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
     >>> source = stp.getPubSource(
@@ -238,10 +235,6 @@ Privacy
 
 Create a private PPA for Celso with some binaries.
 
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
     >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
     >>> cprov_private_ppa_db = factory.makeArchive(
@@ -460,8 +453,7 @@ The URL is a standard proxied URL in case the file is private:
 It will match the fake content we added earlier:
 
     >>> login("admin@canonical.com")
-    >>> from lp.services.librarian.browser import (
-    ...     ProxiedLibraryFileAlias)
+    >>> from lp.services.librarian.browser import ProxiedLibraryFileAlias
     >>> diff_url == ProxiedLibraryFileAlias(
     ...     new_diff.diff_content, cprov.archive).http_url
     True
