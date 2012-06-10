@@ -2086,9 +2086,7 @@ def validate_ppa(owner, proposed_name, private=False):
     except NoSuchPPA:
         return None
     else:
-        # XXX: What if the creator is not in the owner's team?
         text = "You already have a PPA named '%s'." % proposed_name
-        # XXX: Shouldn't this be "owner != creator"?
         if owner.is_team:
             text = "%s already has a PPA named '%s'." % (
                 owner.displayname, proposed_name)
