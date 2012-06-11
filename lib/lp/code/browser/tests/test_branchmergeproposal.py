@@ -54,7 +54,10 @@ from lp.code.tests.helpers import (
     make_merge_proposal_without_reviewers,
     )
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import (
@@ -217,7 +220,8 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # Set up some review requests.
         public_person1 = self.factory.makePerson()
         private_team1 = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         self._nominateReviewer(public_person1, owner)
         self._nominateReviewer(private_team1, owner)
 

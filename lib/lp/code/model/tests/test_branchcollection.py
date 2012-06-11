@@ -31,6 +31,7 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.enums import InformationType
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -684,7 +685,9 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # A person in a team that is subscribed to a branch can see that
         # branch, even if it's private.
         team_owner = self.factory.makePerson()
-        team = self.factory.makeTeam(team_owner)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            owner=team_owner)
         private_branch = self.factory.makeAnyBranch(
             information_type=InformationType.USERDATA)
         # Subscribe the team.
@@ -890,8 +893,10 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the
         # source branch.
-        mp1 = self.factory.makeBranchMergeProposal()
-        removeSecurityProxy(mp1.target_branch).explicitly_private = True
+        registrant = self.factory.makePerson()
+        mp1 = self.factory.makeBranchMergeProposal(registrant=registrant)
+        removeSecurityProxy(mp1.target_branch).transitionToInformationType(
+            InformationType.USERDATA, registrant, verify_policy=False)
         collection = self.all_branches.visibleByUser(None)
         proposals = collection.getMergeProposals()
         self.assertEqual([], list(proposals))

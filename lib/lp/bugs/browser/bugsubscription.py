@@ -37,11 +37,11 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
+from lp.app.errors import SubscriptionPrivacyViolation
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
 from lp.bugs.enums import BugNotificationLevel
-from lp.bugs.errors import SubscriptionPrivacyViolation
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions

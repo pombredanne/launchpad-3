@@ -547,7 +547,8 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         # A branch with a private owner is rendered.
         private_owner = self.factory.makeTeam(
             displayname="PrivateTeam", visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch(owner=private_owner)
+        with person_logged_in(private_owner):
+            branch = self.factory.makeAnyBranch(owner=private_owner)
         # Ensure the branch owner is rendered.
         url = canonical_url(branch, rootsite='code')
         user = self.factory.makePerson()
@@ -560,7 +561,8 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         # A private branch with a private owner is rendered.
         private_owner = self.factory.makeTeam(
             displayname="PrivateTeam", visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch(owner=private_owner)
+        with person_logged_in(private_owner):
+            branch = self.factory.makeAnyBranch(owner=private_owner)
         # Ensure the branch owner is rendered.
         url = canonical_url(branch, rootsite='code')
         user = self.factory.makePerson()
@@ -576,7 +578,8 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         # A branch with a private owner is not rendered for anon users.
         private_owner = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch(owner=private_owner)
+        with person_logged_in(private_owner):
+            branch = self.factory.makeAnyBranch(owner=private_owner)
         # Viewing the branch results in an error.
         url = canonical_url(branch, rootsite='code')
         browser = self._getBrowser()
@@ -604,7 +607,7 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         private_subscriber = self.factory.makeTeam(
             name="privateteam", visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makeAnyBranch()
-        with person_logged_in(branch.owner):
+        with person_logged_in(private_subscriber):
             self.factory.makeBranchSubscription(
                 branch, private_subscriber, branch.owner)
         # Viewing the branch doesn't show the private subscriber.

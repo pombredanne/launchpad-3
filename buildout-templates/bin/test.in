@@ -220,7 +220,7 @@ if __name__ == '__main__':
         sys.exit(main(sys.argv))
 
     def load_list(option, opt_str, list_name, parser):
-        patch_find_tests(filter_tests(list_name))
+        patch_find_tests(filter_tests(list_name, '--shuffle' in sys.argv))
     options.parser.add_option(
         '--load-list', type=str, action='callback', callback=load_list)
     options.parser.add_option(
