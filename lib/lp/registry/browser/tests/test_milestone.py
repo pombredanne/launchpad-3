@@ -33,7 +33,6 @@ from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     HasQueryCount,
     )
-from lp.testing.memcache import MemcacheTestCase
 from lp.testing.views import create_initialized_view
 
 
@@ -141,21 +140,6 @@ class TestMilestoneEditView(TestCaseWithFactory):
         self.assertEqual('new-name', self.milestone.name)
         expected = []
         self.assertEqual(expected, self.milestone.getTags())
-
-
-class TestMilestoneMemcache(MemcacheTestCase):
-
-    def setUp(self):
-        super(TestMilestoneMemcache, self).setUp()
-        product = self.factory.makeProduct()
-        login_person(product.owner)
-        series = self.factory.makeProductSeries(product=product)
-        self.milestone = self.factory.makeMilestone(
-            productseries=series, name="1.1")
-        bugtask = self.factory.makeBugTask(target=product)
-        bugtask.transitionToAssignee(product.owner)
-        bugtask.milestone = self.milestone
-        self.observer = self.factory.makePerson()
 
 
 class TestMilestoneDeleteView(TestCaseWithFactory):
