@@ -69,19 +69,15 @@ class TestPrivacySwitching(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def set_ppa_privacy(self, ppa, private):
-        """Helper method to privatise a ppa."""
-        ppa.private = private
-
     def test_switch_privacy_no_pubs_succeeds(self):
         # Changing the privacy is fine if there are no publishing
         # records.
         public_ppa = self.factory.makeArchive()
-        self.set_ppa_privacy(public_ppa, private=True)
+        public_ppa.private = True
         self.assertTrue(public_ppa.private)
 
         private_ppa = self.factory.makeArchive(private=True)
-        self.set_ppa_privacy(private_ppa, private=False)
+        private_ppa.private = False
         self.assertFalse(private_ppa.private)
 
     def test_switch_privacy_with_pubs_fails(self):
@@ -96,19 +92,17 @@ class TestPrivacySwitching(TestCaseWithFactory):
         publisher.getPubSource(archive=private_ppa)
 
         self.assertRaises(
-            CannotSwitchPrivacy,
-            self.set_ppa_privacy, public_ppa, private=True)
+            CannotSwitchPrivacy, setattr, public_ppa, 'private', True)
 
         self.assertRaises(
-            CannotSwitchPrivacy,
-            self.set_ppa_privacy, private_ppa, private=False)
+            CannotSwitchPrivacy, setattr, private_ppa, 'private', False)
 
     def test_buildd_secret_was_generated(self):
         public_ppa = self.factory.makeArchive()
-        self.set_ppa_privacy(public_ppa, private=True)
+        public_ppa.private = True
         self.assertNotEqual(public_ppa.buildd_secret, None)
 
     def test_discard_buildd_was_discarded(self):
         private_ppa = self.factory.makeArchive(private=True)
-        self.set_ppa_privacy(private_ppa, private=False)
+        private_ppa.private = False
         self.assertEqual(private_ppa.buildd_secret, None)
