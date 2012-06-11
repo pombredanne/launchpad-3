@@ -8,6 +8,7 @@ from zope.security.interfaces import Unauthorized
 from lp.soyuz.interfaces.archive import CannotSwitchPrivacy
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -37,8 +38,25 @@ class TestArchivePrivacy(TestCaseWithFactory):
         with person_logged_in(subscriber):
             self.assertEqual(ppa.description, "Foo")
 
+    def test_owner_changing_privacy(self):
+        ppa = self.factory.makeArchive()
+        with person_logged_in(ppa.owner):
+            self.assertRaises(Unauthorized, setattr, ppa, 'private', True)
 
-class TestArchivePrivacySwitching(TestCaseWithFactory):
+    def test_admin_changing_privacy(self):
+        ppa = self.factory.makeArchive()
+        with celebrity_logged_in('admin'):
+            ppa.private = True
+        self.assertEqual(True, ppa.private)
+
+    def test_commercial_admin_changing_privacy(self):
+        ppa = self.factory.makeArchive()
+        with celebrity_logged_in('commercial_admin'):
+            ppa.private = True
+        self.assertEqual(True, ppa.private)
+
+
+class TestPrivacySwitching(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
