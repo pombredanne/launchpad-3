@@ -9,64 +9,22 @@
   <div id="table-details" class="two-column-list">
     <dl id="owner" tal:condition="context/owner">
       <dt>Maintainer:</dt>
-      <dd>
-        <a tal:replace="structure context/owner/fmt:link" />
-        <a tal:replace="structure overview_menu/reassign/fmt:icon" />
-      </dd>
+      <dd tal:content="structure view/maintainer_widget" />
     </dl>
 
     <dl id="driver">
       <dt>Driver:</dt>
-      <dd tal:define="link overview_menu/driver">
-        <tal:no-driver condition="not:context/driver">
-          <tal:anyone condition="not: link/enabled">
-            None
-          </tal:anyone>
-          <tal:editor condition="link/enabled">
-            Specify a driver
-          </tal:editor>
-        </tal:no-driver>
-        <a
-          tal:condition="context/driver"
-          tal:replace="structure context/driver/fmt:link" />
-        <a tal:replace="structure link/fmt:icon" />
-      </dd>
+      <dd tal:content="structure view/driver_widget" />
     </dl>
 
     <dl id="members">
       <dt>Members:</dt>
-      <dd tal:define="link overview_menu/members">
-        <tal:no-members condition="not:context/members">
-          <tal:anyone condition="not: link/enabled">
-            None
-          </tal:anyone>
-          <tal:editor condition="link/enabled">
-            Specify the members team
-          </tal:editor>
-        </tal:no-members>
-        <a
-         tal:condition="context/members"
-         tal:replace="structure context/members/fmt:link" />
-        <a tal:replace="structure link/fmt:icon" />
-      </dd>
+      <dd tal:content="structure view/members_widget" />
     </dl>
 
     <dl id="mirror-admins">
       <dt>Mirror admins:</dt>
-      <dd tal:define="link overview_menu/mirror_admin">
-        <tal:no-mirror-admin condition="not:context/mirror_admin">
-          <tal:anyone condition="not: link/enabled">
-            None
-          </tal:anyone>
-          <tal:editor condition="link/enabled">
-            Specify a mirror admin
-          </tal:editor>
-        </tal:no-mirror-admin>
-        <a
-          tal:condition="context/mirror_admin"
-          tal:replace="structure context/mirror_admin/fmt:link" />
-        <a tal:replace="structure link/fmt:icon" />
-      </dd>
+      <dd tal:content="structure view/mirror_admin_widget" />
     </dl>
   </div>
 

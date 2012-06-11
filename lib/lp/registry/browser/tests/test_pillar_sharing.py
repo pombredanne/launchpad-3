@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import get_current_web_service_request
 import simplejson
@@ -24,6 +25,7 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
@@ -87,7 +89,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
 
         if with_branch and self.pillar_type == 'product':
             branch = self.factory.makeBranch(
-                product=self.pillar, owner=self.pillar.owner, private=True)
+                product=self.pillar, owner=self.pillar.owner,
+                information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
 
@@ -193,7 +196,7 @@ class PillarSharingDetailsMixin:
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             pillarperson = self.getPillarPerson()
             view = create_initialized_view(pillarperson, '+index')
-            bugtask = list(view.bugs)[0]
+            bugtask = list(view.bugtasks)[0]
             bug = bugtask.bug
             cache = IJSONRequestCache(view.request)
             request = get_current_web_service_request()
@@ -223,6 +226,20 @@ class PillarSharingDetailsMixin:
                         branch, path_only_if_possible=True),
                     'self_link': absoluteURL(branch, request),
                 }, cache.objects.get('branches')[0])
+
+    def test_view_query_count(self):
+        # Test that the view bulk loads artifacts.
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
+            person = self.factory.makePerson()
+            for x in range(0, 15):
+                self.makeArtifactGrantee(person, True, True, False)
+            pillarperson = PillarPerson(self.pillar, person)
+
+            # Invalidate the Storm cache and check the query count.
+            IStore(self.pillar).invalidate()
+            with StormStatementRecorder() as recorder:
+                create_initialized_view(pillarperson, '+index')
+            self.assertThat(recorder, HasQueryCount(LessThan(12)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
@@ -300,7 +317,7 @@ class PillarSharingViewTestMixin:
             picker_config = simplejson.loads(view.json_sharing_picker_config)
             self.assertTrue('vocabulary_filters' in picker_config)
             self.assertEqual(
-                'Grant access to project artifacts',
+                'Share project information',
                 picker_config['header'])
             self.assertEqual(
                 'Search for user or exclusive team with whom to share',
@@ -354,7 +371,7 @@ class PillarSharingViewTestMixin:
             view = create_view(self.pillar, name='+sharing')
             with StormStatementRecorder() as recorder:
                 view.initialize()
-            self.assertThat(recorder, HasQueryCount(LessThan(6)))
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
@@ -386,6 +403,9 @@ class TestProductSharingView(PillarSharingViewTestMixin,
         super(TestProductSharingView, self).setUp()
         self.setupSharing(self.grantees)
         login_person(self.driver)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,

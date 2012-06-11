@@ -212,6 +212,9 @@ class IBranchCollection(Interface):
         :param since: If supplied, ignore merge proposals before this date.
         """
 
+    def withIds(*branch_ids):
+        """Restrict the collection to branches with the specified ids."""
+
 
 class IAllBranches(IBranchCollection):
     """A `IBranchCollection` representing all branches in Launchpad."""

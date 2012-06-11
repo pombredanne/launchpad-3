@@ -200,6 +200,10 @@ table.diff,
     line-height: 18px;
     }
 
+.actionicon {
+    margin-left: 6px;
+    }
+
 .sprite-after {
     padding: 2px 18px 0 0;
     }
@@ -229,22 +233,6 @@ input[type="submit"].icon-only {
 span.icon-only {
     padding-right: 14px;
     line-height: 14px;
-    }
-
-/* XXX: EdwinGrubbs 2009-10-29 bug=463032
-   The reduced padding is only necessary to prevent parts of the
-   adjacent sprites in the consolidated image from appearing
-   when the line wraps and the default font size is 16.
-*/
-.vertical .sprite {
-    padding-bottom: 0px;
-    display: inline-block;
-    min-height: 16px;
-    width: 90%;
-    }
-
-.vertical .sprite:first-line {
-    line-height: 12px;
     }
 
 /* XXX: mars 2009-11-22 bug=484848

@@ -26,6 +26,7 @@ We publish a subset of their attributes.
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
+    relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
@@ -48,6 +49,7 @@ For "devel" additional attributes are available.
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
+    relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
@@ -117,6 +119,7 @@ The archive has the following attributes:
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
     private: False
+    relative_build_score: 0
     require_virtualized: False
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
@@ -986,6 +989,7 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    relative_build_score: 0
     require_virtualized: u'tag:launchpad.net:2008:redacted'
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
@@ -1004,6 +1008,7 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
@@ -1172,6 +1177,18 @@ error is returned.
     foocomm 1.0-2 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
 
+Suppressing notifications
+-------------------------
+
+The owner of the archive can suppress notifications on subscription
+changes over the API.
+
+    >>> private_archive = cprov_webservice.get(
+    ...     cprov_private_ppa['self_link']).jsonBody()
+    >>> private_archive['suppress_subscription_notifications'] = True
+    >>> print modify_archive(cprov_webservice, private_archive)
+    HTTP/1.1 209 ...
+    ...
 
 Archive dependencies
 ====================

@@ -95,9 +95,7 @@ class DistributionSourcePackageCache(SQLBase):
             DistroSeries.distribution = %s AND
             Archive.id = %s AND
             SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+            SourcePackagePublishingHistory.sourcepackagename =
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.dateremoved is NULL AND
             Archive.enabled = TRUE
@@ -106,8 +104,7 @@ class DistributionSourcePackageCache(SQLBase):
             clauseTables=[
                 'Archive',
                 'DistroSeries',
-                'SourcePackagePublishingHistory',
-                'SourcePackageRelease']))
+                'SourcePackagePublishingHistory']))
 
         # Remove the cache entries for packages we no longer publish.
         for cache in cls._find(distro, archive):
@@ -128,9 +125,9 @@ class DistributionSourcePackageCache(SQLBase):
 
         # Get the set of published sourcepackage releases.
         sprs = list(SourcePackageRelease.select("""
-            SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
+            SourcePackagePublishingHistory.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
@@ -219,16 +216,13 @@ class DistributionSourcePackageCache(SQLBase):
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+            SourcePackagePublishingHistory.sourcepackagename =
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(distro, archive),
             distinct=True,
             orderBy="name",
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
-                'SourcePackageRelease']))
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries']))
 
         number_of_updates = 0
         chunk_size = 0

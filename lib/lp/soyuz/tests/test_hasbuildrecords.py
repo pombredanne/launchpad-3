@@ -16,12 +16,12 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.services.database.lpstorm import IStore
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import (
@@ -29,6 +29,7 @@ from lp.soyuz.interfaces.buildrecords import (
     IncompatibleArguments,
     )
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -219,10 +220,9 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         owner = self.factory.makePerson()
         processor_family = ProcessorFamilySet().getByProcessorName('386')
         processor = processor_family.processors[0]
-        builder_set = getUtility(IBuilderSet)
-        self.context = builder_set.new(
+        self.context = self.factory.makeBuilder(
             processor, 'http://example.com', 'Newbob', 'New Bob the Builder',
-            'A new and improved bob.', owner)
+            owner=owner)
 
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:
@@ -281,6 +281,9 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         for build in self.builds[1:3]:
             spr = build.source_package_release
             removeSecurityProxy(spr).sourcepackagename = gedit_name
+            IStore(SourcePackagePublishingHistory).find(
+                SourcePackagePublishingHistory, sourcepackagerelease=spr
+                ).set(sourcepackagenameID=gedit_name.id)
 
         # Set them as sucessfully built
         for build in self.builds:
@@ -345,7 +348,7 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
             publisher.prepareBreezyAutotest()
             publisher.addFakeChroots(distroseries=distroseries)
             distroseries.nominatedarchindep = das
-            builder = self.factory.makeBuilder(processor=pf_proc)
+            self.factory.makeBuilder(processor=pf_proc)
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=spn, distroseries=distroseries)
         spph.createMissingBuilds()

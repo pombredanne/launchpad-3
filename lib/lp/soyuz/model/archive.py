@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'Archive',
     'ArchiveSet',
+    'validate_ppa',
     ]
 
 from operator import attrgetter
@@ -78,10 +79,8 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import (
-    ISlaveStore,
-    IStore,
-    )
+from lp.services.database.lpstorm import ISlaveStore
+from lp.services.database.postgresql import table_has_column
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -325,9 +324,6 @@ class Archive(SQLBase):
         dbName='external_dependencies', notNull=False, default=None,
         storm_validator=storm_validate_external_dependencies)
 
-    commercial = BoolCol(
-        dbName='commercial', notNull=True, default=False)
-
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -340,13 +336,56 @@ class Archive(SQLBase):
         else:
             alsoProvides(self, IDistributionArchive)
 
+    # Here we provide manual properties instead of declaring the column in
+    # storm.  This is to handle a transition period where we rename the
+    # 'commercial' column to 'suppress_subscription_notifications'.  During
+    # the transition period, the code needs to work with both column names.
+    #
+    # The approach taken here only works because we never use 'commercial' in
+    # a WHERE clause or anything like that.
+    #
+    # Once the database change has taken place, these properties should be
+    # deleted, and replaced with a class variable declaration that looks
+    # something like:
+    #
+    #   suppress_subscription_notifications = BoolCol(
+    #       dbName='suppress_subscription_notifications',
+    #       notNull=True, default=False)
+
+    def _get_suppress_column_name(self):
+        """Get the name of the column for suppressing notifications.
+
+        Older versions of the database call it 'commercial', newer ones call
+        it 'suppress_subscription_notifications'.
+
+        Works by interrogating PostgreSQL's own records.
+        """
+        # Chose this look-before-you-leap implementation so as to avoid
+        # invalidating the query by forcing a ProgrammingError.
+        cur = cursor()
+        has_old_column = table_has_column(cur, 'archive', 'commercial')
+        if has_old_column:
+            return 'commercial'
+        else:
+            return 'suppress_subscription_notifications'
+
     @property
     def suppress_subscription_notifications(self):
-        return self.commercial
+        """See `IArchive`."""
+        store = Store.of(self)
+        store.flush()
+        suppress_column = self._get_suppress_column_name()
+        query = "SELECT %s FROM archive WHERE id=%%s" % (suppress_column,)
+        return store.execute(query, (self.id,)).get_one()[0]
 
     @suppress_subscription_notifications.setter
     def suppress_subscription_notifications(self, suppress):
-        self.commercial = suppress
+        """See `IArchive`."""
+        store = Store.of(self)
+        store.flush()
+        suppress_column = self._get_suppress_column_name()
+        query = "UPDATE archive SET %s=%%s WHERE id=%%s" % (suppress_column,)
+        store.execute(query, (bool(suppress), self.id))
 
     # Note: You may safely ignore lint when it complains about this
     # declaration.  As of Python 2.6, this is a perfectly valid way
@@ -514,7 +553,7 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.archiveID == self.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagenameID ==
+            SourcePackagePublishingHistory.sourcepackagenameID ==
                 SourcePackageName.id,
             ]
         orderBy = [
@@ -624,7 +663,7 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+            SourcePackagePublishingHistory.sourcepackagename =
                 SourcePackageName.id
         """ % sqlvalues(self)]
 
@@ -1984,44 +2023,6 @@ class Archive(SQLBase):
         restricted.add(family)
         self.enabled_restricted_families = restricted
 
-    @classmethod
-    def validatePPA(self, person, proposed_name, private=False,
-                    suppress_subscription_notifications=False):
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if private or suppress_subscription_notifications:
-            # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
-            # which says that one needs 'launchpad.Commercial' permission to
-            # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
-            # which determines who is granted launchpad.Commercial
-            # permissions.
-            role = IPersonRoles(person)
-            if not (role.in_admin or role.in_commercial_admin):
-                if private:
-                    return (
-                        '%s is not allowed to make private PPAs' % person.name)
-                if suppress_subscription_notifications:
-                    return (
-                        '%s is not allowed to make PPAs that suppress '
-                        'subscription notifications' % person.name)
-        if person.is_team and (
-            person.subscriptionpolicy in OPEN_TEAM_POLICY):
-            return "Open teams cannot have PPAs."
-        if proposed_name is not None and proposed_name == ubuntu.name:
-            return (
-                "A PPA cannot have the same name as its distribution.")
-        if proposed_name is None:
-            proposed_name = 'ppa'
-        try:
-            person.getPPAByName(proposed_name)
-        except NoSuchPPA:
-            return None
-        else:
-            text = "You already have a PPA named '%s'." % proposed_name
-            if person.is_team:
-                text = "%s already has a PPA named '%s'." % (
-                    person.displayname, proposed_name)
-            return text
-
     def getPockets(self):
         """See `IArchive`."""
         if self.is_ppa:
@@ -2051,6 +2052,37 @@ class Archive(SQLBase):
             raise AssertionError("Job is not failed")
         Store.of(pcj.context).remove(pcj.context)
         job.destroySelf()
+
+
+def validate_ppa(person, proposed_name, private=False):
+    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    if private:
+        # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
+        # which says that one needs 'launchpad.Commercial' permission to
+        # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
+        # which determines who is granted launchpad.Commercial
+        # permissions.
+        role = IPersonRoles(person)
+        if not (role.in_admin or role.in_commercial_admin):
+            return '%s is not allowed to make private PPAs' % person.name
+    if person.is_team and (
+        person.subscriptionpolicy in OPEN_TEAM_POLICY):
+        return "Open teams cannot have PPAs."
+    if proposed_name is not None and proposed_name == ubuntu.name:
+        return (
+            "A PPA cannot have the same name as its distribution.")
+    if proposed_name is None:
+        proposed_name = 'ppa'
+    try:
+        person.getPPAByName(proposed_name)
+    except NoSuchPPA:
+        return None
+    else:
+        text = "You already have a PPA named '%s'." % proposed_name
+        if person.is_team:
+            text = "%s already has a PPA named '%s'." % (
+                person.displayname, proposed_name)
+        return text
 
 
 class ArchiveSet:
@@ -2493,9 +2525,8 @@ class ArchiveSet:
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED),
-            (SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id),
-            SourcePackageRelease.sourcepackagename == source_package_name,
+            SourcePackagePublishingHistory.sourcepackagename ==
+                source_package_name,
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             DistroSeries.distribution == distribution,
             )

@@ -1,10 +1,10 @@
 <span tal:attributes="id view/content_box_id">
   <span tal:attributes="class view/css_class"
         tal:content="structure view/value" />
-  <span tal:condition="view/can_write">&nbsp;
+  <span tal:condition="view/can_write">
     <a tal:attributes="href view/edit_url;
                        title view/edit_title"
-       class="editicon sprite edit"></a>
+       class="editicon sprite edit actionicon"></a>
   </span>
 </span>
 <script tal:condition="view/can_write"

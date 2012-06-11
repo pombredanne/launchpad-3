@@ -72,7 +72,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import validate_ppa
 from lp.soyuz.model.archivepermission import (
     ArchivePermission,
     ArchivePermissionSet,
@@ -1288,21 +1288,24 @@ class TestSuppressSubscription(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_set_and_get_suppress(self):
-        # Basic set and get of the commercial property.  Anyone can read
-        # it and it defaults to False.
+        # Basic set and get of the suppress_subscription_notifications
+        # property.  Anyone can read it and it defaults to False.
         archive = self.factory.makeArchive()
         with person_logged_in(archive.owner):
             self.assertFalse(archive.suppress_subscription_notifications)
 
-            # The archive owner can't change the value.
-            self.assertRaises(
-                Unauthorized,
-                setattr, archive, 'suppress_subscription_notifications', True)
-
-        # Commercial admins can change it.
-        with celebrity_logged_in('commercial_admin'):
+            # The archive owner can change the value.
             archive.suppress_subscription_notifications = True
             self.assertTrue(archive.suppress_subscription_notifications)
+
+    def test_most_users_cant_set_suppress(self):
+        # Basic set and get of the suppress_subscription_notifications
+        # property.  Anyone can read it and it defaults to False.
+        archive = self.factory.makeArchive()
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(archive.suppress_subscription_notifications)
+            self.assertRaises(Unauthorized,
+                setattr, archive, 'suppress_subscription_notifications', True)
 
 
 class TestBuildDebugSymbols(TestCaseWithFactory):
@@ -1652,21 +1655,21 @@ class TestValidatePPA(TestCaseWithFactory):
 
     def test_open_teams(self):
         team = self.factory.makeTeam()
-        self.assertEqual('Open teams cannot have PPAs.',
-            Archive.validatePPA(team, None))
+        self.assertEqual(
+            'Open teams cannot have PPAs.', validate_ppa(team, None))
 
     def test_distribution_name(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
-            Archive.validatePPA(ppa_owner, 'ubuntu'))
+            validate_ppa(ppa_owner, 'ubuntu'))
 
     def test_private_ppa_non_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
-            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
-                                private=True))
+            validate_ppa(
+                ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_private_ppa_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
@@ -1674,30 +1677,31 @@ class TestValidatePPA(TestCaseWithFactory):
             comm = getUtility(ILaunchpadCelebrities).commercial_admin
             comm.addMember(ppa_owner, comm.teamowner)
         self.assertIsNone(
-            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
-                                private=True))
+            validate_ppa(
+                ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_private_ppa_admin(self):
         ppa_owner = self.factory.makeAdministrator()
         self.assertIsNone(
-            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
-                                private=True))
+            validate_ppa(
+                ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
-        self.assertEqual("You already have a PPA named 'ppa'.",
-            Archive.validatePPA(ppa.owner, 'ppa'))
+        self.assertEqual(
+            "You already have a PPA named 'ppa'.", validate_ppa(ppa.owner, 'ppa'))
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         self.factory.makeArchive(owner=team, name='ppa')
-        self.assertEqual("%s already has a PPA named 'ppa'." % (
-            team.displayname), Archive.validatePPA(team, 'ppa'))
+        self.assertEqual(
+            "%s already has a PPA named 'ppa'." % team.displayname,
+            validate_ppa(team, 'ppa'))
 
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
-        self.assertIsNone(Archive.validatePPA(ppa_owner, None))
+        self.assertIsNone(validate_ppa(ppa_owner, None))
 
 
 class TestGetComponentsForSeries(TestCaseWithFactory):

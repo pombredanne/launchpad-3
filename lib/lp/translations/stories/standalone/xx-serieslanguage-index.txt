@@ -158,8 +158,8 @@ Translation policy is rolled back to not affect other tests.
     >>> ubuntu.translationpermission = TranslationPermission.RESTRICTED
     >>> logout()
 
-Translators that have not agreed with the license can not make
-translations, and will see a link to the license page.
+Translators that have not agreed with the licence can not make
+translations, and will see a link to the licence page.
 
     >>> no_license_browser = setupBrowser(
     ...     auth='Basic dude@ex.com:test')

@@ -1155,6 +1155,18 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
 
         self.assertEqual([workitem], list(workitems))
 
+    def test_skips_deleted_workitems(self):
+        assigned_spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=self.current_milestone,
+            product=self.product)
+        # Create a deleted work item.
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem', specification=assigned_spec, deleted=True)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+        self.assertEqual([], list(workitems))
+
     def test_workitems_assigned_to_others_working_on_blueprint(self):
         assigned_spec = self.factory.makeSpecification(
                 assignee=self.team.teamowner, milestone=self.current_milestone,

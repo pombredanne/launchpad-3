@@ -9,6 +9,7 @@ import logging
 import os
 import unittest
 
+from fixtures import FakeLogger
 from storm.store import Store
 from testtools.matchers import LessThan
 
@@ -32,6 +33,12 @@ from lp.testing.systemdocs import (
 class TestAssignments(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestAssignments, self).setUp()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def invalidate_and_render(self, browser, dbobj, url):
         # Ensure caches have been flushed.

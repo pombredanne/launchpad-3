@@ -319,21 +319,13 @@ class IArchivePublic(IPrivacy, IHasOwner):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
-    commercial = Bool(
-        title=_("Commercial"),
-        required=True,
-        description=_(
-            "True if the archive is for commercial applications in the "
-            "Ubuntu Software Centre.  Governs whether subscribers or "
-            "uploaders get mail from Launchpad about archive events."))
-
     suppress_subscription_notifications = exported(
         Bool(
             title=_("Suppress subscription notifications"),
             required=True,
             description=_(
                 "Whether subscribers to private PPAs get emails about their "
-                "subscriptions.")))
+                "subscriptions. Has no effect on a public PPA.")))
 
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
@@ -463,12 +455,6 @@ class IArchiveView(IHasBuildRecords):
     date_created = Datetime(
         title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
-
-    relative_build_score = Int(
-        title=_("Relative build score"), required=True, readonly=False,
-        description=_(
-            "A delta to apply to all build scores for the archive. Builds "
-            "with a higher score will build sooner."))
 
     external_dependencies = exported(
         Text(title=_("External dependencies"), required=False,
@@ -896,19 +882,11 @@ class IArchiveView(IHasBuildRecords):
     def getPackageDownloadTotal(bpr):
         """Get the total download count for a given package."""
 
-    def validatePPA(person, proposed_name):
-        """Check if a proposed name for a PPA is valid.
-
-        :param person: A Person identifying the requestor.
-        :param proposed_name: A String identifying the proposed PPA name.
-        """
-
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 
     def getOverridePolicy():
         """Returns an instantiated `IOverridePolicy` for the archive."""
-
 
     buildd_secret = TextLine(
         title=_("Build farm secret"), required=False,
@@ -1710,8 +1688,18 @@ class IArchiveCommercial(Interface):
         """
 
 
+class IArchiveRestricted(Interface):
+    """A writeable interface for restricted attributes of archives."""
+
+    relative_build_score = exported(Int(
+        title=_("Relative build score"), required=True, readonly=False,
+        description=_(
+            "A delta to apply to all build scores for the archive. Builds "
+            "with a higher score will build sooner.")))
+
+
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView,
-               IArchiveCommercial):
+               IArchiveCommercial, IArchiveRestricted):
     """Main Archive interface."""
     export_as_webservice_entry()
 

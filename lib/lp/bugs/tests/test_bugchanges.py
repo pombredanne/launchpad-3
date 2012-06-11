@@ -502,7 +502,8 @@ class TestBugChanges(TestCaseWithFactory):
     def test_link_private_branch(self):
         # Linking a *private* branch to a bug adds *nothing* to the
         # activity log and does *not* send an e-mail notification.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         self.bug.linkBranch(branch, self.user)
         self.assertRecordedChange()
 
@@ -555,7 +556,8 @@ class TestBugChanges(TestCaseWithFactory):
     def test_unlink_private_branch(self):
         # Unlinking a *private* branch from a bug adds *nothing* to
         # the activity log and does *not* send an e-mail notification.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
         self.bug.unlinkBranch(branch, self.user)
@@ -1049,7 +1051,7 @@ class TestBugChanges(TestCaseWithFactory):
             self.bug_task, providing=providedBy(self.bug_task))
 
         new_target = self.factory.makeProduct(owner=self.user)
-        self.bug_task.transitionToTarget(new_target)
+        self.bug_task.transitionToTarget(new_target, self.user)
         notify(ObjectModifiedEvent(
             self.bug_task, bug_task_before_modification,
             ['target', 'product'], user=self.user))
@@ -1092,7 +1094,7 @@ class TestBugChanges(TestCaseWithFactory):
 
         bug_task_before_modification = Snapshot(
             bug_task, providing=providedBy(bug_task))
-        bug_task.transitionToTarget(new_target)
+        bug_task.transitionToTarget(new_target, self.user)
         notify(ObjectModifiedEvent(
             bug_task, bug_task_before_modification,
             ['target', 'product'], user=self.user))
@@ -1173,7 +1175,7 @@ class TestBugChanges(TestCaseWithFactory):
         bug_task_before_modification = Snapshot(
             source_package_bug_task,
             providing=providedBy(source_package_bug_task))
-        source_package_bug_task.transitionToTarget(new_target)
+        source_package_bug_task.transitionToTarget(new_target, self.user)
 
         notify(ObjectModifiedEvent(
             source_package_bug_task, bug_task_before_modification,
@@ -1211,9 +1213,11 @@ class TestBugChanges(TestCaseWithFactory):
         new_product = self.factory.makeProduct()
         subscriber = self.factory.makePerson()
         new_product.addBugSubscription(subscriber, subscriber)
+        owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            product=old_product, information_type=InformationType.USERDATA)
-        bug.default_bugtask.transitionToTarget(new_product)
+            product=old_product, owner=owner,
+            information_type=InformationType.USERDATA)
+        bug.default_bugtask.transitionToTarget(new_product, owner)
         self.assertNotIn(subscriber, bug.getDirectSubscribers())
         self.assertNotIn(subscriber, bug.getIndirectSubscribers())
 

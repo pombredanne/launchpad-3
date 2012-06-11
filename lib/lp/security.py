@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from zope.component import (
-    getAdapter,
     getUtility,
     queryAdapter,
     )
@@ -957,27 +956,10 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # For efficiency, we do not want to perform several
             # TeamParticipation joins and we only want to do the user visible
             # bug filtering once. We use a With statement for the team
-            # participation check. For the bug query, we first filter on team
-            # association (subscribed to, assigned to etc) and then on user
-            # visibility.
+            # participation check.
 
             store = IStore(Person)
-            team_bugs_visible_select = """
-                SELECT bug_id FROM (
-                    -- The direct team bug subscriptions
-                    SELECT BugSubscription.bug as bug_id
-                    FROM BugSubscription
-                    WHERE BugSubscription.person IN
-                        (SELECT team FROM teams)
-                    UNION
-                    -- The bugs assigned to the team
-                    SELECT BugTask.bug as bug_id
-                    FROM BugTask
-                    WHERE BugTask.assignee IN (SELECT team FROM teams)
-                    ) as TeamBugs
-                """
-            user_private_bugs_visible_filter = get_bug_privacy_filter(
-                user.person, private_only=True)
+            user_bugs_visible_filter = get_bug_privacy_filter(user.person)
 
             # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY
             query = """
@@ -995,24 +977,20 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                     UNION ALL
                     -- Find the bugs associated with the team and filter by
                     -- those that are visible to the user.
-                    -- Public bugs are simple to check and always visible so
-                    -- do those first.
-                    %(team_bug_select)s
-                    WHERE bug_id in (
-                        SELECT Bug.id FROM Bug WHERE Bug.information_type IN
-                        (1, 2)
-                    )
-                    UNION ALL
-                    -- Now do the private bugs the user can see.
-                    %(team_bug_select)s
-                    WHERE bug_id in (
-                        SELECT Bug.id FROM Bug WHERE %(user_bug_filter)s
-                    )
+                    SELECT 1
+                    FROM BugTaskFlat
+                    WHERE
+                        %(user_bug_filter)s
+                        AND (
+                            bug IN (
+                                SELECT bug FROM bugsubscription
+                                WHERE person IN (SELECT team FROM teams))
+                            OR assignee IN (SELECT team FROM teams)
+                            )
                 )
                 """ % dict(
                         personid=quote(self.obj.id),
-                        team_bug_select=team_bugs_visible_select,
-                        user_bug_filter=user_private_bugs_visible_filter)
+                        user_bug_filter=user_bugs_visible_filter)
 
             rs = store.execute(query)
             if rs.rowcount > 0:
@@ -2436,6 +2414,22 @@ class AppendArchive(AuthorizationBase):
         return False
 
 
+class ModerateArchive(AuthorizationBase):
+    """Restrict changing the build score on archives.
+
+    Buildd admins can change this, as a site-wide resource that requires
+    arbitration, especially between distribution builds and builds in
+    non-virtualized PPAs.  Commercial admins can also change this since it
+    affects the relative priority of (private) PPAs.
+    """
+    permission = 'launchpad.Moderate'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        return (user.in_buildd_admin or user.in_commercial_admin or
+                user.in_admin)
+
+
 class ViewArchiveAuthToken(AuthorizationBase):
     """Restrict viewing of archive tokens.
 
@@ -2673,6 +2667,11 @@ class EditPackageset(AuthorizationBase):
     def checkAuthenticated(self, user):
         """The owner of a package set can edit the object."""
         return user.isOwner(self.obj) or user.in_admin
+
+
+class ModeratePackageset(AdminByBuilddAdmin):
+    permission = 'launchpad.Moderate'
+    usedfor = IPackageset
 
 
 class EditPackagesetSet(AuthorizationBase):

@@ -80,7 +80,6 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
@@ -947,7 +946,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None,
+        translations_usage=None, bug_supervisor=None, private_bugs=False,
         driver=None, security_contact=None, icon=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
@@ -989,6 +988,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.driver = driver
         if security_contact is not None:
             naked_product.security_contact = security_contact
+        if private_bugs:
+            naked_product.private_bugs = private_bugs
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1072,8 +1073,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=False, stacked_on=None, sourcepackage=None,
-                   reviewer=None, **optional_branch_args):
+                   information_type=None, stacked_on=None,
+                   sourcepackage=None, reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for `IBranchNamespace.createBranch` can be specified to
@@ -1119,13 +1120,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         branch = namespace.createBranch(
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
-        if private:
-            removeSecurityProxy(branch).explicitly_private = True
-            removeSecurityProxy(branch).transitively_private = True
+        naked_branch = removeSecurityProxy(branch)
+        if information_type is not None:
+            naked_branch.transitionToInformationType(
+                information_type, registrant, verify_policy=False)
         if stacked_on is not None:
-            removeSecurityProxy(branch).stacked_on = stacked_on
+            naked_branch.branchChanged(
+                removeSecurityProxy(stacked_on).unique_name, 'rev1', None,
+                None, None)
         if reviewer is not None:
-            removeSecurityProxy(branch).reviewer = reviewer
+            naked_branch.reviewer = reviewer
         return branch
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,
@@ -1294,19 +1298,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             series_branch_info = []
 
             # Add some product series
-            def makeSeriesBranch(name, is_private=False):
+            def makeSeriesBranch(name, information_type):
                 branch = self.makeBranch(
                     name=name,
                     product=naked_product, owner=related_branch_owner,
-                    private=is_private)
+                    information_type=information_type)
                 series = self.makeProductSeries(
                     product=naked_product, branch=branch)
                 return branch, series
             for x in range(4):
-                is_private = x == 0 and with_private_branches
+                information_type = InformationType.PUBLIC
+                if x == 0 and with_private_branches:
+                    information_type = InformationType.USERDATA
                 (branch, series) = makeSeriesBranch(
-                        name=("series_branch_%s" % x), is_private=is_private)
-                if not is_private:
+                        ("series_branch_%s" % x), information_type)
+                if information_type == InformationType.PUBLIC:
                     series_branch_info.append((branch, series))
 
             # Sort them
@@ -1329,7 +1335,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # associated with a product.
             if naked_product is not None:
 
-                def makePackageBranch(name, is_private=False):
+                def makePackageBranch(name, information_type):
                     distro = self.makeDistribution()
                     distroseries = self.makeDistroSeries(
                         distribution=distro)
@@ -1345,7 +1351,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     branch = self.makePackageBranch(
                         name=name, owner=related_branch_owner,
                         sourcepackagename=sourcepackagename,
-                        distroseries=distroseries, private=is_private)
+                        distroseries=distroseries,
+                        information_type=information_type)
                     linked_branch = ICanHasLinkedBranch(naked_sourcepackage)
                     with celebrity_logged_in('admin'):
                         linked_branch.setBranch(branch, related_branch_owner)
@@ -1357,11 +1364,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     return branch, distroseries
 
                 for x in range(5):
-                    is_private = x == 0 and with_private_branches
+                    information_type = InformationType.PUBLIC
+                    if x == 0 and with_private_branches:
+                        information_type = InformationType.USERDATA
                     branch, distroseries = makePackageBranch(
-                            name=("product_package_branch_%s" % x),
-                            is_private=is_private)
-                    if not is_private:
+                            ("product_package_branch_%s" % x),
+                            information_type)
+                    if information_type == InformationType.PUBLIC:
                         related_package_branch_info.append(
                                 (branch, distroseries))
 
@@ -1505,7 +1514,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
         if subscribed_by is None:
             subscribed_by = person
-        return branch.subscribe(person,
+        return branch.subscribe(removeSecurityProxy(person),
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
@@ -1715,8 +1724,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None, publish=True,
-                    private=False):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -1730,8 +1738,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             one will be created.
         :param target: The `IBugTarget`, to which the bug will be
             targeted to.
-        :param private: If a bug is not specified, the privacy state to use
-            when creating the bug for the bug task..
         """
 
         # Find and return the existing target if one exists.
@@ -1782,33 +1788,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     bug, prerequisite_target, publish=publish)
                 bug = prerequisite.bug
 
-        # Private (and soon all) bugs cannot affect multiple projects
-        # so we ensure that if a bug has not been specified and one is
-        # created, it is for the same pillar as that of the specified target.
-        result_bug_task = None
-        if bug is None and private:
-            product = distribution = sourcepackagename = None
-            pillar = target.pillar
-            if IProduct.providedBy(pillar):
-                product = pillar
-            elif IDistribution.providedBy(pillar):
-                distribution = pillar
-            if (IDistributionSourcePackage.providedBy(target)
-                or ISourcePackage.providedBy(target)):
-                    sourcepackagename = target.sourcepackagename
-            bug = self.makeBug(
-                private=private, product=product, distribution=distribution,
-                sourcepackagename=sourcepackagename)
-            if not ISeriesBugTarget.providedBy(target):
-                result_bug_task = bug.default_bugtask
-        # We keep the existing behaviour for public bugs because
-        # test_bugtask_search breaks spectacularly otherwise. Almost all other
-        # tests pass.
         if bug is None:
             bug = self.makeBug()
 
-        if result_bug_task is not None:
-            return result_bug_task
         if owner is None:
             owner = self.makePerson()
         return removeSecurityProxy(bug).addTask(owner, target)
@@ -2735,8 +2717,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return person
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
-                    description=None, owner=None, active=True,
-                    virtualized=True, vm_host=None, manual=False):
+                    owner=None, active=True, virtualized=True, vm_host=None,
+                    manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -2752,14 +2734,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString('builder-name')
         if title is None:
             title = self.getUniqueString('builder-title')
-        if description is None:
-            description = self.getUniqueString('description')
         if owner is None:
             owner = self.makePerson()
 
         return getUtility(IBuilderSet).new(
-            processor, url, name, title, description, owner, active,
-            virtualized, vm_host, manual=manual)
+            processor, url, name, title, owner, active, virtualized, vm_host,
+            manual=manual)
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
@@ -3503,14 +3483,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return package_upload
 
     def makeSourcePackageUpload(self, distroseries=None,
-                                sourcepackagename=None):
+                                sourcepackagename=None, component=None):
         """Make a `PackageUpload` with a `PackageUploadSource` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         upload = self.makePackageUpload(
             distroseries=distroseries, archive=distroseries.main_archive)
         upload.addSource(self.makeSourcePackageRelease(
-            sourcepackagename=sourcepackagename))
+            sourcepackagename=sourcepackagename, component=component))
         return upload
 
     def makeBuildPackageUpload(self, distroseries=None,

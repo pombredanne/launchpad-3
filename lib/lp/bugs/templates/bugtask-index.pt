@@ -101,9 +101,10 @@
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
       </p>
 
-      <p id="bug-is-question" class="sprite info"
+      <p id="bug-is-question"
          tal:condition="context/bug/getQuestionCreatedFromBug"
          tal:define="question context/bug/getQuestionCreatedFromBug">
+        <span class="sprite info"></span>
         This bug report was converted into a question:
         question #<tal:question-id replace="question/id" />:
         <a href=""
@@ -148,7 +149,7 @@
             <form id="tags-form" style="display: inline">
                 <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
                 <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
-                <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
+                <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit actionicon"></a>
 
               <button class="lazr-pos lazr-btn yui-ieditor-submit_button hidden"
                       id="edit-tags-ok"
@@ -157,8 +158,8 @@
                       id="edit-tags-cancel"
                       type="button">Cancel</button>
            </form>
-           <a href="/+help-bugs/tag-help.html" target="help" class="sprite maybe">&nbsp;
-             <span class="invisible-link">Tag help</span></a>
+           <a href="/+help-bugs/tag-help.html" target="help"
+              class="sprite maybe actionicon"><span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
                tal:attributes="class python: (not(context.bug.tags) and
@@ -166,8 +167,8 @@
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
-            <a href="/+help-bugs/tag-help.html" target="help" class="sprite maybe">&nbsp;
-            <span class="invisible-link">Tag help</span></a>
+            <a href="/+help-bugs/tag-help.html" target="help"
+               class="sprite maybe actionicon"><span class="invisible-link">Tag help</span></a>
             <script type="text/javascript">
                 LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
                     Y.on('domready',

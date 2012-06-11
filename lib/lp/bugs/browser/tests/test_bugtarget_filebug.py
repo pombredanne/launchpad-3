@@ -5,6 +5,7 @@ __metaclass__ = type
 
 
 from BeautifulSoup import BeautifulSoup
+import transaction
 from zope.component import getUtility
 from zope.schema.interfaces import (
     TooLong,
@@ -12,16 +13,24 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.restful.interfaces import IJSONRequestCache
 from lp.bugs.browser.bugtarget import (
-    FileBugInlineFormView,
     FileBugViewBase,
     )
 from lp.bugs.interfaces.bug import (
     IBugAddForm,
     IBugSet,
     )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.publisher import BugsLayer
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -51,7 +60,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If there is not customized confirmation message, a default
         # message is displayed.
         product = self.factory.makeProduct()
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(product))
@@ -61,7 +70,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # FilebugViewBase.bug_reported_acknowledgement
         product.bug_reported_acknowledgement = (
             u"We really appreciate your bug report")
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"We really appreciate your bug report",
             view.getAcknowledgementMessage(product))
@@ -69,7 +78,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If the custom message is set to a string containing only white,
         # space, the default message is used again.
         product.bug_reported_acknowledgement = ' \t'
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(product))
@@ -83,7 +92,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
         # Without any customized bug filing confirmation message, the
         # default message is used.
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(product))
@@ -91,7 +100,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If the project group has a customized message, it is used.
         project_group.bug_reported_acknowledgement = (
             "Thanks for filing a bug for one of our many products.")
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thanks for filing a bug for one of our many products.",
             view.getAcknowledgementMessage(product))
@@ -100,29 +109,10 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # message is used instead of the project group's message.
         product.bug_reported_acknowledgement = (
             u"Thanks for filing a bug for this very special product.")
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thanks for filing a bug for this very special product.",
             view.getAcknowledgementMessage(product))
-
-    def test_getAcknowledgementMessage_product_series(self):
-        # If there is not customized confirmation message, a default
-        # message is displayed.
-        product_series = self.factory.makeProductSeries()
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
-        self.assertEqual(
-            u"Thank you for your bug report.",
-            view.getAcknowledgementMessage(product_series))
-
-        # If a product contains a customized bug filing confirmation
-        # message, it is retrieved for a product series context by
-        # FilebugViewBase.bug_reported_acknowledgement
-        product_series.product.bug_reported_acknowledgement = (
-            u"We really appreciate your bug report")
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
-        self.assertEqual(
-            u"We really appreciate your bug report",
-            view.getAcknowledgementMessage(product_series))
 
     def test_getAcknowledgementMessage_product_series_in_project_group(self):
         # If a product_series is part of a project group and if the project
@@ -134,7 +124,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
         # Without any customized bug filing confirmation message, the
         # default message is used.
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(product_series))
@@ -142,7 +132,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If the project group has a customized message, it is used.
         project_group.bug_reported_acknowledgement = (
             u"Thanks for filing a bug for one of our many product_seriess.")
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thanks for filing a bug for one of our many product_seriess.",
             view.getAcknowledgementMessage(product_series))
@@ -151,7 +141,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # message is used instead of the project group's message.
         product.bug_reported_acknowledgement = (
             u"Thanks for filing a bug for this very special product.")
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thanks for filing a bug for this very special product.",
             view.getAcknowledgementMessage(product_series))
@@ -160,7 +150,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If there is not customized confirmation message, a default
         # message is displayed.
         distribution = self.factory.makeDistribution()
-        view = FileBugInlineFormView(distribution, LaunchpadTestRequest())
+        view = create_initialized_view(distribution, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(distribution))
@@ -170,54 +160,16 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # FilebugViewBase.bug_reported_acknowledgement
         distribution.bug_reported_acknowledgement = (
             u"We really appreciate your bug report")
-        view = FileBugInlineFormView(distribution, LaunchpadTestRequest())
+        view = create_initialized_view(distribution, name='+filebug')
         self.assertEqual(
             u"We really appreciate your bug report",
             view.getAcknowledgementMessage(distribution))
-
-    def test_getAcknowledgementMessage_distroseries(self):
-        # If there is not customized confirmation message, a default
-        # message is displayed.
-        distroseries = self.factory.makeDistroSeries()
-        view = FileBugInlineFormView(distroseries, LaunchpadTestRequest())
-        self.assertEqual(
-            u"Thank you for your bug report.",
-            view.getAcknowledgementMessage(distroseries))
-
-        # DistroSeries objects do not have their own, independent
-        # property bug_reported_acknowledgement; instead, it is
-        # acquired from the parent distribution.
-        distroseries.distribution.bug_reported_acknowledgement = (
-            u"We really appreciate your bug report")
-        view = FileBugInlineFormView(distroseries, LaunchpadTestRequest())
-        self.assertEqual(
-            u"We really appreciate your bug report",
-            view.getAcknowledgementMessage(distroseries))
-
-    def test_getAcknowledgementMessage_sourcepackage(self):
-        # If there is not customized confirmation message, a default
-        # message is displayed.
-        sourcepackage = self.factory.makeSourcePackage()
-        view = FileBugInlineFormView(sourcepackage, LaunchpadTestRequest())
-        self.assertEqual(
-            u"Thank you for your bug report.",
-            view.getAcknowledgementMessage(sourcepackage))
-
-        # SourcePackage objects do not have their own, independent
-        # property bug_reported_acknowledgement; instead, it is
-        # acquired from the parent distribution.
-        sourcepackage.distribution.bug_reported_acknowledgement = (
-            u"We really appreciate your bug report")
-        view = FileBugInlineFormView(sourcepackage, LaunchpadTestRequest())
-        self.assertEqual(
-            u"We really appreciate your bug report",
-            view.getAcknowledgementMessage(sourcepackage))
 
     def test_getAcknowledgementMessage_distributionsourcepackage(self):
         # If there is not customized confirmation message, a default
         # message is displayed.
         dsp = self.factory.makeDistributionSourcePackage()
-        view = FileBugInlineFormView(dsp, LaunchpadTestRequest())
+        view = create_initialized_view(dsp, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(dsp))
@@ -226,7 +178,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # the default message.
         dsp.bug_reported_acknowledgement = (
             u"We really appreciate your bug report")
-        view = FileBugInlineFormView(dsp, LaunchpadTestRequest())
+        view = create_initialized_view(dsp, name='+filebug')
         self.assertEqual(
             u"We really appreciate your bug report",
             view.getAcknowledgementMessage(dsp))
@@ -237,7 +189,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage()
         dsp.distribution.bug_reported_acknowledgement = (
             u"Thank you for filing a bug in our distribution")
-        view = FileBugInlineFormView(dsp, LaunchpadTestRequest())
+        view = create_initialized_view(dsp, name='+filebug')
         self.assertEqual(
             u"Thank you for filing a bug in our distribution",
             view.getAcknowledgementMessage(dsp))
@@ -246,7 +198,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # the message for the distribution.
         dsp.bug_reported_acknowledgement = (
             u"Thank you for filing a bug for this DSP")
-        view = FileBugInlineFormView(dsp, LaunchpadTestRequest())
+        view = create_initialized_view(dsp, name='+filebug')
         self.assertEqual(
             u"Thank you for filing a bug for this DSP",
             view.getAcknowledgementMessage(dsp))
@@ -256,7 +208,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # to the response.
         product = self.factory.makeProduct()
         login_person(product.owner)
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        create_initialized_view(product, name='+filebug')
         form_data = {
             'title': 'A bug title',
             'comment': 'whatever',
@@ -337,6 +289,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
     def setUp(self):
         super(TestFileBugViewBase, self).setUp()
         self.target = self.factory.makeProduct()
+        transaction.commit()
         login_person(self.target.owner)
         self.target.official_malone = True
 
@@ -444,9 +397,9 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         bug = self.filebug_via_view(private_bugs=True)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
-    def test_filebug_information_type_vocabulary(self):
+    def test_filebug_information_type_vocabulary_userdata_private(self):
         # The vocabulary for information_type when filing a bug is created
-        # correctly.
+        # correctly when 'User Data' is to be replaced by 'Private'.
         feature_flags = {
             'disclosure.show_information_type_in_ui.enabled': 'on',
             'disclosure.proprietary_information_type.disabled': 'on',
@@ -459,8 +412,41 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
                 html = view.render()
                 soup = BeautifulSoup(html)
         self.assertEqual(u'Private', soup.find('label', text="Private"))
-        self.assertIs(None, soup.find('label', text="User Data"))
-        self.assertIs(None, soup.find('label', text="Proprietary"))
+        self.assertIsNone(soup.find('label', text="User Data"))
+        self.assertIsNone(soup.find('label', text="Proprietary"))
+
+    def test_filebug_information_type_vocabulary(self):
+        # The vocabulary for information_type when filing a bug is created
+        # correctly.
+        feature_flags = {
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
+        product = self.factory.makeProduct(official_malone=True)
+        with FeatureFixture(feature_flags):
+            with person_logged_in(product.owner):
+                view = create_initialized_view(
+                    product, '+filebug', principal=product.owner)
+                html = view.render()
+                soup = BeautifulSoup(html)
+        for info_type in InformationType:
+            self.assertIsNotNone(soup.find('label', text=info_type.title))
+
+    def test_filebug_information_type_vocabulary_private_projects(self):
+        # The vocabulary for information_type when filing a bug only has
+        # private info types for private bug projects.
+        feature_flags = {
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
+        product = self.factory.makeProduct(
+            official_malone=True, private_bugs=True)
+        with FeatureFixture(feature_flags):
+            with person_logged_in(product.owner):
+                view = create_initialized_view(
+                    product, '+filebug', principal=product.owner)
+                html = view.render()
+                soup = BeautifulSoup(html)
+        for info_type in PRIVATE_INFORMATION_TYPES:
+            self.assertIsNotNone(soup.find('label', text=info_type.title))
+        for info_type in PUBLIC_INFORMATION_TYPES:
+            self.assertIsNone(soup.find('label', text=info_type.title))
 
 
 class TestFileBugSourcePackage(TestCaseWithFactory):
@@ -491,3 +477,152 @@ class TestFileBugSourcePackage(TestCaseWithFactory):
             notification.message
             for notification in view.request.response.notifications])
         self.assertIn("Thank you for your bug report.", msg)
+
+
+class TestFileBugGuidelinesRequestCache(TestCaseWithFactory):
+    # Tests to ensure the request cache contains the expected values for
+    # file bug guidelines views.
+
+    layer = DatabaseFunctionalLayer
+
+    def _assert_cache_values(self, view, private_bugs, duplicate_search):
+        cache = IJSONRequestCache(view.request).objects
+        self.assertContentEqual(cache['private_types'], [
+            type.name for type in PRIVATE_INFORMATION_TYPES])
+        self.assertEqual(cache['bug_private_by_default'], private_bugs)
+
+    def test_product(self):
+        project = self.factory.makeProduct(official_malone=True)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project,
+            '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, False, True)
+
+    def test_product_default_private(self):
+        product = self.factory.makeProduct(official_malone=True)
+        removeSecurityProxy(product).private_bugs = True
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(product,
+            '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, True, True)
+
+    def test_product_no_duplicate_search(self):
+        product = self.factory.makeProduct(official_malone=True)
+        removeSecurityProxy(product).enable_bugfiling_duplicate_search = False
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(product,
+            '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, False, False)
+
+    def test_project_group(self):
+        project = self.factory.makeProject()
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project,
+            '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, False, True)
+
+
+class TestFileBugRequestCache(TestCaseWithFactory):
+    # Tests to ensure the request cache contains the expected values for
+    # file bug views.
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestFileBugRequestCache, self).setUp()
+        self.useFixture(FeatureFixture({
+            'disclosure.enhanced_choice_popup.enabled': 'true'
+        }))
+
+    def _assert_cache_values(self, view, duplicate_search, private_only=False):
+        cache = IJSONRequestCache(view.request).objects
+        self.assertEqual(
+            duplicate_search, cache['enable_bugfiling_duplicate_search'])
+        excluded_statuses = [
+            BugTaskStatus.UNKNOWN,
+            BugTaskStatus.EXPIRED,
+            BugTaskStatus.INVALID,
+            BugTaskStatus.OPINION,
+            BugTaskStatus.WONTFIX,
+            BugTaskStatus.INCOMPLETE]
+        bugtask_status_data = []
+        for item in BugTaskStatus:
+            item = item.value
+            if item in excluded_statuses:
+                continue
+            name = item.title
+            value = item.title
+            description = item.description
+            new_item = {'name': name, 'value': value,
+                        'description': description,
+                        'description_css_class': 'choice-description',
+                        'style': '',
+                        'help': '', 'disabled': False,
+                        'css_class': 'status' + item.name}
+            bugtask_status_data.append(new_item)
+        self.assertEqual(
+            bugtask_status_data, cache['bugtask_status_data'])
+        excluded_importances = [
+            BugTaskImportance.UNKNOWN]
+        bugtask_importance_data = []
+        for item in BugTaskImportance:
+            item = item.value
+            if item in excluded_importances:
+                continue
+            name = item.title
+            value = item.title
+            description = item.description
+            new_item = {'name': name, 'value': value,
+                        'description': description,
+                        'description_css_class': 'choice-description',
+                        'style': '',
+                        'help': '', 'disabled': False,
+                        'css_class': 'importance' + item.name}
+            bugtask_importance_data.append(new_item)
+        self.assertEqual(
+            bugtask_importance_data, cache['bugtask_importance_data'])
+        bugtask_info_type_data = []
+        information_types = list(PRIVATE_INFORMATION_TYPES)
+        if not private_only:
+            information_types.extend(PUBLIC_INFORMATION_TYPES)
+        for item in information_types:
+            new_item = {'name': item.title, 'value': item.name,
+                        'description': item.description,
+                        'description_css_class': 'choice-description'}
+            bugtask_info_type_data.append(new_item)
+        self.assertContentEqual(
+            bugtask_info_type_data, cache['information_type_data'])
+
+    def test_product(self):
+        project = self.factory.makeProduct(official_malone=True)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project, '+filebug', principal=user)
+        self._assert_cache_values(view, True)
+
+    def test_product_private_bugs(self):
+        project = self.factory.makeProduct(
+            official_malone=True, private_bugs=True)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project, '+filebug', principal=user)
+        self._assert_cache_values(view, True, True)
+
+    def test_product_no_duplicate_search(self):
+        product = self.factory.makeProduct(official_malone=True)
+        removeSecurityProxy(product).enable_bugfiling_duplicate_search = False
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(product, '+filebug', principal=user)
+        self._assert_cache_values(view, False)
+
+    def test_project_group(self):
+        project = self.factory.makeProject()
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project, '+filebug', principal=user)
+        self._assert_cache_values(view, True)

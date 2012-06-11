@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for classes in the lp.code.browser.bazaar module."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.browser.bazaar import BazaarApplicationView
+from lp.registry.enums import InformationType
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -34,7 +35,8 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
     def test_recently_registered(self):
         # Create a some private branches (stacked and unstacked) that the
         # logged in user would not normally see.
-        private_branch = self.factory.makeAnyBranch(private=True)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         self.factory.makeAnyBranch(stacked_on=private_branch)
         branch = self.factory.makeAnyBranch()
         recent_branches = self.getViewBranches('recently_registered_branches')
@@ -51,7 +53,8 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
     def test_recently_changed(self):
         # Create a some private branches (stacked and unstacked) that the
         # logged in user would not normally see.
-        private_branch = self.factory.makeAnyBranch(private=True)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         stacked_private_branch = self.factory.makeAnyBranch(
             stacked_on=private_branch)
         branch = self.factory.makeAnyBranch()
@@ -65,7 +68,8 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
         # Create an import branch that is stacked on a private branch that the
         # logged in user would not normally see.  This would never happen in
         # reality, but hey, lets test the function actually works.
-        private_branch = self.factory.makeAnyBranch(private=True)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         # A new code import needs a real user as the sender for the outgoing
         # email.
         login_person(self.factory.makePerson())

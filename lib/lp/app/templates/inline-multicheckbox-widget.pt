@@ -10,8 +10,8 @@
       <a tal:attributes="id string:${view/content_box_id}-btn;
                          href view/edit_url;
                          title view/edit_title"
-         class="sprite edit lazr-btn yui3-activator-act"
-         >&nbsp;<span class="invisible-link">Edit</span></a>
+         class="sprite edit actionicon lazr-btn yui3-activator-act"
+         ><span class="invisible-link">Edit</span></a>
     </tal:has_choices>
   <tal:label-close-tag replace="structure view/label_close_tag"/>
   <span class="yui3-activator-data-box">

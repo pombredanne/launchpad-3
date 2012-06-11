@@ -25,6 +25,7 @@ Each record exposes a number of properties.
     display_name: u'mozilla-firefox'
     display_version: u'0.9'
     distroseries_link: u'http://.../ubuntu/warty'
+    id: 11
     pocket: u'Release'
     resource_type_link: u'http://.../#package_upload'
     self_link: u'http://.../ubuntu/warty/+upload/11'

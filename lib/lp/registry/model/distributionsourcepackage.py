@@ -105,9 +105,7 @@ class DistributionSourcePackageProperty:
                 SourcePackagePublishingHistory.distroseriesID ==
                     DistroSeries.id,
                 DistroSeries.distributionID == obj.distribution.id,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagenameID ==
+                SourcePackagePublishingHistory.sourcepackagenameID ==
                     obj.sourcepackagename.id).order_by(
                         Desc(SourcePackagePublishingHistory.id)).first()
             obj._new(obj.distribution, obj.sourcepackagename,
@@ -233,9 +231,7 @@ class DistributionSourcePackage(BugTargetBase,
         spph = SourcePackagePublishingHistory.selectFirst("""
             SourcePackagePublishingHistory.distroseries = DistroSeries.id AND
             DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.sourcepackagename = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             pocket NOT IN (%s, %s) AND
             status in (%s, %s)""" %
@@ -247,7 +243,6 @@ class DistributionSourcePackage(BugTargetBase,
                           PackagePublishingStatus.PUBLISHED,
                           PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
-                          "SourcePackageRelease",
                           "DistroSeries"],
             orderBy=["status",
                      SQLConstant(
@@ -401,9 +396,9 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s
+            SourcePackagePublishingHistory.sourcepackagename = %s AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagename)
@@ -426,9 +421,10 @@ class DistributionSourcePackage(BugTargetBase,
             DistroSeries.distribution == self.distribution,
             SourcePackagePublishingHistory.archiveID.is_in(
                self.distribution.all_distro_archive_ids),
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagename == self.sourcepackagename)
+            SourcePackagePublishingHistory.sourcepackagename ==
+                self.sourcepackagename,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID)
         result.order_by(
             Desc(SourcePackageRelease.id),
             Desc(SourcePackagePublishingHistory.datecreated),

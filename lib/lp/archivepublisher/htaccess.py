@@ -17,12 +17,12 @@ __all__ = [
 
 
 import crypt
-from operator import attrgetter
+from operator import itemgetter
 import os
 
-from zope.component import getUtility
-
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.registry.model.person import Person
+from lp.services.database.lpstorm import IStore
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 
 HTACCESS_TEMPLATE = """
@@ -79,13 +79,24 @@ def htpasswd_credentials_for_archive(archive, tokens=None):
     assert archive.private, "Archive %r must be private" % archive
 
     if tokens is None:
-        tokens = getUtility(IArchiveAuthTokenSet).getByArchive(archive)
+        tokens = IStore(ArchiveAuthToken).find(
+            (ArchiveAuthToken.person_id, ArchiveAuthToken.token),
+            ArchiveAuthToken.archive == archive,
+            ArchiveAuthToken.date_deactivated == None)
+    # We iterate tokens more than once - materialise it.
+    tokens = list(tokens)
 
     # The first .htpasswd entry is the buildd_secret.
     yield (BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])
 
+    person_ids = map(itemgetter(0), tokens)
+    names = dict(
+        IStore(Person).find(
+            (Person.id, Person.name), Person.id.is_in(set(person_ids))))
+    # Combine the token list with the person list, sorting by person ID
+    # so the file can be compared later.
+    sorted_tokens = [(token[1], names[token[0]]) for token in sorted(tokens)]
     # Iterate over tokens and write the appropriate htpasswd
-    # entries for them.  Use a consistent sort order so that the
-    # generated file can be compared to an existing one later.
-    for token in sorted(tokens, key=attrgetter("id")):
-        yield (token.person.name, token.token, token.person.name[:2])
+    # entries for them.
+    for token, person_name in sorted_tokens:
+        yield (person_name, token, person_name[:2])

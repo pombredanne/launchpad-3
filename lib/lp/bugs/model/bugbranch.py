@@ -77,7 +77,7 @@ class BugBranchSet:
         if not branch_ids:
             return []
 
-        visible = get_bug_privacy_filter(user, use_flat=True) or True
+        visible = get_bug_privacy_filter(user) or True
         return IStore(BugBranch).find(
             BugBranch.branchID,
             BugBranch.branch_id.is_in(branch_ids),
