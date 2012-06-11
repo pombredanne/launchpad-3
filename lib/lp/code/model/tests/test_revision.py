@@ -340,7 +340,8 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # Only public branches are returned.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        removeSecurityProxy(b2).explicitly_private = True
+        removeSecurityProxy(b2).transitionToInformationType(
+            InformationType.USERDATA, b2.owner, verify_policy=False)
         self.assertEqual(b1, self.revision.getBranch())
 
     def testAllowPrivateReturnsPrivateBranch(self):
@@ -348,7 +349,8 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # returned if they are the best match.
         self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        removeSecurityProxy(b2).explicitly_private = True
+        removeSecurityProxy(b2).transitionToInformationType(
+            InformationType.USERDATA, b2.owner, verify_policy=False)
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
     def testAllowPrivateCanReturnPublic(self):
@@ -356,7 +358,8 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # the branches.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(1, owner=self.author)
-        removeSecurityProxy(b1).explicitly_private = True
+        removeSecurityProxy(b1).transitionToInformationType(
+            InformationType.USERDATA, b1.owner, verify_policy=False)
         self.assertEqual(b2, self.revision.getBranch(allow_private=True))
 
     def testGetBranchNotJunk(self):
@@ -464,7 +467,9 @@ class RevisionTestMixin:
         rev1 = self._makeRevision()
         b = self._makeBranch()
         b.createBranchRevision(1, rev1)
-        removeSecurityProxy(b).explicitly_private = True
+
+        removeSecurityProxy(b).transitionToInformationType(
+            InformationType.USERDATA, b.owner, verify_policy=False)
         self.assertEqual([], self._getRevisions())
 
     def testRevisionDateRange(self):
