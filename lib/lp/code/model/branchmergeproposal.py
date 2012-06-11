@@ -195,10 +195,13 @@ class BranchMergeProposal(SQLBase):
     @property
     def private(self):
         return (
-            self.source_branch.transitively_private or
-            self.target_branch.transitively_private or
+            (self.source_branch.information_type
+             in PRIVATE_INFORMATION_TYPES) or
+            (self.target_branch.information_type
+             in PRIVATE_INFORMATION_TYPES) or
             (self.prerequisite_branch is not None and
-             self.prerequisite_branch.transitively_private))
+             (self.prerequisite_branch.information_type in
+              PRIVATE_INFORMATION_TYPES)))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',

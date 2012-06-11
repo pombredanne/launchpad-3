@@ -893,8 +893,10 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the
         # source branch.
-        mp1 = self.factory.makeBranchMergeProposal()
-        removeSecurityProxy(mp1.target_branch).explicitly_private = True
+        registrant = self.factory.makePerson()
+        mp1 = self.factory.makeBranchMergeProposal(registrant=registrant)
+        removeSecurityProxy(mp1.target_branch).transitionToInformationType(
+            InformationType.USERDATA, registrant, verify_policy=False)
         collection = self.all_branches.visibleByUser(None)
         proposals = collection.getMergeProposals()
         self.assertEqual([], list(proposals))
