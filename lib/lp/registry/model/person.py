@@ -313,7 +313,10 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import (
+    Archive,
+    validate_ppa,
+    )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
@@ -2975,12 +2978,7 @@ class Person(
     def createPPA(self, name=None, displayname=None, description=None,
                   private=False, suppress_subscription_notifications=False):
         """See `IPerson`."""
-        # XXX: We pass through the Person on whom the PPA is being created,
-        # but validatePPA assumes that that Person is also the one creating
-        # the PPA.  This is not true in general, and particularly not for
-        # teams.  Instead, both the acting user and the target of the PPA
-        # creation ought to be passed through.
-        errors = Archive.validatePPA(self, name, private)
+        errors = validate_ppa(self, name, private)
         if errors:
             raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

@@ -72,7 +72,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import validate_ppa
 from lp.soyuz.model.archivepermission import (
     ArchivePermission,
     ArchivePermissionSet,
@@ -1655,52 +1655,58 @@ class TestValidatePPA(TestCaseWithFactory):
 
     def test_open_teams(self):
         team = self.factory.makeTeam()
-        self.assertEqual('Open teams cannot have PPAs.',
-            Archive.validatePPA(team, None))
+        self.assertEqual(
+            'Open teams cannot have PPAs.', validate_ppa(team, None))
 
     def test_distribution_name(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
-            Archive.validatePPA(ppa_owner, 'ubuntu'))
+            validate_ppa(ppa_owner, 'ubuntu'))
 
     def test_private_ppa_non_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
+        with person_logged_in(ppa_owner):
+            errors = validate_ppa(
+                ppa_owner, self.factory.getUniqueString(), private=True)
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
-            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
-                                private=True))
+            errors)
 
     def test_private_ppa_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
         with celebrity_logged_in('admin'):
             comm = getUtility(ILaunchpadCelebrities).commercial_admin
             comm.addMember(ppa_owner, comm.teamowner)
-        self.assertIsNone(
-            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
-                                private=True))
+        with person_logged_in(ppa_owner):
+            self.assertIsNone(
+                validate_ppa(
+                    ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_private_ppa_admin(self):
         ppa_owner = self.factory.makeAdministrator()
-        self.assertIsNone(
-            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
-                                private=True))
+        with person_logged_in(ppa_owner):
+            self.assertIsNone(
+                validate_ppa(
+                    ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
-        self.assertEqual("You already have a PPA named 'ppa'.",
-            Archive.validatePPA(ppa.owner, 'ppa'))
+        self.assertEqual(
+            "You already have a PPA named 'ppa'.",
+            validate_ppa(ppa.owner, 'ppa'))
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         self.factory.makeArchive(owner=team, name='ppa')
-        self.assertEqual("%s already has a PPA named 'ppa'." % (
-            team.displayname), Archive.validatePPA(team, 'ppa'))
+        self.assertEqual(
+            "%s already has a PPA named 'ppa'." % team.displayname,
+            validate_ppa(team, 'ppa'))
 
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
-        self.assertIsNone(Archive.validatePPA(ppa_owner, None))
+        self.assertIsNone(validate_ppa(ppa_owner, None))
 
 
 class TestGetComponentsForSeries(TestCaseWithFactory):

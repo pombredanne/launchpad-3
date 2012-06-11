@@ -262,17 +262,14 @@ the named operation 'setPrivate'.
     >>> response = webservice.named_post(
     ...     branch_url, 'setPrivate', api_version='beta', private=True)
     >>> branch = webservice.get(branch_url).jsonBody()
-    >>> print branch['explicitly_private']
-    True
-    >>> print branch['private']
-    True
+    >>> print branch['information_type']
+    User Data
 
-In subsequent versions, 'setPrivate' is gone; you have to set the
-'explicitly_private' field directly.
+In subsequent versions, 'setPrivate' is gone; you have to use the
+'transitionToInformationType' method.
 
     >>> print webservice.named_post(
-    ...     branch_url, 'setPrivate', api_version='devel',
-    ...     explicitly_private=True)
+    ...     branch_url, 'setPrivate', api_version='devel', private=True)
     HTTP/1.1 400 Bad Request
     ...
     No such operation: setPrivate

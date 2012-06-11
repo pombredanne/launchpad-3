@@ -17,6 +17,7 @@ __all__ = [
     'IObjectReassignment',
     'IPerson',
     'IPersonClaim',
+    'IPersonEditRestricted',
     'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
@@ -1482,33 +1483,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: True if the user was subscribed, false if they weren't.
         """
 
-    @operation_parameters(
-        name=TextLine(required=True, constraint=name_validator),
-        displayname=TextLine(required=False),
-        description=TextLine(required=False),
-        private=Bool(required=False),
-        suppress_subscription_notifications=Bool(required=False),
-        )
-    @export_factory_operation(Interface, [])  # Really IArchive.
-    @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None,
-                  private=False, suppress_subscription_notifications=False):
-        """Create a PPA.
-
-        :param name: A string with the name of the new PPA to create. If
-            not specified, defaults to 'ppa'.
-        :param displayname: The displayname for the new PPA.
-        :param description: The description for the new PPA.
-        :param private: Whether or not to create a private PPA. Defaults to
-            False, which means the PPA will be public.
-        :param suppress_subscription_notifications: Whether or not to suppress
-            emails to new subscribers about their subscriptions.  Only
-            meaningful for private PPAs.
-        :raises: `PPACreationError` if an error is encountered
-
-        :return: a PPA `IArchive` record.
-        """
-
     def checkRename():
         """Check if a person or team can be renamed.
 
@@ -1824,6 +1798,33 @@ class IPersonEditRestricted(Interface):
         :param subject: The subject to use.
         :param change_description: A textual description to use when notifying
             about the change.
+        """
+
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False),
+        private=Bool(required=False),
+        suppress_subscription_notifications=Bool(required=False),
+        )
+    @export_factory_operation(Interface, [])  # Really IArchive.
+    @operation_for_version("beta")
+    def createPPA(name=None, displayname=None, description=None,
+                  private=False, suppress_subscription_notifications=False):
+        """Create a PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+            not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :param private: Whether or not to create a private PPA. Defaults to
+            False, which means the PPA will be public.
+        :param suppress_subscription_notifications: Whether or not to suppress
+            emails to new subscribers about their subscriptions.  Only
+            meaningful for private PPAs.
+        :raises: `PPACreationError` if an error is encountered
+
+        :return: a PPA `IArchive` record.
         """
 
 
