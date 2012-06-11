@@ -501,8 +501,7 @@ class TestTeamAddView(TestCaseWithFactory):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         with person_logged_in(team.teamowner):
             view = create_initialized_view(
                 personset, name=self.view_name, principal=team.teamowner)
@@ -514,8 +513,7 @@ class TestTeamAddView(TestCaseWithFactory):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         team_name = self.factory.getUniqueString()
         form = {
             'field.name': team_name,
@@ -550,8 +548,7 @@ class TestTeamAddView(TestCaseWithFactory):
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
             visibility=PersonVisibility.PRIVATE, owner=owner)
-        product = self.factory.makeProduct(owner=owner)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         with person_logged_in(owner):
             url = canonical_url(team)
         browser = self.getUserBrowser(url, user=owner)
