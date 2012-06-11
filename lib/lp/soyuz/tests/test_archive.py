@@ -26,10 +26,12 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
+    PersonVisibility,
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
@@ -1707,6 +1709,36 @@ class TestValidatePPA(TestCaseWithFactory):
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
         self.assertIsNone(validate_ppa(ppa_owner, None))
+
+    def test_private_team_private_ppa(self):
+        # Folk with launchpad.Edit on a private team can make private PPAs for
+        # that team, regardless of whether they have super-powers.a
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        team_admin = self.factory.makePerson()
+        with person_logged_in(team_owner):
+            private_team.addMember(
+                team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
+        with person_logged_in(team_admin):
+            result = validate_ppa(private_team, 'ppa', private=True)
+        self.assertIsNone(result)
+
+    def test_private_team_public_ppa(self):
+        # No one can make a public PPA for a private team.
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        team_admin = self.factory.makePerson()
+        with person_logged_in(team_owner):
+            private_team.addMember(
+                team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
+        with person_logged_in(team_admin):
+            result = validate_ppa(private_team, 'ppa', private=False)
+        self.assertEqual(
+            'Private teams may not have public archives.', result)
 
 
 class TestGetComponentsForSeries(TestCaseWithFactory):

@@ -2071,8 +2071,10 @@ def validate_ppa(owner, proposed_name, private=False):
         # which determines who is granted launchpad.Commercial
         # permissions.
         role = IPersonRoles(creator)
-        if not (role.in_admin or role.in_commercial_admin):
+        if not (owner.private or role.in_admin or role.in_commercial_admin):
             return '%s is not allowed to make private PPAs' % creator.name
+    elif owner.private:
+        return 'Private teams may not have public archives.'
     if owner.is_team and (
         owner.subscriptionpolicy in OPEN_TEAM_POLICY):
         return "Open teams cannot have PPAs."
