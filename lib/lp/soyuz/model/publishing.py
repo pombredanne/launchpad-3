@@ -800,15 +800,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             new_section == current.section):
             return
 
-        # See if the archive has changed by virtue of the component
-        # changing:
-        distribution = self.distroseries.distribution
-        new_archive = distribution.getArchiveByComponent(
-            new_component.name)
-        if new_archive != None and new_archive != current.archive:
-            raise OverrideError(
-                "Overriding component to '%s' failed because it would "
-                "require a new archive." % new_component.name)
+        if new_component != current.component:
+            # See if the archive has changed by virtue of the component
+            # changing:
+            distribution = self.distroseries.distribution
+            new_archive = distribution.getArchiveByComponent(
+                new_component.name)
+            if new_archive != None and new_archive != current.archive:
+                raise OverrideError(
+                    "Overriding component to '%s' failed because it would "
+                    "require a new archive." % new_component.name)
 
         return getUtility(IPublishingSet).newSourcePublication(
             distroseries=current.distroseries,
@@ -1218,14 +1219,16 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             new_priority == current.priority):
             return
 
-        # See if the archive has changed by virtue of the component changing:
-        distribution = self.distroarchseries.distroseries.distribution
-        new_archive = distribution.getArchiveByComponent(
-            new_component.name)
-        if new_archive != None and new_archive != self.archive:
-            raise OverrideError(
-                "Overriding component to '%s' failed because it would "
-                "require a new archive." % new_component.name)
+        if new_component != current.component:
+            # See if the archive has changed by virtue of the component
+            # changing:
+            distribution = self.distroarchseries.distroseries.distribution
+            new_archive = distribution.getArchiveByComponent(
+                new_component.name)
+            if new_archive != None and new_archive != self.archive:
+                raise OverrideError(
+                    "Overriding component to '%s' failed because it would "
+                    "require a new archive." % new_component.name)
 
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
