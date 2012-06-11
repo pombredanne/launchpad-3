@@ -11,6 +11,7 @@ __all__ = [
     'IArchiveSafePublisher',
     'IBinaryPackageFilePublishing',
     'IBinaryPackagePublishingHistory',
+    'IBinaryPackagePublishingHistoryEdit',
     'IBinaryPackagePublishingHistoryPublic',
     'ICanPublishPackages',
     'IFilePublishing',
@@ -18,6 +19,7 @@ __all__ = [
     'IPublishingSet',
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
+    'ISourcePackagePublishingHistoryEdit',
     'ISourcePackagePublishingHistoryPublic',
     'MissingSymlinkInPool',
     'NotInPool',
@@ -41,6 +43,7 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
+    operation_returns_entry,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
@@ -639,16 +642,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             logged.
         """
 
-    def changeOverride(new_component=None, new_section=None):
-        """Change the component and/or section of this publication
-
-        It is changed only if the argument is not None.
-
-        Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or
-        `IBinaryPackagePublishingHistory`.
-        """
-
     def copyTo(distroseries, pocket, archive, overrides=None, creator=None):
         """Copy this publication to another location.
 
@@ -708,8 +701,29 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """
 
 
+class ISourcePackagePublishingHistoryEdit(IPublishingEdit):
+    """A writeable source package publishing history record."""
+
+    # Really ISourcePackagePublishingHistory, patched in
+    # _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @operation_parameters(
+        new_component=TextLine(title=u"The new component name."),
+        new_section=TextLine(title=u"The new section name."))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def changeOverride(new_component=None, new_section=None):
+        """Change the component and/or section of this publication.
+
+        It is changed only if the argument is not None.
+
+        Return the overridden publishing record, a
+        `ISourcePackagePublishingHistory`.
+        """
+
+
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
-                                      IPublishingEdit):
+                                      ISourcePackagePublishingHistoryEdit):
     """A source package publishing history record."""
     export_as_webservice_entry(publish_web_link=False)
 
@@ -888,17 +902,6 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
             logged.
         """
 
-    def changeOverride(new_component=None, new_section=None,
-                       new_priority=None):
-        """Change the component, section and/or priority of this publication.
-
-        It is changed only if the argument is not None.
-
-        Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or
-        `IBinaryPackagePublishingHistory`.
-        """
-
     def copyTo(distroseries, pocket, archive):
         """Copy this publication to another location.
 
@@ -947,8 +950,31 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         """
 
 
+class IBinaryPackagePublishingHistoryEdit(IPublishingEdit):
+    """A writeable binary package publishing record."""
+
+    # Really IBinaryPackagePublishingHistory, patched in
+    # _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @operation_parameters(
+        new_component=TextLine(title=u"The new component name."),
+        new_section=TextLine(title=u"The new section name."),
+        new_priority=TextLine(title=u"The new priority name."))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def changeOverride(new_component=None, new_section=None,
+                       new_priority=None):
+        """Change the component, section and/or priority of this publication.
+
+        It is changed only if the argument is not None.
+
+        Return the overridden publishing record, a
+        `IBinaryPackagePublishingHistory`.
+        """
+
+
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
-                                      IPublishingEdit):
+                                      IBinaryPackagePublishingHistoryEdit):
     """A binary package publishing record."""
     export_as_webservice_entry(publish_web_link=False)
 

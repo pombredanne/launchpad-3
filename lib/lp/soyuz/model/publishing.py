@@ -84,6 +84,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
@@ -94,10 +95,12 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory,
+    name_priority_map,
     OverrideError,
     PoolFileOverwriteError,
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease,
@@ -793,8 +796,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Check there is a change to make
         if new_component is None:
             new_component = current.component
+        elif isinstance(new_component, basestring):
+            new_component = getUtility(IComponentSet)[new_component]
         if new_section is None:
             new_section = current.section
+        elif isinstance(new_section, basestring):
+            new_section = getUtility(ISectionSet)[new_section]
 
         if (new_component == current.component and
             new_section == current.section):
@@ -1209,10 +1216,16 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Check there is a change to make
         if new_component is None:
             new_component = current.component
+        elif isinstance(new_component, basestring):
+            new_component = getUtility(IComponentSet)[new_component]
         if new_section is None:
             new_section = current.section
+        elif isinstance(new_section, basestring):
+            new_section = getUtility(ISectionSet)[new_section]
         if new_priority is None:
             new_priority = current.priority
+        elif isinstance(new_priority, basestring):
+            new_priority = name_priority_map[new_priority]
 
         if (new_component == current.component and
             new_section == current.section and

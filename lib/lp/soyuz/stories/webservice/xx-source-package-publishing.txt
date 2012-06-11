@@ -453,3 +453,47 @@ It will match the fake content we added earlier:
     True
 
     >>> logout()
+
+
+Overrides
+=========
+
+    >>> login("foo.bar@canonical.com")
+    >>> override_source = stp.getPubSource(
+    ...     archive=cprov_ppa, sourcename="testoverrides")
+    >>> logout()
+
+    >>> cprov_archive_devel = webservice.get(
+    ...     "/~cprov/+archive/ppa", api_version="devel").jsonBody()
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive_devel["self_link"], "getPublishedSources",
+    ...     api_version="devel", source_name="testoverrides").jsonBody()
+    >>> print pubs["entries"][0]["section_name"]
+    base
+    >>> package = pubs["entries"][0]["self_link"]
+
+Anonymous users can't change overrides.
+
+    >>> response = webservice.named_post(
+    ...     package, "changeOverride", api_version="devel",
+    ...     new_section="admin")
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The owner of a PPA can change overrides.
+
+    >>> response = cprov_webservice.named_post(
+    ...     package, "changeOverride", api_version="devel",
+    ...     new_section="admin")
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+The override change takes effect:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive["self_link"], "getPublishedSources",
+    ...     source_name="testoverrides").jsonBody()
+    >>> print pubs["entries"][0]["section_name"]
+    admin
