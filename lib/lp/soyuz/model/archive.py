@@ -66,10 +66,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.role import (
-    IHasOwner,
-    IPersonRoles,
-    )
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
@@ -2065,13 +2062,13 @@ def validate_ppa(owner, proposed_name, private=False):
     creator = getUtility(ILaunchBag).user
     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     if private:
-        # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
-        # which says that one needs 'launchpad.Commercial' permission to
-        # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
-        # which determines who is granted launchpad.Commercial
-        # permissions.
-        role = IPersonRoles(creator)
-        if not (owner.private or role.in_admin or role.in_commercial_admin):
+        # NOTE: This duplicates the policy in lp/soyuz/configure.zcml which
+        # says that one needs 'launchpad.Commercial' permission to set
+        # 'private', and the logic in `AdminByCommercialTeamOrAdmins` which
+        # determines who is granted launchpad.Commercial permissions. The
+        # difference is that here we grant ability to set 'private' to people
+        # with a commercial subscription.
+        if not (owner.private or creator.checkAllowVisibility()):
             return '%s is not allowed to make private PPAs' % creator.name
     elif owner.private:
         return 'Private teams may not have public archives.'

@@ -1666,7 +1666,7 @@ class TestValidatePPA(TestCaseWithFactory):
             'A PPA cannot have the same name as its distribution.',
             validate_ppa(ppa_owner, 'ubuntu'))
 
-    def test_private_ppa_non_commercial_admin(self):
+    def test_private_ppa_standard_user(self):
         ppa_owner = self.factory.makePerson()
         with person_logged_in(ppa_owner):
             errors = validate_ppa(
@@ -1674,6 +1674,19 @@ class TestValidatePPA(TestCaseWithFactory):
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
             errors)
+
+    def _grant_commercial_subscription(self, person):
+        product = self.factory.makeProduct(owner=person)
+        product.redeemSubscriptionVoucher(
+            self.factory.getUniqueString(), person, person, 12)
+        self.assertTrue(person.hasCurrentCommercialSubscription())
+
+    def test_private_ppa_commercial_subscription(self):
+        owner = self.factory.makePerson()
+        self._grant_commercial_subscription(owner)
+        with person_logged_in(owner):
+            errors = validate_ppa(owner, 'ppa', private=True)
+        self.assertIsNone(errors)
 
     def test_private_ppa_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
