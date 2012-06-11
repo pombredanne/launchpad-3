@@ -98,6 +98,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     )
 from lp.registry.enums import (
     InformationType,
+    PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import NoSuchDistroSeries
@@ -639,7 +640,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                Branch.last_scanned_id,
                SPBDS.name AS distro_series_name,
                Branch.id,
-               Branch.transitively_private,
+               Branch.information_type,
                Branch.owner
         FROM Branch
         JOIN DistroSeries
@@ -659,7 +660,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # Now we see just a touch of privacy concerns.
             # If the current user is anonymous, they cannot see any private
             # branches.
-            base_query += ('      AND NOT Branch.transitively_private\n')
+            base_query += (
+                '      AND Branch.information_type in %s\n'
+                % sqlvalues(PUBLIC_INFORMATION_TYPES))
         # We want to order the results, in part for easier grouping at the
         # end.
         base_query += 'ORDER BY unique_name, last_scanned_id'
@@ -693,7 +696,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                            id,
                            owner
                     FROM all_branches
-                    WHERE transitively_private
+                    WHERE information_type in %(private_branches)s
                 ), owned_branch_ids AS (
                     SELECT private_branches.id
                     FROM private_branches
@@ -708,10 +711,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             SELECT unique_name, last_scanned_id, distro_series_name
             FROM all_branches
-            WHERE NOT transitively_private OR
+            WHERE information_type in %(public_branches)s OR
                   id IN (SELECT id FROM owned_branch_ids) OR
                   id IN (SELECT id FROM subscribed_branch_ids)
-            """ % dict(base_query=base_query, user=quote(user.id))
+            """ % dict(
+                base_query=base_query,
+                user=quote(user.id),
+                private_branches=quote(PRIVATE_INFORMATION_TYPES),
+                public_branches=quote(PUBLIC_INFORMATION_TYPES))
 
         data = Store.of(self).execute(query + ';')
 
