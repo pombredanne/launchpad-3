@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -20,6 +20,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.errors import SubscriptionPrivacyViolation
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.services.webapp import (
@@ -226,14 +227,17 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         person = data['person']
         subscription = self.context.getSubscription(person)
         if subscription is None:
-            self.context.subscribe(
-                person, notification_level, max_diff_lines, review_level,
-                self.user)
-
-            self.add_notification_message(
-                '%s has been subscribed to this branch with: '
-                % person.displayname, notification_level, max_diff_lines,
-                review_level)
+            try:
+                self.context.subscribe(
+                    person, notification_level, max_diff_lines, review_level,
+                    self.user)
+            except SubscriptionPrivacyViolation as error:
+                self.setFieldError('person', unicode(error))
+            else:
+                self.add_notification_message(
+                    '%s has been subscribed to this branch with: '
+                    % person.displayname, notification_level, max_diff_lines,
+                    review_level)
         else:
             self.add_notification_message(
                 '%s was already subscribed to this branch with: '

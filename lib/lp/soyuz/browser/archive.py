@@ -165,7 +165,10 @@ from lp.soyuz.interfaces.publishing import (
     inactive_publishing_status,
     IPublishingSet,
     )
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import (
+    Archive,
+    validate_ppa,
+    )
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -1973,7 +1976,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        errors = Archive.validatePPA(self.context, proposed_name)
+        errors = validate_ppa(self.context, proposed_name)
         if errors is not None:
             self.addError(errors)
 
@@ -1991,6 +1994,7 @@ class ArchiveActivateView(LaunchpadFormView):
         # PPA name.
         name = data.get('name', None)
 
+        # XXX: jml: I think this ought to call createPPA.
         # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
         # for Ubuntu distribution. PPA creation should be revisited when we
         # start supporting other distribution (debian, mainly).
@@ -2171,13 +2175,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
-
-        if (data.get('suppress_subscription_notifications') is True
-            and not data['private']):
-            self.setFieldError(
-                'suppress_subscription_notifications',
-                'Can only suppress subscription notifications for private '
-                'archives.')
 
         enabled_restricted_families = data.get('enabled_restricted_families')
         require_virtualized = data.get('require_virtualized')

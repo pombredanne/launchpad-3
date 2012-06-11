@@ -344,7 +344,8 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         # the team has any ppas.
 
         def setup_team(team):
-            team.createPPA()
+            with person_logged_in(team.teamowner):
+                team.createPPA()
 
         self._test_edit_team_view_expected_subscription_vocab(
             setup_team, CLOSED_TEAM_POLICY)
