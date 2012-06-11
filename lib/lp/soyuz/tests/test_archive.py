@@ -1675,15 +1675,9 @@ class TestValidatePPA(TestCaseWithFactory):
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
             errors)
 
-    def _grant_commercial_subscription(self, person):
-        product = self.factory.makeProduct(owner=person)
-        product.redeemSubscriptionVoucher(
-            self.factory.getUniqueString(), person, person, 12)
-        self.assertTrue(person.hasCurrentCommercialSubscription())
-
     def test_private_ppa_commercial_subscription(self):
         owner = self.factory.makePerson()
-        self._grant_commercial_subscription(owner)
+        self.factory.grantCommercialSubscription(owner)
         with person_logged_in(owner):
             errors = validate_ppa(owner, 'ppa', private=True)
         self.assertIsNone(errors)
