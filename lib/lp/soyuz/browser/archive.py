@@ -1988,13 +1988,21 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def save_action(self, action, data):
         """Activate a PPA and moves to its page."""
+
         # 'name' field is omitted from the form data for default PPAs and
         # it's dealt with by IArchive.new(), which will use the default
         # PPA name.
         name = data.get('name', None)
-        displayname = data['displayname']
-        description = data['description']
-        ppa = self.context.createPPA(name, displayname, description)
+
+        # XXX: jml: I think this ought to call createPPA.
+        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
+        # for Ubuntu distribution. PPA creation should be revisited when we
+        # start supporting other distribution (debian, mainly).
+        ppa = getUtility(IArchiveSet).new(
+            owner=self.context, purpose=ArchivePurpose.PPA,
+            distribution=self.ubuntu, name=name,
+            displayname=data['displayname'], description=data['description'])
+
         self.next_url = canonical_url(ppa)
 
     @property
