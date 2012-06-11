@@ -286,33 +286,6 @@ class RemoveGranteeSubscriptionsJobTestCase(TestCaseWithFactory):
                 CodeReviewNotificationLevel.NOEMAIL, owner)
         return branch
 
-    def test_unsubscribe_branches(self):
-        # The requested branch subscriptions are removed.
-        owner = self.factory.makePerson()
-        pillar = self.factory.makeProduct(owner=owner)
-        grantee = self.factory.makePerson()
-        branch = self._make_subscribed_branch(pillar, grantee)
-        getUtility(IRemoveGranteeSubscriptionsJobSource).create(
-            pillar, grantee, owner, branches=[branch])
-        with block_on_job(self):
-            transaction.commit()
-        self.assertNotIn(
-            grantee, list(removeSecurityProxy(branch).subscribers))
-
-    def test_unsubscribe_branches_admin(self):
-        # Admins can see all branches so no unsubscribe occurs.
-        owner = self.factory.makePerson()
-        pillar = self.factory.makeProduct(owner=owner)
-        grantee = getUtility(ILaunchpadCelebrities).admin.teamowner
-        branch = self._make_subscribed_branch(pillar, grantee)
-        job = getUtility(IRemoveGranteeSubscriptionsJobSource).create(
-            pillar, grantee, owner, branches=[branch])
-        job.run()
-#        with block_on_job(self):
-#            transaction.commit()
-        self.assertIn(
-            grantee, list(removeSecurityProxy(branch).subscribers))
-
     def _assert_unsubscribe_pillar_artifacts_direct_bugs(self,
                                                          pillar=None):
         # All direct pillar bug subscriptions are removed.
