@@ -2981,9 +2981,6 @@ class Person(
         errors = validate_ppa(self, name, private)
         if errors:
             raise PPACreationError(errors)
-        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
-        # for Ubuntu distribution. PPA creation should be revisited when we
-        # start supporting other distribution (debian, mainly).
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
