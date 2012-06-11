@@ -22,6 +22,17 @@ import logging, os, re, sys, time, warnings
 
 # Initialize our paths.
 ${python-relative-path-setup}
+
+
+# The working directory change is just so that the test script
+# can be invoked from places other than the root of the source
+# tree. This is very useful for IDE integration, so an IDE can
+# e.g. run the test that you are currently editing.
+BUILD_DIR = ${buildout:directory|path-repr}
+there = os.getcwd()
+os.chdir(BUILD_DIR)
+
+
 import sys
 sys.path.insert(0, ${scripts:parts-directory|path-repr})
 import site
@@ -42,7 +53,6 @@ class _SpoofOut(doctest._SpoofOut):
 doctest._SpoofOut = _SpoofOut
 
 
-BUILD_DIR = ${buildout:directory|path-repr}
 CUSTOM_SITE_DIR = ${scripts:parts-directory|path-repr}
 
 # Make tests run in a timezone no launchpad developers live in.
@@ -250,14 +260,8 @@ if __name__ == '__main__':
     if local_options.verbose >= 3 and main_process:
         profiled.setup_profiling()
 
-    # The working directory change is just so that the test script
-    # can be invoked from places other than the root of the source
-    # tree. This is very useful for IDE integration, so an IDE can
-    # e.g. run the test that you are currently editing.
     try:
         try:
-            there = os.getcwd()
-            os.chdir(BUILD_DIR)
             testrunner.run([])
         except SystemExit:
             # Print Layer profiling report if requested.
