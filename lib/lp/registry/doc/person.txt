@@ -1193,16 +1193,15 @@ him:
     ...     SpecificationFilter.COMPLETE]).count()
     0
 
-Next, Carlos has three incomplete specs *related* to him:
+Next, Carlos has two incomplete specs *related* to him:
 
     >>> filter = []
     >>> for spec in carlos.specifications(filter=filter):
     ...     print spec.name, spec.is_complete, spec.informational
     svg-support False False
     extension-manager-upgrades False True
-    media-integrity-check False False
 
-Carlos has 2 specifications assigned to him:
+These 2 specifications are assigned to Carlos:
 
     >>> for spec in carlos.assigned_specs:
     ...     print spec.name
