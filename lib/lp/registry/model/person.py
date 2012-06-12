@@ -3378,13 +3378,14 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        person = getUtility(IPersonSet).getByEmail(email)
-
+        person = getUtility(IPersonSet).getByEmail(
+                    email,
+                    filter_status=False)
+        
         if person is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
                 registrant=registrant, hide_email_addresses=True)
-
         return person
 
     def getByName(self, name, ignore_merged=True):
@@ -3600,29 +3601,32 @@ class PersonSet:
         except SQLObjectNotFound:
             return None
 
-    def getByEmail(self, email):
+    def getByEmail(self, email, filter_status=True):
         """See `IPersonSet`."""
-        address = self.getByEmails([email]).one()
+        address = self.getByEmails([email], filter_status=filter_status).one()
         if address:
             return address[1]
 
-    def getByEmails(self, emails, include_hidden=True):
+    def getByEmails(self, emails, include_hidden=True, filter_status=True):
         """See `IPersonSet`."""
         if not emails:
             return EmptyResultSet()
         addresses = [
             ensure_unicode(address.lower().strip())
             for address in emails]
-        extra_query = True
+        hidden_query = True
+        filter_query = True
         if not include_hidden:
-            extra_query = Person.hide_email_addresses == False
+            hidden_query = Person.hide_email_addresses == False
+        if filter_status:
+            filter_query = EmailAddress.status.is_in(VALID_EMAIL_STATUSES)
         return IStore(Person).using(
             Person,
             Join(EmailAddress, EmailAddress.personID == Person.id)
         ).find(
             (EmailAddress, Person),
-            EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
-            EmailAddress.email.lower().is_in(addresses), extra_query)
+            EmailAddress.email.lower().is_in(addresses),
+            filter_query, hidden_query)
 
     def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):
