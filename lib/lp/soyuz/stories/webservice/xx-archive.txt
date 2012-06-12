@@ -168,6 +168,7 @@ This is a permission that allows a team to upload to a component:
     date_created: ...
     permission: u'Archive Upload Rights'
     person_link: u'http://.../~ubuntu-team'
+    pocket: None
     resource_type_link: ...
     self_link: u'http://.../ubuntu/+archive/primary/+upload/ubuntu-team?type=component&item=main'
     source_package_name: None
@@ -183,6 +184,7 @@ This is a permission that allows an individual to upload a source package.
     date_created: ...
     permission: u'Archive Upload Rights'
     person_link: u'http://.../~carlos'
+    pocket: None
     resource_type_link: ...
     self_link:
         u'http://.../ubuntu/+archive/primary/+upload/carlos?type=packagename&item=mozilla-firefox'
@@ -199,6 +201,7 @@ This is a queue admin right for ubuntu-team:
     date_created: ...
     permission: u'Queue Administration Rights'
     person_link: u'http://.../~ubuntu-team'
+    pocket: None
     resource_type_link: ...
     self_link:
         u'http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team?type=component&item=main'
@@ -215,6 +218,7 @@ And one for an individual:
     date_created: ...
     permission: u'Queue Administration Rights'
     person_link: u'http://.../~name12'
+    pocket: None
     resource_type_link: ...
     self_link:
         u'http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=universe'
@@ -1177,6 +1181,18 @@ error is returned.
     foocomm 1.0-2 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
 
+Suppressing notifications
+-------------------------
+
+The owner of the archive can suppress notifications on subscription
+changes over the API.
+
+    >>> private_archive = cprov_webservice.get(
+    ...     cprov_private_ppa['self_link']).jsonBody()
+    >>> private_archive['suppress_subscription_notifications'] = True
+    >>> print modify_archive(cprov_webservice, private_archive)
+    HTTP/1.1 209 ...
+    ...
 
 Archive dependencies
 ====================

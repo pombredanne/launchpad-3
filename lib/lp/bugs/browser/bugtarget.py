@@ -280,9 +280,26 @@ class FileBugReportingGuidelines(LaunchpadFormView):
             self.show_information_type_in_ui)
         cache.objects['bug_private_by_default'] = (
             IProduct.providedBy(self.context) and self.context.private_bugs)
-        cache.objects['enable_bugfiling_duplicate_search'] = (
-            IProjectGroup.providedBy(self.context)
-            or self.context.enable_bugfiling_duplicate_search)
+        cache.objects['information_type_data'] = [
+            {'value': term.name, 'description': term.description,
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in InformationTypeVocabulary(self.context)]
+        bugtask_status_data = vocabulary_to_choice_edit_items(
+            BugTaskStatus, include_description=True, css_class_prefix='status',
+            excluded_items=[
+                BugTaskStatus.UNKNOWN,
+                BugTaskStatus.EXPIRED,
+                BugTaskStatus.INVALID,
+                BugTaskStatus.OPINION,
+                BugTaskStatus.WONTFIX,
+                BugTaskStatus.INCOMPLETE])
+        cache.objects['bugtask_status_data'] = bugtask_status_data
+        bugtask_importance_data = vocabulary_to_choice_edit_items(
+            BugTaskImportance, include_description=True,
+            css_class_prefix='importance',
+            excluded_items=[BugTaskImportance.UNKNOWN])
+        cache.objects['bugtask_importance_data'] = bugtask_importance_data
 
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
@@ -387,31 +404,11 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # either. It makes for better diagnosis of failing tests.
         if self.redirect_ubuntu_filebug:
             pass
-        LaunchpadFormView.initialize(self)
+        super(FileBugViewBase, self).initialize()
         cache = IJSONRequestCache(self.request)
         cache.objects['enable_bugfiling_duplicate_search'] = (
             IProjectGroup.providedBy(self.context)
             or self.context.enable_bugfiling_duplicate_search)
-        cache.objects['information_type_data'] = [
-            {'value': term.name, 'description': term.description,
-            'name': term.title,
-            'description_css_class': 'choice-description'}
-            for term in InformationTypeVocabulary(self.context)]
-        bugtask_status_data = vocabulary_to_choice_edit_items(
-            BugTaskStatus, include_description=True, css_class_prefix='status',
-            excluded_items=[
-                BugTaskStatus.UNKNOWN,
-                BugTaskStatus.EXPIRED,
-                BugTaskStatus.INVALID,
-                BugTaskStatus.OPINION,
-                BugTaskStatus.WONTFIX,
-                BugTaskStatus.INCOMPLETE])
-        cache.objects['bugtask_status_data'] = bugtask_status_data
-        bugtask_importance_data = vocabulary_to_choice_edit_items(
-            BugTaskImportance, include_description=True,
-            css_class_prefix='importance',
-            excluded_items=[BugTaskImportance.UNKNOWN])
-        cache.objects['bugtask_importance_data'] = bugtask_importance_data
         if (self.extra_data_token is not None and
             not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
@@ -1117,7 +1114,7 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
           - There are no widget errors.
         """
         return (
-            self.contextUsesMalone and
+            self.contextUsesMalone() and
             len(self.similar_bugs) > 0 and
             len(self.widget_errors) == 0)
 

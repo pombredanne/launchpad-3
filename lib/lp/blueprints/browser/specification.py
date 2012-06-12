@@ -418,18 +418,12 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority',
              'whiteboard', 'proposegoal', 'workitems',
-             'milestone', 'requestfeedback', 'givefeedback', 'subscription',
+             'milestone', 'subscription',
              'addsubscriber',
              'linkbug', 'unlinkbug', 'linkbranch',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
-
-    def givefeedback(self):
-        text = 'Give feedback'
-        enabled = (self.user is not None and
-                   bool(self.context.getFeedbackRequests(self.user)))
-        return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def milestone(self):
@@ -445,11 +439,6 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     def priority(self):
         text = 'Change priority'
         return Link('+priority', text, icon='edit')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def requestfeedback(self):
-        text = 'Request feedback'
-        return Link('+requestfeedback', text, icon='add')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def proposegoal(self):
@@ -544,12 +533,6 @@ class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     @cachedproperty
-    def feedbackrequests(self):
-        if self.user is None:
-            return []
-        return list(self.context.getFeedbackRequests(self.user))
-
-    @cachedproperty
     def has_dep_tree(self):
         return self.context.dependencies or self.context.blocked_specs
 
@@ -584,11 +567,6 @@ class SpecificationView(SpecificationSimpleView):
 
         if not self.user:
             return
-
-        if self.feedbackrequests:
-            msg = "You have %d feedback request(s) on this blueprint."
-            msg %= len(self.feedbackrequests)
-            self.notices.append(msg)
 
     @property
     def approver_widget(self):

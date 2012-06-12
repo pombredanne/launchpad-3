@@ -1514,7 +1514,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
         if subscribed_by is None:
             subscribed_by = person
-        return branch.subscribe(person,
+        return branch.subscribe(removeSecurityProxy(person),
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
