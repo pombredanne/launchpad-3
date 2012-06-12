@@ -16,8 +16,7 @@
 
   <tal:has_packages condition="packages">
 
-    <ul
-      tal:content="cache:public, 1 hour">
+    <ul>
       <tal:pair tal:repeat="package packages">
         <li>
           <a class="sprite package-source"
