@@ -105,6 +105,7 @@ from lp.services.tokens import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
+    ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
@@ -2054,7 +2055,14 @@ class Archive(SQLBase):
         job.destroySelf()
 
 
-def validate_ppa(person, proposed_name, private=False):
+def validate_ppa(owner, proposed_name, private=False):
+    """Can 'person' create a PPA called 'proposed_name'?
+
+    :param owner: The proposed owner of the PPA.
+    :param proposed_name: The proposed name.
+    :param private: Whether or not to make it private.
+    """
+    creator = getUtility(ILaunchBag).user
     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     if private:
         # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
@@ -2062,11 +2070,11 @@ def validate_ppa(person, proposed_name, private=False):
         # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
         # which determines who is granted launchpad.Commercial
         # permissions.
-        role = IPersonRoles(person)
+        role = IPersonRoles(creator)
         if not (role.in_admin or role.in_commercial_admin):
-            return '%s is not allowed to make private PPAs' % person.name
-    if person.is_team and (
-        person.subscriptionpolicy in OPEN_TEAM_POLICY):
+            return '%s is not allowed to make private PPAs' % creator.name
+    if owner.is_team and (
+        owner.subscriptionpolicy in OPEN_TEAM_POLICY):
         return "Open teams cannot have PPAs."
     if proposed_name is not None and proposed_name == ubuntu.name:
         return (
@@ -2074,14 +2082,14 @@ def validate_ppa(person, proposed_name, private=False):
     if proposed_name is None:
         proposed_name = 'ppa'
     try:
-        person.getPPAByName(proposed_name)
+        owner.getPPAByName(proposed_name)
     except NoSuchPPA:
         return None
     else:
         text = "You already have a PPA named '%s'." % proposed_name
-        if person.is_team:
+        if owner.is_team:
             text = "%s already has a PPA named '%s'." % (
-                person.displayname, proposed_name)
+                owner.displayname, proposed_name)
         return text
 
 

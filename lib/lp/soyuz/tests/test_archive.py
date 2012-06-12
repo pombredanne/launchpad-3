@@ -1666,30 +1666,35 @@ class TestValidatePPA(TestCaseWithFactory):
 
     def test_private_ppa_non_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
+        with person_logged_in(ppa_owner):
+            errors = validate_ppa(
+                ppa_owner, self.factory.getUniqueString(), private=True)
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
-            validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+            errors)
 
     def test_private_ppa_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
         with celebrity_logged_in('admin'):
             comm = getUtility(ILaunchpadCelebrities).commercial_admin
             comm.addMember(ppa_owner, comm.teamowner)
-        self.assertIsNone(
-            validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+        with person_logged_in(ppa_owner):
+            self.assertIsNone(
+                validate_ppa(
+                    ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_private_ppa_admin(self):
         ppa_owner = self.factory.makeAdministrator()
-        self.assertIsNone(
-            validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+        with person_logged_in(ppa_owner):
+            self.assertIsNone(
+                validate_ppa(
+                    ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
         self.assertEqual(
-            "You already have a PPA named 'ppa'.", validate_ppa(ppa.owner, 'ppa'))
+            "You already have a PPA named 'ppa'.",
+            validate_ppa(ppa.owner, 'ppa'))
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
