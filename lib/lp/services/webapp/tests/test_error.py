@@ -91,7 +91,7 @@ class TestDatabaseErrorViews(TestCase):
         self.useFixture(bouncer)
         # Verify things are working initially.
         url = 'http://launchpad.dev/'
-        urllib2.urlopen(url)
+        self.retryConnection(url)
         # Now break the database, and we get an exception, along with
         # our view.
         bouncer.stop()
