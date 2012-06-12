@@ -112,8 +112,8 @@ passing a type that it does not know about results in an AssertionError:
     ...     ubuntu)
     Traceback (most recent call last):
     ...
-    AssertionError: 'item' ... is not an IComponent, IPackageset or an
-    ISourcePackageName
+    AssertionError: 'item' ... is not an IComponent, IPackageset,
+    ISourcePackageName or PackagePublishingPocket
 
 IArchivePermissionSet also has some helpers to make it very easy to
 check permissions.
