@@ -397,9 +397,14 @@ patch_collection_return_type(
     IArchive, 'getQueueAdminsForComponent', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getComponentsForQueueAdmin', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPocketsForUploader', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getUploadersForPocket', IArchivePermission)
 patch_entry_return_type(IArchive, 'newPackageUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newPackagesetUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newComponentUploader', IArchivePermission)
+patch_entry_return_type(IArchive, 'newPocketUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
@@ -433,6 +438,12 @@ patch_plain_parameter_type(
     IArchive, '_checkUpload', 'distroseries', IDistroSeries)
 patch_choice_parameter_type(
     IArchive, '_checkUpload', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IArchive, 'getUploadersForPocket', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IArchive, 'newPocketUploader', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IArchive, 'deletePocketUploader', 'pocket', PackagePublishingPocket)
 patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
