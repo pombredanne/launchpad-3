@@ -137,7 +137,6 @@ from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
-    ArchivePurpose,
     ArchiveStatus,
     PackageCopyPolicy,
     PackagePublishingStatus,
@@ -1976,7 +1975,8 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        errors = validate_ppa(self.context, proposed_name)
+        errors = validate_ppa(
+            self.context, proposed_name, private=self.is_private_team)
         if errors is not None:
             self.addError(errors)
 
@@ -1994,7 +1994,8 @@ class ArchiveActivateView(LaunchpadFormView):
         name = data.get('name', None)
         displayname = data['displayname']
         description = data['description']
-        ppa = self.context.createPPA(name, displayname, description)
+        ppa = self.context.createPPA(
+            name, displayname, description, private=self.is_private_team)
         self.next_url = canonical_url(ppa)
 
     @property
