@@ -1149,61 +1149,6 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertEqual((task.id,), get_flat())
 
-    def test_PopulateSPPHPU_no_pu(self):
-        # PopulateSourcePackagePublishingHistoryPackageUpload correctly
-        # handles a SPPH with no packageupload.
-        with dbuser('testadmin'):
-            spph = self.factory.makeSourcePackagePublishingHistory()
-        self.runHourly()
-        with dbuser('testadmin'):
-            self.assertIs(None, spph.packageupload)
-
-    def createSPPHwithPU(self):
-        distroseries = self.factory.makeDistroSeries()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=distroseries.main_archive,
-            pocket=self.factory.getAnyPocket())
-        pu = self.factory.makePackageUpload(
-            distroseries=distroseries, archive=distroseries.main_archive,
-            pocket=self.factory.getAnyPocket())
-        pu.addSource(spph.sourcepackagerelease)
-        self.assertIs(None, spph.packageupload)
-        return (spph, pu)
-
-    def test_PopulateSourcePackagePublishingHistoryPackageUpload(self):
-        # PopulateSourcePackagePublishingHistoryPackageUpload handles a
-        # SPPH with a matching packageupload.
-        with dbuser('testadmin'):
-            (spph, pu) = self.createSPPHwithPU()
-        self.runHourly()
-        with dbuser('testadmin'):
-            self.assertEqual(pu, spph.packageupload)
-
-    def test_PopulateSPPHPU_no_changesfile(self):
-        # PopulateSourcePackagePublishingHistoryPackageUpload will not
-        # set a SPPH's packageupload to a PU that is not the original upload.
-        with dbuser('testadmin'):
-            (spph, pu) = self.createSPPHwithPU()
-            pu.changesfile = None
-        self.runHourly()
-        with dbuser('testadmin'):
-            self.assertIs(None, spph.packageupload)
-
-    def test_PopulateSPPHPU_multiple_publications(self):
-        # If there are multiple publications (due to overrides changing),
-        # PopulateSourcePackagePublishingHistoryPackageUpload will set the
-        # correct publication's packageupload.
-        with dbuser('testadmin'):
-            (spph, pu) = self.createSPPHwithPU()
-            cs = self.factory.makeComponentSelection(
-                distroseries=spph.distroseries)
-            overridden_spph = spph.changeOverride(cs.component)
-            self.assertIs(None, overridden_spph.packageupload)
-        self.runHourly()
-        with dbuser('testadmin'):
-            self.assertEqual(pu, spph.packageupload)
-            self.assertIs(None, overridden_spph.packageupload)
-
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
