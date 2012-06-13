@@ -557,8 +557,12 @@ def test_suite():
         distroSeriesSourcePackageSetUp,
         ]
 
+    testname = 'structural-subscription-target.txt'
     for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('structural-subscription-target.txt',
+        id_ext = "%s-%s" % (testname, setUpMethod.func_name)
+        test = LayeredDocFileSuite(
+            testname,
+            id_extensions=[id_ext],
             setUp=setUpMethod, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)

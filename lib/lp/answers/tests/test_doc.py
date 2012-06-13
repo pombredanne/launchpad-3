@@ -87,10 +87,13 @@ def create_interface_test_suite(test_file, targets):
 
     suite = unittest.TestSuite()
     for name, setup_func in targets:
+        test_path = os.path.join(os.path.pardir, 'doc', test_file)
+        id_ext = "%s-%s" % (test_file, name)
         test = LayeredDocFileSuite(
-            os.path.join(os.path.pardir, 'doc', test_file),
-                    setUp=setup_func, tearDown=tearDown,
-                    layer=DatabaseFunctionalLayer)
+            test_path,
+            id_extensions=[id_ext],
+            setUp=setup_func, tearDown=tearDown,
+            layer=DatabaseFunctionalLayer)
         suite.addTest(test)
     return suite
 

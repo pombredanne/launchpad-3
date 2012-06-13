@@ -212,8 +212,12 @@ def test_suite():
         distributionSeriesSetUp,
         ]
 
+    testname = 'bugtarget-questiontarget.txt'
     for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('bugtarget-questiontarget.txt',
+        id_ext = "%s-%s" % (testname, setUpMethod.func_name)
+        test = LayeredDocFileSuite(
+            testname,
+            id_extensions=[id_ext],
             setUp=setUpMethod, tearDown=tearDown,
             layer=DatabaseFunctionalLayer)
         suite.addTest(test)
