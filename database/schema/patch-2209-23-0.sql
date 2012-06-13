@@ -8,8 +8,6 @@ CREATE EXTENSION pg_trgm WITH SCHEMA trgm;
 
 CREATE INDEX distributionsourcepackagecache__name__idx
     ON distributionsourcepackagecache USING gin (name trgm.gin_trgm_ops);
-CREATE INDEX distributionsourcepackagecache__fti__idx
-    ON distributionsourcepackagecache USING gin (fti);
 CREATE INDEX sourcepackagepublishinghistory__archive__distroseries__spn__status__idx
     ON sourcepackagepublishinghistory (archive, distroseries, sourcepackagename, status);
 
