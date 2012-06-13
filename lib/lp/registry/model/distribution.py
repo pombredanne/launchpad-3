@@ -1101,7 +1101,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         find_spec = (
             DistributionSourcePackageCache,
             SourcePackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)),
+            SQL('rank(fti, ftq(?)) AS rank', params=(text,)),
             )
         origin = [
             DistributionSourcePackageCache,
@@ -1114,18 +1114,19 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # quote_like SQL-escapes the string in addition to LIKE-escaping
         # it, so we can't use params=. So we need to double-escape the %
         # on either side of the string: once to survive the formatting
-        # here, and once to survive Storms parameterisation formatting
-        # during compilation. Storm should really %-escape literal SQL
-        # strings, but it doesn't.
-        text_condition = SQL("""
-            (DistributionSourcePackageCache.fti @@ ftq(%s) OR
-             DistributionSourcePackageCache.name ILIKE '%%%%' || %s || '%%%%')
-            """ % (quote(text), quote_like(text)))
+        # here, and once to survive Storm's formatting during
+        # compilation. Storm should really %-escape literal SQL strings,
+        # but it doesn't.
         conditions = [
             DistributionSourcePackageCache.distribution == self,
             DistributionSourcePackageCache.archiveID.is_in(
                 self.all_distro_archive_ids),
-            text_condition,
+            Or(
+                SQL("DistributionSourcePackageCache.fti @@ ftq(?)",
+                    params=(text,)),
+                SQL("DistributionSourcePackageCache.name "
+                    "LIKE '%%%%' || %s || '%%%%'" % quote_like(text)),
+                ),
             ]
 
         packaging_query = Select(
