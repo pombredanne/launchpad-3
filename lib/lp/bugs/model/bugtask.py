@@ -1794,8 +1794,7 @@ class BugTaskSet:
         # The janitor needs access to all bugs.
         if user != getUtility(ILaunchpadCelebrities).janitor:
             bug_privacy_filter = get_bug_privacy_filter(user)
-            if bug_privacy_filter != '':
-                conds.append(bug_privacy_filter)
+            conds.append(bug_privacy_filter)
 
         ids = origin.find(BugTaskFlat.bugtask_id, conds)
         ids = ids.order_by(BugTaskFlat.date_last_updated)
@@ -1893,7 +1892,7 @@ class BugTaskSet:
             BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
             BugTaskFlat.duplicateof == None,
             BugTaskFlat.product_id.is_in(product.id for product in products),
-            SQL(get_bug_privacy_filter(user) or True)
+            get_bug_privacy_filter(user),
             ).group_by(BugTaskFlat.product_id)
         # The result will return a list of product ids and counts,
         # which will be converted into key-value pairs in the dictionary.
@@ -1944,7 +1943,7 @@ class BugTaskSet:
             BugTaskFlat.sourcepackagename_id.is_in(package_name_ids),
             BugTaskFlat.distribution == distribution,
             BugTaskFlat.duplicateof == None,
-            SQL(get_bug_privacy_filter(user) or True)
+            get_bug_privacy_filter(user),
             ).group_by(
                 BugTaskFlat.distribution_id, BugTaskFlat.sourcepackagename_id)
 
