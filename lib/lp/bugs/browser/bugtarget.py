@@ -278,6 +278,8 @@ class FileBugReportingGuidelines(LaunchpadFormView):
             type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['show_information_type_in_ui'] = (
             self.show_information_type_in_ui)
+        cache.objects['show_userdata_as_private'] = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
         cache.objects['bug_private_by_default'] = (
             IProduct.providedBy(self.context) and self.context.private_bugs)
         cache.objects['information_type_data'] = [
