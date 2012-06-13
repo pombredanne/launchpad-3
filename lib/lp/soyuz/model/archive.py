@@ -1121,6 +1121,11 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.uploadersForComponent(self, component_name)
 
+    def getUploadersForPocket(self, pocket):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForPocket(self, pocket)
+
     def getQueueAdminsForComponent(self, component_name):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
@@ -1229,7 +1234,7 @@ class Archive(SQLBase):
             source_ids,
             archive=self)
 
-    def checkArchivePermission(self, user, component_or_package=None):
+    def checkArchivePermission(self, user, item=None):
         """See `IArchive`."""
         # PPA access is immediately granted if the user is in the PPA
         # team.
@@ -1244,7 +1249,7 @@ class Archive(SQLBase):
                 # interface will no longer require them because we can
                 # then relax the database constraint on
                 # ArchivePermission.
-                component_or_package = self.default_component
+                item = self.default_component
 
         # Flatly refuse uploads to copy archives, at least for now.
         if self.is_copy:
@@ -1252,8 +1257,7 @@ class Archive(SQLBase):
 
         # Otherwise any archive, including PPAs, uses the standard
         # ArchivePermission entries.
-        return self._authenticate(
-            user, component_or_package, ArchivePermissionType.UPLOAD)
+        return self._authenticate(user, item, ArchivePermissionType.UPLOAD)
 
     def canUploadSuiteSourcePackage(self, person, suitesourcepackage):
         """See `IArchive`."""
@@ -1316,10 +1320,10 @@ class Archive(SQLBase):
             return reason
         return self.verifyUpload(
             person, sourcepackagename, component, distroseries,
-            strict_component)
+            strict_component=strict_component, pocket=pocket)
 
     def verifyUpload(self, person, sourcepackagename, component,
-                     distroseries, strict_component=True):
+                     distroseries, strict_component=True, pocket=None):
         """See `IArchive`."""
         if not self.enabled:
             return ArchiveDisabled(self.displayname)
@@ -1330,6 +1334,11 @@ class Archive(SQLBase):
                 return CannotUploadToPPA()
             else:
                 return None
+
+        # Users with pocket upload permissions may upload to anything in the
+        # given pocket.
+        if pocket is not None and self.checkArchivePermission(person, pocket):
+            return None
 
         if sourcepackagename is not None:
             # Check whether user may upload because they hold a permission for
@@ -1361,9 +1370,9 @@ class Archive(SQLBase):
         return self._authenticate(
             user, component, ArchivePermissionType.QUEUE_ADMIN)
 
-    def _authenticate(self, user, component, permission):
+    def _authenticate(self, user, item, permission):
         """Private helper method to check permissions."""
-        permissions = self.getPermissions(user, component, permission)
+        permissions = self.getPermissions(user, item, permission)
         return bool(permissions)
 
     def newPackageUploader(self, person, source_package_name):
@@ -1397,6 +1406,19 @@ class Archive(SQLBase):
         return permission_set.newComponentUploader(
             self, person, component_name)
 
+    def newPocketUploader(self, person, pocket):
+        if self.is_partner:
+            if pocket not in (
+                PackagePublishingPocket.RELEASE,
+                PackagePublishingPocket.PROPOSED):
+                raise InvalidPocketForPartnerArchive()
+        elif self.is_ppa:
+            if pocket != PackagePublishingPocket.RELEASE:
+                raise InvalidPocketForPPA()
+
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPocketUploader(self, person, pocket)
+
     def newQueueAdmin(self, person, component_name):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
@@ -1413,6 +1435,11 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.deleteComponentUploader(
             self, person, component_name)
+
+    def deletePocketUploader(self, person, pocket):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deletePocketUploader(self, person, pocket)
 
     def deleteQueueAdmin(self, person, component_name):
         """See `IArchive`."""
@@ -1435,6 +1462,11 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForUploader(self, person)
+
+    def getPocketsForUploader(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.pocketsForUploader(self, person)
 
     def getPackagesetsForUploader(self, person):
         """See `IArchive`."""

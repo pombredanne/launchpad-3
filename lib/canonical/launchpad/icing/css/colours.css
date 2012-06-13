@@ -230,7 +230,7 @@ a.unofficial-tag {
     color: red;
     }
 .voteABSTAIN {
-    color: #bebebe;
+    color: #666;
     }
 .votePENDING {
     color: #f60;
@@ -253,7 +253,7 @@ a.unofficial-tag {
     color: black;
     }
 .mergestatusSUPERSEDED, .mergestatusSUPERSEDED a {
-    color: #bebebe;
+    color: #666;
     }
 .codeimportNEW {
     color: #930;
@@ -314,7 +314,7 @@ a.unofficial-tag {
     color: red;
     }
 .distromirrorstatusUNKNOWN {
-    color: #bebebe;
+    color: #666;
     }
 .buildstatusNEEDSBUILD {
     color: gray;

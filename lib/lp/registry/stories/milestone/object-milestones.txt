@@ -279,8 +279,6 @@ We'll also create a new test milestone within the "trunk" series:
     >>> print browser.title
     Series trunk : Mozilla Firefox
 
-    >>> from lp.testing.layers import MemcachedLayer
-    >>> MemcachedLayer.purge()
     >>> browser.open('http://launchpad.dev/firefox/trunk')
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'series-trunk'))
@@ -385,7 +383,6 @@ that milestone's bug listing:
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
 
-    >>> MemcachedLayer.purge()
     >>> browser.open(milestone_url)
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'milestone_bugtasks'))
