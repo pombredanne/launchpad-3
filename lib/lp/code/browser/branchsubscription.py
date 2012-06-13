@@ -227,7 +227,6 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         review_level = data['review_level']
         person = data['person']
         subscription = self.context.getSubscription(person)
-        errors = False
         if subscription is None:
             try:
                 self.context.subscribe(
@@ -235,7 +234,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
                     self.user)
             except SubscriptionPrivacyViolation as error:
                 self.setFieldError('person', unicode(error))
-                errors = True
+                return
             else:
                 self.add_notification_message(
                     '%s has been subscribed to this branch with: '
@@ -247,8 +246,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
                 % person.displayname,
                 subscription.notification_level, subscription.max_diff_lines,
                 review_level)
-        if not errors:
-            self.set_next_url()
+        self.set_next_url()
 
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):
