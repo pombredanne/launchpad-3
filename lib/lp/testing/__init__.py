@@ -1078,12 +1078,17 @@ class ZopeTestInSubProcess:
         assert isinstance(result, ZopeTestResult), (
             "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
-        # We flush stdout and stderror at this point in order to avoid
-        # bug 986429; it appears that stdout and stderror get copied in
-        # full when we fork, which means that we end up with repeated
-        # output, resulting in repeated subunit output.
-        sys.stdout.flush()
-        sys.stderr.flush()
+        # We flush __stdout__ and __stderr__ at this point in order to avoid
+        # bug 986429; they get copied in full when we fork, which means that
+        # we end up with repeated output, resulting in repeated subunit
+        # output.
+        # Why not sys.stdout and sys.stderr instead?  Because when generating
+        # subunit output we replace stdout and stderr with do-nothing objects
+        # and direct the subunit stream to __stdout__ instead.  Therefore we
+        # need to flush __stdout__ to be sure duplicate lines are not
+        # generated.
+        sys.__stdout__.flush()
+        sys.__stderr__.flush()
         pid = os.fork()
         if pid == 0:
             # Child.
@@ -1097,8 +1102,9 @@ class ZopeTestInSubProcess:
                 result, subunit.TestProtocolClient(fdwrite))
             super(ZopeTestInSubProcess, self).run(result)
             fdwrite.flush()
-            sys.stdout.flush()
-            sys.stderr.flush()
+            # See note above about flushing.
+            sys.__stdout__.flush()
+            sys.__stderr__.flush()
             # Exit hard to avoid running onexit handlers and to avoid
             # anything that could suppress SystemExit; this exit must
             # not be prevented.
