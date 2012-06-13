@@ -199,11 +199,11 @@ class Branch(SQLBase, BzrIdentityMixin):
     # These can die after the UI is dropped.
     @property
     def explicitly_private(self):
-        return self.information_type in PRIVATE_INFORMATION_TYPES
+        return self.private
 
     @property
     def transitively_private(self):
-        return self.explicitly_private
+        return self.private
 
     @property
     def private(self):
