@@ -548,7 +548,8 @@ class TestTeamAddView(TestCaseWithFactory):
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
             visibility=PersonVisibility.PRIVATE, owner=owner)
-        self.factory.grantCommercialSubscription(team)
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
         with person_logged_in(owner):
             url = canonical_url(team)
         browser = self.getUserBrowser(url, user=owner)
