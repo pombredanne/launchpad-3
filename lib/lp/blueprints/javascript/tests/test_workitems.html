@@ -67,12 +67,15 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 </ul>
 <!-- Example markup required by test suite -->
 <div id="test-root">
+  <div id="fixture"></div>
+
+  <script type="text/x-template" id="work-items-test-0">
   <div class="workitems-group" id="milestone_0">
     <table class="listing">
       <thead>
       <tr>
         <th>
-          <div style="float: right; font-weight: normal;">All:
+          <div style="float: left; font-weight: normal;">All:
             <a href="#expandall" class="expandall_link"
                id="expand_milestone_0">Expand</a>
             <a href="#collapseall" class="collapseall_link"
@@ -92,7 +95,23 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       </tr>
       </tbody>
 
-      <tbody class="collapsible-body">
+      <tbody class="collapsible-body default-collapsed">
+      <tr class="padded">
+        <td>
+          Content.
+        </td>
+      </tr>
+      </tbody>
+
+      <tbody>
+      <tr class="expandable">
+        <td>
+          <a href="#" class="expander">&nbsp;</a>
+        </td>
+      </tr>
+      </tbody>
+
+      <tbody class="collapsible-body default-expanded">
       <tr class="padded">
         <td>
           Content.
@@ -102,6 +121,115 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
     </table>
   </div>
+  </script>
+
+  <script type="text/x-template" id="work-items-test-default-collapsed">
+    <div class="workitems-group" id="milestone_1">
+      <table class="listing">
+        <thead>
+        <tr>
+          <th>
+            <div style="float: left; font-weight: normal;">All:
+              <a href="#expandall" class="expandall_link"
+                 id="expand_milestone_1">Expand</a>
+              <a href="#collapseall" class="collapseall_link"
+                 id="collapse_milestone_1">Collapse</a>
+              <a href="#defaultall" class="defaultall_link"
+                 id="default_milestone_1">Default</a>
+            </div>
+          </th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr class="expandable">
+          <td>
+            <a href="#" class="expander">&nbsp;</a>
+          </td>
+        </tr>
+        </tbody>
+
+        <tbody class="collapsible-body default-collapsed">
+        <tr class="padded">
+          <td>
+            Content.
+          </td>
+        </tr>
+        </tbody>
+
+        <tbody>
+        <tr class="expandable">
+          <td>
+            <a href="#" class="expander">&nbsp;</a>
+          </td>
+        </tr>
+        </tbody>
+
+        <tbody class="collapsible-body default-collapsed">
+        <tr class="padded">
+          <td>
+            Content.
+          </td>
+        </tr>
+        </tbody>
+
+      </table>
+    </div>
+  </script>
+
+  <script type="text/x-template" id="work-items-test-default-expanded">
+    <div class="workitems-group" id="milestone_2">
+      <table class="listing">
+        <thead>
+        <tr>
+          <th>
+            <div style="float: left; font-weight: normal;">All:
+              <a href="#expandall" class="expandall_link"
+                 id="expand_milestone_2">Expand</a>
+              <a href="#collapseall" class="collapseall_link"
+                 id="collapse_milestone_2">Collapse</a>
+              <a href="#defaultall" class="defaultall_link"
+                 id="default_milestone_2">Default</a>
+            </div>
+          </th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr class="expandable">
+          <td>
+            <a href="#" class="expander">&nbsp;</a>
+          </td>
+        </tr>
+        </tbody>
+
+        <tbody class="collapsible-body default-expanded">
+        <tr class="padded">
+          <td>
+            Content.
+          </td>
+        </tr>
+        </tbody>
+
+        <tbody>
+        <tr class="expandable">
+          <td>
+            <a href="#" class="expander">&nbsp;</a>
+          </td>
+        </tr>
+        </tbody>
+
+        <tbody class="collapsible-body default-expanded">
+        <tr class="padded">
+          <td>
+            Content.
+          </td>
+        </tr>
+        </tbody>
+
+      </table>
+    </div>
+  </script>
 </div>
 </body>
 </html>
