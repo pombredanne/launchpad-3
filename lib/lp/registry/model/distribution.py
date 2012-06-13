@@ -1149,7 +1149,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         dsp_caches_with_ranks = store.using(*origin).find(
             find_spec, *conditions).order_by(
-                'rank DESC, DistributionSourcePackageCache.name')
+                Desc(SQL('rank')), DistributionSourcePackageCache.name)
         dsp_caches_with_ranks.config(distinct=True)
         return dsp_caches_with_ranks
 
