@@ -154,12 +154,15 @@ class BugNotificationRecipients(NotificationRecipientSet):
     def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
         reason = "Registrant (%s)" % upstream.displayname
-        if person.is_team:
-            text = ("are a member of %s, which is the registrant for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the registrant for %s" % upstream.displayname
+        try:
+            if person.is_team:
+                text = ("are a member of %s, which is the registrant for %s" %
+                    (person.displayname, upstream.displayname))
+                reason += " @%s" % person.name
+            else:
+                text = "are the registrant for %s" % upstream.displayname
+        except AttributeError:
+            import pdb; pdb.set_trace()
         self._addReason(person, text, reason)
 
     def update(self, recipient_set):
