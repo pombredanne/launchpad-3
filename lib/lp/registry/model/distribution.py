@@ -1125,7 +1125,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 SQL("DistributionSourcePackageCache.fti @@ ftq(?)",
                     params=(text,)),
                 SQL("DistributionSourcePackageCache.name "
-                    "LIKE '%%%%' || %s || '%%%%'" % quote_like(text)),
+                    "LIKE '%%%%' || %s || '%%%%'" % quote_like(text.lower())),
                 ),
             ]
 
