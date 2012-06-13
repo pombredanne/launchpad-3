@@ -34,7 +34,7 @@ class ArchivePermissionURL:
         elif self.context.permission == ArchivePermissionType.QUEUE_ADMIN:
             perm_type = "+queue-admin"
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 "Unknown permission type %s" % self.context.permission)
 
         username = self.context.person.name
@@ -51,7 +51,7 @@ class ArchivePermissionURL:
         elif self.context.pocket is not None:
             item = "type=pocket&item=%s" % self.context.pocket.name
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 "One of component, sourcepackagename or package set should "
                 "be set")
 
