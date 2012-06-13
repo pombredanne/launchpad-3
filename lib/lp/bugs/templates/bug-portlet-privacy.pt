@@ -15,8 +15,7 @@
          contains
          <strong id="information-type" tal:content="view/information_type" />
          information
-       </span>&nbsp;<a
-           class="sprite edit" id="privacy-link"
+       </span>&nbsp;<a class="sprite edit" id="privacy-link"
            tal:attributes="href link/path" tal:condition="link/enabled"></a>
       <div id="information-type-description" style="padding-top: 5px"
                 tal:content="view/information_type_description"></div>
