@@ -7,6 +7,11 @@ __metaclass__ = type
 
 from zope.security.interfaces import Unauthorized
 from lp.registry.errors import PPACreationError
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
@@ -49,3 +54,16 @@ class TestCreatePPA(TestCaseWithFactory):
         with person_logged_in(person):
             ppa = person.createPPA(suppress_subscription_notifications=True)
         self.assertEqual(True, ppa.suppress_subscription_notifications)
+
+    def test_private_team_private_ppa(self):
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        team_admin = self.factory.makePerson()
+        with person_logged_in(team_owner):
+            private_team.addMember(
+                team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
+        with person_logged_in(team_admin):
+            ppa = private_team.createPPA(private=True)
+        self.assertEqual(True, ppa.private)
