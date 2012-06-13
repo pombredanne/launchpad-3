@@ -48,6 +48,8 @@ class ArchivePermissionURL:
             item = ("type=packageset&item=%s&series=%s" %
                     (self.context.package_set_name,
                      self.context.distro_series_name))
+        elif self.context.pocket is not None:
+            item = "type=pocket&item=%s" % self.context.pocket.name
         else:
             raise AssertionError, (
                 "One of component, sourcepackagename or package set should "

@@ -400,6 +400,12 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
             if series is not None:
                 the_item = getUtility(IPackagesetSet).getByName(
                     item, distroseries=series)
+        elif item_type == 'pocket':
+            # See if "item" is a pocket name.
+            try:
+                the_item = PackagePublishingPocket.items[item]
+            except KeyError:
+                pass
         else:
             the_item = None
 
