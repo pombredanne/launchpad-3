@@ -1129,13 +1129,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 ),
             ]
 
-        packaging_query = Select(
-            1, tables=[Packaging],
-            where=(Packaging.sourcepackagenameID == SourcePackageName.id))
-        if has_packaging is True:
-            conditions.append(Exists(packaging_query))
-        elif has_packaging is False:
-            conditions.append(Not(Exists(packaging_query)))
+        if has_packaging is not None:
+            packaging_query = Exists(Select(
+                1, tables=[Packaging],
+                where=(Packaging.sourcepackagenameID == SourcePackageName.id)))
+            if has_packaging is False:
+                packaging_query = Not(packaging_query)
+            conditions.append(packaging_query)
 
         if publishing_distroseries is not None:
             origin += [
