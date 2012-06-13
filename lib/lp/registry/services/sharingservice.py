@@ -12,7 +12,6 @@ from itertools import product
 
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import (
-    get_current_browser_request,
     get_current_web_service_request,
     )
 from zope.component import getUtility
@@ -50,7 +49,6 @@ from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
     available_with_permission,
     check_permission,
-    precache_permission_for_objects,
     )
 
 
@@ -112,8 +110,6 @@ class SharingService:
             branches_by_id[branch.id] = branch
 
         # Load the bugs.
-        request = get_current_browser_request()
-        precache_permission_for_objects(request, 'launchpad.View', [person])
         visible_bug_ids = []
         if bugs_by_id:
             param = BugTaskSearchParams(
