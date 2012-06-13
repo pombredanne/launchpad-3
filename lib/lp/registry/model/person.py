@@ -3204,7 +3204,9 @@ class PersonSet:
         # unnecessary.
         with MasterDatabasePolicy():
             email, person = (
-                getUtility(IPersonSet).getByEmails([email_address]).one()
+                getUtility(IPersonSet).getByEmails(
+                    [email_address],
+                    filter_status=False).one()
                 or (None, None))
             identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
