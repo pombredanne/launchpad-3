@@ -4338,6 +4338,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             sales_system_id='new',
             whiteboard='')
 
+    def grantCommercialSubscription(self, person, months=12):
+        """Give 'person' a commercial subscription."""
+        product = self.makeProduct(owner=person)
+        product.redeemSubscriptionVoucher(
+            self.getUniqueString(), person, person, months)
+
 
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by
