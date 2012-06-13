@@ -1139,9 +1139,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         if publishing_distroseries is not None:
             origin.append(
-                Join(SourcePackagePublishingHistory,
-                    SourcePackagePublishingHistory.sourcepackagename ==
-                        SourcePackageName.id))
+                Join(
+                    SourcePackagePublishingHistory,
+                    SourcePackagePublishingHistory.sourcepackagenameID ==
+                        DistributionSourcePackageCache.sourcepackagenameID))
             conditions.extend([
                 SourcePackagePublishingHistory.distroseries ==
                     publishing_distroseries,
