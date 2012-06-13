@@ -981,13 +981,6 @@
             template="../../blueprints/templates/person-table-specworkload.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            name="+specfeedback"
-            facet="specifications"
-            class="lp.registry.browser.person.PersonSpecFeedbackView"
-            permission="zope.Public"
-            template="../../blueprints/templates/person-specfeedback.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
             name="+specworkload"
             facet="specifications"
             class="lp.registry.browser.person.PersonSpecWorkloadView"

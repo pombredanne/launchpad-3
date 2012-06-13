@@ -328,8 +328,6 @@ class HasSpecificationsView(LaunchpadView):
             filter.append(SpecificationFilter.DRAFTER)
         elif role == 'approver':
             filter.append(SpecificationFilter.APPROVER)
-        elif role == 'feedback':
-            filter.append(SpecificationFilter.FEEDBACK)
         elif role == 'subscriber':
             filter.append(SpecificationFilter.SUBSCRIBER)
 
