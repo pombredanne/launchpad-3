@@ -85,7 +85,7 @@ class TestZopeTestInSubProcessLayer:
             "layer.tearDown() not called in parent process.")
 
 
-class no:
+class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
     """Test `ZopeTestInSubProcess`.
 
     Assert that setUp(), test() and tearDown() are called in the child
