@@ -1138,14 +1138,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             conditions.append(packaging_query)
 
         if publishing_distroseries is not None:
-            origin += [
+            origin.append(
                 Join(SourcePackagePublishingHistory,
                     SourcePackagePublishingHistory.sourcepackagename ==
-                        SourcePackageName.id),
-                ]
-            conditions.append(
+                        SourcePackageName.id))
+            conditions.extend([
                 SourcePackagePublishingHistory.distroseries ==
-                publishing_distroseries)
+                    publishing_distroseries,
+                SourcePackagePublishingHistory.archiveID.is_in(
+                    self.all_distro_archive_ids),
+                ])
 
         dsp_caches_with_ranks = store.using(*origin).find(
             find_spec, *conditions).order_by(
