@@ -19,8 +19,8 @@ task.
         [          ]
     ( ) I have already emailed an upstream bug contact:
         [          ]
-    ( ) I just want to register that it is upstream right now; I
-        don't have any way to link it.
+    ( ) I want to add this upstream project to the bug report, but someone
+        must find or report this bug in the upstream bug tracker.
 
 If a product doesn't use Launchpad, and doesn't have a bug tracker
 specified, it will simply say that it doesn't use Launchpad to track
@@ -38,8 +38,8 @@ its bugs and prompt for a URL or an email address.
         [          ]
     ( ) I have already emailed an upstream bug contact:
         [          ]
-    ( ) I just want to register that it is upstream right now; I
-        don't have any way to link it.
+    ( ) I want to add this upstream project to the bug report, but someone
+        must find or report this bug in the upstream bug tracker.
 
 For products using Launchpad, the linking upstream widgets won't even
 appear.
