@@ -24,12 +24,15 @@ from sqlobject import (
     )
 from sqlobject.sqlbuilder import SQLConstant
 from storm.info import ClassAlias
-from storm.locals import (
+from storm.expr import (
     And,
     Desc,
+    Exists,
     Join,
     Max,
+    Not,
     Or,
+    Select,
     SQL,
     )
 from storm.store import Store
@@ -1086,6 +1089,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def searchSourcePackageCaches(
         self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
+        from lp.registry.model.packaging import Packaging
         from lp.soyuz.model.distributionsourcepackagecache import (
             DistributionSourcePackageCache,
             )
@@ -1104,50 +1108,46 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             Join(
                 SourcePackageName,
                 DistributionSourcePackageCache.sourcepackagename ==
-                    SourcePackageName.id,
-                ),
+                    SourcePackageName.id),
             ]
 
-        publishing_condition = ''
+        # quote_like SQL-escapes the string in addition to LIKE-escaping
+        # it, so we can't use params=. So we need to double-escape the %
+        # on either side of the string: once to survive the formatting
+        # here, and once to survive Storms parameterisation formatting
+        # during compilation. Storm should really %-escape literal SQL
+        # strings, but it doesn't.
+        text_condition = SQL("""
+            (DistributionSourcePackageCache.fti @@ ftq(%s) OR
+             DistributionSourcePackageCache.name ILIKE '%%%%' || %s || '%%%%')
+            """ % (quote(text), quote_like(text)))
+        conditions = [
+            DistributionSourcePackageCache.distribution == self,
+            DistributionSourcePackageCache.archiveID.is_in(
+                self.all_distro_archive_ids),
+            text_condition,
+            ]
+
+        packaging_query = Select(
+            1, tables=[Packaging],
+            where=(Packaging.sourcepackagenameID == SourcePackageName.id))
+        if has_packaging is True:
+            conditions.append(Exists(packaging_query))
+        elif has_packaging is False:
+            conditions.append(Not(Exists(packaging_query)))
+
         if publishing_distroseries is not None:
             origin += [
-                Join(SourcePackageRelease,
-                    SourcePackageRelease.sourcepackagename ==
-                        SourcePackageName.id),
                 Join(SourcePackagePublishingHistory,
-                    SourcePackagePublishingHistory.sourcepackagerelease ==
-                        SourcePackageRelease.id),
+                    SourcePackagePublishingHistory.sourcepackagename ==
+                        SourcePackageName.id),
                 ]
-            publishing_condition = (
-                "AND SourcePackagePublishingHistory.distroseries = %d"
-                % publishing_distroseries.id)
+            conditions.append(
+                SourcePackagePublishingHistory.distroseries ==
+                publishing_distroseries)
 
-        packaging_query = """
-            SELECT 1
-            FROM Packaging
-            WHERE Packaging.sourcepackagename = SourcePackageName.id
-            """
-        has_packaging_condition = ''
-        if has_packaging is True:
-            has_packaging_condition = 'AND EXISTS (%s)' % packaging_query
-        elif has_packaging is False:
-            has_packaging_condition = 'AND NOT EXISTS (%s)' % packaging_query
-
-        # Note: When attempting to convert the query below into straight
-        # Storm expressions, a 'tuple index out-of-range' error was always
-        # raised.
-        condition = """
-            DistributionSourcePackageCache.distribution = %s AND
-            DistributionSourcePackageCache.archive IN %s AND
-            (DistributionSourcePackageCache.fti @@ ftq(%s) OR
-             DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
-            %s
-            %s
-            """ % (quote(self), quote(self.all_distro_archive_ids),
-                   quote(text), quote_like(text), has_packaging_condition,
-                   publishing_condition)
         dsp_caches_with_ranks = store.using(*origin).find(
-            find_spec, condition).order_by(
+            find_spec, *conditions).order_by(
                 'rank DESC, DistributionSourcePackageCache.name')
         dsp_caches_with_ranks.config(distinct=True)
         return dsp_caches_with_ranks
