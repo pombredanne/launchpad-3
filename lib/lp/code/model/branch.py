@@ -1520,7 +1520,7 @@ def update_trigger_modified_fields(branch):
     naked_branch.unique_name = AutoReload
     naked_branch.owner_name = AutoReload
     naked_branch.target_suffix = AutoReload
-    naked_branch.transitively_private = AutoReload
+    naked_branch._transitively_private = AutoReload
 
 
 def branch_modified_subscriber(branch, event):
