@@ -35,9 +35,7 @@ from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.services.config import config
 from lp.services.mail.handlers import mail_handlers
-from lp.services.mail.interfaces import (
-    EmailProcessingError,
-    )
+from lp.services.mail.interfaces import EmailProcessingError
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing import (

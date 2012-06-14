@@ -9,8 +9,9 @@ from datetime import (
     datetime,
     timedelta,
     )
-import transaction
+
 import pytz
+import transaction
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from zope.component import getUtility

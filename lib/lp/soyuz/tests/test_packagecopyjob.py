@@ -24,9 +24,7 @@ from lp.registry.model.distroseriesdifferencecomment import (
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
-from lp.services.job.interfaces.job import (
-    JobStatus,
-    )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.tests import (
     block_on_job,
     pop_remote_notifications,

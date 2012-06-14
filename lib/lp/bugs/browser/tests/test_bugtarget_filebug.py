@@ -5,6 +5,7 @@ __metaclass__ = type
 
 
 from BeautifulSoup import BeautifulSoup
+from lazr.restful.interfaces import IJSONRequestCache
 import transaction
 from zope.component import getUtility
 from zope.schema.interfaces import (
@@ -13,10 +14,7 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.restful.interfaces import IJSONRequestCache
-from lp.bugs.browser.bugtarget import (
-    FileBugViewBase,
-    )
+from lp.bugs.browser.bugtarget import FileBugViewBase
 from lp.bugs.interfaces.bug import (
     IBugAddForm,
     IBugSet,

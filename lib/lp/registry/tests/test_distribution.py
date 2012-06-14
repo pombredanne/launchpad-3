@@ -43,9 +43,7 @@ from lp.registry.interfaces.person import (
     OPEN_TEAM_POLICY,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.tests.test_distroseries import (
-    TestDistroSeriesCurrentSourceReleases,
-    )
+from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
@@ -56,6 +54,7 @@ from lp.testing import (
     celebrity_logged_in,
     login_person,
     person_logged_in,
+    TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
@@ -278,7 +277,7 @@ class TestDistribution(TestCaseWithFactory):
 
 
 class TestDistributionCurrentSourceReleases(
-    TestDistroSeriesCurrentSourceReleases):
+    CurrentSourceReleasesMixin, TestCase):
     """Test for Distribution.getCurrentSourceReleases().
 
     This works in the same way as
@@ -290,7 +289,7 @@ class TestDistributionCurrentSourceReleases(
     release_interface = IDistributionSourcePackageRelease
 
     @property
-    def test_target(self):
+    def target(self):
         return self.distribution
 
     def test_which_distroseries_does_not_matter(self):

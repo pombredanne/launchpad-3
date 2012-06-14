@@ -30,12 +30,12 @@ from lp.bugs.model.bug import (
     BugSubscriptionInfo,
     )
 from lp.bugs.model.bugnotification import BugNotificationRecipient
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
-    IAccessPolicySource,
     IAccessPolicyArtifactSource,
+    IAccessPolicySource,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.testing import (

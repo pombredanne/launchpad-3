@@ -147,9 +147,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
-from lp.blueprints.enums import (
-    SpecificationWorkItemStatus,
-    )
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
