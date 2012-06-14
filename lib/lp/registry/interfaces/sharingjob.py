@@ -8,8 +8,6 @@ __metaclass__ = type
 __all__ = [
     'IRemoveBugSubscriptionsJob',
     'IRemoveBugSubscriptionsJobSource',
-    'IRemoveGranteeSubscriptionsJob',
-    'IRemoveGranteeSubscriptionsJobSource',
     'ISharingJob',
     'ISharingJobSource',
     ]
@@ -75,13 +73,6 @@ class IRemoveBugSubscriptionsJob(ISharingJob):
     """
 
 
-class IRemoveGranteeSubscriptionsJob(ISharingJob):
-    """Job to remove subscriptions to artifacts for which access is revoked.
-
-    Invalid subscription for a specific grantee are removed.
-    """
-
-
 class ISharingJobSource(IJobSource):
     """Base interface for acquiring ISharingJobs."""
 
@@ -97,15 +88,4 @@ class IRemoveBugSubscriptionsJobSource(ISharingJobSource):
 
         Subscriptions for users who no longer have access to the bugs are
         removed.
-        """
-
-
-class IRemoveGranteeSubscriptionsJobSource(ISharingJobSource):
-    """An interface for acquiring IRemoveGranteeSubscriptionsJobs."""
-
-    def create(pillar, grantee, requestor, bugs=None, branches=None):
-        """Create a new job to revoke access to the specified artifacts.
-
-        If bug and branches are both None, then all subscriptions the grantee
-        may have to any pillar artifacts are removed.
         """

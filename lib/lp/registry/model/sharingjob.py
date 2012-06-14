@@ -9,7 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'RemoveBugSubscriptionsJob',
-    'RemoveGranteeSubscriptionsJob',
     ]
 
 import contextlib
@@ -46,22 +45,17 @@ from zope.interface import (
     )
 
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugtasksearch import (
-    get_bug_privacy_filter,
     get_bug_privacy_filter_terms,
     )
-from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sharingjob import (
     IRemoveBugSubscriptionsJob,
     IRemoveBugSubscriptionsJobSource,
-    IRemoveGranteeSubscriptionsJob,
-    IRemoveGranteeSubscriptionsJobSource,
     ISharingJob,
     ISharingJobSource,
     )
@@ -255,142 +249,6 @@ class SharingJobDerived(BaseRunnableJob):
         if self.distro:
             vars.append(('distro', self.distro.name))
         return vars
-
-
-class RemoveGranteeSubscriptionsJob(SharingJobDerived):
-    """See `IRemoveGranteeSubscriptionsJob`."""
-
-    implements(IRemoveGranteeSubscriptionsJob)
-    classProvides(IRemoveGranteeSubscriptionsJobSource)
-    class_job_type = SharingJobType.REMOVE_GRANTEE_SUBSCRIPTIONS
-
-    config = config.IRemoveGranteeSubscriptionsJobSource
-
-    @classmethod
-    def create(cls, pillar, grantee, requestor, information_types=None,
-               bugs=None, branches=None):
-        """See `IRemoveGranteeSubscriptionsJob`."""
-
-        bug_ids = [
-            bug.id for bug in bugs or []
-        ]
-        branch_names = [
-            branch.unique_name for branch in branches or []
-        ]
-        information_types = [
-            info_type.value for info_type in information_types or []
-        ]
-        metadata = {
-            'bug_ids': bug_ids,
-            'branch_names': branch_names,
-            'information_types': information_types,
-            'requestor.id': requestor.id
-        }
-        return super(RemoveGranteeSubscriptionsJob, cls).create(
-            pillar, grantee, metadata)
-
-    @property
-    def requestor_id(self):
-        return self.metadata['requestor.id']
-
-    @property
-    def requestor(self):
-        return getUtility(IPersonSet).get(self.requestor_id)
-
-    @property
-    def bug_ids(self):
-        return self.metadata['bug_ids']
-
-    @property
-    def branch_names(self):
-        return self.metadata['branch_names']
-
-    @property
-    def information_types(self):
-        return [
-            enumerated_type_registry[InformationType.name].items[value]
-            for value in self.metadata['information_types']]
-
-    def getErrorRecipients(self):
-        # If something goes wrong we want to let the requestor know as well
-        # as the pillar maintainer (if there is a pillar).
-        result = set()
-        result.add(format_address_for_person(self.requestor))
-        if self.pillar and self.pillar.owner.preferredemail:
-            result.add(format_address_for_person(self.pillar.owner))
-        return list(result)
-
-    def getOperationDescription(self):
-        return ('removing subscriptions for artifacts '
-            'for %s on %s' % (self.grantee.displayname, self.pillar_text))
-
-    def run(self):
-        """See `IRemoveGranteeSubscriptionsJob`."""
-
-        logger = logging.getLogger()
-        logger.info(self.getOperationDescription())
-
-        # Unsubscribe grantee from the specified bugs if they can't see the
-        # bug.
-        if self.bug_ids:
-            bugs = getUtility(IBugSet).getByNumbers(self.bug_ids)
-            inaccessible_bugs = [
-                bug for bug in bugs if not bug.userCanView(self.grantee)]
-            for bug in inaccessible_bugs:
-                bug.unsubscribe(
-                    self.grantee, self.requestor, ignore_permissions=True)
-
-        # Unsubscribe grantee from the specified branches if they can't see the
-        # branch.
-        if self.branch_names:
-            branches = [
-                getUtility(IBranchLookup).getByUniqueName(branch_name)
-                for branch_name in self.branch_names]
-            inaccessible_branches = [
-                branch for branch in branches
-                if not branch.visibleByUser(self.grantee)
-            ]
-            for branch in inaccessible_branches:
-                branch.unsubscribe(
-                    self.grantee, self.requestor, ignore_permissions=True)
-
-        # If required, unsubscribe all pillar artifacts.
-        if not self.bug_ids and not self.branch_names:
-            self._unsubscribe_pillar_artifacts(self.information_types)
-
-    def _unsubscribe_pillar_artifacts(self, only_information_types):
-        # Unsubscribe grantee from pillar artifacts to which they no longer
-        # have access. If only_information_types is specified, filter by the
-        # specified information types, else unsubscribe from all artifacts.
-
-        # Branches are not handled until information_type is supported.
-
-        # Do the bugs.
-        privacy_filter = get_bug_privacy_filter(self.grantee)
-
-        # Admins can see all bugs so there's nothing to do.
-        if not privacy_filter:
-            return
-
-        bug_filter = Not(In(
-            Bug.id,
-            Select(
-                (BugTaskFlat.bug_id,),
-                where=privacy_filter)))
-        if only_information_types:
-            bug_filter = And(
-                bug_filter,
-                Bug.information_type.is_in(only_information_types)
-            )
-        store = IStore(BugSubscription)
-        subscribed_invisible_bugs = store.find(
-            Bug,
-            BugSubscription.bug_id == Bug.id,
-            BugSubscription.person == self.grantee,
-            bug_filter)
-        for bug in subscribed_invisible_bugs:
-            bug.unsubscribe(
-                self.grantee, self.requestor, ignore_permissions=True)
 
 
 class RemoveBugSubscriptionsJob(SharingJobDerived):
