@@ -14,15 +14,9 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from lp.code.enums import (
-    CodeReviewVote,
-    )
-from lp.code.errors import (
-    UserNotBranchReviewer,
-    )
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalGetter,
-    )
+from lp.code.enums import CodeReviewVote
+from lp.code.errors import UserNotBranchReviewer
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposalGetter
 from lp.services.config import config
 from lp.services.mail.commands import (
     EmailCommand,

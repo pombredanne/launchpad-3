@@ -14,7 +14,6 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -29,8 +28,6 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.postgresql import table_has_column
-from lp.services.database.sqlbase import cursor
 from lp.services.helpers import ensure_unicode
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName,
@@ -73,52 +70,7 @@ class Packageset(Storm):
     packagesetgroup_id = Int(name='packagesetgroup', allow_none=False)
     packagesetgroup = Reference(packagesetgroup_id, 'PackagesetGroup.id')
 
-    # Provide a manual property instead of declaring the column in Storm.
-    # This is to handle a transition period where we rename the 'score'
-    # column to 'relative_build_score'.  During the transition period, the
-    # code needs to work with both column names.
-    #
-    # The approach taken here only works because we never use 'score' in a
-    # WHERE clause or anything like that.
-    #
-    # Once the database change has taken place, this property should be
-    # deleted, and replaced with a class variable declaration as follows:
-    #
-    #   relative_build_score = Int(allow_none=False)
-
-    def _get_relative_build_score_column_name(self):
-        """Get the name of the column containing a relative build score.
-
-        Older versions of the database call it 'score'; newer ones call it
-        'relative_build_score'.
-
-        Works by interrogating PostgreSQL's own records.
-        """
-        # Chose this look-before-you-leap implementation so as to avoid
-        # invalidating the query by forcing a ProgrammingError.
-        cur = cursor()
-        if table_has_column(cur, "packageset", "score"):
-            return "score"
-        else:
-            return "relative_build_score"
-
-    @property
-    def relative_build_score(self):
-        """See `IPackageset`."""
-        store = Store.of(self)
-        store.flush()
-        column = self._get_relative_build_score_column_name()
-        query = "SELECT %s FROM packageset WHERE id=%%s" % column
-        return store.execute(query, (self.id,)).get_one()[0]
-
-    @relative_build_score.setter
-    def relative_build_score(self, score):
-        """See `IPackageset`."""
-        store = Store.of(self)
-        store.flush()
-        column = self._get_relative_build_score_column_name()
-        query = "UPDATE packageset SET %s=%%s WHERE id=%%s" % column
-        return store.execute(query, (int(score), self.id))
+    relative_build_score = Int(allow_none=False)
 
     def add(self, data):
         """See `IPackageset`."""

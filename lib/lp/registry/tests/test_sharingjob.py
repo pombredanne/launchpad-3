@@ -5,10 +5,9 @@
 
 __metaclass__ = type
 
-import transaction
-
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -18,8 +17,8 @@ from lp.code.enums import (
     )
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactSource,
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicySource,
     )
 from lp.registry.interfaces.person import TeamSubscriptionPolicy

@@ -6,10 +6,10 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.browser.tests.test_pillar_sharing import SharingBaseTestCase
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
-from lp.registry.browser.tests.test_pillar_sharing import SharingBaseTestCase
 
 
 class TestPillarSharingBreadcrumb(BaseBreadcrumbTestCase, SharingBaseTestCase):

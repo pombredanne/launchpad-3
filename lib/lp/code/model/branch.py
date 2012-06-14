@@ -184,17 +184,17 @@ class Branch(SQLBase, BzrIdentityMixin):
     control_format = EnumCol(enum=ControlFormat, dbName='metadir_format')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-
-    # This attribute signifies whether *this* branch is private, irrespective
-    # of the state of any stacked on branches.
-    explicitly_private = BoolCol(
-        default=False, notNull=True, dbName='private')
-    # A branch is transitively private if it is private or it is stacked on a
-    # transitively private branch. The value of this attribute is maintained
-    # by a database trigger.
-    transitively_private = BoolCol(dbName='transitively_private')
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
+
+    # These can die after the UI is dropped.
+    @property
+    def explicitly_private(self):
+        return self.private
+
+    @property
+    def transitively_private(self):
+        return self.private
 
     @property
     def private(self):
@@ -241,14 +241,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePublic()
         self.information_type = information_type
         self._reconcileAccess()
-        # Set the legacy values for now.
-        self.explicitly_private = private
-        # If this branch is private, then it is also transitively_private
-        # otherwise we need to reload the value.
-        if private:
-            self.transitively_private = True
-        else:
-            self.transitively_private = AutoReload
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -1511,7 +1503,6 @@ def update_trigger_modified_fields(branch):
     naked_branch.unique_name = AutoReload
     naked_branch.owner_name = AutoReload
     naked_branch.target_suffix = AutoReload
-    naked_branch.transitively_private = AutoReload
 
 
 def branch_modified_subscriber(branch, event):
