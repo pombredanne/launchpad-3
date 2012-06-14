@@ -393,7 +393,8 @@ class TeamMembership(SQLBase):
                 # A person has left the team so they may no longer have access
                 # to some artifacts shared with the team. We need to run a job
                 # to remove any subscriptions to such artifacts.
-                getUtility(IRemoveBugSubscriptionsJobSource).create(user)
+                getUtility(IRemoveBugSubscriptionsJobSource).create(
+                    user, grantee=self.team)
         else:
             # Changed from an inactive state to another inactive one, so no
             # need to fill/clean the TeamParticipation table.

@@ -255,7 +255,7 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         job = getUtility(IRemoveBugSubscriptionsJobSource).create(
-            requestor, [bug])
+            requestor, [bug], pillar=product)
         expected_emails = [
             format_address_for_person(person)
             for person in (product.owner, requestor)]
@@ -376,7 +376,8 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
 
         # Now run the job, removing access to userdata artifacts.
         getUtility(IRemoveBugSubscriptionsJobSource).create(
-            pillar.owner, information_types=[InformationType.USERDATA])
+            pillar.owner, pillar=pillar,
+            information_types=[InformationType.USERDATA])
         with block_on_job(self):
             transaction.commit()
 
@@ -398,7 +399,8 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
 
         bug.subscribe(admin, owner)
-        getUtility(IRemoveBugSubscriptionsJobSource).create(owner, [bug])
+        getUtility(IRemoveBugSubscriptionsJobSource).create(
+            owner, [bug], pillar=product)
         with block_on_job(self):
             transaction.commit()
 
