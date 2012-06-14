@@ -43,9 +43,7 @@ from lp.registry.interfaces.person import (
     OPEN_TEAM_POLICY,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.tests.test_distroseries import (
-    CurrentSourceReleasesMixin,
-    )
+from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url

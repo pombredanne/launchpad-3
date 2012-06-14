@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-import email
 import doctest
+import email
 from textwrap import dedent
 
 import soupmatchers

@@ -78,9 +78,7 @@ from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
     )
-from lp.services.job.runner import (
-    BaseRunnableJob,
-    )
+from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import errorlog
 

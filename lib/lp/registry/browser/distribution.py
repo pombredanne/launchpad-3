@@ -57,12 +57,12 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
-from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.errors import NotFoundError
 from lp.app.widgets.image import ImageChangeWidget
