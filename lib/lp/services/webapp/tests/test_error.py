@@ -5,13 +5,14 @@
 
 
 import httplib
+import time
+import urllib2
+
 from storm.exceptions import (
     DisconnectionError,
     OperationalError,
     )
-import time
 import transaction
-import urllib2
 
 from lp.services.webapp.error import (
     DisconnectionErrorView,

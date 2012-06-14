@@ -17,6 +17,7 @@ from lp.services.database.stormexpr import (
     TryAdvisoryLock,
     )
 
+
 __all__ = [
     'AdvisoryLockHeld',
     'LockType',

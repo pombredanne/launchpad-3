@@ -47,12 +47,12 @@ from zope.component import (
     queryMultiAdapter,
     )
 from zope.component.interfaces import ComponentLookupError
+from zope.i18nmessageid import Message
 from zope.interface import (
     directlyProvides,
     implements,
     )
 from zope.interface.advice import addClassAdvisor
-from zope.i18nmessageid import Message
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
