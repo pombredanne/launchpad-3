@@ -61,7 +61,8 @@ from lp.bugs.model.bugtasksearch import (
     )
 from lp.bugs.model.tests.test_bug import LEGACY_ACCESS_TRIGGERS
 from lp.bugs.scripts.bugtasktargetnamecaches import (
-    BugTaskTargetNameCacheUpdater)
+    BugTaskTargetNameCacheUpdater,
+    )
 from lp.bugs.tests.bug import create_old_bug
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
@@ -69,16 +70,15 @@ from lp.hardwaredb.interfaces.hwdb import (
     )
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicyGrantSource,
-    IAccessPolicySource,
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage
-)
-
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPerson,
@@ -92,8 +92,8 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
-    flush_database_updates,
     flush_database_caches,
+    flush_database_updates,
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job

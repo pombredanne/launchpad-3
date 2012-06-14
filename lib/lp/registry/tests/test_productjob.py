@@ -9,8 +9,9 @@ from datetime import (
     datetime,
     timedelta,
     )
-import transaction
+
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -46,6 +47,10 @@ from lp.registry.model.productjob import (
     SevenDayCommercialExpirationJob,
     ThirtyDayCommercialExpirationJob,
     )
+from lp.services.log.logger import BufferLogger
+from lp.services.propertycache import clear_property_cache
+from lp.services.scripts.tests import run_script
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -56,10 +61,6 @@ from lp.testing.layers import (
     ZopelessAppServerLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.log.logger import BufferLogger
-from lp.services.propertycache import clear_property_cache
-from lp.services.scripts.tests import run_script
-from lp.services.webapp.publisher import canonical_url
 
 
 class CommercialHelpers:

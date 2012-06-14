@@ -41,9 +41,9 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
-    IAccessArtifactSource,
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,

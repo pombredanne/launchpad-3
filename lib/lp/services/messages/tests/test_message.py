@@ -14,9 +14,7 @@ from email.utils import (
 
 import transaction
 
-from lp.services.messages.model.message import (
-    MessageSet,
-    )
+from lp.services.messages.model.message import MessageSet
 from lp.testing import (
     login,
     TestCase,
