@@ -57,6 +57,11 @@ span.see-all {
     overflow: hidden;
     }
 
+h1 .readable,
+h2 .readable {
+    vertical-align: baseline;
+    }
+
 .invisible-link {
     display: none;
     }
