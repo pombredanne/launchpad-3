@@ -5,11 +5,13 @@ __metaclass__ = type
 
 __all__ = [
     'get_bug_privacy_filter',
+    'get_bug_privacy_filter_terms',
     'orderby_expression',
     'search_bugs',
     ]
 
 from lazr.enum import BaseItem
+from lazr.restful.utils import safe_hasattr
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
@@ -1378,7 +1380,7 @@ def _get_bug_privacy_filter_with_decorator(user):
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
-    bug_filter_terms = _get_bug_privacy_filter_terms(user)
+    bug_filter_terms = get_bug_privacy_filter_terms(user)
     if not bug_filter_terms:
         return True, _nocache_bug_decorator
     if len(bug_filter_terms) == 1:
@@ -1388,16 +1390,19 @@ def _get_bug_privacy_filter_with_decorator(user):
     return expr, _make_cache_user_can_view_bug(user)
 
 
-def _get_bug_privacy_filter_terms(user):
+def get_bug_privacy_filter_terms(user_or_reference):
     public_bug_filter = (
         BugTaskFlat.information_type.is_in(PUBLIC_INFORMATION_TYPES))
 
-    if user is None:
+    if user_or_reference is None:
         return [public_bug_filter]
 
-    admin_team = getUtility(ILaunchpadCelebrities).admin
-    if removeSecurityProxy(user).inTeam(admin_team):
-        return []
+    user_key = user_or_reference
+    if safe_hasattr(user_or_reference, 'id'):
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if removeSecurityProxy(user_or_reference).inTeam(admin_team):
+            return []
+        user_key = user_or_reference.id
 
     artifact_grant_query = Coalesce(
             ArrayIntersects(SQL('BugTaskFlat.access_grants'),
@@ -1405,7 +1410,7 @@ def _get_bug_privacy_filter_terms(user):
                 ArrayAgg(TeamParticipation.teamID),
                 tables=TeamParticipation,
                 where=(TeamParticipation.personID ==
-                       user.id)
+                       user_key)
             )), False)
 
     policy_grant_query = Coalesce(
@@ -1418,7 +1423,7 @@ def _get_bug_privacy_filter_terms(user):
                             AccessPolicyGrant.grantee_id)),
                 where=(
                     TeamParticipation.personID ==
-                    user.id)
+                    user_key)
             )), False)
 
     return [public_bug_filter, artifact_grant_query, policy_grant_query]

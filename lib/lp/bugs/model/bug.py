@@ -1811,7 +1811,7 @@ class Bug(SQLBase):
             # As a result of the transition, some subscribers may no longer
             # have access to the bug. We need to run a job to remove any such
             # subscriptions.
-            getUtility(IRemoveBugSubscriptionsJobSource).create([self], who)
+            getUtility(IRemoveBugSubscriptionsJobSource).create(who, [self])
 
         return True
 

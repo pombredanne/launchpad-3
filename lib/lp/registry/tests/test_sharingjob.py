@@ -482,7 +482,7 @@ class TestRunViaCron(TestCaseWithFactory):
 
         def create_job(distro, bug, grantee, owner):
             job = getUtility(IRemoveBugSubscriptionsJobSource).create(
-                [bug], owner)
+                owner, [bug])
             with person_logged_in(owner):
                 bug.transitionToInformationType(
                             InformationType.EMBARGOEDSECURITY, owner)
@@ -516,7 +516,7 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         requestor = self.factory.makePerson()
         bug = self.factory.makeBug()
         job = getUtility(IRemoveBugSubscriptionsJobSource).create(
-            [bug], requestor)
+            requestor, [bug])
         naked_job = removeSecurityProxy(job)
         self.assertIsInstance(job, RemoveBugSubscriptionsJob)
         self.assertEqual(requestor.id, naked_job.requestor_id)
@@ -528,7 +528,7 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         job = getUtility(IRemoveBugSubscriptionsJobSource).create(
-            [bug], requestor)
+            requestor, [bug])
         expected_emails = [
             format_address_for_person(person)
             for person in (product.owner, requestor)]
@@ -581,7 +581,7 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         reconcile_access_for_artifact(
             bug, bug.information_type, bug.affected_pillars)
 
-        getUtility(IRemoveBugSubscriptionsJobSource).create([bug], owner)
+        getUtility(IRemoveBugSubscriptionsJobSource).create(owner, [bug])
         with block_on_job(self):
             transaction.commit()
 
@@ -612,3 +612,24 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
             removeSecurityProxy(bug).default_bugtask.product = another_product
 
         self._assert_bug_change_unsubscribes(change_target)
+
+    def test_admins_retain_subscriptions(self):
+        # Admins subscriptions are retained even if they don't have explicit
+        # access.
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+
+        login_person(owner)
+        bug = self.factory.makeBug(
+            owner=owner, product=product,
+            information_type=InformationType.USERDATA)
+
+        bug.subscribe(admin, owner)
+        getUtility(IRemoveBugSubscriptionsJobSource).create(owner, [bug])
+        with block_on_job(self):
+            transaction.commit()
+
+        # Check the result. admin should still be subscribed.
+        subscribers = removeSecurityProxy(bug).getDirectSubscribers()
+        self.assertIn(admin, subscribers)

@@ -26,10 +26,12 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.services.sharingservice import SharingService
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
@@ -55,7 +57,7 @@ from lp.testing.pages import LaunchpadWebServiceCaller
 WRITE_FLAG = {
     'disclosure.enhanced_sharing.writable': 'true',
     'disclosure.enhanced_sharing_details.enabled': 'true',
-    'jobs.celery.enabled_classes': 'RemoveGranteeSubscriptionsJob'}
+    'jobs.celery.enabled_classes': 'RemoveBugSubscriptionsJob'}
 DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 
 
@@ -541,12 +543,15 @@ class TestSharingService(TestCaseWithFactory):
         # Make some artifact grants for our sharee.
         artifact = self.factory.makeAccessArtifact()
         self.factory.makeAccessArtifactGrant(artifact, grantee)
-        for access_policy in access_policies:
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact, policy=access_policy)
         # Make some access policy grants for another sharee.
         another = self.factory.makePerson()
         self.factory.makeAccessPolicyGrant(access_policies[0], another)
+        # Make some artifact grants for our yet another sharee.
+        yet_another = self.factory.makePerson()
+        self.factory.makeAccessArtifactGrant(artifact, yet_another)
+        for access_policy in access_policies:
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact, policy=access_policy)
         # Delete data for a specific information type.
         with FeatureFixture(WRITE_FLAG):
             self.service.deletePillarSharee(
@@ -563,10 +568,16 @@ class TestSharingService(TestCaseWithFactory):
             expected_data = [
                 (grantee, {policy: SharingPermission.ALL}, [])
                 for policy in expected_policies]
-        # Add the expected data for the other sharee.
+        # Add the expected data for the other sharees.
         another_person_data = (
             another, {access_policies[0]: SharingPermission.ALL}, [])
         expected_data.append(another_person_data)
+        policy_permissions = dict([(
+            policy, SharingPermission.SOME) for policy in access_policies])
+        yet_another_person_data = (
+            yet_another, policy_permissions,
+            [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])
+        expected_data.append(yet_another_person_data)
         self.assertContentEqual(
             expected_data, self.service.getPillarSharees(pillar))
 
@@ -768,15 +779,102 @@ class TestSharingService(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         self._assert_revokeAccessGrants(distro, [bug], None)
 
-    def test_revokeAccessGrantsBranches(self):
+    # XXX 2012-06-13 wallyworld bug=1012448
+    # Remove branch subscriptions when information type fully implemented.
+#    def test_revokeAccessGrantsBranches(self):
+#        # Users with launchpad.Edit can delete all access for a sharee.
+#        owner = self.factory.makePerson()
+#        product = self.factory.makeProduct(owner=owner)
+#        login_person(owner)
+#        branch = self.factory.makeBranch(
+#            product=product, owner=owner,
+#            information_type=InformationType.USERDATA)
+#        self._assert_revokeAccessGrants(product, None, [branch])
+
+    def _assert_revokeTeamAccessGrants(self, pillar, bugs, branches):
+        artifacts = []
+        if bugs:
+            artifacts.extend(bugs)
+        if branches:
+            artifacts.extend(branches)
+        policy = self.factory.makeAccessPolicy(pillar=pillar)
+
+        person_grantee = self.factory.makePerson()
+        team_owner = self.factory.makePerson()
+        team_grantee = self.factory.makeTeam(
+            owner=team_owner,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            members=[person_grantee])
+
+        # Subscribe the team and person grantees to the artifacts.
+        for person in [team_grantee, person_grantee]:
+            for bug in bugs or []:
+                bug.subscribe(person, pillar.owner)
+                # XXX 2012-06-12 wallyworld bug=1002596
+                # No need to revoke AAG with triggers removed.
+                if person == person_grantee:
+                    accessartifact_source = getUtility(IAccessArtifactSource)
+                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                        accessartifact_source.find([bug]), [person_grantee])
+            for branch in branches or []:
+                branch.subscribe(person,
+                    BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                    CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
+
+        # Check that grantees have expected access grants and subscriptions.
+        for person in [team_grantee, person_grantee]:
+            visible_bugs, visible_branches = self.service.getVisibleArtifacts(
+                person, branches, bugs)
+            self.assertContentEqual(bugs or [], visible_bugs)
+            self.assertContentEqual(branches or [], visible_branches)
+        for person in [team_grantee, person_grantee]:
+            for bug in bugs or []:
+                self.assertIn(person, bug.getDirectSubscribers())
+
+        with FeatureFixture(WRITE_FLAG):
+            self.service.revokeAccessGrants(
+                pillar, team_grantee, pillar.owner,
+                bugs=bugs, branches=branches)
+        with block_on_job(self):
+            transaction.commit()
+
+        # The grantees now have no access to anything.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        permission_info = apgfs.findGranteePermissionsByPolicy(
+            [policy], [team_grantee, person_grantee])
+        self.assertEqual(0, permission_info.count())
+
+        # Check that the grantee's subscriptions have been removed.
+        # Branches will be done once they have the information_type attribute.
+        for person in [team_grantee, person_grantee]:
+            for bug in bugs or []:
+                self.assertNotIn(person, bug.getDirectSubscribers())
+            visible_bugs, visible_branches = self.service.getVisibleArtifacts(
+                person, branches, bugs)
+            self.assertContentEqual([], visible_bugs)
+            self.assertContentEqual([], visible_branches)
+
+    def test_revokeTeamAccessGrantsBugs(self):
         # Users with launchpad.Edit can delete all access for a sharee.
         owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
+        distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
-        branch = self.factory.makeBranch(
-            product=product, owner=owner,
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_revokeAccessGrants(product, None, [branch])
+        self._assert_revokeTeamAccessGrants(distro, [bug], None)
+
+    # XXX 2012-06-13 wallyworld bug=1012448
+    # Remove branch subscriptions when information type fully implemented.
+#    def test_revokeAccessGrantsBranches(self):
+#        # Users with launchpad.Edit can delete all access for a sharee.
+#        owner = self.factory.makePerson()
+#        product = self.factory.makeProduct(owner=owner)
+#        login_person(owner)
+#        branch = self.factory.makeBranch(
+#            product=product, owner=owner,
+#            information_type=InformationType.USERDATA)
+#        self._assert_revokeTeamAccessGrants(distro, [bug], None)
 
     def _assert_revokeAccessGrantsUnauthorized(self):
         # revokeAccessGrants raises an Unauthorized exception if the user

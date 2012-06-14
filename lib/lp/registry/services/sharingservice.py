@@ -40,7 +40,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sharingjob import (
-    IRemoveGranteeSubscriptionsJobSource,
+    IRemoveBugSubscriptionsJobSource,
     )
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.person import Person
@@ -328,12 +328,12 @@ class SharingService:
         if len(to_delete) > 0:
             accessartifact_grant_source = getUtility(
                 IAccessArtifactGrantSource)
-            accessartifact_grant_source.revokeByArtifact(to_delete)
+            accessartifact_grant_source.revokeByArtifact(to_delete, [sharee])
 
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
-        getUtility(IRemoveGranteeSubscriptionsJobSource).create(
-            pillar, sharee, user, information_types=information_types)
+        getUtility(IRemoveBugSubscriptionsJobSource).create(
+            user, bugs=None, information_types=information_types)
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def revokeAccessGrants(self, pillar, sharee, user, branches=None,
@@ -358,8 +358,11 @@ class SharingService:
 
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
-        getUtility(IRemoveGranteeSubscriptionsJobSource).create(
-            pillar, sharee, user, bugs=bugs, branches=branches)
+        if bugs:
+            getUtility(IRemoveBugSubscriptionsJobSource).create(user, bugs)
+        # XXX 2012-06-13 wallyworld bug=1012448
+        # Remove branch subscriptions when information type fully implemented.
+
 
     def ensureAccessGrants(self, sharee, user, branches=None, bugs=None,
                            ignore_permissions=False):

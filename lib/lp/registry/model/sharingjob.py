@@ -24,13 +24,14 @@ from lazr.enum import (
 import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
+    Alias,
     And,
-    Coalesce,
     In,
-    Join,
     Not,
+    Or,
     Select,
     SQL,
+    With,
     )
 from storm.locals import (
     Int,
@@ -48,7 +49,10 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat
-from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+from lp.bugs.model.bugtasksearch import (
+    get_bug_privacy_filter,
+    get_bug_privacy_filter_terms,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
@@ -61,7 +65,6 @@ from lp.registry.interfaces.sharingjob import (
     ISharingJob,
     ISharingJobSource,
     )
-from lp.registry.model.accesspolicy import AccessPolicyGrant
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -70,10 +73,6 @@ from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
-from lp.services.database.stormexpr import (
-    ArrayAgg,
-    ArrayIntersects,
-    )
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
@@ -404,14 +403,18 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
     config = config.IRemoveBugSubscriptionsJobSource
 
     @classmethod
-    def create(cls, bugs, requestor):
+    def create(cls, requestor, bugs=None, information_types=None):
         """See `IRemoveBugSubscriptionsJob`."""
 
         bug_ids = [
-            bug.id for bug in bugs
+            bug.id for bug in bugs or []
+        ]
+        information_types = [
+            info_type.value for info_type in information_types or []
         ]
         metadata = {
             'bug_ids': bug_ids,
+            'information_types': information_types,
             'requestor.id': requestor.id
         }
         return super(RemoveBugSubscriptionsJob, cls).create(
@@ -432,6 +435,12 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
     @property
     def bugs(self):
         return getUtility(IBugSet).getByNumbers(self.bug_ids)
+
+    @property
+    def information_types(self):
+        return [
+            enumerated_type_registry[InformationType.name].items[value]
+            for value in self.metadata['information_types']]
 
     def getErrorRecipients(self):
         # If something goes wrong we want to let the requestor know as well
@@ -455,35 +464,33 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
 
         # Find all bug subscriptions for which the subscriber cannot see the
         # bug.
-        constraints = [
-            BugTaskFlat.bug_id.is_in(self.bug_ids),
-            Not(Coalesce(
-                ArrayIntersects(SQL('BugTaskFlat.access_grants'),
-                Select(
-                    ArrayAgg(TeamParticipation.teamID),
-                    tables=TeamParticipation,
-                    where=(TeamParticipation.personID ==
-                           BugSubscription.person_id)
-                )), False)),
-            Not(Coalesce(
-                ArrayIntersects(SQL('BugTaskFlat.access_policies'),
-                Select(
-                    ArrayAgg(AccessPolicyGrant.policy_id),
-                    tables=(AccessPolicyGrant,
-                            Join(TeamParticipation,
-                                TeamParticipation.teamID ==
-                                AccessPolicyGrant.grantee_id)),
-                    where=(
-                        TeamParticipation.personID ==
-                        BugSubscription.person_id)
-                )), False))
-        ]
-        subscriptions = IStore(BugSubscription).find(
+        filter_terms = get_bug_privacy_filter_terms(BugSubscription.person_id)
+        invisible_bug_expr = Not(Or(*filter_terms))
+
+        if self.information_types:
+            bug_filter = BugTaskFlat.information_type.is_in(
+                self.information_types)
+        elif self.bug_ids:
+            bug_filter = BugTaskFlat.bug_id.is_in(self.bug_ids)
+        else:
+            bug_filter = True
+
+        # Admins can see all bugs so we need to retain any subscriptions they
+        # have even if there is no explicit grant.
+        admins = With("admins", Select(
+            Alias(TeamParticipation.personID, 'admin_id'),
+            where=And(
+                TeamParticipation.teamID == Person.id,
+                Person.name == 'admins')))
+        subscriptions = IStore(BugSubscription).with_(admins).find(
             BugSubscription,
             In(BugSubscription.bug_id,
                 Select(
                     BugTaskFlat.bug_id,
-                    where=And(*constraints)))
+                    where=And(bug_filter, invisible_bug_expr))),
+            Not(BugSubscription.person_id.is_in(
+                Select(SQL("admin_id"), tables="admins")
+            ))
         )
         for sub in subscriptions:
             sub.bug.unsubscribe(

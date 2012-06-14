@@ -1193,7 +1193,7 @@ class BugTask(SQLBase):
             # have access to the parent bug. We need to run a job to remove any
             # such subscriptions.
             getUtility(IRemoveBugSubscriptionsJobSource).create(
-                [self.bug], user)
+                user, [self.bug])
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""

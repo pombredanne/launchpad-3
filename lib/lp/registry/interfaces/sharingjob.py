@@ -92,7 +92,7 @@ class ISharingJobSource(IJobSource):
 class IRemoveBugSubscriptionsJobSource(ISharingJobSource):
     """An interface for acquiring IRemoveBugSubscriptionsJobs."""
 
-    def create(pillar, bugs, requestor):
+    def create(pillar, requestor, bugs=None, information_types=None):
         """Create a new job to remove subscriptions for the specified bugs.
 
         Subscriptions for users who no longer have access to the bugs are
