@@ -564,8 +564,7 @@ class CommericialExpirationMixin(CommercialHelpers):
 
     def test_run_cronscript(self):
         # Everything is configured: ZCML, schema-lazr.conf, and security.cfg.
-        product, reviewer = self.make_notification_data(
-            licenses=[License.OTHER_PROPRIETARY])
+        product, reviewer = self.make_notification_data()
         private_branch = self.factory.makeBranch(
             owner=product.owner, product=product,
             information_type=InformationType.USERDATA)
@@ -574,6 +573,11 @@ class CommericialExpirationMixin(CommercialHelpers):
             product.development_focus.branch = private_branch
         self.expire_commercial_subscription(product)
         job = self.JOB_CLASS.create(product, reviewer)
+        # Create a proprietary project which will have different DB relations.
+        proprietary_product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        self.expire_commercial_subscription(proprietary_product)
+        proprietary_job = self.JOB_CLASS.create(proprietary_product, reviewer)
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -590,8 +594,15 @@ class CommericialExpirationMixin(CommercialHelpers):
         self.assertTrue(
             message in err,
             'Cound not find "%s" in err log:\n%s.' % (message, err))
+        message = (
+            '%s has sent email to the maintainer of %s.' % (
+                self.JOB_CLASS.__name__, proprietary_product.name))
+        self.assertTrue(
+            message in err,
+            'Cound not find "%s" in err log:\n%s.' % (message, err))
         IStore(job.job).invalidate()
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
+        self.assertEqual(JobStatus.COMPLETED, proprietary_job.job.status)
 
 
 class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
