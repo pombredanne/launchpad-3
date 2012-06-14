@@ -183,6 +183,7 @@ defaults = {
     'test_path': [${buildout:directory/lib|path-repr}],
     'package': ['canonical', 'lp', 'devscripts', 'launchpad_loggerhead'],
     'layer': ['!(MailmanLayer)'],
+    'require_unique_ids': True,
     }
 
 # Monkey-patch os.listdir to randomise the results
