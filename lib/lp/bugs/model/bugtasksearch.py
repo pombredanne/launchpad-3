@@ -30,11 +30,13 @@ from storm.expr import (
     )
 from storm.info import ClassAlias
 from storm.references import Reference
+from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
     )
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
@@ -1378,9 +1380,15 @@ def _get_bug_privacy_filter_with_decorator(user):
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
-    bug_filter_terms = get_bug_privacy_filter_terms(user)
-    if not bug_filter_terms:
+    # Admins can see all bugs, so we can short-circuit the filter.
+    if user is not None and IPersonRoles(user).in_admin:
         return True, _nocache_bug_decorator
+
+    # We want an actual Storm Person.
+    if IPersonRoles.providedBy(user):
+        user = user.person
+
+    bug_filter_terms = get_bug_privacy_filter_terms(user, check_admin=False)
     if len(bug_filter_terms) == 1:
         return bug_filter_terms[0], _nocache_bug_decorator
 
@@ -1388,27 +1396,19 @@ def _get_bug_privacy_filter_with_decorator(user):
     return expr, _make_cache_user_can_view_bug(user)
 
 
-def get_bug_privacy_filter_terms(user_or_reference):
+def get_bug_privacy_filter_terms(user, check_admin=True):
     public_bug_filter = (
         BugTaskFlat.information_type.is_in(PUBLIC_INFORMATION_TYPES))
 
-    if user_or_reference is None:
+    if user is None:
         return [public_bug_filter]
-
-    user_key = user_or_reference
-    userrole = IPersonRoles(user_or_reference, None)
-    if userrole:
-        if userrole.in_admin:
-            return []
-        user_key = userrole.id
 
     artifact_grant_query = Coalesce(
             ArrayIntersects(SQL('BugTaskFlat.access_grants'),
             Select(
                 ArrayAgg(TeamParticipation.teamID),
                 tables=TeamParticipation,
-                where=(TeamParticipation.personID ==
-                       user_key)
+                where=(TeamParticipation.person == user)
             )), False)
 
     policy_grant_query = Coalesce(
@@ -1419,9 +1419,18 @@ def get_bug_privacy_filter_terms(user_or_reference):
                         Join(TeamParticipation,
                             TeamParticipation.teamID ==
                             AccessPolicyGrant.grantee_id)),
-                where=(
-                    TeamParticipation.personID ==
-                    user_key)
+                where=(TeamParticipation.person == user)
             )), False)
 
-    return [public_bug_filter, artifact_grant_query, policy_grant_query]
+    filters = [public_bug_filter, artifact_grant_query, policy_grant_query]
+
+    if check_admin:
+        filters.append(
+            Exists(Select(
+                1, tables=[TeamParticipation],
+                where=And(
+                    TeamParticipation.person == user,
+                    TeamParticipation.team ==
+                        getUtility(ILaunchpadCelebrities).admin))))
+
+    return filters
