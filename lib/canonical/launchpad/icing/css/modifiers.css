@@ -47,6 +47,19 @@ span.see-all {
     display: none;
     }
 
+.readable {
+    /* Textual browsers read the text, graphical browsers see the sprite. */
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    text-indent: 3em;
+    overflow: hidden;
+    }
+
+.expander a .readable {
+    width: 1px;
+    }
+
 .invisible-link {
     display: none;
     }

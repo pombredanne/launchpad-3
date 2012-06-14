@@ -93,7 +93,9 @@
       <tbody>
         <tr class="expandable">
           <td>
-            <span class="expander">&nbsp;</span>
+            <span class="expander">
+                <span class="readable">Expand or Collapse</span>
+            </span>
             <span tal:replace="structure container/html_link" />
           </td>
           <td tal:content="structure container/target_link" />
