@@ -50,14 +50,11 @@ span.see-all {
 .readable {
     /* Textual browsers read the text, graphical browsers see the sprite. */
     display: inline-block;
-    width: 16px;
-    height: 16px;
-    text-indent: 3em;
-    overflow: hidden;
-    }
-
-.expander a .readable {
+    vertical-align: text-top;
     width: 1px;
+    height: 16px;
+    text-indent: 3px;
+    overflow: hidden;
     }
 
 .invisible-link {
