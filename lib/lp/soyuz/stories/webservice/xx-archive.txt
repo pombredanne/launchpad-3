@@ -242,7 +242,8 @@ archive.
     ...      return (entry['permission'],
     ...              entry['person_link'],
     ...              entry['component_name'],
-    ...              entry['source_package_name']),
+    ...              entry['source_package_name'],
+    ...              entry['pocket']),
 
     >>> def show_permission_entries(permissions):
     ...     for entry in sorted(permissions['entries'],
@@ -251,10 +252,11 @@ archive.
     ...         print entry['person_link']
     ...         print entry['component_name']
     ...         print entry['source_package_name']
+    ...         print entry['pocket']
 
     >>> show_permission_entries(permissions)
-    Archive Upload Rights ...~ubuntu-team main None
-    Archive Upload Rights ...~ubuntu-team universe None
+    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team universe None None
 
 `getUploadersForPackage` returns all the permissions where someone can
 upload a particular package.
@@ -266,7 +268,7 @@ upload a particular package.
     ...     show_permission_entries(permissions)
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox
+    Archive Upload Rights ...~carlos None mozilla-firefox None
 
 Passing a bad package name results in an error:
 
@@ -368,8 +370,8 @@ for a person to upload a package.
     http://.../ubuntu/+archive/primary/+upload/name12?type=packagename&item=mozilla-firefox
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox
-    Archive Upload Rights ...~name12 None mozilla-firefox
+    Archive Upload Rights ...~carlos None mozilla-firefox None
+    Archive Upload Rights ...~name12 None mozilla-firefox None
 
 deletePackageUploader() removes that permission:
 
@@ -383,7 +385,7 @@ deletePackageUploader() removes that permission:
 And we can see that it's gone:
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox
+    Archive Upload Rights ...~carlos None mozilla-firefox None
 
 getUploadersForComponent returns all the permissions where someone can
 upload to a particular component:
@@ -395,7 +397,7 @@ upload to a particular component:
     ...     show_permission_entries(permissions)
 
     >>> show_component_permissions("main")
-    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team main None None
 
 Passing a bad component name results in an error:
 
@@ -409,8 +411,8 @@ If you don't specify the component, you get all the uploaders for
 all components.
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~ubuntu-team main None
-    Archive Upload Rights ...~ubuntu-team universe None
+    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team universe None None
 
 newComponentUploader adds a new permission for a person to upload to a
 component.
@@ -429,10 +431,10 @@ component.
     http://.../ubuntu/+archive/primary/+upload/name12?type=component&item=restricted
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~name12 restricted None
-    Archive Upload Rights ...~ubuntu-team main None
-    Archive Upload Rights ...~ubuntu-team restricted None
-    Archive Upload Rights ...~ubuntu-team universe None
+    Archive Upload Rights ...~name12 restricted None None
+    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team restricted None None
+    Archive Upload Rights ...~ubuntu-team universe None None
 
 We can use ``checkUpload`` to verify that a person can upload a
 sourcepackage.
@@ -459,9 +461,9 @@ deleteComponentUploader() removes that permission:
 And we can see that it's gone:
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~ubuntu-team main None
-    Archive Upload Rights ...~ubuntu-team restricted None
-    Archive Upload Rights ...~ubuntu-team universe None
+    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team restricted None None
+    Archive Upload Rights ...~ubuntu-team universe None None
 
 And ``checkUpload`` now also no longer passes:
 
@@ -525,8 +527,8 @@ can administer distroseries queues in a particular component.
     ...     show_permission_entries(permissions)
 
     >>> show_admins_for_component("main")
-    Queue Administration Rights ...~name12 main None
-    Queue Administration Rights ...~ubuntu-team main None
+    Queue Administration Rights ...~name12 main None None
+    Queue Administration Rights ...~ubuntu-team main None None
 
 getComponentsForQueueAdmin returns all the permissions relating to components
 where the user is able to administer distroseries queues.
@@ -538,10 +540,10 @@ where the user is able to administer distroseries queues.
     ...     show_permission_entries(permissions)
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None
-    Queue Administration Rights ...~name12 multiverse None
-    Queue Administration Rights ...~name12 restricted None
-    Queue Administration Rights ...~name12 universe None
+    Queue Administration Rights ...~name12 main None None
+    Queue Administration Rights ...~name12 multiverse None None
+    Queue Administration Rights ...~name12 restricted None None
+    Queue Administration Rights ...~name12 universe None None
 
 newQueueAdmin adds a new permission for a person to administer distroseries
 queues in a particular component.
@@ -560,11 +562,11 @@ queues in a particular component.
     http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=partner
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None
-    Queue Administration Rights ...~name12 multiverse None
-    Queue Administration Rights ...~name12 partner None
-    Queue Administration Rights ...~name12 restricted None
-    Queue Administration Rights ...~name12 universe None
+    Queue Administration Rights ...~name12 main None None
+    Queue Administration Rights ...~name12 multiverse None None
+    Queue Administration Rights ...~name12 partner None None
+    Queue Administration Rights ...~name12 restricted None None
+    Queue Administration Rights ...~name12 universe None None
 
 deleteQueueAdmin removes that permission.
 
@@ -578,10 +580,86 @@ deleteQueueAdmin removes that permission.
 And we can see that it's gone:
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None
-    Queue Administration Rights ...~name12 multiverse None
-    Queue Administration Rights ...~name12 restricted None
-    Queue Administration Rights ...~name12 universe None
+    Queue Administration Rights ...~name12 main None None
+    Queue Administration Rights ...~name12 multiverse None None
+    Queue Administration Rights ...~name12 restricted None None
+    Queue Administration Rights ...~name12 universe None None
+
+getUploadersForPocket returns all the permissions where someone can upload
+to a particular pocket:
+
+    >>> ubuntu_devel = webservice.get(
+    ...     '/distros', api_version='devel').jsonBody()['entries'][0]
+
+    >>> def show_pocket_permissions(pocket):
+    ...     permissions = user_webservice.named_get(
+    ...         ubuntu_devel['main_archive_link'], 'getUploadersForPocket',
+    ...         api_version='devel', pocket=pocket).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_pocket_permissions('Proposed')
+
+Passing a bad pocket name results in an error:
+
+    >>> print cjwatson_webservice.named_get(
+    ...     ubuntu_devel['main_archive_link'], 'getUploadersForPocket',
+    ...     api_version='devel', pocket='badpocket')
+    HTTP/1.1 400 Bad Request
+    ...
+    pocket: Invalid value "badpocket". Acceptable values are: ...
+
+newPocketUploader adds a new permission for a person to upload to a pocket.
+
+    >>> response = ubuntu_owner_webservice.named_post(
+    ...     ubuntu_devel['main_archive_link'], 'newPocketUploader', {},
+    ...     api_version='devel', person=name12['self_link'],
+    ...     pocket='Proposed')
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = user_webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+upload/name12?type=pocket&item=PROPOSED
+
+    >>> show_pocket_permissions('Proposed')
+    Archive Upload Rights ...~name12 None None Proposed
+
+The person named in the permission can upload a package to this pocket.
+
+    >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
+    >>> response = user_webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'checkUpload',
+    ...     distroseries=grumpy['self_link'],
+    ...     sourcepackagename='mozilla-firefox', pocket='Proposed',
+    ...     component='restricted', person=name12['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+
+deletePocketUploader removes that permission:
+
+    >>> print ubuntu_owner_webservice.named_post(
+    ...     ubuntu_devel['main_archive_link'], 'deletePocketUploader', {},
+    ...     api_version='devel', person=name12['self_link'],
+    ...     pocket='Proposed')
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> show_pocket_permissions('Proposed')
+
+    >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
+    >>> response = user_webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'checkUpload',
+    ...     distroseries=grumpy['self_link'],
+    ...     sourcepackagename='mozilla-firefox', pocket='Proposed',
+    ...     component='restricted', person=name12['self_link'])
+    >>> print(response)
+    HTTP/1.1 403 Forbidden
+    ...
+    The signer of this package has no upload rights to
+    this distribution's primary archive.  Did you mean to upload to a PPA?
 
 Malformed archive permission URLs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
