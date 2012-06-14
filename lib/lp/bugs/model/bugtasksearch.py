@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 from lazr.enum import BaseItem
-from lazr.restful.utils import safe_hasattr
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
@@ -31,13 +30,11 @@ from storm.expr import (
     )
 from storm.info import ClassAlias
 from storm.references import Reference
-from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
     )
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
@@ -70,6 +67,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.accesspolicy import AccessPolicyGrant
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.milestone import Milestone
@@ -1398,11 +1396,11 @@ def get_bug_privacy_filter_terms(user_or_reference):
         return [public_bug_filter]
 
     user_key = user_or_reference
-    if safe_hasattr(user_or_reference, 'id'):
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        if removeSecurityProxy(user_or_reference).inTeam(admin_team):
+    userrole = IPersonRoles(user_or_reference, None)
+    if userrole:
+        if userrole.in_admin:
             return []
-        user_key = user_or_reference.id
+        user_key = userrole.id
 
     artifact_grant_query = Coalesce(
             ArrayIntersects(SQL('BugTaskFlat.access_grants'),
