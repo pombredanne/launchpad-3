@@ -115,13 +115,13 @@ class _BaseNamespace:
             information_type = InformationType.PUBLIC
 
         branch = Branch(
-            registrant=registrant,
-            name=name, owner=self.owner, product=product, url=url,
-            title=title, lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard, _explicitly_private=private,
-            information_type=information_type, date_created=date_created,
-            branch_type=branch_type, date_last_modified=date_created,
-            branch_format=branch_format, repository_format=repository_format,
+            registrant=registrant, name=name, owner=self.owner,
+            product=product, url=url, title=title,
+            lifecycle_status=lifecycle_status, summary=summary,
+            whiteboard=whiteboard, information_type=information_type,
+            date_created=date_created, branch_type=branch_type,
+            date_last_modified=date_created, branch_format=branch_format,
+            repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
 
