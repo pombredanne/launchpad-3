@@ -57,11 +57,19 @@ from lp.testing.layers import (
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.log.logger import BufferLogger
+from lp.services.propertycache import clear_property_cache
 from lp.services.scripts.tests import run_script
 from lp.services.webapp.publisher import canonical_url
 
 
 class CommercialHelpers:
+
+    @staticmethod
+    def expire_commercial_subscription(product):
+        expired_date = (
+            product.commercial_subscription.date_expires - timedelta(days=365))
+        removeSecurityProxy(
+            product.commercial_subscription).date_expires = expired_date
 
     def make_expiring_product(self, date_expires, job_class=None):
         product = self.factory.makeProduct(
@@ -538,10 +546,7 @@ class CommericialExpirationMixin(CommercialHelpers):
             licenses=[License.OTHER_PROPRIETARY])
         commercial_subscription = product.commercial_subscription
         if self.EXPIRE_SUBSCRIPTION:
-            expired_date = (
-                commercial_subscription.date_expires - timedelta(days=365))
-            removeSecurityProxy(
-                commercial_subscription).date_expires = expired_date
+            self.expire_commercial_subscription(product)
         iso_date = commercial_subscription.date_expires.date().isoformat()
         job = self.JOB_CLASS.create(product, reviewer)
         pop_notifications()
@@ -635,13 +640,16 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         # When the project is proprietary, the product is deactivated.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
+        self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()
+        clear_property_cache(product)
         self.assertIs(False, product.active)
+        self.assertIsNot(None, product.commercial_subscription)
 
     def test_deactivateCommercialFeatures_open_source(self):
         # When the project is open source, the product's commercial features
-        # are deactivated.
+        # are deactivated and the commercial subscription is deleted.
         product, reviewer = self.make_notification_data(licenses=[License.MIT])
         public_branch = self.factory.makeBranch(
             owner=product.owner, product=product)
@@ -654,21 +662,21 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             public_series.branch = public_branch
             private_series = product.newSeries(
                 product.owner, 'special', 'testing', branch=private_branch)
+        self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()
+        clear_property_cache(product)
         self.assertIs(True, product.active)
         self.assertIs(False, product.private_bugs)
         self.assertEqual(public_branch, public_series.branch)
         self.assertIs(None, private_series.branch)
+        self.assertIs(None, product.commercial_subscription)
 
     def test_run_deactivation_performed(self):
         # An email is sent and the deactivation steps are performed.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
-        expired_date = (
-            product.commercial_subscription.date_expires - timedelta(days=365))
-        removeSecurityProxy(
-            product.commercial_subscription).date_expires = expired_date
+        self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job.run()
         self.assertIs(False, product.active)

@@ -115,9 +115,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         ppa = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        ppa.buildd_secret = 'x'
-        ppa.private = True
+            purpose=ArchivePurpose.PPA, private=True)
 
         changesfile_path = (
             'lib/lp/archiveuploader/tests/data/suite/'
