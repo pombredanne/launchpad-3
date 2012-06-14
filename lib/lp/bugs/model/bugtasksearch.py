@@ -723,6 +723,10 @@ def _build_query(params):
         extra_clauses.append(
             BugTaskFlat.datecreated > params.created_since)
 
+    if params.created_before:
+        extra_clauses.append(
+            BugTaskFlat.datecreated < params.created_before)
+
     query = And(extra_clauses)
 
     if not decorators:
