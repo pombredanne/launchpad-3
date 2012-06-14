@@ -1012,7 +1012,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
         escaped_source = cgi.escape(sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
-        edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
+        edit_link = (
+            '<a class="sprite edit readable" href="%s">edit</a>' % details_url)
 
         # If all the conditions are met for sharing...
         if packaging and upstream and other_template is not None:
