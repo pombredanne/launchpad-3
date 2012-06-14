@@ -71,13 +71,13 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.scripts import log
 from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
     simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.scripts import log
 from lp.services.webapp.publisher import canonical_url
 
 

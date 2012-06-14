@@ -49,6 +49,11 @@ from lp.registry.model.productjob import (
     SevenDayCommercialExpirationJob,
     ThirtyDayCommercialExpirationJob,
     )
+from lp.services.database.lpstorm import IStore
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
+from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     run_script,
@@ -60,11 +65,6 @@ from lp.testing.layers import (
     ZopelessAppServerLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.database.lpstorm import IStore
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.log.logger import BufferLogger
-from lp.services.propertycache import clear_property_cache
-from lp.services.webapp.publisher import canonical_url
 
 
 class CommercialHelpers:
