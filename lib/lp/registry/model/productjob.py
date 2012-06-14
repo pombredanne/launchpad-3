@@ -77,6 +77,7 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.scripts import log
 from lp.services.webapp.publisher import canonical_url
 
 
@@ -332,6 +333,8 @@ class ProductNotificationJob(ProductJobDerived):
             body, headers = self.getBodyAndHeaders(
                 email_template, address, self.reply_to)
             simple_sendmail(from_address, address, subject, body, headers)
+        log.debug("%s has sent email to the maintainer of %s.",
+            self.log_name, self.product.name)
 
     def run(self):
         """See `BaseRunnableJob`.
