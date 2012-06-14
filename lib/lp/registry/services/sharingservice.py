@@ -363,7 +363,6 @@ class SharingService:
         # XXX 2012-06-13 wallyworld bug=1012448
         # Remove branch subscriptions when information type fully implemented.
 
-
     def ensureAccessGrants(self, sharee, user, branches=None, bugs=None,
                            ignore_permissions=False):
         """See `ISharingService`."""
