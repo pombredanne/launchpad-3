@@ -73,6 +73,7 @@ from lp.services.mail.helpers import (
     )
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.scripts import log
 from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
@@ -333,6 +334,8 @@ class ProductNotificationJob(ProductJobDerived):
             body, headers = self.getBodyAndHeaders(
                 email_template, address, self.reply_to)
             simple_sendmail(from_address, address, subject, body, headers)
+        log.debug("%s has sent email to the maintainer of %s.",
+            self.log_name, self.product.name)
 
     def run(self):
         """See `BaseRunnableJob`.
