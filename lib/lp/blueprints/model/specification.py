@@ -224,6 +224,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def workitems_text(self):
         """See ISpecification."""
         workitems_lines = []
+        seen_titles = []
 
         def get_header_text(milestone):
             if milestone is None:
@@ -239,6 +240,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # work item with a different milestone.
         workitems_lines.append(get_header_text(milestone))
         for work_item in self.work_items:
+            # Old code had a bug that would allow the insertion of duplicate
+            # work items (same title) if a work item of that title didn't
+            # already exist. New code filters these out when saving to the
+            # database. Filter diplicates out of the display we well.
+            if work_item.title in seen_titles:
+                continue
+            else:
+                seen_titles.append(work_item.title)
+
             if work_item.milestone != milestone:
                 workitems_lines.append("")
                 milestone = work_item.milestone
@@ -289,8 +299,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
         Also set the sequence of those deleted work items to -1.
         """
+        seen_titles = []
         for work_item in self.work_items:
-            if work_item.title not in titles:
+            if work_item.title not in seen_titles:
+                seen_titles.append(work_item.title)
+
+                if work_item.title not in titles:
+                    work_item.deleted = True
+            else:
+                # Duplicate title in database - clean it out.
                 work_item.deleted = True
 
     def updateWorkItems(self, new_work_items):
@@ -307,6 +324,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # iterate over it updating the existing items and creating any new
         # ones.
         to_insert = []
+        seen_titles = []
         existing_titles = [wi.title for wi in work_items]
         for i in range(len(new_work_items)):
             new_wi = new_work_items[i]
@@ -314,7 +332,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 # This is a new work item, so we insert it with 'i' as its
                 # sequence because that's the position it is on the list
                 # entered by the user.
-                to_insert.append((i, new_wi))
+                if ['title'] not in seen_titles:
+                    to_insert.append((i, new_wi))
             else:
                 # Get the existing work item with the same title and update
                 # it to match what we have now.
@@ -331,6 +350,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
                         "%s does not belong to this spec's target (%s)" %
                             (milestone.displayname, self.target.name))
                 existing_wi.milestone = milestone
+
+            # To prevent inserting duplicate work items, we keep track of
+            # the titles we have seen here. We can't append to existing_titles
+            # because the title may not be associated with a database entry
+            # yet.
+            seen_titles.append(new_wi['title'])
 
         for sequence, item in to_insert:
             self.newWorkItem(item['title'], sequence, item['status'],
