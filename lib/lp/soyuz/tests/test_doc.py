@@ -132,6 +132,7 @@ special = {
         ),
     'closing-bugs-from-changelogs.txt-uploader': LayeredDocFileSuite(
         '../doc/closing-bugs-from-changelogs.txt',
+        id_extensions=['closing-bugs-from-changelogs.txt-uploader'],
         setUp=uploaderBugsSetUp,
         tearDown=uploaderBugsTearDown,
         layer=LaunchpadZopelessLayer
