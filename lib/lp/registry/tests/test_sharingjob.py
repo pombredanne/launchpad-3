@@ -613,6 +613,51 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
 
         self._assert_bug_change_unsubscribes(change_target)
 
+    def _make_subscribed_bug(self, grantee, product=None, distribution=None,
+                             information_type=InformationType.USERDATA):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner, product=product, distribution=distribution,
+            information_type=information_type)
+        with person_logged_in(owner):
+            bug.subscribe(grantee, owner)
+        # Subscribing grantee to bug creates an access grant so we need to
+        # revoke that for our test.
+        accessartifact_source = getUtility(IAccessArtifactSource)
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        accessartifact_grant_source.revokeByArtifact(
+            accessartifact_source.find([bug]), [grantee])
+
+        return bug, owner
+
+    def test_unsubscribe_pillar_artifacts_specific_info_types(self):
+        # Only remove subscriptions for bugs of the specified info type.
+
+        person_grantee = self.factory.makePerson(name='grantee')
+
+        owner = self.factory.makePerson(name='pillarowner')
+        pillar = self.factory.makeProduct(owner=owner)
+
+        # Make bugs the person_grantee is subscribed to.
+        bug1, ignored = self._make_subscribed_bug(
+            person_grantee, product=pillar,
+            information_type=InformationType.USERDATA)
+
+        bug2, ignored = self._make_subscribed_bug(
+            person_grantee, product=pillar,
+            information_type=InformationType.EMBARGOEDSECURITY)
+
+        # Now run the job, removing access to userdata artifacts.
+        getUtility(IRemoveBugSubscriptionsJobSource).create(
+            pillar.owner, information_types=[InformationType.USERDATA])
+        with block_on_job(self):
+            transaction.commit()
+
+        self.assertNotIn(
+            person_grantee, removeSecurityProxy(bug1).getDirectSubscribers())
+        self.assertIn(
+            person_grantee, removeSecurityProxy(bug2).getDirectSubscribers())
+
     def test_admins_retain_subscriptions(self):
         # Admins subscriptions are retained even if they don't have explicit
         # access.
