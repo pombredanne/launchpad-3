@@ -398,7 +398,8 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
     config = config.IRemoveBugSubscriptionsJobSource
 
     @classmethod
-    def create(cls, requestor, bugs=None, information_types=None):
+    def create(cls, requestor, bugs=None, grantee=None, pillar=None,
+               information_types=None):
         """See `IRemoveBugSubscriptionsJob`."""
 
         bug_ids = [bug.id for bug in bugs or []]
@@ -411,7 +412,7 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
             'requestor.id': requestor.id
         }
         return super(RemoveBugSubscriptionsJob, cls).create(
-            None, None, metadata)
+            pillar, grantee, metadata)
 
     @property
     def requestor_id(self):
@@ -461,11 +462,18 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
             Not(Or(*get_bug_privacy_filter_terms(BugSubscription.person_id))))
         filters = [invisible_filter]
 
-        if self.information_types:
-            filters.append(
-                BugTaskFlat.information_type.is_in(self.information_types))
         if self.bug_ids:
             filters.append(BugTaskFlat.bug_id.is_in(self.bug_ids))
+        else:
+            if self.information_types:
+                filters.append(
+                    BugTaskFlat.information_type.is_in(self.information_types))
+            if self.product:
+                filters.append(
+                    BugTaskFlat.product == self.product)
+            if self.distro:
+                filters.append(
+                    BugTaskFlat.distribution == self.distro)
 
         subscriptions = IStore(BugSubscription).find(
             BugSubscription,
