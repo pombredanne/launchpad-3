@@ -24,6 +24,7 @@ from sqlobject import SQLObjectNotFound
 from storm.expr import (
     And,
     In,
+    Join,
     Not,
     Or,
     Select,
@@ -332,20 +333,16 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
                 filters.append(
                     BugTaskFlat.distribution == self.distro)
 
-        subscriptions_filter = [
-            In(BugSubscription.bug_id,
-                Select(BugTaskFlat.bug_id, where=And(*filters)))]
         if self.grantee:
-            subscriptions_filter.append(
+            filters.append(
                 In(BugSubscription.person_id,
                     Select(
                         TeamParticipation.personID,
-                        where=TeamParticipation.team == self.grantee))
-            )
-        subscriptions = IStore(BugSubscription).find(
+                        where=TeamParticipation.team == self.grantee)))
+        subscriptions = IStore(BugSubscription).using(
             BugSubscription,
-            *subscriptions_filter
-        )
+            Join(BugTaskFlat, BugTaskFlat.bug_id == BugSubscription.bug_id)
+            ).find(BugSubscription, *filters).config(distinct=True)
         for sub in subscriptions:
             sub.bug.unsubscribe(
                 sub.person, self.requestor, ignore_permissions=True)
