@@ -779,18 +779,6 @@ class TestSharingService(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         self._assert_revokeAccessGrants(distro, [bug], None)
 
-    # XXX 2012-06-13 wallyworld bug=1012448
-    # Remove branch subscriptions when information type fully implemented.
-#    def test_revokeAccessGrantsBranches(self):
-#        # Users with launchpad.Edit can delete all access for a sharee.
-#        owner = self.factory.makePerson()
-#        product = self.factory.makeProduct(owner=owner)
-#        login_person(owner)
-#        branch = self.factory.makeBranch(
-#            product=product, owner=owner,
-#            information_type=InformationType.USERDATA)
-#        self._assert_revokeAccessGrants(product, None, [branch])
-
     def _assert_revokeTeamAccessGrants(self, pillar, bugs, branches):
         artifacts = []
         if bugs:
@@ -863,18 +851,6 @@ class TestSharingService(TestCaseWithFactory):
             distribution=distro, owner=owner,
             information_type=InformationType.USERDATA)
         self._assert_revokeTeamAccessGrants(distro, [bug], None)
-
-    # XXX 2012-06-13 wallyworld bug=1012448
-    # Remove branch subscriptions when information type fully implemented.
-#    def test_revokeAccessGrantsBranches(self):
-#        # Users with launchpad.Edit can delete all access for a sharee.
-#        owner = self.factory.makePerson()
-#        product = self.factory.makeProduct(owner=owner)
-#        login_person(owner)
-#        branch = self.factory.makeBranch(
-#            product=product, owner=owner,
-#            information_type=InformationType.USERDATA)
-#        self._assert_revokeTeamAccessGrants(distro, [bug], None)
 
     def _assert_revokeAccessGrantsUnauthorized(self):
         # revokeAccessGrants raises an Unauthorized exception if the user
