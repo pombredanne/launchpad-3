@@ -1078,7 +1078,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             This recipe .*changes.
 
             Recipe information
-            Build schedule: Tag help Built on request
+            Build schedule: (?) Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
