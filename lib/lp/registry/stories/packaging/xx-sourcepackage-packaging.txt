@@ -65,7 +65,7 @@ link to all versions and follows it to the distro source package page.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
     The Hoary Hedgehog Release (active development) ...
-      0.1-2  release (main) ... weeks ago
+      0.1-2  release (main) 2005-08-24
 
 
 Register a project from a source package

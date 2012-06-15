@@ -39,6 +39,7 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
@@ -670,7 +671,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # name specifed an error is shown.
         self.user = self.factory.makePerson(name='eric')
         # Make a PPA called 'ppa' using the default.
-        self.user.createPPA(name='foo')
+        with person_logged_in(self.user):
+            self.user.createPPA(name='foo')
         branch = self.factory.makeAnyBranch()
 
         # A new recipe can be created from the branch page.
@@ -710,6 +712,9 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         team = self.factory.makeTeam(
             name='vikings', members=[self.user],
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        with person_logged_in(team.teamowner):
+            team.setMembershipData(
+                self.user, TeamMembershipStatus.ADMIN, team.teamowner)
         branch = self.factory.makeAnyBranch(owner=team)
 
         # A new recipe can be created from the branch page.

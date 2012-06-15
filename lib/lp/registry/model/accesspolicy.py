@@ -41,9 +41,9 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
-    IAccessArtifactSource,
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
@@ -549,36 +549,6 @@ class AccessPolicyGrantFlat(StormBase):
             result_set,
             result_decorator=set_permission,
             pre_iter_hook=load_teams_and_permissions)
-
-    @classmethod
-    def findIndirectGranteePermissionsByPolicy(cls, policies,
-                                               grantees=None):
-        """See `IAccessPolicyGrantFlatSource`."""
-        policies_by_id = dict((policy.id, policy) for policy in policies)
-
-        grantee_filter = Undef
-        if grantees:
-            grantee_ids = [grantee.id for grantee in grantees]
-            grantee_filter = TeamParticipation.personID.is_in(grantee_ids)
-
-        store = IStore(cls)
-        with_expr = With("grantees", store.find(
-            cls.grantee_id,
-            cls.policy_id.is_in(policies_by_id.keys()))
-            .config(distinct=True)._get_select())
-        result_set = store.with_(with_expr).find(
-            (Person,),
-            In(
-                Person.id,
-                Select(
-                    (TeamParticipation.personID,),
-                    tables=(TeamParticipation, Join("grantees",
-                        SQL("grantees.grantee = TeamParticipation.team"))),
-                    where=grantee_filter,
-                    distinct=True)))
-
-        return cls._populateIndirectGranteePermissions(
-            policies_by_id, result_set)
 
     @classmethod
     def findArtifactsByGrantee(cls, grantee, policies):

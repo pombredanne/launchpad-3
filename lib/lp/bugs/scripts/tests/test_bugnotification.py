@@ -4,13 +4,13 @@
 
 __metaclass__ = type
 
-import StringIO
 from datetime import (
     datetime,
     timedelta,
     )
 import logging
 import re
+import StringIO
 import unittest
 
 import pytz

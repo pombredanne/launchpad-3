@@ -4,14 +4,11 @@
 """Tests for running jobs via Celery."""
 
 
-from datetime import (
-    timedelta,
-    )
-from time import (
-    sleep,
-    )
-import transaction
+from datetime import timedelta
+from time import sleep
+
 from lazr.delegates import delegates
+import transaction
 from zope.interface import implements
 
 from lp.services.config import config
@@ -20,8 +17,8 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
+    JobStatus,
     )
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.job.tests import block_on_job

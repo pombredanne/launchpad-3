@@ -419,10 +419,7 @@ a sources.list entry.  If the field fails validation an error is displayed.
     'deb not_a_url' is not a complete and valid sources.list entry
 
 
-Setting the buildd secret for non-private archives also generates an error.
-Because the "suppress_subscription_notifications" flag is also currently set,
-removing privacy will also trigger a validation error because the
-suppress_subscription_notifications flag can only be set on private archives:
+Setting the buildd secret for non-private archives also generates an error:
 
     >>> admin_browser.getControl(
     ...     name="field.external_dependencies").value = ""
@@ -432,8 +429,7 @@ suppress_subscription_notifications flag can only be set on private archives:
 
     >>> for error in get_feedback_messages(admin_browser.contents):
     ...     print error
-    There are 2 errors.
-    Can only suppress subscription notifications for private archives.
+    There is 1 error.
     Do not specify for non-private archives
 
 

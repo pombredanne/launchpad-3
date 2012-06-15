@@ -99,8 +99,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
             output)
         self.assertIn('-e JOB_SOURCE, --exclude=JOB_SOURCE', output)
         self.assertIn('At least one group must be specified.', output)
-        self.assertIn('Group: MAIN\n    IMembershipNotificationJobSource',
-                      output)
+        self.assertIn('Group: MAIN\n    I', output)
 
     def test_empty_queue(self):
         # The script should just create a lockfile, launch a child for

@@ -60,8 +60,8 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.errorlog import ErrorReportEvent
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
-    MAIN_STORE,
     IStoreSelector,
+    MAIN_STORE,
     )
 from lp.testing.dbuser import dbuser
 

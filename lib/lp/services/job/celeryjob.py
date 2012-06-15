@@ -17,6 +17,7 @@ __all__ = [
 from logging import info
 import os
 
+
 os.environ.setdefault('CELERY_CONFIG_MODULE', 'lp.services.job.celeryconfig')
 from celery.task import task
 from lazr.jobrunner.celerytask import RunJob

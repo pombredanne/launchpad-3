@@ -11,7 +11,9 @@ __all__ = [
 from itertools import product
 
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
-from lazr.restful.utils import get_current_web_service_request
+from lazr.restful.utils import (
+    get_current_web_service_request,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -38,7 +40,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sharingjob import (
-    IRemoveGranteeSubscriptionsJobSource,
+    IRemoveBugSubscriptionsJobSource,
     )
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.person import Person
@@ -68,9 +70,7 @@ class SharingService:
     def write_enabled(self):
         return (
             bool(getFeatureFlag(
-            'disclosure.enhanced_sharing.writable') or
-            bool(getFeatureFlag(
-            'disclosure.access_mirror_triggers.removed'))))
+            'disclosure.enhanced_sharing.writable')))
 
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
@@ -223,7 +223,7 @@ class SharingService:
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def sharePillarInformation(self, pillar, sharee, permissions, user):
+    def sharePillarInformation(self, pillar, sharee, user, permissions):
         """See `ISharingService`."""
 
         # We do not support adding sharees to project groups.
@@ -282,7 +282,7 @@ class SharingService:
         # call the deletePillarSharee method directly.
         if len(info_types_for_nothing) > 0:
             self.deletePillarSharee(
-                pillar, user, sharee, info_types_for_nothing)
+                pillar, sharee, user, info_types_for_nothing)
 
         # Return sharee data to the caller.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
@@ -294,7 +294,7 @@ class SharingService:
         return sharee
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def deletePillarSharee(self, pillar, user, sharee,
+    def deletePillarSharee(self, pillar, sharee, user,
                              information_types=None):
         """See `ISharingService`."""
 
@@ -328,15 +328,16 @@ class SharingService:
         if len(to_delete) > 0:
             accessartifact_grant_source = getUtility(
                 IAccessArtifactGrantSource)
-            accessartifact_grant_source.revokeByArtifact(to_delete)
+            accessartifact_grant_source.revokeByArtifact(to_delete, [sharee])
 
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
-        getUtility(IRemoveGranteeSubscriptionsJobSource).create(
-            pillar, sharee, user, information_types=information_types)
+        getUtility(IRemoveBugSubscriptionsJobSource).create(
+            user, bugs=None, grantee=sharee, pillar=pillar,
+            information_types=information_types)
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def revokeAccessGrants(self, pillar, user, sharee, branches=None,
+    def revokeAccessGrants(self, pillar, sharee, user, branches=None,
                            bugs=None):
         """See `ISharingService`."""
 
@@ -358,14 +359,17 @@ class SharingService:
 
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
-        getUtility(IRemoveGranteeSubscriptionsJobSource).create(
-            pillar, sharee, user, bugs=bugs, branches=branches)
+        if bugs:
+            getUtility(IRemoveBugSubscriptionsJobSource).create(
+                user, bugs, grantee=sharee, pillar=pillar)
+        # XXX 2012-06-13 wallyworld bug=1012448
+        # Remove branch subscriptions when information type fully implemented.
 
-    def ensureAccessGrants(self, user, sharee, branches=None, bugs=None,
-                           **kwargs):
+    def ensureAccessGrants(self, sharee, user, branches=None, bugs=None,
+                           ignore_permissions=False):
         """See `ISharingService`."""
 
-        if not self.write_enabled:
+        if not ignore_permissions and not self.write_enabled:
             raise Unauthorized("This feature is not yet enabled.")
 
         artifacts = []
@@ -373,7 +377,6 @@ class SharingService:
             artifacts.extend(branches)
         if bugs:
             artifacts.extend(bugs)
-        ignore_permissions = kwargs.get('ignore_permissions', False)
         if not ignore_permissions:
             # The user needs to have launchpad.Edit permission on all supplied
             # bugs and branches or else we raise an Unauthorized exception.

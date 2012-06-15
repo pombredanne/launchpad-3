@@ -49,9 +49,7 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import (
-    JobStatus,
-    )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,

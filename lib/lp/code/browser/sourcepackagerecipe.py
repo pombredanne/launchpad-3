@@ -114,7 +114,7 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.archive import ArchiveDisabled
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import validate_ppa
 
 
 class IRecipesForPerson(Interface):
@@ -830,7 +830,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
                 self.setFieldError(
                     'ppa_name', 'You need to specify a name for the PPA.')
             else:
-                error = Archive.validatePPA(owner, ppa_name)
+                error = validate_ppa(owner, ppa_name)
                 if error is not None:
                     self.setFieldError('ppa_name', error)
 

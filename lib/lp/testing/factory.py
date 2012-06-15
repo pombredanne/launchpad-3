@@ -1514,7 +1514,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
         if subscribed_by is None:
             subscribed_by = person
-        return branch.subscribe(person,
+        return branch.subscribe(removeSecurityProxy(person),
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
@@ -4337,6 +4337,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             purchaser=product.owner,
             sales_system_id='new',
             whiteboard='')
+
+    def grantCommercialSubscription(self, person, months=12):
+        """Give 'person' a commercial subscription."""
+        product = self.makeProduct(owner=person)
+        product.redeemSubscriptionVoucher(
+            self.getUniqueString(), person, person, months)
 
 
 # Some factory methods return simple Python types. We don't add
