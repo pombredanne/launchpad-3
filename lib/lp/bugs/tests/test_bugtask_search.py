@@ -332,7 +332,7 @@ class OnceTests:
             self.bugtasks[0].datecreated = two_days_ago
         params = self.getBugTaskSearchParams(
             user=None, created_before=one_day_ago)
-        self.assertSearchFinds(params, self.bugtasks[0:1])
+        self.assertSearchFinds(params, self.bugtasks[:1])
 
     def test_modified_since(self):
         # Search results can be limited to bugs modified after a
