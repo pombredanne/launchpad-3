@@ -13,7 +13,7 @@
         <br />[<span tal:content="watch/remotestatus" />]
         </tal:block><a
         tal:attributes="href watch/fmt:url"
-        class="sprite edit actionicon" title="Change watch details"
+        class="sprite edit action-icon" title="Change watch details"
         >edit</a>
     </li>
   </ul>

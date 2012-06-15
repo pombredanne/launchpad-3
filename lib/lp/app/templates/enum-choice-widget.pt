@@ -4,7 +4,7 @@
   <span tal:condition="view/can_write">
     <a tal:attributes="href view/edit_url;
                        title view/edit_title"
-       class="editicon sprite edit actionicon">Edit</a>
+       class="editicon sprite edit action-icon">Edit</a>
   </span>
 </span>
 <script tal:condition="view/can_write"

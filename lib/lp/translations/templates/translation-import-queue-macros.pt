@@ -160,7 +160,7 @@
                         intervening whitespace.  If the two are separated, the
                         edit links stop showing up in Webkit.
                       </tal:comment>
-                      <a class="sprite edit actionicon"
+                      <a class="sprite edit action-icon"
                          tal:attributes="href entry/fmt:url"
                          >Change this entry</a>
                     </tal:block>

@@ -18,7 +18,7 @@
         <span class="cannot-create-ppa-message">
           <span class="security sprite"></span>
           Open or Delegated teams can not create PPAs.&nbsp;
-          <a href="+edit" class="edit sprite actionicon">edit</a>
+          <a href="+edit" class="edit sprite action-icon">edit</a>
         </span>
       </tal:cannot-create-ppa>
 

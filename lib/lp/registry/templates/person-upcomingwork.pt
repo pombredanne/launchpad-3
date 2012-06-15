@@ -94,7 +94,7 @@
         <tr class="expandable">
           <td>
             <span class="expander">
-                <span class="actionicon">Expand or Collapse</span>
+                <span class="action-icon">Expand or Collapse</span>
             </span>
             <span tal:replace="structure container/html_link" />
           </td>

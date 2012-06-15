@@ -52,7 +52,7 @@
           class="spec-branch-summary">
           <tal:link replace="structure spec/fmt:link:blueprints" />
           <tal:show-edit condition="show_edit|nothing">
-            <a class="sprite edit actionicon"
+            <a class="sprite edit action-icon"
               tal:attributes="href spec_branch/fmt:url;">edit</a>
           </tal:show-edit>
         </li>

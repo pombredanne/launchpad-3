@@ -107,7 +107,7 @@
         <tal:help-link condition="widget_help_link">
           <a tal:attributes="href widget_help_link"
              target="help"
-             class="sprite maybe actionicon">(?)</a>
+             class="sprite maybe action-icon">(?)</a>
         </tal:help-link>
       </div>
       <div class="message" tal:condition="error"
@@ -128,7 +128,7 @@
       <tal:help-link condition="widget_help_link">
         <a tal:attributes="href widget_help_link"
            target="help"
-           class="sprite maybe actionicon">(?)</a>
+           class="sprite maybe action-icon">(?)</a>
       </tal:help-link>
       <div tal:condition="error" tal:content="structure error"
            class="message">Error message</div>
@@ -147,7 +147,7 @@
       <tal:help-link condition="widget_help_link">
         <a tal:attributes="href widget_help_link"
            target="help"
-           class="sprite maybe actionicon">(?)</a>
+           class="sprite maybe action-icon">(?)</a>
       </tal:help-link>
       <div tal:condition="error" tal:content="structure error"
            class="message">Error message</div>
