@@ -165,9 +165,6 @@
                     banner = Y.lp.app.banner.privacy.getPrivacyBanner();
                     banner.show();
                 }
-                if (Y.UA.webkit > 0 && Y.UA.webkit < 533) {
-                    Y.one(document.body).addClass('old-webkit');
-                }
                 Y.lp.app.banner.beta.show_beta_if_needed();
                 Y.lp.app.sorttable.SortTable.init();
                 Y.lp.app.inlinehelp.init_help();
