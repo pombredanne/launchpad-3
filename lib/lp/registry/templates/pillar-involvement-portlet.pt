@@ -16,7 +16,7 @@
           class="disabled">
         <div style="padding: 0.3em 0 0.3em 0.3em">
           <div style="display: inline-block"
-               class="sprite icon-only warning-icon"></div>
+               class="sprite readable warning-icon">warning</div>
 
           <div style="height: 1.2em; float: right">
             <img src="/@@/gray-arrow-right.png"
