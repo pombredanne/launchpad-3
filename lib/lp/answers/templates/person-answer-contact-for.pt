@@ -16,11 +16,11 @@
           tal:attributes="href question_target/fmt:url:answers"
           tal:content="question_target/title">Project Title</a>
         <tal:link condition="view/showRemoveYourselfLink">
-          <a class="sprite remove"
+          <a class="sprite remove readable"
             tal:attributes="
             href string:${question_target/fmt:url}/+answer-contact;
             id string:${question_target/name}-setdirectanswercontact"
-            ><span class="invisible-link">Unsubscribe</span></a>
+            >Unsubscribe</a>
         </tal:link>
       </li>
     </ul>
@@ -35,11 +35,11 @@
           tal:attributes="href question_target/fmt:url:answers"
           tal:content="question_target/title">Project Title</a>
         <tal:link condition="view/showRemoveYourselfLink">
-          <a class="sprite remove"
+          <a class="sprite remove readable"
             tal:attributes="
             href string:${question_target/fmt:url}/+answer-contact;
             id string:${question_target/name}-setteamanswercontact"
-            ><span class="invisible-link">Unsubscribe team</span></a>
+            >Unsubscribe team</a>
         </tal:link>
       </li>
     </ul>
