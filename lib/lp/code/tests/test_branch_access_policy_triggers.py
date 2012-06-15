@@ -30,7 +30,7 @@ class TestBranchAccessPolicyTriggers(TestCaseWithFactory):
         # A public branch has no access policy or grants.
         self.assertAccess(self.factory.makeBranch(), None, None)
 
-    def test_adding_apg_with_private_branch(self):
+    def test_adding_aag_with_private_branch(self):
         # Adding a new AAG updates the branch columns via trigger.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
