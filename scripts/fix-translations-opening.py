@@ -17,13 +17,13 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.services.scripts.base import LaunchpadScript
 
 
-select_precise = """\
+select_quantal = """\
 SELECT DistroSeries.id
   FROM DistroSeries
   JOIN Distribution ON
            Distribution.id = DistroSeries.distribution
  WHERE Distribution.name = 'ubuntu'
-   AND DistroSeries.name = 'precise'
+   AND DistroSeries.name = 'quantal'
 """
 
 delete_pofiletranslator = """\
@@ -35,7 +35,7 @@ DELETE FROM POFileTranslator
        AND POFile.potemplate = POTemplate.id
        AND POTemplate.distroseries = (%s)
      LIMIT ?)
-""" % select_precise
+""" % select_quantal
 
 null_translationimportqueueentry_pofile = """\
 UPDATE TranslationImportQueueEntry
@@ -47,7 +47,7 @@ UPDATE TranslationImportQueueEntry
        AND POFile.potemplate = POTemplate.id
        AND POTemplate.distroseries = (%s)
      LIMIT ?)
-""" % select_precise
+""" % select_quantal
 
 delete_pofile = """\
 DELETE FROM POFile
@@ -57,7 +57,7 @@ DELETE FROM POFile
      WHERE POFile.potemplate = POTemplate.id
        AND POTemplate.distroseries = (%s)
      LIMIT ?)
-""" % select_precise
+""" % select_quantal
 
 delete_translationtemplateitem = """\
 DELETE FROM TranslationTemplateItem
@@ -67,7 +67,7 @@ DELETE FROM TranslationTemplateItem
      WHERE TranslationTemplateItem.potemplate = POTemplate.id
        AND POTemplate.distroseries = (%s)
      LIMIT ?)
-""" % select_precise
+""" % select_quantal
 
 delete_packagingjob = """\
 DELETE FROM PackagingJob
@@ -77,7 +77,7 @@ DELETE FROM PackagingJob
      WHERE PackagingJob.potemplate = POTemplate.id
        AND POTemplate.distroseries = (%s)
      LIMIT ?)
-""" % select_precise
+""" % select_quantal
 
 null_translationimportqueueentry_potemplate = """\
 UPDATE TranslationImportQueueEntry
@@ -88,7 +88,7 @@ UPDATE TranslationImportQueueEntry
      WHERE TranslationImportQueueEntry.potemplate = POTemplate.id
        AND POTemplate.distroseries = (%s)
      LIMIT ?)
-""" % select_precise
+""" % select_quantal
 
 delete_potemplate = """\
 DELETE FROM POTemplate
@@ -97,7 +97,7 @@ DELETE FROM POTemplate
       FROM POTemplate
      WHERE POTemplate.distroseries = (%s)
      LIMIT ?)
-""" % select_precise
+""" % select_quantal
 
 statements = [
     delete_pofiletranslator,
@@ -136,9 +136,9 @@ class ExecuteLoop:
         store.commit()
 
 
-class WipePreciseTranslationsScript(LaunchpadScript):
+class WipeQuantalTranslationsScript(LaunchpadScript):
 
-    description = "Wipe Ubuntu Precise's translations."
+    description = "Wipe Ubuntu Quantal's translations."
 
     def add_my_options(self):
         self.parser.epilog = (
@@ -154,4 +154,4 @@ class WipePreciseTranslationsScript(LaunchpadScript):
 
 
 if __name__ == '__main__':
-    WipePreciseTranslationsScript(dbuser='rosettaadmin').run()
+    WipeQuantalTranslationsScript(dbuser='rosettaadmin').run()
