@@ -288,10 +288,10 @@ flag_info = sorted([
      '',
      'Sharing management',
      ''),
-    ('disclosure.access_mirror_triggers.removed',
+    ('disclosure.unsubscribe_jobs.enabled',
      'boolean',
-     ('If true, the database triggers which cause subscribing to grant'
-      'access to a bug or branch have been removed.'),
+     ('If true, the jobs to unsubscribe users who lose access to bugs'
+      'and branches are run.'),
      '',
      '',
      ''),

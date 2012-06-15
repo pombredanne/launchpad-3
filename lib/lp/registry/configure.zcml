@@ -2016,19 +2016,6 @@
     </securedutility>
 
     <!-- Sharing jobs -->
-    <class class=".model.sharingjob.RemoveGranteeSubscriptionsJob">
-      <allow interface=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJob"/>
-      <allow attributes="
-         context
-         log_name"/>
-    </class>
-
-    <securedutility
-        component=".model.sharingjob.RemoveGranteeSubscriptionsJob"
-        provides=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJobSource">
-      <allow interface=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJobSource"/>
-    </securedutility>
-
     <class class=".model.sharingjob.RemoveBugSubscriptionsJob">
       <allow interface=".interfaces.sharingjob.IRemoveBugSubscriptionsJob"/>
       <allow attributes="
