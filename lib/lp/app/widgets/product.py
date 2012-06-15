@@ -351,8 +351,8 @@ class LicenseWidget(CheckBoxMatrixWidget):
             return value
         else:
             return structured(
-                '%s&nbsp;<a href="%s" class="sprite external-link">'
-                '<span class="invisible-link">view licence</span></a>'
+                '%s&nbsp;<a href="%s" class="sprite external-link readable">'
+                'view licence</a>'
                 % (value, term.value.url))
 
     def renderItem(self, index, text, value, name, cssClass):

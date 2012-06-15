@@ -44,7 +44,8 @@ link into an AJAX control when JS is available:
 
     >>> ignored = login_person(product.owner)
     >>> print widget()
-    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt; important</span>
+    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets
+        &gt; important</span>
         <a class="yui3-editable_text-trigger sprite edit actionicon"
            href="http://launchpad.dev/widget/+edit"
            title=""></a>
@@ -262,9 +263,9 @@ to select.
         <a href="/~eric" class="sprite person">Eric</a>
       </span>
       <span>
-        <a class="sprite edit actionicon lazr-btn yui3-activator-act"
+        <a class="sprite edit actionicon lazr-btn yui3-activator-act readable"
           href="http://launchpad.dev/widget/+edit"
-          title=""><span class="invisible-link">Edit</span></a>
+          title="">Edit</a>
         <div class="yui3-activator-message-box yui3-activator-hidden"></div>
     </span> ...
 
@@ -466,10 +467,11 @@ rendered to hook up the widget.
     <span id="edit-distroseries">
       <dt>
         Recipe distro series
-          <a class="sprite edit actionicon lazr-btn yui3-activator-act"
+          <a class="sprite edit actionicon lazr-btn
+                    yui3-activator-act readable"
              href="http://code.launchpad.dev/~eric/+recipe/cake_recipe/+edit"
              id="edit-distroseries-btn"
-             title=""><span class="invisible-link">Edit</span></a>
+             title="">Edit</a>
       </dt>
       <span class="yui3-activator-data-box">
         <dl id='edit-distroseries-items'>

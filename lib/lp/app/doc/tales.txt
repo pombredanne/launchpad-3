@@ -212,20 +212,16 @@ But the 'failed to build' build is 16x14:
 All objects can be represented as a boolean icon.
 
     >>> print test_tales("context/image:boolean", context=None)
-    <span class="sprite no"><span
-      class="invisible-link">no</span></span>
+    <span class="sprite no readable">no</span>
 
     >>> print test_tales("context/image:boolean", context=False)
-    <span class="sprite no"><span
-      class="invisible-link">no</span></span>
+    <span class="sprite no readable">no</span>
 
     >>> print test_tales("context/image:boolean", context=object())
-    <span class="sprite yes"><span
-      class="invisible-link">yes</span></span>
+    <span class="sprite yes readable">yes</span>
 
     >>> print test_tales("context/image:boolean", context=True)
-    <span class="sprite yes"><span
-      class="invisible-link">yes</span></span>
+    <span class="sprite yes readable">yes</span>
 
 
 The fmt: namespace to get strings
@@ -1459,8 +1455,8 @@ The link can be rendered as an anchored icon.
 
     >>> print test_tales('menu_link/fmt:icon', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite icon" title="summary"><span
-       class="invisible-link">text</span></a>
+       class="menu-link-test_link sprite icon readable"
+       title="summary">text</a>
 
 The default rendering can be explicitly called too, text with an icon to
 the left.
