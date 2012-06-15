@@ -75,7 +75,7 @@
         replace="structure link/render" />
         <a href="/+help-bugs/also-affects-project-help.html"
            target="help"
-           class="sprite maybe actionicon"><span class="invisible-link">(?)</span></a>
+           class="sprite maybe actionicon readable">(?)</a>
     </span>
     <span id="also-affects-package"
           tal:attributes="class python:not view.canAddPackageTask() and 'private-disallow' or ''"
