@@ -259,10 +259,3 @@ span.icon-only {
 body.tab-bugs #portlet-subscribers .sprite {
     display: inline;
     }
-
-/* Override sprite style for edit icon on "Mark as duplicate"
-   to make the text not appear on a second line.
-*/
-body.tab-bugs #duplicate-actions .sprite {
-    display: inline;
-    }
