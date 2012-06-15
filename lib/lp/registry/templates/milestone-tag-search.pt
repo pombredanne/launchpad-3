@@ -25,7 +25,7 @@
       <tal:tags replace="structure view/widgets/tags" />
       <input tal:replace="structure view/search_by_tags/render" />
       <a target="help" href="/+help-registry/milestone-tags.html"
-         class="sprite maybe actionicon"><span class="invisible-link">Milestone Tags help</span></a>
+         class="sprite maybe actionicon readable">Milestone Tags help</a>
     </p>
 
     <div class="error" tal:condition="view/errors">

@@ -12,7 +12,7 @@
           This page allows you to add a new distribution series.
           <a href="/+help-registry/distribution-add-series.html"
              target="help"
-             class="sprite maybe actionicon"><span class="invisible-link">(?)</span></a>
+             class="sprite maybe actionicon readable">(?)</a>
         </p>
       </div>
     </div>
