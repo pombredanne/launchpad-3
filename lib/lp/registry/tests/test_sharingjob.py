@@ -91,16 +91,18 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def _makeJob(self):
-        bug = self.factory.makeBug()
-        requestor = self.factory.makePerson()
+        self.bug = self.factory.makeBug()
+        self.requestor = self.factory.makePerson()
         job = getUtility(IRemoveBugSubscriptionsJobSource).create(
-            requestor, bugs=[bug])
+            self.requestor, bugs=[self.bug])
         return job
 
     def test_repr(self):
         job = self._makeJob()
         self.assertEqual(
-            '<REMOVE_BUG_SUBSCRIPTIONS job>',
+            '<REMOVE_BUG_SUBSCRIPTIONS job reconciling subscriptions for '
+            'bug_ids=[%d], requestor=%s>'
+            % (self.bug.id, self.requestor.name),
             repr(job))
 
     def test_create_success(self):

@@ -24,6 +24,7 @@ from sqlobject import SQLObjectNotFound
 from storm.expr import (
     And,
     In,
+    Join,
     Not,
     Or,
     Select,
@@ -168,15 +169,9 @@ class SharingJobDerived(BaseRunnableJob):
         self.context = job
 
     def __repr__(self):
-        if self.grantee:
-            return '<%(job_type)s job for %(grantee)s and %(pillar)s>' % {
-                'job_type': self.context.job_type.name,
-                'grantee': self.grantee.displayname,
-                'pillar': self.pillar_text,
-                }
-        else:
-            return '<%(job_type)s job>' % {
-                'job_type': self.context.job_type.name,
+        return '<%(job_type)s job %(desc)s>' % {
+            'job_type': self.context.job_type.name,
+            'desc': self.getOperationDescription(),
             }
 
     @property
@@ -305,7 +300,16 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
         return list(result)
 
     def getOperationDescription(self):
-        return 'removing subscriptions for bugs %s' % self.bug_ids
+        info = {
+            'information_types': [t.name for t in self.information_types],
+            'requestor': self.requestor.name,
+            'bug_ids': self.bug_ids,
+            'pillar': getattr(self.pillar, 'name', None),
+            'grantee': getattr(self.grantee, 'name', None)
+            }
+        return (
+            'reconciling subscriptions for %s' % ', '.join(
+                '%s=%s' % (k, v) for (k, v) in sorted(info.items()) if v))
 
     def run(self):
         """See `IRemoveBugSubscriptionsJob`."""
@@ -332,20 +336,16 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
                 filters.append(
                     BugTaskFlat.distribution == self.distro)
 
-        subscriptions_filter = [
-            In(BugSubscription.bug_id,
-                Select(BugTaskFlat.bug_id, where=And(*filters)))]
         if self.grantee:
-            subscriptions_filter.append(
+            filters.append(
                 In(BugSubscription.person_id,
                     Select(
                         TeamParticipation.personID,
-                        where=TeamParticipation.team == self.grantee))
-            )
-        subscriptions = IStore(BugSubscription).find(
+                        where=TeamParticipation.team == self.grantee)))
+        subscriptions = IStore(BugSubscription).using(
             BugSubscription,
-            *subscriptions_filter
-        )
+            Join(BugTaskFlat, BugTaskFlat.bug_id == BugSubscription.bug_id)
+            ).find(BugSubscription, *filters).config(distinct=True)
         for sub in subscriptions:
             sub.bug.unsubscribe(
                 sub.person, self.requestor, ignore_permissions=True)
