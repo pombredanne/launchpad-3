@@ -181,7 +181,7 @@ We can also create an import targetting a source package.
     ...     + source_package.name)
     >>> new_remote_url = factory.getUniqueURL()
     >>> response = import_webservice.named_post(source_package_url,
-    ...    'newCodeImport', branch_name='new-import', rcs_type='Mercurial',
+    ...    'newCodeImport', branch_name='new-import', rcs_type='Git',
     ...    url=new_remote_url)
     >>> print response.status
     201
@@ -193,7 +193,7 @@ We can also create an import targetting a source package.
     >>> print representation['branch_link']
     http://.../~import-owner/scruffbuntu/manic/scruff/new-import
     >>> print representation['rcs_type']
-    Mercurial
+    Git
     >>> print representation['url'] == new_remote_url
     True
     >>> print representation['cvs_root']

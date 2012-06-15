@@ -170,16 +170,6 @@ Git imports,
     ...     print extract_text(message)
     The code import has been updated.
 
-Mercurial imports,
-
-    >>> import_browser.open(hg_import_location + '/+edit-import')
-    >>> import_browser.getControl('URL').value = \
-    ...     'http://user:password@metal.example.org/bar'
-    >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
-    The code import has been updated.
-
 and imports targetting source packages.
 
     >>> import_browser.open(package_import_location + '/+edit-import')

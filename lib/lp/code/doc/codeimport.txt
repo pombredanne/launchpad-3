@@ -61,7 +61,6 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
     Subversion via CSCVS
     Subversion via bzr-svn
     Git
-    Mercurial
     Bazaar
 
 
@@ -202,34 +201,6 @@ specified git repo url.
     >>> existing_import = code_import_set.getByURL(git_url)
     >>> git_import == existing_import
     True
-
-Import from Mercurial
-+++++++++++++++++++++
-
-Code imports from Mercurial specify the URL used with "hg clone" to
-retrieve the branch to import.
-
-    >>> hg = RevisionControlSystems.HG
-    >>> hg_url = 'http://hg.example.com/metallic'
-    >>> hg_import = code_import_set.new(
-    ...     registrant=nopriv, target=target, branch_name='trunk-hg',
-    ...     rcs_type=hg, url=hg_url)
-    >>> verifyObject(ICodeImport, removeSecurityProxy(hg_import))
-    True
-
-Creating a CodeImport object creates a corresponding CodeImportEvent.
-
-    >>> hg_events = event_set.getEventsForCodeImport(hg_import)
-    >>> [event.event_type.name for event in hg_events]
-    ['CREATE']
-
-The CodeImportSet is also able to retrieve the code imports with the
-specified hg repo url.
-
-    >>> existing_import = code_import_set.getByURL(url=hg_url)
-    >>> hg_import == existing_import
-    True
-
 
 Updating code import details
 ----------------------------
@@ -556,17 +527,6 @@ Imports via bzr-svn are also similar.
         http://svn.example.com/for-bzr-svn/trunk
     instead of:
         svn://svn.example.com/for-bzr-svn/trunk
-
-And for Mercurial.
-
-    >>> data = {'url': 'http://metal.example.com/byebye.hg'}
-    >>> modify_event = hg_import.updateFromData(data, nopriv)
-    >>> print make_email_body_for_code_import_update(
-    ...     hg_import, modify_event, None)
-    ~import-person/widget/trunk-hg is now being imported from:
-        http://metal.example.com/byebye.hg
-    instead of:
-        http://hg.example.com/metallic
 
 In addition, updateFromData can be used to set the branch whiteboard,
 which is also described in the email that is sent.

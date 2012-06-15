@@ -16,7 +16,7 @@ This page allows the user to import code from various source control systems
 
     >>> external_code = find_tag_by_id(sample_browser.contents, 'external-code')
     >>> print extract_text(external_code)
-    If the code is in Git, Mercurial, CVS or Subversion you can
+    If the code is in Git, CVS or Subversion you can
     request that the branch be imported to Bazaar.
 
 This link is only shown to those that have edit permissions on the

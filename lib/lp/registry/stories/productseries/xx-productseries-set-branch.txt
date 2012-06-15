@@ -3,7 +3,7 @@ Setting the branch for a product series
 
 A product series should have a branch set for it.  The branch can be
 hosted on Launchpad or somewhere else.  Foreign branches can be in
-Bazaar, Git, Mercurial, Subversion, or CVS.  Though internally
+Bazaar, Git, Subversion, or CVS.  Though internally
 Launchpad treats those scenarios differently we provide a single page
 to the user to set up the branch.
 
@@ -49,7 +49,7 @@ Linking to an external branch
 -----------------------------
 
 An external branch can be linked.  The branch can be a Bazaar branch
-or be a Git, Mercurial, Subversion, or CVS branch.
+or be a Git, Subversion, or CVS branch.
 
 Each of these types must provide the URL of the external repository,
 the branch name to use in Launchpad, and the branch owner.
@@ -102,10 +102,10 @@ The branch owner can be the logged in user or one of her teams.
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/+setbranch')
     >>> browser.getControl('Import a branch hosted somewhere else').click()
-    >>> browser.getControl('Branch name').value = 'hg-firefox-branch'
-    >>> browser.getControl('Mercurial').click()
+    >>> browser.getControl('Branch name').value = 'git-firefox-branch'
+    >>> browser.getControl('Git').click()
     >>> browser.getControl('Branch URL').value = (
-    ...     'http://hg.example.com/branch')
+    ...     'http://git.example.com/branch')
     >>> browser.getControl('Branch owner').value = ['hwdb-team']
     >>> browser.getControl('Update').click()
     >>> for message in get_feedback_messages(browser.contents):
@@ -116,7 +116,7 @@ The branch owner can be the logged in user or one of her teams.
     >>> login('test@canonical.com')
     >>> firefox_trunk = firefox.getSeries('trunk')
     >>> print firefox_trunk.branch.unique_name
-    ~hwdb-team/firefox/hg-firefox-branch
+    ~hwdb-team/firefox/git-firefox-branch
     >>> print firefox_trunk.branch.owner.name
     hwdb-team
     >>> logout()
