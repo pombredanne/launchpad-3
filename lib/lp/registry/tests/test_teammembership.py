@@ -998,9 +998,8 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'disclosure.enhanced_sharing.writable': 'true',
-            'jobs.celery.enabled_classes':
-                'RemoveGranteeSubscriptionsJob',
+            'disclosure.unsubscribe_jobs.enabled': 'true',
+            'jobs.celery.enabled_classes': 'RemoveBugSubscriptionsJob',
         }))
         super(TestTeamMembershipJobs, self).setUp()
 
