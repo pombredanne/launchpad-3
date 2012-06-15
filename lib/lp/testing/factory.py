@@ -2192,7 +2192,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
-                       git_repo_url=None, hg_repo_url=None,
+                       git_repo_url=None, 
                        bzr_branch_url=None, registrant=None,
                        rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
@@ -2201,8 +2201,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         passed in, but defaults to a Subversion import from an arbitrary
         unique URL.
         """
-        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
-            hg_repo_url is bzr_branch_url is None):
+        if svn_branch_url is cvs_root is cvs_module is git_repo_url is None:
             svn_branch_url = self.getUniqueURL()
 
         if target is None:
@@ -2228,11 +2227,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 url=git_repo_url, review_status=review_status)
-        elif hg_repo_url is not None:
-            return code_import_set.new(
-                registrant, target, branch_name,
-                rcs_type=RevisionControlSystems.HG,
-                url=hg_repo_url, review_status=review_status)
         elif bzr_branch_url is not None:
             return code_import_set.new(
                 registrant, target, branch_name,

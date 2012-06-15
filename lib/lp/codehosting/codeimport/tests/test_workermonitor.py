@@ -46,7 +46,6 @@ from lp.codehosting.codeimport.tests.servers import (
     BzrServer,
     CVSServer,
     GitServer,
-    MercurialServer,
     SubversionServer,
     )
 from lp.codehosting.codeimport.tests.test_worker import (
@@ -751,18 +750,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         return self.factory.makeCodeImport(
             git_repo_url=self.git_server.get_url())
 
-    def makeHgCodeImport(self):
-        """Make a `CodeImport` that points to a real Mercurial repository."""
-        self.hg_server = MercurialServer(self.repo_path, use_server=False)
-        self.hg_server.start_server()
-        self.addCleanup(self.hg_server.stop_server)
-
-        self.hg_server.makeRepo([('README', 'contents')])
-        self.foreign_commit_count = 1
-
-        return self.factory.makeCodeImport(
-            hg_repo_url=self.hg_server.get_url())
-
     def makeBzrCodeImport(self):
         """Make a `CodeImport` that points to a real Bazaar branch."""
         self.bzr_server = BzrServer(self.repo_path)
@@ -869,17 +856,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
     def DISABLED_test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
-        code_import_id = job.code_import.id
-        job_id = job.id
-        self.layer.txn.commit()
-        result = self.performImport(job_id)
-        return result.addCallback(self.assertImported, code_import_id)
-
-    # XXX 2011-09-09 gary, bug=841556: This test fails
-    # occasionally in buildbot.
-    def DISABLED_test_import_hg(self):
-        # Create a Mercurial CodeImport and import it.
-        job = self.getStartedJobForImport(self.makeHgCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()

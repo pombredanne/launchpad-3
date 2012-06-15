@@ -131,21 +131,6 @@ class TestCodeImportCreation(TestCaseWithFactory):
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
 
-    def test_hg_import_reviewed(self):
-        """A new hg import is always reviewed by default."""
-        code_import = CodeImportSet().new(
-            registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
-            branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
-            url=self.factory.getUniqueURL(),
-            review_status=None)
-        self.assertEqual(
-            CodeImportReviewStatus.REVIEWED,
-            code_import.review_status)
-        # A job is created for the import.
-        self.assertIsNot(None, code_import.import_job)
-
     def test_bzr_import_reviewed(self):
         """A new bzr import is always reviewed by default."""
         code_import = CodeImportSet().new(
@@ -168,7 +153,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=IBranchTarget(registrant),
             branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
+            rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
             review_status=None)
 
@@ -181,7 +166,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=target,
             branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
+            rcs_type=RevisionControlSystems.GIT),
             url=self.factory.getUniqueURL(),
             review_status=None)
         code_import = removeSecurityProxy(code_import)
@@ -203,7 +188,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=target,
             branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
+            rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
             review_status=None, owner=owner)
         code_import = removeSecurityProxy(code_import)
@@ -227,7 +212,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=target,
             branch_name='imported',
-            rcs_type=RevisionControlSystems.HG,
+            rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
             review_status=None, owner=owner)
 

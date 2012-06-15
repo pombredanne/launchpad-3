@@ -911,8 +911,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             widget, vocab.BZR_SVN, current_value, 'SVN')
         self.rcs_type_git = render_radio_widget_part(
             widget, vocab.GIT, current_value)
-        self.rcs_type_hg = render_radio_widget_part(
-            widget, vocab.HG, current_value)
         self.rcs_type_bzr = render_radio_widget_part(
             widget, vocab.BZR, current_value)
         self.rcs_type_emptymarker = widget._emptyMarker()
