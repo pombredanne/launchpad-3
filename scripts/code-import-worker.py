@@ -31,7 +31,6 @@ from lp.codehosting.codeimport.worker import (
     CSCVSImportWorker,
     get_default_bazaar_branch_store,
     GitImportWorker,
-    HgImportWorker,
     )
 from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.services import scripts
@@ -77,8 +76,6 @@ class CodeImportWorker:
             import_worker_cls = GitImportWorker
         elif source_details.rcstype == 'bzr-svn':
             import_worker_cls = BzrSvnImportWorker
-        elif source_details.rcstype == 'hg':
-            import_worker_cls = HgImportWorker
         elif source_details.rcstype == 'bzr':
             import_worker_cls = BzrImportWorker
         elif source_details.rcstype in ['cvs', 'svn']:
