@@ -394,7 +394,7 @@ class TeamMembership(SQLBase):
                 # to some artifacts shared with the team. We need to run a job
                 # to remove any subscriptions to such artifacts.
                 getUtility(IRemoveBugSubscriptionsJobSource).create(
-                    user, grantee=self.team)
+                    user, grantee=self.person)
         else:
             # Changed from an inactive state to another inactive one, so no
             # need to fill/clean the TeamParticipation table.
