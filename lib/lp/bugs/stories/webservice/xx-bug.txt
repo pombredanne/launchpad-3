@@ -1482,6 +1482,17 @@ It can also be used to find bug tasks created since a certain date.
     ...
     ---
 
+Or for finding bug tasks created before a certain date.
+
+    >>> before_date = task.datecreated + timedelta(days=8)
+    >>> pprint_collection(webservice.named_get(
+    ...     '/%s' % target.name, 'searchTasks',
+    ...     created_before=u'%s' % before_date).jsonBody())
+    start: 0
+    total_size: 1
+    ...
+    ---
+
 It is possible to search for bugs targeted to a milestone within a
 project group.
 

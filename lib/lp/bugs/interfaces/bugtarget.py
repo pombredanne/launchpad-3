@@ -173,6 +173,11 @@ search_tasks_params_common = {
             u"Search for bugs that have been created since the given "
             "date."),
         required=False),
+    "created_before": Datetime(
+        title=_(
+            u"Search for bugs that were created before the given "
+            "date."),
+        required=False),
     }
 
 search_tasks_params_for_api_default = dict(
@@ -252,7 +257,8 @@ class IHasBugs(Interface):
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, structural_subscriber=None,
-                    modified_since=None, created_since=None):
+                    modified_since=None, created_since=None,
+                    created_before=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
