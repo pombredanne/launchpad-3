@@ -494,6 +494,57 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         for data, obj in zip(work_items, list(spec.work_items)):
             self.assertThat(obj, MatchesStructure.byEquality(**data))
 
+    def test_duplicate_work_items(self):
+        spec = self.factory.makeSpecification(
+            product=self.factory.makeProduct())
+        login_person(spec.owner)
+        # Create two work-items in our database.
+        wi1_data = self._createWorkItemAndReturnDataDict(spec)
+        wi2_data = self._createWorkItemAndReturnDataDict(spec)
+
+        # These are the work items we'll be inserting.
+        new_wi1_data = dict(title=u'Some Title', assignee=None, milestone=None,
+                            status=SpecificationWorkItemStatus.TODO)
+        new_wi2_data = dict(title=u'Some Title', assignee=None, milestone=None,
+                            status=SpecificationWorkItemStatus.DONE)
+
+        # We want to insert the two work items above in the first and third
+        # positions respectively, so the existing ones to be moved around
+        # (e.g. have their sequence updated).
+        work_items = [new_wi1_data, wi1_data, new_wi2_data, wi2_data]
+        spec.updateWorkItems(work_items)
+
+        # Update our data dicts with the sequences we expect the work items in
+        # our DB to have.
+        new_wi1_data['sequence'] = 0
+        wi1_data['sequence'] = 1
+        new_wi2_data['sequence'] = 2
+        wi2_data['sequence'] = 3
+
+        self.assertEqual(4, spec.work_items.count())
+        for data, obj in zip(work_items, list(spec.work_items)):
+            self.assertThat(obj, MatchesStructure.byEquality(**data))
+
+        # Test that we can insert anotehr duplicate work item.
+        new_wi3_data = dict(title=u'Some Title', assignee=None, milestone=None,
+                                      status=SpecificationWorkItemStatus.TODO)
+        new_wi3_data['sequence'] = 4
+        work_items.append(new_wi3_data)
+        spec.updateWorkItems(work_items)
+
+        self.assertEqual(5, spec.work_items.count())
+        for data, obj in zip(work_items, list(spec.work_items)):
+            self.assertThat(obj, MatchesStructure.byEquality(**data))
+
+        # Now delete one of the duplicated work items. It, and only it,
+        # should be deleted from the work item list.
+        work_items.pop()
+        spec.updateWorkItems(work_items)
+
+        self.assertEqual(4, spec.work_items.count())
+        for data, obj in zip(work_items, list(spec.work_items)):
+            self.assertThat(obj, MatchesStructure.byEquality(**data))
+
     def test_updateWorkItems_updates_existing_ones(self):
         spec = self.factory.makeSpecification()
         login_person(spec.owner)
