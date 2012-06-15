@@ -364,8 +364,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             url = '%s/+configure-translations' % canonical_url(series.product)
         return (
             '<a id="upstream-translations-%(id)s" class="sprite '
-            'edit%(seen)s" href="%(url)s"><span class="invisible-link">'
-            'Configure Upstream Translations</span></a>') % {
+            'edit readable%(seen)s" href="%(url)s">'
+            'Configure Upstream Translations</a>') % {
             'id': id,
             'url': url,
             'seen': '' if visible else ' unseen',

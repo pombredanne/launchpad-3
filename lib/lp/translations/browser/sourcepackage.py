@@ -339,12 +339,11 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     def icon_link(self, id, icon, url, text, hidden):
         """The HTML link to a configuration page."""
         if hidden:
-            css_class = 'sprite %s unseen' % icon
+            css_class = 'sprite %s readable hidden' % icon
         else:
-            css_class = 'sprite %s' % icon
+            css_class = 'sprite %s readable' % icon
         return structured(
-            '<a id="%s" class="%s" href="%s">'
-            '<span class="invisible-link">%s</span></a>',
+            '<a id="%s" class="%s" href="%s">%s</a>',
             id, css_class, url, text)
 
     @property
