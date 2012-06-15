@@ -210,6 +210,11 @@ table.diff,
 h1 a.sprite,
 h2 a.sprite,
 h3 a.sprite {
-    vertical-align: baseline;
+    position: relative;
+    top: 8px;
     font-size: 12px;
+    }
+
+h3 a.sprite {
+    top: 4px;
     }
