@@ -43,17 +43,6 @@ CREATE OR REPLACE FUNCTION _ftq(text) RETURNS text
         # Now that we have handle case sensitive booleans, convert to lowercase
         query = query.lower()
 
-        # Convert foo-bar to ((foo&bar)|foobar) and foo-bar-baz to
-        # ((foo&bar&baz)|foobarbaz)
-        def hyphen_repl(match):
-            bits = match.group(0).split("-")
-            return "((%s)|%s)" % ("&".join(bits), "".join(bits))
-        query = re.sub(r"(?u)\b\w+-[\w\-]+\b", hyphen_repl, query)
-        ## plpy.debug('4 query is %s' % repr(query))
-
-        # Any remaining - characters are spurious
-        query = query.replace('-','')
-
         # Remove unpartnered bracket on the left and right
         query = re.sub(r"(?ux) ^ ( [^(]* ) \)", r"(\1)", query)
         query = re.sub(r"(?ux) \( ( [^)]* ) $", r"(\1)", query)
@@ -167,17 +156,6 @@ CREATE OR REPLACE FUNCTION ftq(text) RETURNS pg_catalog.tsquery
         # Now that we have handle case sensitive booleans, convert to lowercase
         query = query.lower()
 
-        # Convert foo-bar to ((foo&bar)|foobar) and foo-bar-baz to
-        # ((foo&bar&baz)|foobarbaz)
-        def hyphen_repl(match):
-            bits = match.group(0).split("-")
-            return "((%s)|%s)" % ("&".join(bits), "".join(bits))
-        query = re.sub(r"(?u)\b\w+-[\w\-]+\b", hyphen_repl, query)
-        ## plpy.debug('4 query is %s' % repr(query))
-
-        # Any remaining - characters are spurious
-        query = query.replace('-','')
-
         # Remove unpartnered bracket on the left and right
         query = re.sub(r"(?ux) ^ ( [^(]* ) \)", r"(\1)", query)
         query = re.sub(r"(?ux) \( ( [^)]* ) $", r"(\1)", query)
@@ -253,4 +231,4 @@ CREATE OR REPLACE FUNCTION ftq(text) RETURNS pg_catalog.tsquery
         return query or None
         $_$;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, );
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, 1);

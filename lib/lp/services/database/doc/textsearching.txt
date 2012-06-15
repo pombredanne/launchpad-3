@@ -138,7 +138,17 @@ The following examples show the text version of the query using
     ...         compiled = compiled.decode('UTF-8')
     ...         compiled = compiled.encode('US-ASCII', 'backslashreplace')
     ...     print '%s <=> %s' % (uncompiled, compiled)
-
+    >>>
+    >>> def search(text_to_search, search_phrase):
+    ...     cur = cursor()
+    ...     cur.execute("SELECT to_tsvector(%s)", (text_to_search, ))
+    ...     print "FTI data:", cur.fetchall()[0]
+    ...     cur.execute("SELECT ftq(%s)", (search_phrase, ))
+    ...     print "query:", cur.fetchall()[0]
+    ...     cur.execute(
+    ...         "SELECT to_tsvector(%s) @@ ftq(%s)",
+    ...         (text_to_search, search_phrase))
+    ...     print "match:", cur.fetchall()[0][0]
 
 Queries are lowercased
 
@@ -225,49 +235,53 @@ The implicit boolean operation is AND
     (hi&ho|hoe)&work&go <=> ( 'hi' & 'ho' | 'hoe' ) & 'work' & 'go'
 
 
-Hypenation is handled specially. Note that the & operator has precidence
-over the | operator and that tsearch2 removes the unnecessary branckets.
-
-    >>> ftq('foo-bar')
-    ((foo&bar)|foobar) <=> 'foo' & 'bar' | 'foobar'
-
-    >>> ftq('foo-bar-baz')
-    ((foo&bar&baz)|foobarbaz) <=> 'foo' & 'bar' & 'baz' | 'foobarbaz'
-
-    >>> ftq('foo & bar-baz')
-    foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
+If a single '-' precedes a word, it is converted into the '!' operator.
+Note also that a trailing '-' is dropped by to_tsquery().
 
     >>> ftq('-foo bar-')
-    !foo&bar <=> !'foo' & 'bar'
+    !foo&bar- <=> !'foo' & 'bar'
+
+Repeated '-' are simply ignored by to_tsquery().
 
     >>> ftq('---foo--- ---bar---')
-    foo&bar <=> 'foo' & 'bar'
+    ---foo---&---bar--- <=> 'foo' & 'bar'
 
-    >>> ftq('foo-bar test')
-    ((foo&bar)|foobar)&test <=> ( 'foo' & 'bar' | 'foobar' ) & 'test'
+Hyphens surrounded by two words are retained. This reflects the way
+how to_tsquery() and to_tsvector() handle such strings.
 
-    >>> ftq('foo-bar OR test')
-    ((foo&bar)|foobar)|test <=> ( 'foo' & 'bar' | 'foobar' ) | 'test'
+    >>> search('foo-bar', 'foo-bar')
+    FTI data: ("'bar':3 'foo':2 'foo-bar':1",)
+    query: ("'foo-bar' & 'foo' & 'bar'",)
+    match: True
 
 
 Most punctuation characters are converted to whitespace outside of
 words, or treated as a hypen inside words. The exceptions are the
 operators ()!&|!.
 
+XXX add a check with to_tsvector(':100%')
+
     >>> ftq(':100%')
     100 <=> '100'
 
+XXX example of bad replacement '\' -> '-'
+XXX note that to_tsquery() and to_tsvector() handle '\' differently.
+
     >>> ftq(r'foo\bar')
-    ((foo&bar)|foobar) <=> 'foo' & 'bar' | 'foobar'
+    foo-bar <=> 'foo-bar' & 'foo' & 'bar'
+
+XXX example of bad replacement '/' -> '-'
 
     >>> ftq('/dev/pmu')
-    ((dev&pmu)|devpmu) <=> 'dev' & 'pmu' | 'devpmu'
+    dev-pmu <=> 'dev-pmu' & 'dev' & 'pmu'
 
     >>> ftq('cool!')
     cool <=> 'cool'
 
+XXX example of bad replacements '@' -> '-' ; '.'-> '-'
+
     >>> ftq('foo@bar.com')
-    ((foo&bar&com)|foobarcom) <=> 'foo' & 'bar' & 'com' | 'foobarcom'
+    foo-bar-com <=> 'foo-bar-com' & 'foo' & 'bar' & 'com'
 
 
 Some punctuation we pass through to tsearch2 for it to handle.
@@ -309,15 +323,17 @@ It was also noticed through Bug #39828 that tsearch2 will not cope if the
 Bug #44913 - Unicode characters in the wrong place
 
     >>> ftq(u'a-a\N{LATIN SMALL LETTER C WITH CEDILLA}')
-    ((a&a\xe7)|aa\xe7) <=> 'a\xe7' | 'aa\xe7'
+    a-a\xe7 <=> 'a-a\xe7' & 'a\xe7'
 
     Cut & Paste of 'Smart' quotes
 
     >>> ftq(u'a-a\N{RIGHT DOUBLE QUOTATION MARK}')
-    ((a&a)|aa) <=> 'aa'
+    a-a <=> 'a-a'
+
+XXX example of a bad replacement '.' -> '-'
 
     >>> ftq(u'\N{LEFT SINGLE QUOTATION MARK}a.a\N{RIGHT SINGLE QUOTATION MARK}')
-    ((a&a)|aa) <=> 'aa'
+    a-a <=> 'a-a'
 
 
 Bug #44913 - Nothing but stopwords in a query needing repair
@@ -346,6 +362,9 @@ contained nothing but stop words or punctuation.
 Queries containing nothing except whitespace, boolean operators and
 punctuation will just return None.
 
+Note in the fourth example below that the '-' left in the query by _ftq()
+is ignored by to_tsquery().
+
     >>> ftq(" ")
     None <=> None
     >>> ftq("AND")
@@ -353,7 +372,7 @@ punctuation will just return None.
     >>> ftq(" AND (!)")
     None <=> None
     >>> ftq("-")
-    None <=> None
+    - <=> None
 
 
 Words are also stemmed by tsearch2 (using the English stemmer).
@@ -381,7 +400,7 @@ or invalid leading operators
     (hi|!hello)&mom <=> ( 'hi' | !'hello' ) & 'mom'
 
     >>> ftq('(hi OR - AND hello) AND mom')
-    (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
+    (hi|-&hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
     >>> ftq('hi AND mom AND')
     hi&mom <=> 'hi' & 'mom'
@@ -393,7 +412,7 @@ or invalid leading operators
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
     >>> ftq('() hi mom ( ) ((! |((&)))) :-)')
-    (hi&mom) <=> 'hi' & 'mom'
+    (hi&mom&-) <=> 'hi' & 'mom'
 
     >>> ftq("(hi mom")
     hi&mom <=> 'hi' & 'mom'
@@ -421,8 +440,18 @@ or invalid leading operators
 
     Bug #54972
 
+XXXX this looks wrong. But 'a' is a stop word, and punctuation
+XXXX replacement is known to be questionable. Using '-' as the
+XXXX replacement for each char might lead to lost matches because
+XXXX to_tsvector('aaa-bbb') ->  'aaa':2 'aaa-bbb':1 'bbb':3
+XXXX to_tsquery('aaa-bbb')  ->  'aaa-bbb' & 'aaa' & 'bbb'
+XXXX to_tsvector('aaa;bbb') ->  'aaa':1 'bbb':2
+XXXX to_tsquery('aaa;bbb')  ->  'aaa' & 'bbb'
+XXXX So, add more punctiation check with both ts_vector, ts_query,
+XXXX and ftq()
+
     >>> ftq("a[a\n[a")
-    ((a&a)|aa)&a <=> 'aa'
+    a-a&a <=> 'a-a'
 
     Bug #96698
 
@@ -437,10 +466,10 @@ or invalid leading operators
     Bug #160236
 
     >>> ftq("foo&&bar-baz")
-    foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
+    foo&bar-baz <=> 'foo' & 'bar-baz' & 'bar' & 'baz'
 
     >>> ftq("foo||bar.baz")
-    foo|((bar&baz)|barbaz) <=> 'foo' | ( 'bar' & 'baz' | 'barbaz' )
+    foo|bar-baz <=> 'foo' | 'bar-baz' & 'bar' & 'baz'
 
 
 Phrase Searching
@@ -482,7 +511,8 @@ an arbitrary constant that seemed appropriate).
 
     >>> runsql(r"""
     ...   SELECT title, max(ranking) FROM (
-    ...    SELECT Bug.title,rank(Bug.fti||Message.fti,ftq('firefox')) AS ranking
+    ...    SELECT Bug.title,rank(Bug.fti||Message.fti,ftq('firefox'))
+    ...    AS ranking
     ...    FROM Bug, BugMessage, Message
     ...    WHERE Bug.id = BugMessage.bug AND Message.id = BugMessage.message
     ...       AND (Bug.fti @@ ftq('firefox') OR Message.fti @@ ftq('firefox'))
@@ -499,7 +529,8 @@ an arbitrary constant that seemed appropriate).
     ...       AND BugTask.product = Product.id
     ...       AND Product.name LIKE lower('%firefox%')
     ...    UNION
-    ...    SELECT Bug.title, rank(Product.fti, ftq('firefox')) - 0.3 AS ranking
+    ...    SELECT Bug.title, rank(Product.fti, ftq('firefox')) - 0.3
+    ...    AS ranking
     ...    FROM Bug, BugTask, Product
     ...    WHERE Bug.id = BugTask.bug
     ...       AND BugTask.product = Product.id
@@ -518,7 +549,8 @@ an arbitrary constant that seemed appropriate).
     Printing doesn't work     0.70
 
 
-== Natural Language Phrase Query ==
+Natural Language Phrase Query
+-----------------------------
 
 The standard boolean searches of tsearch2 are fine, but sometime you
 want more fuzzy searches.
@@ -557,7 +589,8 @@ and so is processing every single returned item (> 200000 for common queries
 on Ubuntu) - so we are disabling this and reworking from the ground up.
 
 
-=== nl_term_candidates() ===
+nl_term_candidates()
+~~~~~~~~~~~~~~~~~~~~
 
 To find the terms in a search phrase that are canditates for the search,
 we can use the nl_term_candidates() function. This function uses ftq()
@@ -574,11 +607,6 @@ It returns an empty list when there is only stop-words in the query:
     >>> nl_term_candidates('how do I do this?')
     []
 
-We also handle expansion of hypenated words (like ftq does):
-
-    >>> nl_term_candidates('firefox foo-bar give me trouble')
-    [u'firefox', u'foo', u'bar', u'foobar', u'give', u'troubl']
-
 Except for the hyphenation character, all non-word caracters are ignored:
 
     >>> nl_term_candidates(
@@ -586,7 +614,8 @@ Except for the hyphenation character, all non-word caracters are ignored:
     [u'charact', u'insid', u'quot', u'string', u'work']
 
 
-=== nl_phrase_search() ===
+nl_phrase_search()
+~~~~~~~~~~~~~~~~~~
 
 To get the actual tsearch2 query that should be run, you will use the
 nl_phrase_search() function. This one takes two mandatory parameters and
@@ -637,7 +666,8 @@ Short queries are expanded more simply:
     u'slow|system'
 
 
-==== Using other constraints ====
+Using other constraints
+.......................
 
 You can pass a third parameter to the function that will be use as
 an additional constraint to determine the total number of rows that
@@ -679,7 +709,8 @@ is done.
     u'(firefox&flickr&slow)|(flickr&slow)|(firefox&slow)|(firefox&flickr)'
 
 
-==== No keywords filtering with few rows ====
+No keywords filtering with few rows
+...................................
 
 The 50% rule is really useful only when there are many rows. When there
 only very few rows, that keyword elimination becomes a problem since
