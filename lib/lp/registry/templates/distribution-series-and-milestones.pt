@@ -6,8 +6,7 @@
   tal:condition="python:context.series or addserieslink.enabled"
   class="portlet" id="sandm">
     <h2>Active series and milestones</h2>
-    <ul tal:condition="context/series"
-      tal:content="cache:public, 1 hour">
+    <ul tal:condition="context/series">
       <tal:per_series repeat="series context/series">
         <li tal:condition="series/active">
           <strong>

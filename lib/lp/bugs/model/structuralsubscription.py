@@ -83,12 +83,12 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import quote
-from lp.services.propertycache import cachedproperty
 from lp.services.database.stormexpr import (
     ArrayAgg,
     ArrayContains,
     ArrayIntersects,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class StructuralSubscription(Storm):

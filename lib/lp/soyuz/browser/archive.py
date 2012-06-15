@@ -137,7 +137,6 @@ from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
-    ArchivePurpose,
     ArchiveStatus,
     PackageCopyPolicy,
     PackagePublishingStatus,
@@ -403,6 +402,12 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
             if series is not None:
                 the_item = getUtility(IPackagesetSet).getByName(
                     item, distroseries=series)
+        elif item_type == 'pocket':
+            # See if "item" is a pocket name.
+            try:
+                the_item = PackagePublishingPocket.items[item]
+            except KeyError:
+                pass
         else:
             the_item = None
 
@@ -1976,7 +1981,8 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        errors = validate_ppa(self.context, proposed_name)
+        errors = validate_ppa(
+            self.context, proposed_name, private=self.is_private_team)
         if errors is not None:
             self.addError(errors)
 
@@ -1988,20 +1994,14 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def save_action(self, action, data):
         """Activate a PPA and moves to its page."""
-
         # 'name' field is omitted from the form data for default PPAs and
         # it's dealt with by IArchive.new(), which will use the default
         # PPA name.
         name = data.get('name', None)
-
-        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
-        # for Ubuntu distribution. PPA creation should be revisited when we
-        # start supporting other distribution (debian, mainly).
-        ppa = getUtility(IArchiveSet).new(
-            owner=self.context, purpose=ArchivePurpose.PPA,
-            distribution=self.ubuntu, name=name,
-            displayname=data['displayname'], description=data['description'])
-
+        displayname = data['displayname']
+        description = data['description']
+        ppa = self.context.createPPA(
+            name, displayname, description, private=self.is_private_team)
         self.next_url = canonical_url(ppa)
 
     @property

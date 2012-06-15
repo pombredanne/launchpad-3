@@ -40,6 +40,7 @@ from lp.soyuz.interfaces.buildpackagejob import (
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
+from lp.soyuz.model.packageset import Packageset
 
 
 class BuildPackageJob(BuildFarmJobOldDerived, Storm):
@@ -110,7 +111,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             self.build.source_package_release.name,
             distroseries=self.build.distro_series)
         if not package_sets.is_empty():
-            score += max(ps.relative_build_score for ps in package_sets)
+            score += package_sets.max(Packageset.relative_build_score)
 
         # Calculates the build queue time component of the score.
         right_now = datetime.now(pytz.timezone('UTC'))

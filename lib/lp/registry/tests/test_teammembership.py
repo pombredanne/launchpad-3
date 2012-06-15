@@ -25,8 +25,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactSource,
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -59,8 +59,8 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.features.testing import FeatureFixture
-from lp.services.log.logger import BufferLogger
 from lp.services.job.tests import block_on_job
+from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login,
     login_celebrity,
@@ -998,9 +998,8 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'disclosure.enhanced_sharing.writable': 'true',
-            'jobs.celery.enabled_classes':
-                'RemoveGranteeSubscriptionsJob',
+            'disclosure.unsubscribe_jobs.enabled': 'true',
+            'jobs.celery.enabled_classes': 'RemoveBugSubscriptionsJob',
         }))
         super(TestTeamMembershipJobs, self).setUp()
 

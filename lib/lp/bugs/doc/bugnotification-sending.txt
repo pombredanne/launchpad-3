@@ -632,8 +632,9 @@ The X-Launchpad-Bug header
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
 
-    >>> bug_three = getUtility(IBugSet).get(3)
-    >>> subscription = bug_three.subscribe(sample_person, sample_person)
+    >>> with lp_dbuser():
+    ...      bug_three = getUtility(IBugSet).get(3)
+    ...      subscription = bug_three.subscribe(sample_person, sample_person)
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a short comment.', sample_person,

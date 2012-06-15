@@ -121,12 +121,10 @@
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
-          <tal:cache content="cache:public, 1 hour">
-            <ul tal:condition="context/products"
-                tal:repeat="product context/products">
-              <li><a tal:replace="structure product/fmt:link">product</a></li>
-            </ul>
-          </tal:cache>
+          <ul tal:condition="context/products"
+              tal:repeat="product context/products">
+            <li><a tal:replace="structure product/fmt:link">product</a></li>
+          </ul>
           <ul style="margin-top: 0.5em;">
             <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />

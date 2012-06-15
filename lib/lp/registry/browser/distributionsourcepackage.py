@@ -16,14 +16,12 @@ __all__ = [
     'DistributionSourcePackageView',
     ]
 
-from datetime import datetime
 import itertools
 import operator
 
 from lazr.delegates import delegates
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
-import pytz
 from zope.component import (
     adapter,
     getUtility,
@@ -532,11 +530,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             for version in pocket_dict:
                 most_recent_publication = pocket_dict[version][0]
                 date_published = most_recent_publication.datepublished
-                if date_published is None:
-                    published_since = None
-                else:
-                    now = datetime.now(tz=pytz.UTC)
-                    published_since = now - date_published
                 pockets = ", ".join(
                     [pub.pocket.name for pub in pocket_dict[version]])
                 row = {
@@ -547,7 +540,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                     'publication': most_recent_publication,
                     'pockets': pockets,
                     'component': most_recent_publication.component_name,
-                    'published_since': published_since,
+                    'date_published': date_published,
                     }
                 rows.append(row)
             # We need a blank row after each section, so the series

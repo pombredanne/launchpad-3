@@ -24,12 +24,15 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPersonSet,
+    PersonVisibility,
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
@@ -64,10 +67,12 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA,
     NoRightsForArchive,
     NoRightsForComponent,
+    NoSuchPPA,
     VersionRequiresName,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
@@ -92,6 +97,7 @@ from lp.testing import (
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
@@ -523,11 +529,11 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         # Somebody unrelated does not
         self.assertFalse(archive.checkArchivePermission(somebody))
 
-    def makeArchiveAndActiveDistroSeries(self, purpose=ArchivePurpose.PRIMARY):
+    def makeArchiveAndActiveDistroSeries(self, purpose=ArchivePurpose.PRIMARY,
+                                         status=SeriesStatus.DEVELOPMENT):
         archive = self.factory.makeArchive(purpose=purpose)
         distroseries = self.factory.makeDistroSeries(
-            distribution=archive.distribution,
-            status=SeriesStatus.DEVELOPMENT)
+            distribution=archive.distribution, status=status)
         return archive, distroseries
 
     def makePersonWithComponentPermission(self, archive):
@@ -706,6 +712,21 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertCanUpload(
             archive, person, sourcepackagename, distroseries=distroseries)
 
+    def makePersonWithPocketPermission(self, archive, pocket):
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newPocketUploader(person, pocket)
+        return person
+
+    def test_checkUpload_pocket_permission(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY, status=SeriesStatus.CURRENT)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        pocket = PackagePublishingPocket.SECURITY
+        person = self.makePersonWithPocketPermission(archive, pocket)
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries,
+            pocket=pocket)
+
     def make_person_with_packageset_permission(self, archive, distroseries,
                                                packages=()):
         packageset = self.factory.makePackageset(
@@ -801,11 +822,10 @@ class TestArchiveCanUpload(TestCaseWithFactory):
 
     def makePackageToUpload(self, distroseries):
         sourcepackagename = self.factory.makeSourcePackageName()
-        suitesourcepackage = self.factory.makeSuiteSourcePackage(
+        return self.factory.makeSuiteSourcePackage(
             pocket=PackagePublishingPocket.RELEASE,
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
-        return suitesourcepackage
 
     def test_canUploadSuiteSourcePackage_invalid_pocket(self):
         # Test that canUploadSuiteSourcePackage calls checkUpload for
@@ -927,6 +947,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.archive.updatePackageDownloadCount(
             self.bpr_1, day, self.australia, 10)
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertEqual(10, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_reuses_existing_entry(self):
         # A second update will simply add to the count on the existing
@@ -937,6 +958,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.archive.updatePackageDownloadCount(
             self.bpr_1, day, self.australia, 3)
         self.assertCount(13, self.archive, self.bpr_1, day, self.australia)
+        self.assertEqual(13, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_differentiates_between_countries(self):
         # A different country will cause a new entry to be created.
@@ -948,6 +970,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(3, self.archive, self.bpr_1, day, self.new_zealand)
+        self.assertEqual(13, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_country_can_be_none(self):
         # The country can be None, indicating that it is unknown.
@@ -959,6 +982,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(3, self.archive, self.bpr_1, day, None)
+        self.assertEqual(13, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_differentiates_between_days(self):
         # A different date will also cause a new entry to be created.
@@ -972,6 +996,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(
             3, self.archive, self.bpr_1, another_day, self.australia)
+        self.assertEqual(13, self.archive.getPackageDownloadTotal(self.bpr_1))
 
     def test_differentiates_between_bprs(self):
         # And even a different package will create a new entry.
@@ -983,6 +1008,8 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(3, self.archive, self.bpr_2, day, self.australia)
+        self.assertEqual(10, self.archive.getPackageDownloadTotal(self.bpr_1))
+        self.assertEqual(3, self.archive.getPackageDownloadTotal(self.bpr_2))
 
 
 class TestEnabledRestrictedBuilds(TestCaseWithFactory):
@@ -1015,11 +1042,9 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         distro.main_archive.require_virtualized = False
         # Restricting to all restricted architectures is fine
         distro.main_archive.enabled_restricted_families = [self.arm]
-
-        def restrict():
-            distro.main_archive.enabled_restricted_families = []
-
-        self.assertRaises(CannotRestrictArchitectures, restrict)
+        self.assertRaises(
+            CannotRestrictArchitectures, setattr, distro.main_archive,
+            "enabled_restricted_families", [])
 
     def test_main_virtualized_archive_can_be_restricted(self):
         # A main archive can be restricted to certain architectures
@@ -1071,15 +1096,63 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.assertContentEqual([], self.archive.enabled_restricted_families)
 
 
+class TestBuilddSecret(TestCaseWithFactory):
+    """Test buildd_secret security.
+
+    The buildd_secret is used by the slave scanner when generating a
+    sources.list entry for the builder to access a private archive.  It is
+    essentially the password to the archive for the builder.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBuilddSecret, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def test_anonymous_cannot_set_buildd_secret(self):
+        login(ANONYMOUS)
+        e = self.assertRaises(
+            Unauthorized, setattr, self.archive, "buildd_secret", "boing")
+        self.assertEqual("launchpad.Commercial", e.args[2])
+
+    def test_commercial_admin_can_set_buildd_secret(self):
+        with celebrity_logged_in("commercial_admin"):
+            self.archive.buildd_secret = "not so secret at all"
+
+    def test_admin_can_set_buildd_secret(self):
+        with celebrity_logged_in("admin"):
+            self.archive.buildd_secret = "not so secret"
+
+    def test_public_archive_has_public_buildd_secret(self):
+        # In a public PPA, the buildd "secret" is visible to anyone.
+        with celebrity_logged_in("admin"):
+            self.archive.buildd_secret = "not so secret"
+        login(ANONYMOUS)
+        self.assertFalse(self.archive.private)
+        self.assertEqual("not so secret", self.archive.buildd_secret)
+
+    def test_private_archive_has_private_buildd_secret(self):
+        # In a private PPA, the buildd secret can only be read by users with
+        # launchpad.View on the archive.
+        with celebrity_logged_in("admin"):
+            self.archive.buildd_secret = "really secret"
+            self.archive.private = True
+        login(ANONYMOUS)
+        e = self.assertRaises(
+            Unauthorized, getattr, self.archive, "buildd_secret")
+        self.assertEqual("launchpad.View", e.args[2])
+        with person_logged_in(self.archive.owner):
+            self.assertEqual("really secret", self.archive.buildd_secret)
+
+
 class TestArchiveTokens(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestArchiveTokens, self).setUp()
         owner = self.factory.makePerson()
-        self.private_ppa = self.factory.makeArchive(owner=owner)
-        self.private_ppa.buildd_secret = 'blah'
-        self.private_ppa.private = True
+        self.private_ppa = self.factory.makeArchive(owner=owner, private=True)
         self.joe = self.factory.makePerson(name='joe')
         self.private_ppa.newSubscription(self.joe, owner)
 
@@ -1631,8 +1704,7 @@ class TestComponents(TestCaseWithFactory):
         # By default, a person cannot upload to any component of an archive.
         archive = self.factory.makeArchive()
         person = self.factory.makePerson()
-        self.assertEqual(set(),
-            set(archive.getComponentsForUploader(person)))
+        self.assertFalse(set(archive.getComponentsForUploader(person)))
 
     def test_components_for_person_with_permissions(self):
         # If a person has been explicitly granted upload permissions to a
@@ -1647,6 +1719,30 @@ class TestComponents(TestCaseWithFactory):
         ap = ap_set.newComponentUploader(archive, person, component)
         self.assertEqual(set([ap]),
             set(archive.getComponentsForUploader(person)))
+
+
+class TestPockets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_pockets_for_arbitrary_person(self):
+        # By default, a person cannot upload to any pocket of an archive.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        self.assertEqual(set(), set(archive.getPocketsForUploader(person)))
+
+    def test_pockets_for_person_with_permissions(self):
+        # If a person has been explicitly granted upload permissions to a
+        # particular pocket, then those pockets are included in
+        # IArchive.getPocketsForUploader.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        # Only admins or techboard members can add permissions normally. That
+        # restriction isn't relevant to this test.
+        ap_set = removeSecurityProxy(getUtility(IArchivePermissionSet))
+        ap = ap_set.newPocketUploader(
+            archive, person, PackagePublishingPocket.SECURITY)
+        self.assertEqual(set([ap]), set(archive.getPocketsForUploader(person)))
 
 
 class TestValidatePPA(TestCaseWithFactory):
@@ -1664,32 +1760,44 @@ class TestValidatePPA(TestCaseWithFactory):
             'A PPA cannot have the same name as its distribution.',
             validate_ppa(ppa_owner, 'ubuntu'))
 
-    def test_private_ppa_non_commercial_admin(self):
+    def test_private_ppa_standard_user(self):
         ppa_owner = self.factory.makePerson()
+        with person_logged_in(ppa_owner):
+            errors = validate_ppa(
+                ppa_owner, self.factory.getUniqueString(), private=True)
         self.assertEqual(
             '%s is not allowed to make private PPAs' % (ppa_owner.name,),
-            validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+            errors)
+
+    def test_private_ppa_commercial_subscription(self):
+        owner = self.factory.makePerson()
+        self.factory.grantCommercialSubscription(owner)
+        with person_logged_in(owner):
+            errors = validate_ppa(owner, 'ppa', private=True)
+        self.assertIsNone(errors)
 
     def test_private_ppa_commercial_admin(self):
         ppa_owner = self.factory.makePerson()
         with celebrity_logged_in('admin'):
             comm = getUtility(ILaunchpadCelebrities).commercial_admin
             comm.addMember(ppa_owner, comm.teamowner)
-        self.assertIsNone(
-            validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+        with person_logged_in(ppa_owner):
+            self.assertIsNone(
+                validate_ppa(
+                    ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_private_ppa_admin(self):
         ppa_owner = self.factory.makeAdministrator()
-        self.assertIsNone(
-            validate_ppa(
-                ppa_owner, self.factory.getUniqueString(), private=True))
+        with person_logged_in(ppa_owner):
+            self.assertIsNone(
+                validate_ppa(
+                    ppa_owner, self.factory.getUniqueString(), private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
         self.assertEqual(
-            "You already have a PPA named 'ppa'.", validate_ppa(ppa.owner, 'ppa'))
+            "You already have a PPA named 'ppa'.",
+            validate_ppa(ppa.owner, 'ppa'))
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
@@ -1702,6 +1810,36 @@ class TestValidatePPA(TestCaseWithFactory):
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
         self.assertIsNone(validate_ppa(ppa_owner, None))
+
+    def test_private_team_private_ppa(self):
+        # Folk with launchpad.Edit on a private team can make private PPAs for
+        # that team, regardless of whether they have super-powers.a
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        team_admin = self.factory.makePerson()
+        with person_logged_in(team_owner):
+            private_team.addMember(
+                team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
+        with person_logged_in(team_admin):
+            result = validate_ppa(private_team, 'ppa', private=True)
+        self.assertIsNone(result)
+
+    def test_private_team_public_ppa(self):
+        # No one can make a public PPA for a private team.
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        team_admin = self.factory.makePerson()
+        with person_logged_in(team_owner):
+            private_team.addMember(
+                team_admin, team_owner, status=TeamMembershipStatus.ADMIN)
+        with person_logged_in(team_admin):
+            result = validate_ppa(private_team, 'ppa', private=False)
+        self.assertEqual(
+            'Private teams may not have public archives.', result)
 
 
 class TestGetComponentsForSeries(TestCaseWithFactory):
@@ -2484,3 +2622,254 @@ class TestRemovingCopyNotifications(TestCaseWithFactory):
         with person_logged_in(archive2.owner):
             self.assertRaises(
                 AssertionError, archive2.removeCopyNotification, job2.id)
+
+
+class TestPublishFlag(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_primary_archive_published_by_default(self):
+        distribution = self.factory.makeDistribution()
+        self.assertTrue(distribution.main_archive.publish)
+
+    def test_partner_archive_published_by_default(self):
+        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertTrue(partner.publish)
+
+    def test_ppa_published_by_default(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertTrue(ppa.publish)
+
+    def test_copy_archive_not_published_by_default(self):
+        copy = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        self.assertFalse(copy.publish)
+
+
+class TestPPANaming(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_unique_copy_archive_name(self):
+        # Non-PPA archive names must be unique for a given distribution.
+        uber = self.factory.makeDistribution()
+        self.factory.makeArchive(
+            purpose=ArchivePurpose.COPY, distribution=uber, name="uber-copy")
+        self.assertRaises(
+            AssertionError, self.factory.makeArchive,
+            purpose=ArchivePurpose.COPY, distribution=uber, name="uber-copy")
+
+    def test_unique_partner_archive_name(self):
+        # Partner archive names must be unique for a given distribution.
+        uber = self.factory.makeDistribution()
+        self.factory.makeArchive(
+            purpose=ArchivePurpose.PARTNER, distribution=uber,
+            name="uber-partner")
+        self.assertRaises(
+            AssertionError, self.factory.makeArchive,
+            purpose=ArchivePurpose.PARTNER, distribution=uber,
+            name="uber-partner")
+
+    def test_unique_ppa_name_per_owner_and_distribution(self):
+        person = self.factory.makePerson()
+        self.factory.makeArchive(owner=person, name="ppa")
+        self.assertEqual(
+            "PPA for %s" % person.displayname, person.archive.displayname)
+        self.assertEqual("ppa", person.archive.name)
+        self.assertRaises(
+            AssertionError, self.factory.makeArchive, owner=person, name="ppa")
+
+    def test_default_archive(self):
+        # Creating multiple PPAs does not affect the existing traversal from
+        # IPerson to a single IArchive.
+        person = self.factory.makePerson()
+        ppa = self.factory.makeArchive(owner=person, name="ppa")
+        self.factory.makeArchive(owner=person, name="nightly")
+        self.assertEqual(ppa, person.archive)
+
+    def test_non_default_ppas_have_different_displayname(self):
+        person = self.factory.makePerson()
+        another_ppa = self.factory.makeArchive(owner=person, name="nightly")
+        self.assertEqual(
+            "PPA named nightly for %s" % person.displayname,
+            another_ppa.displayname)
+
+    def test_archives_cannot_have_same_name_as_distribution(self):
+        boingolinux = self.factory.makeDistribution(name="boingolinux")
+        self.assertRaises(
+            AssertionError, getUtility(IArchiveSet).new,
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PRIMARY,
+            distribution=boingolinux, name=boingolinux.name)
+
+
+class TestPPALookup(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPPALookup, self).setUp()
+        self.person = self.factory.makePerson()
+        self.factory.makeArchive(owner=self.person, name="ppa")
+        self.nightly = self.factory.makeArchive(
+            owner=self.person, name="nightly")
+
+    def test_ppas(self):
+        # IPerson.ppas returns all owned PPAs ordered by name.
+        self.assertEqual(
+            ["nightly", "ppa"], [ppa.name for ppa in self.person.ppas])
+
+    def test_getPPAByName(self):
+        default_ppa = self.person.getPPAByName("ppa")
+        self.assertEqual(self.person.archive, default_ppa)
+        nightly_ppa = self.person.getPPAByName("nightly")
+        self.assertEqual(self.nightly, nightly_ppa)
+
+    def test_NoSuchPPA(self):
+        self.assertRaises(NoSuchPPA, self.person.getPPAByName, "not-found")
+
+
+class TestDisplayName(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default(self):
+        # If 'displayname' is omitted when creating the archive, there is a
+        # sensible default.
+        archive = self.factory.makeArchive(name="test-ppa")
+        self.assertEqual(
+            "PPA named test-ppa for %s" % archive.owner.displayname,
+            archive.displayname)
+
+    def test_provided(self):
+        # If 'displayname' is provided, it is used.
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.COPY,
+            displayname="Rock and roll with rebuilds!", name="test-rebuild")
+        self.assertEqual("Rock and roll with rebuilds!", archive.displayname)
+
+    def test_editable(self):
+        # Anyone with edit permission on the archive can change displayname.
+        archive = self.factory.makeArchive(name="test-ppa")
+        login("no-priv@canonical.com")
+        e = self.assertRaises(
+            Unauthorized, setattr, archive, "displayname", "No-way!")
+        self.assertEqual("launchpad.Edit", e.args[2])
+        with person_logged_in(archive.owner):
+            archive.displayname = "My testing packages"
+
+
+class TestSigningKeyPropagation(TestCaseWithFactory):
+    """Signing keys are shared between PPAs owned by the same person/team."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_ppa_created_with_no_signing_key(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertIsNone(ppa.signing_key)
+
+    def test_default_signing_key_propagated_to_new_ppa(self):
+        person = self.factory.makePerson()
+        ppa = self.factory.makeArchive(
+            owner=person, purpose=ArchivePurpose.PPA, name="ppa")
+        self.assertEqual(ppa, person.archive)
+        self.factory.makeGPGKey(person)
+        with celebrity_logged_in("admin"):
+            person.archive.signing_key = person.gpg_keys[0]
+        ppa_with_key = self.factory.makeArchive(
+            owner=person, purpose=ArchivePurpose.PPA)
+        self.assertEqual(person.gpg_keys[0], ppa_with_key.signing_key)
+
+
+class TestCountersAndSummaries(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def assertDictEqual(self, one, two):
+        self.assertContentEqual(one.items(), two.items())
+
+    def test_cprov_build_counters_in_sampledata(self):
+        cprov_archive = getUtility(IPersonSet).getByName("cprov").archive
+        expected_counters = {
+            "failed": 1,
+            "pending": 0,
+            "succeeded": 3,
+            "superseded": 0,
+            "total": 4,
+            }
+        self.assertDictEqual(
+            expected_counters, cprov_archive.getBuildCounters())
+
+    def test_ubuntu_build_counters_in_sampledata(self):
+        ubuntu_archive = getUtility(IDistributionSet)["ubuntu"].main_archive
+        expected_counters = {
+            "failed": 5,
+            "pending": 2,
+            "succeeded": 8,
+            "superseded": 3,
+            "total": 18,
+            }
+        self.assertDictEqual(
+            expected_counters, ubuntu_archive.getBuildCounters())
+        # include_needsbuild=False excludes builds in status NEEDSBUILD.
+        expected_counters["pending"] -= 1
+        expected_counters["total"] -= 1
+        self.assertDictEqual(
+            expected_counters,
+            ubuntu_archive.getBuildCounters(include_needsbuild=False))
+
+    def assertBuildSummaryMatches(self, status, builds, summary):
+        self.assertEqual(status, summary["status"])
+        self.assertContentEqual(
+            builds, [build.title for build in summary["builds"]])
+
+    def test_build_summaries_in_sampledata(self):
+        ubuntu = getUtility(IDistributionSet)["ubuntu"]
+        firefox_source = ubuntu.getSourcePackage("mozilla-firefox")
+        firefox_source_pub = firefox_source.publishing_history[0]
+        foobar = ubuntu.getSourcePackage("foobar")
+        foobar_pub = foobar.publishing_history[0]
+        build_summaries = ubuntu.main_archive.getBuildSummariesForSourceIds(
+            [firefox_source_pub.id, foobar_pub.id])
+        self.assertEqual(2, len(build_summaries))
+        expected_firefox_builds = [
+            "hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE",
+            "i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE",
+            ]
+        self.assertBuildSummaryMatches(
+            BuildSetStatus.FULLYBUILT, expected_firefox_builds,
+            build_summaries[firefox_source_pub.id])
+        expected_foobar_builds = [
+            "i386 build of foobar 1.0 in ubuntu warty RELEASE",
+            ]
+        self.assertBuildSummaryMatches(
+            BuildSetStatus.FAILEDTOBUILD, expected_foobar_builds,
+            build_summaries[foobar_pub.id])
+
+    def test_private_archives_have_private_counters_and_summaries(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        with celebrity_logged_in("admin"):
+            archive.private = True
+            publisher = SoyuzTestPublisher()
+            publisher.setUpDefaultDistroSeries(distroseries)
+            publisher.addFakeChroots(distroseries)
+            publisher.getPubBinaries(archive=archive)
+            source_id = archive.getPublishedSources()[0].id
+
+            # An admin can see the counters and build summaries.
+            archive.getBuildCounters()["total"]
+            archive.getBuildSummariesForSourceIds([source_id])
+
+        # The archive owner can see the counters and build summaries.
+        with person_logged_in(archive.owner):
+            archive.getBuildCounters()["total"]
+            archive.getBuildSummariesForSourceIds([source_id])
+
+        # The public cannot.
+        login("no-priv@canonical.com")
+        e = self.assertRaises(
+            Unauthorized, getattr, archive, "getBuildCounters")
+        self.assertEqual("launchpad.View", e.args[2])
+        e = self.assertRaises(
+            Unauthorized, getattr, archive, "getBuildSummariesForSourceIds")
+        self.assertEqual("launchpad.View", e.args[2])

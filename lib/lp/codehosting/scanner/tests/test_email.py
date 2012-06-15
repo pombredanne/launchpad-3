@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 import email
+import os
 
 from bzrlib.uncommit import uncommit
-import os
 from zope.component import getUtility
 from zope.event import notify
 
@@ -22,18 +22,18 @@ from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource,
     )
 from lp.code.model.branchjob import RevisionMailJob
-from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.scanner import events
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
-from lp.services.mail import stub
 from lp.services.job.tests import (
     block_on_job,
     pop_remote_notifications,
     )
+from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (

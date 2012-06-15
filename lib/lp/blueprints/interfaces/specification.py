@@ -379,7 +379,6 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     subscribers = Attribute('The set of subscribers to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
-    feedbackrequests = Attribute('The set of feedback requests queued.')
     dependencies = exported(
         CollectionField(
             title=_('Specs on which this one depends.'),
@@ -441,11 +440,6 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
 
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
-
-    def getFeedbackRequests(person):
-        """Return the requests for feedback for a given person on this
-        specification.
-        """
 
     def notificationRecipientAddresses():
         """Return the list of email addresses that receive notifications."""
@@ -521,16 +515,6 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         (no matter what the type of subscription), otherwise False.
 
         If person is None, the return value is always False.
-        """
-
-    # queue-related methods
-    def queue(provider, requester, queuemsg=None):
-        """Put this specification into the feedback queue of the given person,
-        with an optional message."""
-
-    def unqueue(provider, requester):
-        """Remove the feedback request by the requester for this spec, from
-        the provider's feedback queue.
         """
 
     # sprints

@@ -5,6 +5,10 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'CurrentSourceReleasesMixin',
+    ]
+
 from datetime import timedelta
 from logging import getLogger
 
@@ -48,27 +52,23 @@ from lp.translations.interfaces.translations import (
     )
 
 
-class TestDistroSeriesCurrentSourceReleases(TestCase):
-    """Test for DistroSeries.getCurrentSourceReleases()."""
+class CurrentSourceReleasesMixin:
+    """Mixin class for current source release tests.
 
-    layer = LaunchpadFunctionalLayer
-    release_interface = IDistroSeriesSourcePackageRelease
-
+    Used by tests of DistroSeries and Distribution.  The mixin must not extend
+    TestCase or it will be run by other modules when imported.
+    """
     def setUp(self):
         # Log in as an admin, so that we can create distributions.
-        super(TestDistroSeriesCurrentSourceReleases, self).setUp()
+        super(CurrentSourceReleasesMixin, self).setUp()
         login('foo.bar@canonical.com')
         self.publisher = SoyuzTestPublisher()
         self.factory = self.publisher.factory
         self.development_series = self.publisher.setUpDefaultDistroSeries()
         self.distribution = self.development_series.distribution
-        self.published_package = self.test_target.getSourcePackage(
+        self.published_package = self.target.getSourcePackage(
             self.publisher.default_package_name)
         login(ANONYMOUS)
-
-    @property
-    def test_target(self):
-        return self.development_series
 
     def assertCurrentVersion(self, expected_version, package_name=None):
         """Assert the current version of a package is the expected one.
@@ -80,8 +80,8 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
         """
         if package_name is None:
             package_name = self.publisher.default_package_name
-        package = self.test_target.getSourcePackage(package_name)
-        releases = self.test_target.getCurrentSourceReleases(
+        package = self.target.getSourcePackage(package_name)
+        releases = self.target.getCurrentSourceReleases(
             [package.sourcepackagename])
         self.assertEqual(releases[package].version, expected_version)
 
@@ -95,7 +95,7 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
         # source package is used as the key, with
         # a DistroSeriesSourcePackageRelease as the values.
         self.publisher.getPubSource(version='0.9')
-        releases = self.test_target.getCurrentSourceReleases(
+        releases = self.target.getCurrentSourceReleases(
             [self.published_package.sourcepackagename])
         self.assertTrue(self.published_package in releases)
         self.assertTrue(self.release_interface.providedBy(
@@ -168,6 +168,18 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
             [foo_package.sourcepackagename, bar_package.sourcepackagename])
         self.assertEqual(releases[foo_package].version, '0.9')
         self.assertEqual(releases[bar_package].version, '1.0')
+
+
+class TestDistroSeriesCurrentSourceReleases(
+    CurrentSourceReleasesMixin, TestCase):
+    """Test for DistroSeries.getCurrentSourceReleases()."""
+
+    layer = LaunchpadFunctionalLayer
+    release_interface = IDistroSeriesSourcePackageRelease
+
+    @property
+    def target(self):
+        return self.development_series
 
 
 class TestDistroSeries(TestCaseWithFactory):

@@ -500,7 +500,8 @@ class TestTeamSubscriptionPolicyValidator(TestCaseWithFactory):
         # made to set an illegal open subscription policy on a team.
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        team.createPPA()
+        with person_logged_in(team.teamowner):
+            team.createPPA()
         for policy in OPEN_TEAM_POLICY:
             self.assertRaises(
                 TeamSubscriptionPolicyError,
