@@ -340,7 +340,7 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
                 In(BugSubscription.person_id,
                     Select(
                         TeamParticipation.personID,
-                        where=TeamParticipation.team==self.grantee))
+                        where=TeamParticipation.team == self.grantee))
             )
         subscriptions = IStore(BugSubscription).find(
             BugSubscription,
