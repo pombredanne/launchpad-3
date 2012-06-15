@@ -3,6 +3,7 @@
 
 
 """Job classes related to the sharing feature are in here."""
+from lp.registry.model.teammembership import TeamParticipation
 
 __metaclass__ = type
 
@@ -331,10 +332,19 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
                 filters.append(
                     BugTaskFlat.distribution == self.distro)
 
+        subscriptions_filter = [
+            In(BugSubscription.bug_id,
+                Select(BugTaskFlat.bug_id, where=And(*filters)))]
+        if self.grantee:
+            subscriptions_filter.append(
+                In(BugSubscription.person_id,
+                    Select(
+                        TeamParticipation.personID,
+                        where=TeamParticipation.team==self.grantee))
+            )
         subscriptions = IStore(BugSubscription).find(
             BugSubscription,
-            In(BugSubscription.bug_id,
-                Select(BugTaskFlat.bug_id, where=And(*filters)))
+            *subscriptions_filter
         )
         for sub in subscriptions:
             sub.bug.unsubscribe(
