@@ -364,7 +364,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             url = '%s/+configure-translations' % canonical_url(series.product)
         return (
             '<a id="upstream-translations-%(id)s" class="sprite '
-            'edit readable%(seen)s" href="%(url)s">'
+            'edit actionicon%(seen)s" href="%(url)s">'
             'Configure Upstream Translations</a>') % {
             'id': id,
             'url': url,
@@ -457,7 +457,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             url = '%s/+translations-settings' % canonical_url(series)
         return (
         '<a id="translation-synchronisation-%(id)s" class="sprite '
-        'edit readable%(seen)s" href="%(url)s">'
+        'edit actionicon%(seen)s" href="%(url)s">'
         'Configure Translation Synchronisation</a>') % {
             'id': id,
             'url': url,
@@ -539,7 +539,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
     def _getExpectedPackagingLink(self, id, url, icon, text, visible):
         url = '%s/%s' % (canonical_url(self.sourcepackage), url)
         return (
-            '<a id="%(id)s" class="sprite readable %(icon)s%(seen)s"'
+            '<a id="%(id)s" class="sprite actionicon %(icon)s%(seen)s"'
             ' href="%(url)s">%(text)s</a>') % {
             'id': id,
             'url': url,

@@ -263,7 +263,7 @@ to select.
         <a href="/~eric" class="sprite person">Eric</a>
       </span>
       <span>
-        <a class="sprite edit actionicon lazr-btn yui3-activator-act readable"
+        <a class="sprite edit actionicon lazr-btn yui3-activator-act"
           href="http://launchpad.dev/widget/+edit"
           title="">Edit</a>
         <div class="yui3-activator-message-box yui3-activator-hidden"></div>
@@ -468,7 +468,7 @@ rendered to hook up the widget.
       <dt>
         Recipe distro series
           <a class="sprite edit actionicon lazr-btn
-                    yui3-activator-act readable"
+                    yui3-activator-act actionicon"
              href="http://code.launchpad.dev/~eric/+recipe/cake_recipe/+edit"
              id="edit-distroseries-btn"
              title="">Edit</a>

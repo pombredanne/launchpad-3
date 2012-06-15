@@ -1013,7 +1013,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
         edit_link = (
-            '<a class="sprite edit readable" href="%s">edit</a>' % details_url)
+            '<a class="sprite edit actionicon" href="%s">edit</a>' % details_url)
 
         # If all the conditions are met for sharing...
         if packaging and upstream and other_template is not None:

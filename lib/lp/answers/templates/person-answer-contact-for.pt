@@ -16,7 +16,7 @@
           tal:attributes="href question_target/fmt:url:answers"
           tal:content="question_target/title">Project Title</a>
         <tal:link condition="view/showRemoveYourselfLink">
-          <a class="sprite remove readable"
+          <a class="sprite remove actionicon"
             tal:attributes="
             href string:${question_target/fmt:url}/+answer-contact;
             id string:${question_target/name}-setdirectanswercontact"
@@ -35,7 +35,7 @@
           tal:attributes="href question_target/fmt:url:answers"
           tal:content="question_target/title">Project Title</a>
         <tal:link condition="view/showRemoveYourselfLink">
-          <a class="sprite remove readable"
+          <a class="sprite remove actionicon"
             tal:attributes="
             href string:${question_target/fmt:url}/+answer-contact;
             id string:${question_target/name}-setteamanswercontact"

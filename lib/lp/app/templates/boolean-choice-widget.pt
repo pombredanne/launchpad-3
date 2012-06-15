@@ -3,7 +3,7 @@
     <span tal:condition="view/can_write">
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
-         class="editicon sprite edit actionicon readable">Edit</a>
+         class="editicon sprite edit actionicon">Edit</a>
     </span>
 <tal:close-tag replace="structure view/close_tag"/>
 

@@ -109,7 +109,7 @@
         <strong>does not use</strong> Launchpad as its bug tracker.
         <a tal:attributes="href context/menu:overview/configure_bugtracker/fmt:url"
            tal:condition="context/required:launchpad.Edit">
-          Change this <span class="sprite edit actionicon readable">Edit</span>
+          Change this <span class="sprite edit actionicon">Edit</span>
         </a>
       </div>
       <span tal:condition="view/frontpage_form">

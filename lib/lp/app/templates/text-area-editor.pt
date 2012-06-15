@@ -6,7 +6,7 @@
     <div class="edit-controls" tal:condition="view/can_write">
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
-         class="yui3-editable_text-trigger sprite edit actionicon readable"
+         class="yui3-editable_text-trigger sprite edit actionicon"
          >edit</a>
     </div>
 

@@ -20,7 +20,7 @@
         A bug may need fixing in more than one project. You may add another
         project for this bug here.
         <a href="/+help-bugs/also-affects-project-help.html" target="help"
-        class="sprite maybe actionicon readable">(?)</a>
+        class="sprite maybe actionicon">(?)</a>
     </p>
 
     <p tal:content="structure context/fmt:link" />

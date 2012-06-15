@@ -47,21 +47,6 @@ span.see-all {
     display: none;
     }
 
-.readable {
-    /* Textual browsers read the text, graphical browsers see the sprite. */
-    display: inline-block;
-    vertical-align: text-top;
-    width: 1px;
-    height: 16px;
-    text-indent: 3px;
-    overflow: hidden;
-    }
-
-h1 .readable,
-h2 .readable {
-    vertical-align: baseline;
-    }
-
 .invisible {
     left: -9999em;
     display: block;
@@ -212,7 +197,19 @@ table.diff,
     }
 
 .actionicon {
+    /* Textual browsers read the text, graphical browsers see the sprite. */
+    display: inline-block;
     margin-left: 6px;
+    width: 1px;
+    height: 16px;
+    vertical-align: text-top;
+    text-indent: 3px;
+    overflow: hidden;
+    }
+
+h1 .actionicon,
+h2 .actionicon {
+    vertical-align: baseline;
     }
 
 .sprite-after {

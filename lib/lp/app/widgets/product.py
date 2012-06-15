@@ -351,7 +351,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
             return value
         else:
             return structured(
-                '%s&nbsp;<a href="%s" class="sprite external-link readable">'
+                '%s&nbsp;<a href="%s" class="sprite external-link actionicon">'
                 'view licence</a>'
                 % (value, term.value.url))
 
