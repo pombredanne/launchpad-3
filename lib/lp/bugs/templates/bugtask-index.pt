@@ -159,7 +159,7 @@
                       type="button">Cancel</button>
            </form>
            <a href="/+help-bugs/tag-help.html" target="help"
-              class="sprite maybe actionicon"><span class="invisible-link">Tag help</span></a>
+              class="sprite maybe actionicon readable">Tag help</a>
           </div>
           <div id="add-bug-tags"
                tal:attributes="class python: (not(context.bug.tags) and
@@ -168,7 +168,7 @@
               Add tags
             </a>
             <a href="/+help-bugs/tag-help.html" target="help"
-               class="sprite maybe actionicon"><span class="invisible-link">Tag help</span></a>
+               class="sprite maybe actionicon readable">Tag help</a>
             <script type="text/javascript">
                 LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
                     Y.on('domready',
