@@ -985,13 +985,14 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                 tables=(BugTaskFlat,),
                 where=And(
                     user_bugs_visible_filter,
-                    BugTaskFlat.bug_id.is_in(
-                        Select(
-                            BugSubscription.bug_id,
-                            where=Or(
-                                BugSubscription.person_id.is_in(teams_select),
-                                BugTaskFlat.assignee_id.is_in(teams_select)))))
-                )
+                    Or(
+                        BugTaskFlat.bug_id.is_in(
+                            Select(
+                                BugSubscription.bug_id,
+                                tables=(BugSubscription,),
+                                where=BugSubscription.person_id.is_in(
+                                    teams_select))),
+                        BugTaskFlat.assignee_id.is_in(teams_select))))
             bugs = Union(blueprint_subscription_sql, visible_bug_sql, all=True)
             with_teams = With('teams',
                     Select(
