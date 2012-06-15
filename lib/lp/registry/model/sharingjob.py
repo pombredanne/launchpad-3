@@ -58,6 +58,7 @@ from lp.registry.interfaces.sharingjob import (
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
@@ -331,10 +332,19 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
                 filters.append(
                     BugTaskFlat.distribution == self.distro)
 
+        subscriptions_filter = [
+            In(BugSubscription.bug_id,
+                Select(BugTaskFlat.bug_id, where=And(*filters)))]
+        if self.grantee:
+            subscriptions_filter.append(
+                In(BugSubscription.person_id,
+                    Select(
+                        TeamParticipation.personID,
+                        where=TeamParticipation.team == self.grantee))
+            )
         subscriptions = IStore(BugSubscription).find(
             BugSubscription,
-            In(BugSubscription.bug_id,
-                Select(BugTaskFlat.bug_id, where=And(*filters)))
+            *subscriptions_filter
         )
         for sub in subscriptions:
             sub.bug.unsubscribe(

@@ -333,7 +333,7 @@ class SharingService:
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
         getUtility(IRemoveBugSubscriptionsJobSource).create(
-            user, bugs=None, pillar=pillar,
+            user, bugs=None, grantee=sharee, pillar=pillar,
             information_types=information_types)
 
     @available_with_permission('launchpad.Edit', 'pillar')
@@ -361,7 +361,7 @@ class SharingService:
         # longer see.
         if bugs:
             getUtility(IRemoveBugSubscriptionsJobSource).create(
-                user, bugs, pillar=pillar)
+                user, bugs, grantee=sharee, pillar=pillar)
         # XXX 2012-06-13 wallyworld bug=1012448
         # Remove branch subscriptions when information type fully implemented.
 
