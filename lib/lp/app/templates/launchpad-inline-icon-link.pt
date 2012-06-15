@@ -3,7 +3,7 @@
   condition="context/enabled"
 ><a
   tal:attributes="
-    class string:menu-link-${context/name} sprite ${context/icon};
+    class string:menu-link-${context/name} sprite ${context/icon} readable;
     href context/url;
-    title context/summary;"><span class="invisible-link"
-              tal:content="context/text"></span></a></tal:link-enabled>
+    title context/summary;"
+  tal:content="context/text"></a></tal:link-enabled>
