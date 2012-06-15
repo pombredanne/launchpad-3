@@ -457,12 +457,11 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             url = '%s/+translations-settings' % canonical_url(series)
         return (
         '<a id="translation-synchronisation-%(id)s" class="sprite '
-        'edit%(seen)s" href="%(url)s">'
-        '<span class="invisible-link">Configure Translation '
-        'Synchronisation</span></a>') % {
+        'edit readable%(seen)s" href="%(url)s">'
+        'Configure Translation Synchronisation</a>') % {
             'id': id,
             'url': url,
-            'seen': '' if visible else ' unseen',
+            'seen': '' if visible else ' hidden',
             }
 
     def test_upstream_sync_link__no_packaging_link(self):
@@ -540,12 +539,12 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
     def _getExpectedPackagingLink(self, id, url, icon, text, visible):
         url = '%s/%s' % (canonical_url(self.sourcepackage), url)
         return (
-            '<a id="%(id)s" class="sprite %(icon)s%(seen)s" href="%(url)s">'
-            '<span class="invisible-link">%(text)s</span></a>') % {
+            '<a id="%(id)s" class="sprite readable %(icon)s%(seen)s"'
+            ' href="%(url)s">%(text)s</a>') % {
             'id': id,
             'url': url,
             'icon': icon,
-            'seen': '' if visible else ' unseen',
+            'seen': '' if visible else ' hidden',
             'text': text,
             }
 
