@@ -38,9 +38,9 @@ length, languages and the date of last update for this distribution series.
 
     >>> table = find_tag_by_id(anon_browser.contents, 'templates_table')
     >>> print extract_text(table)
-    Priority    Source package Template name  Shared with  Length   Updated
-    0           evolution      man            not shared   1        2006-08-14
-    100         evolution      evolution-2.2  evolution/trunk 22    2005-05-06
+    Priority    Source package Template name  Shared with     Length   Updated
+    0           evolution      man            ...not shared   1     2006-08-14
+    100         evolution      evolution-2.2  ...evolution/trunk 22 2005-05-06
     ...
 
 Logged-in users see a link to all the active translation templates
@@ -135,7 +135,7 @@ details. Likewise for the other links for each template.
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
-    >>> admin_browser.getLink('Edit').click()
+    >>> admin_browser.getLink('Edit', index=1).click()
     >>> print admin_browser.url
     http://translations.../evolution/+pots/disabled-template/+edit
 
