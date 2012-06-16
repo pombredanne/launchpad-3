@@ -100,7 +100,7 @@ Where Sample person user can see the description previously entered.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Hoohay for PPA.
 
 The PPA owner is able to edit PPA 'displayname' and 'description'.
@@ -122,7 +122,7 @@ where he can see the updated information.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Howdy, cowboys !
 
 Empty 'description' fields are not rendered.
@@ -214,7 +214,7 @@ That understood, the PPA gets activated.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Hoohay for Team PPA.
 
 Any team administrator can edit the description contents,
@@ -234,7 +234,7 @@ exactly the same as for a user-PPA, see above:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Yay, I can change it.
 
 Cancelling the 'Edit' form will redirect the user to the PPA overview
@@ -250,7 +250,7 @@ page and discard the changes.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Yay, I can change it.
 
 Create a publication in the team's PPA.
@@ -304,7 +304,7 @@ name of other users or teams:
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Go for it, you lazy !
 
 LP-admins can also 'edit' PPAs of other people:
@@ -516,7 +516,7 @@ Activate the PPA in the first browser:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     PPA rocks!
 
 Activating the default PPA in the second browser results in an error

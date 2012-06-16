@@ -70,7 +70,7 @@ portlet.
     Links:
     trunk series
      (/fooix/trunk)
-    <span class="invisible-link">Change details</span>
+     Change details
      (http://launchpad.dev/fooix/+edit)
     >>> print_involvement_portlet(owner_browser)
     Configure bug tracker
@@ -129,10 +129,10 @@ branch.
     Browse the code
     Links:
       trunk series (/fooix/trunk)
-      <span class="invisible-link">Change details</span>
+      Change details
         (http://launchpad.dev/fooix/+edit)
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
-      <span class="invisible-link">Change branch</span>
+      Change branch
       Change the branch for this series
         (http://launchpad.dev/fooix/trunk/+linkbranch)
       Browse the code
@@ -167,10 +167,10 @@ appears as if there is no series branch set.
     Browse the code
     Links:
       trunk series (/fooix/trunk)
-      <span class="invisible-link">Change details</span>
+      Change details
         (http://launchpad.dev/fooix/+edit)
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
-      <span class="invisible-link">Change branch</span>
+      Change branch
       Change the branch for this series
         (http://launchpad.dev/fooix/trunk/+linkbranch)
       Browse the code

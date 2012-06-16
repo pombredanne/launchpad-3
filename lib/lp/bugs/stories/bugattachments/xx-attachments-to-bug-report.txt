@@ -47,7 +47,7 @@ displayed as the bug report).
     wrote
     on 2007-03-15:
     #0
-    sample data
+    sample data Edit
     (8 bytes,
     text/plain)
     >>> link = browser.getLink('sample data')
@@ -55,8 +55,8 @@ displayed as the bug report).
     http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
     >>> edit_link = find_tags_by_class(browser.contents, 'edit sprite')[1]
     >>> print edit_link
-    <a alt="edit" class="sprite edit"...
-    ...href="/jokosher/+bug/11/+attachment/1"></a>
+    <a class="sprite edit action-icon"
+       href="/jokosher/+bug/11/+attachment/1">Edit</a>
 
 
 Patch attachments are shown before non-patch attachments
