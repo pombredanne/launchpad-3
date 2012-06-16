@@ -53,7 +53,7 @@
           <tal:link replace="structure spec/fmt:link:blueprints" />
           <tal:show-edit condition="show_edit|nothing">
             <a class="sprite edit action-icon"
-              tal:attributes="href spec_branch/fmt:url;">edit</a>
+              tal:attributes="href spec_branch/fmt:url;">Edit</a>
           </tal:show-edit>
         </li>
 

@@ -134,7 +134,7 @@
               >Documentation URL</a>
             <a class="edit sprite action-icon"
                tal:attributes="href string:${translator/translationgroup/fmt:url}/${translator/language/code}/+edit"
-            >edit</a></td>
+            >Edit</a></td>
         </tr>
       </tbody>
     </table>
