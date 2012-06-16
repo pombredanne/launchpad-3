@@ -7,7 +7,7 @@
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
          class="yui3-editable_text-trigger sprite edit action-icon"
-         >edit</a>
+         >Edit</a>
     </div>
 
     <h3 tal:condition="view/title"
