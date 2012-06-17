@@ -44,10 +44,11 @@ link into an AJAX control when JS is available:
 
     >>> ignored = login_person(product.owner)
     >>> print widget()
-    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt; important</span>
-        <a class="yui3-editable_text-trigger sprite edit actionicon"
+    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets
+        &gt; important</span>
+        <a class="yui3-editable_text-trigger sprite edit action-icon"
            href="http://launchpad.dev/widget/+edit"
-           title=""></a>
+           title="">Edit</a>
     </h1>
     <script>
     ...
@@ -92,7 +93,7 @@ of the object being edited.  This can be overridden in two ways:
     >>> ignored = login_person(product.owner)
     >>> print diff_view()
     <h1...
-    <a class="yui3-editable_text-trigger sprite edit actionicon"
+    <a class="yui3-editable_text-trigger sprite edit action-icon"
        href="http://launchpad.dev/widget/+edit-people"
        title="Change the product title">...
 
@@ -164,9 +165,9 @@ editor.
       <div id="edit-description" class="lazr-multiline-edit">
         <div class="clearfix">
           <div class="edit-controls">
-            <a class="yui3-editable_text-trigger sprite edit actionicon"
+            <a class="yui3-editable_text-trigger sprite edit action-icon"
                href="http://launchpad.dev/~eric/+archive/ppa/+edit"
-               title=""></a>
+               title="">Edit</a>
           </div>
           <h3>A title</h3>
         </div>
@@ -262,9 +263,9 @@ to select.
         <a href="/~eric" class="sprite person">Eric</a>
       </span>
       <span>
-        <a class="sprite edit actionicon lazr-btn yui3-activator-act"
+        <a class="sprite edit action-icon lazr-btn yui3-activator-act"
           href="http://launchpad.dev/widget/+edit"
-          title=""><span class="invisible-link">Edit</span></a>
+          title="">Edit</a>
         <div class="yui3-activator-message-box yui3-activator-hidden"></div>
     </span> ...
 
@@ -330,8 +331,8 @@ rendered to hook up the widget.
     <span id="edit-hide_email_addresses">
     My email: <span class="value">Don't hide it</span>
       <span>
-        <a class="editicon sprite edit actionicon"
-           href="http://launchpad.dev/~eric/+edit" title=""></a>
+        <a class="editicon sprite edit action-icon"
+           href="http://launchpad.dev/~eric/+edit" title="">Edit</a>
       </span>
     </span>
     <script>
@@ -388,9 +389,9 @@ rendered to hook up the widget.
     <span id="edit-lifecycle_status">
         <span class="value branchstatusDEVELOPMENT">Development</span>
         <span>
-          <a class="editicon sprite edit actionicon"
+          <a class="editicon sprite edit action-icon"
              href="http://.../+edit"
-             title=""></a>
+             title="">Edit</a>
         </span>
     </span>
     <script>
@@ -466,10 +467,10 @@ rendered to hook up the widget.
     <span id="edit-distroseries">
       <dt>
         Recipe distro series
-          <a class="sprite edit actionicon lazr-btn yui3-activator-act"
+          <a class="sprite edit action-icon lazr-btn yui3-activator-act"
              href="http://code.launchpad.dev/~eric/+recipe/cake_recipe/+edit"
              id="edit-distroseries-btn"
-             title=""><span class="invisible-link">Edit</span></a>
+             title="">Edit</a>
       </dt>
       <span class="yui3-activator-data-box">
         <dl id='edit-distroseries-items'>

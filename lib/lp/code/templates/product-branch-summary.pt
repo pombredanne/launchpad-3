@@ -119,7 +119,7 @@
        tal:define="configure_codehosting view/configure_codehosting |
        nothing">
       <p>
-        <a class="sprite maybe actionicon"
+        <a class="sprite maybe action-icon"
            href="https://help.launchpad.net/Code">Getting started
           with code hosting in Launchpad</a>.</p>
 

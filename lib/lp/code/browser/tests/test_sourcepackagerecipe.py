@@ -312,9 +312,10 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual('daily', extract_text(content.h1))
+        self.assertEqual('daily\nEdit', extract_text(content.h1))
         self.assertThat(
-            'Make some food!', MatchesTagText(content, 'edit-description'))
+            'Edit Make some food!',
+            MatchesTagText(content, 'edit-description'))
         self.assertThat(
             'Master Chef', MatchesPickerText(content, 'edit-owner'))
         self.assertThat(
@@ -774,8 +775,9 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
         content = find_main_content(browser.contents)
         self.assertThat(
-            'This is stuff', MatchesTagText(content, 'edit-description'))
+            'Edit This is stuff', MatchesTagText(content, 'edit-description'))
         self.assertThat(
+            'Edit '
             '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
             'lp://dev/~chef/ratatouille/meat',
             MatchesTagText(content, 'edit-recipe_text'))
@@ -838,10 +840,11 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl('Update Recipe').click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual('fings', extract_text(content.h1))
+        self.assertEqual('fings\nEdit', extract_text(content.h1))
         self.assertThat(
-            'This is stuff', MatchesTagText(content, 'edit-description'))
+            'Edit This is stuff', MatchesTagText(content, 'edit-description'))
         self.assertThat(
+            'Edit '
             '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
             'lp://dev/~chef/ratatouille/meat',
             MatchesTagText(content, 'edit-recipe_text'))
@@ -1074,11 +1077,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
             .*
-            Description
+            Description Edit
             This recipe .*changes.
 
             Recipe information
-            Build schedule: Tag help Built on request
+            Build schedule: .* Built on request Edit
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
@@ -1090,7 +1093,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
 
-            Recipe contents
+            Recipe contents Edit
             # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 

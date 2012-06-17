@@ -181,7 +181,10 @@ from lp.services.helpers import (
     shortlist,
     )
 from lp.services.identity.interfaces.account import AccountStatus
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    VALID_EMAIL_STATUSES,
+    )
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
@@ -234,6 +237,7 @@ class BasePersonVocabulary:
             # lookup based on that.
             email = IStore(EmailAddress).find(
                 EmailAddress,
+                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
                 EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
                 raise LookupError(token)
@@ -839,6 +843,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
             email_storm_query = self.store.find(
                 EmailAddress.personID,
+                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
                 EmailAddress.email.lower().startswith(text))
             email_subquery = Alias(email_storm_query._get_select(),
                                    'EmailAddress')

@@ -87,7 +87,7 @@
                     <a tal:condition="
                          translator/context/required:launchpad.Edit"
                          tal:attributes="href string:${translator/code}/+edit"
-                         class="edit sprite actionicon"></a>
+                         class="edit sprite action-icon"></a>
                   </tal:notadmin>
                 </td>
                 <td>
