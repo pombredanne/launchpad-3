@@ -156,7 +156,7 @@ Let's also make some bugs that almost qualify for expiration.
     >>> ubuntu_alsa = ubuntu.getSourcePackage('alsa-utils')
     >>> another_assigned_bugtask = create_old_bug(
     ...     'assigned', 61, ubuntu, assignee=sample_person)
-    >>> another_assigned_bugtask.transitionToTarget(ubuntu_alsa)
+    >>> another_assigned_bugtask.transitionToTarget(ubuntu_alsa, sample_person)
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> invalid_bugtask = bugtaskset.createTask(
     ...     another_assigned_bugtask.bug, sample_person, ubuntu_evolution,

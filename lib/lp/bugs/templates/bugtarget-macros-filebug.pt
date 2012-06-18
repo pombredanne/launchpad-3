@@ -109,7 +109,7 @@
         <strong>does not use</strong> Launchpad as its bug tracker.
         <a tal:attributes="href context/menu:overview/configure_bugtracker/fmt:url"
            tal:condition="context/required:launchpad.Edit">
-          Change this&nbsp;<span class="sprite edit"></span>
+          Change this <span class="sprite edit action-icon">Edit</span>
         </a>
       </div>
       <span tal:condition="view/frontpage_form">
@@ -325,69 +325,6 @@
   </tr>
 </metal:bug_reporting_guidelines>
 
-<metal:privacy define-macro="bug-reporting-privacy">
-    <tal:private condition="view/isPrivate">
-        <script type="text/javascript">
-            LPJS.use('lp.app.banner.privacy',  function(Y) {
-                Y.on('domready', function() {
-                var cfg = {
-                    notification_text: "This report will be private. "
-                    + "You can disclose it later."
-                };
-                var banner = new Y.lp.app.banner.privacy.PrivacyBanner(cfg);
-                banner.show();
-                });
-            });
-        </script>
-    </tal:private>
-    <tal:flip-privacy>
-        <script type="text/javascript">
-            LPJS.use('node-event-delegate', 'lp.app.banner.privacy', function(Y) {
-                var setup_information_type = function() {
-                    var itypes_table = Y.one('.radio-button-widget');
-                    itypes_table.delegate('click', function() {
-                        var private_type = (Y.Array.indexOf(
-                            LP.cache.private_types, this.get('value')) >= 0);
-                        privacy_ns = Y.lp.app.banner.privacy;
-                        var banner = privacy_ns.getPrivacyBanner();
-                        if (private_type) {
-                            banner.show();
-                        } else {
-                            banner.hide();
-                        }
-                        }, "input[name='field.information_type']");
-                };
-                var setup_security_related = function() {
-                    var cfg = {
-                      notification_text: "This report will be private "
-                          + "because it is a security vulnerability. You "
-                          + "can disclose it later."
-                    };
-                    var privacy_ns = Y.lp.app.banner.privacy;
-                    var banner = new privacy_ns.PrivacyBanner(cfg);
-                    banner.render();
-                    var sec = Y.one('[id="field.security_related"]');
-                    sec.on('change', function() {
-                      var checked = sec.get('checked');
-                      if (checked) {
-                          banner.show();
-                      } else {
-                          banner.hide();
-                      }
-                    });
-                };
-                Y.on('domready', function() {
-                    if (LP.cache.show_information_type_in_ui) {
-                        setup_information_type();
-                    } else {
-                        setup_security_related();
-                    }
-                });
-            });
-        </script>
-    </tal:flip-privacy>
-</metal:privacy>
-
 <metal:similar-bugs define-macro="display-similar-bugs">
   <tal:results-intro-with-summary condition="view/show_summary_in_results">
     <p id="filebug-query-heading">
@@ -450,9 +387,8 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  &nbsp;&nbsp;
-                  <a class="sprite new-window view-bug-link" target="_blank"
-		      tal:attributes="href bug/fmt:url"
+                  <a class="sprite new-window view-bug-link action-icon"
+                     target="_blank" tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>
               </div>

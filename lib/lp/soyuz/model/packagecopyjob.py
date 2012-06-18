@@ -49,9 +49,7 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import (
-    JobStatus,
-    )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
@@ -552,7 +550,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
             send_email=send_email, announce_from_person=self.requester,
-            sponsored=self.sponsored)
+            sponsored=self.sponsored, packageupload=pu)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if ancestry is not None:

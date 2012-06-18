@@ -77,24 +77,6 @@ def statisticianTearDown(test):
     tearDown(test)
 
 
-def distroseriesqueueSetUp(test):
-    setUp(test)
-    # The test requires that the umask be set to 022, and in fact this comment
-    # was made in irc on 13-Apr-2007:
-    #
-    # (04:29:18 PM) kiko: barry, cprov says that the local umask is controlled
-    # enough for us to rely on it
-    #
-    # Setting it here reproduces the environment that the doctest expects.
-    # Save the old umask so we can reset it in the tearDown().
-    test.old_umask = os.umask(022)
-
-
-def distroseriesqueueTearDown(test):
-    os.umask(test.old_umask)
-    tearDown(test)
-
-
 def uploadQueueSetUp(test):
     lobotomize_stevea()
     test_dbuser = config.uploadqueue.dbuser
@@ -132,11 +114,6 @@ def manageChrootSetup(test):
 
 
 special = {
-    'buildd-scoring.txt': LayeredDocFileSuite(
-        '../doc/buildd-scoring.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        ),
     'package-cache.txt': LayeredDocFileSuite(
         '../doc/package-cache.txt',
         setUp=statisticianSetUp, tearDown=statisticianTearDown,
@@ -147,11 +124,6 @@ special = {
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
-    'distroseriesqueue-debian-installer.txt': LayeredDocFileSuite(
-        '../doc/distroseriesqueue-debian-installer.txt',
-        setUp=distroseriesqueueSetUp, tearDown=distroseriesqueueTearDown,
-        layer=LaunchpadFunctionalLayer
-        ),
     'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
         '../doc/closing-bugs-from-changelogs.txt',
         setUp=uploadQueueSetUp,
@@ -160,6 +132,7 @@ special = {
         ),
     'closing-bugs-from-changelogs.txt-uploader': LayeredDocFileSuite(
         '../doc/closing-bugs-from-changelogs.txt',
+        id_extensions=['closing-bugs-from-changelogs.txt-uploader'],
         setUp=uploaderBugsSetUp,
         tearDown=uploaderBugsTearDown,
         layer=LaunchpadZopelessLayer
@@ -183,11 +156,6 @@ special = {
     'manage-chroot.txt': LayeredDocFileSuite(
         '../doc/manage-chroot.txt',
         setUp=manageChrootSetup,
-        layer=LaunchpadZopelessLayer,
-        ),
-    'package-arch-specific.txt': LayeredDocFileSuite(
-        '../doc/package-arch-specific.txt',
-        setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
         ),
     'queuebuilder.txt': LayeredDocFileSuite(

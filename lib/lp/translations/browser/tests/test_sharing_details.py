@@ -364,11 +364,11 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             url = '%s/+configure-translations' % canonical_url(series.product)
         return (
             '<a id="upstream-translations-%(id)s" class="sprite '
-            'edit%(seen)s" href="%(url)s"><span class="invisible-link">'
-            'Configure Upstream Translations</span></a>') % {
+            'edit action-icon%(seen)s" href="%(url)s">'
+            'Configure Upstream Translations</a>') % {
             'id': id,
             'url': url,
-            'seen': '' if visible else ' unseen',
+            'seen': '' if visible else ' hidden',
             }
 
     def test_configure_translations_link__no_packaging_link(self):
@@ -457,12 +457,11 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             url = '%s/+translations-settings' % canonical_url(series)
         return (
         '<a id="translation-synchronisation-%(id)s" class="sprite '
-        'edit%(seen)s" href="%(url)s">'
-        '<span class="invisible-link">Configure Translation '
-        'Synchronisation</span></a>') % {
+        'edit action-icon%(seen)s" href="%(url)s">'
+        'Configure Translation Synchronisation</a>') % {
             'id': id,
             'url': url,
-            'seen': '' if visible else ' unseen',
+            'seen': '' if visible else ' hidden',
             }
 
     def test_upstream_sync_link__no_packaging_link(self):
@@ -540,12 +539,12 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
     def _getExpectedPackagingLink(self, id, url, icon, text, visible):
         url = '%s/%s' % (canonical_url(self.sourcepackage), url)
         return (
-            '<a id="%(id)s" class="sprite %(icon)s%(seen)s" href="%(url)s">'
-            '<span class="invisible-link">%(text)s</span></a>') % {
+            '<a id="%(id)s" class="sprite %(icon)s action-icon%(seen)s"'
+            ' href="%(url)s">%(text)s</a>') % {
             'id': id,
             'url': url,
             'icon': icon,
-            'seen': '' if visible else ' unseen',
+            'seen': '' if visible else ' hidden',
             'text': text,
             }
 
@@ -1012,18 +1011,18 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         else:
             link_matcher = '#'
         if enabled:
-            css_class = 'sprite add'
+            css_class = 'sprite add action-icon'
         else:
-            css_class = 'sprite add unseen'
+            css_class = 'sprite add action-icon hidden'
         matcher = Tag('add-branch', 'a', attrs={
             'id': 'add-branch',
             'href': link_matcher,
             'class': css_class})
         self.assertThat(contents, HTMLContains(matcher))
         if enabled:
-            css_class = 'sprite edit'
+            css_class = 'sprite edit action-icon'
         else:
-            css_class = 'sprite edit unseen'
+            css_class = 'sprite edit action-icon hidden'
         matcher = Tag('change-branch', 'a', attrs={
             'id': 'change-branch',
             'href': link_matcher,
@@ -1085,7 +1084,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             attrs={
                 'id': 'upstream-translations-incomplete',
                 'href': '#',
-                'class': 'sprite edit unseen',
+                'class': 'sprite edit action-icon hidden',
                 },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
@@ -1094,7 +1093,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             attrs={
                 'id': 'upstream-translations-complete',
                 'href': '#',
-                'class': 'sprite edit unseen',
+                'class': 'sprite edit action-icon hidden',
                 },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
@@ -1109,7 +1108,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             attrs={
                 'id': 'translation-synchronisation-incomplete',
                 'href': '#',
-                'class': 'sprite edit unseen',
+                'class': 'sprite edit action-icon hidden',
                 },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
@@ -1118,7 +1117,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             attrs={
                 'id': 'translation-synchronisation-complete',
                 'href': '#',
-                'class': 'sprite edit unseen',
+                'class': 'sprite edit action-icon hidden',
                 },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))

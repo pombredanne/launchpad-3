@@ -15,7 +15,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.builder import BuilderSlave
@@ -478,11 +477,10 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         owner = self.factory.makePerson()
         processor_family = ProcessorFamilySet().getByProcessorName('386')
         processor = processor_family.processors[0]
-        builder_set = getUtility(IBuilderSet)
 
-        self.builder = builder_set.new(
+        self.builder = self.factory.makeBuilder(
             processor, 'http://example.com', 'Newbob', 'New Bob the Builder',
-            'A new and improved bob.', owner)
+            owner=owner)
 
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:

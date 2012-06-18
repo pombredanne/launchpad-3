@@ -21,8 +21,6 @@ body.global-notification-visible .login-logout {
     font-weight: bold;
     box-shadow: 0 0 5px #333;
     }
-
-
 .global-notification .sprite.notification-private {
     float: left;
     display: inline-block;
@@ -58,10 +56,11 @@ body.global-notification-visible .login-logout {
    Privacy
 */
 
-.privacy-banner {
+.yui3-privacybanner-content .global-notification{
     /* Define colour for browsers that don't support transparency */
     background-color: #8d1f1f;
     /* Set transparent background for browsers that support it */
     background-color: rgba(125,0,0,0.9);
     color: #fff;
+    text-align: left;
 }

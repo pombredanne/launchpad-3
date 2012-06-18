@@ -231,7 +231,7 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        person = getUtility(IPersonSet).getByEmail(login)
+        person = getUtility(IPersonSet).getByEmail(login, filter_status=False)
         if person is None or person.account is None:
             return None
         return self._principalForAccount(person.account, access_level, scope)

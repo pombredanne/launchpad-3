@@ -54,7 +54,10 @@ from lp.code.tests.helpers import (
     make_merge_proposal_without_reviewers,
     )
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import (
@@ -217,7 +220,8 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # Set up some review requests.
         public_person1 = self.factory.makePerson()
         private_team1 = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         self._nominateReviewer(public_person1, owner)
         self._nominateReviewer(private_team1, owner)
 
@@ -472,7 +476,8 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
 
         # Make a branch the reviewer cannot see.
         owner = self.factory.makePerson()
-        target_branch = self._makeTargetBranch(owner=owner, private=True)
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         request = LaunchpadTestRequest(
@@ -498,7 +503,8 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         # Ajax submits where there is a validation error in the submitted data
         # return the expected json response containing the error info.
         owner = self.factory.makePerson()
-        target_branch = self._makeTargetBranch(owner=owner, private=True)
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
@@ -670,7 +676,7 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         # notification message is displayed.
         owner = self.factory.makePerson()
         target_branch = self._makeTargetBranch(
-            private=True, owner=owner)
+            owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         with person_logged_in(owner):
             view = self._createView()
@@ -1290,7 +1296,8 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
         bmp2 = self.factory.makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
-        removeSecurityProxy(bmp2.source_branch).explicitly_private = True
+        removeSecurityProxy(bmp2.source_branch).information_type = (
+            InformationType.USERDATA)
         self.assertEqual(
             [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
 

@@ -55,6 +55,7 @@ from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -518,7 +519,7 @@ class BugViewMixin:
         return getUtility(ILaunchBag).bugtask
 
 
-class BugView(LaunchpadView, BugViewMixin):
+class BugView(InformationTypePortletMixin, LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -534,17 +535,6 @@ class BugView(LaunchpadView, BugViewMixin):
     def show_information_type_in_ui(self):
         return bool(getFeatureFlag(
             'disclosure.show_information_type_in_ui.enabled'))
-
-    def initialize(self):
-        super(BugView, self).initialize()
-        cache = IJSONRequestCache(self.request)
-        cache.objects['information_types'] = [
-            {'value': term.value, 'description': term.description,
-            'name': term.title} for term in InformationTypeVocabulary()]
-        cache.objects['private_types'] = [
-            type.title for type in PRIVATE_INFORMATION_TYPES]
-        cache.objects['show_information_type_in_ui'] = (
-            self.show_information_type_in_ui)
 
     @cachedproperty
     def page_description(self):
@@ -593,19 +583,6 @@ class BugView(LaunchpadView, BugViewMixin):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
-
-    @property
-    def information_type(self):
-        # This can be replaced with just a return when the feature flag is
-        # dropped.
-        title = self.context.information_type.title
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
-        if (
-            self.context.information_type == InformationType.USERDATA and
-            show_userdata_as_private):
-            return 'Private'
-        return title
 
 
 class BugActivity(BugView):
@@ -840,7 +817,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
-# XXX: This can move to using LaunchpadEditFormView when 
+# XXX: This can move to using LaunchpadEditFormView when
 # show_information_type_in_ui is removed.
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""

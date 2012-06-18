@@ -23,6 +23,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
@@ -53,6 +58,8 @@ from lp.services.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import block_on_job
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login,
@@ -65,6 +72,7 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
+    CeleryJobLayer,
     DatabaseFunctionalLayer,
     DatabaseLayer,
     LaunchpadZopelessLayer,
@@ -982,6 +990,69 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         tm.setStatus(TeamMembershipStatus.ADMIN, self.team2.teamowner)
         self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
         self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
+
+
+class TestTeamMembershipJobs(TestCaseWithFactory):
+    """Test jobs associated with managing team membership."""
+    layer = CeleryJobLayer
+
+    def setUp(self):
+        self.useFixture(FeatureFixture({
+            'disclosure.unsubscribe_jobs.enabled': 'true',
+            'jobs.celery.enabled_classes': 'RemoveBugSubscriptionsJob',
+        }))
+        super(TestTeamMembershipJobs, self).setUp()
+
+    def _make_subscribed_bug(self, grantee, product=None, distribution=None,
+                             information_type=InformationType.USERDATA):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner, product=product, distribution=distribution,
+            information_type=information_type)
+        with person_logged_in(owner):
+            bug.subscribe(grantee, owner)
+        return bug, owner
+
+    def test_retract_unsubscribes_former_member(self):
+        # When a team member is removed, any subscriptions to artifacts they
+        # can no longer see are removed also.
+        person_grantee = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        # Make a bug the person_grantee is subscribed to.
+        bug1, ignored = self._make_subscribed_bug(
+            person_grantee, product=product,
+            information_type=InformationType.USERDATA)
+
+        # Make another bug and grant access to a team.
+        team_grantee = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            members=[person_grantee])
+        bug2, bug2_owner = self._make_subscribed_bug(
+            team_grantee, product=product,
+            information_type=InformationType.EMBARGOEDSECURITY)
+        # Add a subscription for the person_grantee.
+        with person_logged_in(bug2_owner):
+            bug2.subscribe(person_grantee, bug2_owner)
+
+        # Subscribing person_grantee to bugs creates an access grant so we
+        # need to revoke the one to bug2 for our test.
+        accessartifact_source = getUtility(IAccessArtifactSource)
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        accessartifact_grant_source.revokeByArtifact(
+            accessartifact_source.find([bug2]), [person_grantee])
+
+        with person_logged_in(person_grantee):
+            person_grantee.retractTeamMembership(team_grantee, person_grantee)
+        with block_on_job(self):
+            transaction.commit()
+
+        # person_grantee is still subscribed to bug1.
+        self.assertIn(
+            person_grantee, removeSecurityProxy(bug1).getDirectSubscribers())
+        # person_grantee is not subscribed to bug2 because they no longer have
+        # access via a team.
+        self.assertNotIn(
+            person_grantee, removeSecurityProxy(bug2).getDirectSubscribers())
 
 
 class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):

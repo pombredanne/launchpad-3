@@ -128,7 +128,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         bug = self.makeBugAndPolicies(private=True)
         task = bug.addTask(bug.owner, product)
         Store.of(bug).flush()
-        removeSecurityProxy(task).destroySelf()
+        removeSecurityProxy(task).delete(who=bug.owner)
         self.assertEqual((1, 1), self.assertMirrored(bug))
 
     def test_make_public(self):

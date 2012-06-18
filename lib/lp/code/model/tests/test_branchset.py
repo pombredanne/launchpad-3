@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchSet."""
@@ -10,6 +10,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
+from lp.registry.enums import InformationType
 from lp.testing import (
     login_person,
     logout,
@@ -74,7 +75,8 @@ class TestBranchSet(TestCaseWithFactory):
         person = self.factory.makePerson(name='fred')
         owner = self.factory.makePerson()
         visible_branch = self.factory.makeBranch()
-        invisible_branch = self.factory.makeBranch(owner=owner, private=True)
+        invisible_branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         invisible_name = removeSecurityProxy(invisible_branch).unique_name
         branches = [
             visible_branch.unique_name,
@@ -96,7 +98,8 @@ class TestBranchSet(TestCaseWithFactory):
         person = self.factory.makePerson(name='fred')
         owner = self.factory.makePerson()
         visible_branch = self.factory.makeBranch()
-        invisible_branch = self.factory.makeBranch(owner=owner, private=True)
+        invisible_branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         invisible_name = removeSecurityProxy(invisible_branch).unique_name
         branches = [
             visible_branch.unique_name,

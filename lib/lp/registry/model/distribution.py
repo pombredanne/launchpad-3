@@ -98,6 +98,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     )
 from lp.registry.enums import (
     InformationType,
+    PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import NoSuchDistroSeries
@@ -179,7 +180,6 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distributionsourcepackagerelease import (
@@ -640,7 +640,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                Branch.last_scanned_id,
                SPBDS.name AS distro_series_name,
                Branch.id,
-               Branch.transitively_private,
+               Branch.information_type,
                Branch.owner
         FROM Branch
         JOIN DistroSeries
@@ -660,7 +660,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # Now we see just a touch of privacy concerns.
             # If the current user is anonymous, they cannot see any private
             # branches.
-            base_query += ('      AND NOT Branch.transitively_private\n')
+            base_query += (
+                '      AND Branch.information_type in %s\n'
+                % sqlvalues(PUBLIC_INFORMATION_TYPES))
         # We want to order the results, in part for easier grouping at the
         # end.
         base_query += 'ORDER BY unique_name, last_scanned_id'
@@ -694,7 +696,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                            id,
                            owner
                     FROM all_branches
-                    WHERE transitively_private
+                    WHERE information_type in %(private_branches)s
                 ), owned_branch_ids AS (
                     SELECT private_branches.id
                     FROM private_branches
@@ -709,10 +711,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             SELECT unique_name, last_scanned_id, distro_series_name
             FROM all_branches
-            WHERE NOT transitively_private OR
+            WHERE information_type in %(public_branches)s OR
                   id IN (SELECT id FROM owned_branch_ids) OR
                   id IN (SELECT id FROM subscribed_branch_ids)
-            """ % dict(base_query=base_query, user=quote(user.id))
+            """ % dict(
+                base_query=base_query,
+                user=quote(user.id),
+                private_branches=quote(PRIVATE_INFORMATION_TYPES),
+                public_branches=quote(PUBLIC_INFORMATION_TYPES))
 
         data = Store.of(self).execute(query + ';')
 
@@ -1167,29 +1173,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # results will only see DSPs
         return DecoratedResultSet(dsp_caches_with_ranks, result_to_dsp)
 
-    @property
-    def _binaryPackageSearchClause(self):
-        """Return a Storm match clause for binary package searches."""
-        # This matches all DistributionSourcePackageCache rows that have
-        # a source package that generated the BinaryPackageName that
-        # we're searching for.
-        from lp.soyuz.model.distributionsourcepackagecache import (
-            DistributionSourcePackageCache,
-            )
-        return (
-            DistroSeries.distribution == self,
-            DistroSeries.status != SeriesStatus.OBSOLETE,
-            DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
-            BinaryPackageRelease.build == BinaryPackageBuild.id,
-            (BinaryPackageBuild.source_package_release ==
-                SourcePackageRelease.id),
-            SourcePackageRelease.sourcepackagename == SourcePackageName.id,
-            DistributionSourcePackageCache.sourcepackagename ==
-                SourcePackageName.id,
-            DistributionSourcePackageCache.archiveID.is_in(
-                self.all_distro_archive_ids))
-
     def searchBinaryPackages(self, package_name, exact_match=False):
         """See `IDistribution`."""
         from lp.soyuz.model.distributionsourcepackagecache import (
@@ -1199,20 +1182,30 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         select_spec = (DistributionSourcePackageCache,)
 
+        find_spec = (
+            DistributionSourcePackageCache.distribution == self,
+            DistributionSourcePackageCache.archiveID.is_in(
+                self.all_distro_archive_ids))
+
         if exact_match:
-            find_spec = self._binaryPackageSearchClause + (
-                BinaryPackageRelease.binarypackagename
-                    == BinaryPackageName.id,
-                )
-            match_clause = (BinaryPackageName.name == package_name,)
+            # To match BinaryPackageName.name exactly requires a very
+            # slow 8 table join. So let's instead use binpkgnames, with
+            # an ugly set of LIKEs matching spaces or either end of the
+            # string on either side of the name. A regex is several
+            # times slower and harder to escape.
+            match_clause = (Or(
+                DistributionSourcePackageCache.binpkgnames.like(
+                    '%% %s %%' % package_name.lower()),
+                DistributionSourcePackageCache.binpkgnames.like(
+                    '%% %s' % package_name.lower()),
+                DistributionSourcePackageCache.binpkgnames.like(
+                    '%s %%' % package_name.lower()),
+                DistributionSourcePackageCache.binpkgnames ==
+                    package_name.lower()), )
         else:
             # In this case we can use a simplified find-spec as the
             # binary package names are present on the
             # DistributionSourcePackageCache records.
-            find_spec = (
-                DistributionSourcePackageCache.distribution == self,
-                DistributionSourcePackageCache.archiveID.is_in(
-                    self.all_distro_archive_ids))
             match_clause = (
                 DistributionSourcePackageCache.binpkgnames.like(
                     "%%%s%%" % package_name.lower()),)

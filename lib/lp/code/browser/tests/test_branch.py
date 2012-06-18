@@ -10,10 +10,12 @@ from textwrap import dedent
 
 from BeautifulSoup import BeautifulSoup
 import pytz
+from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -37,6 +39,7 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -544,7 +547,8 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         # A branch with a private owner is rendered.
         private_owner = self.factory.makeTeam(
             displayname="PrivateTeam", visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch(owner=private_owner)
+        with person_logged_in(private_owner):
+            branch = self.factory.makeAnyBranch(owner=private_owner)
         # Ensure the branch owner is rendered.
         url = canonical_url(branch, rootsite='code')
         user = self.factory.makePerson()
@@ -557,7 +561,8 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         # A private branch with a private owner is rendered.
         private_owner = self.factory.makeTeam(
             displayname="PrivateTeam", visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch(owner=private_owner)
+        with person_logged_in(private_owner):
+            branch = self.factory.makeAnyBranch(owner=private_owner)
         # Ensure the branch owner is rendered.
         url = canonical_url(branch, rootsite='code')
         user = self.factory.makePerson()
@@ -573,7 +578,8 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         # A branch with a private owner is not rendered for anon users.
         private_owner = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeAnyBranch(owner=private_owner)
+        with person_logged_in(private_owner):
+            branch = self.factory.makeAnyBranch(owner=private_owner)
         # Viewing the branch results in an error.
         url = canonical_url(branch, rootsite='code')
         browser = self._getBrowser()
@@ -601,7 +607,7 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         private_subscriber = self.factory.makeTeam(
             name="privateteam", visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makeAnyBranch()
-        with person_logged_in(branch.owner):
+        with person_logged_in(private_subscriber):
             self.factory.makeBranchSubscription(
                 branch, private_subscriber, branch.owner)
         # Viewing the branch doesn't show the private subscriber.
@@ -758,7 +764,8 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         # If the target is private, the landing targets should not include it.
         bmp = self.factory.makeBranchMergeProposal()
         branch = bmp.source_branch
-        removeSecurityProxy(bmp.target_branch).explicitly_private = True
+        removeSecurityProxy(bmp.target_branch).information_type = (
+            InformationType.USERDATA)
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_targets)
@@ -779,7 +786,8 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         # it.
         bmp = self.factory.makeBranchMergeProposal()
         branch = bmp.target_branch
-        removeSecurityProxy(bmp.source_branch).explicitly_private = True
+        removeSecurityProxy(bmp.source_branch).information_type = (
+            InformationType.USERDATA)
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_candidates)
@@ -799,7 +807,8 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         # the target is private, then the dependent_branches are not shown.
         branch = self.factory.makeProductBranch()
         bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
-        removeSecurityProxy(bmp.source_branch).explicitly_private = True
+        removeSecurityProxy(bmp.source_branch).information_type = (
+            InformationType.USERDATA)
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.dependent_branches)
@@ -894,6 +903,55 @@ class TestBranchEditView(TestCaseWithFactory):
         with person_logged_in(person):
             self.assertEquals(team, branch.owner)
 
+    def test_information_type_in_ui(self):
+        # The information_type of a branch can be changed via the UI when
+        # the feature flag is enabled.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+        feature_flag = {
+            'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admin = admins.teamowner
+        with FeatureFixture(feature_flag):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=admin)
+            browser.getControl("Embargoed Security").click()
+            browser.getControl("Change Branch").click()
+        with person_logged_in(person):
+            self.assertEqual(
+                InformationType.EMBARGOEDSECURITY, branch.information_type)
+
+    def test_information_type_in_ui_vocabulary(self):
+        # The vocabulary that Branch:+edit uses for the information_type
+        # has been correctly created.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+        feature_flags = {
+            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
+            'disclosure.proprietary_information_type.disabled': 'on'}
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admin = admins.teamowner
+        with FeatureFixture(feature_flags):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=admin)
+            self.assertRaises(LookupError, browser.getControl, "Proprietary")
+
+    def test_can_not_change_privacy_of_stacked_on_private(self):
+        # The privacy field is not shown if the branch is stacked on a
+        # private branch.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        stacked_on = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner, stacked_on=stacked_on)
+        with person_logged_in(owner):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=owner)
+        self.assertRaises(
+            LookupError, browser.getControl, "Keep branch confidential")
+
 
 class TestBranchUpgradeView(TestCaseWithFactory):
 
@@ -913,3 +971,50 @@ class TestBranchUpgradeView(TestCaseWithFactory):
         self.assertEqual(
             'An upgrade is already in progress for branch %s.' %
             branch.bzr_identity, view.request.notifications[0].message)
+
+
+class TestBranchPrivacyPortlet(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_information_type_in_ui(self):
+        # With the show_information_type_in_branch_ui feature flag on, the
+        # privacy portlet shows the information_type.
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        feature_flag = {
+            'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            with person_logged_in(owner):
+                view = create_initialized_view(branch, '+portlet-privacy')
+                soup = BeautifulSoup(view.render())
+        information_type = soup.find('strong')
+        description = soup.find('div', id='information-type-description')
+        self.assertEqual('User Data', information_type.renderContents())
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'Visible only to users with whom the project has shared '
+            'information containing user data.',
+            description.renderContents())
+
+    def test_information_type_in_ui_with_display_as_private(self):
+        # With both show_information_type_in_branch_ui and
+        # display_userdata_as_private, the information_type is shown with
+        # User Data masked as Private.
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        feature_flags = {
+            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
+            'disclosure.display_userdata_as_private.enabled': 'on'}
+        with FeatureFixture(feature_flags):
+            with person_logged_in(owner):
+                view = create_initialized_view(branch, '+portlet-privacy')
+                soup = BeautifulSoup(view.render())
+        information_type = soup.find('strong')
+        description = soup.find('div', id='information-type-description')
+        self.assertEqual('Private', information_type.renderContents())
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'Visible only to users with whom the project has shared '
+            'private information.',
+            description.renderContents())

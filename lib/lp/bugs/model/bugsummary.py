@@ -78,7 +78,6 @@ class BugSummary(Storm):
     viewed_by = Reference(viewed_by_id, Person.id)
 
     has_patch = Bool()
-    fixed_upstream = Bool()
 
 
 class CombineBugSummaryConstraint:

@@ -41,7 +41,6 @@ from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import (
     ForeignKey,
-    IntCol,
     SQLObjectNotFound,
     StringCol,
     )
@@ -120,6 +119,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
@@ -143,6 +143,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
@@ -507,7 +508,6 @@ class BugTask(SQLBase):
         storm_validator=validate_conjoined_attribute)
     date_left_closed = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
-    heat = IntCol(notNull=True, default=0)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -640,6 +640,7 @@ class BugTask(SQLBase):
         notify(ObjectDeletedEvent(self, who))
         self.destroySelf()
         del get_property_cache(bug).bugtasks
+        self.bug._reconcileAccess()
 
         # When a task is deleted, we also delete it's BugNomination entry
         # if there is one. Sadly, getNominationFor() can return None or
@@ -684,7 +685,7 @@ class BugTask(SQLBase):
         """See `IBugTask`."""
         return self.bug.isSubscribed(person)
 
-    def _syncSourcePackages(self, new_spn):
+    def _syncSourcePackages(self, new_spn, user):
         """Synchronize changes to source packages with other distrotasks.
 
         If one distroseriestask's source package is changed, all the
@@ -707,6 +708,7 @@ class BugTask(SQLBase):
                 key['sourcepackagename'] = new_spn
                 bugtask.transitionToTarget(
                     bug_target_from_key(**key),
+                    user,
                     _sync_sourcepackages=False)
 
     def getContributorInfo(self, user, person):
@@ -1141,7 +1143,7 @@ class BugTask(SQLBase):
 
         validate_target(self.bug, target)
 
-    def transitionToTarget(self, target, _sync_sourcepackages=True):
+    def transitionToTarget(self, target, user, _sync_sourcepackages=True):
         """See `IBugTask`.
 
         If _sync_sourcepackages is True (the default) and the
@@ -1170,11 +1172,12 @@ class BugTask(SQLBase):
         # sourcepackagename. This keeps series tasks consistent.
         if (_sync_sourcepackages and
             new_key['sourcepackagename'] != self.sourcepackagename):
-            self._syncSourcePackages(new_key['sourcepackagename'])
+            self._syncSourcePackages(new_key['sourcepackagename'], user)
 
         for name, value in new_key.iteritems():
             setattr(self, name, value)
         self.updateTargetNameCache()
+        self.bug._reconcileAccess()
 
         # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
         # We also should see if we ought to auto-transition to the
@@ -1183,6 +1186,14 @@ class BugTask(SQLBase):
             self.bug.shouldConfirmBugtasks()):
             self.maybeConfirm()
         # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+
+        flag = 'disclosure.unsubscribe_jobs.enabled'
+        if bool(getFeatureFlag(flag)):
+            # As a result of the transition, some subscribers may no longer
+            # have access to the parent bug. We need to run a job to remove any
+            # such subscriptions.
+            getUtility(IRemoveBugSubscriptionsJobSource).create(
+                user, [self.bug], pillar=target_before_change)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1647,6 +1658,7 @@ class BugTaskSet:
             bugtask.updateTargetNameCache()
             if bugtask.conjoined_slave:
                 bugtask._syncFromConjoinedSlave()
+        removeSecurityProxy(bug)._reconcileAccess()
         return tasks
 
     def createTask(self, bug, owner, target, status=None, importance=None,
@@ -1782,8 +1794,7 @@ class BugTaskSet:
         # The janitor needs access to all bugs.
         if user != getUtility(ILaunchpadCelebrities).janitor:
             bug_privacy_filter = get_bug_privacy_filter(user)
-            if bug_privacy_filter != '':
-                conds.append(bug_privacy_filter)
+            conds.append(bug_privacy_filter)
 
         ids = origin.find(BugTaskFlat.bugtask_id, conds)
         ids = ids.order_by(BugTaskFlat.date_last_updated)
@@ -1881,7 +1892,7 @@ class BugTaskSet:
             BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
             BugTaskFlat.duplicateof == None,
             BugTaskFlat.product_id.is_in(product.id for product in products),
-            SQL(get_bug_privacy_filter(user) or True)
+            get_bug_privacy_filter(user),
             ).group_by(BugTaskFlat.product_id)
         # The result will return a list of product ids and counts,
         # which will be converted into key-value pairs in the dictionary.
@@ -1932,7 +1943,7 @@ class BugTaskSet:
             BugTaskFlat.sourcepackagename_id.is_in(package_name_ids),
             BugTaskFlat.distribution == distribution,
             BugTaskFlat.duplicateof == None,
-            SQL(get_bug_privacy_filter(user) or True)
+            get_bug_privacy_filter(user),
             ).group_by(
                 BugTaskFlat.distribution_id, BugTaskFlat.sourcepackagename_id)
 

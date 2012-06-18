@@ -151,7 +151,7 @@ PAGE-BOTTOM
                 action="https://launchpad.net/+search">
             <input type="search" id="search-text" name="field.text" />
             <input type="submit" value=""
-              class="icon-only sprite search-icon" />
+              class="sprite search-icon" />
           </form>
         </div>
     </div>
