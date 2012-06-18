@@ -289,20 +289,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
         Also set the sequence of those deleted work items to -1.
         """
-        title_counts = {}
-        for title in titles:
-            if title not in title_counts:
-                title_counts[title] = 1
-            else:
-                title_counts[title] += 1
+        title_counts = self._list_to_dict_of_frequency(titles)
 
         for work_item in self.work_items:
-            if(work_item.title not in title_counts or
-               title_counts[work_item.title] == 0):
+            if (work_item.title not in title_counts or
+                title_counts[work_item.title] == 0):
                 work_item.deleted = True
 
             elif title_counts[work_item.title] > 0:
                 title_counts[work_item.title] -= 1
+
+    def _list_to_dict_of_frequency(self, list):
+        dictionary = {}
+        for item in list:
+            if not item in dictionary:
+                dictionary[item] = 1
+            else:
+                dictionary[item] += 1
+        return dictionary
 
     def updateWorkItems(self, new_work_items):
         """See ISpecification."""
@@ -319,18 +323,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # ones.
         to_insert = []
         existing_titles = [wi.title for wi in work_items]
-        existing_title_count = {}
-        for title in existing_titles:
-            if not title in existing_title_count:
-                existing_title_count[title] = 1
-            else:
-                existing_title_count[title] += 1
+        existing_title_count = self._list_to_dict_of_frequency(existing_titles)
 
-        for i in range(len(new_work_items)):
-            new_wi = new_work_items[i]
-            if(new_wi['title'] not in existing_titles or
-               new_wi['title'] in existing_title_count and
-               existing_title_count[new_wi['title']] == 0):
+        for i, new_wi in enumerate(new_work_items):
+            if (new_wi['title'] not in existing_titles or
+                existing_title_count[new_wi['title']] == 0):
                 to_insert.append((i, new_wi))
             else:
                 existing_title_count[new_wi['title']] -= 1
