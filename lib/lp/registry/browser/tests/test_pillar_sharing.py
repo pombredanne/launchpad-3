@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import get_current_web_service_request
 import simplejson
@@ -88,7 +89,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
 
         if with_branch and self.pillar_type == 'product':
             branch = self.factory.makeBranch(
-                product=self.pillar, owner=self.pillar.owner, private=True)
+                product=self.pillar, owner=self.pillar.owner,
+                information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
 
@@ -369,7 +371,7 @@ class PillarSharingViewTestMixin:
             view = create_view(self.pillar, name='+sharing')
             with StormStatementRecorder() as recorder:
                 view.initialize()
-            self.assertThat(recorder, HasQueryCount(LessThan(6)))
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
@@ -401,6 +403,9 @@ class TestProductSharingView(PillarSharingViewTestMixin,
         super(TestProductSharingView, self).setUp()
         self.setupSharing(self.grantees)
         login_person(self.driver)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,

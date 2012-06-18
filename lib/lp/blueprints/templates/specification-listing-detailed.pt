@@ -46,12 +46,6 @@
   </tal:block>
   <i tal:condition="context/whiteboard"
      tal:content="context/whiteboard">white board goes here</i>
-  <tal:fbreqs repeat="fbreq view/feedbackrequests">
-    <b>Your feedback requested</b> by
-    <span tal:replace="fbreq/requester/displayname">Foo Bar</span>.
-    <i tal:content="fbreq/queuemsg"
-       tal:condition="fbreq/queuemsg">Msg goes here</i>
-  </tal:fbreqs>
   <tal:sprints condition="context/sprints">
   <br />
   <b>Sprints</b>:

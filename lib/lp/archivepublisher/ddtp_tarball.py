@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of translated packages descriptions (ddtp) tarballs.
@@ -42,13 +42,19 @@ class DdtpTarballUpload(CustomUpload):
 
     Old contents will be preserved.
     """
-    def __init__(self, archive_root, tarfile_path, distroseries):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
+    custom_type = "ddtp-tarball"
 
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         tarfile_base = os.path.basename(tarfile_path)
         name, component, self.version = tarfile_base.split('_')
+        self.arch = None
+
         self.targetdir = os.path.join(archive_root, 'dists',
                                       distroseries, component)
+
+    def checkForConflicts(self):
+        # We just overwrite older files, so no conflicts are possible.
+        pass
 
     def shouldInstall(self, filename):
         # Ignore files outside of the i18n subdirectory
@@ -66,6 +72,5 @@ def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
     Raises CustomUploadError (or some subclass thereof) if
     anything goes wrong.
     """
-    upload = DdtpTarballUpload(archive_root, tarfile_path, distroseries)
-    upload.process()
-
+    upload = DdtpTarballUpload()
+    upload.process(archive_root, tarfile_path, distroseries)

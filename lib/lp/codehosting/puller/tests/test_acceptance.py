@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """End-to-end tests for the branch puller."""
@@ -32,6 +32,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.tests.helpers import LoomTestMixin
 from lp.codehosting.vfs import get_lp_server
+from lp.registry.enums import InformationType
 from lp.services.config import config
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.testing.layers import ZopelessAppServerLayer
@@ -221,8 +222,12 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
         """
         # Make the branch in the database.
         product = self.factory.makeProduct()
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
         default_branch = self.factory.makeProductBranch(
-            product=product, private=private)
+            product=product, information_type=information_type)
         transaction.commit()
         # Create the underlying bzr branch.
         lp_server = self.getLPServerForUser(default_branch.owner)

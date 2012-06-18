@@ -224,7 +224,7 @@ class LinkView(LaunchpadView):
             value.append(self.sprite_class)
             value.append(self.context.icon)
         if self.context.hidden:
-            value.append('invisible-link')
+            value.append('hidden')
         return " ".join(value)
 
     @property

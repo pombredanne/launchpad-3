@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the public codehosting API."""
@@ -16,6 +16,7 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
+from lp.registry.enums import InformationType
 from lp.services.xmlrpc import LaunchpadFault
 from lp.testing import (
     person_logged_in,
@@ -302,7 +303,8 @@ class TestExpandURL(TestCaseWithFactory):
         # Invisible branches are resolved as if they didn't exist, so that we
         # reveal the least possile amount of information about them.
         # For fully specified branch names, this means resolving the lp url.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         # Removing security proxy to get at the unique_name attribute of a
         # private branch, and tests are currently running as an anonymous
         # user.
@@ -315,7 +317,8 @@ class TestExpandURL(TestCaseWithFactory):
         # Removing security proxy because we need to be able to get at
         # attributes of a private branch and these tests are running as an
         # anonymous user.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         series = self.factory.makeProductSeries(branch=branch)
         lp_path = '%s/%s' % (series.product.name, series.name)
         self.assertOnlyWritableResolves(lp_path)
@@ -323,7 +326,8 @@ class TestExpandURL(TestCaseWithFactory):
     def test_private_branch_as_development_focus(self):
         # We resolve private linked branches using the writable alias.
         product, trunk = self.makeProdutWithTrunk()
-        removeSecurityProxy(trunk).explicitly_private = True
+        removeSecurityProxy(trunk).information_type = (
+            InformationType.USERDATA)
         self.assertOnlyWritableResolves(product.name)
 
     def test_private_branch_as_user(self):
@@ -337,7 +341,8 @@ class TestExpandURL(TestCaseWithFactory):
         # Create the owner explicitly so that we can get its email without
         # resorting to removeSecurityProxy.
         owner = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(owner=owner, private=True)
+        branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         path = removeSecurityProxy(branch).unique_name
         self.assertOnlyWritableResolves(path)
 

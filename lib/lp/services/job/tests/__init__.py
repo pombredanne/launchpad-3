@@ -15,8 +15,8 @@ from contextlib import contextmanager
 
 from testtools.content import text_content
 
-from lp.testing.fixture import CaptureOops
 from lp.services.job.runner import BaseRunnableJob
+from lp.testing.fixture import CaptureOops
 
 
 def celeryd(queue, cwd=None):

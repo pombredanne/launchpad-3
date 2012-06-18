@@ -33,6 +33,7 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
+from lp.services.utils import total_seconds
 import replication.helpers
 
 
@@ -112,11 +113,6 @@ FIX_PATCH_TIMES_POST_SQL = dedent("""\
     """)
 
 
-def to_seconds(td):
-    """Convert a timedelta to seconds."""
-    return td.days * (24 * 60 * 60) + td.seconds + td.microseconds / 1000000.0
-
-
 def report_patch_times(con, todays_patches):
     """Report how long it took to apply the given patches."""
     cur = con.cursor()
@@ -135,7 +131,7 @@ def report_patch_times(con, todays_patches):
     for major, minor, patch, start_time, db_time in cur.fetchall():
         if (major, minor, patch) in todays_patches:
             continue
-        db_time = to_seconds(db_time)
+        db_time = total_seconds(db_time)
         start_time = start_time.strftime('%Y-%m-%d')
         log.info(
             "%d-%02d-%d applied %s in %0.1f seconds"
@@ -157,7 +153,7 @@ def report_patch_times(con, todays_patches):
             continue
         log.info(
             "%d-%02d-%d applied just now in %0.1f seconds",
-            major, minor, patch, to_seconds(db_time))
+            major, minor, patch, total_seconds(db_time))
 
 
 def apply_patches_normal(con):

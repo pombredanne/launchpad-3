@@ -5,6 +5,7 @@ __metaclass__ = type
 
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -69,6 +70,9 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.user = self.factory.makePerson(name="macadamia")
         login_person(self.user)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def verify_involvment(self, context):
         self.assertTrue(IHasSpecifications.providedBy(context))
@@ -121,6 +125,12 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
 class TestAssignments(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestAssignments, self).setUp()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_assignments_are_batched(self):
         product = self.factory.makeProduct()
@@ -246,6 +256,9 @@ class TestSpecificationsRobots(TestCaseWithFactory):
         super(TestSpecificationsRobots, self).setUp()
         self.product = self.factory.makeProduct()
         self.naked_product = removeSecurityProxy(self.product)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _configure_project(self, usage):
         self.naked_product.blueprints_usage = usage

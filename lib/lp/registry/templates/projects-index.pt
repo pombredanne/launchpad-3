@@ -61,9 +61,9 @@
             </tbody>
          </table>
 
-          <p class="sprite error-icon application-summary"
+          <p class="application-summary"
              tal:condition="not: view/search_results">
-             No project groups matching
+             <span class="sprite error-icon">No project groups matching</span>
              &#8220;<span tal:replace="view/search_string">moz</span>&#8221;
              were found.
           </p>

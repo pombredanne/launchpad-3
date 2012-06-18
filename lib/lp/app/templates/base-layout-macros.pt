@@ -151,6 +151,7 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script id="base-layout-load-scripts" type="text/javascript">
+        //<![CDATA[
         LPJS.use('base', 'node', 'console', 'event',
             'oop', 'lp', 'lp.app.banner.privacy',
             'lp.app.banner.beta', 'lp.app.foldables','lp.app.sorttable',
@@ -184,6 +185,7 @@
                   window.location = e.new_value;
             });
         });
+        //]]>
     </script>
     <script id="base-helper-functions" type="text/javascript">
          //<![CDATA[

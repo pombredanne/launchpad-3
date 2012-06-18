@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for visibility of branches.
@@ -26,6 +26,8 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranchSet
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.role import IPersonRoles
 from lp.security import AccessBranch
 from lp.services.webapp.authorization import (
@@ -76,7 +78,8 @@ class TestBranchVisibility(TestCaseWithFactory):
         # The owners of a branch always have visibility of their own branches.
 
         owner = self.factory.makePerson()
-        branch = self.factory.makeBranch(owner=owner, private=True)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         naked_branch = removeSecurityProxy(branch)
 
         clear_cache()  # Clear authorization cache for check_permission.
@@ -89,7 +92,8 @@ class TestBranchVisibility(TestCaseWithFactory):
     def test_visible_to_administrator(self):
         # Launchpad administrators often have a need to see private
         # Launchpad things in order to fix up fubars by users.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         naked_branch = removeSecurityProxy(branch)
         admin = getUtility(ILaunchpadCelebrities).admin.teamowner
         access = AccessBranch(naked_branch)
@@ -98,11 +102,14 @@ class TestBranchVisibility(TestCaseWithFactory):
     def test_visible_to_subscribers(self):
         # Branches that are not public are viewable by members of the
         # visibility_team and to subscribers.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         naked_branch = removeSecurityProxy(branch)
         person = self.factory.makePerson()
         teamowner = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=teamowner, members=[person])
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            owner=teamowner, members=[person])
 
         # Not visible to an unsubscribed person.
         access = AccessBranch(naked_branch)
@@ -134,14 +141,17 @@ class TestBranchVisibility(TestCaseWithFactory):
         private_owner = self.factory.makePerson()
         test_branches = []
         for x in range(5):
-            # We want the first 3 public and the last 3 private
-            branch = self.factory.makeBranch(name='branch_%s' % x)
-            # The 3rd, 4th and 5th will be explicitly private.
-            branch.explicitly_private = x > 2
+            # We want the first 3 public and the last 3 private.
+            information_type = InformationType.PUBLIC
+            if x > 2:
+                information_type = InformationType.USERDATA
+            branch = self.factory.makeBranch(
+                information_type=information_type)
             test_branches.append(branch)
         test_branches.append(
             self.factory.makeBranch(
-                name='branch_5', private=True, owner=private_owner))
+                owner=private_owner,
+                information_type=InformationType.USERDATA))
 
         # Anonymous users see just the public branches.
         branch_info = [(branch, branch.private)

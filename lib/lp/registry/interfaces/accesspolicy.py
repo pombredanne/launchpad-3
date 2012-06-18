@@ -159,6 +159,13 @@ class IAccessPolicyArtifactSource(Interface):
             pairs.
         """
 
+    def delete(links):
+        """Delete the specified `IAccessPolicyArtifacts`s.
+
+        :param links: a collection of (`IAccessArtifact`, `IAccessPolicy`)
+            pairs.
+        """
+
     def findByArtifact(artifacts):
         """Return all `IAccessPolicyArtifact` objects for the artifacts."""
 
@@ -258,5 +265,5 @@ class IAccessPolicyGrantFlatSource(Interface):
         """Find the `IAccessArtifact`s for grantee and policies.
 
         :param grantee: the access artifact grantee.
-        :param policies: a collection of `IAccesPolicy`s.
+        :param policies: a collection of `IAccessPolicy`s.
         """

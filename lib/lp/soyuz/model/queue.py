@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1215,7 +1215,8 @@ class PackageUploadSource(SQLBase):
             distroseries=self.packageupload.distroseries,
             component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
-            pocket=self.packageupload.pocket)
+            pocket=self.packageupload.pocket,
+            packageupload=self.packageupload)
 
 
 class PackageUploadCustom(SQLBase):
@@ -1237,7 +1238,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # This is a marker as per the comment in dbschema.py.
+        # This is a marker as per the comment in lib/lp/soyuz/enums.py:
         ##CUSTOMFORMAT##
         # Essentially, if you alter anything to do with what custom formats
         # are, what their tags are, or anything along those lines, you should

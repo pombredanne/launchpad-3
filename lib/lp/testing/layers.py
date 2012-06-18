@@ -111,10 +111,10 @@ from lp.services.config.fixture import (
     ConfigUseFixture,
     )
 from lp.services.database.sqlbase import session_store
-from lp.services.job.tests import celeryd
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
+from lp.services.job.tests import celeryd
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
 from lp.services.mail.mailbox import (
     IMailBox,

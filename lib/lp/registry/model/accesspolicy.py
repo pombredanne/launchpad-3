@@ -9,45 +9,76 @@ __all__ = [
     'AccessPolicy',
     'AccessPolicyArtifact',
     'AccessPolicyGrant',
+    'reconcile_access_for_artifact',
     ]
 
 from collections import defaultdict
 
 import pytz
+from storm import Undef
 from storm.expr import (
     And,
     In,
+    Join,
     Or,
     Select,
     SQL,
+    With,
     )
 from storm.properties import (
     DateTime,
     Int,
     )
 from storm.references import Reference
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.enums import (
     InformationType,
+    PUBLIC_INFORMATION_TYPES,
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
+    IAccessPolicySource,
     )
 from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import create
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
+
+
+def reconcile_access_for_artifact(artifact, information_type, pillars):
+    if information_type in PUBLIC_INFORMATION_TYPES:
+        # If it's public we can delete all the access information.
+        # IAccessArtifactSource handles the cascade.
+        getUtility(IAccessArtifactSource).delete([artifact])
+        return
+    [abstract_artifact] = getUtility(IAccessArtifactSource).ensure([artifact])
+
+    # Now determine the existing and desired links, and make them
+    # match.
+    apasource = getUtility(IAccessPolicyArtifactSource)
+    wanted_links = set(
+        (abstract_artifact, policy) for policy in
+        getUtility(IAccessPolicySource).find(
+            (pillar, information_type) for pillar in pillars))
+    existing_links = set([
+        (apa.abstract_artifact, apa.policy)
+        for apa in apasource.findByArtifact([abstract_artifact])])
+    apasource.create(wanted_links - existing_links)
+    apasource.delete(existing_links - wanted_links)
 
 
 class AccessArtifact(StormBase):
@@ -174,6 +205,9 @@ class AccessPolicy(StormBase):
     @classmethod
     def find(cls, pillars_and_types):
         """See `IAccessPolicySource`."""
+        pillars_and_types = list(pillars_and_types)
+        if len(pillars_and_types) == 0:
+            return EmptyResultSet()
         return IStore(cls).find(
             cls,
             Or(*(
@@ -222,11 +256,18 @@ class AccessPolicyArtifact(StormBase):
     @classmethod
     def find(cls, links):
         """See `IAccessArtifactGrantSource`."""
+        links = list(links)
+        if len(links) == 0:
+            return EmptyResultSet()
         return IStore(cls).find(
             cls,
             Or(*(
                 And(cls.abstract_artifact == artifact, cls.policy == policy)
                 for (artifact, policy) in links)))
+
+    @classmethod
+    def delete(cls, links):
+        cls.find(links).remove()
 
     @classmethod
     def findByArtifact(cls, artifacts):
@@ -359,6 +400,29 @@ class AccessPolicyGrantFlat(StormBase):
             Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
 
     @classmethod
+    def _populatePermissionsCache(cls, permissions_cache,
+                                  shared_artifact_info_types, grantee_ids,
+                                  policies_by_id, persons_by_id):
+            all_permission_term = SQL("bool_or(artifact IS NULL) as all")
+            some_permission_term = SQL(
+                "bool_or(artifact IS NOT NULL) as some")
+            constraints = [
+                cls.grantee_id.is_in(grantee_ids),
+                cls.policy_id.is_in(policies_by_id.keys())]
+            result_set = IStore(cls).find(
+                (cls.grantee_id, cls.policy_id, all_permission_term,
+                 some_permission_term),
+                *constraints).group_by(cls.grantee_id, cls.policy_id)
+            for (person_id, policy_id, has_all, has_some) in result_set:
+                person = persons_by_id[person_id]
+                policy = policies_by_id[policy_id]
+                permissions_cache[person][policy] = (
+                    SharingPermission.ALL if has_all
+                    else SharingPermission.SOME)
+                if has_some:
+                    shared_artifact_info_types[person].append(policy.type)
+
+    @classmethod
     def findGranteePermissionsByPolicy(cls, policies, grantees=None):
         """See `IAccessPolicyGrantFlatSource`."""
         policies_by_id = dict((policy.id, policy) for policy in policies)
@@ -380,24 +444,9 @@ class AccessPolicyGrantFlat(StormBase):
             # load any corresponding permissions and cache them.
             people_by_id = dict(
                 (person[0].id, person[0]) for person in people)
-            all_permission_term = SQL("bool_or(artifact IS NULL) as all")
-            some_permission_term = SQL(
-                "bool_or(artifact IS NOT NULL) as some")
-            constraints = [
-                cls.grantee_id.is_in(people_by_id.keys()),
-                cls.policy_id.is_in(policies_by_id.keys())]
-            result_set = IStore(cls).find(
-                (cls.grantee_id, cls.policy_id, all_permission_term,
-                 some_permission_term),
-                *constraints).group_by(cls.grantee_id, cls.policy_id)
-            for (person_id, policy_id, has_all, has_some) in result_set:
-                person = people_by_id[person_id]
-                policy = policies_by_id[policy_id]
-                permissions_cache[person][policy] = (
-                    SharingPermission.ALL if has_all
-                    else SharingPermission.SOME)
-                if has_some:
-                    shared_artifact_info_types[person].append(policy.type)
+            cls._populatePermissionsCache(
+                permissions_cache, shared_artifact_info_types,
+                people_by_id.keys(), policies_by_id, people_by_id)
 
         constraints = [cls.policy_id.is_in(policies_by_id.keys())]
         if grantees:
@@ -415,6 +464,91 @@ class AccessPolicyGrantFlat(StormBase):
         return DecoratedResultSet(
             result_set,
             result_decorator=set_permission, pre_iter_hook=load_permissions)
+
+    @classmethod
+    def _populateIndirectGranteePermissions(cls,
+                                            policies_by_id, result_set):
+        # A cache for the sharing permissions, keyed on grantee.
+        permissions_cache = defaultdict(dict)
+        # A cache of teams belonged to, keyed by grantee.
+        via_teams_cache = defaultdict(list)
+        grantees_by_id = defaultdict()
+        # Information types for which there are shared artifacts.
+        shared_artifact_info_types = defaultdict(list)
+
+        def set_permission(grantee):
+            # Lookup the permissions from the previously loaded cache.
+            via_team_ids = via_teams_cache[grantee[0].id]
+            via_teams = sorted(
+                [grantees_by_id[team_id] for team_id in via_team_ids],
+                key=lambda x: x.displayname)
+            permissions = permissions_cache[grantee[0]]
+            shared_info_types = shared_artifact_info_types[grantee[0]]
+            # For access via teams, we need to use the team permissions. If a
+            # person has access via more than one team, we use the most
+            # powerful permission of all that are there.
+            for team in via_teams:
+                team_permissions = permissions_cache[team]
+                shared_info_types = []
+                for info_type, permission in team_permissions.items():
+                    permission_to_use = permissions.get(info_type, permission)
+                    if permission == SharingPermission.ALL:
+                        permission_to_use = permission
+                    elif permission == SharingPermission.SOME:
+                        shared_info_types.append(info_type.type)
+                    permissions[info_type] = permission_to_use
+            result = (
+                grantee[0], permissions, via_teams or None,
+                shared_info_types)
+            return result
+
+        def load_teams_and_permissions(grantees):
+            # We now have the grantees we want in the result so load any
+            # associated team memberships and permissions and cache them.
+            if permissions_cache:
+                return
+            store = IStore(cls)
+            for grantee in grantees:
+                grantees_by_id[grantee[0].id] = grantee[0]
+            # Find any teams associated with the grantees. If grantees is a
+            # sliced list (for batching), it may contain indirect grantees but
+            # not the team they belong to so that needs to be fixed below.
+            with_expr = With("grantees", store.find(
+                cls.grantee_id, cls.policy_id.is_in(policies_by_id.keys())
+                ).config(distinct=True)._get_select())
+            result_set = store.with_(with_expr).find(
+                (TeamParticipation.teamID, TeamParticipation.personID),
+                TeamParticipation.personID.is_in(grantees_by_id.keys()),
+                TeamParticipation.teamID.is_in(
+                    Select(
+                        (SQL("grantees.grantee"),),
+                        tables="grantees",
+                        distinct=True)))
+            team_ids = set()
+            direct_grantee_ids = set()
+            for team_id, team_member_id in result_set:
+                if team_member_id == team_id:
+                    direct_grantee_ids.add(team_member_id)
+                else:
+                    via_teams_cache[team_member_id].append(team_id)
+                    team_ids.add(team_id)
+            # Remove from the via_teams cache all the direct grantees.
+            for direct_grantee_id in direct_grantee_ids:
+                if direct_grantee_id in via_teams_cache:
+                    del via_teams_cache[direct_grantee_id]
+            # Load and cache the additional required teams.
+            persons = store.find(Person, Person.id.is_in(team_ids))
+            for person in persons:
+                grantees_by_id[person.id] = person
+
+            cls._populatePermissionsCache(
+                permissions_cache, shared_artifact_info_types,
+                grantees_by_id.keys(), policies_by_id, grantees_by_id)
+
+        return DecoratedResultSet(
+            result_set,
+            result_decorator=set_permission,
+            pre_iter_hook=load_teams_and_permissions)
 
     @classmethod
     def findArtifactsByGrantee(cls, grantee, policies):

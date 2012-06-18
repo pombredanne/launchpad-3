@@ -115,6 +115,15 @@ class TestPersonSet(TestCaseWithFactory):
             "PersonSet.getByEmail() should ignore case and whitespace.")
         self.assertEqual(person1, person2)
 
+    def test_getByEmail_ignores_unvalidated_emails(self):
+        person = self.factory.makePerson()
+        unvalidated_email = self.factory.makeEmail(
+            'fnord@example.com',
+            person,
+            email_status=EmailAddressStatus.NEW)
+        found = self.person_set.getByEmail('fnord@example.com')
+        self.assertTrue(found is None)
+        
     def test_getPrecachedPersonsFromIDs(self):
         # The getPrecachedPersonsFromIDs() method should only make one
         # query to load all the extraneous data. Accessing the
@@ -139,6 +148,40 @@ class TestPersonSet(TestCaseWithFactory):
                 person.archive
                 person.preferredemail
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
+
+    def test_getByOpenIDIdentifier_returns_person(self):
+        # getByOpenIDIdentifier takes a full OpenID identifier and
+        # returns the corresponding person.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            identifier = person.account.openid_identifiers.one().identifier
+        self.assertEqual(
+            person,
+            self.person_set.getByOpenIDIdentifier(
+                u'http://openid.launchpad.dev/+id/%s' % identifier))
+        self.assertEqual(
+            person,
+            self.person_set.getByOpenIDIdentifier(
+                u'http://ubuntu-openid.launchpad.dev/+id/%s' % identifier))
+
+    def test_getByOpenIDIdentifier_for_nonexistent_identifier_is_none(self):
+        # None is returned if there's no matching person.
+        self.assertIs(
+            None,
+            self.person_set.getByOpenIDIdentifier(
+                u'http://openid.launchpad.dev/+id/notanid'))
+
+    def test_getByOpenIDIdentifier_for_bad_domain_is_none(self):
+        # Even though the OpenIDIdentifier table doesn't store the
+        # domain, we verify it against our known OpenID faux-vhosts.
+        # If it doesn't match, we don't even try to check the identifier.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            identifier = person.account.openid_identifiers.one().identifier
+        self.assertIs(
+            None,
+            self.person_set.getByOpenIDIdentifier(
+                u'http://not.launchpad.dev/+id/%s' % identifier))
 
 
 class TestPersonSetMergeMailingListSubscriptions(TestCaseWithFactory):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposal listing views."""
@@ -23,6 +23,7 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
+from lp.registry.enums import InformationType
 from lp.registry.model.personproduct import PersonProduct
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -380,7 +381,8 @@ class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
         # Merge proposals against private branches are visible to
         # the branch owner.
         product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(private=True, product=product)
+        branch = self.factory.makeBranch(
+            product=product, information_type=InformationType.USERDATA)
         with person_logged_in(removeSecurityProxy(branch).owner):
             mp = self.factory.makeBranchMergeProposal(target_branch=branch)
             view = create_initialized_view(

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the IBranchLookup implementation."""
@@ -25,6 +25,7 @@ from lp.code.interfaces.codehosting import (
     BRANCH_ID_ALIAS_PREFIX,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.enums import InformationType
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -135,7 +136,8 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
     def test_branch_id_alias_private(self):
         # Private branches are not found at all (this is for anonymous access)
         owner = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(owner=owner, private=True)
+        branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             path = branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
@@ -146,8 +148,9 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         # (this is for anonymous access)
         owner = self.factory.makePerson()
         private_branch = self.factory.makeAnyBranch(
-            owner=owner, private=True)
-        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+            owner=owner, information_type=InformationType.USERDATA)
+        branch = self.factory.makeAnyBranch(
+            stacked_on=private_branch, owner=owner)
         with person_logged_in(owner):
             path = branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
@@ -546,7 +549,8 @@ class TestGetByLPPath(TestCaseWithFactory):
     def test_private_branch(self):
         # If the unique name refers to an invisible branch, getByLPPath raises
         # NoSuchBranch, just as if the branch weren't there at all.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         path = removeSecurityProxy(branch).unique_name
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, path)
@@ -554,7 +558,8 @@ class TestGetByLPPath(TestCaseWithFactory):
     def test_transitive_private_branch(self):
         # If the unique name refers to an invisible branch, getByLPPath raises
         # NoSuchBranch, just as if the branch weren't there at all.
-        private_branch = self.factory.makeAnyBranch(private=True)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         branch = self.factory.makeAnyBranch(stacked_on=private_branch)
         path = removeSecurityProxy(branch).unique_name
         self.assertRaises(
@@ -641,7 +646,8 @@ class TestGetByLPPath(TestCaseWithFactory):
         # If the given path refers to an object with an invisible linked
         # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
         # weren't there at all.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         product = removeSecurityProxy(branch).product
         removeSecurityProxy(product).development_focus.branch = branch
         self.assertRaises(
@@ -651,7 +657,8 @@ class TestGetByLPPath(TestCaseWithFactory):
         # If the given path refers to an object with an invisible linked
         # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
         # weren't there at all.
-        private_branch = self.factory.makeProductBranch(private=True)
+        private_branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         branch = self.factory.makeProductBranch(stacked_on=private_branch)
         product = removeSecurityProxy(branch).product
         removeSecurityProxy(product).development_focus.branch = branch

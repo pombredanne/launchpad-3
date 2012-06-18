@@ -511,8 +511,8 @@ class LinkUpstreamHowOptions(EnumeratedType):
 #    mailing lists."
 
     UNLINKED_UPSTREAM = Item(
-        """I just want to register that it is upstream right now; \
-           I don't have any way to link it.
+        """I want to add this upstream project to the bug report, but someone\
+        must find or report this bug in the upstream bug tracker.
 
         Launchpad will record that.
         """)

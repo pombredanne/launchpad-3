@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Functions and classes that are subscribed to registry events."""
 
@@ -14,10 +14,7 @@ import textwrap
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import (
-    IPerson,
-    IPersonViewRestricted,
-    )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
 from lp.services.config import config
 from lp.services.mail.helpers import get_email_template
@@ -33,12 +30,8 @@ from lp.services.webapp.publisher import (
 
 
 def product_licenses_modified(product, event):
-    """Send a notification if licenses changed and a license is special."""
-    if not event.edited_fields:
-        return
-    licenses_changed = 'licenses' in event.edited_fields
-    needs_notification = LicenseNotification.needs_notification(product)
-    if licenses_changed and needs_notification:
+    """Send a notification if licences changed and a licence is special."""
+    if LicenseNotification.needs_notification(product):
         user = IPerson(event.user)
         notification = LicenseNotification(product, user)
         notification.send()
@@ -46,7 +39,7 @@ def product_licenses_modified(product, event):
 
 
 class LicenseNotification:
-    """Send notification about special licenses to the user."""
+    """Send notification about special licences to the user."""
 
     def __init__(self, product, user):
         self.product = product
@@ -88,9 +81,9 @@ class LicenseNotification:
         return textwrap.fill(message, 72)
 
     def send(self):
-        """Send a message to the user about the product's license."""
+        """Send a message to the user about the product's licence."""
         if not self.needs_notification(self.product):
-            # The project has a common license.
+            # The project has a common licence.
             return False
         user_address = format_address(
             self.user.displayname, self.user.preferredemail.email)
@@ -105,9 +98,9 @@ class LicenseNotification:
             product_url=canonical_url(self.product),
             commercial_use_expiration=self.getCommercialUseMessage(),
             )
-        # Email the user about license policy.
+        # Email the user about licence policy.
         subject = (
-            "License information for %(product_name)s "
+            "Licence information for %(product_name)s "
             "in Launchpad" % substitutions)
         template = get_email_template(
             self.getTemplateName(), app='registry')
@@ -115,12 +108,12 @@ class LicenseNotification:
         simple_sendmail(
             from_address, user_address,
             subject, message, headers={'Reply-To': commercial_address})
-        # Inform that Launchpad recognized the license change.
+        # Inform that Launchpad recognized the licence change.
         self._addLicenseChangeToReviewWhiteboard()
         return True
 
     def display(self):
-        """Show a message in a browser page about the product's license."""
+        """Show a message in a browser page about the product's licence."""
         request = get_current_browser_request()
         message = self.getCommercialUseMessage()
         if request is None or message == '':
@@ -142,7 +135,7 @@ class LicenseNotification:
     def _addLicenseChangeToReviewWhiteboard(self):
         """Update the whiteboard for the reviewer's benefit."""
         now = self._formatDate()
-        whiteboard = 'User notified of license policy on %s.' % now
+        whiteboard = 'User notified of licence policy on %s.' % now
         naked_product = removeSecurityProxy(self.product)
         if naked_product.reviewer_whiteboard is None:
             naked_product.reviewer_whiteboard = whiteboard

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'admin_logged_in',
     'anonymous_logged_in',
     'celebrity_logged_in',
     'login',
@@ -129,6 +130,13 @@ def login_celebrity(celebrity_name, participation=None):
     return login_as(celeb, participation=participation)
 
 
+def login_admin(ignored, participation=None):
+    """Log in as an admin."""
+    login(ANONYMOUS)
+    admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+    return login_as(admin, participation=participation)
+
+
 def logout():
     """Tear down after login(...), ending the current interaction.
 
@@ -178,6 +186,12 @@ def anonymous_logged_in():
 def celebrity_logged_in(celebrity_name):
     """Make a context manager for running logged in as a celebrity."""
     return _with_login(login_celebrity, celebrity_name)
+
+
+@contextmanager
+def admin_logged_in():
+    # Use teamowner to avoid expensive and noisy team member additions.
+    return _with_login(login_admin, None)
 
 
 with_anonymous_login = decorate_with(person_logged_in, None)

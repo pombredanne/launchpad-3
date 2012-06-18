@@ -376,7 +376,7 @@ Attributes can be edited via the webservice.patch() method.
     >>> patch = {
     ...     u'driver_link': webservice.getAbsoluteUrl('/~mark'),
     ...     u'homepage_url': u'http://sf.net/firefox',
-    ...     u'licenses': [u'Python License', u'GNU GPL v2'],
+    ...     u'licenses': [u'Python Licence', u'GNU GPL v2'],
     ...     u'bug_tracker_link':
     ...         webservice.getAbsoluteUrl('/bugs/bugtrackers/mozilla.org'),
     ...     }
@@ -687,7 +687,7 @@ Similarly we can find new projects.
     APTonCD
     ...
 
-All of the projects of a given license can be found.
+All of the projects of a given licence can be found.
 
     >>> proprietary = webservice.named_get(
     ...     "/projects", "licensing_search",
@@ -740,7 +740,7 @@ Verify a project does not exist and then create it.
 
     >>> print create_project('my-new-project', 'My New Project',
     ...     'My New Project', 'My Shiny New Project',
-    ...     licenses=["Zope Public License", "GNU GPL v2"],
+    ...     licenses=["Zope Public Licence", "GNU GPL v2"],
     ...     wiki_url="http://example.com/shiny")
     HTTP/1.1 201 Created
     ...
@@ -762,7 +762,7 @@ Verify a project does not exist and then create it.
     My Shiny New Project
 
     >>> print sorted(new_project['licenses'])
-    [u'GNU GPL v2', u'Zope Public License']
+    [u'GNU GPL v2', u'Zope Public Licence']
 
     >>> print new_project['project_reviewed']
     False

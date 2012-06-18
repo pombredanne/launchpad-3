@@ -616,7 +616,8 @@ class AffectsEmailCommand(EmailCommand):
             if bugtask is not None:
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IBugTask)
-                bugtask.transitionToTarget(bug_target)
+                bugtask.transitionToTarget(
+                    bug_target, getUtility(ILaunchBag).user)
                 event = ObjectModifiedEvent(
                     bugtask, bugtask_before_edit, ['sourcepackagename'])
 

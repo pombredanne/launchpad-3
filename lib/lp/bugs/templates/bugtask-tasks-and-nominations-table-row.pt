@@ -22,7 +22,8 @@
            tal:attributes="
             id string:bugtask-delete-${data/form_row_id};
             href data/delete_link"
-           class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
+           class="sprite remove bugtask-delete action-icon"
+           style="margin-left: 4px">Remove</a>
     </td>
     <td tal:condition="not:data/indent_task">
       <span tal:attributes="id string:bugtarget-picker-${data/row_id}">
@@ -40,7 +41,8 @@
            tal:attributes="
             id string:bugtask-delete-${data/form_row_id};
             href data/delete_link"
-           class="sprite remove bugtask-delete" style="margin-left: 4px"></a>
+           class="sprite remove bugtask-delete action-icon"
+           style="margin-left: 4px">Remove</a>
       </span>
     </td>
 

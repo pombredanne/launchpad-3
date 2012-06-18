@@ -110,6 +110,37 @@
       <allow interface=".interfaces.persontransferjob.IPersonMergeJob"/>
     </class>
 
+    <!-- IProductNotificationJob -->
+    <securedutility
+        component=".model.productjob.CommercialExpiredJob"
+        provides=".interfaces.productjob.ICommercialExpiredJobSource">
+      <allow interface=".interfaces.productjob.ICommercialExpiredJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.CommercialExpiredJob">
+      <allow interface=".interfaces.productjob.ICommercialExpiredJob"/>
+    </class>
+
+    <securedutility
+        component=".model.productjob.SevenDayCommercialExpirationJob"
+        provides=".interfaces.productjob.ISevenDayCommercialExpirationJobSource">
+      <allow interface=".interfaces.productjob.ISevenDayCommercialExpirationJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.SevenDayCommercialExpirationJob">
+      <allow interface=".interfaces.productjob.ISevenDayCommercialExpirationJob"/>
+    </class>
+
+    <securedutility
+        component=".model.productjob.ThirtyDayCommercialExpirationJob"
+        provides=".interfaces.productjob.IThirtyDayCommercialExpirationJobSource">
+      <allow interface=".interfaces.productjob.IThirtyDayCommercialExpirationJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.ThirtyDayCommercialExpirationJob">
+      <allow interface=".interfaces.productjob.IThirtyDayCommercialExpirationJob"/>
+    </class>
+
     <!-- INameBlacklist -->
     <securedutility
         class="lp.registry.model.nameblacklist.NameBlacklistSet"
@@ -1070,7 +1101,7 @@
             interface="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"/>
     </class>
     <subscriber
-        for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="lp.registry.interfaces.product.IProduct lp.registry.interfaces.product.ILicensesModifiedEvent"
         handler="lp.registry.subscribers.product_licenses_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
@@ -1983,4 +2014,19 @@
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource"/>
     </securedutility>
+
+    <!-- Sharing jobs -->
+    <class class=".model.sharingjob.RemoveBugSubscriptionsJob">
+      <allow interface=".interfaces.sharingjob.IRemoveBugSubscriptionsJob"/>
+      <allow attributes="
+         context
+         log_name"/>
+    </class>
+
+    <securedutility
+        component=".model.sharingjob.RemoveBugSubscriptionsJob"
+        provides=".interfaces.sharingjob.IRemoveBugSubscriptionsJobSource">
+      <allow interface=".interfaces.sharingjob.IRemoveBugSubscriptionsJobSource"/>
+    </securedutility>
+
 </configure>

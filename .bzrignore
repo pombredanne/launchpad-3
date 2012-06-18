@@ -1,6 +1,5 @@
 .tags
 bzr-version-info.py
-logs
 logs/*
 +*
 sourcecode/*
@@ -71,10 +70,11 @@ configs/testrunner-appserver_*
 doc/_build
 .idea
 run.gdb
-lib/canonical/launchpad/icing/icon-sprites.png
-lib/canonical/launchpad/icing/icon-sprites.positioning
+lib/canonical/launchpad/icing/*-sprites-*.png
+lib/canonical/launchpad/icing/*.positioning
 lib/canonical/launchpad/icing/yui
 .emacs.desktop
 callgrind.out.*
 scripts/mlist-sync.py
 ./celerybeat-schedule
+!logs/README.txt

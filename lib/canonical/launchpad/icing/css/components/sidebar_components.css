@@ -24,16 +24,6 @@
 .side ul {
     background: #fbfbfb;
     }
-#privacy.private {
-    background: url(/@@/private-bg) top left repeat-x;  /* 8px high */
-    padding-top: 12px;  /* = 8px + the usual 4px top padding */
-    }
-/* Override for when the feature flag is active */
-.feature-flag-bugs-private-notification-enabled #privacy.private {
-    background-image: none;
-    background-color: #FBFBFB;
-    padding-top: 0.5em;
-    }
 .downloads li {
     margin: 0;
     padding: 2px 0 0;
