@@ -114,7 +114,7 @@ class SharingService:
         if bugs_by_id:
             param = BugTaskSearchParams(
                 user=person, bug=any(*bugs_by_id.keys()))
-            visible_bug_ids = list(getUtility(IBugTaskSet).searchBugIds(param))
+            visible_bug_ids = set(getUtility(IBugTaskSet).searchBugIds(param))
         visible_bugs = [bugs_by_id[bug_id] for bug_id in visible_bug_ids]
 
         # Load the branches.
