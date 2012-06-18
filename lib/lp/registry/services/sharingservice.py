@@ -10,16 +10,16 @@ __all__ = [
 
 from itertools import product
 
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
+from lazr.restful.utils import (
+    get_current_web_service_request,
+    )
+
 from storm.expr import (
     And,
     In,
     Not,
     Select,
-    )
-
-from lazr.restful.interfaces import IWebBrowserOriginatingRequest
-from lazr.restful.utils import (
-    get_current_web_service_request,
     )
 from zope.component import getUtility
 from zope.interface import implements
