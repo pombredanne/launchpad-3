@@ -14,10 +14,10 @@ from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import (
     get_current_web_service_request,
     )
-
 from storm.expr import (
     And,
     In,
+    Join,
     Not,
     Select,
     )
@@ -153,31 +153,30 @@ class SharingService:
         # Determine the grantees who have access via an access policy grant.
         policy_grantees = (
             Select(
-                (TeamParticipation.personID,),
+                (AccessPolicyGrant.grantee_id,),
                 where=And(
                     AccessPolicyArtifact.abstract_artifact == access_artifact,
                     AccessPolicyGrant.policy_id ==
-                        AccessPolicyArtifact.policy_id,
-                    AccessPolicyGrant.grantee_id ==
-                        TeamParticipation.teamID)))
+                        AccessPolicyArtifact.policy_id)))
 
         # Determine the grantees who have access via an access artifact grant.
         artifact_grantees = (
             Select(
-                (TeamParticipation.personID,),
+                (AccessArtifactGrant.grantee_id,),
                 where=And(
                     AccessArtifactGrant.abstract_artifact_id ==
-                        access_artifact.id,
-                    AccessArtifactGrant.grantee_id ==
-                        TeamParticipation.teamID)))
+                        access_artifact.id)))
 
         person_ids = [person.id for person in people]
         store = IStore(AccessArtifactGrant)
-        result_set = store.find(
+        tables = [
+            Person,
+            Join(TeamParticipation, TeamParticipation.personID == Person.id)]
+        result_set = store.using(*tables).find(
             Person,
             And(
-                Not(In(Person.id, policy_grantees)),
-                Not(In(Person.id, artifact_grantees))),
+                Not(In(TeamParticipation.teamID, policy_grantees)),
+                Not(In(TeamParticipation.teamID, artifact_grantees))),
             In(Person.id, person_ids))
 
         return result_set
