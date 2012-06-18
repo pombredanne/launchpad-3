@@ -70,13 +70,14 @@ class ISharingService(IService):
         :return: a collection of artifacts the person can see.
         """
 
-    def getPeopleWithoutAccess(artifact, people):
+    def getPeopleWithoutAccess(concrete_artifact, people):
         """Return the people who cannot access an artifact.
 
         Given a list of people, return those who do not have access to the
         specified bug or branch.
 
-        :param artifact: the bug or branch whose access is being checked.
+        :param concrete_artifact: the bug or branch whose access is being
+            checked.
         :param people: the people whose access is being checked.
         :return: a collection of people without access to the artifact.
         """
