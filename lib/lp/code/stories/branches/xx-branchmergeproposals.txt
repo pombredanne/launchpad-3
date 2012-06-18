@@ -103,7 +103,7 @@ commit message can be set.
     >>> nopriv_browser.getControl('Update').click()
 
     >>> print_tag_with_id(nopriv_browser.contents, 'edit-commit_message')
-    Commit Message
+    Edit Commit Message
     Add more &lt;b&gt;mojo&lt;/b&gt;
 
 A commit message can be removed deleting the text when editing.

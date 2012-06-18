@@ -630,7 +630,8 @@ Invalid users and anonymous contacters
 Inactive users and users without a preferred email address are invalid
 and cannot be contacted.
 
-    >>> former_user = person_set.getByEmail('former-user@canonical.com')
+    >>> former_user = person_set.getByEmail('former-user@canonical.com',
+    ...     filter_status=False)
     >>> view = create_initialized_view(former_user, '+contactuser')
     >>> view.request.response.getStatus()
     302

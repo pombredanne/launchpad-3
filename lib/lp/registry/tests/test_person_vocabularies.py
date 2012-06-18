@@ -21,6 +21,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.webapp.vocabulary import FilteredVocabularyBase
 from lp.testing import (
     login_person,
@@ -370,6 +371,14 @@ class TestValidTeamVocabulary(VocabularyTestBase,
         # The vocab shouldn't support person or team filters.
         self.assertEqual([], self.getVocabulary(None).supportedFilters())
 
+    def test_unvalidated_emails_ignored(self):
+        person = self.factory.makePerson()
+        unvalidated_email = self.factory.makeEmail(
+            'fnord@example.com',
+            person,
+            email_status=EmailAddressStatus.NEW)
+        search = self.searchVocabulary(None, 'fnord@example.com')
+        self.assertEqual([], [s for s in search])
 
 class TestNewPillarShareeVocabulary(VocabularyTestBase,
                                         TestCaseWithFactory):

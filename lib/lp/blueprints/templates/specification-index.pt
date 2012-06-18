@@ -269,7 +269,7 @@
 
     <div class="portlet">
       <a href="/+help-blueprints/workitems-help.html" target="help"
-         class="sprite maybe actionicon"><span class="invisible-link">Tag help</span></a>
+         class="sprite maybe action-icon">(?)</a>
       <div class="wide" tal:content="structure view/workitems_text_widget" />
     </div>
 
