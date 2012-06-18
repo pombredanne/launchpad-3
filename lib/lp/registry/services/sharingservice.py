@@ -127,6 +127,15 @@ class SharingService:
 
         return visible_bugs, visible_branches
 
+    def getPeopleWithoutAccess(self, artifact, people):
+        """See `ISharingService`."""
+        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        access_artifacts = list(
+            getUtility(IAccessArtifactSource).find([artifact]))
+        return (
+            access_artifacts and
+            ap_grant_flat.findPeopleWithoutAccess(access_artifacts[0], people))
+
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [
@@ -365,7 +374,7 @@ class SharingService:
         # XXX 2012-06-13 wallyworld bug=1012448
         # Remove branch subscriptions when information type fully implemented.
 
-    def ensureAccessGrants(self, sharee, user, branches=None, bugs=None,
+    def ensureAccessGrants(self, sharees, user, branches=None, bugs=None,
                            ignore_permissions=False):
         """See `ISharingService`."""
 
@@ -391,9 +400,9 @@ class SharingService:
         artifacts_with_grants = [
             artifact_grant.abstract_artifact
             for artifact_grant in
-            aagsource.find([(artifact, sharee) for artifact in artifacts])]
+            aagsource.find(product(artifacts, sharees))]
         # Create access to bugs/branches for the specified sharee for which a
         # grant does not already exist.
         missing_artifacts = set(artifacts) - set(artifacts_with_grants)
         getUtility(IAccessArtifactGrantSource).grant(
-            list(product(missing_artifacts, [sharee], [user])))
+            list(product(missing_artifacts, sharees, [user])))

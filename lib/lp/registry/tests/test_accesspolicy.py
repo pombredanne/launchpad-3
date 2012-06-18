@@ -666,6 +666,20 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.assertContentEqual(
             [artifact], self.apgfs.findArtifactsByGrantee(grantee, [policy]))
 
+    def test_findPeopleWithoutAccess(self):
+        # findPeopleWithoutAccess() returns the people who do not have access
+        # to an artifact.
+        policy = self.factory.makeAccessPolicy()
+        artifact = self.factory.makeAccessArtifact()
+        grantee_with_access = self.factory.makePerson()
+        grantee_without_access = self.factory.makePerson()
+        self.factory.makeAccessArtifactGrant(artifact, grantee_with_access)
+        self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
+        self.assertContentEqual(
+            [grantee_without_access],
+            self.apgfs.findPeopleWithoutAccess(
+                artifact, [grantee_with_access, grantee_without_access]))
+
 
 class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
 

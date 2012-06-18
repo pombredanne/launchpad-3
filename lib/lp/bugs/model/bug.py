@@ -842,13 +842,15 @@ class Bug(SQLBase):
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
-        # Grant the subscriber access if they can't see the bug.
-        service = getUtility(IService, 'sharing')
-        bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
-        if not bugs:
-            service.ensureAccessGrants(
-                person, subscribed_by, bugs=[self],
-                ignore_permissions=True)
+        # Grant the subscriber access if they can't see the bug but only if
+        # there is at least one bugtask for which access can be checked.
+        if self.default_bugtask:
+            service = getUtility(IService, 'sharing')
+            bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+            if not bugs:
+                service.ensureAccessGrants(
+                    [person], subscribed_by, bugs=[self],
+                    ignore_permissions=True)
 
         # In some cases, a subscription should be created without
         # email notifications.  suppress_notify determines if
@@ -1804,6 +1806,21 @@ class Bug(SQLBase):
 
         self.information_type = information_type
         self._reconcileAccess()
+
+        # If the transition makes the bug private, then we need to ensure all
+        # subscribers can see the bug. For any who can't, we create an access
+        # artifact grant.
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            # Grant the subscriber access if they can't see the bug.
+            service = getUtility(IService, 'sharing')
+            subscribers = self.getDirectSubscribers()
+            blind_subscribers = service.getPeopleWithoutAccess(
+                self, subscribers)
+            if blind_subscribers.count():
+                service.ensureAccessGrants(
+                    blind_subscribers, who, bugs=[self],
+                    ignore_permissions=True)
+
         self.updateHeat()
 
         flag = 'disclosure.unsubscribe_jobs.enabled'
@@ -2673,6 +2690,19 @@ class BugSet:
 
         bug, event = self.createBugWithoutTarget(params)
 
+        # Create the task on a product if one was passed.
+        if params.product:
+            getUtility(IBugTaskSet).createTask(
+                bug, params.owner, params.product, status=params.status)
+
+        # Create the task on a source package name if one was passed.
+        if params.distribution:
+            target = params.distribution
+            if params.sourcepackagename:
+                target = target.getSourcePackage(params.sourcepackagename)
+            getUtility(IBugTaskSet).createTask(
+                bug, params.owner, target, status=params.status)
+
         if params.information_type in SECURITY_INFORMATION_TYPES:
             if params.product:
                 context = params.product
@@ -2694,19 +2724,6 @@ class BugSet:
                 bug.subscribe(params.product.bug_supervisor, params.owner)
             else:
                 bug.subscribe(params.product.owner, params.owner)
-
-        # Create the task on a product if one was passed.
-        if params.product:
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, params.product, status=params.status)
-
-        # Create the task on a source package name if one was passed.
-        if params.distribution:
-            target = params.distribution
-            if params.sourcepackagename:
-                target = target.getSourcePackage(params.sourcepackagename)
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, target, status=params.status)
 
         bug_task = bug.default_bugtask
         if params.assignee:

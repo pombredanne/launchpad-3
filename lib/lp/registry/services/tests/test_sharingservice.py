@@ -895,7 +895,7 @@ class TestSharingService(TestCaseWithFactory):
             grantee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
             self.service.ensureAccessGrants(
-                grantee, user, bugs=bugs, branches=branches)
+                [grantee], user, bugs=bugs, branches=branches)
 
         # Check that grantee has expected access grants.
         shared_bugs = []
@@ -966,7 +966,7 @@ class TestSharingService(TestCaseWithFactory):
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
                 Unauthorized, self.service.ensureAccessGrants,
-                user, sharee, bugs=[bug])
+                [sharee], user, bugs=[bug])
 
     def test_ensureAccessGrantsAnonymous(self):
         # Anonymous users are not allowed.
@@ -991,7 +991,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         self.assertRaises(
             Unauthorized, self.service.ensureAccessGrants,
-            sharee, product.owner, bugs=[bug])
+            [sharee], product.owner, bugs=[bug])
 
     def test_getSharedArtifacts(self):
         # Test the getSharedArtifacts method.
@@ -1050,6 +1050,35 @@ class TestSharingService(TestCaseWithFactory):
             product, grantee, user)
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
         self.assertContentEqual(branches[:9], shared_branches)
+
+    def test_getPeopleWithoutAccess(self):
+        # Test the getPeopleWithoutAccess method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+
+        # Make some people to check.
+        people = []
+        for x in range(0, 10):
+            person = self.factory.makePerson()
+            people.append(person)
+        bug = self.factory.makeBug(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        access_artifact = self.factory.makeAccessArtifact(concrete=bug)
+
+        def grant_access(person):
+            self.factory.makeAccessArtifactGrant(
+                artifact=access_artifact, grantee=person, grantor=owner)
+            return access_artifact
+
+        # Grant access to some of the people.
+        for person in people[:5]:
+            grant_access(person)
+
+        # Check the results.
+        without_access = self.service.getPeopleWithoutAccess(bug, people)
+        self.assertContentEqual(people[5:], without_access)
 
     def test_getVisibleArtifacts(self):
         # Test the getVisibleArtifacts method.

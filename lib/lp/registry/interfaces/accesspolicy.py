@@ -267,3 +267,10 @@ class IAccessPolicyGrantFlatSource(Interface):
         :param grantee: the access artifact grantee.
         :param policies: a collection of `IAccessPolicy`s.
         """
+
+    def findPeopleWithoutAccess(artifact, people):
+        """Find the people without access to the specified artifact.
+
+        :param artifact: the access artifact for which to check access.
+        :param people: the people for whom to check access.
+        """

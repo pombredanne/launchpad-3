@@ -59,7 +59,6 @@ from lp.bugs.model.bugtasksearch import (
     _build_status_clause,
     _build_tag_search_clause,
     )
-from lp.bugs.model.tests.test_bug import LEGACY_ACCESS_TRIGGERS
 from lp.bugs.scripts.bugtasktargetnamecaches import (
     BugTaskTargetNameCacheUpdater,
     )
@@ -123,7 +122,6 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
-from lp.testing.dbtriggers import triggers_disabled
 from lp.testing.dbuser import (
     dbuser,
     switch_dbuser,
@@ -242,7 +240,7 @@ class TestBugTaskCreation(TestCaseWithFactory):
 
         # There are also transitional triggers that do this. Disable
         # them temporarily so we can be sure the application side works.
-        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+        with disable_trigger_fixture():
             with admin_logged_in():
                 old_product = bug.default_bugtask.product
                 getUtility(IBugTaskSet).createManyTasks(
@@ -2209,7 +2207,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
 
         # There are also transitional triggers that do this. Disable
         # them temporarily so we can be sure the application side works.
-        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+        with disable_trigger_fixture():
             with admin_logged_in():
                 task.delete()
 
@@ -3290,7 +3288,7 @@ class TestTransitionToTarget(TestCaseWithFactory):
 
         # There are also transitional triggers that do this. Disable
         # them temporarily so we can be sure the application side works.
-        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+        with disable_trigger_fixture():
             with admin_logged_in():
                 bug.default_bugtask.transitionToTarget(
                     new_product, new_product.owner)

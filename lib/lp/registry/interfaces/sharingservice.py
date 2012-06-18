@@ -70,6 +70,17 @@ class ISharingService(IService):
         :return: a collection of artifacts the person can see.
         """
 
+    def getPeopleWithoutAccess(artifact, people):
+        """Return the people who cannot access an artifact.
+
+        Given a list of people, return those who do not have access to the
+        specified bug or branch.
+
+        :param artifact: the bug or branch whose access is being checked.
+        :param people: the people whose access is being checked.
+        :return: a collection of people without access to the artifact.
+        """
+
     def getInformationTypes(pillar):
         """Return the allowed information types for the given pillar."""
 
@@ -165,16 +176,17 @@ class ISharingService(IService):
     @export_write_operation()
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        sharee=Reference(IPerson, title=_('Sharee'), required=True),
+        sharees=List(
+            Reference(IPerson, title=_('Sharee'), required=True)),
         bugs=List(
             Reference(schema=IBug), title=_('Bugs'), required=False),
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def ensureAccessGrants(sharee, user, branches=None, bugs=None):
+    def ensureAccessGrants(sharees, user, branches=None, bugs=None):
         """Ensure a sharee has an access grant to the specified artifacts.
 
-        :param sharee: the person or team for whom to grant access
+        :param sharees: the people or teams for whom to grant access
         :param user: the user making the request
         :param bugs: the bugs for which to grant access
         :param branches: the branches for which to grant access

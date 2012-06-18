@@ -224,6 +224,7 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
     start = BugTaskFlat
     if just_bug_ids:
         want = BugTaskFlat.bug_id
+        orderby_expression = want
     else:
         want = BugTaskFlat.bugtask_id
         decorators.append(lambda id: IStore(BugTask).get(BugTask, id))
@@ -275,6 +276,8 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
         result = store.using(*origin).find(want)
 
     result.order_by(orderby_expression)
+    if just_bug_ids:
+        result.config(distinct=True)
     return DecoratedResultSet(
         result,
         lambda row: reduce(lambda task, dec: dec(task), decorators, row),
