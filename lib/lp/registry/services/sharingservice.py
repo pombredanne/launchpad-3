@@ -159,8 +159,7 @@ class SharingService:
                     AccessPolicyGrant.policy_id ==
                         AccessPolicyArtifact.policy_id,
                     AccessPolicyGrant.grantee_id ==
-                        TeamParticipation.teamID),
-                distinct=True))
+                        TeamParticipation.teamID)))
 
         # Determine the grantees who have access via an access artifact grant.
         artifact_grantees = (
@@ -170,8 +169,7 @@ class SharingService:
                     AccessArtifactGrant.abstract_artifact_id ==
                         access_artifact.id,
                     AccessArtifactGrant.grantee_id ==
-                        TeamParticipation.teamID),
-                distinct=True))
+                        TeamParticipation.teamID)))
 
         person_ids = [person.id for person in people]
         store = IStore(AccessArtifactGrant)
