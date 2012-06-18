@@ -27,13 +27,10 @@ CREATE OR REPLACE FUNCTION _ftq(text) RETURNS text
         query = re.sub(r"(?u)\bNOT\b", " !", query)
         ## plpy.debug('2 query is %s' % repr(query))
 
-        # Deal with unwanted punctuation. We convert strings of punctuation
-        # inside words to a '-' character for the hypenation handling below
-        # to deal with further. Outside of words we replace with whitespace.
-        # We don't mess with -&|!()' as they are handled later.
-        #punctuation = re.escape(r'`~@#$%^*+=[]{}:;"<>,.?\/')
-        punctuation = r"[^\w\s\-\&\|\!\(\)']"
-        query = re.sub(r"(?u)(\w)%s+(\w)" % (punctuation,), r"\1-\2", query)
+        # Deal with unwanted punctuation.
+        # ':' is used in queries to specify a weight of a word.
+        # '\' is treated differently in to_tsvector() and to_tsquery().
+        punctuation = r'[:\\]'
         query = re.sub(r"(?u)%s+" % (punctuation,), " ", query)
         ## plpy.debug('3 query is %s' % repr(query))
 
@@ -140,13 +137,10 @@ CREATE OR REPLACE FUNCTION ftq(text) RETURNS pg_catalog.tsquery
         query = re.sub(r"(?u)\bNOT\b", " !", query)
         ## plpy.debug('2 query is %s' % repr(query))
 
-        # Deal with unwanted punctuation. We convert strings of punctuation
-        # inside words to a '-' character for the hypenation handling below
-        # to deal with further. Outside of words we replace with whitespace.
-        # We don't mess with -&|!()' as they are handled later.
-        #punctuation = re.escape(r'`~@#$%^*+=[]{}:;"<>,.?\/')
-        punctuation = r"[^\w\s\-\&\|\!\(\)']"
-        query = re.sub(r"(?u)(\w)%s+(\w)" % (punctuation,), r"\1-\2", query)
+        # Deal with unwanted punctuation.
+        # ':' is used to specify a weight of a word.
+        # '\' is treated differently in to_tsvector() and to_tsquery().
+        punctuation = r'[:\\]'
         query = re.sub(r"(?u)%s+" % (punctuation,), " ", query)
         ## plpy.debug('3 query is %s' % repr(query))
 
