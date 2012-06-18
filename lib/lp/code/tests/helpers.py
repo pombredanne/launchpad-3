@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -13,6 +13,7 @@ __all__ = [
     'make_official_package_branch',
     'make_project_branch_with_revisions',
     'make_project_cloud_data',
+    'remove_all_sample_data_branches',
     ]
 
 
@@ -37,8 +38,10 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.sqlbase import cursor
 from lp.testing import (
     run_with_login,
     time_counter,
@@ -90,8 +93,7 @@ def make_erics_fooix_project(factory):
     :return: a dict of objects to put into local scope.
     """
     eric = factory.makePerson(
-        name='eric', displayname='Eric the Viking',
-        email='eric@example.com', password='test')
+        name='eric', displayname='Eric the Viking', email='eric@example.com')
     fooix = factory.makeProduct(
         name='fooix', displayname='Fooix', owner=eric)
     trunk = factory.makeProductBranch(
@@ -99,8 +101,7 @@ def make_erics_fooix_project(factory):
     removeSecurityProxy(fooix.development_focus).branch = trunk
     # Development is done by Fred.
     fred = factory.makePerson(
-        name='fred', displayname='Fred Flintstone',
-        email='fred@example.com', password='test')
+        name='fred', displayname='Fred Flintstone', email='fred@example.com')
     feature = factory.makeProductBranch(
         owner=fred, product=fooix, name='feature')
     proposed = factory.makeProductBranch(
@@ -207,8 +208,7 @@ def make_mint_distro_with_branches(factory):
         twisted, zope, bzr, python
     """
     albert, bob, charlie = [
-        factory.makePerson(
-            name=name, email=("%s@mint.example.com" % name), password="test")
+        factory.makePerson(name=name, email=("%s@mint.example.com" % name))
         for name in ('albert', 'bob', 'charlie')]
     mint_team = factory.makeTeam(owner=albert, name="mint-team")
     mint_team.addMember(bob, albert)
@@ -267,7 +267,12 @@ def make_project_branch_with_revisions(factory, date_generator, product=None,
     """Make a new branch with revisions."""
     if revision_count is None:
         revision_count = 5
-    branch = factory.makeProductBranch(product=product, private=private)
+    if private:
+        information_type = InformationType.USERDATA
+    else:
+        information_type = InformationType.PUBLIC
+    branch = factory.makeProductBranch(
+        product=product, information_type=information_type)
     naked_branch = removeSecurityProxy(branch)
     factory.makeRevisionsForBranch(
         naked_branch, count=revision_count, date_generator=date_generator)
@@ -327,3 +332,15 @@ def get_non_existant_source_package_branch_unique_name(owner, factory):
     return '~%s/%s/%s/%s/%s' % (
         owner, distroseries.distribution.name, distroseries.name,
         source_package, branch)
+
+
+def remove_all_sample_data_branches():
+    c = cursor()
+    c.execute('delete from bugbranch')
+    c.execute('delete from specificationbranch')
+    c.execute('update productseries set branch=NULL')
+    c.execute('delete from branchrevision')
+    c.execute('delete from branchsubscription')
+    c.execute('delete from codeimportjob')
+    c.execute('delete from codeimport')
+    c.execute('delete from branch')

@@ -29,10 +29,13 @@ transaction, since it doesn't need DB access.
     ...         print "initializeRemoteBugDB() called: %r" % (
     ...             remote_bug_ids, )
 
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> bug_watch_updater = CheckwatchesMaster(transaction)
+    >>> bug_watch_updater = CheckwatchesMaster(
+    ...     transaction, logger=FakeLogger())
     >>> bug_watch_updater.updateBugWatches(
     ...     InitializingExternalBugTracker(), [])
+    INFO Updating 0 watches for 0 bugs on http://example.com
     initializeRemoteBugDB() called: []
 
 
@@ -403,11 +406,12 @@ logged saying that comments won't be imported.
     ...     sync_comments = True
 
     >>> checkwatches_master = CheckwatchesMaster(
-    ...     transaction, syncable_gnome_products=[])
+    ...     transaction, syncable_gnome_products=[],
+    ...     logger=FakeLogger())
     >>> remote_bug_updater = checkwatches_master.remote_bug_updater_factory(
     ...     checkwatches_master, CommentImportExternalBugTracker(), '1',
     ...     [], [], server_time=None)
-    WARNING:...:Comment importing supported, but server time can't be
+    WARNING Comment importing supported, but server time can't be
                 trusted. No comments will be imported. (OOPS-...)
 
 
@@ -664,7 +668,7 @@ same as that specified in launchpad.conf. We use a test version of
 ExternalBugTracker here that doesn't actually do anything besides
 fulfill the implementation requirements of IExternalBugTracker.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestExternalBugTracker)
     >>> tracker = TestExternalBugTracker('http://example.com/')
@@ -864,7 +868,7 @@ where to file the bug upstream.
 
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> external_bugtracker = TestExternalBugTracker(
     ...     'http://example.com')

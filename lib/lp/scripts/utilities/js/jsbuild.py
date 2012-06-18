@@ -1,3 +1,6 @@
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """build.py - Minifies and creates the JS build directory."""
 
 __metaclass__ = type
@@ -6,14 +9,14 @@ __all__ = [
     'JSComboFile',
     ]
 
+from glob import glob
 import optparse
 import os
 import re
 import sys
 
-from glob import glob
-
 import cssutils
+
 
 HERE = os.path.dirname(__file__)
 BUILD_DIR = os.path.normpath(os.path.join(

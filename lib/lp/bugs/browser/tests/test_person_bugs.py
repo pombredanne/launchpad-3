@@ -1,20 +1,49 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for person bug views."""
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.browser.tales import MenuAPI
 from lp.app.errors import UnexpectedFormData
+from lp.bugs.browser import person
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.registry.browser import person
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
+
+
+class PersonBugsMenuTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_user(self):
+        user = self.factory.makePerson()
+        menu_api = MenuAPI(user)
+        menu_api._selectedfacetname = 'bugs'
+        enabled_links = sorted(
+            link.name for link in menu_api.navigation.values()
+            if link.enabled)
+        expected_links = [
+            'affectingbugs', 'assignedbugs', 'commentedbugs',
+            'relatedbugs', 'reportedbugs', 'softwarebugs', 'subscribedbugs']
+        self.assertEqual(expected_links, enabled_links)
+
+    def test_team(self):
+        team = self.factory.makeTeam()
+        menu_api = MenuAPI(team)
+        menu_api._selectedfacetname = 'bugs'
+        enabled_links = sorted(
+            link.name for link in menu_api.navigation.values()
+            if link.enabled)
+        expected_links = [
+            'assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs']
+        self.assertEqual(expected_links, enabled_links)
 
 
 class TestBugSubscriberPackageBugsSearchListingView(TestCaseWithFactory):

@@ -14,7 +14,7 @@
  * details widgets until the user states that the project they are
  * registering is not a duplicate.
  */
-LPS.use('node', 'lazr.effects', function(Y) {
+LPJS.use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         /* These two regexps serve slightly different purposes.  The first
          * finds the leftmost run of valid url characters for the autofill
@@ -180,7 +180,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
              * event handler so that the height style left by lazr.effects is
              * removed when the animation is done.  We're never going to slide
              * the form widgets back in, and the height style causes the
-             * license widget to dive under the Complete Registration button.
+             * licence widget to dive under the Complete Registration button.
              * See bug 391138 for details.
              */
             var anim = Y.lazr.effects.slide_out(form_widgets);
@@ -239,14 +239,12 @@ LPS.use('node', 'lazr.effects', function(Y) {
 });
   </script>
 
-    <div id="staging-message" style="font-size: larger; background: #e0f0d0;
-        padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
-       -webkit-border-radius: 5px; margin-bottom: 1em;"
+    <div id="staging-message" style="background: #e0f0d0;
+        padding: 0.3em; border-radius: 5px; margin-bottom: 1em;"
       tal:condition="not: is_demo">
       You can <strong>test Launchpad's features</strong> at <a
       href="https://staging.launchpad.net/">staging.launchpad.net</a>
-      <form style="display: inline; font-size: smaller"
-            action="https://staging.launchpad.net/">
+      <form class="inline" action="https://staging.launchpad.net/">
         <input type="submit" value="Oh, I want to create a test project" />
       </form>
     </div>
@@ -296,7 +294,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
 
         <div tal:condition="view/search_results_count"
              id="search-results">
-          <div style="font-size: larger; margin-bottom: 1em; max-width: 60em;">
+          <div style="margin-bottom: 1em; max-width: 60em;">
           <img src="/@@/info" />
           There are similar projects already registered in Launchpad.
           Is project
@@ -320,13 +318,13 @@ LPS.use('node', 'lazr.effects', function(Y) {
         </div>
 
         <div id="registration-details-title"
-             style="font-size: larger; max-width: 60em;"
+             style="max-width: 60em;"
              tal:condition="view/is_step/2">
           <h3 id="registration-separator"
               style="margin-top: 3em;"
               tal:condition="view/search_results_count"
               >Registration details</h3>
-          Select the licenses for project
+          Select the licences for project
           <strong><tal:displayname tal:replace="view/request/field.displayname" />
           (<tal:name  tal:replace="view/request/field.name" />)</strong>
           and complete the registration.  You may also update the project's

@@ -11,10 +11,6 @@ import os
 from lp.scripts.utilities.js.jsbuild import ComboFile
 from lp.scripts.utilities.js.combo import combine_files
 
-# This constant helps us meet maximum line-length goals.
-GALLERY_ACCORDION = 'yui3-gallery/gallery-accordion/assets/'
-
-
 root = os.path.abspath('.')
 root = os.path.normpath(${buildout:directory|path-repr})
 icing = os.path.join(root, 'lib/canonical/launchpad/icing')
@@ -24,6 +20,7 @@ target = os.path.join(icing, 'combo.css')
 # including lots of styles that we don't need/want, so keeping this hard-coded
 # list seems like the best option for now.
 names = [
+    'ubuntu-webfonts.css',
     'style.css',
     'yui/cssreset/reset.css',
     # Use the old cssgrids instead of the new cssgrids.
@@ -34,17 +31,35 @@ names = [
     'build/autocomplete/assets/skins/sam/autocomplete.css',
     'build/overlay/assets/skins/sam/pretty-overlay.css',
     'build/formoverlay/assets/formoverlay-core.css',
+    'build/inlinehelp/assets/inlinehelp-core.css',
+    'build/indicator/assets/indicator-core.css',
     'build/confirmationoverlay/assets/confirmationoverlay-core.css',
     'build/picker/assets/skins/sam/picker.css',
     'build/activator/assets/skins/sam/activator.css',
     'build/choiceedit/assets/choiceedit-core.css',
     'build/ordering/assets/ordering-core.css',
-    GALLERY_ACCORDION + 'gallery-accordion-core.css',
-    GALLERY_ACCORDION + 'skins/sam/gallery-accordion-skin.css',
-    'build/sprite.css',
-    # This one goes at the end because it's our main stylesheet and should
+    'build/gallery-accordion/assets/gallery-accordion-core.css',
+    'build/gallery-accordion/assets/skins/sam/gallery-accordion-skin.css',
+    'build/inline-sprites-1.css',
+    'build/inline-sprites-2.css',
+    'build/block-sprites-1.css',
+    # Include our main stylesheets at the end so they
     # take precedence over the others.
-    'style-3-0.css']
+    'css/base.css',
+    'css/typography.css',
+    'css/colours.css',
+    'css/forms.css',
+    'css/layout.css',
+    'css/modifiers.css']
+
+# Get all the component css files so we don't have to edit this file every
+# time a new component is added
+component_dir = 'css/components'
+component_path = os.path.abspath(os.path.join(icing, component_dir))
+for root, dirs, files in os.walk(component_path):
+    for file in files:
+        if file.endswith('.css'):
+            names.append('%s/%s' % (component_dir, file))
 
 absolute_names = []
 for name in names:

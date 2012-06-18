@@ -132,7 +132,7 @@ The bug search feed is not enabled by default since it may represent a
 performance problem in production.
 
     >>> from zope.security.interfaces import Unauthorized
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.launchpad.is_bug_search_feed_active
     True
     >>> bug_search_feed_data = """

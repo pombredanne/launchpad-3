@@ -18,7 +18,7 @@ on that wiki.
 
 The returned WikiName object provides both IWikiName and IHasOwner.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(IWikiName, wiki_name)
     True
     >>> verifyObject(IHasOwner, wiki_name)

@@ -25,12 +25,7 @@ from sqlobject import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskAdded
 from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus,
@@ -38,7 +33,12 @@ from lp.bugs.interfaces.bugnomination import (
     IBugNomination,
     IBugNominationSet,
     )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class BugNomination(SQLBase):
@@ -93,8 +93,8 @@ class BugNomination(SQLBase):
                     targets.append(distroseries)
         else:
             targets.append(self.productseries)
-        for target in targets:
-            bug_task = self.bug.addTask(approver, target)
+        bugtasks = getUtility(IBugTaskSet).createManyTasks(self.bug, approver, targets)
+        for bug_task in bugtasks:
             self.bug.addChange(BugTaskAdded(UTC_NOW, approver, bug_task))
 
     def decline(self, decliner):
@@ -120,11 +120,11 @@ class BugNomination(SQLBase):
 
     def canApprove(self, person):
         """See IBugNomination."""
-        if person.inTeam(getUtility(ILaunchpadCelebrities).admin):
+        # Use the class method to check permissions because there is not
+        # yet a bugtask instance with the this target.
+        BugTask = self.bug.bugtasks[0].__class__
+        if BugTask.userHasDriverPrivilegesContext(self.target, person):
             return True
-        for driver in self.target.drivers:
-            if person.inTeam(driver):
-                return True
 
         if self.distroseries is not None:
             distribution = self.distroseries.distribution

@@ -1,23 +1,25 @@
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution page."""
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
 import soupmatchers
 from testtools.matchers import (
     MatchesAny,
     Not,
     )
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp import canonical_url
 from lp.testing import (
     login_celebrity,
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -31,6 +33,9 @@ class TestDistributionPage(TestCaseWithFactory):
         self.distro = self.factory.makeDistribution(
             name="distro", displayname=u'distro')
         self.simple_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_distributionpage_addseries_link(self):
         # An admin sees the +addseries link.

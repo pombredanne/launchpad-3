@@ -8,7 +8,7 @@ method to get all the Products needing updating.
 IProductSet.getProductsWithNoneRemoteProduct() is used for this.
 
 
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     >>> store.execute("UPDATE Product SET remote_product = 'not-None'")

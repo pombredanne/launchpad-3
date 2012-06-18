@@ -37,10 +37,10 @@
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
-      devmode modules/canonical.config/config/devmode;
-      yui string:${icingroot}/yui;
-      lazr_js string:${icingroot}/lazr/build;
-      lp_js string:${icingroot}/build"
+      combo_url view/combo_url;
+      devmode modules/lp.services.config/config/devmode;
+      yui_version view/yui_version;
+      yui_console_debug view/yui_console_debug;"
   >
   <tal:comment replace="nothing">
     This macro just loads javascript files. It doesn't
@@ -55,12 +55,6 @@
     We can revisit this IE-only optimization if we remove SSL.  Any changes that
     affect IE should be tested using webpagetest.org. (See the dev.launchpad.net
     wiki for details.)
-
-    XXX mars 2010-01-21
-    We have to load MochiKit outside of the main javascript rollup so that the
-    rollup's size does not exceed 512Kb.  That magic number triggers a bug
-    somewhere in the automated test system that will prevent Windmill from
-    executing.
   </tal:comment>
   <script type="text/javascript">
     var LP = {
@@ -68,86 +62,168 @@
         links: {}
     };
   </script>
-  <script type="text/javascript"
-          tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-
-  <script type="text/javascript"
+  <tal:js-legacy condition="not: request/features/js.combo_loader.enabled">
+    <script type="text/javascript"
           tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
+    <script type="text/javascript" tal:content="string:
+       YUI.GlobalConfig = {
+           debug: ${yui_console_debug},
+           fetchCSS: false,
+           timeout: 50,
+           ignore: [
+               'yui2-yahoo', 'yui2-event', 'yui2-dom',
+               'yui2-calendar','yui2-dom-event'
+           ]
+        }
+       ">
+    </script>
+  </tal:js-legacy>
 
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
-  <script type="text/javascript">
-    // Define a global YUI sandbox that should be used by everyone.
-    var LPS = YUI({
-      // Don't try to fetch CSS files.
-      fetchCSS: false,
-      // For paranoia, set a low timeout to not wait on loading a resource.
-      timeout: 50
-      });
-  </script>
-</metal:load-javascript>
 
+  <tal:js-loader condition="request/features/js.combo_loader.enabled">
+   <script type="text/javascript"
+        tal:attributes="src string:${combo_url}/?yui/yui/yui-min.js&amp;lp/meta.js&amp;yui/loader/loader-min.js"></script>
+   <script type="text/javascript" tal:content="string:
+        YUI.GlobalConfig = {
+            combine: true,
+            comboBase: '${combo_url}/?',
+            root: 'yui/',
+            debug: ${yui_console_debug},
+            fetchCSS: false,
+            groups: {
+                lp: {
+                    combine: true,
+                    base: '${combo_url}/?lp/',
+                    comboBase: '${combo_url}/?',
+                    root: 'lp/',
+                    // comes from including lp/meta.js
+                    modules: LP_MODULES,
+                    fetchCSS: false
+                },
+                yui2: {
+                    combine: true,
+                    base: '${combo_url}/?yui2/',
+                    comboBase: '${combo_url}/?',
+                    root: 'yui2/',
+                    fetchCSS: false,
+                    modules: {
+                        'yui2-yahoo': {
+                            path: 'yahoo/yahoo.js'
+                        },
+                        'yui2-event': {
+                            path: 'event/event.js'
+                        },
+                        'yui2-dom': {
+                            path: 'dom/dom.js'
+                        },
+                        'yui2-calendar': {
+                            path: 'calendar/calendar.js'
+                        },
+                        'yui2-dom-event': {
+                            path: 'yahoo-dom-event/yahoo-dom-event.js'
+                        }
+                    }
+                }
+            }
+        }">
+   </script>
+
+  </tal:js-loader>
+  <script type="text/javascript">
+      // we need this to create a single YUI instance all events and code
+      // talks across. All instances of YUI().use should be based off of
+      // LPJS instead.
+      LPJS = new YUI();
+  </script>
+
+</metal:load-javascript>
 
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
-      icingroot_contrib string:/+icing-contrib/rev${revno};
-      devmode modules/canonical.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
+      devmode modules/lp.services.config/config/devmode;">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
-  <tal:needs_json tal:condition="request/needs_json">
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
-  </tal:needs_json>
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-    <script type="text/javascript">
-      LPS.use('base', 'node', 'oop', 'event', 'lp.app.beta_features',
-              'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
-                'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
-                function(Y) {
-          Y.on("domready", function () {
-              if (Y.one(document.body).hasClass('private')) {
-                  Y.lp.app.privacy.setup_privacy_notification();
-                  Y.lp.app.privacy.display_privacy_notification();
-              }
-              Y.lp.app.beta_features.display_beta_notification();
-          });
-      });
-    </script>
+    <script id="base-layout-load-scripts" type="text/javascript">
+        //<![CDATA[
+        LPJS.use('base', 'node', 'console', 'event',
+            'oop', 'lp', 'lp.app.banner.privacy',
+            'lp.app.banner.beta', 'lp.app.foldables','lp.app.sorttable',
+            'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
+            'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
+            'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
+            function(Y) {
 
-  <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
-        Y.on('load', function(e) {
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-	    Y.lp.app.links.check_valid_lp_links();
-            // Longpolling will only start if
-            // LP.cache.longpoll is populated.
-            // We use Y.later to work around a Safari/Chrome 'feature':
-            // The mouse cursor stays 'busy' until all the requests started during
-            // page load are finished.  Hence we want the long poll request to start
-            // right *after* the page has loaded.
-            Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
-        }, window);
+            Y.on("domready", function () {
+                if (Y.one(document.body).hasClass('private')) {
+                    banner = Y.lp.app.banner.privacy.getPrivacyBanner();
+                    banner.show();
+                }
+                Y.lp.app.banner.beta.show_beta_if_needed();
+                Y.lp.app.sorttable.SortTable.init();
+                Y.lp.app.inlinehelp.init_help();
+                Y.lp.activate_collapsibles();
+                Y.lp.app.foldables.activate();
+                Y.lp.app.links.check_valid_lp_links();
+                // Longpolling will only start if
+                // LP.cache.longpoll is populated.
+                // We use Y.later to work around a Safari/Chrome 'feature':
+                // The mouse cursor stays 'busy' until all the requests started during
+                // page load are finished.  Hence we want the long poll request to start
+                // right *after* the page has loaded.
+                Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
 
-        // Hook up the function that dismisses the help window if we click
-        // anywhere outside of it.
-        Y.on('click', handleClickOnPage, window);
+            });
 
-        Y.on('lp:context:web_link:changed', function(e) {
-            window.location = e.new_value;
+            Y.on('lp:context:web_link:changed', function(e) {
+                  window.location = e.new_value;
+            });
         });
-    });
-  </script>
+        //]]>
+    </script>
+    <script id="base-helper-functions" type="text/javascript">
+         //<![CDATA[
+        // This code is pulled from lp.js that needs to be available on every
+        // request. Pulling here to get it outside the scope of the YUI block.
+        function setFocusByName(name) {
+            // Focus the first element matching the given name which can be focused.
+            var nodes = document.getElementsByName(name);
+            var i, node;
+            for (i = 0; i < nodes.length; i++) {
+                node = nodes[i];
+                if (node.focus) {
+                    try {
+                        // Trying to focus a hidden element throws an error in IE8.
+                        if (node.offsetHeight !== 0) {
+                            node.focus();
+                        }
+                    } catch (e) {
+                        LPJS.use('console', function(Y) {
+                            Y.log('In setFocusByName(<' +
+                                node.tagName + ' type=' + node.type + '>): ' + e);
+                        });
+                    }
+                    break;
+                }
+            }
+        }
+
+        function selectWidget(widget_name, event) {
+          if (event && (event.keyCode === 9 || event.keyCode === 13)) {
+              // Avoid firing if user is tabbing through or simply pressing
+              // enter to submit the form.
+              return;
+          }
+          document.getElementById(widget_name).checked = true;
+        }
+        //]]>
+    </script>
 </metal:page-javascript>
 
 
@@ -174,12 +250,6 @@
         type="text/css"
         rel="stylesheet"
         media="screen, print"
-        href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
-
-  <link
-        type="text/css"
-        rel="stylesheet"
-        media="screen, print"
         tal:attributes="href string:${icingroot}/combo.css" />
 </metal:launchpad-stylesheet-3-0>
 
@@ -194,8 +264,12 @@
                    '${links/?key/fmt:api_url}';">
     </script>
   </tal:cache>
-
-  <script tal:content="string:LP.cache = ${view/getCacheJSON};">
+  <tal:comment condition="nothing">
+    The id of the script block below is used to determine whether this
+    page is loaded by test_lp_client_integration.js.
+  </tal:comment>
+  <script id="json-cache-script"
+          tal:content="string:LP.cache = ${view/getCacheJSON};">
   </script>
 </metal:lp-client-cache>
 
@@ -255,7 +329,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2011
+      &copy; 2004-2012
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
@@ -295,6 +369,31 @@
   </div>
 </metal:site-message>
 
+
+<metal:debug-timeline define-macro="debug-timeline">
+  <a tal:condition="request/features/visible_render_time"
+     tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
+     id="debug_timeline" class="hidden">
+    <table class="debug-timeline listing">
+      <thead>
+        <tr>
+          <th>Duration</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="action timeline_actions">
+          <td class="amount" tal:content="action/duration/fmt:millisecondduration"/>
+          <td style="font-family: monospace; text-align: left;">
+            <pre class="wrap"><span class="action-category" tal:content="action/category"/>: <span class="action-details" tal:content="action/detail"/></pre>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </a>
+</metal:debug-timeline>
+
+
 <metal:plural-msg define-macro="plural-message">
   <tal:comment condition="nothing">
     Expected variables to be defined in a containing tag or global:
@@ -311,3 +410,4 @@
     condition="python: count != 1"
     replace="l_plural" /></metal:plural-msg>
 </macros>
+

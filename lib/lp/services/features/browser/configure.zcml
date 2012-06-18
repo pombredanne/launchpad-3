@@ -16,7 +16,7 @@
      access is for admins only.
     -->
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.services.features.browser.edit.FeatureControlView"
         name="+feature-rules"
         permission="launchpad.Edit"
@@ -28,14 +28,14 @@
      +feature-rules.
     -->
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.services.features.browser.info.FeatureInfoView"
         name="+feature-info"
         permission="launchpad.Edit"
         template="../templates/feature-info.pt"/>
 
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.services.features.browser.changelog.FeatureChangeLogView"
         name="+feature-changelog"
         permission="launchpad.Edit"

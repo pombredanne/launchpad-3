@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,20 +15,24 @@ __all__ = [
 from lazr.restful.utils import smartquote
 from zope.interface import implements
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.errors import SubscriptionPrivacyViolation
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.menu import structured
 
 
 class BranchSubscriptionPrimaryContext:
@@ -48,9 +52,20 @@ class BranchPortletSubscribersContent(LaunchpadView):
 
     def subscriptions(self):
         """Return a decorated list of branch subscriptions."""
+
+        # Cache permissions so private subscribers can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        if self.user is not None:
+            subscribers = [
+                subscription.person
+                for subscription in self.context.subscriptions]
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", subscribers)
+
         visible_subscriptions = [
             subscription for subscription in self.context.subscriptions
-            if check_permission('launchpad.View', subscription.person)]
+            if check_permission('launchpad.LimitedView', subscription.person)]
         return sorted(
             visible_subscriptions,
             key=lambda subscription: subscription.person.displayname)
@@ -212,14 +227,17 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         person = data['person']
         subscription = self.context.getSubscription(person)
         if subscription is None:
-            self.context.subscribe(
-                person, notification_level, max_diff_lines, review_level,
-                self.user)
-
-            self.add_notification_message(
-                '%s has been subscribed to this branch with: '
-                % person.displayname, notification_level, max_diff_lines,
-                review_level)
+            try:
+                self.context.subscribe(
+                    person, notification_level, max_diff_lines, review_level,
+                    self.user)
+            except SubscriptionPrivacyViolation as error:
+                self.setFieldError('person', unicode(error))
+            else:
+                self.add_notification_message(
+                    '%s has been subscribed to this branch with: '
+                    % person.displayname, notification_level, max_diff_lines,
+                    review_level)
         else:
             self.add_notification_message(
                 '%s was already subscribed to this branch with: '

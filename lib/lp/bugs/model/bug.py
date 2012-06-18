@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -22,10 +22,6 @@ __all__ = [
 
 
 from cStringIO import StringIO
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
@@ -39,7 +35,6 @@ from lazr.lifecycle.event import (
     )
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
-from pytz import timezone
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -80,45 +75,23 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
-    cursor,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
+    SubscriptionPrivacyViolation,
     UserCannotUnsubscribePerson,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -129,10 +102,10 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.errors import (
+    BugCannotBePrivate,
     InvalidDuplicateValue,
-    SubscriptionPrivacyViolation,
     )
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -148,6 +121,7 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
+    BugNominationStatus,
     NominationError,
     NominationSeriesObsoleteError,
     )
@@ -162,6 +136,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
@@ -175,15 +150,23 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
-    get_bug_privacy_filter,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscribers,
-    get_structural_subscriptions_for_bug,
+    get_structural_subscriptions,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -193,8 +176,11 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import (
     Person,
     person_sort_key,
@@ -202,9 +188,26 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
+from lp.services.helpers import shortlist
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.messages.interfaces.message import (
     IMessage,
     IndexedMessage,
@@ -219,6 +222,13 @@ from lp.services.propertycache import (
     clear_property_cache,
     get_property_cache,
     )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 _bug_tag_query_template = """
@@ -231,11 +241,10 @@ def snapshot_bug_params(bug_params):
     return Snapshot(
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
-            "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename",
-            "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by", "importance",
-            "milestone", "assignee", "cve"])
+            "datecreated", "information_type", "distribution",
+            "sourcepackagename", "product", "status", "subscribers", "tags",
+            "subscribe_owner", "filed_by", "importance", "milestone",
+            "assignee", "cve"])
 
 
 class BugTag(SQLBase):
@@ -348,12 +357,12 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    private = BoolCol(notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    security_related = BoolCol(notNull=True, default=False)
+    information_type = EnumCol(
+        enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
@@ -387,6 +396,14 @@ class Bug(SQLBase):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def private(self):
+        return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    @property
+    def security_related(self):
+        return self.information_type in SECURITY_INFORMATION_TYPES
 
     @cachedproperty
     def _subscriber_cache(self):
@@ -802,7 +819,7 @@ class Bug(SQLBase):
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-        if person.isTeam() and self.private and person.anyone_can_join():
+        if person.is_team and self.private and person.anyone_can_join():
             error_msg = ("Open and delegated teams cannot be subscribed "
                 "to private bugs.")
             raise SubscriptionPrivacyViolation(error_msg)
@@ -824,6 +841,14 @@ class Bug(SQLBase):
 
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
+
+        # Grant the subscriber access if they can't see the bug.
+        service = getUtility(IService, 'sharing')
+        bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+        if not bugs:
+            service.ensureAccessGrants(
+                person, subscribed_by, bugs=[self],
+                ignore_permissions=True)
 
         # In some cases, a subscription should be created without
         # email notifications.  suppress_notify determines if
@@ -867,6 +892,14 @@ class Bug(SQLBase):
                 store.flush()
                 self.updateHeat()
                 del get_property_cache(self)._known_viewers
+
+                # Revoke access to bug if feature flag is on.
+                flag = 'disclosure.legacy_subscription_visibility.enabled'
+                if bool(getFeatureFlag(flag)):
+                    artifacts_to_delete = getUtility(
+                        IAccessArtifactSource).find([self])
+                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                        artifacts_to_delete, [person])
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -940,8 +973,10 @@ class Bug(SQLBase):
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
-    def getSubscriptionInfo(self, level=BugNotificationLevel.LIFECYCLE):
+    def getSubscriptionInfo(self, level=None):
         """See `IBug`."""
+        if level is None:
+            level = BugNotificationLevel.LIFECYCLE
         return BugSubscriptionInfo(self, level)
 
     def getDirectSubscriptions(self):
@@ -994,6 +1029,7 @@ class Bug(SQLBase):
         # the regular proxied object.
         return sorted(
             indirect_subscribers,
+            # XXX: GavinPanella 2011-12-12 bug=911752: Use person_sort_key.
             key=lambda x: removeSecurityProxy(x).displayname)
 
     def getSubscriptionsFromDuplicates(self, recipients=None):
@@ -1009,8 +1045,10 @@ class Bug(SQLBase):
                 Bug.duplicateof == self,
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                BugSubscription.person_id).config(
-                    distinct=(BugSubscription.person_id,)),
+                    BugSubscription.person_id,
+                    BugSubscription.date_created,
+                    BugSubscription.id
+                    ).config(distinct=(BugSubscription.person_id,)),
             operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
@@ -1022,14 +1060,13 @@ class Bug(SQLBase):
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
         info = self.getSubscriptionInfo(level)
-
         if recipients is not None:
-            # Pre-load duplicate bugs.
-            list(self.duplicates)
+            list(self.duplicates)  # Pre-load duplicate bugs.
+            info.duplicate_only_subscribers  # Pre-load subscribers.
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-        return info.duplicate_only_subscriptions.subscribers.sorted
+        return info.duplicate_only_subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -1218,13 +1255,7 @@ class Bug(SQLBase):
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
-
-        # When a new task is added the bug's heat becomes relevant to the
-        # target's max_bug_heat.
-        target.recalculateBugHeatCache()
-
-        return new_task
+        return getUtility(IBugTaskSet).createTask(self, owner, target)
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
@@ -1541,16 +1572,28 @@ class Bug(SQLBase):
             raise NominationError(
                 "Only bug supervisors or owners can nominate bugs.")
 
-        nomination = BugNomination(
-            owner=owner, bug=self, distroseries=distroseries,
-            productseries=productseries)
+        # There may be an existing DECLINED nomination. If so, we set the
+        # status back to PROPOSED. We do not alter the original date_created.
+        nomination = None
+        try:
+            nomination = self.getNominationFor(target)
+        except NotFoundError:
+            pass
+        if nomination:
+            nomination.status = BugNominationStatus.PROPOSED
+            nomination.decider = None
+            nomination.date_decided = None
+        else:
+            nomination = BugNomination(
+                owner=owner, bug=self, distroseries=distroseries,
+                productseries=productseries)
         self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
     def canBeNominatedFor(self, target):
         """See `IBug`."""
         try:
-            self.getNominationFor(target)
+            nomination = self.getNominationFor(target)
         except NotFoundError:
             # No nomination exists. Let's see if the bug is already
             # directly targeted to this nomination target.
@@ -1580,7 +1623,11 @@ class Bug(SQLBase):
             # No tasks match the candidate's pillar. We must refuse.
             return False
         else:
-            # The bug is already nominated for this nomination target.
+            # The bug may be already nominated for this nomination target.
+            # If the status is declined, the bug can be renominated, else
+            # return False
+            if nomination:
+                return nomination.status == BugNominationStatus.DECLINED
             return False
 
     def getNominationFor(self, target):
@@ -1682,224 +1729,91 @@ class Bug(SQLBase):
 
         return bugtask
 
-    def setPrivacyAndSecurityRelated(self, private, security_related, who):
-        """ See `IBug`."""
-        private_changed = False
-        security_related_changed = False
-        bug_before_modification = Snapshot(self, providing=providedBy(self))
-
-        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
-        f_flag = bool(getFeatureFlag(f_flag_str))
-        if f_flag:
-            # Before we update the privacy or security_related status, we
-            # need to reconcile the subscribers to avoid leaking private
-            # information.
-            if (self.private != private
-                    or self.security_related != security_related):
-                self.reconcileSubscribers(private, security_related, who)
-
-        if self.private != private:
-            private_changed = True
-            self.private = private
-
-            if private:
-                self.who_made_private = who
-                self.date_made_private = UTC_NOW
-            else:
-                self.who_made_private = None
-                self.date_made_private = None
-
-            # XXX: This should be a bulk update. RBC 20100827
-            # bug=https://bugs.launchpad.net/storm/+bug/625071
-            for attachment in self.attachments_unpopulated:
-                attachment.libraryfile.restricted = private
-
-        if self.security_related != security_related:
-            security_related_changed = True
-            self.security_related = security_related
-
-        if private_changed or security_related_changed:
-            # Correct the heat for the bug immediately, so that we don't have
-            # to wait for the next calculation job for the adjusted heat.
-            self.updateHeat()
-
-        if private_changed or security_related_changed:
-            changed_fields = []
-
-            if private_changed:
-                changed_fields.append('private')
-                if not f_flag and private:
-                    # If we didn't call reconcileSubscribers, we may have
-                    # bug supervisors who should be on this bug, but aren't.
-                    supervisors = set()
-                    for bugtask in self.bugtasks:
-                        supervisors.add(bugtask.pillar.bug_supervisor)
-                    if None in supervisors:
-                        supervisors.remove(None)
-                    for s in supervisors:
-                        subscriptions = get_structural_subscriptions_for_bug(
-                                            self, s)
-                        if subscriptions != []:
-                            self.subscribe(s, who)
-
-            if security_related_changed:
-                changed_fields.append('security_related')
-                if not f_flag and security_related:
-                    # The bug turned out to be security-related, subscribe the
-                    # security contact. We do it here only if the feature flag
-                    # is not set, otherwise it's done in
-                    # reconcileSubscribers().
-                    for pillar in self.affected_pillars:
-                        if pillar.security_contact is not None:
-                            self.subscribe(pillar.security_contact, who)
-
-            notify(ObjectModifiedEvent(
-                    self, bug_before_modification, changed_fields, user=who))
-
-        return private_changed, security_related_changed
-
     def setPrivate(self, private, who):
         """See `IBug`.
 
         We also record who made the change and when the change took
         place.
         """
-        return self.setPrivacyAndSecurityRelated(
-            private, self.security_related, who)[0]
+        return self.transitionToInformationType(
+            convert_to_information_type(private, self.security_related), who)
 
     def setSecurityRelated(self, security_related, who):
         """Setter for the `security_related` property."""
-        return self.setPrivacyAndSecurityRelated(
-            self.private, security_related, who)[1]
+        return self.transitionToInformationType(
+            convert_to_information_type(self.private, security_related), who)
 
-    def getRequiredSubscribers(self, for_private, for_security_related, who):
-        """Return the mandatory subscribers for a bug with given attributes.
+    def transitionToInformationType(self, information_type, who,
+                                    from_api=False):
+        """See `IBug`."""
+        if from_api and information_type == InformationType.PROPRIETARY:
+            raise BugCannotBePrivate(
+                "Cannot transition the information type to proprietary.")
+        if self.information_type == information_type:
+            return False
+        if (information_type == InformationType.PROPRIETARY and
+            len(self.affected_pillars) > 1):
+            raise BugCannotBePrivate(
+                "Multi-pillar bugs cannot be proprietary.")
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            self.who_made_private = who
+            self.date_made_private = UTC_NOW
+            missing_subscribers = set([who, self.owner])
+        else:
+            self.who_made_private = None
+            self.date_made_private = None
+            missing_subscribers = set()
+        # XXX: This should be a bulk update. RBC 20100827
+        # bug=https://bugs.launchpad.net/storm/+bug/625071
+        for attachment in self.attachments_unpopulated:
+            attachment.libraryfile.restricted = (
+                information_type in PRIVATE_INFORMATION_TYPES)
 
-        When a bug is marked as private or security related, it is required
-        that certain people be subscribed so they can access details about the
-        bug. The rules are:
-            security=true, private=true/false ->
-                subscribers = the reporter + security contact for each task
-            security=false, private=true ->
-                subscribers = the reporter + bug supervisor for each task
-            security=false, private=false ->
-                subscribers = ()
+        # There are several people we need to ensure are subscribed.
+        # If the information type is userdata, we need to check for bug
+        # supervisors who aren't subscribed and should be. If there is no
+        # bug supervisor, we need to subscribe the maintainer.
+        pillars = self.affected_pillars
+        if information_type == InformationType.USERDATA:
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            for pillar in pillars:
+                # Ubuntu is special cased; no one else should be added in the
+                # USERDATA case.
+                if pillar != ubuntu:
+                    if pillar.bug_supervisor is not None:
+                        missing_subscribers.add(pillar.bug_supervisor)
+                    else:
+                        missing_subscribers.add(pillar.owner)
 
-        If bug supervisor or security contact is unset, fallback to bugtask
-        reporter/owner.
-        """
-        if not for_private and not for_security_related:
-            return set()
-        result = set()
-        result.add(self.owner)
-        for bugtask in self.bugtasks:
-            maintainer = bugtask.pillar.owner
-            if for_security_related:
-                result.add(bugtask.pillar.security_contact or maintainer)
-            if for_private:
-                result.add(bugtask.pillar.bug_supervisor or maintainer)
-        if for_private:
-            subscribers_for_who = self.getSubscribersForPerson(who)
-            if subscribers_for_who.is_empty():
-                result.add(who)
-        return result
+        # If the information type is security related, we need to ensure
+        # the security contacts are subscribed. If there is no security
+        # contact, we need to subscribe the maintainer.
+        if information_type in SECURITY_INFORMATION_TYPES:
+            for pillar in pillars:
+                if pillar.security_contact is not None:
+                    missing_subscribers.add(pillar.security_contact)
+                else:
+                    missing_subscribers.add(pillar.owner)
 
-    def getAutoRemovedSubscribers(self, for_private, for_security_related):
-        """Return the to be removed subscribers for bug with given attributes.
+        for s in missing_subscribers:
+            # Don't subscribe someone if they're already subscribed via a
+            # team.
+            already_subscribed_teams = self.getSubscribersForPerson(s)
+            if already_subscribed_teams.is_empty():
+                self.subscribe(s, who)
 
-        When a bug's privacy or security related attributes change, some
-        existing subscribers may need to be automatically removed.
-        The rules are:
-            security=false ->
-                auto removed subscribers = (bugtask security contacts)
-            privacy=false ->
-                auto removed subscribers = (bugtask bug supervisors)
+        self.information_type = information_type
+        self._reconcileAccess()
+        self.updateHeat()
 
-        """
-        bug_supervisors = []
-        security_contacts = []
-        for pillar in self.affected_pillars:
-            if (self.security_related and not for_security_related
-                and pillar.security_contact):
-                    security_contacts.append(pillar.security_contact)
-            if (self.private and not for_private
-                and pillar.bug_supervisor):
-                    bug_supervisors.append(pillar.bug_supervisor)
-        return bug_supervisors, security_contacts
+        flag = 'disclosure.unsubscribe_jobs.enabled'
+        if bool(getFeatureFlag(flag)):
+            # As a result of the transition, some subscribers may no longer
+            # have access to the bug. We need to run a job to remove any such
+            # subscriptions.
+            getUtility(IRemoveBugSubscriptionsJobSource).create(who, [self])
 
-    def reconcileSubscribers(self, for_private, for_security_related, who):
-        """ Ensure only appropriate people are subscribed to private bugs.
-
-        When a bug is marked as either private = True or security_related =
-        True, we need to ensure that only people who are authorised to know
-        about the privileged contents of the bug remain directly subscribed
-        to it. So we:
-          1. Get the required subscribers depending on the bug status.
-          2. Get the auto removed subscribers depending on the bug status.
-             eg security contacts when a bug is updated to security related =
-             false.
-          3. Get the allowed subscribers = required subscribers
-                                            + bugtask owners
-          4. Remove any current direct subscribers who are not allowed or are
-             to be auto removed.
-          5. Add any subscribers who are required.
-        """
-        current_direct_subscribers = (
-            self.getSubscriptionInfo().direct_subscribers)
-        required_subscribers = self.getRequiredSubscribers(
-            for_private, for_security_related, who)
-        removed_bug_supervisors, removed_security_contacts = (
-            self.getAutoRemovedSubscribers(for_private, for_security_related))
-        for subscriber in removed_bug_supervisors:
-            recipients = BugNotificationRecipients()
-            recipients.addBugSupervisor(subscriber)
-            notification_text = ("This bug is no longer private so the bug "
-                "supervisor was unsubscribed. They will no longer be "
-                "notified of changes to this bug for privacy related "
-                "reasons, but may receive notifications about this bug from "
-                "other subscriptions.")
-            self.unsubscribe(
-                subscriber, who, ignore_permissions=True,
-                send_notification=True,
-                notification_text=notification_text,
-                recipients=recipients)
-        for subscriber in removed_security_contacts:
-            recipients = BugNotificationRecipients()
-            recipients.addSecurityContact(subscriber)
-            notification_text = ("This bug is no longer security related so "
-                "the security contact was unsubscribed. They will no longer "
-                "be notified of changes to this bug for security related "
-                "reasons, but may receive notifications about this bug "
-                "from other subscriptions.")
-            self.unsubscribe(
-                subscriber, who, ignore_permissions=True,
-                send_notification=True,
-                notification_text=notification_text,
-                recipients=recipients)
-
-        # If this bug is for a project that is marked as having private bugs
-        # by default, and the bug is private or security related, we will
-        # unsubscribe any unauthorised direct subscribers.
-        pillar = self.default_bugtask.pillar
-        private_project = IProduct.providedBy(pillar) and pillar.private_bugs
-        if private_project and (for_private or for_security_related):
-            allowed_subscribers = set()
-            allowed_subscribers.add(self.owner)
-            for bugtask in self.bugtasks:
-                allowed_subscribers.add(bugtask.owner)
-                allowed_subscribers.add(bugtask.pillar.owner)
-                allowed_subscribers.update(set(bugtask.pillar.drivers))
-            allowed_subscribers = required_subscribers.union(
-                allowed_subscribers)
-            subscribers_to_remove = (
-                current_direct_subscribers.difference(allowed_subscribers))
-            for subscriber in subscribers_to_remove:
-                self.unsubscribe(subscriber, who, ignore_permissions=True)
-
-        subscribers_to_add = (
-            required_subscribers.difference(current_direct_subscribers))
-        for subscriber in subscribers_to_add:
-            self.subscribe(subscriber, who)
+        return True
 
     def getBugTask(self, target):
         """See `IBug`."""
@@ -1978,15 +1892,14 @@ class Bug(SQLBase):
         store.invalidate(self)
 
     def shouldConfirmBugtasks(self):
-        """Should we try to confirm this bug's bugtasks?
-        The answer is yes if more than one user is affected."""
+        """See `IBug`."""
         # == 2 would probably be sufficient once we have all legacy bug tasks
         # confirmed.  For now, this is a compromise: we don't need a migration
         # step, but we will make some unnecessary comparisons.
         return self.users_affected_count_with_dupes > 1
 
     def maybeConfirmBugtasks(self):
-        """Maybe try to confirm our new bugtasks."""
+        """See `IBug`."""
         if self.shouldConfirmBugtasks():
             for bugtask in self.bugtasks:
                 bugtask.maybeConfirm()
@@ -2015,15 +1928,12 @@ class Bug(SQLBase):
     def _markAsDuplicate(self, duplicate_of):
         """Mark this bug as a duplicate of another.
 
-        Marking a bug as a duplicate requires a recalculation
-        of the heat of this bug and of the master bug, and it
-        requires a recalulation of the heat cache of the
-        affected bug targets. None of this is done here in order
-        to avoid unnecessary repetitions in recursive calls
-        for duplicates of this bug, which also become duplicates
+        Marking a bug as a duplicate requires a recalculation of the
+        heat of this bug and of the master bug. None of this is done
+        here in order to avoid unnecessary repetitions in recursive
+        calls for duplicates of this bug, which also become duplicates
         of the new master bug.
         """
-        affected_targets = set()
         field = DuplicateBug()
         field.context = self
         current_duplicateof = self.duplicateof
@@ -2034,9 +1944,7 @@ class Bug(SQLBase):
                 user = getUtility(ILaunchBag).user
                 for duplicate in self.duplicates:
                     old_value = duplicate.duplicateof
-                    affected_targets.update(
-                        duplicate._markAsDuplicate(duplicate_of))
-
+                    duplicate._markAsDuplicate(duplicate_of)
                     # Put an entry into the BugNotification table for
                     # later processing.
                     change = BugDuplicateChange(
@@ -2052,43 +1960,43 @@ class Bug(SQLBase):
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
         if duplicate_of is not None:
-            # Update the heat of the master bug and set this bug's heat
-            # to 0 (since it's a duplicate, it shouldn't have any heat
-            # at all).
-            self.setHeat(0, affected_targets=affected_targets)
             # Maybe confirm bug tasks, now that more people might be affected
             # by this bug from the duplicates.
             duplicate_of.maybeConfirmBugtasks()
-        else:
-            # Otherwise, recalculate this bug's heat, since it will be 0
-            # from having been a duplicate. We also update the bug that
-            # was previously duplicated.
-            self.updateHeat(affected_targets)
-            if current_duplicateof is not None:
-                current_duplicateof.updateHeat(affected_targets)
-        return affected_targets
+
+        # Update the former duplicateof's heat, as it will have been
+        # reduced by the unduping.
+        if current_duplicateof is not None:
+            current_duplicateof.updateHeat()
 
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
-        affected_targets = self._markAsDuplicate(duplicate_of)
+        self._markAsDuplicate(duplicate_of)
         if duplicate_of is not None:
-            duplicate_of.updateHeat(affected_targets)
-        for target in affected_targets:
-            target.recalculateBugHeatCache()
+            duplicate_of.updateHeat()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.message.visible = visible
+
+        user_owns_comment = False
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        if bool(getFeatureFlag(flag)):
+            user_owns_comment = bug_message.owner == user
+        if (not self.userCanSetCommentVisibility(user)
+            and not user_owns_comment):
+            raise Unauthorized(
+                "User %s cannot hide or show bug comments" % user.name)
+        bug_message.message.setVisible(visible)
 
     @cachedproperty
     def _known_viewers(self):
         """A set of known persons able to view this bug.
 
         This method must return an empty set or bug searches will trigger late
-        evaluation. Any 'should be set on load' propertis must be done by the
+        evaluation. Any 'should be set on load' properties must be done by the
         bug search.
 
         If you are tempted to change this method, don't. Instead see
@@ -2110,8 +2018,10 @@ class Bug(SQLBase):
 
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
-        Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
+        bugtasksearch's get_bug_privacy_filter.
         """
+        from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+
         if not self.private:
             # This is a public bug.
             return True
@@ -2122,13 +2032,34 @@ class Bug(SQLBase):
         if user.id in self._known_viewers:
             return True
 
-        filter = get_bug_privacy_filter(user)
-        store = Store.of(self)
-        store.flush()
-        if (not filter or
-            not store.find(Bug, Bug.id == self.id, filter).is_empty()):
+        params = BugTaskSearchParams(user=user, bug=self)
+        if not getUtility(IBugTaskSet).search(params).is_empty():
             self._known_viewers.add(user.id)
             return True
+        return False
+
+    def userCanSetCommentVisibility(self, user):
+        """See `IBug`"""
+
+        if user is None:
+            return False
+        roles = IPersonRoles(user)
+        if roles.in_admin or roles.in_registry_experts:
+            return True
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        return bool(getFeatureFlag(flag)) and self.userInProjectRole(roles)
+
+    def userInProjectRole(self, user):
+        """ Return True if user has a project role for any affected pillar."""
+        roles = IPersonRoles(user)
+        if roles is None:
+            return False
+        for pillar in self.affected_pillars:
+            if (roles.isOwner(pillar)
+                or roles.isOneOfDrivers(pillar)
+                or roles.isBugSupervisor(pillar)
+                or roles.isSecurityContact(pillar)):
+                return True
         return False
 
     def linkHWSubmission(self, submission):
@@ -2192,30 +2123,8 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat, timestamp=None, affected_targets=None):
+    def updateHeat(self):
         """See `IBug`."""
-        """See `IBug`."""
-        if timestamp is None:
-            timestamp = UTC_NOW
-
-        if heat < 0:
-            heat = 0
-
-        self.heat = heat
-        self.heat_last_updated = timestamp
-        if affected_targets is None:
-            for task in self.bugtasks:
-                task.target.recalculateBugHeatCache()
-        else:
-            affected_targets.update(task.target for task in self.bugtasks)
-
-    def updateHeat(self, affected_targets=None):
-        """See `IBug`."""
-        if self.duplicateof is not None:
-            # If this bug is a duplicate we don't try to calculate its
-            # heat.
-            return
-
         # We need to flush the store first to ensure that changes are
         # reflected in the new bug heat total.
         store = Store.of(self)
@@ -2223,12 +2132,19 @@ class Bug(SQLBase):
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
-        if affected_targets is None:
-            for task in self.bugtasks:
-                task.target.recalculateBugHeatCache()
-        else:
-            affected_targets.update(task.target for task in self.bugtasks)
         store.flush()
+
+    def _reconcileAccess(self):
+        # reconcile_access_for_artifact will only use the pillar list if
+        # the information type is private. But affected_pillars iterates
+        # over the tasks immediately, which is needless expense for
+        # public bugs.
+        if self.information_type in PRIVATE_INFORMATION_TYPES:
+            pillars = self.affected_pillars
+        else:
+            pillars = []
+        reconcile_access_for_artifact(
+            self, self.information_type, pillars)
 
     def _attachments_query(self):
         """Helper for the attachments* properties."""
@@ -2310,48 +2226,44 @@ def get_also_notified_subscribers(
     if IBug.providedBy(bug_or_bugtask):
         bug = bug_or_bugtask
         bugtasks = bug.bugtasks
+        info = bug.getSubscriptionInfo(level)
     elif IBugTask.providedBy(bug_or_bugtask):
         bug = bug_or_bugtask.bug
         bugtasks = [bug_or_bugtask]
+        info = bug.getSubscriptionInfo(level).forTask(bug_or_bugtask)
     else:
         raise ValueError('First argument must be bug or bugtask')
 
     if bug.private:
         return []
 
-    # Direct subscriptions always take precedence over indirect
-    # subscriptions.
-    direct_subscribers = set(bug.getDirectSubscribers())
+    # Subscribers to exclude.
+    exclude_subscribers = frozenset().union(
+        info.direct_subscribers_at_all_levels, info.muted_subscribers)
+    # Get also-notified subscribers at the given level for the given tasks.
+    also_notified_subscribers = info.also_notified_subscribers
 
-    also_notified_subscribers = set()
-
-    for bugtask in bugtasks:
-        if (bugtask.assignee and
-            bugtask.assignee not in direct_subscribers):
-            # We have an assignee that is not a direct subscriber.
-            also_notified_subscribers.add(bugtask.assignee)
-            if recipients is not None:
+    if recipients is not None:
+        for bugtask in bugtasks:
+            assignee = bugtask.assignee
+            if assignee in also_notified_subscribers:
+                # We have an assignee that is not a direct subscriber.
                 recipients.addAssignee(bugtask.assignee)
-
-        # If the target's bug supervisor isn't set...
-        pillar = bugtask.pillar
-        if (pillar.bug_supervisor is None and
-            pillar.official_malone and
-            pillar.owner not in direct_subscribers):
-            # ...we add the owner as a subscriber.
-            also_notified_subscribers.add(pillar.owner)
-            if recipients is not None:
-                recipients.addRegistrant(pillar.owner, pillar)
+            # If the target's bug supervisor isn't set...
+            pillar = bugtask.pillar
+            if pillar.official_malone and pillar.bug_supervisor is None:
+                if pillar.owner in also_notified_subscribers:
+                    # ...we add the owner as a subscriber.
+                    recipients.addRegistrant(pillar.owner, pillar)
 
     # This structural subscribers code omits direct subscribers itself.
-    also_notified_subscribers.update(
-        get_structural_subscribers(
-            bug_or_bugtask, recipients, level, direct_subscribers))
+    # TODO: Pass the info object into get_structural_subscribers for
+    # efficiency... or do the recipients stuff here.
+    structural_subscribers = get_structural_subscribers(
+        bug_or_bugtask, recipients, level, exclude_subscribers)
+    assert also_notified_subscribers.issuperset(structural_subscribers)
 
-    # Remove security proxy for the sort key, but return
-    # the regular proxied object.
-    return sorted(also_notified_subscribers,
-                  key=lambda x: removeSecurityProxy(x).displayname)
+    return also_notified_subscribers.sorted
 
 
 def load_people(*where):
@@ -2364,7 +2276,8 @@ def load_people(*where):
         `ValidPersonCache` records are loaded simultaneously.
     """
     return PersonSet()._getPrecachedPersons(
-        origin=[Person], conditions=where, need_validity=True)
+        origin=[Person], conditions=where, need_validity=True,
+        need_preferred_email=True)
 
 
 class BugSubscriberSet(frozenset):
@@ -2494,13 +2407,57 @@ class BugSubscriptionInfo:
 
     def __init__(self, bug, level):
         self.bug = bug
+        self.bugtask = None  # Implies all.
         assert level is not None
         self.level = level
+        # This cache holds related `BugSubscriptionInfo` instances relating to
+        # the same bug but with different levels and/or choice of bugtask.
+        self.cache = {self.cache_key: self}
+        # This is often used in event handlers, many of which block implicit
+        # flushes. However, the data needs to be in the database for the
+        # queries herein to give correct answers.
+        Store.of(bug).flush()
+
+    @property
+    def cache_key(self):
+        """A (bug ID, bugtask ID, level) tuple for use as a hash key.
+
+        This helps `forTask()` and `forLevel()` to be more efficient,
+        returning previously populated instances to avoid running the same
+        queries against the database again and again.
+        """
+        bugtask_id = None if self.bugtask is None else self.bugtask.id
+        return self.bug.id, bugtask_id, self.level
+
+    def forTask(self, bugtask):
+        """Create a new `BugSubscriptionInfo` limited to `bugtask`.
+
+        The given task must refer to this object's bug. If `None` is passed a
+        new `BugSubscriptionInfo` instance is returned with no limit.
+        """
+        info = self.__class__(self.bug, self.level)
+        info.bugtask, info.cache = bugtask, self.cache
+        return self.cache.setdefault(info.cache_key, info)
+
+    def forLevel(self, level):
+        """Create a new `BugSubscriptionInfo` limited to `level`."""
+        info = self.__class__(self.bug, level)
+        info.bugtask, info.cache = self.bugtask, self.cache
+        return self.cache.setdefault(info.cache_key, info)
+
+    @cachedproperty
+    @freeze(BugSubscriberSet)
+    def muted_subscribers(self):
+        muted_people = Select(BugMute.person_id, BugMute.bug == self.bug)
+        return load_people(Person.id.is_in(muted_people))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
-    def old_direct_subscriptions(self):
-        """The bug's direct subscriptions."""
+    def direct_subscriptions(self):
+        """The bug's direct subscriptions.
+
+        Excludes muted subscriptions.
+        """
         return IStore(BugSubscription).find(
             BugSubscription,
             BugSubscription.bug_notification_level >= self.level,
@@ -2508,66 +2465,67 @@ class BugSubscriptionInfo:
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
 
-    @cachedproperty
-    def direct_subscriptions_and_subscribers(self):
-        """The bug's direct subscriptions."""
-        res = IStore(BugSubscription).find(
-            (BugSubscription, Person),
-            BugSubscription.bug_notification_level >= self.level,
-            BugSubscription.bug == self.bug,
-            BugSubscription.person_id == Person.id,
-            Not(In(BugSubscription.person_id,
-                   Select(BugMute.person_id,
-                          BugMute.bug_id == self.bug.id))))
-        # Here we could test for res.count() but that will execute another
-        # query.  This structure avoids the extra query.
-        return zip(*res) or ((), ())
-
-    @cachedproperty
-    @freeze(BugSubscriptionSet)
-    def direct_subscriptions(self):
-        return self.direct_subscriptions_and_subscribers[0]
-
-    @cachedproperty
-    @freeze(BugSubscriberSet)
+    @property
     def direct_subscribers(self):
-        return self.direct_subscriptions_and_subscribers[1]
+        """The bug's direct subscriptions.
 
-    @cachedproperty
-    def duplicate_subscriptions_and_subscribers(self):
-        """Subscriptions to duplicates of the bug."""
-        if self.bug.private:
-            return ((), ())
-        else:
-            res = IStore(BugSubscription).find(
-                (BugSubscription, Person),
-                BugSubscription.bug_notification_level >= self.level,
-                BugSubscription.bug_id == Bug.id,
-                BugSubscription.person_id == Person.id,
-                Bug.duplicateof == self.bug,
-                Not(In(BugSubscription.person_id,
-                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
-        # Here we could test for res.count() but that will execute another
-        # query.  This structure avoids the extra query.
-        return zip(*res) or ((), ())
+        Excludes muted subscribers.
+        """
+        return self.direct_subscriptions.subscribers
+
+    @property
+    def direct_subscriptions_at_all_levels(self):
+        """The bug's direct subscriptions at all levels.
+
+        Excludes muted subscriptions.
+        """
+        return self.forLevel(
+            BugNotificationLevel.LIFECYCLE).direct_subscriptions
+
+    @property
+    def direct_subscribers_at_all_levels(self):
+        """The bug's direct subscribers at all levels.
+
+        Excludes muted subscribers.
+        """
+        return self.direct_subscriptions_at_all_levels.subscribers
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_subscriptions(self):
-        return self.duplicate_subscriptions_and_subscribers[0]
+        """Subscriptions to duplicates of the bug.
 
-    @cachedproperty
-    @freeze(BugSubscriberSet)
+        Excludes muted subscriptions.
+        """
+        if self.bug.private:
+            return ()
+        else:
+            return IStore(BugSubscription).find(
+                BugSubscription,
+                BugSubscription.bug_notification_level >= self.level,
+                BugSubscription.bug_id == Bug.id,
+                Bug.duplicateof == self.bug,
+                Not(In(
+                    BugSubscription.person_id,
+                    Select(
+                        BugMute.person_id, BugMute.bug_id == Bug.id,
+                        tables=[BugMute]))))
+
+    @property
     def duplicate_subscribers(self):
-        return self.duplicate_subscriptions_and_subscribers[1]
+        """Subscribers to duplicates of the bug.
+
+        Excludes muted subscribers.
+        """
+        return self.duplicate_subscriptions.subscribers
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_only_subscriptions(self):
-        """Subscriptions to duplicates of the bug.
+        """Subscriptions to duplicates of the bug only.
 
-        Excludes subscriptions for people who have a direct subscription or
-        are also notified for another reason.
+        Excludes muted subscriptions, subscriptions for people who have a
+        direct subscription, or who are also notified for another reason.
         """
         self.duplicate_subscribers  # Pre-load subscribers.
         higher_precedence = (
@@ -2577,47 +2535,85 @@ class BugSubscriptionInfo:
             subscription for subscription in self.duplicate_subscriptions
             if subscription.person not in higher_precedence)
 
+    @property
+    def duplicate_only_subscribers(self):
+        """Subscribers to duplicates of the bug only.
+
+        Excludes muted subscribers, subscribers who have a direct
+        subscription, or who are also notified for another reason.
+        """
+        return self.duplicate_only_subscriptions.subscribers
+
     @cachedproperty
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
-        """Structural subscriptions to the bug's targets."""
-        return list(get_structural_subscriptions_for_bug(self.bug))
+        """Structural subscriptions to the bug's targets.
+
+        Excludes direct subscriptions.
+        """
+        subject = self.bug if self.bugtask is None else self.bugtask
+        return get_structural_subscriptions(subject, self.level)
+
+    @property
+    def structural_subscribers(self):
+        """Structural subscribers to the bug's targets.
+
+        Excludes direct subscribers.
+        """
+        return self.structural_subscriptions.subscribers
 
     @cachedproperty
     @freeze(BugSubscriberSet)
     def all_assignees(self):
-        """Assignees of the bug's tasks."""
-        assignees = Select(BugTask.assigneeID, BugTask.bug == self.bug)
-        return load_people(Person.id.is_in(assignees))
+        """Assignees of the bug's tasks.
+
+        *Does not* exclude muted subscribers.
+        """
+        if self.bugtask is None:
+            assignees = Select(BugTask.assigneeID, BugTask.bug == self.bug)
+            return load_people(Person.id.is_in(assignees))
+        else:
+            return load_people(Person.id == self.bugtask.assigneeID)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
     def all_pillar_owners_without_bug_supervisors(self):
-        """Owners of pillars for which no Bug supervisor is configured."""
-        for bugtask in self.bug.bugtasks:
+        """Owners of pillars for which there is no bug supervisor.
+
+        The pillars must also use Launchpad for bug tracking.
+
+        *Does not* exclude muted subscribers.
+        """
+        if self.bugtask is None:
+            bugtasks = self.bug.bugtasks
+        else:
+            bugtasks = [self.bugtask]
+        for bugtask in bugtasks:
             pillar = bugtask.pillar
-            if pillar.bug_supervisor is None:
-                yield pillar.owner
+            if pillar.official_malone:
+                if pillar.bug_supervisor is None:
+                    yield pillar.owner
 
     @cachedproperty
     def also_notified_subscribers(self):
-        """All subscribers except direct and dupe subscribers."""
+        """All subscribers except direct, dupe, and muted subscribers."""
         if self.bug.private:
             return BugSubscriberSet()
         else:
-            muted = IStore(BugMute).find(
-                Person,
-                BugMute.person_id == Person.id,
-                BugMute.bug == self.bug)
-            return BugSubscriberSet().union(
-                self.structural_subscriptions.subscribers,
+            subscribers = BugSubscriberSet().union(
+                self.structural_subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
-                self.all_assignees).difference(
-                self.direct_subscribers).difference(muted)
+                self.all_assignees)
+            return subscribers.difference(
+                self.direct_subscribers_at_all_levels,
+                self.muted_subscribers)
 
     @cachedproperty
     def indirect_subscribers(self):
-        """All subscribers except direct subscribers."""
+        """All subscribers except direct subscribers.
+
+        Excludes muted subscribers.
+        """
         return self.also_notified_subscribers.union(
             self.duplicate_subscribers)
 
@@ -2651,25 +2647,6 @@ class BugSet:
                     "Unable to locate bug with nickname %s." % bugid)
         return bug
 
-    def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
-        """See `IBugSet`."""
-        where_clauses = []
-        if duplicateof:
-            where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
-
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            where_clauses.append(privacy_filter)
-
-        other_params = {}
-        if orderBy:
-            other_params['orderBy'] = orderBy
-        if limit:
-            other_params['limit'] = limit
-
-        return Bug.select(
-            ' AND '.join(where_clauses), **other_params)
-
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See `IBugSet`."""
         bug = Bug.selectFirst("""
@@ -2691,13 +2668,12 @@ class BugSet:
         if params.product and params.product.private_bugs:
             # If the private_bugs flag is set on a product, then
             # force the new bug report to be private.
-            params.private = True
+            if params.information_type == InformationType.PUBLIC:
+                params.information_type = InformationType.USERDATA
 
         bug, event = self.createBugWithoutTarget(params)
 
-        if params.security_related:
-            assert params.private, (
-                "A security related bug should always be private by default.")
+        if params.information_type in SECURITY_INFORMATION_TYPES:
             if params.product:
                 context = params.product
             else:
@@ -2718,9 +2694,6 @@ class BugSet:
                 bug.subscribe(params.product.bug_supervisor, params.owner)
             else:
                 bug.subscribe(params.product.owner, params.owner)
-        else:
-            # nothing to do
-            pass
 
         # Create the task on a product if one was passed.
         if params.product:
@@ -2742,6 +2715,8 @@ class BugSet:
             bug_task.transitionToImportance(params.importance, params.owner)
         if params.milestone:
             bug_task.transitionToMilestone(params.milestone, params.owner)
+
+        bug._reconcileAccess()
 
         # Tell everyone.
         if notify_event:
@@ -2786,18 +2761,22 @@ class BugSet:
             params.description = params.msg.text_contents
 
         extra_params = {}
-        if params.private:
+        if params.information_type in PRIVATE_INFORMATION_TYPES:
             # We add some auditing information. After bug creation
             # time these attributes are updated by Bug.setPrivate().
             extra_params.update(
                 date_made_private=params.datecreated,
                 who_made_private=params.owner)
 
+        # Set the legacy attributes for now.
+        private = params.information_type in PRIVATE_INFORMATION_TYPES
+        security_related = (
+            params.information_type in SECURITY_INFORMATION_TYPES)
         bug = Bug(
             title=params.title, description=params.description,
-            private=params.private, owner=params.owner,
-            datecreated=params.datecreated,
-            security_related=params.security_related,
+            owner=params.owner, datecreated=params.datecreated,
+            information_type=params.information_type,
+            _private=private, _security_related=security_related,
             **extra_params)
 
         if params.subscribe_owner:
@@ -2866,24 +2845,15 @@ class BugSet:
         result_set = store.find(Bug, Bug.id.is_in(bug_numbers))
         return result_set.order_by('id')
 
-    def dangerousGetAllBugs(self):
+    def getBugsWithOutdatedHeat(self, cutoff):
         """See `IBugSet`."""
         store = IStore(Bug)
-        result_set = store.find(Bug)
-        return result_set.order_by('id')
-
-    def getBugsWithOutdatedHeat(self, max_heat_age):
-        """See `IBugSet`."""
-        store = IStore(Bug)
-        last_updated_cutoff = (
-            datetime.now(timezone('UTC')) -
-            timedelta(days=max_heat_age))
         last_updated_clause = Or(
-            Bug.heat_last_updated < last_updated_cutoff,
+            Bug.heat_last_updated < cutoff,
             Bug.heat_last_updated == None)
 
-        return store.find(
-            Bug, Bug.duplicateof == None, last_updated_clause).order_by('id')
+        return store.find(Bug, last_updated_clause).order_by(
+            Bug.heat_last_updated)
 
 
 class BugAffectsPerson(SQLBase):

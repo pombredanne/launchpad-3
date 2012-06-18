@@ -5,14 +5,36 @@ The TranslationImportQueueEntry is an entry of the queue that will be imported
 into Rosetta.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.registry.interfaces.distroseries import IDistroSeries
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue)
     >>> from lp.translations.model.translationimportqueue import (
     ...     TranslationImportQueueEntry)
+
+    >>> translationimportqueue = getUtility(ITranslationImportQueue)
 
     >>> def clear_queue(queue):
     ...     """Remove all entries off the import queue."""
     ...     store = IStore(TranslationImportQueueEntry)
     ...     store.find(TranslationImportQueueEntry).remove()
+
+    >>> def get_target_names(status=None):
+    ...     """Call getRequestTargets, return list of names/titles."""
+    ...     result = []
+    ...     queue = translationimportqueue.getRequestTargets(status)
+    ...     for object in queue:
+    ...         if IDistroSeries.providedBy(object):
+    ...             name = "%s/%s" % (object.distribution.name, object.name)
+    ...         else:
+    ...             name = object.name
+    ...         result.append("%s %s" % (name, object.displayname))
+    ...     return result
+
+    >>> def print_list(strings):
+    ...     """Print list of strings as list of lines."""
+    ...     for string in strings:
+    ...         print string
 
 
 getGuessedPOFile
@@ -26,22 +48,18 @@ Here we have some imports and utility fetch.
 
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.translations.enums import RosettaImportStatus
-    >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue)
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.model.productseries import ProductSeries
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
 
-    >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
     >>> distroset = getUtility(IDistributionSet)
@@ -931,168 +949,6 @@ no sense at all.
     0
 
 
-getRequestTargets
------------------
-
-    >>> # Helper functions
-    >>> def get_target_names(status=None):
-    ...     """Call getRequestTargets, return list of names/titles.
-    ...     """
-    ...     result = []
-    ...     queue = translationimportqueue.getRequestTargets(status)
-    ...     for object in queue:
-    ...         if IDistroSeries.providedBy(object):
-    ...             name = "%s/%s" % (object.distribution.name, object.name)
-    ...         else:
-    ...             name = object.name
-    ...         result.append("%s %s" % (name, object.displayname))
-    ...     return result
-
-    >>> def print_list(strings):
-    ...     """Print list of strings as list of lines."""
-    ...     for string in strings:
-    ...         print string
-
-getRequestTargets() returns all objects that have entries in the
-translation import queue waiting to be imported.  Object can be a
-Product or a DistroSeries.
-
-The user uploads two translations into Hoary and Warty respectively, as
-well as one for the Firefox trunk series.
-
-    >>> from lp.registry.interfaces.distribution import (
-    ...     IDistributionSet)
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> hoary_distroseries = ubuntu.getSeries('hoary')
-    >>> evolution_sourcepackagename = (
-    ...     SourcePackageName.selectOne("name='evolution'"))
-    >>> entry1 = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, rosetta_experts,
-    ...      distroseries=hoary_distroseries,
-    ...      sourcepackagename=evolution_sourcepackagename)
-
-    >>> warty_distroseries = ubuntu.getSeries('warty')
-    >>> entry3 = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, rosetta_experts,
-    ...      distroseries=warty_distroseries,
-    ...      sourcepackagename=evolution_sourcepackagename)
-    >>> print entry3.status.name
-    NEEDS_REVIEW
-
-    >>> firefox = productset['firefox']
-    >>> productseries = firefox.getSeries('trunk')
-    >>> entry2 = translationimportqueue.addOrUpdateEntry(
-    ...     'foo/bar.pot', 'foo content', True,
-    ...     rosetta_experts, productseries=productseries)
-    >>> flush_database_updates()
-
-The list of objects with approved entries is still empty, since we haven't
-approved any.
-
-    >>> print_list(sorted(get_target_names(RosettaImportStatus.APPROVED)))
-
-    >>> print entry3.status.name
-    NEEDS_REVIEW
-
-Now we approve these entries (we need to be Rosetta administrator to do this).
-We also need to set an import target.
-
-    >>> login('carlos@canonical.com')
-    >>> entry1.potemplate = factory.makePOTemplate(
-    ...     name=u"evolution",
-    ...     distroseries=hoary_distroseries,
-    ...     sourcepackagename=evolution_sourcepackagename)
-    >>> entry1.pofile = factory.makePOFile('sr', potemplate=entry1.potemplate)
-    >>> entry1.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
-    >>> entry2.potemplate = factory.makePOTemplate(
-    ...     name=u"firefox",
-    ...     productseries=productseries)
-    >>> entry2.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
-
-    >>> flush_database_updates()
-    >>> translationimportqueue = getUtility(ITranslationImportQueue)
-
-If we re-get the list of objects which have approved entries, we'll
-get these recently approved ones.
-
-    >>> print_list(sorted(get_target_names(RosettaImportStatus.APPROVED)))
-    firefox         Mozilla Firefox
-    ubuntu/hoary    Hoary
-
-Lets check that the returned entries are actually the same ones we submitted.
-Each of the objects returned provides a getFirstEntryToImport method
-which returns the TranslationImportQueueEntry which is next up for import.
-
-    >>> importqueues = translationimportqueue.getRequestTargets(
-    ...     RosettaImportStatus.APPROVED)
-    >>> sortedqueues = sorted(importqueues,
-    ...                       cmp=lambda x,y: cmp(y.title, x.title))
-    >>> queue1 = sortedqueues[0]
-    >>> queue1.title
-    u'The Hoary Hedgehog Release'
-    >>> entry = queue1.getFirstEntryToImport()
-    >>> entry == entry1
-    True
-
-    >>> queue2 = sortedqueues[1]
-    >>> queue2.title
-    u'Mozilla Firefox'
-    >>> entry = queue2.getFirstEntryToImport()
-    >>> entry == entry2
-    True
-
-Note that our third entry never received approval, so it is still awaiting
-review.
-
-    >>> print entry3.status.name
-    NEEDS_REVIEW
-
-    >>> print_list(sorted(get_target_names()))
-    evolution       Evolution
-    firefox         Mozilla Firefox
-    ubuntu/hoary    Hoary
-    ubuntu/warty    Warty
-
-Administrators temporarily block translation imports to Warty.
-
-    >>> warty_distroseries.defer_translation_imports = True
-
-While imports are blocked, Warty does not show up as having pending
-imports.
-
-    >>> print_list(sorted(get_target_names()))
-    evolution       Evolution
-    firefox         Mozilla Firefox
-    ubuntu/hoary    Hoary
-
-An administrator deactivates Firefox, thinking that the project is being
-run in violation of Launchpad policies.
-
-    # Unlink the source packages so the project can be deactivated.
-    >>> from lp.testing import unlink_source_packages
-    >>> unlink_source_packages(firefox)
-    >>> firefox.active = False
-
-Now that Firefox is inactive, it no longer shows up as having pending
-imports.
-
-    >>> print_list(sorted(get_target_names()))
-    evolution       Evolution
-    ubuntu/hoary    Hoary
-
-The administrator realizes that there has been a mistake, and makes
-Firefox active again.
-
-    >>> firefox.active = True
-
-The import request for Firefox was not removed, so Firefox is listed as
-having pending imports again.
-
-    >>> print_list(sorted(get_target_names()))
-    evolution       Evolution
-    firefox         Mozilla Firefox
-    ubuntu/hoary    Hoary
-
 addOrUpdateEntry()
 ------------------
 
@@ -1137,14 +993,12 @@ Current entries in the queue are:
 
     >>> queue = getUtility(ITranslationImportQueue)
     >>> print_queue_entries(queue)
-    hoary evolution | evolution          | po/sr.po
-    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
     evolution       | None               | po/sr.po
+    hoary evolution | None               | po/sr.po
     hoary evolution | None               | po/evolution-2.2.pot
-    warty evolution | None               | po/sr.po
 
 Attach the sample tarball to the 'evolution-2.2-test' template in evolution
 product. We can ask to only upload the template from the tarball and ignore
@@ -1160,14 +1014,12 @@ the other files.
 And this new entry in the queue appears in the list.
 
     >>> print_queue_entries(queue)
-    hoary evolution | evolution          | po/sr.po
-    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
     evolution       | None               | po/sr.po
+    hoary evolution | None               | po/sr.po
     hoary evolution | None               | po/evolution-2.2.pot
-    warty evolution | None               | po/sr.po
     evolution       | evolution-2.2-test | foo.pot
 
 
@@ -1183,14 +1035,12 @@ There will be three new entries from the tarball.
 And those new entries in the queue appear in the list.
 
     >>> print_queue_entries(queue)
-    hoary evolution | evolution          | po/sr.po
-    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
     evolution       | None               | po/sr.po
+    hoary evolution | None               | po/sr.po
     hoary evolution | None               | po/evolution-2.2.pot
-    warty evolution | None               | po/sr.po
     evolution       | evolution-2.2-test | foo.pot
     evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | fr.po
@@ -1263,6 +1113,7 @@ important to prevent problems like bug #133611, in which case were not getting
 the extra three entries.
 
     >>> print_queue_entries(queue)
+    evolution ...
     hoary ...
     ...
     evolution       | evolution-2.2-test | foo.pot
@@ -1295,6 +1146,7 @@ then to a specific template.
 These files are put into different entries.
 
     >>> print_queue_entries(queue)
+    evolution ...
     hoary ...
     ...
     evolution       | evolution-2.2      | fr.po
@@ -1350,6 +1202,7 @@ To all intents and purposes, it's as if the files' paths inside the
 tarball were exactly as the filename filter returned them.
 
     >>> print_queue_entries(queue)
+    evolution ...
     hoary evolution | ...
     ...
     evolution       | evolution-2.2      | bar.pot
@@ -1436,94 +1289,6 @@ Set the entry to approved, which is only possible if we don't use setStatus.
     >>> clear_queue(translationimportqueue)
 
 
-getRequestTargets output ordering
----------------------------------
-
-The queue is populated with a wild mix of requests: for packages in
-different release series of Ubuntu, for packages in different distros,
-for product series, with different statuses; some were imported from
-upstream, some were produced right here in Launchpad.
-
-    >>> def create_distro_request(distro_name, series_name):
-    ...     """Enqueue an import request for given distro package."""
-    ...     distro = distroset[distro_name]
-    ...     series = distro.getSeries(series_name)
-    ...     package = packageset['pmount']
-    ...     template = factory.makePOTemplate(distroseries=series,
-    ...                                       sourcepackagename=package)
-    ...     # In a completely arbitrary move, we make all import requests for
-    ...     # distro series imported.
-    ...     return translationimportqueue.addOrUpdateEntry('messages.pot',
-    ...         'dummy file', True, rosetta_experts, distroseries=series,
-    ...         sourcepackagename=package, potemplate=template)
-
-    >>> def create_product_request(product_name, template_name):
-    ...     """Enqueue an import request for given product and template."""
-    ...     product = productset[product_name]
-    ...     series = product.primary_translatable
-    ...     assert series is not None, (
-    ...         "Product %s has no translatable series." % product_name)
-    ...     template = series.getPOTemplate(template_name)
-    ...     # In another completely arbitrary move, we make all import
-    ...     # requests for products non-imported.
-    ...     return translationimportqueue.addOrUpdateEntry('messages.pot',
-    ...         'dummy file', False, rosetta_experts, productseries=series,
-    ...         potemplate=template)
-
-    >>> # Populate import queue with wild mix of requests.
-    >>> entry = create_product_request('evolution', 'evolution-2.2')
-    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
-    >>> entry = create_distro_request('debian', 'sarge')
-    >>> entry.setStatus(RosettaImportStatus.NEEDS_REVIEW, rosetta_experts)
-    >>> entry = create_product_request('alsa-utils', 'alsa-utils')
-    >>> entry.setStatus(RosettaImportStatus.FAILED, rosetta_experts)
-    >>> entry = create_distro_request('ubuntu', 'grumpy')
-    >>> entry.setStatus(RosettaImportStatus.BLOCKED, rosetta_experts)
-    >>> entry = create_distro_request('kubuntu', 'krunch')
-    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
-    >>> entry = create_product_request('evolution', 'evolution-2.2-test')
-    >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
-    >>> entry = create_distro_request('debian', 'woody')
-    >>> entry.setStatus(RosettaImportStatus.NEEDS_REVIEW, rosetta_experts)
-    >>> flush_database_updates()
-
-TranslationImportQueue.getRequestTargets first lists distro series
-(ordered by distro name and series name), followed by products (ordered
-by name).
-
-    >>> print_list(get_target_names())
-    debian/sarge        Sarge
-    debian/woody        Woody
-    kubuntu/krunch      Krunch
-    ubuntu/grumpy       Grumpy
-    alsa-utils          alsa-utils
-    evolution           Evolution
-
-    >>> for status in RosettaImportStatus.items:
-    ...     print "%s:" % status.name
-    ...     print_list(get_target_names(status))
-    APPROVED:
-    kubuntu/krunch      Krunch
-    evolution           Evolution
-    IMPORTED:
-    evolution           Evolution
-    DELETED:
-    FAILED:
-    alsa-utils          alsa-utils
-    NEEDS_REVIEW:
-    debian/sarge        Sarge
-    debian/woody        Woody
-    BLOCKED:
-    ubuntu/grumpy       Grumpy
-    NEEDS_INFORMATION:
-
-You can also select by status.
-
-    >>> print_list(get_target_names(RosettaImportStatus.APPROVED))
-    kubuntu/krunch      Krunch
-    evolution           Evolution
-
-
 cleanUpQueue
 ------------
 
@@ -1579,6 +1344,19 @@ have been deactivated.
 A user sets up Jokosher for translation, and uploads a template.
 
     >>> from lp.app.enums import ServiceUsage
+
+    >>> def create_product_request(product_name, template_name):
+    ...     """Enqueue an import request for given product and template."""
+    ...     product = productset[product_name]
+    ...     series = product.primary_translatable
+    ...     assert series is not None, (
+    ...         "Product %s has no translatable series." % product_name)
+    ...     template = series.getPOTemplate(template_name)
+    ...     # In another completely arbitrary move, we make all import
+    ...     # requests for products non-imported.
+    ...     return translationimportqueue.addOrUpdateEntry('messages.pot',
+    ...         'dummy file', False, rosetta_experts, productseries=series,
+    ...         potemplate=template)
 
     >>> jokosher = productset['jokosher']
     >>> jokosher_trunk = jokosher.getSeries('trunk')

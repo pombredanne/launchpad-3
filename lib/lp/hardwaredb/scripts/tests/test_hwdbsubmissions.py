@@ -5,19 +5,23 @@
 
 __metaclass__ = type
 
-from storm.store import Store
 from tempfile import mktemp
 
-from canonical.launchpad.ftests.script import run_script
-from canonical.testing.layers import LaunchpadScriptLayer
+from storm.store import Store
+import transaction
+
 from lp.hardwaredb.interfaces.hwdb import HWSubmissionProcessingStatus
 from lp.hardwaredb.scripts.hwdbsubmissions import (
     ProcessingLoopForPendingSubmissions,
     ProcessingLoopForReprocessingBadSubmissions,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    )
 from lp.testing.matchers import Contains
-import transaction
+from lp.testing.script import run_script
 
 
 class TestProcessingLoops(TestCaseWithFactory):
@@ -107,8 +111,7 @@ class TestProcessingLoops(TestCaseWithFactory):
         submissions = loop.getUnprocessedSubmissions(1)
         self.assertEqual(1, len(submissions))
 
-    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
-    def xxx_test_BadSubmissions_respects_start(self):
+    def test_BadSubmissions_respects_start(self):
         # It is possible to request a start id. Previous entries are ignored.
         submission1 = self.factory.makeHWSubmission(
             status=HWSubmissionProcessingStatus.INVALID)
@@ -119,18 +122,18 @@ class TestProcessingLoops(TestCaseWithFactory):
         # The sample data already contains one submission.
         submissions = loop.getUnprocessedSubmissions(2)
         self.assertEqual([submission2], submissions)
+        DatabaseLayer.force_dirty_database()
 
-    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
-    def xxx_test_run_reprocessing_script_no_params(self):
+    def test_run_reprocessing_script_no_params(self):
         # cronscripts/reprocess-hwdb-submissions.py needs at least the
         # parameter --start-file
         retcode, stdout, stderr = run_script(
             'cronscripts/reprocess-hwdb-submissions.py', [])
         self.assertThat(
             stderr, Contains('Option --start-file not specified.'))
+        DatabaseLayer.force_dirty_database()
 
-    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
-    def xxx_test_run_reprocessing_script_startfile_does_not_exist(self):
+    def test_run_reprocessing_script_startfile_does_not_exist(self):
         # If the specified start file does not exist,
         # cronscripts/reprocess-hwdb-submissions.py reports an error.
         does_not_exist = mktemp()
@@ -139,9 +142,9 @@ class TestProcessingLoops(TestCaseWithFactory):
             ['--start-file', does_not_exist])
         self.assertThat(
             stderr, Contains('Cannot access file %s' % does_not_exist))
+        DatabaseLayer.force_dirty_database()
 
-    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
-    def xxx_test_run_reprocessing_script_startfile_without_integer(self):
+    def test_run_reprocessing_script_startfile_without_integer(self):
         # If the specified start file contains any non-integer string,
         # cronscripts/reprocess-hwdb-submissions.py reports an error.
         start_file_name = mktemp()
@@ -154,9 +157,9 @@ class TestProcessingLoops(TestCaseWithFactory):
         self.assertThat(
             stderr,
             Contains('%s must contain only an integer' % start_file_name))
+        DatabaseLayer.force_dirty_database()
 
-    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
-    def xxx_test_run_reprocessing_script_startfile_with_negative_integer(self):
+    def test_run_reprocessing_script_startfile_with_negative_integer(self):
         # If the specified start file contains any non-integer string,
         # cronscripts/reprocess-hwdb-submissions.py reports an error.
         start_file_name = mktemp()
@@ -169,9 +172,9 @@ class TestProcessingLoops(TestCaseWithFactory):
         self.assertThat(
             stderr,
             Contains('%s must contain a positive integer' % start_file_name))
+        DatabaseLayer.force_dirty_database()
 
-    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
-    def xxx_test_run_reprocessing_script_max_submission_not_integer(self):
+    def test_run_reprocessing_script_max_submission_not_integer(self):
         # If the parameter --max-submissions is not an integer,
         # cronscripts/reprocess-hwdb-submissions.py reports an error.
         retcode, stdout, stderr = run_script(
@@ -179,6 +182,7 @@ class TestProcessingLoops(TestCaseWithFactory):
             ['--max-submissions', 'nonsense'])
         expected = "Invalid value for --max_submissions specified: 'nonsense'"
         self.assertThat(stderr, Contains(expected))
+        DatabaseLayer.force_dirty_database()
 
     def test_run_reprocessing_script_two_batches(self):
         # cronscripts/reprocess-hwdb-submissions.py begings to process

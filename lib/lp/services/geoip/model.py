@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 from zope.interface import implements
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.geoip.helpers import ipaddress_from_request
 from lp.services.geoip.interfaces import (
     IGeoIP,

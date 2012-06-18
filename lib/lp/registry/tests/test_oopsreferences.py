@@ -12,14 +12,17 @@ from datetime import (
 
 from pytz import utc
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.oopsreferences import referenced_oops
+from lp.services.database.lpstorm import IStore
 from lp.services.messages.model.message import (
     Message,
     MessageSet,
     )
-from lp.testing import TestCaseWithFactory, person_logged_in
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestOopsReferences(TestCaseWithFactory):
@@ -37,7 +40,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set(),
@@ -51,7 +54,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set(),
@@ -66,7 +69,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set(),
@@ -81,7 +84,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set(),
@@ -94,7 +97,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
         self.failUnlessEqual(
@@ -122,7 +125,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
         self.failUnlessEqual(
@@ -139,7 +142,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
         self.failUnlessEqual(
@@ -157,7 +160,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "distribution=%(distribution)s",
             {'distribution': distro.id}))
         self.failUnlessEqual(
@@ -170,17 +173,23 @@ class TestOopsReferences(TestCaseWithFactory):
         # a reference even though they are not formatted specially - this
         # requires somewhat special handling in the reference calculation
         # function.
-        oopsid = "OOPS-abcdef1234"
-        bug = self.factory.makeBug()
-        with person_logged_in(bug.owner):
-            bug.description = (
+        oopsid_old = "OOPS-abcdef1234"
+        oopsid_new = "OOPS-4321"
+        bug_old = self.factory.makeBug()
+        bug_new = self.factory.makeBug()
+        with person_logged_in(bug_old.owner):
+            bug_old.description = (
                 "foo https://lp-oops.canonical.com/oops.py?oopsid=%s bar"
-                % oopsid)
-            self.store.flush()
+                % oopsid_old)
+        with person_logged_in(bug_new.owner):
+            bug_new.description = (
+                "foo https://oops.canonical.com/oops.py?oopsid=%s bar"
+                % oopsid_new)
+        self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid_old, oopsid_new]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set([]),

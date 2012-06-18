@@ -11,13 +11,13 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.librarian.testing.fake import FakeLibrarian
-from canonical.testing import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.librarianserver.testing.fake import FakeLibrarian
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.registry.interfaces.person import IPersonSet
-from lp.testing import TestCaseWithFactory
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
@@ -352,21 +352,6 @@ class FileImporterTestCase(TestCaseWithFactory):
                 po_importer.pofile.language.displayname,
                 po_importer.potemplate.displayname),
             'Did not create the correct comment for %s' % test_email)
-
-    def test_getPersonByEmail_personless_account(self):
-        # An Account without a Person attached is a difficult case for
-        # _getPersonByEmail: it has to create the Person but re-use an
-        # existing Account and email address.
-        (pot_importer, po_importer) = self._createImporterForExportedEntries()
-        test_email = 'freecdsplease@example.com'
-        account = self.factory.makeAccount('Send me Ubuntu', test_email)
-
-        person = po_importer._getPersonByEmail(test_email)
-
-        self.assertEqual(account, person.account)
-
-        # The same person will come up for the same address next time.
-        self.assertEqual(person, po_importer._getPersonByEmail(test_email))
 
     def test_getPersonByEmail_bad_address(self):
         # _getPersonByEmail returns None for malformed addresses.

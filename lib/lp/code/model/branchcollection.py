@@ -9,6 +9,8 @@ __all__ = [
     ]
 
 from collections import defaultdict
+from functools import partial
+from operator import attrgetter
 
 from lazr.restful.utils import safe_hasattr
 from storm.expr import (
@@ -29,17 +31,6 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.launchpad.webapp.vocabulary import CountableIterator
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -64,17 +55,16 @@ from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
-from lp.code.model.diff import (
-    Diff,
-    PreviewDiff,
-    )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.registry.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
     Owner,
     Person,
-    ValidPersonCache,
     )
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -83,7 +73,20 @@ from lp.services.database.bulk import (
     load_referencing,
     load_related,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
 from lp.services.propertycache import get_property_cache
+from lp.services.searchbuilder import any
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.webapp.vocabulary import CountableIterator
 
 
 class GenericBranchCollection:
@@ -127,6 +130,7 @@ class GenericBranchCollection:
         if exclude_from_search is None:
             exclude_from_search = []
         self._exclude_from_search = exclude_from_search
+        self._user = None
 
     def count(self):
         """See `IBranchCollection`."""
@@ -222,7 +226,45 @@ class GenericBranchCollection:
         return [
             With("candidate_branches", SQL("SELECT id from scope_branches"))]
 
-    def _preloadDataForBranches(self, branches):
+    @staticmethod
+    def preloadVisibleStackedOnBranches(branches, user=None):
+        """Preload the chains of stacked on branches related to the given list
+        of branches. Only the branches visible for the given user are
+        preloaded/returned.
+
+        """
+        if len(branches) == 0:
+            return
+        store = IStore(Branch)
+        result = store.execute("""
+            WITH RECURSIVE stacked_on_branches_ids AS (
+                SELECT column1 as id FROM (VALUES %s) AS temp
+                UNION
+                SELECT DISTINCT branch.stacked_on
+                FROM stacked_on_branches_ids, Branch AS branch
+                WHERE
+                    branch.id = stacked_on_branches_ids.id AND
+                    branch.stacked_on IS NOT NULL
+            )
+            SELECT id from stacked_on_branches_ids
+            """ % ', '.join(
+                ["(%s)" % quote(id)
+                 for id in map(attrgetter('id'), branches)]))
+        branch_ids = [res[0] for res in result.get_all()]
+        # Not really sure this is useful: if a given branch is visible by a
+        # user, then I think it means that the whole chain of branches on
+        # which is is stacked on is visible by this user
+        expressions = [Branch.id.is_in(branch_ids)]
+        if user is None:
+            collection = AnonymousBranchCollection(
+                branch_filter_expressions=expressions)
+        else:
+            collection = VisibleBranchCollection(
+                user=user, branch_filter_expressions=expressions)
+        return list(collection.getBranches())
+
+    @staticmethod
+    def preloadDataForBranches(branches):
         """Preload branches cached associated product series and
         suite source packages."""
         caches = dict((branch.id, get_property_cache(branch))
@@ -238,7 +280,7 @@ class GenericBranchCollection:
         # associatedProductSeries
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
-        for productseries in self.store.find(
+        for productseries in IStore(ProductSeries).find(
             ProductSeries,
             ProductSeries.branchID.is_in(branch_ids)):
             cache = caches[productseries.branchID]
@@ -272,7 +314,7 @@ class GenericBranchCollection:
             branch_ids = set(branch.id for branch in rows)
             if not branch_ids:
                 return
-            self._preloadDataForBranches(rows)
+            GenericBranchCollection.preloadDataForBranches(rows)
             load_related(Product, rows, ['productID'])
             # So far have only needed the persons for their canonical_url - no
             # need for validity etc in the /branches API call.
@@ -295,47 +337,19 @@ class GenericBranchCollection:
             for_branches is not None or
             target_branch is not None or
             merged_revnos is not None):
-            return self._naiveGetMergeProposals(statuses, for_branches,
-                target_branch, merged_revnos, eager_load)
+            return self._naiveGetMergeProposals(
+                statuses, for_branches, target_branch, merged_revnos,
+                eager_load=eager_load)
         else:
             # When examining merge proposals in a scope, this is a moderately
             # effective set of constrained queries. It is not effective when
             # unscoped or when tight constraints on branches are present.
-            return self._scopedGetMergeProposals(statuses)
+            return self._scopedGetMergeProposals(
+                statuses, eager_load=eager_load)
 
     def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
-        target_branch=None, merged_revnos=None, eager_load=False):
-
-        def do_eager_load(rows):
-            branch_ids = set()
-            person_ids = set()
-            diff_ids = set()
-            for mp in rows:
-                branch_ids.add(mp.target_branchID)
-                branch_ids.add(mp.source_branchID)
-                person_ids.add(mp.registrantID)
-                person_ids.add(mp.merge_reporterID)
-                diff_ids.add(mp.preview_diff_id)
-            if not branch_ids:
-                return
-
-            # Pre-load Person and ValidPersonCache.
-            list(self.store.find(
-                (Person, ValidPersonCache),
-                ValidPersonCache.id == Person.id,
-                Person.id.is_in(person_ids),
-                ))
-
-            # Pre-load PreviewDiffs and Diffs.
-            list(self.store.find(
-                (PreviewDiff, Diff),
-                PreviewDiff.id.is_in(diff_ids),
-                Diff.id == PreviewDiff.diff_id))
-
-            branches = set(
-                self.store.find(Branch, Branch.id.is_in(branch_ids)))
-            self._preloadDataForBranches(branches)
-
+                                target_branch=None, merged_revnos=None,
+                                eager_load=False):
         Target = ClassAlias(Branch, "target")
         extra_tables = list(set(
             self._tables.values() + self._asymmetric_tables.values()))
@@ -366,13 +380,15 @@ class GenericBranchCollection:
         if not eager_load:
             return resultset
         else:
-            return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
-    def _scopedGetMergeProposals(self, statuses):
+    def _scopedGetMergeProposals(self, statuses, eager_load=False):
         scope_tables = [Branch] + self._tables.values()
         scope_expressions = self._branch_filter_expressions
         select = self.store.using(*scope_tables).find(
-            (Branch.id, Branch.transitively_private, Branch.ownerID),
+            (Branch.id, Branch.information_type, Branch.ownerID),
             *scope_expressions)
         branches_query = select._get_select()
         with_expr = [With("scope_branches", branches_query)
@@ -391,16 +407,30 @@ class GenericBranchCollection:
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
-        return self.store.with_(with_expr).using(*tables).find(
+        resultset = self.store.with_(with_expr).using(*tables).find(
             BranchMergeProposal, *expressions)
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
-    def getMergeProposalsForPerson(self, person, status=None):
+    def getMergeProposalsForPerson(self, person, status=None,
+                                   eager_load=False):
         """See `IBranchCollection`."""
         # We want to limit the proposals to those where the source branch is
         # limited by the defined collection.
         owned = self.ownedBy(person).getMergeProposals(status)
         reviewing = self.getMergeProposalsForReviewer(person, status)
-        return owned.union(reviewing)
+        resultset = owned.union(reviewing)
+
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
@@ -717,13 +747,18 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy([Branch.last_scanned > epoch], symmetric=False)
 
+    def withIds(self, *branch_ids):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.id.is_in(branch_ids)], symmetric=False)
+
 
 class AnonymousBranchCollection(GenericBranchCollection):
     """Branch collection that only shows public branches."""
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility."""
-        return [branch_class.transitively_private == False]
+        return [
+            branch_class.information_type.is_in(PUBLIC_INFORMATION_TYPES)]
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
@@ -735,7 +770,8 @@ class AnonymousBranchCollection(GenericBranchCollection):
         return [
             With("candidate_branches",
                 SQL("""select id from scope_branches
-                    where not transitively_private"""))
+                    where information_type in %s"""
+                % sqlvalues(PUBLIC_INFORMATION_TYPES)))
             ]
 
 
@@ -815,7 +851,8 @@ class VisibleBranchCollection(GenericBranchCollection):
             Select(Branch.id,
                    And(Branch.owner == TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.transitively_private == True)),
+                       Branch.information_type.is_in(
+                           PRIVATE_INFORMATION_TYPES))),
             # Private branches the person is subscribed to, either directly or
             # indirectly.
             Select(Branch.id,
@@ -823,7 +860,8 @@ class VisibleBranchCollection(GenericBranchCollection):
                        BranchSubscription.person ==
                        TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.transitively_private == True)))
+                       Branch.information_type.is_in(
+                           PRIVATE_INFORMATION_TYPES))))
         return private_branches
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
@@ -832,7 +870,8 @@ class VisibleBranchCollection(GenericBranchCollection):
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        public_branches = branch_class.transitively_private == False
+        public_branches = branch_class.information_type.is_in(
+            PUBLIC_INFORMATION_TYPES)
         if self._private_branch_ids is None:
             # Public only.
             return [public_branches]
@@ -853,24 +892,26 @@ class VisibleBranchCollection(GenericBranchCollection):
             # Really an anonymous sitation
             return [
                 With("candidate_branches",
-                    SQL("""
-                        select id from scope_branches
-                        where not transitively_private"""))
+                    SQL("""select id from scope_branches
+                        where information_type in %s"""
+                    % sqlvalues(PUBLIC_INFORMATION_TYPES)))
                 ]
         return [
             With("teams", self.store.find(TeamParticipation.teamID,
                 TeamParticipation.personID == person.id)._get_select()),
             With("private_branches", SQL("""
                 SELECT scope_branches.id FROM scope_branches WHERE
-                scope_branches.transitively_private AND (
+                scope_branches.information_type in %s AND (
                     (scope_branches.owner in (select team from teams) OR
                      EXISTS(SELECT true from BranchSubscription, teams WHERE
                          branchsubscription.branch = scope_branches.id AND
-                         branchsubscription.person = teams.team)))""")),
+                         branchsubscription.person = teams.team)))"""
+                % sqlvalues(PRIVATE_INFORMATION_TYPES))),
             With("candidate_branches", SQL("""
                 (SELECT id FROM private_branches) UNION
                 (select id FROM scope_branches
-                WHERE not transitively_private)"""))
+                WHERE information_type in %s)"""
+                % sqlvalues(PUBLIC_INFORMATION_TYPES)))
             ]
 
     def visibleByUser(self, person):

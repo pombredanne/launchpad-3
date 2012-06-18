@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,20 +10,9 @@ from datetime import (
 import unittest
 
 import pytz
-from storm.expr import Join
-from storm.store import Store
-from testtools.matchers import Equals
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    greater_than,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
@@ -34,7 +23,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugsummary import BugSummary
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtasksearch import _process_order_by
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -43,24 +32,75 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.person import Person
-from lp.services.features.testing import FeatureFixture
+from lp.services.database.sqlbase import convert_storm_clause_to_string
+from lp.services.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    )
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     person_logged_in,
-    StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import HasQueryCount
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
-PRIVATE_BUG_VISIBILITY_FLAG = {
-    'disclosure.private_bug_visibility_rules.enabled': 'on'}
-PRIVATE_BUG_VISIBILITY_CTE_FLAG = {
-    'disclosure.private_bug_visibility_cte.enabled': 'on'}
+class TestProcessOrderBy(TestCase):
+
+    def assertOrderForParams(self, expected, user=None, product=None,
+                             distribution=None, **kwargs):
+        params = BugTaskSearchParams(user, **kwargs)
+        if product:
+            params.setProduct(product)
+        if distribution:
+            params.setProduct(distribution)
+        self.assertEqual(
+            expected,
+            convert_storm_clause_to_string(_process_order_by(params)[0]))
+
+    def test_tiebreaker(self):
+        # Requests for ambiguous sorts get a disambiguator of BugTask.id
+        # glued on.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bugtask',
+            orderby='-importance')
+
+    def test_tiebreaker_direction(self):
+        # The tiebreaker direction is the reverse of the primary
+        # direction. This is mostly to retain the old default sort order
+        # of (-importance, bugtask), and could probably be reversed if
+        # someone wants to.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance, BugTaskFlat.bugtask DESC',
+            orderby='importance')
+
+    def test_tiebreaker_in_unique_context(self):
+        # The tiebreaker is Bug.id if the context is unique, so we'll
+        # find no more than a single task for each bug. This applies to
+        # searches within a product, distribution source package, or
+        # source package.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bug',
+            orderby='-importance',
+            product='foo')
+
+    def test_tiebreaker_in_duplicated_context(self):
+        # If the context can have multiple tasks for a single bug, we
+        # still use BugTask.id.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bug',
+            orderby='-importance',
+            distribution='foo')
 
 
 class SearchTestBase:
-    """A mixin class with tests useful for all targets and search variants."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -75,27 +115,15 @@ class SearchTestBase:
         expected = self.resultValuesForBugtasks(expected_bugtasks)
         self.assertEqual(expected, search_result)
 
-    def test_aggregate_by_target(self):
-        # BugTaskSet.search supports returning the counts for each target (as
-        # long as only one type of target was selected).
-        if self.group_on is None:
-            # Not a useful/valid permutation.
-            return
-        self.getBugTaskSearchParams(user=None, multitarget=True)
-        # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
-        user = self.factory.makePerson()
-        expected = {(self.targetToGroup(self.searchtarget),): 3,
-            (self.targetToGroup(self.searchtarget2),): 6}
-        actual = self.bugtask_set.countBugs(
-            user, (self.searchtarget, self.searchtarget2),
-            group_on=self.group_on)
-        self.assertEqual(expected, actual)
+    def subscribeToTarget(self, subscriber):
+        # Subscribe the given person to the search target.
+        with person_logged_in(subscriber):
+            self.searchtarget.addSubscription(
+                subscriber, subscribed_by=subscriber)
 
-    def test_search_all_bugtasks_for_target(self):
-        # BugTaskSet.search() returns all bug tasks for a given bug
-        # target, if only the bug target is passed as a search parameter.
-        params = self.getBugTaskSearchParams(user=None)
-        self.assertSearchFinds(params, self.bugtasks)
+
+class OnceTests:
+    """A mixin class with tests that don't need to be run for all targets."""
 
     def test_private_bug_in_search_result_anonymous_users(self):
         # Private bugs are not included in search results for anonymous users.
@@ -132,67 +160,6 @@ class SearchTestBase:
         admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
         self.assertSearchFinds(params, self.bugtasks)
-
-    def test_private_bug_in_search_result_assignees(self):
-        # Private bugs are included in search results for the assignee.
-        with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.setPrivate(True, self.owner)
-        bugtask = self.bugtasks[-1]
-        user = self.factory.makePerson()
-        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        with person_logged_in(admin):
-            bugtask.transitionToAssignee(user)
-        params = self.getBugTaskSearchParams(user=user)
-        self.assertSearchFinds(params, self.bugtasks)
-
-    def test_private_bug_in_search_result_pillar_owners(self):
-        # Private, non-security bugs are included in search results for the
-        # pillar owners if the correct feature flag is enabled.
-        bugtask = self.bugtasks[-1]
-        pillar_owner = bugtask.pillar.owner
-        with person_logged_in(self.owner):
-            bugtask.bug.setPrivate(True, self.owner)
-            bugtask.bug.unsubscribe(pillar_owner, self.owner)
-        params = self.getBugTaskSearchParams(user=pillar_owner)
-        # Check the results with the feature flag.
-        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
-            self.assertSearchFinds(params, self.bugtasks)
-        # Check the results without the feature flag.
-        self.assertSearchFinds(params, self.bugtasks[:-1])
-
-        # Make the bugtask security related.
-        with person_logged_in(self.owner):
-            bugtask.bug.setSecurityRelated(True, self.owner)
-            bugtask.bug.unsubscribe(pillar_owner, self.owner)
-        # It should now be excluded from the results.
-        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
-            self.assertSearchFinds(params, self.bugtasks[:-1])
-
-    def test_private_bug_in_search_result_pillar_owners_cte(self):
-        # Like test_private_bug_in_search_result_pillar_owners, but with
-        # the new CTE-based visibility query.
-        bugtask = self.bugtasks[-1]
-        pillar_owner = bugtask.pillar.owner
-        with person_logged_in(self.owner):
-            bugtask.bug.setPrivate(True, self.owner)
-            bugtask.bug.unsubscribe(pillar_owner, self.owner)
-        params = self.getBugTaskSearchParams(user=pillar_owner)
-        # Check the results with the feature flag.
-        flags = dict()
-        flags.update(PRIVATE_BUG_VISIBILITY_FLAG)
-        flags.update(PRIVATE_BUG_VISIBILITY_CTE_FLAG)
-        with FeatureFixture(flags):
-            self.assertSearchFinds(params, self.bugtasks)
-        # Check the results without the feature flag.
-        self.assertSearchFinds(params, self.bugtasks[:-1])
-
-        # Make the bugtask security related.
-        with person_logged_in(self.owner):
-            bugtask.bug.setSecurityRelated(True, self.owner)
-            bugtask.bug.unsubscribe(pillar_owner, self.owner)
-        # It should now be excluded from the results.
-        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
-            self.assertSearchFinds(params, self.bugtasks[:-1])
 
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.
@@ -248,68 +215,6 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=None, subscriber=subscriber)
         self.assertSearchFinds(params, [expected])
 
-    def subscribeToTarget(self, subscriber):
-        # Subscribe the given person to the search target.
-        with person_logged_in(subscriber):
-            self.searchtarget.addSubscription(
-                subscriber, subscribed_by=subscriber)
-
-    def _findBugtaskForOtherProduct(self, bugtask, main_product):
-        # Return the bugtask for the product that is not related to the
-        # main bug target.
-        #
-        # The default bugtasks of this test suite are created by
-        # ObjectFactory.makeBugTask() as follows:
-        # - a new bug is created having a new product as the target.
-        # - another bugtask is created for self.searchtarget (or,
-        #   when self.searchtarget is a milestone, for the product
-        #   of the milestone)
-        # This method returns the bug task for the product that is not
-        # related to the main bug target.
-        bug = bugtask.bug
-        for other_task in bug.bugtasks:
-            other_target = other_task.target
-            if (IProduct.providedBy(other_target)
-                and other_target != main_product):
-                return other_task
-        self.fail(
-            'No bug task found for a product that is not the target of '
-            'the main test bugtask.')
-
-    def findBugtaskForOtherProduct(self, bugtask):
-        # Return the bugtask for the product that is not related to the
-        # main bug target.
-        #
-        # This method must ober overridden for product related tests.
-        return self._findBugtaskForOtherProduct(bugtask, None)
-
-    def test_search_by_structural_subscriber(self):
-        # Search results can be limited to bugs with a bug target to which
-        # a given person has a structural subscription.
-        subscriber = self.factory.makePerson()
-        # If the given person is not subscribed, no bugtasks are returned.
-        params = self.getBugTaskSearchParams(
-            user=None, structural_subscriber=subscriber)
-        self.assertSearchFinds(params, [])
-        # When the person is subscribed, all bugtasks are returned.
-        self.subscribeToTarget(subscriber)
-        params = self.getBugTaskSearchParams(
-            user=None, structural_subscriber=subscriber)
-        self.assertSearchFinds(params, self.bugtasks)
-
-        # Searching for a structural subscriber does not return a bugtask,
-        # if the person is subscribed to another target than the main
-        # bug target.
-        other_subscriber = self.factory.makePerson()
-        other_bugtask = self.findBugtaskForOtherProduct(self.bugtasks[0])
-        other_target = other_bugtask.target
-        with person_logged_in(other_subscriber):
-            other_target.addSubscription(
-                other_subscriber, subscribed_by=other_subscriber)
-        params = self.getBugTaskSearchParams(
-            user=None, structural_subscriber=other_subscriber)
-        self.assertSearchFinds(params, [])
-
     def test_search_by_bug_attachment(self):
         # Search results can be limited to bugs having attachments of
         # a given type.
@@ -346,100 +251,18 @@ class SearchTestBase:
                     owner=commenter, content='comment %s' % number)
 
     def test_fulltext_search(self):
-        # Full text searches find text indexed by Bug.fti...
+        # Full text searches find text indexed by Bug.fti.
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
-            user=None, searchtext='one title')
+            user=None, searchtext=u'one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
-        # ...and by MessageChunk.fti
-        params = self.getBugTaskSearchParams(
-            user=None, searchtext='three comment')
-        self.assertSearchFinds(params, self.bugtasks[2:3])
 
     def test_fast_fulltext_search(self):
         # Fast full text searches find text indexed by Bug.fti...
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
-            user=None, fast_searchtext='one title')
+            user=None, fast_searchtext=u'one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
-        # ..or by MessageChunk.fti
-        params = self.getBugTaskSearchParams(
-            user=None, fast_searchtext='three comment')
-        self.assertSearchFinds(params, [])
-
-    def test_has_no_upstream_bugtask(self):
-        # Search results can be limited to bugtasks of bugs that do
-        # not have a related upstream task.
-        #
-        # All bugs created in makeBugTasks() have at least one
-        # bug task for a product: The default bug task created
-        # by lp.testing.factory.Factory.makeBug() if neither a
-        # product nor a distribution is specified. For distribution
-        # related tests we need another bug which does not have
-        # an upstream (aka product) bug task, otherwise the set of
-        # bugtasks returned for a search for has_no_upstream_bugtask
-        # would always be empty.
-        if (IDistribution.providedBy(self.searchtarget) or
-            ISourcePackage.providedBy(self.searchtarget) or
-            IDistributionSourcePackage.providedBy(self.searchtarget)):
-            if IDistribution.providedBy(self.searchtarget):
-                bug = self.factory.makeBug(distribution=self.searchtarget)
-                expected = [bug.default_bugtask]
-            else:
-                bug = self.factory.makeBug(
-                    distribution=self.searchtarget.distribution,
-                    sourcepackagename=self.factory.makeSourcePackageName())
-                bugtask = self.factory.makeBugTask(
-                    bug=bug, target=self.searchtarget)
-                expected = [bugtask]
-        elif IDistroSeries.providedBy(self.searchtarget):
-            bug = self.factory.makeBug(
-                distribution=self.searchtarget.distribution)
-            bugtask = self.factory.makeBugTask(
-                bug=bug, target=self.searchtarget)
-            expected = [bugtask]
-        else:
-            # Bugs without distribution related bugtasks have always at
-            # least one product related bugtask, hence a
-            # has_no_upstream_bugtask search will always return an
-            # empty result set.
-            expected = []
-        params = self.getBugTaskSearchParams(
-            user=None, has_no_upstream_bugtask=True)
-        self.assertSearchFinds(params, expected)
-
-    def changeStatusOfBugTaskForOtherProduct(self, bugtask, new_status):
-        # Change the status of another bugtask of the same bug to the
-        # given status.
-        other_task = self.findBugtaskForOtherProduct(bugtask)
-        with person_logged_in(other_task.target.owner):
-            other_task.transitionToStatus(new_status, other_task.target.owner)
-
-    def test_upstream_status(self):
-        # Search results can be filtered by the status of an upstream
-        # bug task.
-        #
-        # The bug task status of the default test data has only bug tasks
-        # with status NEW for the "other" product, hence all bug tasks
-        # will be returned in a search for bugs that are open upstream.
-        params = self.getBugTaskSearchParams(user=None, open_upstream=True)
-        self.assertSearchFinds(params, self.bugtasks)
-        # A search for tasks resolved upstream does not yield any bugtask.
-        params = self.getBugTaskSearchParams(
-            user=None, resolved_upstream=True)
-        self.assertSearchFinds(params, [])
-        # But if we set upstream bug tasks to "fix committed" or "fix
-        # released", the related bug tasks for our test target appear in
-        # the search result.
-        self.changeStatusOfBugTaskForOtherProduct(
-            self.bugtasks[0], BugTaskStatus.FIXCOMMITTED)
-        self.changeStatusOfBugTaskForOtherProduct(
-            self.bugtasks[1], BugTaskStatus.FIXRELEASED)
-        self.assertSearchFinds(params, self.bugtasks[:2])
-        # A search for bug tasks open upstream now returns only one
-        # test task.
-        params = self.getBugTaskSearchParams(user=None, open_upstream=True)
-        self.assertSearchFinds(params, self.bugtasks[2:])
 
     def test_tags(self):
         # Search results can be limited to bugs having given tags.
@@ -500,6 +323,17 @@ class SearchTestBase:
             user=None, created_since=one_day_ago)
         self.assertSearchFinds(params, self.bugtasks[1:])
 
+    def test_created_before(self):
+        # Search results can be limited to bugtasks created before a
+        # given time.
+        one_day_ago = self.bugtasks[0].datecreated - timedelta(days=1)
+        two_days_ago = self.bugtasks[0].datecreated - timedelta(days=2)
+        with person_logged_in(self.owner):
+            self.bugtasks[0].datecreated = two_days_ago
+        params = self.getBugTaskSearchParams(
+            user=None, created_before=one_day_ago)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+
     def test_modified_since(self):
         # Search results can be limited to bugs modified after a
         # given time.
@@ -507,8 +341,8 @@ class SearchTestBase:
             self.bugtasks[0].bug.date_last_updated - timedelta(days=1))
         two_days_ago = (
             self.bugtasks[0].bug.date_last_updated - timedelta(days=2))
-        with person_logged_in(self.owner):
-            self.bugtasks[0].bug.date_last_updated = two_days_ago
+        bug = self.bugtasks[0].bug
+        removeSecurityProxy(bug).date_last_updated = two_days_ago
         params = self.getBugTaskSearchParams(
             user=None, modified_since=one_day_ago)
         self.assertSearchFinds(params, self.bugtasks[1:])
@@ -610,6 +444,222 @@ class SearchTestBase:
             user=None, orderby='-milestone_name')
         self.assertSearchFinds(params, expected)
 
+    def test_sort_by_bug_reporter(self):
+        params = self.getBugTaskSearchParams(user=None, orderby='reporter')
+        expected = sorted(self.bugtasks, key=lambda task: task.bug.owner.name)
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-reporter')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_assignee(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[2].transitionToAssignee(
+                self.factory.makePerson(name="assignee-1"))
+            self.bugtasks[1].transitionToAssignee(
+                self.factory.makePerson(name="assignee-2"))
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        params = self.getBugTaskSearchParams(user=None, orderby='assignee')
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-assignee')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_bug_title(self):
+        params = self.getBugTaskSearchParams(user=None, orderby='title')
+        expected = sorted(self.bugtasks, key=lambda task: task.bug.title)
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-title')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_tag(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[2].bug.tags = ['tag-a', 'tag-d']
+            self.bugtasks[1].bug.tags = ['tag-b', 'tag-c']
+        params = self.getBugTaskSearchParams(user=None, orderby='tag')
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(user=None, orderby='-tag')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_linked_specification(self):
+        with person_logged_in(self.owner):
+            spec_1 = self.factory.makeSpecification(
+                name='spec-1', owner=self.owner)
+            spec_1.linkBug(self.bugtasks[2].bug)
+            spec_1_1 = self.factory.makeSpecification(
+                name='spec-1-1', owner=self.owner)
+            spec_1_1.linkBug(self.bugtasks[2].bug)
+            spec_2 = self.factory.makeSpecification(
+                name='spec-2', owner=self.owner)
+            spec_2.linkBug(self.bugtasks[1].bug)
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='specification')
+        expected = [self.bugtasks[2], self.bugtasks[1], self.bugtasks[0]]
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(
+            user=None, orderby='-specification')
+        self.assertSearchFinds(params, expected)
+
+
+class TargetTests:
+    """Tests which are useful for every target."""
+
+    def test_aggregate_by_target(self):
+        # BugTaskSet.search supports returning the counts for each target (as
+        # long as only one type of target was selected).
+        if self.group_on is None:
+            # Not a useful/valid permutation.
+            return
+        self.getBugTaskSearchParams(user=None, multitarget=True)
+        # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
+        user = self.factory.makePerson()
+        expected = {(self.targetToGroup(self.searchtarget),): 3,
+            (self.targetToGroup(self.searchtarget2),): 6}
+        actual = self.bugtask_set.countBugs(
+            user, (self.searchtarget, self.searchtarget2),
+            group_on=self.group_on)
+        self.assertEqual(expected, actual)
+
+    def test_search_all_bugtasks_for_target(self):
+        # BugTaskSet.search() returns all bug tasks for a given bug
+        # target, if only the bug target is passed as a search parameter.
+        params = self.getBugTaskSearchParams(user=None)
+        self.assertSearchFinds(params, self.bugtasks)
+
+    def _findBugtaskForOtherProduct(self, bugtask, main_product):
+        # Return the bugtask for the product that is not related to the
+        # main bug target.
+        #
+        # The default bugtasks of this test suite are created by
+        # ObjectFactory.makeBugTask() as follows:
+        # - a new bug is created having a new product as the target.
+        # - another bugtask is created for self.searchtarget (or,
+        #   when self.searchtarget is a milestone, for the product
+        #   of the milestone)
+        # This method returns the bug task for the product that is not
+        # related to the main bug target.
+        bug = bugtask.bug
+        for other_task in bug.bugtasks:
+            other_target = other_task.target
+            if (IProduct.providedBy(other_target)
+                and other_target != main_product):
+                return other_task
+        self.fail(
+            'No bug task found for a product that is not the target of '
+            'the main test bugtask.')
+
+    def findBugtaskForOtherProduct(self, bugtask):
+        # Return the bugtask for the product that is not related to the
+        # main bug target.
+        #
+        # This method must ober overridden for product related tests.
+        return self._findBugtaskForOtherProduct(bugtask, None)
+
+    def test_search_by_structural_subscriber(self):
+        # Search results can be limited to bugs with a bug target to which
+        # a given person has a structural subscription.
+        subscriber = self.factory.makePerson()
+        # If the given person is not subscribed, no bugtasks are returned.
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, [])
+        # When the person is subscribed, all bugtasks are returned.
+        self.subscribeToTarget(subscriber)
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, self.bugtasks)
+
+        # Searching for a structural subscriber does not return a bugtask,
+        # if the person is subscribed to another target than the main
+        # bug target.
+        other_subscriber = self.factory.makePerson()
+        other_bugtask = self.findBugtaskForOtherProduct(self.bugtasks[0])
+        other_target = other_bugtask.target
+        with person_logged_in(other_subscriber):
+            other_target.addSubscription(
+                other_subscriber, subscribed_by=other_subscriber)
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=other_subscriber)
+        self.assertSearchFinds(params, [])
+
+    def test_has_no_upstream_bugtask(self):
+        # Search results can be limited to bugtasks of bugs that do
+        # not have a related upstream task.
+        #
+        # All bugs created in makeBugTasks() have at least one
+        # bug task for a product: The default bug task created
+        # by lp.testing.factory.Factory.makeBug() if neither a
+        # product nor a distribution is specified. For distribution
+        # related tests we need another bug which does not have
+        # an upstream (aka product) bug task, otherwise the set of
+        # bugtasks returned for a search for has_no_upstream_bugtask
+        # would always be empty.
+        if (IDistribution.providedBy(self.searchtarget) or
+            ISourcePackage.providedBy(self.searchtarget) or
+            IDistributionSourcePackage.providedBy(self.searchtarget)):
+            if IDistribution.providedBy(self.searchtarget):
+                bug = self.factory.makeBug(distribution=self.searchtarget)
+                expected = [bug.default_bugtask]
+            else:
+                bug = self.factory.makeBug(
+                    distribution=self.searchtarget.distribution,
+                    sourcepackagename=self.factory.makeSourcePackageName())
+                bugtask = self.factory.makeBugTask(
+                    bug=bug, target=self.searchtarget)
+                expected = [bugtask]
+        elif IDistroSeries.providedBy(self.searchtarget):
+            bug = self.factory.makeBug(
+                distribution=self.searchtarget.distribution)
+            bugtask = self.factory.makeBugTask(
+                bug=bug, target=self.searchtarget)
+            expected = [bugtask]
+        else:
+            # Bugs without distribution related bugtasks have always at
+            # least one product related bugtask, hence a
+            # has_no_upstream_bugtask search will always return an
+            # empty result set.
+            expected = []
+        params = self.getBugTaskSearchParams(
+            user=None, has_no_upstream_bugtask=True)
+        self.assertSearchFinds(params, expected)
+
+    def changeStatusOfBugTaskForOtherProduct(self, bugtask, new_status):
+        # Change the status of another bugtask of the same bug to the
+        # given status.
+        other_task = self.findBugtaskForOtherProduct(bugtask)
+        with person_logged_in(other_task.target.owner):
+            other_task.transitionToStatus(new_status, other_task.target.owner)
+
+    def test_upstream_status(self):
+        # Search results can be filtered by the status of an upstream
+        # bug task.
+        #
+        # The bug task status of the default test data has only bug tasks
+        # with status NEW for the "other" product, hence all bug tasks
+        # will be returned in a search for bugs that are open upstream.
+        params = self.getBugTaskSearchParams(user=None, open_upstream=True)
+        self.assertSearchFinds(params, self.bugtasks)
+        # A search for tasks resolved upstream does not yield any bugtask.
+        params = self.getBugTaskSearchParams(
+            user=None, resolved_upstream=True)
+        self.assertSearchFinds(params, [])
+        # But if we set upstream bug tasks to "fix committed" or "fix
+        # released", the related bug tasks for our test target appear in
+        # the search result.
+        self.changeStatusOfBugTaskForOtherProduct(
+            self.bugtasks[0], BugTaskStatus.FIXCOMMITTED)
+        self.changeStatusOfBugTaskForOtherProduct(
+            self.bugtasks[1], BugTaskStatus.FIXRELEASED)
+        self.assertSearchFinds(params, self.bugtasks[:2])
+        # A search for bug tasks open upstream now returns only one
+        # test task.
+        params = self.getBugTaskSearchParams(user=None, open_upstream=True)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+
 
 class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
 
@@ -640,7 +690,7 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
         # Someone without permission to see deactiveated projects does
         # not see bugtasks for deactivated projects.
         bugtask_set = getUtility(IBugTaskSet)
-        param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys')
+        param = BugTaskSearchParams(user=None, fast_searchtext=u'Monkeys')
         results = bugtask_set.search(param, _noprejoins=True)
         self.assertEqual([self.active_bugtask], list(results))
 
@@ -680,6 +730,48 @@ class ProjectGroupAndDistributionTests:
         params = self.getBugTaskSearchParams(
             user=None, structural_subscriber=subscriber)
         self.assertSearchFinds(params, self.bugtasks)
+
+
+class DistributionAndDistroSeriesTests:
+    """Tests which are useful for distributions and their series."""
+
+    def makeBugInComponent(self, archive, series, component):
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, distroseries=series, component=component,
+            status=PackagePublishingStatus.PUBLISHED)
+        return self.factory.makeBugTask(
+            target=self.searchtarget.getSourcePackage(pub.sourcepackagename))
+
+    def test_search_by_component(self):
+        series = self.getCurrentSeries()
+        distro = series.distribution
+        self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+
+        main = getUtility(IComponentSet)['main']
+        main_task = self.makeBugInComponent(
+            distro.main_archive, series, main)
+        universe = getUtility(IComponentSet)['universe']
+        universe_task = self.makeBugInComponent(
+            distro.main_archive, series, universe)
+        partner = getUtility(IComponentSet)['partner']
+        partner_task = self.makeBugInComponent(
+            distro.getArchiveByComponent('partner'), series, partner)
+
+        # Searches for a single component work.
+        params = self.getBugTaskSearchParams(user=None, component=main)
+        self.assertSearchFinds(params, [main_task])
+        params = self.getBugTaskSearchParams(user=None, component=universe)
+        self.assertSearchFinds(params, [universe_task])
+
+        # Non-primary-archive component searches also work.
+        params = self.getBugTaskSearchParams(user=None, component=partner)
+        self.assertSearchFinds(params, [partner_task])
+
+        # A combination of archives works.
+        params = self.getBugTaskSearchParams(
+            user=None, component=any(partner, main))
+        self.assertSearchFinds(params, [main_task, partner_task])
 
 
 class BugTargetTestBase:
@@ -958,25 +1050,6 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
                 subscriber, subscribed_by=subscriber)
         return subscriber
 
-    def test_disable_targetnames_search(self):
-        # searching in the target name is contentious and arguably a bug. To
-        # permit incremental changes we allow it to be disabled via a feature
-        # flag.
-        with person_logged_in(self.owner):
-            product1 = self.factory.makeProduct(name='product-foo',
-                owner=self.owner, project=self.searchtarget)
-            product2 = self.factory.makeProduct(name='product-bar',
-                owner=self.owner, project=self.searchtarget)
-            bug1 = self.factory.makeBug(product=product1)
-            bug1.default_bugtask.updateTargetNameCache()
-            self.factory.makeBug(product=product2)
-        params = self.getBugTaskSearchParams(user=None, searchtext='uct-fo')
-        # With no flag, we find the first bug.
-        self.assertSearchFinds(params, [bug1.default_bugtask])
-        with FeatureFixture({'malone.disable_targetnamesearch': u'on'}):
-            # With a flag set, no bugs are found.
-            self.assertSearchFinds(params, [])
-
     def setUpMilestoneSorting(self):
         with person_logged_in(self.owner):
             milestone_1 = self.factory.makeMilestone(
@@ -1044,7 +1117,8 @@ class MilestoneTarget(BugTargetTestBase):
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
                          BugTargetWithBugSuperVisor,
-                         ProjectGroupAndDistributionTests):
+                         ProjectGroupAndDistributionTests,
+                         DistributionAndDistroSeriesTests):
     """Use a distribution as the bug target."""
 
     def setUp(self):
@@ -1069,6 +1143,11 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
         """See `ProductAndDistributionTests`."""
         return self.factory.makeDistroSeries(distribution=self.searchtarget)
 
+    def getCurrentSeries(self):
+        if self.searchtarget.currentseries is None:
+            self.makeSeries()
+        return self.searchtarget.currentseries
+
     def setUpStructuralSubscriptions(self):
         # See `ProjectGroupAndDistributionTests`.
         subscriber = self.factory.makePerson()
@@ -1092,7 +1171,8 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
         return self.bugtasks[1:] + self.bugtasks[:1]
 
 
-class DistroseriesTarget(BugTargetTestBase):
+class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests,
+                         DistributionAndDistroSeriesTests):
     """Use a distro series as the bug target."""
 
     def setUp(self):
@@ -1114,6 +1194,9 @@ class DistroseriesTarget(BugTargetTestBase):
     def setBugParamsTarget(self, params, target):
         params.setDistroSeries(target)
 
+    def getCurrentSeries(self):
+        return self.searchtarget
+
     def setUpMilestoneSorting(self):
         with person_logged_in(self.owner):
             milestone_1 = self.factory.makeMilestone(
@@ -1124,8 +1207,261 @@ class DistroseriesTarget(BugTargetTestBase):
             self.bugtasks[2].transitionToMilestone(milestone_2, self.owner)
         return self.bugtasks[1:] + self.bugtasks[:1]
 
+    def setUpStructuralSubscriptions(self, subscribe_search_target=True):
+        # See `ProjectGroupAndDistributionTests`.
+        # Users can search for series and package subscriptions. Users
+        # subscribe to packages at the distro level.
+        subscriber = self.factory.makePerson()
+        if subscribe_search_target:
+            self.subscribeToTarget(subscriber)
+        # Create a bug in a package in the series being searched.
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.searchtarget)
+        self.bugtasks.append(self.factory.makeBugTask(target=sourcepackage))
+        # Create a bug in another series for the same package.
+        other_series = self.factory.makeDistroSeries(
+            distribution=self.searchtarget.distribution)
+        other_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=other_series,
+            sourcepackagename=sourcepackage.sourcepackagename)
+        self.factory.makeBugTask(target=other_sourcepackage)
+        # Create a bug in the same distrubution package.
+        dsp = self.searchtarget.distribution.getSourcePackage(
+            sourcepackage.name)
+        self.factory.makeBugTask(target=dsp)
+        # Subscribe to the DSP to search both DSPs and SPs.
+        with person_logged_in(subscriber):
+            dsp.addSubscription(
+                subscriber, subscribed_by=subscriber)
+        return subscriber
 
-class SourcePackageTarget(BugTargetTestBase):
+    def test_subordinate_structural_subscribers(self):
+        # Searching for a subscriber who is subscribed to only subordinate
+        # objects will match those objects
+        subscriber = self.setUpStructuralSubscriptions(
+            subscribe_search_target=False)
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, [self.bugtasks[-1]])
+
+
+class UpstreamFilterTests:
+    """A mixin class with tests related to restircted upstream filtering.
+
+    Classes derived from this class must also derive from SearchTestBase.
+
+    These tests make sense only for the targets SourcePackage
+    DistributionSourcePackage.
+    """
+
+    def setUpUpstreamTests(self, upstream_target):
+        # The default test bugs have two tasks for DistributionSourcePackage
+        # tests: one task for the DSP and another task for a product;
+        # they have three tasks for SourcePackage tests: for a product,
+        # for a DSP and for a sourcepackage.
+        # Tests in this class are about searching bug tasks, where the
+        # bug has a task for any upstream target or for a given upstream
+        # target and where the bug task for the upstream target has certain
+        # properties.
+        with person_logged_in(self.searchtarget.distribution.owner):
+            self.searchtarget.distribution.official_malone = True
+        for existing_task in self.bugtasks:
+            bug = existing_task.bug
+            self.factory.makeBugTask(bug, target=upstream_target)
+
+    def addWatch(self, bug, target=None):
+        # Add a bug watch to the bugtask for the given target. If no
+        # target is specified, the bug watch is added to the default
+        # bugtask, which is a different product for each bug.
+        if target is None:
+            task = bug.bugtasks[0]
+        else:
+            for task in bug.bugtasks:
+                if task.target == target:
+                    break
+        with person_logged_in(task.target.owner):
+            watch = self.factory.makeBugWatch(bug=bug)
+            task.bugwatch = watch
+
+    def test_pending_bugwatch_elsewhere__no_upstream_specified(self):
+        # By default, those bugs are returned where
+        #   - an upstream task exists
+        #   - the upstream product does not use LP for bug tracking
+        #   - the bug task has no bug watch.
+        # All test bugs fulfill this condition.
+        upstream_target = self.factory.makeProduct()
+        self.setUpUpstreamTests(upstream_target)
+        params = self.getBugTaskSearchParams(
+            user=None, pending_bugwatch_elsewhere=True)
+        self.assertSearchFinds(params, self.bugtasks)
+        # If a bug watch is added to only one of the product related
+        # bug tasks, the bug is still returned.
+        self.addWatch(self.bugtasks[0].bug)
+        self.addWatch(self.bugtasks[1].bug, target=upstream_target)
+        self.assertSearchFinds(params, self.bugtasks)
+        # If bugwatches are added to the other product related bug task
+        # too, the bugs are not included in the search result.
+        self.addWatch(self.bugtasks[0].bug, target=upstream_target)
+        self.addWatch(self.bugtasks[1].bug)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+
+    def test_pending_bugwatch_elsewhere__upstream_product(self):
+        # If an upstream target using Malone is specified, a search
+        # returns all bugs with a bug task for this target, if the
+        # task does not have a bug watch.
+        upstream_target = self.factory.makeProduct()
+        self.setUpUpstreamTests(upstream_target)
+        # The first bug task of all test bugs is targeted to its
+        # own Product instance.
+        bug = self.bugtasks[0].bug
+        single_bugtask_product = bug.bugtasks[0].target
+        params = self.getBugTaskSearchParams(
+            user=None, pending_bugwatch_elsewhere=True,
+            upstream_target=single_bugtask_product)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        # If a bug watch is added to this task, the search returns an
+        # empty result set.
+        self.addWatch(self.bugtasks[0].bug)
+        self.assertSearchFinds(params, [])
+
+    def test_pending_bugwatch_elsewhere__upstream_product_uses_lp(self):
+        # If an upstream target not using Malone is specified, a search
+        # alsways returns an empty result set.
+        upstream_target = self.factory.makeProduct()
+        self.setUpUpstreamTests(upstream_target)
+        with person_logged_in(upstream_target.owner):
+            upstream_target.official_malone = True
+        params = self.getBugTaskSearchParams(
+            user=None, pending_bugwatch_elsewhere=True,
+            upstream_target=upstream_target)
+        self.assertSearchFinds(params, [])
+
+    def test_pending_bugwatch_elsewhere__upstream_distribution(self):
+        # If an upstream target not using Malone is specified, a search
+        # alsways returns an empty result set.
+        upstream_target = self.factory.makeDistribution()
+        self.setUpUpstreamTests(upstream_target)
+        params = self.getBugTaskSearchParams(
+            user=None, pending_bugwatch_elsewhere=True,
+            upstream_target=upstream_target)
+        self.assertSearchFinds(params, self.bugtasks)
+
+    def test_has_no_upstream_bugtask__target_specified(self):
+        # The target of the default bugtask of the first test bug
+        # (a product) does not appear in other bugs, thus a search
+        # returns all other bugtasks if we specify the search parameters
+        # has_no_upstream_bugtask and use the target described above
+        # as the upstream_target.
+        bug = self.bugtasks[0].bug
+        upstream_target = bug.bugtasks[0].target
+        params = self.getBugTaskSearchParams(
+            user=None, has_no_upstream_bugtask=True,
+            upstream_target=upstream_target)
+        self.assertSearchFinds(params, self.bugtasks[1:])
+        # If a new distribution is specified as the upstream target,
+        # all bugs are returned, since there are no tasks for this
+        # distribution.
+        upstream_target = self.factory.makeDistribution()
+        params = self.getBugTaskSearchParams(
+            user=None, has_no_upstream_bugtask=True,
+            upstream_target=upstream_target)
+        self.assertSearchFinds(params, self.bugtasks)
+        # When we add bugtasks for this distribution, the search returns
+        # an empty result.
+        self.setUpUpstreamTests(upstream_target)
+        self.assertSearchFinds(params, [])
+
+    def test_open_upstream(self):
+        # It is possible to search for bugs with open upstream bugtasks.
+        bug = self.bugtasks[2].bug
+        upstream_task = bug.bugtasks[0]
+        upstream_owner = upstream_task.target.owner
+        with person_logged_in(upstream_owner):
+            upstream_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_owner)
+        params = self.getBugTaskSearchParams(user=None, open_upstream=True)
+        self.assertSearchFinds(params, self.bugtasks[:2])
+
+    def test_open_upstream__upstream_product_specified(self):
+        # A search for bugs having an open upstream bugtask can be
+        # limited to a specific upstream product.
+        bug = self.bugtasks[2].bug
+        upstream_task = bug.bugtasks[0]
+        upstream_product = upstream_task.target
+        params = self.getBugTaskSearchParams(
+            user=None, open_upstream=True, upstream_target=upstream_product)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+        upstream_owner = upstream_product.owner
+        with person_logged_in(upstream_owner):
+            upstream_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_owner)
+        self.assertSearchFinds(params, [])
+
+    def test_open_upstream__upstream_distribution_specified(self):
+        # A search for bugs having an open upstream bugtask can be
+        # limited to a specific upstream distribution.
+        upstream_distro = self.factory.makeDistribution()
+        params = self.getBugTaskSearchParams(
+            user=None, open_upstream=True, upstream_target=upstream_distro)
+        self.assertSearchFinds(params, [])
+        bug = self.bugtasks[0].bug
+        distro_task = self.factory.makeBugTask(
+            bug=bug, target=upstream_distro)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        with person_logged_in(upstream_distro.owner):
+            distro_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_distro.owner)
+        self.assertSearchFinds(params, [])
+
+    def test_resolved_upstream(self):
+        # It is possible to search for bugs with resolved upstream bugtasks.
+        bug = self.bugtasks[2].bug
+        upstream_task = bug.bugtasks[0]
+        upstream_owner = upstream_task.target.owner
+        with person_logged_in(upstream_owner):
+            upstream_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_owner)
+        params = self.getBugTaskSearchParams(user=None, resolved_upstream=True)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+
+    def test_resolved_upstream__upstream_product_specified(self):
+        # A search for bugs having a resolved upstream bugtask can be
+        # limited to a specific upstream product.
+        bug = self.bugtasks[2].bug
+        upstream_task = bug.bugtasks[0]
+        upstream_product = upstream_task.target
+        params = self.getBugTaskSearchParams(
+            user=None, resolved_upstream=True,
+            upstream_target=upstream_product)
+        self.assertSearchFinds(params, [])
+        upstream_owner = upstream_product.owner
+        for bug in [task.bug for task in self.bugtasks]:
+            upstream_task = bug.bugtasks[0]
+            upstream_owner = upstream_task.owner
+            with person_logged_in(upstream_owner):
+                upstream_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_owner)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+
+    def test_resolved_upstream__upstream_distribution_specified(self):
+        # A search for bugs having an open upstream bugtask can be
+        # limited to a specific upstream distribution.
+        upstream_distro = self.factory.makeDistribution()
+        params = self.getBugTaskSearchParams(
+            user=None, resolved_upstream=True,
+            upstream_target=upstream_distro)
+        self.assertSearchFinds(params, [])
+        bug = self.bugtasks[0].bug
+        distro_task = self.factory.makeBugTask(
+            bug=bug, target=upstream_distro)
+        self.assertSearchFinds(params, [])
+        with person_logged_in(upstream_distro.owner):
+            distro_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_distro.owner)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+
+
+class SourcePackageTarget(BugTargetTestBase, UpstreamFilterTests):
     """Use a source package as the bug target."""
 
     def setUp(self):
@@ -1172,7 +1508,8 @@ class SourcePackageTarget(BugTargetTestBase):
 
 
 class DistributionSourcePackageTarget(BugTargetTestBase,
-                                      BugTargetWithBugSuperVisor):
+                                      BugTargetWithBugSuperVisor,
+                                      UpstreamFilterTests):
     """Use a distribution source package as the bug target."""
 
     def setUp(self):
@@ -1236,60 +1573,49 @@ class MultipleParams:
     accepts exactly one instance.
     """
 
-    def test_two_param_objects(self):
-        # We can pass more than one BugTaskSearchParams instance to
-        # BugTaskSet.search().
+    def setUpTwoSearchParams(self, orderby=None):
+        # Prepare the test data for the tests in this class.
         params1 = self.getBugTaskSearchParams(
-            user=None, status=BugTaskStatus.FIXCOMMITTED)
+            user=None, status=BugTaskStatus.FIXCOMMITTED, orderby=orderby)
         subscriber = self.factory.makePerson()
         self.subscribeToTarget(subscriber)
         params2 = self.getBugTaskSearchParams(
             user=None, status=BugTaskStatus.NEW,
-            structural_subscriber=subscriber)
+            structural_subscriber=subscriber, orderby=orderby)
+        return params1, params2
+
+    def test_two_param_objects(self):
+        # We can pass more than one BugTaskSearchParams instance to
+        # BugTaskSet.search().
+        params1, params2 = self.setUpTwoSearchParams()
         search_result = self.runSearch(params1, params2)
         expected = self.resultValuesForBugtasks(self.bugtasks[1:])
+        self.assertEqual(expected, search_result)
+
+    def test_two_param_objects_sorting_needs_extra_join(self):
+        # If result ordering needs an extra join, the join
+        # is added to the union of the result sets for the two
+        # BugTaskSearchParams instances.
+        params1, params2 = self.setUpTwoSearchParams(orderby='reporter')
+        search_result = self.runSearch(params1, params2)
+
+        def sortkey(bugtask):
+            return bugtask.owner.name
+
+        expected_bugtasks = sorted(self.bugtasks[1:], key=sortkey)
+        expected = self.resultValuesForBugtasks(expected_bugtasks)
         self.assertEqual(expected, search_result)
 
 
 class PreloadBugtaskTargets(MultipleParams):
     """Preload bug targets during a BugTaskSet.search() query."""
 
-    def runSearch(self, params, *args, **kw):
+    def runSearch(self, params, *args):
         """Run BugTaskSet.search() and preload bugtask target objects."""
-        return list(self.bugtask_set.search(
-            params, *args, _noprejoins=False, **kw))
+        return list(self.bugtask_set.search(params, *args, _noprejoins=False))
 
     def resultValuesForBugtasks(self, expected_bugtasks):
         return expected_bugtasks
-
-    def test_preload_additional_objects(self):
-        # It is possible to join additional tables in the search query
-        # in order to load related Storm objects during the query.
-        store = Store.of(self.bugtasks[0])
-        store.invalidate()
-
-        # If we do not prejoin the owner, two queries a run
-        # in order to retrieve the owner of the bugtask.
-        with StormStatementRecorder() as recorder:
-            params = self.getBugTaskSearchParams(user=None)
-            found_tasks = self.runSearch(params)
-            found_tasks[0].owner
-            self.assertTrue(len(recorder.statements) > 1)
-
-        # If we join the table person on bugtask.owner == person.id
-        # the owner object is loaded in the query that retrieves the
-        # bugtasks.
-        store.invalidate()
-        with StormStatementRecorder() as recorder:
-            params = self.getBugTaskSearchParams(user=None)
-            found_tasks = self.runSearch(
-                params,
-                prejoins=[(Person, Join(Person, BugTask.owner == Person.id))])
-            # More than one query may have been performed
-            search_count = recorder.count
-            # Accessing the owner does not trigger more queries.
-            found_tasks[0].owner
-            self.assertThat(recorder, HasQueryCount(Equals(search_count)))
 
 
 class NoPreloadBugtaskTargets(MultipleParams):
@@ -1314,18 +1640,56 @@ class QueryBugIDs:
         return [bugtask.bug.id for bugtask in expected_bugtasks]
 
 
+class TestMilestoneDueDateFiltering(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_milestone_date_filters(self):
+        today = datetime.today().date()
+        ten_days_ago = today - timedelta(days=10)
+        ten_days_from_now = today + timedelta(days=10)
+        current_milestone = self.factory.makeMilestone(dateexpected=today)
+        old_milestone = self.factory.makeMilestone(
+            dateexpected=ten_days_ago)
+        future_milestone = self.factory.makeMilestone(
+            dateexpected=ten_days_from_now)
+        current_milestone_bug = self.factory.makeBug(
+            milestone=current_milestone)
+        self.factory.makeBug(milestone=old_milestone)
+        self.factory.makeBug(milestone=future_milestone)
+        # Search for bugs whose milestone.dateexpected is between yesterday
+        # and tomorrow.  This will return only the one task targeted to
+        # current_milestone.
+        params = BugTaskSearchParams(
+            user=None,
+            milestone_dateexpected_after=today - timedelta(days=1),
+            milestone_dateexpected_before=today + timedelta(days=1))
+        result = getUtility(IBugTaskSet).search(params)
+        self.assertEqual(
+            current_milestone_bug.bugtasks, list(result))
+
+
 def test_suite():
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
     for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
+        class_name = 'Test%s' % bug_target_search_type_class.__name__
+        class_bases = (
+            bug_target_search_type_class, ProductTarget, OnceTests,
+            SearchTestBase, TestCaseWithFactory)
+        test_class = type(class_name, class_bases, {})
+        suite.addTest(loader.loadTestsFromTestCase(test_class))
+
         for target_mixin in bug_targets_mixins:
             class_name = 'Test%s%s' % (
                 bug_target_search_type_class.__name__,
                 target_mixin.__name__)
+            mixins = [
+                target_mixin, bug_target_search_type_class]
             class_bases = (
-                target_mixin, bug_target_search_type_class,
-                SearchTestBase, TestCaseWithFactory)
+                tuple(mixins)
+                + (TargetTests, SearchTestBase, TestCaseWithFactory))
             # Dynamically build a test class from the target mixin class,
             # from the search type mixin class, from the mixin class
             # having all tests and from a unit test base class.

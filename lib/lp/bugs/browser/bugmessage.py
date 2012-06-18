@@ -12,9 +12,6 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -22,6 +19,7 @@ from lp.app.browser.launchpadform import (
 from lp.bugs.browser.bugattachment import BugAttachmentContentCheck
 from lp.bugs.interfaces.bugmessage import IBugMessageAddForm
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.services.webapp import canonical_url
 
 
 class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
@@ -54,9 +52,9 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
         # Ensure either a comment or filecontent was provide, but only
         # if no errors have already been noted.
         if len(self.errors) == 0:
-            comment = data.get('comment', None)
+            comment = data.get('comment') or u''
             filecontent = data.get('filecontent', None)
-            if not comment and not filecontent:
+            if not comment.strip() and not filecontent:
                 self.addError("Either a comment or attachment "
                               "must be provided.")
 
@@ -134,7 +132,6 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
 
             self.request.response.addNotification(
                 "Attachment %s added to bug." % filename)
-
 
     def shouldShowEmailMeWidget(self):
         """Should the subscribe checkbox be shown?"""

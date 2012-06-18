@@ -9,10 +9,9 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.security.management import getInteraction
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     ANONYMOUS,
     anonymous_logged_in,
@@ -29,6 +28,7 @@ from lp.testing import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestLoginHelpers(TestCaseWithFactory):
@@ -103,13 +103,6 @@ class TestLoginHelpers(TestCaseWithFactory):
         team = self.factory.makeTeam()
         e = self.assertRaises(ValueError, login_person, team)
         self.assertEqual(str(e), "Got team, expected person: %r" % (team,))
-
-    def test_login_account(self):
-        # Calling login_person with an account logs you in with that account.
-        person = self.factory.makePerson()
-        account = person.account
-        login_person(account)
-        self.assertLoggedIn(person)
 
     def test_login_with_email(self):
         # login() logs a person in by email.
@@ -247,6 +240,14 @@ class TestLoginHelpers(TestCaseWithFactory):
             person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(team))
 
+    def test_team_logged_in_provides_person(self):
+        # person_logged_in makes the logged-in person available through
+        # the context manager.
+        team = self.factory.makeTeam()
+        with person_logged_in(team) as p:
+            person = self.getLoggedInPerson()
+        self.assertEqual(p, person)
+
     def test_celebrity_logged_in(self):
         # celebrity_logged_in runs in a context where a celebrity is logged
         # in.
@@ -254,6 +255,12 @@ class TestLoginHelpers(TestCaseWithFactory):
         with celebrity_logged_in('vcs_imports'):
             person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(vcs_imports))
+
+    def test_celebrity_logged_in_provides_person(self):
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        with celebrity_logged_in('vcs_imports') as p:
+            person = self.getLoggedInPerson()
+        self.assertEqual(p, person)
 
     def test_celebrity_logged_in_restores_person(self):
         # Once outside of the celebrity_logged_in context, the originally
@@ -273,7 +280,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         def f():
             return self.getLoggedInPerson()
 
-        logout()
+        login_as(None)
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 
@@ -284,7 +291,7 @@ class TestLoginHelpers(TestCaseWithFactory):
         def f():
             return self.getLoggedInPerson()
 
-        logout()
+        login_as(None)
         logged_in = f()
         self.assertEqual(person, logged_in)
 

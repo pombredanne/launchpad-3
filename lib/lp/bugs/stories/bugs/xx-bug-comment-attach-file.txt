@@ -72,7 +72,7 @@ You cannot upload an empty attachment.
 The size of uploaded files is limited with the max_attachment_size
 option in launchpad.conf. In our example, the size is limited to 1024.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> print config.launchpad.max_attachment_size
     1024

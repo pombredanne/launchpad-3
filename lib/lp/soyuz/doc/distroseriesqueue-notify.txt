@@ -19,7 +19,7 @@ changes file which are all needed for successful operation of notify().
 Set up some library files for the netapplet source package.  These are
 not already present in the sample data.
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> from lp.archiveuploader.tests import datadir
     >>> import os
@@ -203,7 +203,7 @@ parameter provided that everything is already committed to the database
 (which is not the case when nascent upload runs).  This example
 demonstrates this usage:
 
-    >>> from canonical.librarian.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
     >>> changes_file = open(changes_file_path,"r")
     >>> fillLibrarianFile(1, content=changes_file.read())
     >>> changes_file.close()
@@ -287,5 +287,5 @@ Only one email is generated:
 
 Clean up, otherwise stuff is left lying around in /var/tmp.
 
-    >>> from canonical.testing.layers import LibrarianLayer
+    >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.librarian_fixture.clear()

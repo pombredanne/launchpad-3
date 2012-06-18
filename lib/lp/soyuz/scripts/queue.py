@@ -23,10 +23,10 @@ import hashlib
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.librarian.utils import filechunks
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
+from lp.services.config import config
+from lp.services.librarian.utils import filechunks
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.component import IComponentSet
@@ -409,7 +409,8 @@ class QueueActionFetch(QueueAction):
         self.displayRule()
         for queue_item in self.items:
             file_list = []
-            file_list.append(queue_item.changesfile)
+            if queue_item.changesfile is not None:
+                file_list.append(queue_item.changesfile)
 
             for source in queue_item.sources:
                 for spr_file in source.sourcepackagerelease.files:

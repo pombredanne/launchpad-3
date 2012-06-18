@@ -8,8 +8,6 @@
 >
 <body>
   <div metal:fill-slot="main">
-    <p>Private teams cannot be added as a member of another team.</p>
-
     <p id="no-candidates" tal:condition="not: view/candidate_teams">
       None of the teams you administer can be added to this team.
     </p>

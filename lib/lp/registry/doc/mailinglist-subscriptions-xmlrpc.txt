@@ -141,10 +141,9 @@ discarded.
 Similarly, email addresses with an unvalidated status are not considered
 registered either.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> new_address = emailset.new(
-    ...     'frederick@example.com', fred, account=fred.account)
+    >>> new_address = emailset.new('frederick@example.com', fred)
     >>> new_address.email, new_address.status.title
     (u'frederick@example.com', 'New Email Address')
     >>> sorted((email_address.email, email_address.status.title)
@@ -218,7 +217,7 @@ We archive messages by sending them to The Mail Archive
 message is posted to so all we need to do is include them in the recipients
 list and the rest is taken care of.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.mailman.archive_address
     'archive@mail-archive.dev'
 
@@ -276,10 +275,10 @@ Launchpad.
 This is true even if by dumb luck the address actually gets registered in
 Launchpad.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
     >>> new_address = emailset.new(
     ...     config.mailman.archive_address, fred,
-    ...     EmailAddressStatus.VALIDATED, account=fred.account)
+    ...     EmailAddressStatus.VALIDATED)
     >>> transaction.commit()
 
     >>> mailinglist_api.isRegisteredInLaunchpad(
@@ -291,7 +290,7 @@ itself is private, so is its archive, and then messages are not sent to the
 archiver email address.
 
     >>> from zope.component import queryAdapter
-    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from lp.services.privacy.interfaces import IObjectPrivacy
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> team_three = new_team('team-three')
     >>> queryAdapter(team_three, IObjectPrivacy).is_private

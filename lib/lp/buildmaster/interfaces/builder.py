@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -25,10 +25,10 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
     exported,
-    operation_parameters,
-    operation_returns_entry,
-    operation_returns_collection_of,
     operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
     )
 from lazr.restful.fields import (
     Reference,
@@ -46,16 +46,16 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
-from lp.soyuz.interfaces.processor import IProcessor
 from lp.services.fields import (
     Description,
     PersonChoice,
     Title,
     )
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class BuildDaemonError(Exception):
@@ -102,11 +102,11 @@ class IBuilder(IHasOwner):
     Builder instance represents a single builder slave machine within the
     Launchpad Auto Build System. It should specify a 'processor' on which the
     machine is based and is able to build packages for; a URL, by which the
-    machine is accessed through an XML-RPC interface; name, title,
-    description for entity identification and browsing purposes; an LP-like
-    owner which has unrestricted access to the instance; the build slave
-    machine status representation, including the field/properties:
-    virtualized, builderok, status, failnotes and currentjob.
+    machine is accessed through an XML-RPC interface; name, title for entity
+    identification and browsing purposes; an LP-like owner which has
+    unrestricted access to the instance; the build slave machine status
+    representation, including the field/properties: virtualized, builderok,
+    status, failnotes and currentjob.
     """
     export_as_webservice_entry()
 
@@ -138,12 +138,6 @@ class IBuilder(IHasOwner):
         title=_('Title'), required=True,
         description=_(
             'The builder slave title. Should be just a few words.')))
-
-    description = exported(Description(
-        title=_('Description'), required=False,
-        description=_('The builder slave description, may be several '
-                      'paragraphs of text, giving the highlights and '
-                      'details.')))
 
     virtualized = exported(Bool(
         title=_('Virtualized'), required=True, default=False,
@@ -192,9 +186,6 @@ class IBuilder(IHasOwner):
 
     def failBuilder(reason):
         """Mark builder as failed for a given reason."""
-
-    def setSlaveForTesting(proxy):
-        """Sets the RPC proxy through which to operate the build slave."""
 
     def verifySlaveBuildCookie(slave_build_id):
         """Verify that a slave's build cookie is consistent.
@@ -337,11 +328,9 @@ class IBuilder(IHasOwner):
             or immediately if it's a non-virtual slave.
         """
 
-    def findAndStartJob(buildd_slave=None):
+    def findAndStartJob():
         """Find a job to run and send it to the buildd slave.
 
-        :param buildd_slave: An optional buildd slave that this builder should
-            talk to.
         :return: A Deferred whose value is the `IBuildQueue` instance
             found or None if no job was found.
         """
@@ -372,8 +361,8 @@ class IBuilderSet(Interface):
     def getByName(name):
         """Retrieve a builder by name"""
 
-    def new(processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None):
+    def new(processor, url, name, title, owner, active=True,
+            virtualized=False, vm_host=None):
         """Create a new Builder entry.
 
         Additionally to the given arguments, builder are created with

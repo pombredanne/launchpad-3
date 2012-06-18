@@ -10,21 +10,21 @@ import os
 
 import transaction
 
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
+from lp.registry.tests import mailinglists_helper
+from lp.services.testing import (
+    build_doctest_suite,
+    build_test_suite,
     )
-from canonical.testing.layers import (
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     DatabaseLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.registry.tests import mailinglists_helper
-from lp.services.testing import (
-    build_doctest_suite,
-    build_test_suite,
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 
@@ -85,6 +85,7 @@ special = {
         ),
     'mailinglist-xmlrpc.txt-external': LayeredDocFileSuite(
         '../doc/mailinglist-xmlrpc.txt',
+        id_extensions=['mailinglist-xmlrpc.txt-external'],
         setUp=mailingListXMLRPCExternalSetUp,
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
@@ -97,6 +98,7 @@ special = {
         ),
     'mailinglist-subscriptions-xmlrpc.txt-external': LayeredDocFileSuite(
         '../doc/mailinglist-subscriptions-xmlrpc.txt',
+        id_extensions=['mailinglist-subscriptions-xmlrpc.txt-external'],
         setUp=mailingListXMLRPCExternalSetUp,
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
@@ -115,6 +117,7 @@ special = {
         ),
     'message-holds-xmlrpc.txt-external': LayeredDocFileSuite(
         '../doc/message-holds-xmlrpc.txt',
+        id_extensions=['message-holds-xmlrpc.txt-external'],
         setUp=mailingListXMLRPCExternalSetUp,
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,

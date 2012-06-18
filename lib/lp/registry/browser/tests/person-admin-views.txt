@@ -3,8 +3,8 @@
 Admistrators can access a subset of any IPerson's fields from the UI.
 The PersonAdministerView is registered under the +review name.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.services.webapp.authorization import check_permission
+    >>> from lp.services.webapp.interfaces import IOpenLaunchBag
 
     >>> login('foo.bar@canonical.com')
     >>> admin = getUtility(IOpenLaunchBag).user
@@ -31,7 +31,6 @@ is an IPerson or IAccount.
 The PersonAdministerView allows Launchpad admins to change some
 of a user's attributes.
 
-    >>> old_password = user.password
     >>> form = {
     ...     'field.name': 'zaphod',
     ...     'field.displayname': 'Zaphod Beeblebrox',
@@ -53,7 +52,7 @@ of a user's attributes.
 
 Non administrators cannot access the +review view
 
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> view = create_initialized_view(user, '+review')
     >>> check_permission('launchpad.Admin', view)
     False
@@ -70,7 +69,7 @@ Non-admins cannot access it.
 
 An admin can see a user's account information.
 
-    >>> login_person(admin)
+    >>> ignored = login_person(admin)
     >>> view = create_initialized_view(
     ...     user, '+reviewaccount', principal=admin)
     >>> check_permission('launchpad.Admin', view)
@@ -78,7 +77,7 @@ An admin can see a user's account information.
     >>> print view.errors
     []
     >>> view.field_names
-    ['displayname', 'password', 'status', 'status_comment']
+    ['displayname', 'status', 'status_comment']
     >>> view.label
     "Review person's account"
 
@@ -97,32 +96,25 @@ not need to look in the db.
 
 The admin can change the user's account information.
 
-    >>> old_password = user.password
     >>> form = {
     ...     'field.displayname': 'The Zaphod Beeblebrox',
-    ...     'field.password': 'secret1',
-    ...     'field.password_dupe': 'secret1',
     ...     'field.status': 'ACTIVE',
     ...     'field.actions.change': 'Change',
     ...     }
     >>> view = create_initialized_view(user, '+reviewaccount', form=form)
     >>> print view.errors
     []
-    >>> user.password != old_password
-    True
     >>> print user.displayname
     Zaphod Beeblebrox
 
 An admin can suspend a user's account using the +reviewaccount view. When
-an account is suspended, the preferred email address is disabled and the
-password is changed too.
+an account is suspended, the preferred email address is disabled.
 
     >>> user.account_status
     <DBItem AccountStatus.ACTIVE, ...>
     >>> print user.account_status_comment
     None
 
-    >>> old_password = user.password
     >>> form = {
     ...     'field.displayname': 'Zaphod Beeblebrox',
     ...     'field.status': 'SUSPENDED',
@@ -137,16 +129,13 @@ password is changed too.
     <DBItem AccountStatus.SUSPENDED, ...>
     >>> print user.account_status_comment
     Wanted by the galactic police.
-    >>> user.password != old_password
-    True
     >>> print user.preferredemail
     None
 
 An admin can reactivate a disabled user's account too. Unlike the act of
-suspension, reactivation does not change the user's password or email
-addresses; the user must use the reset password feature to restore these.
+suspension, reactivation does not change the user's email addresses; the
+user must log in to restore these.
 
-    >>> old_password = user.password
     >>> form = {
     ...     'field.displayname': 'Zaphod Beeblebrox',
     ...     'field.status': 'ACTIVE',
@@ -160,7 +149,5 @@ addresses; the user must use the reset password feature to restore these.
     <DBItem AccountStatus.ACTIVE, ...>
     >>> print user.account_status_comment
     Zaphod's a hoopy frood.
-    >>> user.password == old_password
-    True
     >>> print user.preferredemail
     None

@@ -9,7 +9,7 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.potmsgset import IPOTMsgSet
 

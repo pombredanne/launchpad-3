@@ -195,13 +195,13 @@ those widgets are checkboxes and menus.
 Teams can be owners of submissions.
 
     >>> import os
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> team_form = form.copy()
     >>> team_form['field.emailaddress'] = 'support@ubuntu.com'
     >>> team_form['field.submission_key'] = u'unique-id-68'
     >>> valid_sample_data_path = os.path.join(
     ...     config.root,
-    ...     'lib/canonical/launchpad/scripts/tests/'
+    ...     'lib/lp/hardwaredb/scripts/tests/'
     ...     'simple_valid_hwdb_submission.xml')
     >>> valid_sample_data = StringIO(open(valid_sample_data_path).read())
     >>> valid_sample_data.filename = 'simple_valid_hwdb_submission.xml'
@@ -253,7 +253,7 @@ submissions. We don't have a Librarian file for this submission, so
 let's add one. Let's add invalid data in order to see how invalid
 submissions are processed.
 
-    >>> from canonical.librarian.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
     >>> submission = submission_set.getBySubmissionKey('test_submission_id_1')
     >>> fillLibrarianFile(
     ...     submission.raw_submission.id, 'nonsense')
@@ -264,7 +264,7 @@ submissions are processed.
     >>> transaction.commit()
 
     # Run the script.
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.testing.script import run_script
     >>> returnvalue, out, err = run_script(
     ...     'cronscripts/process-hwdb-submissions.py', ['-m1'])
     >>> returnvalue

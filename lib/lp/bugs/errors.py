@@ -1,13 +1,13 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/bugs modules."""
 
 __metaclass__ = type
 __all__ = [
+    'BugCannotBePrivate',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
-    'SubscriptionPrivacyViolation',
 ]
 
 import httplib
@@ -28,5 +28,5 @@ class InvalidDuplicateValue(LaunchpadValidationError):
 
 
 @error_status(httplib.BAD_REQUEST)
-class SubscriptionPrivacyViolation(Exception):
-    """The subscription would violate privacy policies."""
+class BugCannotBePrivate(Exception):
+    """The bug is not allowed to be private."""

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to ApportJobs are in here."""
@@ -26,17 +26,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.temporaryblobstorage import (
-    TemporaryBlobStorage,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.bugs.interfaces.apportjob import (
     ApportJobType,
     IApportJob,
@@ -48,9 +37,22 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
-from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
+from lp.services.job.runner import BaseRunnableJob
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class ApportJob(StormBase):
@@ -112,9 +114,13 @@ class ApportJob(StormBase):
                 'No occurrence of %s has key %s' % (cls.__name__, key))
         return instance
 
+    def makeDerived(self):
+        return ApportJobDerived.makeSubclass(self)
+
 
 class ApportJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from ApportJob."""
+    __metaclass__ = EnumeratedSubclass
     delegates(IApportJob)
     classProvides(IApportJobSource)
 
@@ -126,7 +132,9 @@ class ApportJobDerived(BaseRunnableJob):
         """See `IApportJob`."""
         # If there's already a job for the blob, don't create a new one.
         job = ApportJob(blob, cls.class_job_type, {})
-        return cls(job)
+        derived = cls(job)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def get(cls, job_id):
@@ -174,6 +182,8 @@ class ProcessApportBlobJob(ApportJobDerived):
 
     class_job_type = ApportJobType.PROCESS_BLOB
     classProvides(IProcessApportBlobJobSource)
+
+    config = config.process_apport_blobs
 
     @classmethod
     def create(cls, blob):

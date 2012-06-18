@@ -27,15 +27,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    Link,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -44,6 +36,14 @@ from lp.app.browser.launchpadform import (
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    Link,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.publisher import LaunchpadView
 from lp.translations.browser.translationlinksaggregator import (
     TranslationLinksAggregator,
     )
@@ -265,7 +265,7 @@ class PersonTranslationView(LaunchpadView):
     @property
     def person_is_translator(self):
         """Is this person active in translations?"""
-        if self.context.isTeam():
+        if self.context.is_team:
             return False
         person = ITranslationsPerson(self.context)
         history = person.getTranslationHistory(self.history_horizon).any()
@@ -283,7 +283,7 @@ class PersonTranslationView(LaunchpadView):
     @property
     def requires_preferred_languages(self):
         """Does this person need to set preferred languages?"""
-        return not self.context.isTeam() and len(self.context.languages) == 0
+        return not self.context.is_team and len(self.context.languages) == 0
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
@@ -450,20 +450,17 @@ class PersonTranslationView(LaunchpadView):
 
         return overall
 
-
     to_complete_template = ViewPageTemplateFile(
         '../templates/person-translations-to-complete-table.pt')
 
     def translations_to_complete_table(self):
         return self.to_complete_template(dict(view=self))
 
-
     to_review_template = ViewPageTemplateFile(
         '../templates/person-translations-to-review-table.pt')
 
     def translations_to_review_table(self):
         return self.to_review_template(dict(view=self))
-
 
 
 class PersonTranslationReviewView(PersonTranslationView):

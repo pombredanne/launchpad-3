@@ -7,7 +7,8 @@ files. The property returns a sorted list of dictionaries with URLs,
 filenames and filesizes.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.testing import celebrity_logged_in
 
 We'll create SourcePackagePublishingHistory entries for
 alsa-utils and foobar in ubuntu to test with:
@@ -16,13 +17,12 @@ alsa-utils and foobar in ubuntu to test with:
     ...     SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
-    >>> login('foo.bar@canonical.com')
-    >>> stp = SoyuzTestPublisher()
-    >>> stp.prepareBreezyAutotest()
-    >>> alsa_pub = stp.getPubSource(sourcename='alsa-utils-test')
-    >>> foo_pub = stp.getPubSource(sourcename='foobar-test',
-    ...     status=PackagePublishingStatus.DELETED)
-    >>> logout()
+    >>> with celebrity_logged_in('admin'):
+    ...     stp = SoyuzTestPublisher()
+    ...     stp.prepareBreezyAutotest()
+    ...     alsa_pub = stp.getPubSource(sourcename='alsa-utils-test')
+    ...     foo_pub = stp.getPubSource(sourcename='foobar-test',
+    ...         status=PackagePublishingStatus.DELETED)
 
 The base class BasePublishingRecordView provides a few helper methods
 and properties for querying the publishing history record:

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchivePermission."""
@@ -10,6 +10,7 @@ __all__ = [
     'ArchivePermissionSet',
     ]
 
+from lazr.enum import DBItem
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -25,34 +26,36 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
     )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archive import (
     ComponentNotFound,
     IArchive,
     )
-from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission,
     IArchivePermissionSet,
@@ -100,6 +103,8 @@ class ArchivePermission(SQLBase):
     packageset = Reference(packageset_id, 'Packageset.id')
 
     explicit = BoolCol(dbName='explicit', notNull=True, default=False)
+
+    pocket = EnumCol(dbName="pocket", schema=PackagePublishingPocket)
 
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
@@ -176,10 +181,13 @@ class ArchivePermissionSet:
             clauses.append(
                 "ArchivePermission.packageset = %s" % sqlvalues(item.id))
             prejoins.append("packageset")
+        elif (zope_isinstance(item, DBItem) and
+              item.enum.name == "PackagePublishingPocket"):
+            clauses.append("ArchivePermission.pocket = %s" % sqlvalues(item))
         else:
             raise AssertionError(
-                "'item' %r is not an IComponent, IPackageset or an "
-                "ISourcePackageName" % item)
+                "'item' %r is not an IComponent, IPackageset, "
+                "ISourcePackageName or PackagePublishingPocket" % item)
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(
@@ -235,7 +243,7 @@ class ArchivePermissionSet:
             prejoins=["component"])
 
     def componentsForUploader(self, archive, person):
-        """See `IArchivePermissionSet`,"""
+        """See `IArchivePermissionSet`."""
         return self._componentsFor(
             archive, person, ArchivePermissionType.UPLOAD)
 
@@ -277,6 +285,24 @@ class ArchivePermissionSet:
             sourcepackagename=sourcepackagename)
         return results.prejoin(["sourcepackagename"])
 
+    def pocketsForUploader(self, archive, person):
+        """See `IArchivePermissionSet`."""
+        return ArchivePermission.select("""
+            ArchivePermission.archive = %s AND
+            ArchivePermission.permission = %s AND
+            ArchivePermission.pocket IS NOT NULL AND
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                    TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD, person))
+
+    def uploadersForPocket(self, archive, pocket):
+        "See `IArchivePermissionSet`."""
+        return ArchivePermission.selectBy(
+            archive=archive, permission=ArchivePermissionType.UPLOAD,
+            pocket=pocket)
+
     def queueAdminsForComponent(self, archive, component):
         "See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
@@ -315,6 +341,17 @@ class ArchivePermissionSet:
                 archive=archive, person=person, component=component,
                 permission=ArchivePermissionType.UPLOAD)
 
+    def newPocketUploader(self, archive, person, pocket):
+        """See `IArchivePermissionSet`."""
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.UPLOAD, pocket)
+        try:
+            return existing[0]
+        except IndexError:
+            return ArchivePermission(
+                archive=archive, person=person, pocket=pocket,
+                permission=ArchivePermissionType.UPLOAD)
+
     def newQueueAdmin(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
@@ -350,6 +387,12 @@ class ArchivePermissionSet:
         component = self._nameToComponent(component)
         permission = ArchivePermission.selectOneBy(
             archive=archive, person=person, component=component,
+            permission=ArchivePermissionType.UPLOAD)
+        self._remove_permission(permission)
+
+    def deletePocketUploader(self, archive, person, pocket):
+        permission = ArchivePermission.selectOneBy(
+            archive=archive, person=person, pocket=pocket,
             permission=ArchivePermissionType.UPLOAD)
         self._remove_permission(permission)
 

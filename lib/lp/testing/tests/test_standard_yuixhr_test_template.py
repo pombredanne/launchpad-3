@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """{Describe your test suite here}.
@@ -8,12 +8,12 @@ __metaclass__ = type
 __all__ = []
 
 from lp.testing import person_logged_in
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.yuixhr import (
     login_as_person,
     make_suite,
     setup,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 
 # This is one half of a YUI app test.  The other half is a .js test of
 # exactly the same name as your Python file, just with different file

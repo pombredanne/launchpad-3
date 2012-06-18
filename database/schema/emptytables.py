@@ -8,11 +8,12 @@
 __metaclass__ = type
 
 import _pythonpath
+
 from optparse import OptionParser
 
-from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import db_options
 from fti import quote_identifier
+from lp.services.database.sqlbase import connect
+from lp.services.scripts import db_options
 
 
 def main(options):

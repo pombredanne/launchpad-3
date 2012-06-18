@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -10,14 +10,10 @@ from zope.component import getUtility
 from zope.interface.exceptions import Invalid
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
+from lp.registry.enums import (
+    InformationType,
+    PersonTransferJobType,
     )
-from lp.registry.enum import PersonTransferJobType
 from lp.registry.errors import (
     JoinNotAllowed,
     TeamSubscriptionPolicyError,
@@ -34,12 +30,19 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.persontransferjob import PersonTransferJob
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_celebrity,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 
 
@@ -120,7 +123,7 @@ class TestTeamContactAddress(TestCaseWithFactory):
     def test_setContactAddress_after_purged_mailing_list_and_rename(self):
         # This is the rare case where a list is purged for a team rename,
         # then the contact address is set/unset sometime afterwards.
-        # The old mailing list address belongs the the team, but not the list.
+        # The old mailing list address belongs the team, but not the list.
         # 1. Create then purge a mailing list.
         self.createMailingListAndGetAddress()
         mailing_list = self.team.mailing_list
@@ -400,7 +403,9 @@ class TestTeamSubscriptionPolicyChoiceModerated(TeamSubscriptionPolicyBase):
     def test_closed_team_with_private_bugs_cannot_become_open(self):
         # The team cannot become open if it is subscribed to private bugs.
         self.setUpTeams()
-        bug = self.factory.makeBug(owner=self.team.teamowner, private=True)
+        bug = self.factory.makeBug(
+            owner=self.team.teamowner,
+            information_type=InformationType.USERDATA)
         with person_logged_in(self.team.teamowner):
             bug.subscribe(self.team, self.team.teamowner)
         self.assertFalse(
@@ -412,7 +417,9 @@ class TestTeamSubscriptionPolicyChoiceModerated(TeamSubscriptionPolicyBase):
     def test_closed_team_with_private_bugs_assigned_cannot_become_open(self):
         # The team cannot become open if it is assigned private bugs.
         self.setUpTeams()
-        bug = self.factory.makeBug(owner=self.team.teamowner, private=True)
+        bug = self.factory.makeBug(
+            owner=self.team.teamowner,
+            information_type=InformationType.USERDATA)
         with person_logged_in(self.team.teamowner):
             bug.default_bugtask.transitionToAssignee(self.team)
         self.assertFalse(
@@ -493,7 +500,8 @@ class TestTeamSubscriptionPolicyValidator(TestCaseWithFactory):
         # made to set an illegal open subscription policy on a team.
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        team.createPPA()
+        with person_logged_in(team.teamowner):
+            team.createPPA()
         for policy in OPEN_TEAM_POLICY:
             self.assertRaises(
                 TeamSubscriptionPolicyError,

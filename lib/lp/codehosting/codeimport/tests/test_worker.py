@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -48,16 +48,11 @@ import subvertpy
 import subvertpy.client
 import subvertpy.ra
 
-from canonical.config import config
-from canonical.testing.layers import (
-    BaseLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
-from lp.codehosting import load_optional_plugin
+import lp.codehosting
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
     extract_tarball,
@@ -92,10 +87,16 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
+from lp.registry.enums import InformationType
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    BaseLayer,
+    DatabaseFunctionalLayer,
     )
 
 
@@ -1143,7 +1144,6 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
     def setUp(self):
         super(TestGitImport, self).setUp()
-        load_optional_plugin('git')
         self.setUpImport()
 
     def tearDown(self):
@@ -1220,7 +1220,6 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
 
     def setUp(self):
         super(TestMercurialImport, self).setUp()
-        load_optional_plugin('hg')
         self.setUpImport()
 
     def tearDown(self):
@@ -1302,7 +1301,6 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
 
     def setUp(self):
         super(TestBzrSvnImport, self).setUp()
-        load_optional_plugin('svn')
         self.setUpImport()
 
     def makeImportWorker(self, source_details, opener_policy):
@@ -1418,6 +1416,7 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertBadUrl("svn+ssh://svn.example.com/bla")
         self.assertGoodUrl("git://git.example.com/repo")
         self.assertGoodUrl("https://hg.example.com/hg/repo/branch")
+        self.assertGoodUrl("bzr://bzr.example.com/somebzrurl/")
 
 
 class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
@@ -1546,7 +1545,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             arguments)
 
     def test_bzr_stacked(self):
-        devfocus = self.factory.makeAnyBranch(private=False)
+        devfocus = self.factory.makeAnyBranch()
         code_import = self.factory.makeCodeImport(
                 bzr_branch_url='bzr://bzr.example.com/foo',
                 target=devfocus.target)
@@ -1561,7 +1560,8 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
 
     def test_bzr_stacked_private(self):
         # Code imports can't be stacked on private branches.
-        devfocus = self.factory.makeAnyBranch(private=True)
+        devfocus = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         code_import = self.factory.makeCodeImport(
                 target=devfocus.target,
                 bzr_branch_url='bzr://bzr.example.com/foo')

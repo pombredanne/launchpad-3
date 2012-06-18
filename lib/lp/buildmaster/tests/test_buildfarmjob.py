@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBuildFarmJob`."""
@@ -12,16 +12,10 @@ from datetime import (
 
 import pytz
 from storm.store import Store
-from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
@@ -35,14 +29,14 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.services.database.sqlbase import flush_database_updates
 from lp.testing import (
     login,
-    StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import HasQueryCount
-from lp.translations.interfaces.translationtemplatesbuild import (
-    ITranslationTemplatesBuildSource,
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -234,66 +228,6 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         super(TestBuildFarmJobSet, self).setUp()
         self.builder = self.factory.makeBuilder()
         self.build_farm_job_set = getUtility(IBuildFarmJobSet)
-
-    def createTranslationTemplateBuild(self):
-        build_farm_job_source = getUtility(IBuildFarmJobSource)
-        build_farm_job = build_farm_job_source.new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
-        source = getUtility(ITranslationTemplatesBuildSource)
-        branch = self.factory.makeBranch()
-        return source.create(build_farm_job, branch)
-
-    def createSourcePackageRecipeBuild(self):
-        sprb = self.factory.makeSourcePackageRecipeBuild()
-        Store.of(sprb).flush()
-        return sprb
-
-    def createBuilds(self):
-        builds = []
-        for i in xrange(10):
-            # We don't create binary package builds because the test
-            # would be really heavy to setup.
-            builds.append(self.createTranslationTemplateBuild())
-            builds.append(self.createSourcePackageRecipeBuild())
-        return builds
-
-    def test_getSpecificJobs(self):
-        builds = self.createBuilds()
-        specific_jobs = self.build_farm_job_set.getSpecificJobs(
-            [build.build_farm_job for build in builds])
-        self.assertContentEqual(
-            builds, specific_jobs)
-
-    def test_getSpecificJobs_preserves_order(self):
-        builds = self.createBuilds()
-        specific_jobs = self.build_farm_job_set.getSpecificJobs(
-            [build.build_farm_job for build in builds])
-        self.assertEqual(
-            [(build.id, build.__class__) for build in builds],
-            [(job.id, job.__class__) for job in specific_jobs])
-
-    def test_getSpecificJobs_empty(self):
-        self.assertContentEqual(
-            [],
-            self.build_farm_job_set.getSpecificJobs([]))
-
-    def test_getSpecificJobs_sql_queries_count(self):
-        # getSpecificJobs issues one query for each build type.
-        builds = self.createBuilds()
-        build_farm_jobs = [build.build_farm_job for build in builds]
-        with StormStatementRecorder() as recorder:
-            self.build_farm_job_set.getSpecificJobs(
-                build_farm_jobs)
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
-
-    def test_getSpecificJobs_no_specific_job(self):
-        build_farm_job_source = getUtility(IBuildFarmJobSource)
-        build_farm_job = build_farm_job_source.new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
-        flush_database_updates()
-        self.assertRaises(
-            InconsistentBuildFarmJobError,
-            self.build_farm_job_set.getSpecificJobs, [build_farm_job])
 
     def test_getBuildsForBuilder_all(self):
         # The default call without arguments returns all builds for the

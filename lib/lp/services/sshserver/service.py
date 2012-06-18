@@ -31,7 +31,6 @@ from lp.services.sshserver import (
     )
 from lp.services.sshserver.auth import SSHUserAuthServer
 from lp.services.twistedsupport import gatherResults
-from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class KeepAliveSettingSSHServerTransport(SSHServerTransport):
@@ -171,7 +170,6 @@ class SSHService(service.Service):
             logging.getLogger(self._access_log_path),
             self._access_log_path)
         manager.setUp()
-        set_up_oops_reporting(self._main_log, self._oops_configuration)
         notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask

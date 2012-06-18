@@ -208,7 +208,7 @@ We can view the link on the public PPA to Celso's private PPA when logged
 in as Celso.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~joe/+archive/ppa/+packages")
     >>> expander_url = cprov_browser.getLink(id=expander_link_id).url
@@ -289,7 +289,7 @@ for iceweasel before marking it as superseded.
     >>> pmount_pub.removal_comment = 'nhack !'
     >>> logout()
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 The default status filter is 'published', which means that, by
@@ -443,7 +443,7 @@ sees that there was a failure while building 'cdrkit' on i386 he can
 quickly 'retry' the failure.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
 

@@ -10,14 +10,14 @@ from datetime import timedelta
 from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
+from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 expected_body = u"""\

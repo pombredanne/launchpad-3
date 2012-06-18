@@ -24,7 +24,7 @@
       </tal:description>
     </p>
     <p tal:condition="context/owner" id="potemplate-owner"
-       class="discreet">
+       class="lesser">
       <strong>Owner:</strong>
       <a tal:replace="structure context/owner/fmt:link">owner name</a>
     </p>

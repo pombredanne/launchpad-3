@@ -15,13 +15,11 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import logout
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from canonical.launchpad.webapp.publisher import (
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.publisher import (
     canonical_url,
     RedirectionView,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.browser.publishing import (
     SourcePackagePublishingHistoryNavigation,
     )
@@ -31,9 +29,11 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     BrowserTestCase,
     FakeLaunchpadRequest,
+    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 
 

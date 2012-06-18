@@ -11,13 +11,13 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestSoyuzScript(unittest.TestCase):

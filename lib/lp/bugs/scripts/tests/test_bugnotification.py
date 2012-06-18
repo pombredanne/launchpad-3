@@ -4,30 +4,25 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+import logging
 import re
+import StringIO
 import unittest
 
 import pytz
 from storm.store import Store
 from testtools.matchers import Not
 from transaction import commit
-from zope.component import getUtility, getSiteManager
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    sqlvalues,
-    )
-from canonical.launchpad.ftests import login
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -62,19 +57,37 @@ from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.scripts.bugnotification import (
     construct_email_notifications,
-    get_email_notifications,
     get_activity_key,
+    get_email_notifications,
     notification_batches,
     notification_comment_batches,
     process_deferred_notifications,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    flush_database_updates,
+    sqlvalues,
+    )
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 from lp.testing import (
+    login,
     TestCase,
-    TestCaseWithFactory)
-from lp.testing.dbuser import lp_dbuser
+    TestCaseWithFactory,
+    )
+from lp.testing.dbuser import (
+    lp_dbuser,
+    switch_dbuser,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import Contains
 
 
@@ -85,6 +98,7 @@ class MockBug:
     duplicateof = None
     private = False
     security_related = False
+    information_type = InformationType.PUBLIC
     messages = []
 
     def __init__(self, id, owner):
@@ -228,13 +242,14 @@ class TestGetActivityKey(TestCase):
                          'some bug task identifier:status')
 
 
-class TestGetEmailNotifications(unittest.TestCase):
+class TestGetEmailNotifications(TestCase):
     """Tests for the exception handling in get_email_notifications()."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up some mock bug notifications to use."""
-        self.layer.switchDbUser(config.malone.bugnotification_dbuser)
+        super(TestGetEmailNotifications, self).setUp()
+        switch_dbuser(config.malone.bugnotification_dbuser)
         sample_person = getUtility(IPersonSet).getByEmail(
             'test@canonical.com')
         self.now = datetime.now(pytz.timezone('UTC'))
@@ -278,6 +293,7 @@ class TestGetEmailNotifications(unittest.TestCase):
         sm.registerUtility(self._fake_utility)
 
     def tearDown(self):
+        super(TestGetEmailNotifications, self).tearDown()
         sm = getSiteManager()
         sm.unregisterUtility(self._fake_utility)
         sm.registerUtility(self._original_utility)
@@ -370,6 +386,44 @@ class TestGetEmailNotifications(unittest.TestCase):
         # cause any errors.
         bug_four = getUtility(IBugSet).get(4)
         self.assertEqual(bug_four.id, 4)
+
+    def test_early_exit(self):
+        # When not-yet-exhausted generators need to be deallocated Python
+        # raises a GeneratorExit exception at the point of their last yield.
+        # The get_email_notifications generator was catching that exception in
+        # a try/except and logging it, leading to bug 994694.  This test
+        # verifies that the fix for that bug (re-raising the exception) stays
+        # in place.
+
+        # Set up logging so we can later assert that no exceptions are logged.
+        log_output = StringIO.StringIO()
+        logger = logging.getLogger()
+        log_handler = logging.StreamHandler(log_output)
+        logger.addHandler(logging.StreamHandler(log_output))
+        self.addCleanup(logger.removeHandler, log_handler)
+
+        # Make some data to feed to get_email_notifications.
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        msg = getUtility(IMessageSet).fromText('', '', owner=person)
+        bug = MockBug(1, person)
+        # We need more than one notification because we want the generator to
+        # stay around after being started.  Consuming the first starts it but
+        # since the second exists, the generator stays active.
+        notifications = [
+            MockBugNotification(
+                message=msg, bug=bug, is_comment=True, date_emailed=None),
+            MockBugNotification(
+                message=msg, bug=bug, is_comment=True, date_emailed=None),
+            ]
+
+        # Now we create the generator, start it, and then close it, triggering
+        # a GeneratorExit exception inside the generator.
+        email_notifications = get_email_notifications(notifications)
+        email_notifications.next()
+        email_notifications.close()
+
+        # Verify that no "Error while building email notifications." is logged.
+        self.assertEqual('', log_output.getvalue())
 
 
 class TestNotificationCommentBatches(unittest.TestCase):
@@ -594,13 +648,14 @@ class EmailNotificationTestBase(TestCaseWithFactory):
         self.bug_subscriber = self.factory.makePerson(name="bug-subscriber")
         self.bug_owner = self.factory.makePerson(name="bug-owner")
         self.bug = self.factory.makeBug(
-            product=self.product, private=False, owner=self.bug_owner)
+            product=self.product, owner=self.bug_owner,
+            information_type=InformationType.USERDATA)
         self.reporter = self.bug.owner
         self.bug.subscribe(self.bug_subscriber, self.reporter)
         [self.product_bugtask] = self.bug.bugtasks
         commit()
         login('test@canonical.com')
-        self.layer.switchDbUser(config.malone.bugnotification_dbuser)
+        switch_dbuser(config.malone.bugnotification_dbuser)
         self.now = datetime.now(pytz.UTC)
         self.ten_minutes_ago = self.now - timedelta(minutes=10)
         self.notification_set = getUtility(IBugNotificationSet)

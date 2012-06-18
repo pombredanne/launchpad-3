@@ -10,11 +10,14 @@ import os
 import socket
 import tempfile
 
+from testtools.matchers import FileContains
+
 from lp.services.osutils import (
     ensure_directory_exists,
     open_for_writing,
     remove_tree,
     until_no_eintr,
+    write_file,
     )
 from lp.testing import TestCase
 
@@ -93,6 +96,16 @@ class TestOpenForWriting(TestCase):
         fp.write("Hello world!\n")
         fp.close()
         self.assertEqual("Hello world!\n", open(filename).read())
+
+
+class TestWriteFile(TestCase):
+
+    def test_write_file(self):
+        directory = self.makeTemporaryDirectory()
+        filename = os.path.join(directory, 'filename')
+        content = self.getUniqueString()
+        write_file(filename, content)
+        self.assertThat(filename, FileContains(content))
 
 
 class TestUntilNoEINTR(TestCase):

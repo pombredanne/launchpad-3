@@ -15,7 +15,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import QuestionRecipientSet
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.model.questionjob import QuestionEmailJob
@@ -29,6 +28,7 @@ from lp.answers.notification import (
 from lp.registry.interfaces.person import IPerson
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 def pop_questionemailjobs():

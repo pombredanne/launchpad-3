@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ILicensesModifiedEvent',
     'InvalidProductName',
     'IProduct',
     'IProductModerateRestricted',
@@ -39,7 +40,10 @@ from lazr.restful.declarations import (
     export_factory_operation,
     export_operation_as,
     export_read_operation,
+    export_write_operation,
     exported,
+    mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -51,6 +55,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -68,17 +73,14 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -92,6 +94,7 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
+from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
@@ -218,26 +221,26 @@ def sourceforge_project_name_validator(project_name):
 
 
 class LicenseStatus(DBEnumeratedType):
-    """The status of a project's license review."""
+    """The status of a project's licence review."""
 
     OPEN_SOURCE = DBItem(
         10, "Open Source",
-        u"This project&rsquo;s license is open source.")
+        u"This project&rsquo;s licence is open source.")
     PROPRIETARY = DBItem(
         20, "Proprietary",
-        u"This project&rsquo;s license is proprietary.")
+        u"This project&rsquo;s licence is proprietary.")
     UNREVIEWED = DBItem(
         30, "Unreviewed",
-        u"This project&rsquo;s license has not been reviewed.")
+        u"This project&rsquo;s licence has not been reviewed.")
     UNSPECIFIED = DBItem(
         40, "Unspecified",
-        u"This project&rsquo;s license has not been specified.")
+        u"This project&rsquo;s licence has not been specified.")
 
 
 class License(DBEnumeratedType):
-    """Licenses under which a project's code can be released."""
+    """Licences under which a project's code can be released."""
 
-    # Sort licenses alphabetically by their description.
+    # Sort licences alphabetically by their description.
     sort_order = (
         'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
         'BSD', 'COMMON_PUBLIC',
@@ -249,31 +252,31 @@ class License(DBEnumeratedType):
         'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(
-        10, "Academic Free License",
+        10, "Academic Free Licence",
         url='http://www.opensource.org/licenses/afl-3.0.php')
     AFFERO = DBItem(
         20, "GNU Affero GPL v3",
         url='http://www.opensource.org/licenses/agpl-v3.html')
     APACHE = DBItem(
-        30, "Apache License",
+        30, "Apache Licence",
         url='http://www.opensource.org/licenses/apache2.0.php')
     ARTISTIC = DBItem(
-        40, "Artistic License 1.0",
+        40, "Artistic Licence 1.0",
         url='http://opensource.org/licenses/artistic-license-1.0.php')
     ARTISTIC_2_0 = DBItem(
-        45, 'Artistic License 2.0',
+        45, 'Artistic Licence 2.0',
         url='http://www.opensource.org/licenses/artistic-license-2.0.php')
     BSD = DBItem(
-        50, "Simplified BSD License",
+        50, "Simplified BSD Licence",
         url='http://www.opensource.org/licenses/bsd-license.php')
     COMMON_PUBLIC = DBItem(
-        80, "Common Public License",
+        80, "Common Public Licence",
         url='http://www.opensource.org/licenses/cpl1.0.php')
     ECLIPSE = DBItem(
-        90, "Eclipse Public License",
+        90, "Eclipse Public Licence",
         url='http://www.opensource.org/licenses/eclipse-1.0.php')
     EDUCATIONAL_COMMUNITY = DBItem(
-        100, "Educational Community License",
+        100, "Educational Community Licence",
         url='http://www.opensource.org/licenses/ecl2.php')
     GNU_GPL_V2 = DBItem(
         130, "GNU GPL v2",
@@ -288,31 +291,31 @@ class License(DBEnumeratedType):
         155, "GNU LGPL v3",
         url='http://www.opensource.org/licenses/lgpl-3.0.html')
     MIT = DBItem(
-        160, "MIT / X / Expat License",
+        160, "MIT / X / Expat Licence",
         url='http://www.opensource.org/licenses/mit-license.php')
     MPL = DBItem(
-        170, "Mozilla Public License",
+        170, "Mozilla Public Licence",
         url='http://www.opensource.org/licenses/mozilla1.1.php')
     OPEN_SOFTWARE = DBItem(
-        190, "Open Software License v 3.0",
+        190, "Open Software Licence v 3.0",
         url='http://www.opensource.org/licenses/osl-3.0.php')
     # XXX BarryWarsaw 2009-06-10 There is really no such thing as the "Perl
-    # License".  See bug 326308 for details.  We can't remove this option
+    # Licence".  See bug 326308 for details.  We can't remove this option
     # because of the existing data in production, however the plan is to hide
     # this choice from users during project creation as part of bug 333932.
     PERL = DBItem(
-        200, "Perl License")
+        200, "Perl Licence")
     PHP = DBItem(
-        210, "PHP License",
+        210, "PHP Licence",
         url='http://www.opensource.org/licenses/php.php')
     PUBLIC_DOMAIN = DBItem(
         220, "Public Domain",
         url='https://answers.launchpad.net/launchpad/+faq/564')
     PYTHON = DBItem(
-        230, "Python License",
+        230, "Python Licence",
         url='http://www.opensource.org/licenses/PythonSoftFoundation.php')
     ZPL = DBItem(
-        280, "Zope Public License",
+        280, "Zope Public Licence",
         url='http://www.opensource.org/licenses/zpl.php')
     CC_BY = DBItem(
         300, 'Creative Commons - Attribution',
@@ -327,16 +330,28 @@ class License(DBEnumeratedType):
         330, "GNU GFDL no options",
         url='http://www.gnu.org/copyleft/fdl.html')
     OFL = DBItem(
-        340, "Open Font License v1.1",
+        340, "Open Font Licence v1.1",
         url='http://scripts.sil.org/OFL')
-    # This is a placeholder "license" for users who know they want something
-    # open source but haven't yet chosen a license for their project.  We do
+    # This is a placeholder "licence" for users who know they want something
+    # open source but haven't yet chosen a licence for their project.  We do
     # not want to block them from registering their project, but this choice
     # will allow us to nag them later.
     DONT_KNOW = DBItem(3000, "I don't know yet")
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
+
+
+class ILicensesModifiedEvent(Interface):
+    """A Product's licenses were changed."""
+
+    def __init__(self, product, user=None):
+        """Create an an event about a licence change to a product.
+
+        :param product: The product that was modified.
+        :param user: The user who modified the object. The user comes from
+            the current interaction if the user is not provided.
+        """
 
 
 class IProductDriverRestricted(Interface):
@@ -381,7 +396,7 @@ class IProductModerateRestricted(Interface):
             title=_('Notes for the project reviewer'),
             required=False,
             description=_(
-                "Notes on the project's license, editable only by reviewers "
+                "Notes on the project's licence, editable only by reviewers "
                 "(Admins and Commercial Admins).")))
 
     is_permitted = exported(
@@ -402,9 +417,9 @@ class IProductModerateRestricted(Interface):
 
     license_approved = exported(
         Bool(
-            title=_("License approved"),
+            title=_("Licence approved"),
             description=_(
-                "The project is legitimate and its license appears valid. "
+                "The project is legitimate and its licence appears valid. "
                 "Not applicable to 'Other/Proprietary'.")))
 
 
@@ -615,20 +630,20 @@ class IProductPublic(
         description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
-    private_bugs = Bool(title=_('Private bugs'),
+    private_bugs = exported(Bool(title=_('Private bugs'), readonly=True,
                         description=_(
                             "Whether or not bugs reported into this project "
-                            "are private by default."))
+                            "are private by default.")))
     licenses = exported(
-        Set(title=_('Licenses'),
+        Set(title=_('Licences'),
             value_type=Choice(vocabulary=License)))
 
     license_info = exported(
         Description(
-            title=_('Description of additional licenses'),
+            title=_('Description of additional licences'),
             required=False,
             description=_(
-                "Description of licenses that do not appear in the list "
+                "Description of licences that do not appear in the list "
                 "above.")))
 
     bugtracker = exported(
@@ -727,8 +742,11 @@ class IProductPublic(
                     "Whether the project's licensing requires a new "
                     "commercial subscription to use launchpad.")))
 
+    has_current_commercial_subscription = Attribute("""
+        Whether the project has a current commercial subscription.""")
+
     license_status = Attribute("""
-        Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
+        Whether the licence is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
     remote_product = exported(
         TextLine(
@@ -741,6 +759,24 @@ class IProductPublic(
         _("Series that are active and/or have been packaged."))
 
     packagings = Attribute(_("All the packagings for the project."))
+
+    def checkPrivateBugsTransitionAllowed(private_bugs, user):
+        """Can the private_bugs attribute be changed to the value by the user?
+
+        Generally, the permission is restricted to ~registry or ~admin or
+        bug supervisors.
+        In addition, a valid commercial subscription is required to turn on
+        private bugs when being done by a bug supervisor. However, no
+        commercial subscription is required to turn off private bugs.
+        """
+
+    @mutator_for(private_bugs)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(private_bugs=copy_field(private_bugs))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setPrivateBugs(private_bugs, user):
+        """Mutator for private_bugs that checks entitlement."""
 
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
@@ -916,7 +952,7 @@ class IProductSet(Interface):
     @operation_parameters(
         search_text=TextLine(title=_("Search text")),
         active=Bool(title=_("Is the project active")),
-        project_reviewed=Bool(title=_("Is the project license reviewed")),
+        project_reviewed=Bool(title=_("Is the project licence reviewed")),
         licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
         created_after=Date(title=_("Created after date")),

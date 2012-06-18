@@ -26,7 +26,7 @@
     <ul class="bulleted" style="clear:left;">
       <li><a href="+purchase-subscription">Purchase a subscription.</a></li>
       <li><a href="mailto:commercial@launchpad.net">Contact us</a>
-          about changing your license.
+          about changing your licence.
       </li>
     </ul>
     <p>
@@ -36,19 +36,19 @@
     <ul class="bulleted">
       <li>Must make the source code freely available.</li>
       <li>Must allow modification and distribution of modified copies under
-          the same license.</li>
+          the same licence.</li>
       <li>Must allow redistribution.</li>
       <li>Must not require royalty payments or any other fee for
           redistribution or modification.</li>
       <li>Must allow these rights to be passed on along with the software.</li>
       <li>Must not discriminate against persons, groups or against fields
           of endeavour.</li>
-      <li>Must not be distributed under a license specific to Ubuntu.</li>
-      <li>Must not contaminate other software licenses.</li>
+      <li>Must not be distributed under a licence specific to Ubuntu.</li>
+      <li>Must not contaminate other software licences.</li>
     </ul>
 
     <p>
-      <a tal:define="config modules/canonical.config/config"
+      <a tal:define="config modules/lp.services.config/config"
         tal:attributes="href config/commercial/licensing_policy_url">
         View licensing policies
       </a>

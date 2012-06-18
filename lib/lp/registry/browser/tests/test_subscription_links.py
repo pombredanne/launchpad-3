@@ -5,33 +5,31 @@
 
 __metaclass__ = type
 
-import re
-import simplejson
 import unittest
-from zope.component import getUtility
-from BeautifulSoup import BeautifulSoup
 
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.testing.pages import first_tag_by_class
-from canonical.testing.layers import DatabaseFunctionalLayer
+from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
+from zope.component import getUtility
 
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.milestone import ProjectMilestone
+from lp.services.webapp.interaction import ANONYMOUS
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
-    celebrity_logged_in,
-    person_logged_in,
     BrowserTestCase,
+    celebrity_logged_in,
+    extract_lp_cache,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import first_tag_by_class
 from lp.testing.sampledata import ADMIN_EMAIL
-from lp.testing.views import (
-    create_initialized_view,
-    )
+from lp.testing.views import create_initialized_view
 
 
 class _TestResultsMixin:
@@ -71,17 +69,13 @@ class _TestResultsMixin:
             None, self.new_edit_link,
             "Expected edit_bug_mail link missing")
         # Ensure the LP.cache has been populated.
-        mo = re.search(
-            r'<script>\s*LP.cache\s*=\s*({.*?});\s*</script>', self.contents)
-        if mo is None:
-            self.fail('No JSON cache found')
-        cache = simplejson.loads(mo.group(1))
+        cache = extract_lp_cache(self.contents)
         self.assertIn('administratedTeams', cache)
         # Ensure the call to setup the subscription is in the HTML.
         # Only check for the presence of setup's configuration step; more
         # detailed checking is needlessly brittle.
 
-        # A windmill test is required to ensure that the call actually
+        # A yuixhr test is required to ensure that the call actually
         # succeeded, by checking the link class for 'js-action'.
         setup = ('{content_box: "#structural-subscription-content-box"});')
         self.assertTrue(setup in self.contents)
@@ -95,6 +89,9 @@ class _TestStructSubs(TestCaseWithFactory, _TestResultsMixin):
     def setUp(self):
         super(_TestStructSubs, self).setUp()
         self.regular_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _create_scenario(self, user):
         with person_logged_in(user):
@@ -136,7 +133,7 @@ class ProductBugs(ProductView):
     """Test structural subscriptions on the product bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class ProjectGroupView(_TestStructSubs):
@@ -196,7 +193,7 @@ class ProductSeriesBugs(ProductSeriesView):
     """Test structural subscriptions on the product series bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
     def setUp(self):
         super(ProductSeriesBugs, self).setUp()
@@ -251,6 +248,9 @@ class DistroView(BrowserTestCase, _TestResultsMixin):
         with person_logged_in(self.target.owner):
             self.target.official_malone = True
         self.regular_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _create_scenario(self, user):
         with person_logged_in(user):
@@ -310,7 +310,7 @@ class DistroBugs(DistroView):
     """Test structural subscriptions on the distro bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
     def test_subscribe_link_owner(self):
         self._create_scenario(self.target.owner)
@@ -477,7 +477,7 @@ class ProductDoesNotUseLPBugs(ProductDoesNotUseLPView):
     """Test structural subscriptions on the product bugs view."""
 
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class ProjectGroupDoesNotUseLPView(_DoesNotUseLP):
@@ -588,7 +588,7 @@ class DistroDoesNotUseLPView(DistroView):
 
 class DistroDoesNotUseLPBugs(DistroDoesNotUseLPView):
     rootsite = 'bugs'
-    view = '+bugs-index'
+    view = '+bugs'
 
 
 class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):
@@ -642,7 +642,7 @@ class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):
 class ProductMilestoneDoesNotUseLPView(ProductMilestoneView):
 
     def setUp(self):
-        BrowserTestCase.setUp(self)
+        super(ProductMilestoneDoesNotUseLPView, self).setUp()
         self.product = self.factory.makeProduct()
         with person_logged_in(self.product.owner):
             self.product.official_malone = False

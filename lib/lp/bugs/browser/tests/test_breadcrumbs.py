@@ -5,8 +5,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
@@ -17,7 +17,7 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         super(TestBugTaskBreadcrumb, self).setUp()
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
-        self.bug = self.factory.makeBug(product=product)
+        self.bug = self.factory.makeBug(product=product, title='borked')
         self.bugtask = self.bug.default_bugtask
         self.bugtask_url = canonical_url(self.bugtask, rootsite='bugs')
 
@@ -26,6 +26,8 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         last_crumb = crumbs[-1]
         self.assertEquals(self.bugtask_url, last_crumb.url)
         self.assertEquals("Bug #%d" % self.bug.id, last_crumb.text)
+        self.assertEquals(
+            u"Bug #%d \u201cborked\u201d" % self.bug.id, last_crumb.detail)
 
     def test_bugtask_child(self):
         crumbs = self.getBreadcrumbsForObject(
@@ -77,3 +79,22 @@ class TestBugTrackerBreadcrumbs(BaseBreadcrumbTestCase):
             (self.bug_tracker.title, self.bug_tracker_url),
             ]
         self.assertBreadcrumbs(expected_breadcrumbs, self.bug_tracker)
+
+
+class BugsVHostBreadcrumbTestCase(BaseBreadcrumbTestCase):
+
+    def test_person(self):
+        person = self.factory.makePerson(name='snarf')
+        person_bugs_url = canonical_url(person, rootsite='bugs')
+        crumbs = self.getBreadcrumbsForObject(person, rootsite='bugs')
+        last_crumb = crumbs[-1]
+        self.assertEquals(person_bugs_url, last_crumb.url)
+        self.assertEquals("Bugs", last_crumb.text)
+
+    def test_bugtarget(self):
+        project = self.factory.makeProduct(name='fnord')
+        project_bugs_url = canonical_url(project, rootsite='bugs')
+        crumbs = self.getBreadcrumbsForObject(project, rootsite='bugs')
+        last_crumb = crumbs[-1]
+        self.assertEquals(project_bugs_url, last_crumb.url)
+        self.assertEquals("Bugs", last_crumb.text)

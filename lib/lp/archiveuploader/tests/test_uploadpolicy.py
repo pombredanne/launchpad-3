@@ -3,14 +3,16 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
     AbstractUploadPolicy,
     ArchiveUploadType,
     )
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestUploadPolicy_validateUploadType(TestCase):

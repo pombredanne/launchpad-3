@@ -15,7 +15,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
 
 
@@ -39,7 +39,7 @@ class ITranslationRelicensingAgreement(Interface):
         readonly=False, required=True, schema=IPerson)
 
     allow_relicensing = Bool(
-        title=_("Whether the person agreed to the BSD license"),
+        title=_("Whether the person agreed to the BSD licence"),
         readonly=False, default=True, required=True)
 
     date_decided = Datetime(
@@ -49,7 +49,7 @@ class ITranslationRelicensingAgreement(Interface):
 
 class TranslationRelicensingAgreementOptions(EnumeratedType):
     BSD = Item("License all my translations in Launchpad "
-               "under the BSD license")
+               "under the BSD licence")
     REMOVE = Item("Not make translations in Launchpad")
 
 

@@ -8,11 +8,9 @@ __metaclass__ = type
 from zope.interface import (
     implements,
     Interface,
-)
-
+    )
 from zope.schema import Choice
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.lazrjs import (
     InlineEditPickerWidget,
     InlinePersonEditPickerWidget,
@@ -21,6 +19,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestInlineEditPickerWidget(TestCaseWithFactory):

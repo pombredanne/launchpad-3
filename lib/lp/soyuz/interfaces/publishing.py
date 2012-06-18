@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -54,7 +54,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -495,6 +495,25 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=True
         ))
 
+    sponsor = exported(
+        Reference(
+            IPerson,
+            title=_('Publication sponsor'),
+            description=_('The IPerson who sponsored the creation of '
+                'this publication.'),
+            required=False, readonly=True
+        ))
+
+    packageupload = exported(
+        Reference(
+            # Really IPackageUpload, fixed in _schema_circular_imports.
+            Interface,
+            title=_('Package upload'),
+            description=_('The Package Upload that caused the creation of '
+                'this publication.'),
+            required=False, readonly=True
+        ))
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
@@ -628,6 +647,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             `IOverridePolicy`.
         :param creator: the `IPerson` to use as the creator for the copied
             publication.
+        :param packageupload: The `IPackageUpload` that caused this
+            publication to be created.
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -712,6 +733,9 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         required=False, readonly=False)
     binarypackagerelease = Attribute(
         "The binary package release being published")
+    distroarchseriesID = Int(
+        title=_("The DB id for the distroarchseries."),
+        required=False, readonly=False)
     distroarchseries = exported(
         Reference(
             # Really IDistroArchSeries (fixed in
@@ -901,6 +925,14 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         :param end_date: The optional last date to return.
         """
 
+    @export_read_operation()
+    @operation_for_version("devel")
+    def binaryFileUrls():
+        """URLs for this binary publication's binary files.
+
+        :return: A collection of URLs for this binary.
+        """
+
 
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
                                       IPublishingEdit):
@@ -1001,6 +1033,10 @@ class IPublishingSet(Interface):
              should be created for the new source publication.
         :param creator: An optional `IPerson`. If this is None, the
             sourcepackagerelease's creator will be used.
+        :param sponsor: An optional `IPerson` indicating the sponsor of this
+            publication.
+        :param packageupload: An optional `IPackageUpload` that caused this
+            publication to be created.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING

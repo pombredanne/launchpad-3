@@ -12,11 +12,11 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
+    get_contact_email_addresses,
     get_person_or_team,
     IncomingEmailError,
     parse_commands,
@@ -25,11 +25,13 @@ from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
+from lp.services.webapp.interaction import get_current_principal
 from lp.testing import (
     login_person,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestParseCommands(TestCase):
@@ -220,6 +222,34 @@ class TestGetPersonOrTeam(TestCaseWithFactory):
             owner=owner, email='fooix-devs@lists.example.com')
         self.assertEqual(
             team, get_person_or_team('fooix-devs@lists.example.com'))
+
+
+class Testget_contact_email_addresses(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_person_with_hidden_email(self):
+        user = self.factory.makePerson(
+            email='user@canonical.com',
+            hide_email_addresses=True,
+            name='user')
+        result = get_contact_email_addresses(user)
+        self.assertEqual(set(['user@canonical.com']), result)
+
+    def test_user_with_preferredemail(self):
+        user = self.factory.makePerson(
+            email='user@canonical.com', name='user',)
+        result = get_contact_email_addresses(user)
+        self.assertEqual(set(['user@canonical.com']), result)
+
+    def test_private_team(self):
+        email = 'team@canonical.com'
+        team = self.factory.makeTeam(
+            name='breaks-things',
+            email=email,
+            visibility=PersonVisibility.PRIVATE)
+        result = get_contact_email_addresses(team)
+        self.assertEqual(set(['team@canonical.com']), result)
 
 
 def test_suite():

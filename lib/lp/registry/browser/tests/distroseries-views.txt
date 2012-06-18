@@ -158,7 +158,7 @@ uses the displayname, title, and description fields.
 
     >>> driver = factory.makePerson(name='ubuntu-driver')
     >>> hoary.driver = driver
-    >>> login_person(driver)
+    >>> ignored = login_person(driver)
     >>> view = create_initialized_view(hoary, '+edit')
     >>> print view.label
     Edit The Hoary Hedgehog Release details
@@ -189,7 +189,7 @@ Series that belong to derivative distributions also contain the status field.
 
     >>> yo_driver = factory.makePerson(name='yo-driver')
     >>> youbuntu.driver = yo_driver
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
     >>> view = create_initialized_view(yo_series, '+edit')
     >>> print view.label
     Edit Melon details
@@ -243,7 +243,7 @@ A distroseries is created whent the required field are submitted.
 
 Administrators can create series, but normal users cannot.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> check_permission('launchpad.Driver', view)
     True
@@ -259,7 +259,7 @@ Drivers can create distro series
 Users who are appointed as drivers of a distribution can create a series.
 Most distributions are an `IDerivativeDistribution`.
 
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
     >>> check_permission('launchpad.Moderate', view)
     True
@@ -282,9 +282,9 @@ is an `IBaseDistribution`.
     >>> ubuntu.full_functionality
     True
 
-    >>> login_person(ubuntu.owner.teamowner)
+    >>> ignored = login_person(ubuntu.owner.teamowner)
     >>> ubuntu.driver = yo_driver
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
     >>> check_permission('launchpad.Edit', view)
     False
@@ -299,7 +299,7 @@ to a `IDerivativeDistribution`.
     >>> print yo_series.driver.name
     yo-driver
 
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
     >>> view = create_view(yo_series, name='+edit')
     >>> check_permission('launchpad.Edit', view)
     True
@@ -319,9 +319,9 @@ to a `IDerivativeDistribution`.
 
 Drivers of an `IBaseDistribution` such as Ubuntu cannot edit a series.
 
-    >>> login_person(ubuntu.owner.teamowner)
+    >>> ignored = login_person(ubuntu.owner.teamowner)
     >>> hoary.driver = yo_driver
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
 
     >>> view = create_view(hoary, name='+edit')
     >>> check_permission('launchpad.Edit', view)

@@ -9,14 +9,14 @@ __all__ = []
 
 import transaction
 
-from canonical.launchpad.ftests import login_person
-from canonical.testing import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.testing import (
+    login_person,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
     )
 
 

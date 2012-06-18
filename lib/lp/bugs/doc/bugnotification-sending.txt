@@ -124,7 +124,7 @@ still None:
 
 Setting date_emailed to some date causes it not to be pending anymore:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> notifications[0].date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
     >>> pending_notifications = getUtility(
@@ -349,24 +349,10 @@ notification will be sent to all members individually.
 Duplicates
 ----------
 
-We will need some helper functions.
-
-    >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
-
-    >>> def switch_db_to_launchpad():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> def switch_db_to_bugnotification():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(
-    ...         config.malone.bugnotification_dbuser)
-
-We will also need a fresh new bug.
+We will need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> description = getUtility(IMessageSet).fromText(
@@ -433,12 +419,7 @@ inserted at the top of the message body.
     ...     sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
-    ...         security_related=True, private=True))
-
-    >>> sec_vuln_bug.security_related
-    True
-    >>> sec_vuln_bug.private
-    True
+    ...         information_type=InformationType.EMBARGOEDSECURITY))
 
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
@@ -651,8 +632,9 @@ The X-Launchpad-Bug header
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
 
-    >>> bug_three = getUtility(IBugSet).get(3)
-    >>> subscription = bug_three.subscribe(sample_person, sample_person)
+    >>> with lp_dbuser():
+    ...      bug_three = getUtility(IBugSet).get(3)
+    ...      subscription = bug_three.subscribe(sample_person, sample_person)
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a short comment.', sample_person,
@@ -743,64 +725,59 @@ won't be included.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
-    >>> #bug_three.unsubscribe(sample_person, sample_person)
 
-
-The X-Launchpad-Bug-Private header
-----------------------------------
+The X-Launchpad-Bug-Information-Type header
+-------------------------------------------
 
 When a notification is sent out about a bug, the
-X-Launchpad-Bug-Private header shows if the bug is marked as
-private. It can have the value "yes" or "no".
+X-Launchpad-Bug-Information-Type header shows the information type value
+assigned to the bug. For backwards compatibility, the X-Launchpad-Bug-Private
+and X-Launchpad-Bug-Security-Vulnerability headers are also set. These headers
+can have the value "yes" or "no".
 
-    >>> bug_three.private
-    False
+    >>> print bug_three.information_type.title
+    Public
+
+    >>> def print_message_header_details(message):
+    ...     print '%s %s %s %s' % (
+    ...         message['To'],
+    ...         message.get_all('X-Launchpad-Bug-Private'),
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
+    ...         message.get_all('X-Launchpad-Bug-Information-Type'))
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    test@canonical.com ['no']
+    ...     print_message_header_details(message)
+    test@canonical.com ['no'] ['no'] ['Public']
 
 Predictably, private bugs are sent with a slightly different header:
 
     >>> with lp_dbuser():
-    ...     bug_three.setPrivate(True, sample_person)
+    ...     bug_three.transitionToInformationType(
+    ...         InformationType.USERDATA, sample_person)
     True
-    >>> bug_three.private
-    True
+    >>> print bug_three.information_type.title
+    User Data
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    test@canonical.com ['yes']
+    ...     print_message_header_details(message)
+    foo.bar@canonical.com ['yes'] ['no'] ['User Data']
+    mark@example.com ['yes'] ['no']  ['User Data']
+    test@canonical.com ['yes'] ['no']  ['User Data']
 
-
-The X-Launchpad-Bug-Security-Vulnerability header
--------------------------------------------------
-
-When a notification is sent out about a bug, the
-X-Launchpad-Bug-Security-Vulnerability header records if the bug is a
-security vulnerability. It can have the value "yes" or "no".
-
-    >>> bug_three.security_related
-    False
-
-    >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], (
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    test@canonical.com ['no']
-
-The presence of the security flag on a bug is, surprise, denoted by a
-simple "yes":
+Now transition the bug to embargoed security:
 
     >>> with lp_dbuser():
-    ...     bug_three.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    ...     bug_three.transitionToInformationType(
+    ...         InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)
     True
-    >>> bug_three.security_related
-    True
+    >>> print bug_three.information_type.title
+    Embargoed Security
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], (
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    test@canonical.com ['yes']
+    ...     print_message_header_details(message)
+    foo.bar@canonical.com ['yes'] ['yes'] ['Embargoed Security']
+    mark@example.com ['yes'] ['yes']  ['Embargoed Security']
+    test@canonical.com ['yes'] ['yes']  ['Embargoed Security']
 
 
 The X-Launchpad-Bug-Commenters header
@@ -1125,7 +1102,7 @@ notification level of the subscription.
 
     >>> flush_notifications()
 
-    >>> from lp.bugs.enum import BugNotificationLevel
+    >>> from lp.bugs.enums import BugNotificationLevel
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')

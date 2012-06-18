@@ -12,11 +12,6 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.registry.model.distribution import Distribution
@@ -24,6 +19,11 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class BranchListingQueryOptimiser:

@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bring a new slave online."""
@@ -8,27 +8,28 @@
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from optparse import OptionParser
 import subprocess
 import sys
 from textwrap import dedent
 import time
 
-import _pythonpath
 import psycopg2
-import replication.helpers
-from replication.helpers import LPMAIN_SET_ID
 
-from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import (
+from lp.services.database.postgresql import ConnectionString
+from lp.services.database.sqlbase import (
     connect_string,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,
     )
+import replication.helpers
+from replication.helpers import LPMAIN_SET_ID
 
 
 def main():
@@ -120,12 +121,10 @@ def main():
             "Database at %s is not empty." % target_connection_string)
     target_con.rollback()
 
-    # Duplicate the full schema. We restore with no-privileges as required
-    # roles may not yet exist, so we have to run security.py on the
-    # new slave once it is built.
+    # Duplicate the full schema.
     log.info("Duplicating full db schema from '%s' to '%s'" % (
         lpmain_connection_string, target_connection_string))
-    cmd = "pg_dump --schema-only --no-privileges %s | psql -1 -q %s" % (
+    cmd = "pg_dump --schema-only %s | psql -1 -q %s" % (
         source_connection_string.asPGCommandLineArgs(),
         target_connection_string.asPGCommandLineArgs())
     if subprocess.call(cmd, shell=True) != 0:
@@ -218,13 +217,10 @@ def main():
         subscribe set (
             id=%d, provider=@master_node, receiver=@new_node, forward=yes);
         echo 'Waiting for subscribe to start processing.';
-        echo 'This will block on long running transactions.';
-        sync (id = @master_node);
         wait for event (
             origin = @master_node, confirmed = ALL,
             wait on = @master_node, timeout = 0);
         """ % (set_id, set_id))
-        script += full_sync
 
     replication.helpers.execute_slonik(script)
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -29,6 +29,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import Join
+from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
@@ -37,22 +38,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.helpers import shortlist
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
@@ -60,6 +45,20 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
     SourcePackageUrgency,
+    )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
     )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
@@ -205,6 +204,8 @@ class SourcePackageRelease(SQLBase):
         """See `ISourcePackageRelease`."""
         store = Store.of(self)
         store.flush()
+        if content is not None:
+            content = unicode(content)
         store.execute(
             "UPDATE sourcepackagerelease SET copyright=%s WHERE id=%s",
             (content, self.id))
@@ -417,55 +418,76 @@ class SourcePackageRelease(SQLBase):
             pocket=pocket,
             archive=archive)
 
+    def findBuildsByArchitecture(self, distroseries, archive):
+        """Find associated builds, by architecture.
+
+        Looks for `BinaryPackageBuild` records for this source package
+        release, with publication records in the distroseries associated with
+        `distroarchseries`.  There should be at most one of these per
+        architecture.
+
+        :param distroarchseries: `DistroArchSeries` to look for.
+        :return: A dict mapping architecture tags (in string form,
+            e.g. 'i386') to `BinaryPackageBuild`s for that build.
+        """
+        # Avoid circular imports.
+        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        BuildDAS = ClassAlias(DistroArchSeries, 'BuildDAS')
+        PublishDAS = ClassAlias(DistroArchSeries, 'PublishDAS')
+
+        query = Store.of(self).find(
+            (BuildDAS.architecturetag, BinaryPackageBuild),
+            BinaryPackageBuild.source_package_release == self,
+            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
+            BuildDAS.id == BinaryPackageBuild.distro_arch_series_id,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            PublishDAS.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID,
+            PublishDAS.distroseriesID == distroseries.id,
+            # Architecture-independent binary package releases are built
+            # in the nominated arch-indep architecture but published in
+            # all architectures.  This condition makes sure we consider
+            # only builds that have been published in their own
+            # architecture.
+            PublishDAS.architecturetag == BuildDAS.architecturetag)
+        results = list(query.config(distinct=True))
+        mapped_results = dict(results)
+        assert len(mapped_results) == len(results), (
+            "Found multiple build candidates per architecture: %s.  "
+            "This may mean that we have a serious problem in our DB model.  "
+            "Further investigation is required."
+            % [(tag, build.id) for tag, build in results])
+        return mapped_results
+
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
         # First we try to follow any binaries built from the given source
         # in a distroarchseries with the given architecturetag and published
         # in the given (distroarchseries, archive) location.
-        clauseTables = [
-            'BinaryPackagePublishingHistory', 'BinaryPackageRelease',
-            'DistroArchSeries']
-
-        query = """
-            BinaryPackageBuild.source_package_release = %s AND
-            BinaryPackageRelease.build = BinaryPackageBuild.id AND
-            DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND
-            DistroArchSeries.architecturetag = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive = %s
-        """ % sqlvalues(self, distroarchseries.architecturetag,
-                        distroarchseries, archive)
-
-        select_results = BinaryPackageBuild.select(
-            query, clauseTables=clauseTables, distinct=True,
-            orderBy='-BinaryPackageBuild.id')
-
-        # XXX cprov 20080216: this if/elif/else block could be avoided or,
-        # at least, simplified if SelectOne accepts 'distinct' argument.
-        # The query above results in multiple identical builds for ..
-        results = list(select_results)
-        if len(results) == 1:
+        # (Querying all architectures and then picking the right one out
+        # of the result turns out to be much faster than querying for
+        # just the architecture we want).
+        builds_by_arch = self.findBuildsByArchitecture(
+            distroarchseries.distroseries, archive)
+        build = builds_by_arch.get(distroarchseries.architecturetag)
+        if build is not None:
             # If there was any published binary we can use its original build.
-            # This case covers the situations when both, source and binaries
+            # This case covers the situations when both source and binaries
             # got copied from another location.
-            return results[0]
-        elif len(results) > 1:
-            # If more than one distinct build was found we have a problem.
-            # A build was created when it shouldn't, possible due to bug
-            # #181736. The broken build should be manually removed.
-            raise AssertionError(
-                    "Found more than one build candidate: %s. It possibly "
-                    "means we have a serious problem in out DB model, "
-                    "further investigation is required." %
-                    [build.id for build in results])
-        else:
-            # If there was no published binary we have to try to find a
-            # suitable build in all possible location across the distroseries
-            # inheritance tree. See bellow.
-            pass
+            return build
 
+        # If there was no published binary we have to try to find a
+        # suitable build in all possible location across the distroseries
+        # inheritance tree. See below.
+        clause_tables = [
+            'BuildFarmJob',
+            'PackageBuild',
+            'DistroArchSeries',
+            ]
         queries = [
             "BinaryPackageBuild.package_build = PackageBuild.id AND "
             "PackageBuild.build_farm_job = BuildFarmJob.id AND "
@@ -480,8 +502,7 @@ class SourcePackageRelease(SQLBase):
         query = " AND ".join(queries)
 
         return BinaryPackageBuild.selectFirst(
-            query, clauseTables=[
-                'BuildFarmJob', 'PackageBuild', 'DistroArchSeries'],
+            query, clauseTables=clause_tables,
             orderBy=['-BuildFarmJob.date_created'])
 
     def override(self, component=None, section=None, urgency=None):
@@ -618,7 +639,7 @@ class SourcePackageRelease(SQLBase):
         if self.changelog is None:
             return None
 
-        apt_pkg.InitSystem()
+        apt_pkg.init_system()
         chunks = []
         changelog = self.changelog
         # The python-debian API for parsing changelogs is pretty awful. The
@@ -628,7 +649,7 @@ class SourcePackageRelease(SQLBase):
             for block in Changelog(changelog.read()):
                 version = block._raw_version
                 if (since_version and
-                    apt_pkg.VersionCompare(version, since_version) <= 0):
+                    apt_pkg.version_compare(version, since_version) <= 0):
                     break
                 # Poking in private attributes is not nice but again the
                 # API is terrible.  We want to ensure that the name/date

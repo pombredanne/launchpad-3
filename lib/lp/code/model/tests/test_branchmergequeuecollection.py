@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge queue collections."""
@@ -8,8 +8,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branchmergequeuecollection import (
     IAllBranchMergeQueues,
@@ -20,7 +18,10 @@ from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.code.model.branchmergequeuecollection import (
     GenericBranchMergeQueueCollection,
     )
+from lp.registry.enums import InformationType
+from lp.services.database.lpstorm import IMasterStore
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestGenericBranchMergeQueueCollection(TestCaseWithFactory):
@@ -65,8 +66,8 @@ class TestGenericBranchMergeQueueCollection(TestCaseWithFactory):
         # will be the size of that subset. That is, 'count' respects any
         # filters that are applied.
         person = self.factory.makePerson()
-        queue = self.factory.makeBranchMergeQueue(owner=person)
-        queue2 = self.factory.makeAnyBranch()
+        self.factory.makeBranchMergeQueue(owner=person)
+        self.factory.makeAnyBranch()
         collection = GenericBranchMergeQueueCollection(
             self.store, [BranchMergeQueue.owner == person])
         self.assertEqual(1, collection.count())
@@ -84,12 +85,14 @@ class TestBranchMergeQueueCollectionFilters(TestCaseWithFactory):
         # IBranchMergeQueueCollection.count() returns the number of queues
         # that getMergeQueues() yields, even when the visibleByUser filter is
         # applied.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         naked_branch = removeSecurityProxy(branch)
-        queue = self.factory.makeBranchMergeQueue(branches=[naked_branch])
-        branch2 = self.factory.makeAnyBranch(private=True)
+        self.factory.makeBranchMergeQueue(branches=[naked_branch])
+        branch2 = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         naked_branch2 = removeSecurityProxy(branch2)
-        queue2 = self.factory.makeBranchMergeQueue(branches=[naked_branch2])
+        self.factory.makeBranchMergeQueue(branches=[naked_branch2])
         collection = self.all_queues.visibleByUser(naked_branch.owner)
         self.assertEqual(1, len(collection.getMergeQueues()))
         self.assertEqual(1, collection.count())
@@ -98,7 +101,7 @@ class TestBranchMergeQueueCollectionFilters(TestCaseWithFactory):
         # 'ownedBy' returns a new collection restricted to queues owned by
         # the given person.
         queue = self.factory.makeBranchMergeQueue()
-        queue2 = self.factory.makeBranchMergeQueue()
+        self.factory.makeBranchMergeQueue()
         collection = self.all_queues.ownedBy(queue.owner)
         self.assertEqual([queue], collection.getMergeQueues())
 
@@ -113,13 +116,13 @@ class TestGenericBranchMergeQueueCollectionVisibleFilter(TestCaseWithFactory):
         self.queue_with_public_branch = self.factory.makeBranchMergeQueue(
             branches=[removeSecurityProxy(public_branch)])
         private_branch1 = self.factory.makeAnyBranch(
-            private=True, name='private1')
+            name='private1', information_type=InformationType.USERDATA)
         naked_private_branch1 = removeSecurityProxy(private_branch1)
         self.private_branch1_owner = naked_private_branch1.owner
         self.queue1_with_private_branch = self.factory.makeBranchMergeQueue(
             branches=[naked_private_branch1])
         private_branch2 = self.factory.makeAnyBranch(
-            private=True, name='private2')
+            name='private2', information_type=InformationType.USERDATA)
         self.queue2_with_private_branch = self.factory.makeBranchMergeQueue(
             branches=[removeSecurityProxy(private_branch2)])
         self.all_queues = getUtility(IAllBranchMergeQueues)
@@ -162,7 +165,8 @@ class TestGenericBranchMergeQueueCollectionVisibleFilter(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(team_owner)
         private_branch = self.factory.makeAnyBranch(
-            owner=team, private=True, name='team')
+            owner=team, name='team',
+            information_type=InformationType.USERDATA)
         queue_with_private_branch = self.factory.makeBranchMergeQueue(
             branches=[removeSecurityProxy(private_branch)])
         queues = self.all_queues.visibleByUser(team_owner)

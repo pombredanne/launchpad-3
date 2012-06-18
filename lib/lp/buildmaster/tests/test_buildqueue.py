@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=C0324
 
@@ -20,15 +20,6 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -43,6 +34,11 @@ from lp.buildmaster.model.buildqueue import (
     get_builder_data,
     )
 from lp.services.job.model.job import Job
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -52,6 +48,10 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def find_job(test, name, processor='386'):
@@ -1412,3 +1412,19 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         assign_to_builder(self, 'xxr-daptup', 1, None)
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
         check_estimate(self, postgres_job, 120)
+
+
+class TestBuildQueueManual(TestCaseWithFactory):
+    layer = ZopelessDatabaseLayer
+
+    def _makeBuildQueue(self):
+        """Produce a `BuildQueue` object to test."""
+        return self.factory.makeSourcePackageRecipeBuildJob()
+
+    def test_manualScore_prevents_rescoring(self):
+        # Manually-set scores are fixed.
+        buildqueue = self._makeBuildQueue()
+        initial_score = buildqueue.lastscore
+        buildqueue.manualScore(initial_score + 5000)
+        buildqueue.score()
+        self.assertEqual(initial_score + 5000, buildqueue.lastscore)

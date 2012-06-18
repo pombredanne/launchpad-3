@@ -17,7 +17,7 @@ sent to the Python logging system. Cronscripts (scripts using
 LaunchpadCronScript) also log warnings and and errors as OOPS reports.
 
     >>> import os.path, subprocess, sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> cronscript_crash_path = os.path.join(
     ...     config.root, 'lib', 'lp', 'services', 'scripts', 'tests',
     ...     'cronscript-crash.py')

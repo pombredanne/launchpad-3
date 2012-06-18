@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ApportJobs."""
@@ -12,17 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.bugs.interfaces.apportjob import (
     ApportJobType,
     IApportJob,
@@ -37,10 +26,24 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
+from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.tests import block_on_job
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.scripts.tests import run_script
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    CeleryJobLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.views import create_initialized_view
 
@@ -92,12 +95,8 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         super(ProcessApportBlobJobTestCase, self).setUp()
 
         # Create a BLOB using existing testing data.
-        testfiles = os.path.join(config.root, 'lib/lp/bugs/tests/testfiles')
-        blob_file = open(
-            os.path.join(testfiles, 'extra_filebug_data.msg'))
-        blob_data = blob_file.read()
 
-        self.blob = self.factory.makeBlob(blob_data)
+        self.blob = self.factory.makeBlob(blob_file='extra_filebug_data.msg')
         transaction.commit()  # We need the blob available from the Librarian.
 
     def _assertFileBugDataMatchesDict(self, filebug_data, data_dict):
@@ -126,7 +125,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             data_dict['hwdb_submission_keys'],
             "Values for hwdb_submission_keys do not match")
 
-        # The attachments list of of the data_dict dict will be of
+        # The attachments list of the data_dict dict will be of
         # the same length as the attachments list in the filebug_data
         # object.
         self.assertEqual(
@@ -308,6 +307,28 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # processed_data dict.
         processed_data = job.metadata.get('processed_data', None)
         self._assertFileBugDataMatchesDict(filebug_data, processed_data)
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_ProcessApportBlobJob(self):
+        # ProcessApportBlobJob runs under Celery.
+        blob = self.factory.makeBlob(blob_file='extra_filebug_data.msg')
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'ProcessApportBlobJob'}))
+        with block_on_job(self):
+            job = getUtility(IProcessApportBlobJobSource).create(blob)
+            transaction.commit()
+
+        # Once the job has been run, its metadata will contain a dict
+        # called processed_data, which will contain the data parsed from
+        # the BLOB.
+        processed_data = job.metadata.get('processed_data', None)
+        self.assertIsNot(
+            None, processed_data,
+            "processed_data should not be None after the job has run.")
 
 
 class TestTemporaryBlobStorageAddView(TestCaseWithFactory):

@@ -12,8 +12,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.sourcepackage import (
     get_register_upstream_url,
     PackageUpstreamTracking,
@@ -30,6 +28,8 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
 
 

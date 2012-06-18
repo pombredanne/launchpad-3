@@ -17,12 +17,19 @@ import os
 import shutil
 import sys
 
+from bzrlib import ui
 from bzrlib.branch import Branch
-from bzrlib.errors import BzrError, NotBranchError, IncompatibleRepositories
+from bzrlib.errors import (
+    BzrError,
+    IncompatibleRepositories,
+    NotBranchError,
+    )
 from bzrlib.plugin import load_plugins
 from bzrlib.revisionspec import RevisionSpec
-from bzrlib.trace import enable_default_logging, report_exception
-from bzrlib import ui
+from bzrlib.trace import (
+    enable_default_logging,
+    report_exception,
+    )
 from bzrlib.upgrade import upgrade
 from bzrlib.workingtree import WorkingTree
 
@@ -43,11 +50,13 @@ def parse_config_file(file_handle):
         yield line.split()
 
 
-def interpret_config_entry(entry):
+def interpret_config_entry(entry, use_http=False):
     """Interpret a single parsed line from the config file."""
     branch_name = entry[0]
     components = entry[1].split(';revno=')
     branch_url = components[0]
+    if use_http:
+        branch_url = branch_url.replace('lp:', 'http://bazaar.launchpad.net/')
     if len(components) == 1:
         revision = None
     else:
@@ -76,18 +85,19 @@ def load_cache(cache_filename):
         return json.load(cache_file)
 
 
-def interpret_config(config_entries, public_only):
+def interpret_config(config_entries, public_only, use_http=False):
     """Interpret a configuration stream, as parsed by 'parse_config_file'.
 
     :param configuration: A sequence of parsed configuration entries.
     :param public_only: If true, ignore private/optional branches.
+    :param use_http: If True, force all branch URLs to use http://
     :return: A dict mapping the names of the sourcecode dependencies to a
         2-tuple of their branches and whether or not they are optional.
     """
     config = {}
     for entry in config_entries:
         branch_name, branch_url, revision, optional = interpret_config_entry(
-            entry)
+            entry, use_http)
         if not optional or not public_only:
             config[branch_name] = (branch_url, revision, optional)
     return config
@@ -298,10 +308,11 @@ def remove_branches(sourcecode_directory, removed_branches, quiet=False):
 
 
 def update_sourcecode(sourcecode_directory, config_filename, cache_filename,
-                      public_only, tip, dry_run, quiet=False):
+                      public_only, tip, dry_run, quiet=False, use_http=False):
     """Update the sourcecode."""
     config_file = open(config_filename)
-    config = interpret_config(parse_config_file(config_file), public_only)
+    config = interpret_config(
+        parse_config_file(config_file), public_only, use_http)
     config_file.close()
     cache = load_cache(cache_filename)
     branches = find_branches(sourcecode_directory)
@@ -349,6 +360,10 @@ def main(args):
     parser.add_option(
         '--quiet', action='store_true',
         help="Don't print informational messages.")
+    parser.add_option(
+        '--use-http', action='store_true',
+        help="Force bzr to use http to get the sourcecode branches "
+             "rather than using bzr+ssh.")
     options, args = parser.parse_args(args)
     root = get_launchpad_root()
     if len(args) > 1:
@@ -373,5 +388,6 @@ def main(args):
     load_plugins()
     update_sourcecode(
         sourcecode_directory, config_filename, cache_filename,
-        options.public_only, options.tip, options.dry_run, options.quiet)
+        options.public_only, options.tip, options.dry_run, options.quiet,
+        options.use_http)
     return 0

@@ -11,23 +11,24 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     DistributionSourcePackageInDatabase,
     )
 from lp.registry.model.karma import KarmaTotalCache
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import flush_database_updates
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import HasQueryCount
 
@@ -145,6 +146,22 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage(with_db=False)
         self.assertFalse(dsp.is_official)
 
+    def test_drivers_are_distributions(self):
+        # DSP.drivers returns the drivers for the distribution.
+        distribution = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        self.assertNotEqual([], distribution.drivers)
+        self.assertEqual(dsp.drivers, distribution.drivers)
+
+    def test_personHasDriverRights(self):
+        # A distribution driver has driver permissions on a DSP.
+        distribution = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        driver = distribution.drivers[0]
+        self.assertTrue(dsp.personHasDriverRights(driver))
+
 
 class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
 
@@ -187,14 +204,12 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
         self.source_package = self.distribution.getSourcePackage('gedit')
 
         # Add slightly more soyuz karma for person_nightly for this package.
-        transaction.commit()
-        self.layer.switchDbUser('karma')
+        switch_dbuser('karma')
         self.person_beta_karma = KarmaTotalCache(
             person=self.person_beta, karma_total=200)
         self.person_nightly_karma = KarmaTotalCache(
             person=self.person_nightly, karma_total=201)
-        transaction.commit()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
     def test_order_by_soyuz_package_karma(self):
         # Returned archives are ordered by the soyuz karma of the
@@ -211,10 +226,9 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
 
         # Update the soyuz karma for person_beta for this package so that
         # it is greater than person_nightly's.
-        self.layer.switchDbUser('karma')
+        switch_dbuser('karma')
         self.person_beta_karma.karma_total = 202
-        transaction.commit()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
         related_archives = self.source_package.findRelatedArchives()
         related_archive_names = [

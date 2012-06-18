@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Find OOPS References within the LP database."""
@@ -11,7 +11,7 @@ __all__ = [
 
 import re
 
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     cursor,
     sqlvalues,
     )
@@ -39,7 +39,7 @@ def referenced_oops(start_date, end_date, context_clause, context_params):
     # Note that the POSIX regexp syntax is subtly different to the Python,
     # and that we need to escape all \ characters to keep the SQL interpreter
     # happy.
-    posix_oops_match = (r"~* '^(oops-\\w+)|(\\moops-\\w+)'")
+    posix_oops_match = (r"~* E'^(oops-\\w+)|(\\moops-\\w+)'")
     params = dict(start_date=start_date, end_date=end_date)
     params.update(context_params)
     sql_params = sqlvalues(**params)
@@ -76,6 +76,6 @@ def referenced_oops(start_date, end_date, context_clause, context_params):
     cur.execute(query)
     for content in (row[0] for row in cur.fetchall()):
         for oops in oops_re.findall(content):
-            referenced_codes.add(oops.upper())
+            referenced_codes.add(oops)
 
     return referenced_codes

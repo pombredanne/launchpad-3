@@ -25,9 +25,6 @@ from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.testing.layers import ZopelessAppServerLayer
-from canonical.testing.profiled import profiled
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,
@@ -56,7 +53,10 @@ from lp.codehosting.tests.servers import (
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.services.config import config
+from lp.services.testing.profiled import profiled
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class ForkingServerForTests(object):
@@ -143,7 +143,6 @@ class SSHServerLayer(ZopelessAppServerLayer):
     def getTacHandler(cls):
         if cls._tac_handler is None:
             cls._tac_handler = CodeHostingTac(
-                config.codehosting.hosted_branches_root,
                 config.codehosting.mirrored_branches_root)
         return cls._tac_handler
 
@@ -756,6 +755,9 @@ def make_smoke_tests(base_suite):
         'RepositoryFormat5',
         'RepositoryFormat6',
         'RepositoryFormat7',
+        'HgRepositoryFormat',
+        'GitRepositoryFormat',
+        'SvnRepositoryFormat',
         ]
     scenarios = all_repository_format_scenarios()
     scenarios = [

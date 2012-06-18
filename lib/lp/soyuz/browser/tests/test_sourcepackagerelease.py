@@ -8,17 +8,17 @@
 __metaclass__ = type
 __all__ = [
     'TestSourcePackageReleaseFiles',
-    'test_suite',
+    'TestSourcePackageReleaseView',
     ]
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.testing import TestCaseWithFactory
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.views import create_initialized_view
 
 

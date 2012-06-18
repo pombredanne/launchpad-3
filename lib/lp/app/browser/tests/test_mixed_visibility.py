@@ -3,17 +3,13 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import TeamFormatterAPI
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-
-
-MIXED_VISIBILITY_FLAG = {'disclosure.log_private_team_leaks.enabled': 'on'}
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestMixedVisibility(TestCaseWithFactory):
@@ -25,10 +21,9 @@ class TestMixedVisibility(TestCaseWithFactory):
         # informational OOPS is logged.
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         viewer = self.factory.makePerson()
-        with FeatureFixture(MIXED_VISIBILITY_FLAG):
-            with person_logged_in(viewer):
-                self.assertEqual(
-                    u'<hidden>', TeamFormatterAPI(team).displayname(None))
-            self.assertEqual(1, len(self.oopses))
-            self.assertTrue(
-                'MixedVisibilityError' in self.oopses[0]['tb_text'])
+        with person_logged_in(viewer):
+            self.assertEqual(
+                u'<hidden>', TeamFormatterAPI(team).displayname(None))
+        self.assertEqual(1, len(self.oopses))
+        self.assertTrue(
+            'MixedVisibilityError' in self.oopses[0]['tb_text'])

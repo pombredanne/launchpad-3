@@ -18,7 +18,7 @@ homepage_content is formatted as HTML.
     >>> homepage_content = "line one <script>\n\nhttp://aa.aa/"
     >>> person_set = getUtility(IPersonSet)
     >>> active_user = person_set.getByName('name12')
-    >>> login_person(active_user)
+    >>> ignored = login_person(active_user)
     >>> active_user.homepage_content = homepage_content
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(active_user, '+index')
@@ -28,13 +28,13 @@ homepage_content is formatted as HTML.
     >>> print view.homepage_content
     <p>line one &lt;script&gt;</p>
     <BLANKLINE>
-    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr />aa.aa/</a></p>
 
 Teams are always valid and do not have probation rules; the homepage
 content is formatted HTML.
 
     >>> team = factory.makeTeam()
-    >>> login_person(team.teamowner)
+    >>> ignored = login_person(team.teamowner)
     >>> team.homepage_content = homepage_content
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(team, '+index')
@@ -44,7 +44,7 @@ content is formatted HTML.
     >>> print view.homepage_content
     <p>line one &lt;script&gt;</p>
     <BLANKLINE>
-    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr />aa.aa/</a></p>
 
 New users are on probation; the homepage content is escaped HTML.
 
@@ -63,13 +63,13 @@ New users are on probation; the homepage content is escaped HTML.
 Inactive and suspended users are invalid; the homepage content is
 escaped HTML.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
+    >>> from lp.services.identity.interfaces.account import AccountStatus
+    >>> from lp.services.database.lpstorm import IMasterObject
 
     # Only admins can change an account.
 
     >>> admin_user = person_set.getByName('name16')
-    >>> login_person(admin_user)
+    >>> ignored = login_person(admin_user)
     >>> invalid_user = factory.makePerson(name="ugh")
     >>> invalid_user.homepage_content = homepage_content
     >>> IMasterObject(invalid_user.account).status = AccountStatus.NOACCOUNT
@@ -115,7 +115,6 @@ anyone in Launchpad..
 
     >>> mark.hide_email_addresses
     False
-    >>> logout()
 
 Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor
@@ -315,7 +314,7 @@ on..." section in the Person profile page (+index). Nothing is rendered
 when the user does not have any assigned bug or specs that are not in
 progress.
 
-    >>> user = factory.makePerson(name='ken', password='test')
+    >>> user = factory.makePerson(name='ken')
     >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
     False
@@ -326,7 +325,7 @@ progress.
     >>> len(view.assigned_specs_in_progress)
     0
 
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
     >>> len(extract_text(view.render()))
     0
 
@@ -335,7 +334,7 @@ progress state.
 
     >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> product = factory.makeProduct(name="tool", owner=user)
     >>> spec = factory.makeSpecification(
     ...     product=product, title='Specs need stories')
@@ -523,19 +522,11 @@ contacted.
     [u'no-priv']
 
 
-Non-member contacting a Team
-----------------------------
+Non-team-admin contacting a Team
+--------------------------------
 
-Users can contact teams, but the behaviour depends upon whether the user
-is a member of the team. No Privileges Person is not a member of the
-Landscape Developers team.
-
-    >>> view = create_initialized_view(landscape_developers, '+index')
-    >>> print view.contact_link_title
-    Send an email to this team's owner through Launchpad
-
-The EmailToPersonView can be used by non-members to contact the team
-owner.
+The EmailToPersonView can be used by non-team-admins to contact the team
+admins.
 
     >>> view = create_initialized_view(landscape_developers, '+contactuser')
     >>> print view.label
@@ -546,26 +537,25 @@ owner.
 
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team
-    owner, Sample Person (name12).
+    admins.
 
     >>> [recipient.name for recipient in view.recipients]
     [u'name12']
 
 
-Member contacting a Team
-------------------------
+Team admin contacting a Team
+----------------------------
 
-Members can contact their team. How they are contacted depends upon
-whether the team's contact address is set. Sample Person can contact his
-team, Landscape developers, even though they do not have a contact
-address.
+Team admins can contact their team to broadcast a message to all members.
+Sample Person can contact his team, Landscape developers, even though they do
+not have a contact address.
 
-    >>> login('test@canonical.com')
+    >>> team_admin = login_person(landscape_developers.adminmembers[0])
     >>> view = create_initialized_view(landscape_developers, '+index')
     >>> print view.contact_link_title
     Send an email to your team's members through Launchpad
 
-The EmailToPersonView can be used by members to contact their team.
+The EmailToPersonView can be used by admins to contact their team.
 
     >>> view = create_initialized_view(landscape_developers, '+contactuser')
     >>> print view.label
@@ -609,19 +599,6 @@ special message just for him.
     >>> [recipient.name for recipient in view.recipients]
     [u'name12']
 
-EmailToPersonView will use the contact address when the team has one.
-
-    >>> email_address = factory.makeEmail(
-    ...     'landscapers@canonical.com', landscape_developers)
-    >>> landscape_developers.setContactAddress(email_address)
-
-    >>> view = create_initialized_view(landscape_developers, '+contactuser')
-    >>> print view.recipients.description
-    You are contacting the Landscape Developers (landscape-developers) team.
-
-    >>> [recipient.name for recipient in view.recipients]
-    [u'landscape-developers']
-
 
 Contact this user/team valid addresses and quotas
 -------------------------------------------------
@@ -653,7 +630,8 @@ Invalid users and anonymous contacters
 Inactive users and users without a preferred email address are invalid
 and cannot be contacted.
 
-    >>> former_user = person_set.getByEmail('former-user@canonical.com')
+    >>> former_user = person_set.getByEmail('former-user@canonical.com',
+    ...     filter_status=False)
     >>> view = create_initialized_view(former_user, '+contactuser')
     >>> view.request.response.getStatus()
     302
@@ -751,7 +729,7 @@ If the PPA is private, only the owner will see the section.
     >>> login("admin@canonical.com")
     >>> private_ppa = factory.makeArchive(private=True)
 
-    >>> login_person(private_ppa.owner)
+    >>> ignored = login_person(private_ppa.owner)
     >>> view = create_initialized_view(private_ppa.owner, "+index")
     >>> view.should_show_ppa_section
     True
@@ -767,7 +745,7 @@ This aspect allows him to access the 'Create a new PPA' link.
     >>> print sample_person.archive
     None
 
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> view = create_initialized_view(sample_person, "+index")
     >>> view.should_show_ppa_section
     True

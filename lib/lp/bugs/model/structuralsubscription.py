@@ -3,10 +3,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_structural_subscriptions_for_bug',
-    'get_structural_subscriptions_for_target',
     'get_structural_subscribers',
     'get_structural_subscription_targets',
+    'get_structural_subscriptions',
+    'get_structural_subscriptions_for_bug',
+    'get_structural_subscriptions_for_target',
     'StructuralSubscription',
     'StructuralSubscriptionTargetMixin',
     ]
@@ -17,12 +18,10 @@ import pytz
 from storm.base import Storm
 from storm.expr import (
     And,
-    CompoundOper,
     Count,
     In,
     Join,
     LeftJoin,
-    NamedFunc,
     Not,
     Or,
     Select,
@@ -45,9 +44,6 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import ProxyFactory
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
@@ -84,6 +80,14 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import quote
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayContains,
+    ArrayIntersects,
+    )
 from lp.services.propertycache import cachedproperty
 
 
@@ -478,14 +482,14 @@ class StructuralSubscriptionTargetMixin:
     def getSubscriptions(self, subscriber=None):
         """See `IStructuralSubscriptionTarget`."""
         from lp.registry.model.person import Person
-        clauses = [StructuralSubscription.subscriberID==Person.id]
+        clauses = [StructuralSubscription.subscriberID == Person.id]
         for key, value in self._target_args.iteritems():
             clauses.append(
-                getattr(StructuralSubscription, key)==value)
+                getattr(StructuralSubscription, key) == value)
 
         if subscriber is not None:
             clauses.append(
-                StructuralSubscription.subscriberID==subscriber.id)
+                StructuralSubscription.subscriberID == subscriber.id)
 
         store = Store.of(self.__helper.pillar)
         return store.find(
@@ -588,78 +592,102 @@ def get_structural_subscriptions_for_bug(bug, person=None):
         *conditions)
 
 
-def get_structural_subscribers(
-    bug_or_bugtask, recipients, level, direct_subscribers=None):
-    """Return subscribers for bug or bugtask at level.
+def query_structural_subscriptions(
+    what, bug, bugtasks, level, exclude=None):
+    """Query into structural subscriptions for a given bug.
 
-    :param bug: a bug.
-    :param recipients: a BugNotificationRecipients object or None.
-                       Populates if given.
-    :param level: a level from lp.bugs.enum.BugNotificationLevel.
-    :param direct_subscribers: a collection of Person objects who are
-                               directly subscribed to the bug.
-
-    Excludes structural subscriptions for people who are directly subscribed
-    to the bug."""
-    if IBug.providedBy(bug_or_bugtask):
-        bug = bug_or_bugtask
-        bugtasks = bug.bugtasks
-    elif IBugTask.providedBy(bug_or_bugtask):
-        bug = bug_or_bugtask.bug
-        bugtasks = [bug_or_bugtask]
-    else:
-        raise ValueError('First argument must be bug or bugtask')
+    :param what: The fields to fetch. Choose from `Person`,
+        `StructuralSubscription`, `BugSubscriptionFilter`, or a combo.
+    :param bug: An `IBug`
+    :param bugtasks: An iterable of `IBugTask`.
+    :param level: A level from `BugNotificationLevel`. Filters below this
+        level will be excluded.
+    :param exclude: `Person`s to exclude (e.g. direct subscribers).
+    """
+    from lp.registry.model.person import Person  # Circular.
     filter_id_query = (
         _get_structural_subscription_filter_id_query(
-            bug, bugtasks, level, direct_subscribers))
+            bug, bugtasks, level, exclude))
     if not filter_id_query:
         return EmptyResultSet()
-    # This is here because of a circular import.
-    from lp.registry.model.person import Person
     source = IStore(StructuralSubscription).using(
         StructuralSubscription,
         Join(BugSubscriptionFilter,
              BugSubscriptionFilter.structural_subscription_id ==
              StructuralSubscription.id),
         Join(Person,
-             Person.id == StructuralSubscription.subscriberID),
-        )
-    if recipients is None:
-        return source.find(
-            Person,
-            In(BugSubscriptionFilter.id,
-               filter_id_query)).config(distinct=True).order_by()
+             Person.id == StructuralSubscription.subscriberID))
+    conditions = In(
+        BugSubscriptionFilter.id, filter_id_query)
+    return source.find(what, conditions)
+
+
+def get_bug_and_bugtasks(bug_or_bugtask):
+    """Return a bug and a list of bugtasks given a bug or a bugtask.
+
+    :param bug_or_bugtask: An `IBug` or `IBugTask`.
+    :raises ValueError: If `bug_or_bugtask` does not provide `IBug` or
+        `IBugTask`.
+    """
+    if IBug.providedBy(bug_or_bugtask):
+        return bug_or_bugtask, bug_or_bugtask.bugtasks
+    elif IBugTask.providedBy(bug_or_bugtask):
+        return bug_or_bugtask.bug, [bug_or_bugtask]
     else:
-        subscribers = []
-        query_results = source.find(
+        raise ValueError(
+            "Expected bug or bugtask, got %r" % (bug_or_bugtask,))
+
+
+def get_structural_subscriptions(bug_or_bugtask, level, exclude=None):
+    """Return subscriptions for bug or bugtask at level.
+
+    :param bug_or_bugtask: An `IBug` or `IBugTask`.
+    :param level: A level from `BugNotificationLevel`. Filters below this
+        level will be excluded.
+    :param exclude: `Person`s to exclude (e.g. direct subscribers).
+    """
+    from lp.registry.model.person import Person  # Circular.
+    bug, bugtasks = get_bug_and_bugtasks(bug_or_bugtask)
+    subscriptions = query_structural_subscriptions(
+        StructuralSubscription, bug, bugtasks, level, exclude)
+    # Return only the first subscription and filter per subscriber.
+    subscriptions.config(distinct=(Person.id,))
+    subscriptions.order_by(
+        Person.id, StructuralSubscription.id,
+        BugSubscriptionFilter.id)
+    return subscriptions
+
+
+def get_structural_subscribers(
+    bug_or_bugtask, recipients, level, exclude=None):
+    """Return subscribers for bug or bugtask at level.
+
+    :param bug_or_bugtask: An `IBug` or `IBugTask`.
+    :param recipients: A `BugNotificationRecipients` object or
+        `None`, which will be populated if provided.
+    :param level: A level from `BugNotificationLevel`. Filters below this
+        level will be excluded.
+    :param exclude: `Person`s to exclude (e.g. direct subscribers).
+    """
+    from lp.registry.model.person import Person  # Circular.
+    bug, bugtasks = get_bug_and_bugtasks(bug_or_bugtask)
+    if recipients is None:
+        subscribers = query_structural_subscriptions(
+            Person, bug, bugtasks, level, exclude)
+        subscribers.config(distinct=True)
+        return subscribers.order_by()
+    else:
+        results = query_structural_subscriptions(
             (Person, StructuralSubscription, BugSubscriptionFilter),
-            In(BugSubscriptionFilter.id, filter_id_query))
-        for person, subscription, filter in query_results:
-            # Set up results.
+            bug, bugtasks, level, exclude)
+        subscribers = []
+        for person, subscription, filter in results:
             if person not in recipients:
                 subscribers.append(person)
                 recipients.addStructuralSubscriber(
                     person, subscription.target)
             recipients.addFilter(filter)
         return subscribers
-
-
-class ArrayAgg(NamedFunc):
-    "Aggregate values (within a GROUP BY) into an array."
-    __slots__ = ()
-    name = "ARRAY_AGG"
-
-
-class ArrayContains(CompoundOper):
-    "True iff the left side is a superset of the right side."
-    __slots__ = ()
-    oper = "@>"
-
-
-class ArrayIntersects(CompoundOper):
-    "True iff the left side shares at least one element with the right side."
-    __slots__ = ()
-    oper = "&&"
 
 
 def _get_structural_subscription_filter_id_query(
@@ -839,7 +867,7 @@ def _calculate_tag_query(conditions, tags):
             group_by=(BugSubscriptionFilter.id,),
             having=Count(
                 SQL('CASE WHEN BugSubscriptionFilterTag.include '
-                    'THEN BugSubscriptionFilterTag.tag END'))==0)
+                    'THEN BugSubscriptionFilterTag.tag END')) == 0)
     else:
         # The bug has some tags.  This will require a bit of fancy
         # footwork. First, though, we will simply want to leave out

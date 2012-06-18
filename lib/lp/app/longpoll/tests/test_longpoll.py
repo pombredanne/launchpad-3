@@ -15,8 +15,6 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.longpoll import (
     emit,
     subscribe,
@@ -26,8 +24,10 @@ from lp.services.longpoll.interfaces import (
     ILongPollSubscriber,
     )
 from lp.services.messaging.interfaces import IMessageSession
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
 from lp.testing.fixture import ZopeAdapterFixture
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class IFakeObject(Interface):

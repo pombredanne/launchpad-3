@@ -6,11 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.testing.layers import YUITestLayer
 from lp.testing import (
     build_yui_unittest_suite,
     YUIUnitTestCase,
     )
+from lp.testing.layers import YUITestLayer
 
 
 class BugsYUIUnitTestCase(YUIUnitTestCase):

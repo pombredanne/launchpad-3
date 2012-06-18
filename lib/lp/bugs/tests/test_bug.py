@@ -1,4 +1,4 @@
-
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.bugs.model.Bug."""
@@ -10,10 +10,8 @@ from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bug import(
+from lp.bugs.enums import BugNotificationLevel
+from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
@@ -29,6 +27,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugSubscriptionMethods(TestCaseWithFactory):

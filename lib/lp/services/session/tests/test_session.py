@@ -5,17 +5,17 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     IStore,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,
     )
 from lp.testing import TestCase
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSessionModelAdapters(TestCase):

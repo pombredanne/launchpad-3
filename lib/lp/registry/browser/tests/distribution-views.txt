@@ -95,7 +95,7 @@ The view accepts the basic fields to register a distribution.
 
 Only admins and owners can access the view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> check_permission('launchpad.Admin', view)
     True
@@ -269,10 +269,10 @@ The distribution index page may contain portlets for Launchpad applications.
 If the distribution does not officially use the apps, its portlet does
 not appear.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> owner = distribution.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> distribution.official_malone = False
     >>> question = factory.makeQuestion(target=distribution)
     >>> faq = factory.makeFAQ(target=distribution)
@@ -292,11 +292,8 @@ not appear.
 
 If the distribution officially uses the application, its portlet does appear.
 
-    >>> from canonical.testing.layers import MemcachedLayer
     >>> from lp.app.enums import ServiceUsage
 
-    # When the cache regenerated, all users will see the change.
-    >>> MemcachedLayer.purge()
     >>> distribution.answers_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.official_malone = True

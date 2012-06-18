@@ -6,8 +6,8 @@ for IDistroSeries context (IDistroSeriesView)
 Let's instantiate the view for +queue for anonymous access:
 
   >>> from zope.component import queryMultiAdapter
-  >>> from canonical.launchpad.database.librarian import LibraryFileAlias
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.services.librarian.model import LibraryFileAlias
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> fake_chroot = LibraryFileAlias.get(1)
 
@@ -26,8 +26,8 @@ View parameters need to be set properly before start:
 
 After setup we have a 'batched' list:
 
-  >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
-  >>> from canonical.launchpad.webapp.testing import verifyObject
+  >>> from lp.services.webapp.interfaces import IBatchNavigator
+  >>> from lp.services.webapp.testing import verifyObject
   >>> verifyObject(IBatchNavigator, queue_view.batchnav)
   True
 
@@ -232,7 +232,7 @@ for a package "foo" and uploading a new build that has "foo" and
     ...     SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> stp = SoyuzTestPublisher()
     >>> hoary = ubuntu['hoary']
     >>> stp.prepareBreezyAutotest()
@@ -253,12 +253,12 @@ Now that "foo" is published in Hoary, we can upload a new build.
     ...     sourcename="foo", distroseries=hoary, version="1.0-2",
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
-    >>> from lp.soyuz.interfaces.component import IComponentSet
-    >>> from lp.soyuz.model.component import ComponentSelection
     >>> from lp.archiveuploader.tests import datadir, getPolicy
     >>> from lp.archiveuploader.nascentupload import NascentUpload
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.model.component import ComponentSelection
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
     >>> universe = getUtility(IComponentSet)['universe']
     >>> trash = ComponentSelection(distroseries=hoary, component=universe)
@@ -294,5 +294,5 @@ is_new() method requires to work.
 
 We created librarian files that need cleaning up before leaving the test.
 
-  >>> from canonical.testing.layers import LibrarianLayer
+  >>> from lp.testing.layers import LibrarianLayer
   >>> LibrarianLayer.librarian_fixture.clear()

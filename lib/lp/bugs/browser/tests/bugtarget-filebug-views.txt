@@ -6,7 +6,7 @@ contains enough functionality to file bug, the classes inheriting from
 it only adds some more functionality, like adding fields, searching for
 similar bug reports, etc.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.bugtarget import FileBugViewBase
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -126,7 +126,8 @@ The first inline part will be appended to the bug description.
     ... --boundary--
     ... """
     >>> import transaction
-    >>> from canonical.launchpad.interfaces.temporaryblobstorage import ITemporaryStorageManager
+    >>> from lp.services.temporaryblobstorage.interfaces import (
+    ...     ITemporaryStorageManager)
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
 
 We need to commit the transaction since the data will be stored in the
@@ -167,7 +168,8 @@ will be set with the actual data.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This should be added to the description.
@@ -226,7 +228,8 @@ to the bug.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This should be added to the description.
@@ -331,7 +334,7 @@ The attachments are all added to the same comment.
 
     >>> for comment in filebug_view.added_bug.messages[1:]:
     ...     print "Comment by %s: %s attachment(s)" % (
-    ...         comment.owner.displayname, comment.bugattachments.count())
+    ...         comment.owner.displayname, len(comment.bugattachments))
     Comment by No Privileges Person: 2 attachment(s)
 
 
@@ -375,7 +378,8 @@ the message.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This bug should be private.
@@ -438,7 +442,8 @@ We can also specify that a bug is public via the same field.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This bug should be public.
@@ -502,7 +507,8 @@ they can be identified by their Launchpad name or their e-mail address.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     Other people are interested in this bug.
@@ -572,7 +578,8 @@ subscribe certain people and teams to bugs when they are filed.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This bug should be private, and Mark Shuttleworth subscribed.
@@ -697,23 +704,28 @@ The base class allows security bugs to be filed.
     True
 
 
-Extra fields for bug supervisors
---------------------------------
+Extra fields for privileged users
+---------------------------------
 
-Bug supervisors are offered several extra options when filing bugs.
+Privileged users are offered several extra options when filing bugs.
 
-    >>> person = factory.makePerson(name=u'bug-superdude')
-    >>> product = factory.makeProduct(owner=person)
+    >>> owner = factory.makePerson(name=u'bug-superdude')
+    >>> person = factory.makePerson()
+    >>> product = factory.makeProduct(owner=owner)
 
-    >>> login_person(person)
-
+    >>> ignored = login_person(person)
     >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> normal_fields = set(filebug_view.field_names)
-    >>> product.setBugSupervisor(person, person)
+    >>> ignored = login_person(owner)
+    >>> filebug_view = create_initialized_view(product, '+filebug')
+    >>> owner_fields = set(filebug_view.field_names)
+    >>> product.setBugSupervisor(owner, owner)
     >>> supervisor_fields = set(filebug_view.field_names)
 
-Supervisors get all the same fields as normal users, plus a few extra.
+Privileged users get all the same fields as normal users, plus a few extra.
 
+    >>> owner_fields == supervisor_fields
+    True
     >>> supervisor_fields.issuperset(normal_fields)
     True
 
@@ -734,7 +746,7 @@ Bugs can be filed with settings for all these extra fields.
 
     >>> bug_data = dict(
     ...     title=u'Extra Fields Bug', comment=u'Test description.',
-    ...     assignee=person, importance=BugTaskImportance.HIGH,
+    ...     assignee=owner, importance=BugTaskImportance.HIGH,
     ...     milestone=milestone, status=BugTaskStatus.TRIAGED)
     >>> print filebug_view.validate(bug_data)
     None

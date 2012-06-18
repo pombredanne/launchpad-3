@@ -55,7 +55,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
@@ -239,10 +239,10 @@ class IDistributionPublic(
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")
-    members = PublicPersonChoice(
+    members = exported(PublicPersonChoice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
-        vocabulary='ValidPersonOrTeam')
+        vocabulary='ValidPersonOrTeam'))
     mirror_admin = exported(PublicPersonChoice(
         title=_("Mirror Administrator"),
         description=_("The person or team that has the rights to review and "
@@ -347,7 +347,7 @@ class IDistributionPublic(
 
     upstream_report_excluded_packages = Attribute(
         "A list of the source packages that should not be shown on the "
-        "upstream bug report for this Distribution.")
+        "upstream report for this Distribution.")
 
     has_published_binaries = Bool(
         title=_("Has Published Binaries"),
@@ -569,18 +569,6 @@ class IDistributionPublic(
 
     def getAllPPAs():
         """Return all PPAs for this distribution."""
-
-    # Really returns IArchive, see
-    # _schema_circular_imports.py.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getCommercialPPAs():
-        """Return all commercial PPAs.
-
-        Commercial PPAs are private, but explicitly flagged up as commercial
-        so that they are discoverable by people who wish to buy items
-        from them.
-        """
 
     def searchPPAs(text=None, show_inactive=False):
         """Return all PPAs matching the given text in this distribution.

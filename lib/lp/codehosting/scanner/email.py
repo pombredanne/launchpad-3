@@ -11,12 +11,12 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource,
     IRevisionsAddedJobSource,
     )
+from lp.services.config import config
 
 
 def subscribers_want_notification(db_branch):
@@ -46,10 +46,11 @@ def send_removed_revision_emails(revisions_removed):
     # No diff is associated with the removed email.
     subject = "[Branch %s] %s removed" % (
         revisions_removed.db_branch.unique_name, count)
-    getUtility(IRevisionMailJobSource).create(
+    job = getUtility(IRevisionMailJobSource).create(
         revisions_removed.db_branch, revno='removed',
         from_address=config.canonical.noreply_from_address,
         body=contents, subject=subject)
+    job.celeryRunOnCommit()
 
 
 def queue_tip_changed_email_jobs(tip_changed):
@@ -66,11 +67,12 @@ def queue_tip_changed_email_jobs(tip_changed):
                    revisions)
         subject = "[Branch %s] %s" % (
             tip_changed.db_branch.unique_name, revisions)
-        getUtility(IRevisionMailJobSource).create(
+        job = getUtility(IRevisionMailJobSource).create(
             tip_changed.db_branch, 'initial',
             config.canonical.noreply_from_address, message, subject)
     else:
-        getUtility(IRevisionsAddedJobSource).create(
+        job = getUtility(IRevisionsAddedJobSource).create(
             tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,
             tip_changed.bzr_branch.last_revision(),
             config.canonical.noreply_from_address)
+    job.celeryRunOnCommit()

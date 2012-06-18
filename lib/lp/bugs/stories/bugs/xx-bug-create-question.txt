@@ -14,7 +14,7 @@ An anonymous user cannot create a question.
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
     >>> anon_browser.title
-    'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
+    'Bug #10 ... : Bugs : ...linux-source-2.6.15... package : Ubuntu'
 
     >>> anon_browser.getLink('Convert to a question').click()
     Traceback (most recent call last):
@@ -28,7 +28,7 @@ really a question. He chooses to make a question from it.
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
     >>> user_browser.title
-    'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
+    'Bug #10 ... : Bugs : ...linux-source-2.6.15... package : Ubuntu'
 
     >>> user_browser.getLink('Convert to a question').click()
     >>> user_browser.title
@@ -50,7 +50,7 @@ No Privileges Person is shown the bug page again. There is a permanent
 informational message stating that a question was created from the bug.
 
     >>> user_browser.title
-    'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
+    'Bug #10 ... : Bugs : ...linux-source-2.6.15... package : Ubuntu'
 
     >>> content = find_main_content(user_browser.contents)
     >>> content.find(id="bug-is-question")
@@ -114,7 +114,7 @@ He uses the link to Related bug to return to the bug.
 
     >>> user_browser.getLink('#10: another test bug').click()
     >>> user_browser.title
-    'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
+    'Bug #10 ... : Bugs : ...linux-source-2.6.15... package : Ubuntu'
 
 
 When a question cannot be created from a bug
@@ -127,8 +127,7 @@ question.
 
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
     >>> user_browser.title
-    'Bug #9 in Mozilla Thunderbird: \xe2\x80\x9cThunderbird
-    crashes\xe2\x80\x9d'
+    'Bug #9 ...'
 
     >>> user_browser.getLink('Convert to a question').click()
     >>> print user_browser.title
@@ -137,7 +136,8 @@ question.
     >>> find_main_content(user_browser.contents).p
     <p>
     This bug cannot be converted into a question.
-    Mozilla Thunderbird does not use Launchpad to track bugs. ...
+    Mozilla Thunderbird does not use Launchpad to track bugs.
+    Mozilla Thunderbird does not use Launchpad for support questions. ...
 
 The page is present, but without a comment field or a button to create
 the question.
@@ -191,15 +191,16 @@ could not be created.
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12')
     >>> user_browser.title
-    'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
+    'Bug #12 ...'
 
     >>> user_browser.getLink('Convert to a question').click()
     >>> user_browser.getControl('Comment').value = 'This will succeed.'
     >>> user_browser.getControl('Convert this Bug into a Question').click()
     >>> user_browser.title
-    'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
+    'Bug #12 ...'
 
-    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    >>> message = find_tag_by_id(user_browser.contents, 'bug-is-question')
+    >>> print extract_text(message)
     This bug report was converted into a question:...question #16...
 
     >>> user_browser.goBack(count=1)
@@ -207,8 +208,6 @@ could not be created.
     >>> user_browser.getControl('Convert this Bug into a Question').click()
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
     This bug could not be converted into a question.
-    This bug report was converted into a question: question #16:
-    Copy, Cut and Delete operations should work on selections.
 
 
 Remove the question
@@ -219,8 +218,7 @@ the 'Convert back to a bug' link. No Privileges Person decides to
 reactivate a bug report.
 
     >>> user_browser.title
-    'Bug #12 in Jokosher: \xe2\x80\x9cCopy, Cut and Delete operations should
-    work on selections\xe2\x80\x9d'
+    'Bug #12 ... : Bugs : Jokosher'
 
     >>> user_browser.getLink('Convert back to a bug').click()
     >>> print user_browser.title
@@ -244,7 +242,7 @@ portlet is gone too. He views the question and sees that it is still in
 the Open status.
 
     >>> user_browser.title
-    'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
+    'Bug #12 ... : Bugs : Jokosher'
 
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
     Removed Question #...: Copy, Cut and Delete operations should work...

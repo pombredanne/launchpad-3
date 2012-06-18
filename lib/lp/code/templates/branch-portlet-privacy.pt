@@ -7,6 +7,13 @@
     class python: path('context/private') and 'portlet private' or 'portlet public'
   "
 >
+  <tal:information_type tal:condition="view/show_information_type_in_ui">
+    <span id="information-type-summary"
+      tal:attributes="class view/information_type_css;">This branch
+      contains <strong id="information-type" tal:content="view/information_type"></strong> information</span>
+    <div id="information-type-description" style="padding-top: 5px" tal:content="view/information_type_description"></div>
+  </tal:information_type>
+  <tal:privacy tal:condition="not:view/show_information_type_in_ui">
   <div tal:condition="not:context/private"
   >This branch is public</div>
   <div tal:condition="context/private">
@@ -15,4 +22,5 @@
           because it is stacked on a private branch.
       </tal:msg>
   </div>
+  </tal:privacy>
 </div>

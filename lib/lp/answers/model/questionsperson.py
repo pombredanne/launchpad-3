@@ -7,10 +7,10 @@ __all__ = [
     ]
 
 
-from canonical.database.sqlbase import sqlvalues
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.question import QuestionPersonSearch
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.worlddata.model.language import Language
 
 

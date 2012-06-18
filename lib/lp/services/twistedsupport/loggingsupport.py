@@ -10,7 +10,6 @@ __all__ = [
     'LaunchpadLogFile',
     'set_up_logging_for_script',
     'set_up_oops_reporting',
-    'set_up_tacfile_logging',
     ]
 
 
@@ -31,56 +30,38 @@ from twisted.python.logfile import DailyLogFile
 from twisted.web import xmlrpc
 from zope.interface import implements
 
-from canonical.launchpad.scripts import logger
-from canonical.launchpad.webapp import errorlog
-from canonical.librarian.utils import copy_and_close
+from lp.services.librarian.utils import copy_and_close
+from lp.services.scripts import logger
+from lp.services.webapp import errorlog
 
 
-def set_up_logging_for_script(options, name):
+def set_up_logging_for_script(options, name, logfile):
     """Create a `Logger` object and configure twisted to use it.
 
     This also configures oops reporting to use the section named
     'name'."""
     logger_object = logger(options, name)
-    set_up_oops_reporting(name, name, mangle_stdout=True)
+    observer = set_up_oops_reporting(name, name, logfile)
+    log.startLoggingWithObserver(observer)
     return logger_object
 
 
-def set_up_tacfile_logging(name, level):
-    """Create a `Logger` object for use in tac files.
-
-    This is preferable to use over `set_up_logging_for_script` for .tac
-    files since there's no options to pass through.  The logger object
-    is connected to Twisted's log and returned.
-
-    :param name: The logger instance name.
-    :param level: The log level to use, eg. logging.INFO or logging.DEBUG
-    """
-    logger = logging.getLogger(name)
-    channel = logging.StreamHandler(log.StdioOnnaStick())
-    channel.setLevel(level)
-    channel.setFormatter(logging.Formatter('%(message)s'))
-    logger.addHandler(channel)
-    logger.setLevel(level)
-    return logger
-
-
-def set_up_oops_reporting(name, configuration, mangle_stdout=True):
+def set_up_oops_reporting(name, configuration, logfile):
     """Set up OOPS reporting by starting the Twisted logger with an observer.
 
     :param name: The name of the logger to use for oops reporting.
     :param configuration: The name of the config section to use for oops
         reporting.
-    :param mangle_stdout: If True, send stdout and stderr to the logger.
-        Defaults to False.
+    :param logfile: File to log output to.
     """
     errorlog.globalErrorUtility.configure(
         configuration,
         config_factory=oops_twisted.Config,
         publisher_adapter=oops_twisted.defer_publisher)
+    log_observer = RotatableFileLogObserver(logfile)
     oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config,
-        log.PythonLoggingObserver(loggerName=name).emit)
-    log.startLoggingWithObserver(oops_observer.emit, mangle_stdout)
+        log_observer)
+    return oops_observer
 
 
 class LaunchpadLogFile(DailyLogFile):

@@ -7,7 +7,7 @@ To test this we will add a watch to an existing bug, bug #12, which has
 no existing bug watches.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> bug12 = getUtility(IBugSet).get(12)

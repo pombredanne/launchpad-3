@@ -37,7 +37,7 @@
           >(changes file)</a>
       </tal:view_changesfile>
     </td>
-    <td tal:condition="context/archive/owner/isTeam"
+    <td tal:condition="context/archive/owner/is_team"
         tal:define="spr context/sourcepackagerelease;
                     signer spr/dscsigningkey/owner|nothing">
       <tal:has_signer condition="signer">

@@ -33,18 +33,12 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.config import (
+from lp.services import scripts
+from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.database.postgresql import ConnectionString
-from canonical.launchpad import scripts
-from canonical.launchpad.scripts.logger import OopsHandler
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS,
-    setupInteractionByEmail,
-    )
+from lp.services.database.postgresql import ConnectionString
 from lp.services.features import (
     get_relevant_feature_controller,
     install_feature_controller,
@@ -52,6 +46,13 @@ from lp.services.features import (
     )
 from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.scripts.logger import OopsHandler
+from lp.services.utils import total_seconds
+from lp.services.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.interaction import (
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 
 
 LOCK_PATH = "/var/lock/"
@@ -352,13 +353,13 @@ class LaunchpadScript:
             profiler.dump_stats(self.options.profile)
 
     def _init_zca(self, use_web_security):
-        """Initialize the ZCA, this can be overriden for testing purpose."""
+        """Initialize the ZCA, this can be overridden for testing purposes."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
 
     def _init_db(self, isolation):
         """Initialize the database transaction.
 
-        Can be overriden for testing purpose.
+        Can be overridden for testing purposes.
         """
         dbuser = self.dbuser
         if dbuser is None:
@@ -414,6 +415,10 @@ class LaunchpadCronScript(LaunchpadScript):
         # overriding the name property.
         logging.getLogger().addHandler(OopsHandler(self.name))
 
+    def get_last_activity(self):
+        """Return the last activity, if any."""
+        return getUtility(IScriptActivitySet).getLastActivity(self.name)
+
     @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
@@ -424,6 +429,12 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+        # date_started is recorded *after* the lock is acquired and we've
+        # initialized Zope components and the database.  Thus this time is
+        # only for the script proper, rather than total execution time.
+        seconds_taken = total_seconds(date_completed - date_started)
+        self.logger.debug(
+            "%s ran in %ss (excl. load & lock)" % (self.name, seconds_taken))
 
 
 @contextmanager

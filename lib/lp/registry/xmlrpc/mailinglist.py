@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XMLRPC APIs for mailing lists."""
@@ -15,15 +15,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from lp.services.encoding import escape_nonascii_uniquely
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.mailinglist import (
     IMailingListAPIView,
     IMailingListSet,
@@ -36,6 +27,15 @@ from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonVisibility,
     )
+from lp.services.config import config
+from lp.services.encoding import escape_nonascii_uniquely
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp import LaunchpadXMLRPCView
+from lp.xmlrpc import faults
 
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that
@@ -225,7 +225,6 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
         return (email_address is not None and
-                email_address.personID is not None and
                 not email_address.person.is_team and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))

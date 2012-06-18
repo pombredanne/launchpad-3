@@ -5,12 +5,12 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestQuestionDirectSubscribers(TestCaseWithFactory):

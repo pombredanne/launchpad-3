@@ -19,15 +19,16 @@ The callstack is essentially:
 
 __metaclass__ = type
 
+import _pythonpath
+
 import sys
 import time
 
-import _pythonpath
 import psycopg2
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.scripts import log
+from lp.services.config import config
+from lp.services.scripts import log
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.scripts.gina import ExecutionError

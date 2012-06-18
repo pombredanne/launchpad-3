@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test DKIM-signed messages"""
@@ -11,13 +11,18 @@ from StringIO import StringIO
 import dkim
 import dns.resolver
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import incoming
-from lp.services.mail.incoming import authenticateEmail
+from lp.services.mail.incoming import (
+    authenticateEmail,
+    InactiveAccount,
+    )
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 # sample private key made with 'openssl genrsa' and public key using 'openssl
 # rsa -pubout'.  Not really the key for canonical.com ;-)
@@ -44,17 +49,6 @@ sample_dns = """\
 k=rsa; \
 p=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANmBe10IgY+u7h3enWTukkqtUD5PR52T\
 b/mPfjC0QJTocVBq6Za/PlzfV+Py92VaCak19F4WrbVTK5Gg5tW220MCAwEAAQ=="""
-
-
-plain_content = """\
-From: Foo Bar <foo.bar@canonical.com>
-Date: Fri, 1 Apr 2010 00:00:00 +1000
-Subject: yet another comment
-To: 1@bugs.staging.launchpad.net
-
-  importance critical
-
-Why isn't this fixed yet?"""
 
 
 class TestDKIM(TestCaseWithFactory):
@@ -101,6 +95,24 @@ class TestDKIM(TestCaseWithFactory):
 
         self.addCleanup(restore)
 
+    def preload_dns_response(self, response_type='valid'):
+        """Configure a fake DNS key response.
+
+        :param response_type: Describes what response to give back as the
+        key.  The default, 'valid', is to give the valid test signing key.
+        'broken' gives a key that's almost but not quite valid, 'garbage'
+        gives one that doesn't look valid at all.
+        """
+        if response_type == 'valid':
+            key = sample_dns
+        elif response_type == 'broken':
+            key = sample_dns.replace(';', '')
+        elif response_type == 'garbage':
+            key = 'abcdefg'
+        else:
+            raise ValueError(response_type)
+        self._dns_responses['example._domainkey.canonical.com.'] = key
+
     def get_dkim_log(self):
         return self._log_output.getvalue()
 
@@ -119,15 +131,29 @@ class TestDKIM(TestCaseWithFactory):
         if l.find(substring) == -1:
             self.fail("didn't find %r in log: %s" % (substring, l))
 
+    def makeMessageText(self, sender=None, from_address=None):
+        if from_address is None:
+            from_address = "Foo Bar <foo.bar@canonical.com>"
+        text = ("From: " + from_address + "\n" + """\
+Date: Fri, 1 Apr 2010 00:00:00 +1000
+Subject: yet another comment
+To: 1@bugs.staging.launchpad.net
+
+  importance critical
+
+Why isn't this fixed yet?""")
+        if sender is not None:
+            text = "Sender: " + sender + "\n" + text
+        return text
+
     def test_dkim_broken_pubkey(self):
         """Handle a subtly-broken pubkey like qq.com, see bug 881237.
 
         The message is not trusted but inbound message processing does not
         abort either.
         """
-        signed_message = self.fake_signing(plain_content)
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns.replace(';', '')
+        signed_message = self.fake_signing(self.makeMessageText())
+        self.preload_dns_response('broken')
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -136,9 +162,8 @@ class TestDKIM(TestCaseWithFactory):
         self.assertDkimLogContains('unexpected error in DKIM verification')
 
     def test_dkim_garbage_pubkey(self):
-        signed_message = self.fake_signing(plain_content)
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            'aothuaonu'
+        signed_message = self.fake_signing(self.makeMessageText())
+        self.preload_dns_response('garbage')
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -155,10 +180,9 @@ class TestDKIM(TestCaseWithFactory):
             self.test_dkim_valid_strict)
 
     def test_dkim_valid_strict(self):
-        signed_message = self.fake_signing(plain_content,
+        signed_message = self.fake_signing(self.makeMessageText(),
             canonicalize=(dkim.Simple, dkim.Simple))
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertStronglyAuthenticated(principal, signed_message)
@@ -166,9 +190,8 @@ class TestDKIM(TestCaseWithFactory):
             'foo.bar@canonical.com')
 
     def test_dkim_valid(self):
-        signed_message = self.fake_signing(plain_content)
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        signed_message = self.fake_signing(self.makeMessageText())
+        self.preload_dns_response()
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertStronglyAuthenticated(principal, signed_message)
@@ -177,9 +200,8 @@ class TestDKIM(TestCaseWithFactory):
 
     def test_dkim_untrusted_signer(self):
         # Valid signature from an untrusted domain -> untrusted
-        signed_message = self.fake_signing(plain_content)
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        signed_message = self.fake_signing(self.makeMessageText())
+        self.preload_dns_response()
         saved_domains = incoming._trusted_dkim_domains[:]
 
         def restore():
@@ -198,11 +220,10 @@ class TestDKIM(TestCaseWithFactory):
         # that of the From-sender, if that domain is relaying the message.
         # However, we shouldn't then trust the purported sender, because they
         # might have just made it up rather than relayed it.
-        tweaked_message = plain_content.replace('foo.bar@canonical.com',
-            'steve.alexander@ubuntulinux.com')
+        tweaked_message = self.makeMessageText(
+            from_address='steve.alexander@ubuntulinux.com')
         signed_message = self.fake_signing(tweaked_message)
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -215,9 +236,8 @@ class TestDKIM(TestCaseWithFactory):
         #  We still treat this as weakly authenticated by the purported
         # From-header sender, though perhaps in future we would prefer
         # to reject these messages.
-        signed_message = self.fake_signing(plain_content)
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        signed_message = self.fake_signing(self.makeMessageText())
+        self.preload_dns_response()
         fiddled_message = signed_message.replace(
             'From: Foo Bar <foo.bar@canonical.com>',
             'From: Carlos <carlos@canonical.com>')
@@ -230,9 +250,8 @@ class TestDKIM(TestCaseWithFactory):
 
     def test_dkim_changed_from_realname(self):
         # If the real name part of the message has changed, it's detected.
-        signed_message = self.fake_signing(plain_content)
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        signed_message = self.fake_signing(self.makeMessageText())
+        self.preload_dns_response()
         fiddled_message = signed_message.replace(
             'From: Foo Bar <foo.bar@canonical.com>',
             'From: Evil Foo <foo.bar@canonical.com>')
@@ -246,7 +265,7 @@ class TestDKIM(TestCaseWithFactory):
     def test_dkim_nxdomain(self):
         # If there's no DNS entry for the pubkey it should be handled
         # decently.
-        signed_message = self.fake_signing(plain_content)
+        signed_message = self.fake_signing(self.makeMessageText())
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -258,8 +277,8 @@ class TestDKIM(TestCaseWithFactory):
         # treated as weakly authenticated.
         # The library doesn't log anything if there's no header at all.
         principal = authenticateEmail(
-            signed_message_from_string(plain_content))
-        self.assertWeaklyAuthenticated(principal, plain_content)
+            signed_message_from_string(self.makeMessageText()))
+        self.assertWeaklyAuthenticated(principal, self.makeMessageText())
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
 
@@ -267,10 +286,9 @@ class TestDKIM(TestCaseWithFactory):
         # The message has a syntactically valid DKIM signature that
         # doesn't actually correspond to what was signed.  We log
         # something about this but we don't want to drop the message.
-        signed_message = self.fake_signing(plain_content)
+        signed_message = self.fake_signing(self.makeMessageText())
         signed_message += 'blah blah'
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -291,12 +309,85 @@ class TestDKIM(TestCaseWithFactory):
         self.factory.makeEmail(
             person=person,
             address='dkimtest@example.com')
-        self._dns_responses['example._domainkey.canonical.com.'] = sample_dns
-        tweaked_message = (
-            "Sender: dkimtest@canonical.com\n" + plain_content.replace(
-                "From: Foo Bar <foo.bar@canonical.com>",
-                "From: DKIM Test <dkimtest@example.com>"))
+        self.preload_dns_response()
+        tweaked_message = self.makeMessageText(
+            sender="dkimtest@canonical.com",
+            from_address="DKIM Test <dkimtest@example.com>")
         signed_message = self.fake_signing(tweaked_message)
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertStronglyAuthenticated(principal, signed_message)
+
+    def test_dkim_signed_but_from_unknown_address(self):
+        """Sent from trusted dkim address, but only the From address is known.
+
+        See https://bugs.launchpad.net/launchpad/+bug/925597
+        """
+        self.factory.makePerson(
+            email='dkimtest@example.com',
+            name='dkimtest',
+            displayname='DKIM Test')
+        self.preload_dns_response()
+        tweaked_message = self.makeMessageText(
+            sender="dkimtest@canonical.com",
+            from_address="DKIM Test <dkimtest@example.com>")
+        signed_message = self.fake_signing(tweaked_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
+        self.assertEqual(principal.person.preferredemail.email,
+            'dkimtest@example.com')
+        self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertDkimLogContains(
+            'valid dkim signature, but not from a known email address')
+
+    def test_dkim_signed_but_from_unverified_address(self):
+        """Sent from trusted dkim address, but only the From address is known.
+
+        The sender is a known, but unverified address.
+
+        See https://bugs.launchpad.net/launchpad/+bug/925597
+        """
+        from_address = "dkimtest@example.com"
+        sender_address = "dkimtest@canonical.com"
+        person = self.factory.makePerson(
+            email=from_address,
+            name='dkimtest',
+            displayname='DKIM Test')
+        self.factory.makeEmail(sender_address, person, EmailAddressStatus.NEW)
+        self.preload_dns_response()
+        tweaked_message = self.makeMessageText(
+            sender=sender_address,
+            from_address="DKIM Test <dkimtest@example.com>")
+        signed_message = self.fake_signing(tweaked_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
+        self.assertEqual(principal.person.preferredemail.email,
+            from_address)
+        self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertDkimLogContains(
+            'valid dkim signature, but not from an active email address')
+
+    def test_dkim_signed_from_person_without_account(self):
+        """You can have a person with no account.
+
+        We don't accept mail from them.
+
+        See https://bugs.launchpad.net/launchpad/+bug/925597
+        """
+        from_address = "dkimtest@example.com"
+        # This is not quite the same as having account=None, but it seems as
+        # close as the factory lets us get? -- mbp 2012-04-13
+        self.factory.makePerson(
+            email=from_address,
+            name='dkimtest',
+            displayname='DKIM Test',
+            account_status=AccountStatus.NOACCOUNT)
+        self.preload_dns_response()
+        message_text = self.makeMessageText(
+            sender=from_address,
+            from_address=from_address)
+        signed_message = self.fake_signing(message_text)
+        self.assertRaises(
+            InactiveAccount,
+            authenticateEmail,
+            signed_message_from_string(signed_message))

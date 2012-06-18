@@ -26,7 +26,7 @@
   </securedutility>
 
   <class class=".branch.BranchVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
   <securedutility
@@ -37,7 +37,7 @@
   </securedutility>
 
   <class class=".branch.HostedBranchRestrictedOnOwnerVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
   <securedutility
@@ -48,7 +48,7 @@
   </securedutility>
 
   <class class=".branch.BranchRestrictedOnProductVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 </configure>

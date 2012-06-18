@@ -43,7 +43,7 @@ from zope.schema import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage

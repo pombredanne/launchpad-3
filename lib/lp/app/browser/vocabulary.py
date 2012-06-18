@@ -9,6 +9,7 @@ __all__ = [
     'HugeVocabularyJSONView',
     'IPickerEntrySource',
     'get_person_picker_entry_metadata',
+    'vocabulary_filters',
     ]
 
 from itertools import izip
@@ -29,10 +30,6 @@ from zope.interface import (
     )
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     IRCNicknameFormatterAPI,
@@ -50,6 +47,10 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import NoCanonicalUrl
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.vocabulary import IHugeVocabulary
 from lp.soyuz.interfaces.archive import IArchive
 
 # XXX: EdwinGrubbs 2009-07-27 bug=405476
@@ -234,6 +235,10 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
         """Gets the maintainer information for the target picker entry."""
         raise NotImplemented
 
+    def getCommercialSubscription(self, target):
+        """Gets the commercial subscription details for the target."""
+        return None
+
     def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
         entries = (
@@ -264,7 +269,11 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             maintainer = self.getMaintainer(target)
             if maintainer is not None:
                 picker_entry.details.append(
-                    'Maintainer: %s' % self.getMaintainer(target))
+                    'Maintainer: %s' % maintainer)
+            commercial_subscription = self.getCommercialSubscription(target)
+            if commercial_subscription is not None:
+                picker_entry.details.append(
+                    'Commercial Subscription: %s' % commercial_subscription)
         return entries
 
 
@@ -340,6 +349,16 @@ class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
         return target.summary
+
+    def getCommercialSubscription(self, target):
+        """See `TargetPickerEntrySource`"""
+        if target.commercial_subscription:
+            if target.has_current_commercial_subscription:
+                return 'Active'
+            else:
+                return 'Expired'
+        else:
+            return 'None'
 
 
 @adapter(IDistribution)
@@ -492,3 +511,24 @@ class HugeVocabularyJSONView:
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(dict(total_size=total_size, entries=result))
+
+
+def vocabulary_filters(vocabulary):
+    # Only IHugeVocabulary's have filters.
+    if not IHugeVocabulary.providedBy(vocabulary):
+        return []
+    supported_filters = vocabulary.supportedFilters()
+    # If we have no filters or just the ALL filter, then no filtering
+    # support is required.
+    filters = []
+    if (len(supported_filters) == 0 or
+       (len(supported_filters) == 1
+        and supported_filters[0].name == 'ALL')):
+        return filters
+    for filter in supported_filters:
+        filters.append({
+            'name': filter.name,
+            'title': filter.title,
+            'description': filter.description,
+            })
+    return filters

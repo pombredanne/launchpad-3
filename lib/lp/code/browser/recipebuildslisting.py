@@ -17,14 +17,14 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.batching import BatchNavigator
+from lp import _
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
+from lp.services.webapp.batching import BatchNavigator
 
 
 class RecipeBuildFilter(EnumeratedType):

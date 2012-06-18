@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets dealing with a choice of options."""
@@ -17,15 +17,17 @@ __all__ = [
 
 import math
 
+from lazr.enum import IEnumeratedType
+from zope.app.form.browser import MultiCheckBoxWidget
+from zope.app.form.browser.itemswidgets import (
+    DropdownWidget,
+    RadioWidget,
+    )
+from zope.app.form.browser.widget import renderElement
 from zope.schema.interfaces import IChoice
 from zope.schema.vocabulary import SimpleVocabulary
-from zope.app.form.browser import MultiCheckBoxWidget
-from zope.app.form.browser.itemswidgets import DropdownWidget, RadioWidget
-from zope.app.form.browser.widget import renderElement
 
-from lazr.enum import IEnumeratedType
-
-from canonical.launchpad.webapp.menu import escape
+from lp.services.webapp.menu import escape
 
 
 class LaunchpadDropdownWidget(DropdownWidget):
@@ -150,12 +152,17 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             'The vocabulary must implement IEnumeratedType')
         super(LaunchpadRadioWidgetWithDescription, self).__init__(
             field, vocabulary, request)
+        self.extra_hint = None
+        self.extra_hint_class = None
 
     def _renderRow(self, text, form_value, id, elem):
         """Render the table row for the widget depending on description."""
         if form_value != self._missing:
             vocab_term = self.vocabulary.getTermByToken(form_value)
-            description = vocab_term.value.description
+            # This is not needed when display_userdata_as_private is removed.
+            description = getattr(vocab_term, 'description', None)
+            if description is None:
+                description = vocab_term.value.description
         else:
             description = None
 
@@ -190,12 +197,25 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
                              type='radio')
         return self._renderRow(text, value, id, elem)
 
+    def renderExtraHint(self):
+        extra_hint_html = ''
+        extra_hint_class = ''
+        if self.extra_hint_class:
+            extra_hint_class = ' class="%s"' % self.extra_hint_class
+        if self.extra_hint:
+            extra_hint_html = ('<div%s>%s</div>'
+                % (extra_hint_class, escape(self.extra_hint)))
+        return extra_hint_html
+
     def renderValue(self, value):
         # Render the items in a table to align the descriptions.
         rendered_items = self.renderItems(value)
+        extra_hint = self.renderExtraHint()
         return (
-            '<table class="radio-button-widget">%s</table>'
-            % ''.join(rendered_items))
+            '%(extra_hint)s\n'
+            '<table class="radio-button-widget">%(items)s</table>'
+            % {'extra_hint': extra_hint,
+               'items': ''.join(rendered_items)})
 
 
 class LaunchpadBooleanRadioWidget(LaunchpadRadioWidget):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBranchNamespace` implementations."""
@@ -8,7 +8,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -36,15 +35,21 @@ from lp.code.model.branchnamespace import (
     PersonalNamespace,
     ProductNamespace,
     )
+from lp.registry.enums import InformationType
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
     )
 from lp.registry.interfaces.distribution import NoSuchDistribution
-from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.person import (
+    NoSuchPerson,
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class NamespaceMixin:
@@ -76,6 +81,7 @@ class NamespaceMixin:
             BranchType.HOSTED, branch_name, registrant)
         self.assertEqual(
             expected_unique_name, branch.unique_name)
+        self.assertEqual(InformationType.PUBLIC, branch.information_type)
 
     def test_createBranch_passes_through(self):
         # createBranch takes all the arguments that the `Branch` constructor
@@ -369,6 +375,22 @@ class TestProductNamespacePrivacy(TestCaseWithFactory):
         product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
         self.assertEqual(team, namespace.getPrivacySubscriber())
+
+    def test_information_type_private_team(self):
+        # Given a privacy policy for a namespace, branches are created with
+        # the correct information type.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            owner=person)
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(team, product)
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        branch = namespace.createBranch(
+            BranchType.HOSTED, self.factory.getUniqueString(),
+            namespace.owner)
+        self.assertEqual(InformationType.USERDATA, branch.information_type)
 
     def test_subscriber_private_team_namespace(self):
         # If there is a private policy for a namespace owner, then there is no
@@ -958,10 +980,22 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_anyone(self):
-        # No +junk branches are private.
+        # +junk branches are not private for individuals
         person = self.factory.makePerson()
         namespace = PersonalNamespace(person)
         self.assertFalse(namespace.canBranchesBePrivate())
+
+    def test_public_team(self):
+        # +junk branches for public teams cannot be private
+        team = self.factory.makeTeam()
+        namespace = PersonalNamespace(team)
+        self.assertFalse(namespace.canBranchesBePrivate())
+
+    def test_private_team(self):
+        # +junk branches can be private for private teams
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        namespace = PersonalNamespace(team)
+        self.assertTrue(namespace.canBranchesBePrivate())
 
 
 class TestPersonalNamespaceCanBranchesBePublic(TestCaseWithFactory):
@@ -1306,37 +1340,32 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
           * "charlie", who is a member of zulu.
           * "doug", who is a member of no teams.
         """
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        super(BranchVisibilityPolicyTestCase, self).setUp(
+            'admin@canonical.com')
         # Our test product.
         self.product = self.factory.makeProduct()
         # Create some test people.
         self.albert = self.factory.makePerson(
-            email='albert@code.ninja.nz',
             name='albert', displayname='Albert Tester')
         self.bob = self.factory.makePerson(
-            email='bob@code.ninja.nz',
             name='bob', displayname='Bob Tester')
         self.charlie = self.factory.makePerson(
-            email='charlie@code.ninja.nz',
             name='charlie', displayname='Charlie Tester')
         self.doug = self.factory.makePerson(
-            email='doug@code.ninja.nz',
             name='doug', displayname='Doug Tester')
-
         self.people = (self.albert, self.bob, self.charlie, self.doug)
 
         # And create some test teams.
-        self.xray = self.factory.makeTeam(name='xray')
-        self.yankee = self.factory.makeTeam(name='yankee')
-        self.zulu = self.factory.makeTeam(name='zulu')
+        self.xray = self.factory.makeTeam(
+            name='xray', members=[self.albert],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        self.yankee = self.factory.makeTeam(
+            name='yankee', members=[self.albert, self.bob],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        self.zulu = self.factory.makeTeam(
+            name='zulu', members=[self.albert, self.charlie],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         self.teams = (self.xray, self.yankee, self.zulu)
-
-        # Set the memberships of our test people to the test teams.
-        self.albert.join(self.xray)
-        self.albert.join(self.yankee)
-        self.albert.join(self.zulu)
-        self.bob.join(self.yankee)
-        self.charlie.join(self.zulu)
 
     def defineTeamPolicies(self, team_policies):
         """Shortcut to help define team policies."""

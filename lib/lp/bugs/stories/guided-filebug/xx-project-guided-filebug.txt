@@ -37,7 +37,7 @@ page.
     'http://bugs.launchpad.dev/evolution/+bug/...'
 
     >>> user_browser.title
-    'Bug #... in Evolution: ...Evolution crashes...'
+    'Bug #...Evolution crashes... : Bugs : Evolution'
 
 
 Subscribing to a similar bug
@@ -109,7 +109,7 @@ user to the bug page.
     'http://bugs.launchpad.dev/evolution/+bug/...'
 
     >>> user_browser.title
-    'Bug #... in Evolution: ...Faznambutron dumps core...'
+    'Bug #...Faznambutron dumps core... : Bugs : Evolution'
 
 
 Empty ProjectGroups
@@ -281,5 +281,3 @@ package to file a bug:
     >>> user_browser.getLink('File a bug here').click()
     >>> user_browser.url
     'http://launchpad.dev/ubuntu/+source/thunderbird/+filebug'
-
-

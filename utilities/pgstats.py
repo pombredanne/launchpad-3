@@ -11,7 +11,9 @@ emailing via cron
 __metaclass__ = type
 
 import sys
+
 import psycopg2
+
 
 def percentage(num, total):
     """Return a percentage string of num/total"""

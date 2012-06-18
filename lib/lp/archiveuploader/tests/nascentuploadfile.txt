@@ -1,4 +1,5 @@
-= NascentUploadFiles =
+NascentUploadFiles
+==================
 
 Files related with an Soyuz upload are modelled as:
 
@@ -13,7 +14,7 @@ Files related with an Soyuz upload are modelled as:
 
 Import the test keys so we have them ready for verification
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 We need to be logged into the security model in order to get any further
@@ -22,11 +23,13 @@ We need to be logged into the security model in order to get any further
     >>> from lp.archiveuploader.tests import datadir, getPolicy
 
 
-== NascentUploadFile base class ==
+NascentUploadFile base class
+----------------------------
 
 (This base class has many checks in it that are not yet documented here.)
 
-=== Forbidden character check ===
+Forbidden character check
+.........................
 Some characters are forbidden in filenames as per Debian packaging policy, and
 this check is performed by the checkNameIsTaintFree() method.  It raises an
 UploadError if there is an invalid character found.
@@ -55,7 +58,8 @@ With a good filename, no exception is raised.
     >>> upload_file.checkNameIsTaintFree()
 
 
-== ChangesFile  ==
+ChangesFile
+-----------
 
 A changesfile contains manifest of what is included (ou should be
 considered) for the upload in question.
@@ -159,7 +163,8 @@ Remove the misnamed changes file copy used for testing.
     >>> os.unlink(copyp)
 
 
-=== CustomUploadFile identification ===
+CustomUploadFile identification
+...............................
 
 A custom upload is essentially a tarball, so it matches the is_source
 regexp, even though it isn't actually a source file:
@@ -212,7 +217,8 @@ See the CustomUploadFile checks below for specific checks on custom
 uploads.
 
 
-=== ChangesFile Parsing Addresses ===
+ChangesFile Parsing Addresses
+.............................
 
 Address parsing is implemented by the SignableTagFile class, which
 is base for ChangesFile and DSCFile.
@@ -264,37 +270,6 @@ a new Person will be created.
     >>> addr['person'].creation_comment
     u'when the some-source_6.6.6 package was uploaded to hoary/RELEASE'
 
-If the email address is registered but not associated with a person it will be 
-associated with a new Person. This involves updating the email address, something 
-for which the uploader must have explicit permissions (bug 589073).
-
-    >>> sig_file.policy.create_people
-    True
-
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces.account import IAccountSet
-    >>> from lp.registry.interfaces.person import (
-    ...      PersonCreationRationale, IPersonSet)
-    >>> (acct, email) = getUtility(IAccountSet).createAccountAndEmail(
-    ...          "foo@canonical.com", PersonCreationRationale.UNKNOWN,
-    ...          "fo", "secr1t")
-    >>> person = getUtility(IPersonSet).createPersonWithoutEmail("fo",
-    ...          rationale=PersonCreationRationale.UNKNOWN)
-	>>> person.account = acct
-
-    Commit the changes so the emailaddress will have to be updated later 
-    rather than inserted.
-
-    >>> commit()
-
-    >>> addr = sig_file.parseAddress("Foo <foo@canonical.com>")
-    >>> print addr['person'].creation_rationale.name
-    UNKNOWN
-    >>> commit()
-
-    >>> print addr['email']
-    foo@canonical.com
-
 If the use an un-initialized policy to create a launchpad person the
 creation_rationale will still be possible, however missing important
 information, the upload target:
@@ -335,7 +310,8 @@ the upload processing:
     <Person ...>
 
 
-=== Signature Traces ===
+Signature Traces
+................
 
 Changes file can be optionally GPG-signed, so ChangesFile has
 infrastructure to record this information for later checks with policy
@@ -353,7 +329,8 @@ The IGPGKey used to sign this ChangesFile:
     u'1024D/5D147547'
 
 
-== DSCFile ==
+DSCFile
+-------
 
 DSCFile class models the operations and checks needed for processing
 and storing a DSC file in the LP system.
@@ -430,7 +407,8 @@ disk:
 
     >>> errors = ed_broken_dsc.verify()
     >>> [str(err) for err in errors]
-    ['File ed_0.2-20.dsc mentioned in the changes has a checksum mismatch. de8b206f8fc57bd931f6226feac6644a != e31eeb0b6b3b87e1ea79378df864ffff']
+    ['File ed_0.2-20.dsc mentioned in the changes has a checksum mismatch.
+    de8b206f8fc57bd931f6226feac6644a != e31eeb0b6b3b87e1ea79378df864ffff']
 
 It also verifies the file size when the checksum matches.
 
@@ -442,10 +420,12 @@ It also verifies the file size when the checksum matches.
 
     >>> errors = ed_broken_dsc.verify()
     >>> [str(err) for err in errors]
-    ['File ed_0.2-20.dsc mentioned in the changes has a size mismatch. 578 != 500']
+    ['File ed_0.2-20.dsc mentioned in the changes has a size mismatch.
+    578 != 500']
 
 
-=== Sub-DSC files or DSCUploadedFiles ===
+Sub-DSC files or DSCUploadedFiles
+.................................
 
 Sub-DSCFiles are DSCUploadedFile objects.
 
@@ -467,93 +447,79 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
     ...     modified_insecure_policy, DevNullLogger())
     >>> errors = ed_broken_dsc_file.verify()
     >>> [str(err) for err in errors]
-    ['File ed_0.2-20.diff.gz mentioned in the changes has a checksum mismatch. 8343836094fb01ee9b9a1067b23365f1 != f9e1e5f13725f581919e9bfd6227ffff']
+    ['File ed_0.2-20.diff.gz mentioned in the changes has a checksum mismatch.
+    8343836094fb01ee9b9a1067b23365f1 != f9e1e5f13725f581919e9bfd6227ffff']
 
 
-=== Sub-DSC file lookup ===
+DebBinaryUploadFile
+-------------------
 
+DebBinaryUploadFile models a binary .deb file.
 
-== SourceUploadFile ==
-
-
-== DebBinaryUploadFile ==
-
-DebBinaryUploadFile models a binary .deb file. 
-
-   >>> from lp.archiveuploader.nascentuploadfile import (
-   ...    DebBinaryUploadFile)
-   >>> ed_deb_path = datadir('ed_0.2-20_i386.deb')
-   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
-   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
-   ...                     15, 'main/editors', 'important', 'foo', '1.2',
-   ...                     ed_binary_changes, modified_insecure_policy,
-   ...                     DevNullLogger())
+    >>> from lp.archiveuploader.nascentuploadfile import (
+    ...    DebBinaryUploadFile)
+    >>> ed_deb_path = datadir('ed_0.2-20_i386.deb')
+    >>> ed_binary_deb = DebBinaryUploadFile(
+    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
+    ...     'main/editors', 'important', 'foo', '1.2', ed_binary_changes,
+    ...     modified_insecure_policy, DevNullLogger())
 
 Like the other files it can be verified:
 
-   >>> list(ed_binary_deb.verify())
-   []
+    >>> list(ed_binary_deb.verify())
+    []
 
 Verification checks that the specified section matches the section in the
 changes file:
 
-   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
-   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
-   ...                     15, 'main/net', 'important', 'foo', '1.2',
-   ...                     ed_binary_changes, modified_insecure_policy,
-   ...                     DevNullLogger())
-   >>> list(ed_binary_deb.verify())
-   [UploadError('ed_0.2-20_i386.deb control file lists section as 
-                main/editors but changes file has main/net.',)]
+    >>> ed_binary_deb = DebBinaryUploadFile(
+    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15, 'main/net',
+    ...     'important', 'foo', '1.2', ed_binary_changes,
+    ...     modified_insecure_policy, DevNullLogger())
+    >>> list(ed_binary_deb.verify())
+    [UploadError('ed_0.2-20_i386.deb
+    control file lists section as main/editors but changes file has
+    main/net.',)]
 
 It also checks the priority against the changes file:
 
-   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
-   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
-   ...                     15, 'main/editors', 'extra', 'foo', '1.2',
-   ...                     ed_binary_changes, modified_insecure_policy,
-   ...                     DevNullLogger())
-   >>> list(ed_binary_deb.verify())
-   [UploadError('ed_0.2-20_i386.deb control file lists priority as important 
-                 but changes file has extra.',)]
+    >>> ed_binary_deb = DebBinaryUploadFile(
+    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
+    ...     'main/editors', 'extra', 'foo', '1.2', ed_binary_changes,
+    ...     modified_insecure_policy, DevNullLogger())
+    >>> list(ed_binary_deb.verify())
+    [UploadError('ed_0.2-20_i386.deb
+    control file lists priority as important but changes file has extra.',)]
 
-The timestamp of the files in the .deb are tested against the policy for being 
-too new:
+The timestamp of the files in the .deb are tested against the policy for
+being too new:
 
-   >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
-   >>> old_only_policy = getPolicy(
-   ...     name='insecure', distro='ubuntu', distroseries='hoary')
-   >>> old_only_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
-   >>> old_only_policy.future_time_grace = -5 * 365 * 24 * 60 * 60
+    >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
+    >>> old_only_policy = getPolicy(
+    ...     name='insecure', distro='ubuntu', distroseries='hoary')
+    >>> old_only_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
+    >>> old_only_policy.future_time_grace = -5 * 365 * 24 * 60 * 60
 
-   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
-   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
-   ...                     15, 'main/editors', 'important', 'foo', '1.2',
-   ...                     ed_binary_changes, old_only_policy,
-   ...                     DevNullLogger())
-   >>> list(ed_binary_deb.verifyDebTimestamp())
-   [UploadError('ed_0.2-20_i386.deb: has 26 file(s) with a time stamp too 
-        far into the future (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
+    >>> ed_binary_deb = DebBinaryUploadFile(
+    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
+    ...     'main/editors', 'important', 'foo', '1.2', ed_binary_changes,
+    ...     old_only_policy, DevNullLogger())
+    >>> list(ed_binary_deb.verifyDebTimestamp())
+    [UploadError('ed_0.2-20_i386.deb:
+    has 26 file(s) with a time stamp too far into the future
+    (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
 
 ... as well as for being too old:
 
-   >>> new_only_policy = getPolicy(
-   ...     name='insecure', distro='ubuntu', distroseries='hoary')
-   >>> new_only_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
-   >>> new_only_policy.earliest_year = 2010
-   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
-   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
-   ...                     15, 'main/editors', 'important', 'foo', '1.2',
-   ...                     ed_binary_changes, new_only_policy,
-   ...                     DevNullLogger())
-   >>> list(ed_binary_deb.verify())
-   [UploadError('ed_0.2-20_i386.deb: has 26 file(s) with a time stamp too
-                 far in the past (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
-
-
-== UDebBinaryUploadFile ==
-
-
-== CustomUploadFile ==
-
-
+    >>> new_only_policy = getPolicy(
+    ...     name='insecure', distro='ubuntu', distroseries='hoary')
+    >>> new_only_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
+    >>> new_only_policy.earliest_year = 2010
+    >>> ed_binary_deb = DebBinaryUploadFile(
+    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
+    ...     'main/editors', 'important', 'foo', '1.2', ed_binary_changes,
+    ...     new_only_policy, DevNullLogger())
+    >>> list(ed_binary_deb.verify())
+    [UploadError('ed_0.2-20_i386.deb:
+    has 26 file(s) with a time stamp too far in the past
+    (e.g. control [Thu Jan  3 19:29:01 2008]).',)]

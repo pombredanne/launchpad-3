@@ -13,7 +13,7 @@ these well-known objects through attributes.
     >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(ILaunchpadCelebrities, celebs)
     True
 
@@ -133,7 +133,7 @@ commercial_admin
 ----------------
 
 There is a 'Commercial Subscription Admins' team that has administrative
-power over the license review process and has the ability to de-activate
+power over the licence review process and has the ability to de-activate
 projects.
 
     >>> commercial_admin = personset.getByName('commercial-admins')

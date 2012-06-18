@@ -14,13 +14,13 @@ __metaclass__ = type
 
 import _pythonpath
 
-# The following line is a horrible hack, but unfortunately necessary right now
-# to stop import errors from circular imports.
-import canonical.launchpad.interfaces
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
-from lp.services.job.runner import JobCronScript, TwistedJobRunner
+from lp.services.job.runner import (
+    JobCronScript,
+    TwistedJobRunner,
+    )
 
 
 class RunMergeProposalJobs(JobCronScript):

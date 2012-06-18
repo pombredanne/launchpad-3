@@ -77,7 +77,7 @@ a pop-up:
 
 She clicks on FAQ's title to display the complete FAQ content:
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
 
     >>> browser.getLink('How can I play MP3/Divx').click()
     >>> print backslashreplace(browser.title)

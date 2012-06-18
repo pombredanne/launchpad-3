@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to PersonTransferJob."""
@@ -26,23 +26,8 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enum import PersonTransferJobType
+from lp.registry.enums import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -59,14 +44,30 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
+from lp.services.config import config
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.stormbase import StormBase
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
     simple_sendmail,
     )
+from lp.services.webapp import canonical_url
 
 
 class PersonTransferJob(StormBase):
@@ -117,6 +118,9 @@ class PersonTransferJob(StormBase):
         # but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
 
+    def makeDerived(self):
+        return PersonTransferJobDerived.makeSubclass(self)
+
 
 class PersonTransferJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from PersonTransferJob.
@@ -128,6 +132,7 @@ class PersonTransferJobDerived(BaseRunnableJob):
     the run() method.
     """
 
+    __metaclass__ = EnumeratedSubclass
     delegates(IPersonTransferJob)
     classProvides(IPersonTransferJobSource)
 
@@ -148,7 +153,9 @@ class PersonTransferJobDerived(BaseRunnableJob):
             major_person=major_person,
             job_type=cls.class_job_type,
             metadata=metadata)
-        return cls(job)
+        derived = cls(job)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def iterReady(cls):
@@ -177,6 +184,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
     classProvides(IMembershipNotificationJobSource)
 
     class_job_type = PersonTransferJobType.MEMBERSHIP_NOTIFICATION
+
+    config = config.IMembershipNotificationJobSource
 
     @classmethod
     def create(cls, member, team, reviewer, old_status, new_status,
@@ -226,7 +235,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
 
     def run(self):
         """See `IMembershipNotificationJob`."""
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         from_addr = format_address(
             self.team.displayname, config.canonical.noreply_from_address)
         admin_emails = self.team.getTeamAdminsEmailAddresses()
@@ -240,8 +249,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         if self.reviewer != self.member:
             self.reviewer_name = self.reviewer.unique_displayname
         else:
-            # The user himself changed his self.membership.
-            self.reviewer_name = 'the user himself'
+            self.reviewer_name = 'the user'
 
         if self.last_change_comment:
             comment = ("\n%s said:\n %s\n" % (
@@ -316,7 +324,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         # self.members, and in this case we won't have a single email
         # address to send this notification to.
         if self.member_email and self.reviewer != self.member:
-            if self.member.isTeam():
+            if self.member.is_team:
                 template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name
@@ -344,6 +352,8 @@ class PersonMergeJob(PersonTransferJobDerived):
     classProvides(IPersonMergeJobSource)
 
     class_job_type = PersonTransferJobType.MERGE
+
+    config = config.IPersonMergeJobSource
 
     @classmethod
     def create(cls, from_person, to_person, reviewer=None, delete=False):
@@ -418,7 +428,7 @@ class PersonMergeJob(PersonTransferJobDerived):
         from_person_name = self.from_person.name
         to_person_name = self.to_person.name
 
-        from canonical.launchpad.scripts import log
+        from lp.services.scripts import log
         personset = getUtility(IPersonSet)
         if self.metadata.get('delete', False):
             log.debug(

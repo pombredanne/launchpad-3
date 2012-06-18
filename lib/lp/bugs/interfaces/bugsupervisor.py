@@ -23,7 +23,7 @@ from lazr.restful.declarations import (
 from lazr.restful.interface import copy_field
 from zope.interface import Interface
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import PersonChoice
 
 

@@ -6,12 +6,13 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from canonical.launchpad.webapp.interfaces import (
+
+from lp.services.webapp.interfaces import (
     ILaunchpadApplication,
     ILaunchpadRoot,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_view
 
 

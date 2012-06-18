@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
@@ -60,18 +60,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    NavigationMenu,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp import _
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -113,8 +102,19 @@ from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.archive import ArchiveDisabled
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import validate_ppa
 
 
 class IRecipesForPerson(Interface):
@@ -350,9 +350,14 @@ def builds_for_recipe(recipe):
         other circumstance which resulted in the build not being completed).
         This allows started but unfinished builds to show up in the view but
         be discarded as more recent builds become available.
+
+        Builds that the user does not have permission to see are excluded.
         """
-        builds = list(recipe.pending_builds)
+        builds = [build for build in recipe.pending_builds
+            if check_permission('launchpad.View', build)]
         for build in recipe.completed_builds:
+            if not check_permission('launchpad.View', build):
+                continue
             builds.append(build)
             if len(builds) >= 5:
                 break
@@ -383,8 +388,10 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         """
         initial_values = {'distroseries': self.context.distroseries}
         build = self.context.last_build
-        if build is not None:
-            initial_values['archive'] = build.archive
+        if build:
+            # If the build can't be viewed, the archive can't.
+            if check_permission('launchpad.View', build):
+                initial_values['archive'] = build.archive
         return initial_values
 
     class schema(Interface):
@@ -573,10 +580,10 @@ class ISourcePackageEditSchema(Interface):
         Text(
             title=u'Recipe text', required=True,
             description=u"""The text of the recipe.
-                <a href="/+help/recipe-syntax.html" target="help"
+                <a href="/+help-code/recipe-syntax.html" target="help"
                   >Syntax help&nbsp;
-                  <span class="sprite maybe">
-                    <span class="invisible-link">Help</span>
+                  <span class="sprite maybe action-icon">
+                    Help
                   </span></a>
                """))
 
@@ -823,7 +830,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
                 self.setFieldError(
                     'ppa_name', 'You need to specify a name for the PPA.')
             else:
-                error = Archive.validatePPA(owner, ppa_name)
+                error = validate_ppa(owner, ppa_name)
                 if error is not None:
                     self.setFieldError('ppa_name', error)
 

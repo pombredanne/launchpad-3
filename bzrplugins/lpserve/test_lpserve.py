@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import errno
@@ -11,8 +11,6 @@ import tempfile
 import threading
 import time
 
-from testtools import content
-
 from bzrlib import (
     errors,
     osutils,
@@ -20,27 +18,32 @@ from bzrlib import (
     trace,
     )
 from bzrlib.plugins import lpserve
+from testtools import content
 
-from canonical.config import config
-from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
+from lp.codehosting import (
+    get_bzr_path,
+    get_BZR_PLUGIN_PATH_for_subprocess,
+    )
+from lp.services.config import config
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
     """A test-double to run a "forking service" in a thread.
 
-    Note that we don't allow actually forking, but it does allow us to interact
-    with the service for other operations.
+    Note that we don't allow actually forking, but it does allow us to
+    interact with the service for other operations.
     """
 
-    # For testing, we set the timeouts much lower, because we want the tests to
-    # run quickly
+    # For testing we set the timeouts much lower, because we want the
+    # tests to run quickly.
     WAIT_FOR_CHILDREN_TIMEOUT = 0.5
     SOCKET_TIMEOUT = 0.01
     SLEEP_FOR_CHILDREN_TIMEOUT = 0.01
     WAIT_FOR_REQUEST_TIMEOUT = 0.1
 
-    # We're running in a thread as part of the test suite, blow up if we try to
-    # fork
+    # We're running in a thread as part of the test suite.  Blow up at
+    # any attempt to fork.
     _fork_function = None
 
     def __init__(self, path, perms=None):
@@ -52,10 +55,12 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
             path=path, perms=None)
 
     def _register_signals(self):
-        pass # Don't register it for the test suite
+        # Don't register it for the test suite.
+        pass
 
     def _unregister_signals(self):
-        pass # We don't fork, and didn't register, so don't unregister
+        # We don't fork, and didn't register, so don't unregister.
+        pass
 
     def _create_master_socket(self):
         super(TestingLPForkingServiceInAThread, self)._create_master_socket()
@@ -131,7 +136,7 @@ class TestTestingLPForkingServiceInAThread(tests.TestCaseWithTransport):
     def test_autostop(self):
         # We shouldn't leak a thread here, as it should be part of the test
         # case teardown.
-        service = TestingLPForkingServiceInAThread.start_service(self)
+        TestingLPForkingServiceInAThread.start_service(self)
 
 
 class TestCaseWithLPForkingService(tests.TestCaseWithTransport):
@@ -294,25 +299,24 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         os.mkfifo(os.path.join(tempdir, 'stdin'))
         os.mkfifo(os.path.join(tempdir, 'stdout'))
         os.mkfifo(os.path.join(tempdir, 'stderr'))
+
         # catch SIGALRM so we don't stop the test suite. It will still
         # interupt the blocking open() calls.
-        def noop_on_alarm(signal, frame):
-            return
-        signal.signal(signal.SIGALRM, noop_on_alarm)
+        signal.signal(signal.SIGALRM, FakeMethod())
+
         self.addCleanup(signal.signal, signal.SIGALRM, signal.SIG_DFL)
         e = self.assertRaises(errors.BzrError,
             self.service._open_handles, tempdir)
         self.assertContainsRe(str(e), r'After \d+.\d+s we failed to open.*')
 
 
-
 class TestCaseWithSubprocess(tests.TestCaseWithTransport):
     """Override the bzr start_bzr_subprocess command.
 
-    The launchpad infrastructure requires a fair amount of configuration to get
-    paths, etc correct. This provides a "start_bzr_subprocess" command that
-    has all of those paths appropriately set, but otherwise functions the same
-    as the bzrlib.tests.TestCase version.
+    The launchpad infrastructure requires a fair amount of configuration to
+    get paths, etc correct. This provides a "start_bzr_subprocess" command
+    that has all of those paths appropriately set, but otherwise functions the
+    same as the bzrlib.tests.TestCase version.
     """
 
     def get_python_path(self):
@@ -373,8 +377,8 @@ class TestCaseWithSubprocess(tests.TestCaseWithTransport):
 class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
     """Tests will get a separate process to communicate to.
 
-    The number of these tests should be small, because it is expensive to start
-    and stop the daemon.
+    The number of these tests should be small, because it is expensive to
+    start and stop the daemon.
 
     TODO: This should probably use testresources, or layers somehow...
     """
@@ -433,7 +437,14 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             env_changes=env_changes)
         trace.mutter('started lp-service subprocess')
         expected = 'Listening on socket: %s\n' % (path,)
-        path_line = proc.stderr.readline()
+        while True:
+            path_line = proc.stderr.readline()
+            # Stop once we have found the path line.
+            if path_line.startswith('Listening on socket:'):
+                break
+            # If the subprocess has finished, there is no more to read.
+            if proc.poll() is not None:
+                break
         trace.mutter(path_line)
         self.assertEqual(expected, path_line)
         return proc
@@ -458,23 +469,26 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         service_fd, path = tempfile.mkstemp(prefix='tmp-lp-service-',
                                             suffix='.sock')
         os.close(service_fd)
-        os.remove(path) # service wants create it as a socket
-        env_changes = {'BZR_PLUGIN_PATH': lpserve.__path__[0],
-                       'BZR_LOG': tempname}
+        # The service wants to create this file as a socket.
+        os.remove(path)
+        env_changes = {
+            'BZR_PLUGIN_PATH': lpserve.__path__[0],
+            'BZR_LOG': tempname,
+            }
         proc = self._start_subprocess(path, env_changes)
         return proc, path
 
     def stop_service(self):
         if self.service_process is None:
-            # Already stopped
+            # Already stopped.
             return
         # First, try to stop the service gracefully, by sending a 'quit'
-        # message
+        # message.
         try:
             response = self.send_message_to_service('quit\n')
-        except socket.error, e:
-            # Ignore a failure to connect, the service must be stopping/stopped
-            # already
+        except socket.error:
+            # Ignore a failure to connect; the service must be
+            # stopping/stopped already.
             response = None
         tend = time.time() + 10.0
         while self.service_process.poll() is None:
@@ -564,7 +578,7 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
         for idx in [3, 2, 0, 1]:
             p, pid, sock = paths[idx]
             stdout_msg = 'hello %d\n' % (idx,)
-            stderr_msg = 'goodbye %d\n' % (idx+1,)
+            stderr_msg = 'goodbye %d\n' % (idx + 1,)
             stdout, stderr = self.communicate_with_fork(p,
                 '1 %s2 %s' % (stdout_msg, stderr_msg))
             self.assertEqualDiff(stdout_msg, stdout)
@@ -597,7 +611,8 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
     def test_sigterm_exits_nicely(self):
         self._check_exits_nicely(signal.SIGTERM)
 
-    def test_sigint_exits_nicely(self):
+    def disable_test_sigint_exits_nicely(self):
+        # XXX: frankban 2012-03-29 bug=828584: This test fails intermittently.
         self._check_exits_nicely(signal.SIGINT)
 
     def test_child_exits_eventually(self):
@@ -607,13 +622,8 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
         # *sigh* signal.alarm only has 1s resolution, so this test is slow.
         response = self.send_message_to_service('child_connect_timeout 1\n')
         self.assertEqual('ok\n', response)
-        # Now request a fork
+        # Now request a fork.
         path, pid, sock = self.send_fork_request('rocks')
-        # # Open one handle, but not all of them
-        stdin_path = os.path.join(path, 'stdin')
-        stdout_path = os.path.join(path, 'stdout')
-        stderr_path = os.path.join(path, 'stderr')
-        child_stdin = open(stdin_path, 'wb')
         # We started opening the child, but stop before we get all handles
         # open. After 1 second, the child should get signaled and die.
         # The master process should notice, and tell us the status of the
@@ -621,7 +631,7 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
         val = sock.recv(4096)
         self.assertEqual('exited\n%s\n' % (signal.SIGALRM,), val)
         # The master process should clean up after the now deceased child.
-        self.failIfExists(path)
+        self.assertPathDoesNotExist(path)
 
 
 class TestCaseWithLPForkingServiceDaemon(
@@ -675,8 +685,8 @@ class TestCaseWithLPForkingServiceDaemon(
         # Because nothing else will clean this up, add this final handler to
         # clean up if all else fails.
         self.addCleanup(self._cleanup_daemon, pid, pid_filename)
-        # self.service_process will now be the pid of the daemon, rather than a
-        # Popen object.
+        # self.service_process will now be the pid of the daemon,
+        # rather than a Popen object.
         return pid
 
     def stop_service(self):
@@ -688,8 +698,8 @@ class TestCaseWithLPForkingServiceDaemon(
         try:
             response = self.send_message_to_service('quit\n')
         except socket.error, e:
-            # Ignore a failure to connect, the service must be stopping/stopped
-            # already
+            # Ignore a failure to connect; the service must be
+            # stopping/stopped already.
             response = None
         if response is not None:
             self.assertEqual('ok\nquit command requested... exiting\n',
@@ -733,16 +743,17 @@ class TestCaseWithLPForkingServiceDaemon(
         self.service_process = None
 
     def test_simple_start_and_stop(self):
-        pass # All the work is done in setUp()
+        # All the work is done in setUp().
+        pass
 
     def test_starts_and_cleans_up(self):
-        # The service should be up and responsive
+        # The service should be up and responsive.
         response = self.send_message_to_service('hello\n')
         self.assertEqual('ok\nyep, still alive\n', response)
         self.failUnless(os.path.isfile(self.service_pid_filename))
         with open(self.service_pid_filename, 'rb') as f:
             content = f.read()
         self.assertEqualDiff('%d\n' % (self.service_process,), content)
-        # We're done, shut it down
+        # We're done.  Shut it down.
         self.stop_service()
         self.failIf(os.path.isfile(self.service_pid_filename))

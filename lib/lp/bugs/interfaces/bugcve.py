@@ -11,7 +11,7 @@ __all__ = ['IBugCve']
 
 from zope.schema import Object
 
-from canonical.launchpad import _
+from lp import _
 from lp.bugs.interfaces.buglink import IBugLink
 from lp.bugs.interfaces.cve import ICve
 

@@ -24,14 +24,6 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.nl_search import nl_phrase_search
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
 from lp.answers.interfaces.faq import (
     IFAQ,
     IFAQSet,
@@ -44,6 +36,14 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.nl_search import nl_phrase_search
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 
 
 class FAQ(SQLBase):

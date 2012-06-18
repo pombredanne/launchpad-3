@@ -6,14 +6,14 @@
 __metaclass__ = type
 
 
-import re
 import os
+import re
 from shutil import rmtree
-import simplejson
 import sys
 import tempfile
 import types
 
+import simplejson
 from storm.exceptions import DisconnectionError
 from testtools.testcase import ExpectedException
 import transaction
@@ -24,22 +24,22 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.http import IResult
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import LaunchpadFunctionalLayer
-
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.osutils import override_environ
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
-    TestCase,
-    login,
     ANONYMOUS,
+    login,
+    TestCase,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import Contains
+from lp.testing.publication import test_traverse
+from lp.testing.tests import test_yuixhr_fixture
 from lp.testing.views import create_view
 from lp.testing.yuixhr import setup
-from lp.testing.tests import test_yuixhr_fixture
-from lp.testing.publication import test_traverse
+
 
 TEST_MODULE_NAME = '_lp_.tests'
 
@@ -104,7 +104,7 @@ class TestYUITestFixtureController(TestCase):
             path_info='/+yuitest/lp/testing/tests/test_yuixhr_fixture')
         view.initialize()
         content = view.renderHTML()
-        self.assertTrue(content.startswith('<!DOCTYPE HTML'))
+        self.assertTrue(content.startswith('<!DOCTYPE html>'))
         self.assertTextMatchesExpressionIgnoreWhitespace(
             re.escape(
                 'src="/+yuitest/lp/testing/tests/test_yuixhr_fixture.js"'),
@@ -158,7 +158,7 @@ class TestYUITestFixtureController(TestCase):
         view = create_traversed_view(
             path_info='/+yuitest/lp/testing/tests/test_yuixhr_fixture')
         content = view()
-        self.assertTrue(content.startswith('<!DOCTYPE HTML'))
+        self.assertTrue(content.startswith('<!DOCTYPE html>'))
         self.assertEqual(
             'text/html',
             view.request.response.getHeader('Content-Type'))

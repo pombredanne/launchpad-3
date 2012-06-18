@@ -8,6 +8,13 @@ __all__ = [
     'IQuestionsPerson',
     ]
 
+from lazr.restful.declarations import (
+    export_read_operation,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    )
+from lazr.restful.fields import ReferenceChoice
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -16,20 +23,12 @@ from zope.schema import (
     TextLine,
     )
 
-from lazr.restful.declarations import (
-    export_read_operation,
-    operation_for_version,
-    operation_parameters,
-    operation_returns_collection_of,
-    )
-from lazr.restful.fields import ReferenceChoice
-
-from canonical.launchpad import _
+from lp import _
 from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionParticipation,
     QuestionSort,
     QuestionStatus,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.interfaces.questioncollection import IQuestionCollection
 

@@ -80,7 +80,7 @@ We also have GeoIPRequest, which adapts an IBrowserRequest into an
 IGeoIPRecord, providing the latitude, longitude and time zone of the
 request's originating IP address.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.geoip.interfaces import IGeoIPRecord
     >>> request = LaunchpadTestRequest()
 

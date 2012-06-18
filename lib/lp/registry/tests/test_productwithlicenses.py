@@ -10,11 +10,6 @@ from operator import attrgetter
 from storm.store import Store
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -24,7 +19,12 @@ from lp.registry.model.product import (
     Product,
     ProductWithLicenses,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestProductWithLicenses(TestCaseWithFactory):
@@ -89,7 +89,7 @@ class TestProductWithLicenses(TestCaseWithFactory):
 
     def test_licenses_column_aggregates(self):
         # Adding a licensing column for a product with multiple licenses
-        # still finds a single product, not one per license.
+        # still finds a single product, not one per licence.
         licenses = [License.AFFERO, License.GNU_GPL_V3]
         product = self.factory.makeProduct(licenses=licenses)
         column = ProductWithLicenses.composeLicensesColumn()

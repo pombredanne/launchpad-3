@@ -18,7 +18,7 @@
     <browser:url
         for="lp.services.worlddata.interfaces.country.ICountrySet"
         path_expression="string:+countries"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
         rootsite="mainsite" />
 
     <browser:navigation

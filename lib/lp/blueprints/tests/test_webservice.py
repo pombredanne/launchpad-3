@@ -6,24 +6,23 @@
 __metaclass__ = type
 
 import transaction
-
 from zope.security.management import endInteraction
 
-from canonical.launchpad.testing.pages import (
-    LaunchpadWebServiceCaller,
-    webservice_for_person,
-    )
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.testing import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
     )
 
 
@@ -39,10 +38,8 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
             '/%s/+spec/%s' % (spec_object.target.name, spec_object.name))
 
     def getPillarOnWebservice(self, pillar_obj):
-        # XXX: 2010-11-26, salgado, bug=681767: Can't use relative URLs here.
         launchpadlib = self.getLaunchpadlib()
-        return launchpadlib.load(
-            str(launchpadlib._root_uri) + '/' + pillar_obj.name)
+        return launchpadlib.load(pillar_obj.name)
 
 
 class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
@@ -143,6 +140,12 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec = self.factory.makeSpecification(whiteboard='Test')
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(spec.whiteboard, spec_webservice.whiteboard)
+
+    def test_representation_contains_workitems(self):
+        work_item = self.factory.makeSpecificationWorkItem()
+        spec_webservice = self.getSpecOnWebservice(work_item.specification)
+        self.assertEqual(work_item.specification.workitems_text,
+                         spec_webservice.workitems_text)
 
     def test_representation_contains_milestone(self):
         product = self.factory.makeProduct()

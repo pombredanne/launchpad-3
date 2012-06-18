@@ -21,9 +21,9 @@ from zope.app.form.utility import setUpWidget
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 
 
 class ProjectScopeWidget(BrowserWidget, InputWidget):

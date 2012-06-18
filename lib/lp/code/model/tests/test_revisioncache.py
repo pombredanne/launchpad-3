@@ -14,18 +14,18 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
+from lp.code.interfaces.revisioncache import IRevisionCache
+from lp.code.model.revision import RevisionCache
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.interfaces.revisioncache import IRevisionCache
-from lp.code.model.revision import RevisionCache
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestRevisionCacheAdaptation(TestCaseWithFactory):

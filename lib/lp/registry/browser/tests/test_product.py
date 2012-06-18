@@ -5,119 +5,29 @@
 
 __metaclass__ = type
 
-import datetime
-
-import pytz
-
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.testing.pages import (
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
-from lp.registry.browser.product import (
-    ProductLicenseMixin,
-    )
 from lp.registry.interfaces.product import (
-    License,
     IProductSet,
+    License,
     )
+from lp.services.config import config
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    BrowserTestCase,
     login_celebrity,
-    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.mail_helpers import pop_notifications
+from lp.testing.fixture import DemoMode
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import find_tag_by_id
 from lp.testing.service_usage_helpers import set_service_usage
 from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
-
-
-class TestProductLicenseMixin(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        # Setup an a view that implements ProductLicenseMixin.
-        super(TestProductLicenseMixin, self).setUp()
-        self.registrant = self.factory.makePerson(
-            name='registrant', email='registrant@launchpad.dev')
-        self.product = self.factory.makeProduct(
-            name='ball', owner=self.registrant)
-        self.view = create_view(self.product, '+edit')
-        self.view.product = self.product
-        login_person(self.registrant)
-
-    def verify_whiteboard(self):
-        # Verify that the review whiteboard was updated.
-        naked_product = removeSecurityProxy(self.product)
-        whiteboard, stamp = naked_product.reviewer_whiteboard.rsplit(' ', 1)
-        self.assertEqual(
-            'User notified of license policy on', whiteboard)
-
-    def verify_user_email(self, notification):
-        # Verify that the user was sent an email about the license change.
-        self.assertEqual(
-            'License information for ball in Launchpad',
-            notification['Subject'])
-        self.assertEqual(
-            'Registrant <registrant@launchpad.dev>',
-            notification['To'])
-        self.assertEqual(
-            'Commercial <commercial@launchpad.net>',
-            notification['Reply-To'])
-
-    def test_ProductLicenseMixin_instance(self):
-        # The object under test is an instance of ProductLicenseMixin.
-        self.assertTrue(isinstance(self.view, ProductLicenseMixin))
-
-    def test_notifyCommercialMailingList_known_license(self):
-        # A known license does not generate an email.
-        self.product.licenses = [License.GNU_GPL_V2]
-        self.view.notifyCommercialMailingList()
-        self.assertEqual(0, len(pop_notifications()))
-
-    def test_notifyCommercialMailingList_other_dont_know(self):
-        # An Other/I don't know license sends one email.
-        self.product.licenses = [License.DONT_KNOW]
-        self.view.notifyCommercialMailingList()
-        self.verify_whiteboard()
-        notifications = pop_notifications()
-        self.assertEqual(1, len(notifications))
-        self.verify_user_email(notifications.pop())
-
-    def test_notifyCommercialMailingList_other_open_source(self):
-        # An Other/Open Source license sends one email.
-        self.product.licenses = [License.OTHER_OPEN_SOURCE]
-        self.product.license_info = 'http://www,boost.org/'
-        self.view.notifyCommercialMailingList()
-        self.verify_whiteboard()
-        notifications = pop_notifications()
-        self.assertEqual(1, len(notifications))
-        self.verify_user_email(notifications.pop())
-
-    def test_notifyCommercialMailingList_other_proprietary(self):
-        # An Other/Proprietary license sends one email.
-        self.product.licenses = [License.OTHER_PROPRIETARY]
-        self.product.license_info = 'All mine'
-        self.view.notifyCommercialMailingList()
-        self.verify_whiteboard()
-        notifications = pop_notifications()
-        self.assertEqual(1, len(notifications))
-        self.verify_user_email(notifications.pop())
-
-    def test__formatDate(self):
-        # Verify the date format.
-        now = datetime.datetime(2005, 6, 15, 0, 0, 0, 0, pytz.UTC)
-        result = self.view._formatDate(now)
-        self.assertEqual('2005-06-15', result)
 
 
 class TestProductConfiguration(TestCaseWithFactory):
@@ -169,10 +79,7 @@ class TestProductAddView(TestCaseWithFactory):
         self.assertTrue(message is not None)
 
     def test_staging_message_is_demo(self):
-        config.push('staging-test', '''
-            [launchpad]
-            is_demo: true
-            ''')
+        self.useFixture(DemoMode())
         view = create_initialized_view(self.product_set, '+new')
         message = find_tag_by_id(view.render(), 'staging-message')
         self.assertEqual(None, message)
@@ -203,14 +110,14 @@ class TestProductView(TestCaseWithFactory):
         self.assertTrue(view.show_programming_languages)
 
     def test_show_license_info_without_other_license(self):
-        # show_license_info is false when one of the "other" licenses is
+        # show_license_info is false when one of the "other" licences is
         # not selected.
         view = create_initialized_view(self.product, '+index')
         self.assertEqual((License.GNU_GPL_V2, ), self.product.licenses)
         self.assertFalse(view.show_license_info)
 
     def test_show_license_info_with_other_open_source_license(self):
-        # show_license_info is true when the Other/Open Source license is
+        # show_license_info is true when the Other/Open Source licence is
         # selected.
         view = create_initialized_view(self.product, '+index')
         with person_logged_in(self.product.owner):
@@ -218,7 +125,7 @@ class TestProductView(TestCaseWithFactory):
         self.assertTrue(view.show_license_info)
 
     def test_show_license_info_with_other_open_proprietary_license(self):
-        # show_license_info is true when the Other/Proprietary license is
+        # show_license_info is true when the Other/Proprietary licence is
         # selected.
         view = create_initialized_view(self.product, '+index')
         with person_logged_in(self.product.owner):
@@ -226,14 +133,14 @@ class TestProductView(TestCaseWithFactory):
         self.assertTrue(view.show_license_info)
 
     def test_is_proprietary_with_proprietary_license(self):
-        # is_proprietary is true when the project has a proprietary license.
+        # is_proprietary is true when the project has a proprietary licence.
         with person_logged_in(self.product.owner):
             self.product.licenses = [License.OTHER_PROPRIETARY]
         view = create_initialized_view(self.product, '+index')
         self.assertTrue(view.is_proprietary)
 
     def test_is_proprietary_without_proprietary_license(self):
-        # is_proprietary is false when the project has a proprietary license.
+        # is_proprietary is false when the project has a proprietary licence.
         with person_logged_in(self.product.owner):
             self.product.licenses = [License.GNU_GPL_V2]
         view = create_initialized_view(self.product, '+index')
@@ -249,7 +156,7 @@ class TestProductView(TestCaseWithFactory):
             widget.edit_url)
 
     def test_project_reviewed_widget(self):
-        # The license reviewed widget is is unique to the product.
+        # The licence reviewed widget is is unique to the product.
         login_celebrity('registry_experts')
         view = create_initialized_view(self.product, '+index')
         widget = view.project_reviewed_widget
@@ -259,7 +166,7 @@ class TestProductView(TestCaseWithFactory):
             widget.edit_url)
 
     def test_license_approved_widget_any_license(self):
-        # The license approved widget is is unique to the product.
+        # The licence approved widget is is unique to the product.
         login_celebrity('registry_experts')
         view = create_initialized_view(self.product, '+index')
         widget = view.license_approved_widget
@@ -278,13 +185,13 @@ class TestProductView(TestCaseWithFactory):
         self.assertEqual('Commercial subscription required', text)
 
     def test_license_approved_widget_no_license(self):
-        # Projects without a license cannot be approved.
+        # Projects without a licence cannot be approved.
         with person_logged_in(self.product.owner):
             self.product.licenses = [License.DONT_KNOW]
         login_celebrity('registry_experts')
         view = create_initialized_view(self.product, '+index')
         text = view.license_approved_widget
-        self.assertEqual('License required', text)
+        self.assertEqual('Licence required', text)
 
     def test_widget_id_for_name_dots(self):
         # Dots are replaced with dashes to make a valid CSS Id.
@@ -366,7 +273,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         self.assertTrue(content.find(id='fnord-license-info') is not None)
 
     def test_project_commercial_subscription_data(self):
-        # The projects with the OTHER_Proprietary license show commercial
+        # The projects with the OTHER_Proprietary licence show commercial
         # subscription information.
         product = self.factory.makeProduct(name='fnord')
         with person_logged_in(product.owner):
@@ -393,3 +300,19 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         self.assertTrue(
             'Y.lp.app.choice.addBinaryChoice' in str(
                 content.find(id='fnord-edit-license-approved').parent))
+
+
+class TestProductRdfView(BrowserTestCase):
+    """Test the Product RDF view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_headers(self):
+        """The headers for the RDF view of a product should be as expected."""
+        product = self.factory.makeProduct()
+        browser = self.getViewBrowser(product, view_name='+rdf')
+        content_disposition = 'attachment; filename="%s.rdf"' % product.name
+        self.assertEqual(
+            content_disposition, browser.headers['Content-disposition'])
+        self.assertEqual(
+            'application/rdf+xml', browser.headers['Content-type'])

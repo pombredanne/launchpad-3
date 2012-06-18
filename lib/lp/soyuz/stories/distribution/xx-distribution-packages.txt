@@ -176,27 +176,18 @@ It will thus not be listed in the "...other untrusted versions of..." portlet.
     # Give the creators of the above source packages some soyuz
     # karma for their efforts.
     >>> from lp.registry.model.karma import KarmaTotalCache
+    >>> from lp.testing.dbuser import dbuser
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
     >>> ppa_disabled_owner_id = ppa_disabled.owner.id
     >>> ppa_disabled.disable()
-    >>> transaction.commit()
-
-    # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
-    # test api call to switchDbUser that works for non-zopeless layers.
-    # When bug 396419 is fixed, we can instead use
-    # DatabaseLayer.switchDbUser() instead of reconnect_stores()
-    >>> from canonical.testing.layers import reconnect_stores
-    >>> reconnect_stores('karmacacheupdater')
-    >>> from zope.component import getUtility
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_beta_owner_id, karma_total=200)
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_nightly_owner_id, karma_total=201)
-    >>> cache_entry = KarmaTotalCache(
-    ...     person=ppa_disabled_owner_id, karma_total=202)
-    >>> transaction.commit()
-    >>> reconnect_stores('launchpad')
+    >>> with dbuser('karma'):
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_beta_owner_id, karma_total=200)
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_nightly_owner_id, karma_total=201)
+    ...     cache_entry = KarmaTotalCache(
+    ...         person=ppa_disabled_owner_id, karma_total=202)
 
     >>> logout()
 
@@ -207,7 +198,7 @@ a distribution.  There are several sections of information.
 
 The page has an appropriate title and main heading.
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(user_browser.title)
     \u201ciceweasel\u201d package : Ubuntu
 
@@ -247,7 +238,7 @@ the time elapsed since it was published.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
     The Warty Warthog Release (current stable release)      Set upstream link
-      1.0  release  (main)  ... weeks ago
+      1.0  release  (main)  2006-04-11
 
 Each 'version' line contains an expandable row that shows more information
 about that version.  To show it, click the expander icon.  If the user has
@@ -256,9 +247,9 @@ javascript enabled, the information is shown in-place.
     >>> expander_url = find_tags_by_class(
     ...     user_browser.contents, 'expander')[0]
     >>> print expander_url
-    <a class="expander" href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra" id="pub26-expander">
-      &nbsp;
-    </a>
+    <a class="expander"
+    href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra"
+    id="pub26-expander"></a>
 
     >>> browser.open(user_browser.getLink(id="pub26-expander").url)
     >>> print extract_text(browser.contents)
@@ -285,7 +276,8 @@ There's also a section on the page that gives some package information:
     Component:* main
     Architectures:* any
     Latest upload: 1.0
-    *actual publishing details may vary in this distribution, these are just the package defaults.
+    *actual publishing details may vary in this distribution, these are just
+    the package defaults.
 
 And if the source has direct packaging linkage, the upstream's description
 is used in another section:
@@ -545,8 +537,8 @@ We will create 4 new versions of 'alsa-utils' sourcepackages.
     >>> versions = ['2.0', '2.1', '2.2', '2.3']
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.testing import login, logout
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
@@ -590,7 +582,7 @@ Publishing History
 ------------------
 
 Users can inspect the full publishing history by clicking on a link in
-the action menu on the the distribution source package index page.
+the action menu on the distribution source package index page.
 
     >>> anon_browser.getLink('View full publishing history').click()
 

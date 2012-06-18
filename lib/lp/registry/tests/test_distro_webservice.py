@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -11,7 +11,6 @@ from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
@@ -21,12 +20,15 @@ from lp.code.enums import (
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     api_url,
     launchpadlib_for,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestDistribution(TestCaseWithFactory):
@@ -147,7 +149,8 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
         series = self.factory.makeDistroSeries(distro)
         source_package = self.factory.makeSourcePackage(distroseries=series)
         branch = self.factory.makeBranch(
-            sourcepackage=source_package, private=True, **kwargs)
+            sourcepackage=source_package,
+            information_type=InformationType.USERDATA, **kwargs)
         return branch, distro
 
     def test_private_branch_hidden(self):
@@ -196,7 +199,9 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
         # it is visible.
         branch, distro = self.makeBranch()
         person = self.factory.makePerson()
-        team = self.factory.makeTeam(members=[person])
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            members=[person])
         removeSecurityProxy(branch).subscribe(
             team, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,

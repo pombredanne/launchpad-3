@@ -16,8 +16,18 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Int
 
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.webapp import (
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.buildmaster.enums import BuildStatus
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild,
+    )
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     enabled_with_permission,
@@ -25,17 +35,6 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     )
-from lp.app.browser.launchpadform import (
-    action,
-    LaunchpadFormView,
-    )
-from lp.app.browser.tales import CustomizableFormatter
-from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild,
-    )
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import cachedproperty
 
 
 UNEDITABLE_BUILD_STATES = (
@@ -43,17 +42,6 @@ UNEDITABLE_BUILD_STATES = (
     BuildStatus.FAILEDTOBUILD,
     BuildStatus.SUPERSEDED,
     BuildStatus.FAILEDTOUPLOAD,)
-
-
-class SourcePackageRecipeBuildFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for ISourcePackageRecipeBuild objects."""
-
-    _link_summary_template = '%(title)s [%(owner)s/%(archive)s]'
-
-    def _link_summary_values(self):
-        return {'title': self._context.title,
-                'owner': self._context.archive.owner.name,
-                'archive': self._context.archive.name}
 
 
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):

@@ -26,9 +26,7 @@
   </p>
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
-    You are not the bug assignee nor the maintainer of
-    <tal:context replace="context/bugtargetdisplayname">project</tal:context>,
-    and therefore cannot edit this bug's status.
+    You need to log in to change this bug's status.
   </p>
   <tal:has_watch
       condition="context/bugwatch"
@@ -179,14 +177,14 @@
         <td tal:content="structure view/widgets/status" />
         <td title="Changeable only by a project maintainer or bug supervisor">
           <span
-            tal:condition="not:view/userCanEditImportance"
+            tal:condition="not:view/user_has_privileges"
             class="sprite read-only"></span>
           <tal:widget content="structure view/widgets/importance" />
         </td>
         <td tal:condition="view/widgets/milestone"
             title="Changeable only by a project maintainer or bug supervisor">
           <span
-            tal:condition="not:view/userCanEditMilestone"
+            tal:condition="not:view/user_has_privileges"
             class="sprite read-only"></span>
           <tal:widget content="structure view/widgets/milestone" />
         </td>

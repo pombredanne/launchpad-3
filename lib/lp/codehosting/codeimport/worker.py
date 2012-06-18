@@ -23,6 +23,10 @@ __all__ = [
 import os
 import shutil
 
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
+
 from bzrlib.branch import (
     Branch,
     InterBranch,
@@ -40,7 +44,6 @@ from bzrlib.errors import (
     TooManyRedirections,
     )
 from bzrlib.transport import (
-    do_catching_redirections,
     get_transport_from_path,
     get_transport_from_url,
     )
@@ -59,7 +62,6 @@ from lazr.uri import (
     )
 import SCM
 
-from canonical.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.code.interfaces.codehosting import (
@@ -80,6 +82,7 @@ from lp.codehosting.safe_open import (
     BranchOpenPolicy,
     SafeBranchOpener,
     )
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 
 
@@ -92,7 +95,7 @@ class CodeImportBranchOpenPolicy(BranchOpenPolicy):
      - only open the allowed schemes
     """
 
-    allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp']
+    allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp', 'bzr']
 
     def shouldFollowReferences(self):
         """See `BranchOpenPolicy.shouldFollowReferences`.
@@ -711,49 +714,17 @@ class PullingImportWorker(ImportWorker):
         """
         return None
 
-    def _open_dir(self, url):
-        """Simple BzrDir.open clone that only uses self.probers.
-
-        :param url: URL to open
-        :return: ControlDir instance
-        """
-        def redirected(transport, e, redirection_notice):
-            self._opener_policy.checkOneURL(e.target)
-            redirected_transport = transport._redirected_to(
-                e.source, e.target)
-            if redirected_transport is None:
-                raise NotBranchError(e.source)
-            self._logger.info('%s is%s redirected to %s',
-                 transport.base, e.permanently, redirected_transport.base)
-            return redirected_transport
-
-        def find_format(transport):
-            last_error = None
-            for prober_kls in self.probers:
-                prober = prober_kls()
-                try:
-                    return transport, prober.probe_transport(transport)
-                except NotBranchError, e:
-                    last_error = e
-            else:
-                raise last_error
-        transport = get_transport_from_url(url)
-        transport, format = do_catching_redirections(find_format, transport,
-            redirected)
-        return format.open(transport)
-
     def _doImport(self):
         self._logger.info("Starting job.")
         saved_factory = bzrlib.ui.ui_factory
-        opener = SafeBranchOpener(self._opener_policy)
+        opener = SafeBranchOpener(self._opener_policy, self.probers)
         bzrlib.ui.ui_factory = LoggingUIFactory(logger=self._logger)
         try:
             self._logger.info(
                 "Getting exising bzr branch from central store.")
             bazaar_branch = self.getBazaarBranch()
             try:
-                remote_branch = opener.open(
-                    self.source_details.url, self._open_dir)
+                remote_branch = opener.open(self.source_details.url)
             except TooManyRedirections:
                 self._logger.info("Too many redirections.")
                 return CodeImportWorkerExitCode.FAILURE_INVALID

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Model tests for the DistroSeriesDifference class."""
@@ -12,13 +12,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -37,6 +31,8 @@ from lp.registry.model.distroseriesdifference import (
     most_recent_publications,
     )
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.packagesetsources import PackagesetSources
@@ -44,6 +40,10 @@ from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -934,10 +934,20 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             pub,
             ds_diff.parent_source_package_release.publishings[0])
 
-
-class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
+    def test_source_package_release_superseded(self):
+        # If the publication is not actively published, it is still returned
+        # by source_package_release()
+        dsp = self.factory.makeDistroSeriesParent()
+        spn = self.factory.makeSourcePackageName()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=dsp.derived_series,
+            archive=dsp.derived_series.main_archive, sourcepackagename=spn,
+            status=PackagePublishingStatus.SUPERSEDED)
+        dsd = getUtility(IDistroSeriesDifferenceSource).new(
+            dsp.derived_series, spn, dsp.parent_series)
+        spr = dsd.source_package_release
+        self.assertEqual(dsp.derived_series, spr.distroseries)
+        self.assertEqual(spph.sourcepackagerelease, spr.sourcepackagerelease)
 
     def test_package_diff_urls(self):
         # Only completed package diffs have urls.

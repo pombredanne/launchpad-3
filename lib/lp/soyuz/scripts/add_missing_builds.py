@@ -4,15 +4,15 @@
 
 import sys
 
-from canonical.config import config
 from lp.app.errors import NotFoundError
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 
 
 class AddMissingBuilds(SoyuzScript):

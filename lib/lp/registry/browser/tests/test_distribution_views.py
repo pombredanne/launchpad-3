@@ -6,17 +6,17 @@ __metaclass__ = type
 import soupmatchers
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import (
+    login,
     login_celebrity,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
 from lp.testing.views import create_initialized_view
 

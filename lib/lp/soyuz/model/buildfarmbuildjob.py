@@ -9,9 +9,9 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
+from lp.services.database.constants import UTC_NOW
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 
 

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Specification."""
@@ -10,19 +10,19 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,
     )
+from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class SpecificationTests(TestCaseWithFactory):
@@ -65,8 +65,7 @@ class SpecificationTests(TestCaseWithFactory):
         product2 = self.factory.makeProduct()
         specification1 = self.factory.makeSpecification(
             product=product1, name="foo")
-        specification2 = self.factory.makeSpecification(
-            product=product2, name="foo")
+        self.factory.makeSpecification(product=product2, name="foo")
         self.assertRaises(
             TargetAlreadyHasSpecification,
             removeSecurityProxy(specification1).retarget, product2)
@@ -83,7 +82,7 @@ class SpecificationTests(TestCaseWithFactory):
         product2 = self.factory.makeProduct()
         specification1 = self.factory.makeSpecification(
             product=product1, name="foo")
-        specification2 = self.factory.makeSpecification(
+        self.factory.makeSpecification(
             product=product2, name="foo")
         self.assertRaises(
             TargetAlreadyHasSpecification, specification1.validateMove,
@@ -119,7 +118,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         self.new_names = NewSpecificationDefinitionStatus.items.mapping.keys()
 
     def test_new_with_open_definition_status_creates_specification(self):
-        # Calling new() with an open definition status will will create
+        # Calling new() with an open definition status will create
         # a specification.
         self.assertTrue(
             SpecificationDefinitionStatus.NEW.name in self.new_names)

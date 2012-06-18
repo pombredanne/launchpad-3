@@ -17,9 +17,9 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.config import config
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.bugs.scripts.bugexpire import BugJanitor
+from lp.services.config import config
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class ExpireBugTasks(LaunchpadCronScript):

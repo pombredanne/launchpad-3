@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,11 +18,13 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.services.database.bulk import load_related
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -36,8 +38,9 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_POCKET,
     SCORE_BY_URGENCY,
     )
-
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
+from lp.soyuz.model.packageset import Packageset
 
 
 class BuildPackageJob(BuildFarmJobOldDerived, Storm):
@@ -63,6 +66,14 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         We override this to provide a delegate specific to package builds."""
         self.build_farm_job = BuildFarmBuildJob(self.build)
 
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        return list(IStore(BinaryPackageBuild).find(
+            BinaryPackageBuild,
+            [BuildPackageJob.job_id.is_in([job.id for job in jobs]),
+             BuildPackageJob.build_id == BinaryPackageBuild.id]))
+
     def score(self):
         """See `IBuildPackageJob`."""
         # Define a table we'll use to calculate the score based on the time
@@ -86,17 +97,21 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         score = 0
 
         # Calculates the urgency-related part of the score.
-        urgency = SCORE_BY_URGENCY[
-            self.build.source_package_release.urgency]
-        score += urgency
+        score += SCORE_BY_URGENCY[self.build.source_package_release.urgency]
 
         # Calculates the pocket-related part of the score.
-        score_pocket = SCORE_BY_POCKET[self.build.pocket]
-        score += score_pocket
+        score += SCORE_BY_POCKET[self.build.pocket]
 
         # Calculates the component-related part of the score.
         score += SCORE_BY_COMPONENT.get(
             self.build.current_component.name, 0)
+
+        # Calculates the package-set-related part of the score.
+        package_sets = getUtility(IPackagesetSet).setsIncludingSource(
+            self.build.source_package_release.name,
+            distroseries=self.build.distro_series)
+        if not package_sets.is_empty():
+            score += package_sets.max(Packageset.relative_build_score)
 
         # Calculates the build queue time component of the score.
         right_now = datetime.now(pytz.timezone('UTC'))
@@ -156,6 +171,14 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     def virtualized(self):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
+
+    @classmethod
+    def preloadJobsData(cls, jobs):
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.services.job.model.job import Job
+        load_related(Job, jobs, ['job_id'])
+        builds = load_related(BinaryPackageBuild, jobs, ['build_id'])
+        getUtility(IBinaryPackageBuildSet).preloadBuildsData(list(builds))
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):

@@ -203,8 +203,7 @@ page will nag you about it.
 Noi, a new user, visits her home page.
 
     >>> login(ANONYMOUS)
-    >>> noi = factory.makePerson(
-    ...     name='noi', email='noi@example.com', password='test')
+    >>> noi = factory.makePerson(name='noi', email='noi@example.com')
     >>> logout()
 
     >>> noi_browser = setupBrowser('Basic noi@example.com:test')

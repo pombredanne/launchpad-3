@@ -17,5 +17,3 @@ from lp.bugs.scripts.checkwatches.core import (
     TooMuchTimeSkew,
     TwistedThreadScheduler,
     )
-
-

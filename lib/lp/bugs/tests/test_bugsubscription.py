@@ -5,17 +5,10 @@
 
 __metaclass__ = type
 
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    MatchesAny,
-    )
-
+from testtools.matchers import LessThan
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     launchpadlib_for,
@@ -23,6 +16,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 

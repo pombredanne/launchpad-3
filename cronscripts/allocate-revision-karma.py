@@ -7,9 +7,8 @@
 
 import _pythonpath
 
-from canonical.config import config
-
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
+from lp.services.config import config
 
 
 if __name__ == '__main__':

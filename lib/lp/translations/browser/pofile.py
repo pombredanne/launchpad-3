@@ -25,9 +25,15 @@ from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
     LaunchpadView,
@@ -35,15 +41,9 @@ from canonical.launchpad.webapp import (
     Navigation,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from lp.app.errors import (
-    NotFoundError,
-    UnexpectedFormData,
-    )
-from lp.registry.interfaces.person import IPersonSet
-from lp.services.propertycache import cachedproperty
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.browser.translationmessage import (
@@ -206,8 +206,8 @@ class POFileMetadataViewMixin:
 
         return """
             New to translating in Launchpad?
-            <a href="/+help/new-to-translating.html" target="help">
-                Read our guide</a>.
+            <a href="/+help-translations/new-to-translating.html"
+            target="help">Read our guide</a>.
             """
 
     @property
@@ -245,7 +245,7 @@ class POFileMetadataViewMixin:
 
     @property
     def documentation_link_bubble(self):
-        """Reference to documentation, if appopriate."""
+        """Reference to documentation, if appropriate."""
         if not self.has_any_documentation:
             return ""
 
@@ -266,200 +266,6 @@ class POFileMetadataViewMixin:
             </div>
             """ % ' '.join([
                 self.introduction_link, self.guide_links])
-
-
-class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
-    """A basic view for a POFile
-
-    This view is different from POFileView as it is the base for a new
-    generation of POFile views that use the new TranslatableMessage class
-    to display messages. They will eventually replace POFileView and its
-    decendants."""
-
-    DEFAULT_SHOW = 'all'
-    DEFAULT_SIZE = 10
-
-    def initialize(self):
-        super(POFileBaseView, self).initialize()
-
-        self._initializeShowOption()
-
-        self.batchnav = self._buildBatchNavigator()
-
-    @cachedproperty
-    def contributors(self):
-        return tuple(self.context.contributors)
-
-    @cachedproperty
-    def user_can_edit(self):
-        """Does the user have full edit rights for this translation?"""
-        return self.context.canEditTranslations(self.user)
-
-    @cachedproperty
-    def user_can_suggest(self):
-        """Is the user allowed to make suggestions here?"""
-        return self.context.canAddSuggestions(self.user)
-
-    @property
-    def permission_statement(self):
-        """Construct the statement about permissions.
-
-        Explain the permissions the current user has on this pofile.
-        """
-
-        if self.user_can_edit:
-            return _("You have full access to this translation.")
-        if self.user_can_suggest:
-            return _("Your suggestions will be held for review by "
-                     "the managers of this translation.")
-        # Check for logged in state
-        if self.user is None:
-            return _("You are not logged in.  Please log in to "
-                     "work on translations.")
-        if not self.has_translationgroup:
-            return _("This translation is not open for changes.")
-        if self.is_managed:
-            return _("This template can be translated only by its managers.")
-        return _("There is nobody to manage translation into this particular "
-                 "language.  If you are interested in working on it, please "
-                 "contact the translation group.")
-
-    @property
-    def translation_groups_statement(self):
-        """List translation groups and translation teams for this translation.
-
-        Returns a HTML string that lists the translation groups and the
-        relevant translators for this translation.
-        """
-        if self.translation_group is not None:
-            language = self.context.language
-            groups = []
-            for group in self.context.potemplate.translationgroups:
-                translator = group.query_translator(language)
-                # XXX: henninge 2009-09-09 bug=426745:
-                # The group and translator should be linkified.
-                if translator is None:
-                    groups.append(_(u"%s translation group") % group.title)
-                else:
-                    groups.append(_(u"%s assigned by %s") % (
-                        translator.translator.displayname, group.title))
-
-            # There are at most two translation groups, so just using 'and'
-            # is fine here.
-            statement = _(u"This translation is managed by %s.") % (
-                u" and ".join(groups))
-        else:
-            statement = _(u"No translation group has been assigned.")
-        return statement
-
-    @property
-    def number_of_plural_forms(self):
-        """The number of plural forms for the language or 1 if not known."""
-        if self.context.language.pluralforms is not None:
-            return self.context.language.pluralforms
-        return 1
-
-    @property
-    def plural_expression(self):
-        """The plural expression for this language or the empty string."""
-        if self.context.language.pluralexpression is not None:
-            return self.context.language.pluralexpression
-        return ""
-
-    def _initializeShowOption(self):
-        # Get any value given by the user
-        self.show = self.request.form_ng.getOne('show')
-        self.search_text = self.request.form_ng.getOne('search')
-        if self.search_text is not None:
-            self.show = 'all'
-
-        # Functions that deliver the correct message counts for each
-        # valid option value.
-        count_functions = {
-            'all': self.context.messageCount,
-            'translated': self.context.translatedCount,
-            'untranslated': self.context.untranslatedCount,
-            'new_suggestions': self.context.unreviewedCount,
-            'changed_in_ubuntu': self.context.updatesCount,
-            }
-
-        if self.show not in count_functions:
-            self.show = self.DEFAULT_SHOW
-
-        self.shown_count = count_functions[self.show]()
-
-    def _buildBatchNavigator(self):
-        """Construct a BatchNavigator of POTMsgSets and return it."""
-
-        # Changing the "show" option resets batching.
-        old_show_option = self.request.form_ng.getOne('old_show')
-        show_option_changed = (
-            old_show_option is not None and old_show_option != self.show)
-        if show_option_changed:
-            # Start will be 0 by default.
-            force_start = True
-        else:
-            force_start = False
-        return POFileBatchNavigator(self._getSelectedPOTMsgSets(),
-                                    self.request, size=self.DEFAULT_SIZE,
-                                    transient_parameters=["old_show"],
-                                    force_start=force_start)
-
-    def _handleShowAll(self):
-        """Get `POTMsgSet`s when filtering for "all" (but possibly searching).
-
-        Normally returns all `POTMsgSet`s for this `POFile`, but also handles
-        search requests which act as a separate form of filtering.
-        """
-        if self.search_text is None:
-            return self.context.potemplate.getPOTMsgSets()
-
-        if len(self.search_text) <= 1:
-            self.request.response.addWarningNotification(
-                "Please try searching for a longer string.")
-            return self.context.potemplate.getPOTMsgSets()
-
-        return self.context.findPOTMsgSetsContaining(text=self.search_text)
-
-    def _getSelectedPOTMsgSets(self):
-        """Return a list of the POTMsgSets that will be rendered."""
-        # The set of message sets we get is based on the selection of kind
-        # of strings we have in our form.
-        get_functions = {
-            'all': self._handleShowAll,
-            'translated': self.context.getPOTMsgSetTranslated,
-            'untranslated': self.context.getPOTMsgSetUntranslated,
-            'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
-            'changed_in_ubuntu':
-                self.context.getPOTMsgSetDifferentTranslations,
-            }
-
-        if self.show not in get_functions:
-            raise UnexpectedFormData('show = "%s"' % self.show)
-
-        # We cannot listify the results to avoid additional count queries,
-        # because we could end up with a list of more than 32000 items with
-        # an average list of 5000 items.
-        # The batch system will slice the list of items so we will fetch only
-        # the exact number of entries we need to render the page.
-        return get_functions[self.show]()
-
-    @property
-    def messages(self):
-        """The list of TranslatableMessages to show."""
-        last = None
-        messages = []
-        for potmsgset in self.batchnav.currentBatch():
-            assert (last is None or
-                    potmsgset.getSequence(
-                        self.context.potemplate) >= last.getSequence(
-                            self.context.potemplate)), (
-                "POTMsgSets on page not in ascending sequence order")
-            last = potmsgset
-
-            messages.append(
-                self.context.makeTranslatableMessage(potmsgset))
-        return messages
 
 
 class POFileView(LaunchpadView):

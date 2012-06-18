@@ -46,7 +46,7 @@ Pick the first release from the set.
 
 Add a file alias to the productrelease.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
 
     >>> login("foo.bar@canonical.com")
     >>> from zope.security.proxy import removeSecurityProxy
@@ -133,7 +133,7 @@ The deleted release file will no longer appear in ProductRelease.files.
 Deleting files via a GET method is not allowed.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET'},
     ...     form={'delete_files': 'Delete Files'})

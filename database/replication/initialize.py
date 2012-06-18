@@ -9,24 +9,25 @@ This script is run once to convert a singledb Launchpad instance to
 a replicated setup.
 """
 
+import _pythonpath
+
 from optparse import OptionParser
 import subprocess
 import sys
 
-import _pythonpath
 import helpers
 
-from canonical.config import config
-from canonical.database.postgresql import (
+from lp.services.config import config
+from lp.services.database.postgresql import (
     all_sequences_in_schema,
     all_tables_in_schema,
     ConnectionString,
     )
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,

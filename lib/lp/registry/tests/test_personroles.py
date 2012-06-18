@@ -7,11 +7,11 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IPersonRoles
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestPersonRoles(TestCaseWithFactory):
@@ -39,7 +39,7 @@ class TestPersonRoles(TestCaseWithFactory):
     def _get_person_celebrities(self, is_team):
         for name in ILaunchpadCelebrities.names():
             attr = getattr(self.celebs, name)
-            if IPerson.providedBy(attr) and attr.isTeam() == is_team:
+            if IPerson.providedBy(attr) and attr.is_team == is_team:
                 yield (name, attr)
 
     def test_in_teams(self):
@@ -114,6 +114,18 @@ class TestPersonRoles(TestCaseWithFactory):
         sprint = self.factory.makeSprint()
         roles = IPersonRoles(self.person)
         self.assertFalse(roles.isOneOfDrivers(sprint))
+
+    def test_isBugSupervisor(self):
+        # The person can be the bug supervisor of something, e.g. a product.
+        product = self.factory.makeProduct(bug_supervisor=self.person)
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isBugSupervisor(product))
+
+    def test_isSecurityContact(self):
+        # The person can be the security contact of something, e.g. a product.
+        product = self.factory.makeProduct(security_contact=self.person)
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isSecurityContact(product))
 
     def test_isOneOf(self):
         # Objects may have multiple roles that a person can fulfill.

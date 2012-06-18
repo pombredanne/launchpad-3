@@ -10,11 +10,14 @@ Remove this script after migration is complete.
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from optparse import OptionParser
 import os.path
 from textwrap import dedent
 
-import _pythonpath
+from lp.services import scripts
+from lp.services.database.sqlbase import connect
 import replication.helpers
 from replication.helpers import (
     LPMAIN_SET_ID,
@@ -23,9 +26,6 @@ from replication.helpers import (
     get_all_cluster_nodes,
     get_master_node,
     )
-
-from canonical.database.sqlbase import connect
-from canonical.launchpad import scripts
 
 
 con = None

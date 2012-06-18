@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
@@ -10,6 +10,7 @@ __all__ = [
     'BadStateTransition',
     'BranchCannotBePrivate',
     'BranchCannotBePublic',
+    'BranchCannotChangeInformationType',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
@@ -155,6 +156,10 @@ class BranchCannotBePrivate(Exception):
     """The branch cannot be made private."""
 
 
+class BranchCannotChangeInformationType(Exception):
+    """The information type of this branch cannot be changed."""
+
+
 class InvalidBranchException(Exception):
     """Base exception for an error resolving a branch for a component.
 
@@ -217,6 +222,7 @@ class ClaimReviewFailed(Exception):
     """The user cannot claim the pending review."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidBranchMergeProposal(Exception):
     """Raised during the creation of a new branch merge proposal.
 
@@ -296,7 +302,7 @@ class ReviewNotPending(Exception):
 
 
 class UpdatePreviewDiffNotReady(Exception):
-    """Raised if the the preview diff is not ready to run."""
+    """Raised if the preview diff is not ready to run."""
 
 
 class UserHasExistingReview(Exception):

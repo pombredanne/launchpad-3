@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -30,7 +30,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
@@ -45,13 +45,14 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.role import IHasDrivers
 from lp.soyuz.enums import ArchivePurpose
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
                                  IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
-                                 IQuestionTarget):
+                                 IQuestionTarget, IHasDrivers):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -106,14 +107,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         "no such package -- this occurs when there is no current series for "
         "the distribution.")
 
-    total_bug_heat = Attribute(
-        "Sum of the bug heat for all the bugs matching the distribution "
-        "and sourcepackagename of the IDistributionSourcePackage.")
-
-    max_bug_heat = Attribute(
-        "Maximum bug heat for a single bug matching the distribution "
-        "and sourcepackagename of the IDistributionSourcePackage.")
-
     bug_count = Attribute(
         "Number of bugs matching the distribution and sourcepackagename "
         "of the IDistributionSourcePackage.")
@@ -121,6 +114,8 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     po_message_count = Attribute(
         "Number of translations matching the distribution and "
         "sourcepackagename of the IDistributionSourcePackage.")
+
+    drivers = Attribute("The drivers for the distribution.")
 
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this

@@ -25,8 +25,8 @@ We'll make a private archive and add a new build to it to demonstrate this.
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.testing import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
 
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
@@ -65,15 +65,17 @@ So now we can go to frog's builder page and see what the page shows us.
 The status shown to an anonymous user hides the private source it is
 building.
 
+    >>> anon_browser.mech_browser.set_handle_equiv(False)
     >>> anon_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(find_main_content(anon_browser.contents))
     The frog builder...
     Current status
-    Building private source
+    Building private job
     ...
 
 Launchpad Administrators are allowed to see the build:
 
+    >>> admin_browser.mech_browser.set_handle_equiv(False)
     >>> admin_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(find_main_content(admin_browser.contents))
     The frog builder...
@@ -85,17 +87,19 @@ Launchpad Administrators are allowed to see the build:
 Buildd Administrators are not allowed to see the build in the portlet:
 
     >>> name12_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> name12_browser.mech_browser.set_handle_equiv(False)
     >>> name12_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(find_main_content(name12_browser.contents))
     The frog builder...
     Current status
-    Building private source
+    Building private job
     ...
 
 cprov is also allowed to see his own build:
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
+    >>> cprov_browser.mech_browser.set_handle_equiv(False)
     >>> cprov_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The frog builder...
@@ -215,7 +219,7 @@ Launchpad Buildd admins cannot see private builds.
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private source
+    frog  386        Building private job
     ...
 
 cprov can see his own private build:
@@ -238,7 +242,7 @@ Anonymous users cannot see the private build:
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private source
+    frog  386        Building private job
     ...
 
 
@@ -276,8 +280,8 @@ Let's make the iceweasel package available in breezy-autotest.
 First log in as an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from lp.services.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
@@ -295,7 +299,6 @@ First log in as an admin to be able to manipulate the source publishing.
 
 Now the anonymous user can see the build:
 
-    >>> anon_browser = setupBrowser()
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
     The Launchpad build farm
@@ -307,6 +310,7 @@ Now the anonymous user can see the build:
 
 Any other logged-in user will also see the build:
 
+    >>> browser.mech_browser.set_handle_equiv(False)
     >>> browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(browser.contents))
     The Launchpad build farm

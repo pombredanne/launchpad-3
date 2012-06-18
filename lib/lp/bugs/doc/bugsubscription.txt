@@ -9,7 +9,7 @@ Bug Subscriber APIs
 
 First, let's login:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
 IBug has a subscriptions attribute:
@@ -46,8 +46,9 @@ a bug is unduped, and so forth.
 Let's create a new bug to demonstrate how direct and indirect
 subscriptions work.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
@@ -98,17 +99,17 @@ IBug.getIndirectSubscribers().
 Finer-grained access to indirect subscribers is provided by
 getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 
-    >>> linux_source_bug.getAlsoNotifiedSubscribers()
+    >>> list(linux_source_bug.getAlsoNotifiedSubscribers())
     [<Person at ...>]
-    >>> linux_source_bug.getSubscribersFromDuplicates()
-    ()
+    >>> list(linux_source_bug.getSubscribersFromDuplicates())
+    []
 
 It is also possible to get the list of indirect subscribers for an
 individual bug task.
 
     >>> from lp.bugs.model.bug import get_also_notified_subscribers
     >>> res = get_also_notified_subscribers(linux_source_bug.bugtasks[0])
-    >>> res
+    >>> list(res)
     [<Person at ...>]
 
 These are security proxied.
@@ -267,7 +268,7 @@ BugNotificationLevel.COMMENTS.
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
 
-    >>> from lp.bugs.enum import BugNotificationLevel
+    >>> from lp.bugs.enums import BugNotificationLevel
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
@@ -358,7 +359,6 @@ subscribed to the dupe target.
     Ubuntu Team
 
     >>> linux_source_bug_dupe.markAsDuplicate(linux_source_bug)
-    >>> linux_source_bug_dupe.syncUpdate()
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -380,17 +380,7 @@ bug.
     ()
 
 When a bug is marked private, specific people like the bugtask bug supervisors
-will be automatically subscribed, and only specifically allowed existing
-direct subscribers (eg bugtask pillar maintainers) will remain subscribed.
-
-We currently use a feature flag to control who is subscribed when a bug is
-made private.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
+will be automatically subscribed.
 
     >>> from zope.event import notify
 
@@ -414,7 +404,6 @@ made private.
     Foo Bar
     Mark Shuttleworth
     Robert Collins
-    Ubuntu Team
 
 A private bug never has indirect subscribers. Let's add an indirect subscriber
 to show that they still aren't included in the indirect subscriptions.
@@ -434,16 +423,15 @@ any subscribers not converted to direct subscribers.
 
     >>> linux_source_bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> linux_source_bug.syncUpdate()
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
     Mark Shuttleworth
+    Robert Collins
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     Martin Pitt
     No Privileges Person
-    Robert Collins
     Sample Person
     Scott James Remnant
     Ubuntu Team
@@ -451,14 +439,9 @@ any subscribers not converted to direct subscribers.
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Martin Pitt
     No Privileges Person
-    Robert Collins
     Sample Person
     Scott James Remnant
     Ubuntu Team
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()
 
 To find out which email addresses should receive a notification email on
 a bug, and why, IBug.getBugNotificationRecipients() assembles an
@@ -473,7 +456,7 @@ You can query for the addresses and reasons:
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
-     ('robertc@robertcollins.net', u'Subscriber (Mozilla Firefox)'),
+     ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
@@ -487,7 +470,7 @@ notification level or higher will be returned.
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('robertc@robertcollins.net', u'Subscriber (Mozilla Firefox)'),
+     ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
@@ -502,7 +485,7 @@ the COMMENTS level...
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('robertc@robertcollins.net', u'Subscriber (Mozilla Firefox)'),
+     ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
@@ -516,7 +499,7 @@ the COMMENTS level...
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
-     ('robertc@robertcollins.net', u'Subscriber (Mozilla Firefox)'),
+     ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
@@ -718,7 +701,7 @@ there is no security contact:
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, security_related=True, private=True)
+    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
     >>> new_bug = ubuntu.createBug(params)
 
     >>> getSubscribers(new_bug)
@@ -806,7 +789,7 @@ bugs, because upstream has no security contact, in this case.
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, security_related=True, private=True)
+    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
     >>> new_bug = firefox.createBug(params)
 
     >>> getSubscribers(new_bug)
@@ -872,7 +855,7 @@ security bug filed on a package, because Ubuntu has no security contact:
     >>> params = CreateBugParams(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
-    ...     owner=foobar, security_related=True, private=True)
+    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
     >>> new_bug = evolution.createBug(params)
 
     >>> getSubscribers(new_bug)
@@ -910,7 +893,6 @@ subscriptions themselves, rather than the subscribers.
     ...     owner=keybuk)
     >>> dupe_ff_bug = firefox.createBug(params)
     >>> dupe_ff_bug.markAsDuplicate(ff_bug)
-    >>> dupe_ff_bug.syncUpdate()
     >>> dupe_ff_bug.subscribe(foobar, lifeless)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():

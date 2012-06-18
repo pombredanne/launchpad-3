@@ -10,9 +10,8 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp.vocabulary import NamedSQLObjectVocabulary
-
 from lp.blueprints.model.sprint import Sprint
+from lp.services.webapp.vocabulary import NamedSQLObjectVocabulary
 
 
 class FutureSprintVocabulary(NamedSQLObjectVocabulary):

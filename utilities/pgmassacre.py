@@ -13,11 +13,12 @@ Cut off access, slaughter connections and burn the database to the ground
 (but do nothing that could put the system into recovery mode).
 """
 
+from optparse import OptionParser
 import sys
 import time
+
 import psycopg2
 import psycopg2.extensions
-from optparse import OptionParser
 
 
 def connect(dbname='template1'):

@@ -23,7 +23,7 @@ Sample Person creates the team, thus becoming its owner.
 
 Sample Person can access the +mailinglist page.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(aardvarks, '+mailinglist')
@@ -129,7 +129,6 @@ Mailman side.
     >>> login('no-priv@canonical.com')
     >>> list_one.deactivate()
     >>> mailman.act()
-    >>> logout()
     >>> transaction.commit()
 
 The team owner can purge his list, as well as a Launchpad administrator and

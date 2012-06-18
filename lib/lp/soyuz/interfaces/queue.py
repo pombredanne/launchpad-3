@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -22,10 +22,15 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
+import httplib
+
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
+    error_status,
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    operation_for_version,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -40,7 +45,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 
@@ -53,6 +58,7 @@ class QueueStateWriteProtectedError(Exception):
     """
 
 
+@error_status(httplib.BAD_REQUEST)
 class QueueInconsistentStateError(Exception):
     """Queue state machine error.
 
@@ -98,9 +104,10 @@ class IPackageUpload(Interface):
 
     export_as_webservice_entry(publish_web_link=False)
 
-    id = Int(
+    id = exported(
+        Int(
             title=_("ID"), required=True, readonly=True,
-            )
+            ))
 
     status = exported(
         Choice(
@@ -258,6 +265,8 @@ class IPackageUpload(Interface):
             has no sources associated to it.
         """
 
+    @export_write_operation()
+    @operation_for_version("devel")
     def acceptFromQueue(logger=None, dry_run=False):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
@@ -266,6 +275,8 @@ class IPackageUpload(Interface):
         :raises: AssertionError if the context is a delayed-copy.
         """
 
+    @export_write_operation()
+    @operation_for_version("devel")
     def rejectFromQueue(logger=None, dry_run=False):
         """Call setRejected, do a syncUpdate, and send notification email."""
 

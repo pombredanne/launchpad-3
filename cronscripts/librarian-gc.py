@@ -14,14 +14,14 @@ rows in the database.
 
 __metaclass__ = type
 
-import logging
-
 import _pythonpath
 
-from canonical.config import config
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.librarian import librariangc
+import logging
+
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarianserver import librariangc
 from lp.services.scripts.base import LaunchpadCronScript
 
 

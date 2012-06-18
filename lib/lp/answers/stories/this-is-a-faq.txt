@@ -33,7 +33,7 @@ support in Firefox. That question has a well-known answer, so he clicks
 on 'Link to a FAQ' to answer the question:
 
     # We use backslashreplace because the page title includes smart quotes.
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
     >>> print backslashreplace(user_browser.title)

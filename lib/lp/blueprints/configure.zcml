@@ -23,8 +23,7 @@
       name="blueprints" />
 
 
-  <lp:help-folder
-      folder="help" type="lp.blueprints.publisher.BlueprintsLayer" />
+  <lp:help-folder folder="help" name="+help-blueprints" />
 
   <!-- Sprint -->
 
@@ -37,19 +36,19 @@
         set_schema="lp.blueprints.interfaces.sprint.ISprint"/>
   </class>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.sprint.ISprint"
-      factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+      factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
       permission="zope.Public"/>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.sprint.ISprintSet"
       factory="lp.blueprints.browser.sprint.SprintSetBreadcrumb"
       permission="zope.Public"/>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.specification.ISpecification"
-      factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+      factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
       permission="zope.Public"/>
 
   <!-- This is a view used to export data needed by the sprint scheduler.
@@ -79,6 +78,12 @@
         set_attributes="whiteboard"/>
   </class>
 
+  <!-- SpecificationWorkItem -->
+  <class class="lp.blueprints.model.specificationworkitem.SpecificationWorkItem">
+    <allow
+        interface="lp.blueprints.interfaces.specificationworkitem.ISpecificationWorkItem"/>
+  </class>
+
   <!-- SpecificationDependency -->
 
   <class class="lp.blueprints.model.specificationdependency.SpecificationDependency">
@@ -104,20 +109,11 @@
   <subscriber
       for="lp.blueprints.interfaces.specificationsubscription.ISpecificationSubscription
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_subscription_created"/>
+      handler="lp.blueprints.mail.notifications.notify_specification_subscription_created"/>
   <subscriber
       for="lp.blueprints.interfaces.specificationsubscription.ISpecificationSubscription
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_subscription_modified"/>
-
-  <!-- SpecificationFeedback -->
-
-  <class class="lp.blueprints.model.specificationfeedback.SpecificationFeedback">
-    <allow interface="lp.blueprints.interfaces.specificationfeedback.ISpecificationFeedback"/>
-    <require
-        permission="zope.Public"
-        set_schema="lp.blueprints.interfaces.specificationfeedback.ISpecificationFeedback"/>
-  </class>
+      handler="lp.blueprints.mail.notifications.notify_specification_subscription_modified"/>
 
   <!-- SprintAttendance -->
 
@@ -139,7 +135,7 @@
   <subscriber
       for="lp.blueprints.interfaces.specificationbranch.ISpecificationBranch
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.subscribers.karma.spec_branch_created"/>
+      handler="lp.blueprints.subscribers.spec_branch_created"/>
 
   <!-- SpecificationBranchSet -->
 
@@ -176,7 +172,8 @@
     <require
         permission="launchpad.AnyPerson"
         attributes="linkBug
-                    unlinkBug"/>
+                    unlinkBug
+                    setWorkItems"/>
   </class>
 
   <class class="lp.blueprints.model.specificationbug.SpecificationBug">
@@ -187,11 +184,11 @@
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.subscribers.karma.spec_created"/>
+      handler="lp.blueprints.subscribers.spec_created"/>
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.subscribers.karma.spec_modified"/>
+      handler="lp.blueprints.subscribers.spec_modified"/>
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
@@ -203,7 +200,7 @@
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_modified"/>
+      handler="lp.blueprints.mail.notifications.notify_specification_modified"/>
 
   <!-- SpecificationSet -->
 

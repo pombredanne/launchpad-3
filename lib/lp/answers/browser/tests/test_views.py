@@ -11,16 +11,16 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing import BrowserTestCase
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
-from lp.testing import BrowserTestCase
 
 
 class TestEmailObfuscated(BrowserTestCase):

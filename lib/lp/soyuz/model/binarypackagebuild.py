@@ -33,35 +33,6 @@ from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    ISlaveStore,
-    IStore,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -78,10 +49,38 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
     )
+from lp.services.config import config
+from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.job.model.job import Job
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
+    )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
@@ -434,13 +433,18 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 "It is expected to be a tuple containing only another "
                 "tuple with 3 elements  (name, version, relation)."
                 % (token, self.title, self.id, self.dependencies))
+        # Map relations to the canonical form used in control files.
+        if relation == '<':
+            relation = '<<'
+        elif relation == '>':
+            relation = '>>'
         return (name, version, relation)
 
     def _checkDependencyVersion(self, available, required, relation):
         """Return True if the available version satisfies the context."""
         # This dict maps the package version relationship syntax in lambda
-        # functions which returns boolean according the results of
-        # apt_pkg.VersionCompare function (see the order above).
+        # functions which returns boolean according to the results of
+        # apt_pkg.version_compare function (see the order above).
         # For further information about pkg relationship syntax see:
         #
         # http://www.debian.org/doc/debian-policy/ch-relationships.html
@@ -448,11 +452,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         version_relation_map = {
             # any version is acceptable if no relationship is given
             '': lambda x: True,
-            # stricly later
+            # strictly later
             '>>': lambda x: x == 1,
             # later or equal
             '>=': lambda x: x >= 0,
-            # stricly equal
+            # strictly equal
             '=': lambda x: x == 0,
             # earlier or equal
             '<=': lambda x: x <= 0,
@@ -464,7 +468,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # it behaves similar to cmp, i.e. returns negative
         # if first < second, zero if first == second and
         # positive if first > second.
-        dep_result = apt_pkg.VersionCompare(available, required)
+        dep_result = apt_pkg.version_compare(available, required)
 
         return version_relation_map[relation](dep_result)
 
@@ -501,12 +505,13 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def updateDependencies(self):
         """See `IBuild`."""
 
-        # apt_pkg requires InitSystem to get VersionCompare working properly.
-        apt_pkg.InitSystem()
+        # apt_pkg requires init_system to get version_compare working
+        # properly.
+        apt_pkg.init_system()
 
         # Check package build dependencies using apt_pkg
         try:
-            parsed_deps = apt_pkg.ParseDepends(self.dependencies)
+            parsed_deps = apt_pkg.parse_depends(self.dependencies)
         except (ValueError, TypeError):
             raise UnparsableDependencies(
                 "Build dependencies for %s (%s) could not be parsed: '%s'\n"
@@ -683,7 +688,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 recipients = recipients.union(
                     get_contact_email_addresses(dsc_key.owner))
 
-        # Modify notification contents according the targeted archive.
+        # Modify notification contents according to the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
         # We only send build-notifications to 'buildd-admin' celebrity for
         # main archive candidates.
@@ -747,7 +752,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         else:
             extra_info = ''
 
-        template = get_email_template('build-notification.txt')
+        template = get_email_template('build-notification.txt', app='soyuz')
         replacements = {
             'source_name': self.source_package_release.name,
             'source_version': self.source_package_release.version,
@@ -866,6 +871,31 @@ class BinaryPackageBuildSet:
             return None
         return resulting_tuple[0]
 
+    def preloadBuildsData(self, builds):
+        # Circular imports.
+        from lp.soyuz.model.distroarchseries import (
+            DistroArchSeries
+            )
+        from lp.registry.model.distroseries import (
+            DistroSeries
+            )
+        from lp.registry.model.distribution import (
+            Distribution
+            )
+        from lp.soyuz.model.archive import Archive
+        from lp.registry.model.person import Person
+        self._prefetchBuildData(builds)
+        distro_arch_series = load_related(
+            DistroArchSeries, builds, ['distro_arch_series_id'])
+        package_builds = load_related(
+            PackageBuild, builds, ['package_build_id'])
+        archives = load_related(Archive, package_builds, ['archive_id'])
+        load_related(Person, archives, ['ownerID'])
+        distroseries = load_related(
+            DistroSeries, distro_arch_series, ['distroseriesID'])
+        load_related(
+            Distribution, distroseries, ['distributionID'])
+
     def getByBuildFarmJobs(self, build_farm_jobs):
         """See `ISpecificBuildFarmJobSource`."""
         if len(build_farm_jobs) == 0:
@@ -873,11 +903,14 @@ class BinaryPackageBuildSet:
         clause_tables = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
         build_farm_job_ids = [
             build_farm_job.id for build_farm_job in build_farm_jobs]
-        return Store.of(build_farm_jobs[0]).using(*clause_tables).find(
+
+        resultset = Store.of(build_farm_jobs[0]).using(*clause_tables).find(
             BinaryPackageBuild,
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.build_farm_job == BuildFarmJob.id,
             BuildFarmJob.id.is_in(build_farm_job_ids))
+        return DecoratedResultSet(
+            resultset, pre_iter_hook=self.preloadBuildsData)
 
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""
@@ -949,7 +982,7 @@ class BinaryPackageBuildSet:
                         SourcePackageRelease.id AND
                     SourcePackageRelease.sourcepackagename =
                         SourcePackageName.id
-                    AND SourcepackageName.name LIKE '%%' || %s || '%%'
+                    AND SourcepackageName.name LIKE '%%%%' || %s || '%%%%'
                 ''' % quote_like(name))
             else:
                 queries.append('''

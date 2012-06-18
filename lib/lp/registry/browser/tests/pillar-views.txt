@@ -9,7 +9,7 @@ project involvement. Only links to official applications are rendered.
 
 
     >>> distribution = factory.makeDistribution(name='umbra')
-    >>> login_person(distribution.owner)
+    >>> ignored = login_person(distribution.owner)
     >>> view = create_view(
     ...     distribution, '+get-involved', principal=distribution.owner)
 
@@ -65,7 +65,7 @@ The view provides a list of enabled links that is rendered by the template.
 Products are supported.
 
     >>> product = factory.makeProduct(name='bread')
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(product, '+get-involved')
     >>> print view.blueprints_usage.name
@@ -84,7 +84,6 @@ to configure each service.
     report_bug
     ask_question
     help_translate
-    submit_code
 
     >>> for link in view.configuration_links:
     ...     print link['link'].name
@@ -130,12 +129,11 @@ Changing the product's usage is reflected in the view properties.
 
 The progress bar is shown as a green bar.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
     >>> rendered = view.render()
     >>> print find_tag_by_id(rendered, 'progressbar')
-    <div ... id="progressbar">
-    ...
-    <img src="/@@/green-bar" ... width="25".../>
+    <div id="progressbar" ...>
+    <img src="/@@/green-bar" ... width: 25%.../>
     ...
 
 Each application is displayed (except for blueprints) with an
@@ -144,13 +142,13 @@ indicator showing whether it has been configured or not.
     >>> print find_tag_by_id(rendered, 'configuration_links')
     <table...
     <a href="http://launchpad.dev/bread/+configure-bugtracker"...
-    <span class="sprite no">...
+    <span class="sprite no action-icon">...
     <a href="http://launchpad.dev/bread/+configure-answers"...
-    <span class="sprite no">...
+    <span class="sprite no action-icon">...
     <a href="http://launchpad.dev/bread/+configure-translations"...
-    <span class="sprite yes">...
+    <span class="sprite yes action-icon">...
     <a href="http://launchpad.dev/bread/trunk/+setbranch"...
-    <span class="sprite no">...
+    <span class="sprite no action-icon">...
     </table>
 
 Project groups are supported too, but they only display the
@@ -238,7 +236,7 @@ set the links.  Despite the fact that the distribution uses blueprints,
 and translations those links are not enabled for DistributionSourcePackages.
 
     >>> from lp.app.enums import ServiceUsage
-    >>> login_person(distribution.owner)
+    >>> ignored = login_person(distribution.owner)
     >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.translations_usage = ServiceUsage.LAUNCHPAD
     >>> package = factory.makeDistributionSourcePackage(
@@ -268,7 +266,6 @@ The menu when viewed from a product page.
     http://bugs.launchpad.dev/bread/+filebug
     http://answers.launchpad.dev/bread/+addquestion
     http://translations.launchpad.dev/bread
-    http://code.launchpad.dev/bread/+addbranch
     http://blueprints.launchpad.dev/bread/+addspec
 
     >>> from lp.registry.browser.pillar import InvolvedMenu

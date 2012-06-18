@@ -99,17 +99,8 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasBug,
-    IHasDateCreated,
-    )
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    NULL,
-    )
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from lp import _
+from lp.app.interfaces.launchpad import IHasDateCreated
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugwatch import (
@@ -118,6 +109,7 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -126,6 +118,12 @@ from lp.services.fields import (
     StrippedTextLine,
     Summary,
     )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
+from lp.services.webapp.interfaces import ITableBatchNavigator
 from lp.soyuz.interfaces.component import IComponent
 
 
@@ -140,53 +138,43 @@ class BugTaskImportance(DBEnumeratedType):
     UNKNOWN = DBItem(999, """
         Unknown
 
-        The severity of this bug task is unknown.
+        The importance of this bug is not known.
         """)
 
     CRITICAL = DBItem(50, """
         Critical
 
-        This bug is essential to fix as soon as possible. It affects
-        system stability, data integrity and/or remote access
-        security.
+        Fix now or as soon as possible.
         """)
 
     HIGH = DBItem(40, """
         High
 
-        This bug needs urgent attention from the maintainer or
-        upstream. It affects local system security or data integrity.
+        Schedule to be fixed soon.
         """)
 
     MEDIUM = DBItem(30, """
         Medium
 
-        This bug warrants an upload just to fix it, but can be put
-        off until other major or critical bugs have been fixed.
+        Fix when convenient, or schedule to fix later.
         """)
 
     LOW = DBItem(20, """
         Low
 
-        This bug does not warrant an upload just to fix it, but
-        it should be fixed, if possible, next time the maintainer
-        does an upload. For example, it might be a typo in a document.
+        Fix when convenient.
         """)
 
     WISHLIST = DBItem(10, """
         Wishlist
 
-        This is not a bug, but a request for an enhancement or
-        new feature that does not yet exist in the package. It does
-        not affect system stability. For example: it might be a
-        usability or documentation fix.
+        Not a bug. It's an enhancement/new feature.
         """)
 
     UNDECIDED = DBItem(5, """
         Undecided
 
-        A relevant developer or manager has not yet decided how
-        important this bug is.
+        Not decided yet. Maybe needs more discussion.
         """)
 
 
@@ -199,8 +187,7 @@ class BugTaskStatus(DBEnumeratedType):
     NEW = DBItem(10, """
         New
 
-        This is a new bug and has not yet been confirmed by the maintainer of
-        this product or source package.
+        Not looked at yet.
         """)
 
     # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
@@ -211,31 +198,25 @@ class BugTaskStatus(DBEnumeratedType):
     INCOMPLETE = DBItem(15, """
         Incomplete
 
-        More info is required before making further progress on this bug,
-        likely from the reporter. E.g. the exact error message the user saw,
-        the URL the user was visiting when the bug occurred, etc.
+        Cannot be verified, the reporter needs to give more info.
         """)
 
     OPINION = DBItem(16, """
         Opinion
 
-        The bug remains open for discussion only. This status is usually
-        used where there is disagreement over whether the bug is relevant
-        to the current target and whether it should be fixed.
+        Doesn't fit with the project, but can be discussed.
         """)
 
     INVALID = DBItem(17, """
         Invalid
 
-        This is not a bug. It could be a support request, spam, or a
-        misunderstanding.
+        Not a bug. May be a support request or spam.
         """)
 
     WONTFIX = DBItem(18, """
         Won't Fix
 
-        This will not be fixed. For example, this might be a bug but it's not
-        considered worth fixing, or it might not be fixed in this release.
+        Doesn't fit with the project plans, sorry.
         """)
 
     EXPIRED = DBItem(19, """
@@ -247,44 +228,37 @@ class BugTaskStatus(DBEnumeratedType):
     CONFIRMED = DBItem(20, """
         Confirmed
 
-        This bug has been reviewed, verified, and confirmed as something
-        needing fixing. Anyone can set this status.
+        Verified by someone other than the reporter.
         """)
 
     TRIAGED = DBItem(21, """
         Triaged
 
-        This bug has been reviewed, verified, and confirmed as
-        something needing fixing. The user must be a bug supervisor to
-        set this status, so it carries more weight than merely
-        Confirmed.
+        Verified by the bug supervisor.
         """)
 
     INPROGRESS = DBItem(22, """
         In Progress
 
-        The person assigned to fix this bug is currently working on fixing it.
+        The assigned person is working on it.
         """)
 
     FIXCOMMITTED = DBItem(25, """
         Fix Committed
 
-        This bug has been fixed in version control, but the fix has
-        not yet made it into a released version of the affected
-        software.
+        Fixed, but not available until next release.
         """)
 
     FIXRELEASED = DBItem(30, """
         Fix Released
 
-        The fix for this bug is available in a released version of the
-        affected software.
+        The fix was released.
         """)
 
     UNKNOWN = DBItem(999, """
         Unknown
 
-        The status of this bug task is unknown.
+        The status of this bug is not known.
         """)
 
 
@@ -562,7 +536,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
             title=_('Assigned to'), required=False,
             vocabulary='ValidAssignee',
             readonly=True))
-    assigneeID = Attribute('The assignee ID (for eager loading)')
+    assigneeID = Int(title=_('The assignee ID (for eager loading)'))
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -795,14 +769,6 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         authorised to do so.
         """
 
-    def setImportanceFromDebbugs(severity):
-        """Set the Launchpad BugTask importance on the basis of a debbugs
-        severity.  This maps from the debbugs severity values ('normal',
-        'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
-        the Launchpad importance values, and returns the relevant Launchpad
-        importance.
-        """
-
     def canTransitionToStatus(new_status, user):
         """Return True if the user is allowed to change the status to
         `new_status`.
@@ -843,12 +809,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userCanUnassign(user):
-        """Check if the current user can set assignee to None.
-
-        Project owner, project drivers, series drivers, bug supervisors
-        and Launchpad admins can do this always; other users can do this
-        only if they or their reams are the assignee.
-        """
+        """Check if the current user can set assignee to None."""
 
     @mutator_for(assignee)
     @operation_parameters(
@@ -869,10 +830,11 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     @mutator_for(target)
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         target=copy_field(target))
     @export_write_operation()
-    def transitionToTarget(target):
+    def transitionToTarget(target, user):
         """Convert the bug task to a different bug target."""
 
     def updateTargetNameCache():
@@ -913,11 +875,17 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         not a package task, returns None.
         """
 
-    def userCanEditMilestone(user):
-        """Can the user edit the Milestone field?"""
+    def userHasDriverPrivileges(user):
+        """Does the user have driver privledges on the current bugtask?
 
-    def userCanEditImportance(user):
-        """Can the user edit the Importance field?"""
+        :return: A boolean.
+        """
+
+    def userHasBugSupervisorPrivileges(user):
+        """Is the user privileged and allowed to change details on a bug?
+
+        :return: A boolean.
+        """
 
 
 # Set schemas that were impossible to specify during the definition of
@@ -1016,10 +984,11 @@ class IBugTaskSearchBase(Interface):
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
-    bug_supervisor = Choice(
-        title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
-        description=_('Show only bugs in packages this person or team '
-                      'is subscribed to.'),
+    structural_subscriber = Choice(
+        title=_('Structural Subscriber'), vocabulary='ValidPersonOrTeam',
+        description=_(
+            'Show only bugs in projects, series, distributions, and packages '
+            'that this person or team is subscribed to.'),
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
@@ -1065,6 +1034,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
         description=_("Search for any or all of the tags specified."),
         vocabulary=BugTagsSearchCombinator, required=False,
         default=BugTagsSearchCombinator.ANY)
+
+    upstream_target = Choice(
+        title=_('Project'), required=False, vocabulary='Product')
 
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
@@ -1187,9 +1159,9 @@ class BugTaskSearchParams:
 
     def __init__(self, user, bug=None, searchtext=None, fast_searchtext=None,
                  status=None, importance=None, milestone=None,
-                 assignee=None, sourcepackagename=None, owner=None,
-                 attachmenttype=None, orderby=None, omit_dupes=False,
-                 subscriber=None, component=None,
+                 milestone_tag=None, assignee=None, sourcepackagename=None,
+                 owner=None, attachmenttype=None, orderby=None,
+                 omit_dupes=False, subscriber=None, component=None,
                  pending_bugwatch_elsewhere=False, resolved_upstream=False,
                  open_upstream=False, has_no_upstream_bugtask=False, tag=None,
                  has_cve=False, bug_supervisor=None, bug_reporter=None,
@@ -1204,7 +1176,9 @@ class BugTaskSearchParams:
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, linked_blueprints=None,
                  structural_subscriber=None, modified_since=None,
-                 created_since=None, exclude_conjoined_tasks=False, cve=None):
+                 created_since=None, exclude_conjoined_tasks=False, cve=None,
+                 upstream_target=None, milestone_dateexpected_before=None,
+                 milestone_dateexpected_after=None, created_before=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1212,6 +1186,7 @@ class BugTaskSearchParams:
         self.status = status
         self.importance = importance
         self.milestone = milestone
+        self.milestone_tag = milestone_tag
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
         self.owner = owner
@@ -1251,8 +1226,12 @@ class BugTaskSearchParams:
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
         self.created_since = created_since
+        self.created_before = created_before
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
         self.cve = cve
+        self.upstream_target = upstream_target
+        self.milestone_dateexpected_before = milestone_dateexpected_before
+        self.milestone_dateexpected_after = milestone_dateexpected_after
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1397,7 +1376,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
                        linked_blueprints=None, structural_subscriber=None,
-                       modified_since=None, created_since=None):
+                       modified_since=None, created_since=None,
+                       created_before=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1468,6 +1448,7 @@ class BugTaskSearchParams:
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
         search_params.created_since = created_since
+        search_params.created_before = created_before
 
         return search_params
 
@@ -1475,6 +1456,8 @@ class BugTaskSearchParams:
 class IBugTaskSet(Interface):
     """A utility to retrieving BugTasks."""
     title = Attribute('Title')
+    orderby_expression = Attribute(
+        "The SQL expression for a sort key")
 
     def get(task_id):
         """Retrieve a BugTask with the given id.
@@ -1488,6 +1471,18 @@ class IBugTaskSet(Interface):
         """Return the bugs with the given IDs and all of its bugtasks.
 
         :return: A dictionary mapping the bugs to their bugtasks.
+        """
+
+    def getBugTaskTags(bugtasks):
+        """Return a set of bugtasks bug tags
+
+        Return a dict mapping from bugtask to tag.
+        """
+
+    def getBugTaskPeople(bugtasks):
+        """Return a set of people related to bugtasks.
+
+        Return a dict mapping from Person.id to Person.
         """
 
     def getBugTaskBadgeProperties(bugtasks):
@@ -1531,9 +1526,6 @@ class IBugTaskSet(Interface):
 
         :param search_params: a BugTaskSearchParams object
         :param args: any number of BugTaskSearchParams objects
-        :param prejoins: (keyword) A sequence of tuples
-            (table, table_join) which should be pre-joined in addition
-            to the default prejoins.
 
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the
@@ -1573,6 +1565,10 @@ class IBugTaskSet(Interface):
         :return: A list of tuples containing (status_id, count).
         """
 
+    def createManyTasks(bug, owner, targets, status=None, importance=None,
+                   assignee=None, milestone=None):
+        """Create a series of bug tasks and return them."""
+
     def createTask(bug, owner, target, status=None, importance=None,
                    assignee=None, milestone=None):
         """Create a bug task on a bug and return it.
@@ -1609,34 +1605,6 @@ class IBugTaskSet(Interface):
         inactive and have never been confirmed.
         """
 
-    def maintainedBugTasks(person, minimportance=None,
-                           showclosed=None, orderby=None, user=None):
-        """Return all bug tasks assigned to a package/product maintained by
-        :person:.
-
-        By default, closed (FIXCOMMITTED, INVALID) tasks are not
-        returned. If you want closed tasks too, just pass
-        showclosed=True.
-
-        If minimportance is not None, return only the bug tasks with
-        importance greater than minimportance.
-
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-
-        The <user> parameter is necessary to make sure we don't return any
-        bugtask of a private bug for which the user is not subscribed. If
-        <user> is None, no private bugtasks will be returned.
-        """
-
-    def getOrderByColumnDBName(col_name):
-        """Get the database name for col_name.
-
-        If the col_name is unrecognized, a KeyError is raised.
-        """
-
     def getBugCountsForPackages(user, packages):
         """Return open bug counts for the list of packages.
 
@@ -1666,12 +1634,6 @@ class IBugTaskSet(Interface):
         """Get all the milestones for the selected bugtasks' targets."""
 
     open_bugtask_search = Attribute("A search returning open bugTasks.")
-
-    def buildUpstreamClause(params):
-        """Create a SQL clause to do upstream checks in a bug search.
-
-        :return: A string SQL expression.
-        """
 
 
 def valid_remote_bug_url(value):

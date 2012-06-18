@@ -5,18 +5,20 @@
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
+from testtools.matchers import Not
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
-from testtools.matchers import Not
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
@@ -30,6 +32,9 @@ class TestProjectGroupEditView(TestCaseWithFactory):
     def setUp(self):
         super(TestProjectGroupEditView, self).setUp()
         self.project_group = self.factory.makeProject(name='grupo')
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_links_admin(self):
         # An admin can change details and administer a project group.

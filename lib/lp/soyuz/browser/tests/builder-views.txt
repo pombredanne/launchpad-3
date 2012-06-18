@@ -4,7 +4,7 @@
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
 
@@ -56,7 +56,7 @@ fields and actions are displayed:
 This page requires launchpad.Edit permission and the builder is owned
 by mark. we nee to log in as mark or any other member of admin team
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> builder_view = create_initialized_view(builder, name="+edit")
@@ -67,7 +67,6 @@ by mark. we nee to log in as mark or any other member of admin team
     ...     print field_name
     name
     title
-    description
     processor
     url
     manual
@@ -164,7 +163,7 @@ Assign the build to the 'frog' builder:
     >>> private_job.builder = frog
     >>> private_job_id = private_job.id
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 At the content class level, all the information about the current job
@@ -259,40 +258,24 @@ architectures.
     >>> amd64 = Processor.selectOneBy(name='amd64')
     >>> hppa = Processor.selectOneBy(name='hppa')
 
-    >>> a_builder = builderset.new(
-    ...     i386, url='http://hamburger', name="hamburger",
-    ...     title="The Hamburger Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     hppa, url='http://cheese', name="cheese",
-    ...     title="The Cheese Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     amd64, url='http://bacon', name="bacon",
-    ...     title="The Bacon Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     i386, url='http://egg', name="egg",
-    ...     title="The Egg Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
-
-    >>> a_builder = builderset.new(
-    ...     hppa, url='http://ham', name="ham",
-    ...     title="The Ham Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
-
-    >>> a_builder = builderset.new(
-    ...     amd64, url='http://prosciuto', name="prosciuto",
-    ...     title="The Prosciuto Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
+    >>> ignored = factory.makeBuilder(
+    ...     name='hamburger', processor=i386, virtualized=True)
+    >>> ignored = factory.makeBuilder(
+    ...     name='cheese', processor=hppa, virtualized=True)
+    >>> ignored = factory.makeBuilder(
+    ...     name='bacon', processor=amd64, virtualized=True)
+    >>> ignored = factory.makeBuilder(
+    ...     name='egg', processor=i386, virtualized=False)
+    >>> ignored = factory.makeBuilder(
+    ...     name='ham', processor=hppa, virtualized=False, manual=True)
+    >>> ignored = factory.makeBuilder(
+    ...     name='prosciuto', processor=amd64, virtualized=False)
 
 Newly created builders will be in manual mode because we don't want
 them going straight into the build farm until tested.
 
-    >>> a_builder.manual
+    >>> ham = builderset.getByName('ham')
+    >>> ham.manual
     True
 
 The 'Other' builder category is a `BuilderCategory` class, which

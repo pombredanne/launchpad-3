@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing.layers import LaunchpadLayer
+from lp.testing.layers import LaunchpadLayer
 
 
 class KarmaSampleDataTestCase(unittest.TestCase):

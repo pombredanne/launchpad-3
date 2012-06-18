@@ -28,18 +28,6 @@ from zope.interface import (
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -56,6 +44,18 @@ from lp.registry.interfaces.poll import (
     PollAlgorithm,
     PollSecrecy,
     )
+from lp.services.helpers import shortlist
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    )
+from lp.services.webapp.breadcrumb import TitleBreadcrumb
 
 
 class PollEditLinksMixin:
@@ -444,7 +444,7 @@ class PollOptionEditView(LaunchpadEditFormView):
     label = "Edit option details"
     page_title = 'Edit option'
     field_names = ["name", "title"]
-    custom_widget("title", TextWidget, width=30)
+    custom_widget("title", TextWidget, displayWidth=30)
 
     @property
     def cancel_url(self):
@@ -464,7 +464,7 @@ class PollOptionAddView(LaunchpadFormView):
     label = "Create new poll option"
     page_title = "New option"
     field_names = ["name", "title"]
-    custom_widget("title", TextWidget, width=30)
+    custom_widget("title", TextWidget, displayWidth=30)
 
     @property
     def cancel_url(self):

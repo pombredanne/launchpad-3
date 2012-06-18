@@ -6,7 +6,7 @@ Package cache system is better described in package-cache.txt.
 infrastructure and it is localised in the 'cronscripts' directory
 
   >>> import os
-  >>> from canonical.config import config
+  >>> from lp.services.config import config
   >>> script = os.path.join(config.root, "cronscripts", "update-pkgcache.py")
 
 Database sampledata has two pending modifications of package cache
@@ -72,3 +72,7 @@ Now, search results are up to date:
   >>> warty.searchPackages('foobar').count()
   0
 
+Explicitly mark the database as dirty so that it is cleaned (see bug 994158).
+
+  >>> from lp.testing.layers import DatabaseLayer
+  >>> DatabaseLayer.force_dirty_database()

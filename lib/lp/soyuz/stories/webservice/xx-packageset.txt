@@ -85,7 +85,7 @@ Here's an example with a funny URL concoted by a "smart" user.
 
 Populate the 'umbrella' package set with source packages.
 
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -573,6 +573,7 @@ Let's see what we've got:
     package_set_name: u'firefox'
     permission: u'Archive Upload Rights'
     person_link: u'http://.../~name12'
+    pocket: None
     resource_type_link: ...
     self_link: u'http://.../+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary'
     source_package_name: None

@@ -14,22 +14,22 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
 from lp.registry.model.productseries import ProductSeries
+from lp.services.config import config
+from lp.services.database.lpstorm import ISlaveStore
 from lp.services.log.logger import BufferLogger
+from lp.services.scripts.tests import run_script
 from lp.testing import (
     map_branch_contents,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.translations.scripts.translations_to_branch import (
     ExportTranslationsToBranch,
     )
@@ -169,8 +169,8 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             db_branch.last_mirrored_id, tree.branch.last_revision())
         self.assertTrue(db_branch.pending_writes)
         matches = MatchesRegex(
-            '(.|\n)*WARNING Skipped .* due to stale DB info and scheduled'
-            ' scan.')
+            "(.|\n)*WARNING Skipped .* due to stale DB info, and scheduled a "
+            "new scan.")
         self.assertThat(exporter.logger.getLogBuffer(), matches)
 
     def test_exportToBranches_handles_nonascii_exceptions(self):

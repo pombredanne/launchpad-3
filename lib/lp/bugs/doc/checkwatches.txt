@@ -6,8 +6,8 @@ can't test it properly, since we don't yet have a mock HTTP server we
 can use for testing, so let's just make sure that it doesn't try to
 contact any external servers.
 
-    >>> from canonical.database.sqlbase import cursor, sqlvalues
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.sqlbase import cursor, sqlvalues
+    >>> from lp.services.database.constants import UTC_NOW
     >>> cur = cursor()
     >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" %
     ...     sqlvalues(UTC_NOW))

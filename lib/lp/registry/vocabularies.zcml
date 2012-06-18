@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -12,7 +12,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.DistributionVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -25,7 +25,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.DistroSeriesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -37,7 +37,7 @@
   </securedutility>
 
   <class class=".vocabularies.DistroSeriesDerivationVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -49,7 +49,7 @@
   </securedutility>
 
   <class class=".vocabularies.DistroSeriesDifferencesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -62,7 +62,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.FeaturedProjectVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -75,7 +75,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.FilteredDistroSeriesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -88,7 +88,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.FilteredProductSeriesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -101,7 +101,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.KarmaCategoryVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -114,7 +114,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.MilestoneVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -127,7 +127,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.NonMergedPeopleAndTeamsVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -140,7 +140,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.AdminMergeablePersonVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -153,7 +153,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.PersonAccountToMergeVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -166,7 +166,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.PersonActiveMembershipVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -188,7 +188,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ProductVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -201,7 +201,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ProductReleaseVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -214,7 +214,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ProductSeriesVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -227,7 +227,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ProjectGroupVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -249,7 +249,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.CommercialProjectsVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -262,7 +262,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.UserTeamsParticipationVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -275,7 +275,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.UserTeamsParticipationPlusSelfVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
   <securedutility
@@ -287,7 +287,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.UserTeamsParticipationPlusSelfSimpleDisplayVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
   <securedutility
@@ -299,9 +299,21 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.AllUserTeamsParticipationVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+
+  <securedutility
+    name="AllUserTeamsParticipationPlusSelf"
+    component="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
   <securedutility
     name="ActiveMailingList"
@@ -312,7 +324,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ActiveMailingListVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -325,7 +337,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ValidPersonOrTeamVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -364,7 +376,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ValidPersonOrClosedTeamVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
   <securedutility
@@ -376,7 +388,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ValidTeamVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -389,7 +401,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ValidPersonVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -402,7 +414,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ValidTeamMemberVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -415,9 +427,20 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.ValidTeamOwnerVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+  <securedutility
+    name="NewPillarSharee"
+    component="lp.registry.vocabularies.NewPillarShareeVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.NewPillarShareeVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
   <securedutility
     name="DistributionOrProduct"
@@ -428,7 +451,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.DistributionOrProductVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -441,7 +464,7 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.DistributionOrProductOrProjectGroupVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -454,12 +477,12 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.SourcePackageNameVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
   <class class="lp.registry.vocabularies.SourcePackageNameIterator">
-    <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+    <allow interface="lp.services.webapp.vocabulary.ICountableIterator"/>
   </class>
 
   <securedutility
@@ -471,11 +494,14 @@
   </securedutility>
 
   <class class="lp.registry.vocabularies.DistributionSourcePackageVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+    <require
+        permission="zope.Public"
+        attributes="setDistribution"/>
   </class>
 
     <class
-        class="canonical.launchpad.webapp.vocabulary.VocabularyFilterAll">
+        class="lp.services.webapp.vocabulary.VocabularyFilterAll">
         <require
             permission="zope.Public"
             attributes="name title description"/>
@@ -506,6 +532,12 @@
     </class>
     <class
         class="lp.registry.vocabularies.VocabularyFilterTeam">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
+    <class
+        class="lp.registry.vocabularies.InformationTypeVocabulary">
         <require
             permission="zope.Public"
             attributes="name title description"/>

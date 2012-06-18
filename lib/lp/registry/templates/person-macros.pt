@@ -64,8 +64,8 @@
         <dd
           tal:attributes="title context/subscriptionpolicy/description">
           <span tal:replace="context/subscriptionpolicy/title" />
-          <a class="sprite maybe" href="/+help/team-subscription-policy.html"
-            target="help">&nbsp;</a>
+          <a class="sprite maybe action-icon" href="/+help-registry/team-subscription-policy.html"
+            target="help"></a>
         </dd>
       </dl>
 
@@ -92,18 +92,18 @@
        >
     <h2>Subteam of</h2>
 
-    <p tal:condition="not: context/super_teams">
+    <p tal:condition="not: view/super_teams">
       &#8220;<span tal:replace="context/displayname"/>&#8221;
       itself is not a member of any other team.
     </p>
 
-    <tal:is-a-subteam condition="context/super_teams">
+    <tal:is-a-subteam condition="view/super_teams">
       <p>
         &#8220;<span tal:replace="context/displayname"/>&#8221;
         is a member of these teams:
       </p>
       <ul class="iconed">
-        <li tal:repeat="team context/super_teams">
+        <li tal:repeat="team view/super_teams">
           <tal:block replace="structure team/fmt:link" />
         </li>
       </ul>
@@ -111,7 +111,7 @@
 
     <ul class="horizontal">
       <li
-        tal:condition="context/super_teams"
+        tal:condition="view/super_teams"
         tal:replace="structure overview_menu/memberships/fmt:link" />
       <li
         tal:condition="context/open_membership_invitations"
@@ -242,40 +242,18 @@
   </tr>
 </metal:macro>
 
-
-<metal:macro define-macro="private-team-js">
+<metal:macro define-macro="team-js">
   <tal:comment replace="nothing">
-    This macro inserts the javascript necessary to automatically insert the
-    private team prefix into a name field.  It is here since it is shared in
-    multiple templates.
+    This macro inserts the javascript used on the team add/edit pages.
+    It is here since it is shared in multiple templates.
   </tal:comment>
-  <tal:script define="private_prefix view/private_prefix|nothing"
-              condition="private_prefix">
   <script type="text/javascript"
           tal:content="string:
-    LPS.use('node', 'event', function(Y) {
-      // Prepend/remove 'private-' from team name based on visibility
-      // setting.  User can choose to edit it back out, if they wish.
-      function visibility_on_change(e) {
-        var visibility = e.target;
-        var prefix = (visibility.get('value') == 'PRIVATE')
-          ? '$private_prefix' : '';
-        // XXX: Brad Crittenden 2009-01-30
-        // bug=http://yuilibrary.com/projects/yui3/ticket/2423101
-        // Dotted CSS selectors not parsed correctly.  Therefore not
-        // using Y.one().
-        var name = document.getElementById('field.name');
-        name.value = prefix + name.value.replace(/^$private_prefix/, '');
-
-      };
-      // Attach the function to the onchange event.
-      // XXX: Brad Crittenden 2009-01-30
-      // bug=http://yuilibrary.com/projects/yui3/ticket/2423101
-      // Dotted CSS selectors not parsed correctly.
-      Y.on('change', visibility_on_change, document.getElementById('field.visibility'));
+    LPJS.use('node', 'event','lp.registry.team', function(Y) {
+      Y.on('domready', function(e) {
+        Y.lp.registry.team.initialise_team_edit();
+      });
     });">
   </script>
-  </tal:script>
 </metal:macro>
-
 </tal:root>

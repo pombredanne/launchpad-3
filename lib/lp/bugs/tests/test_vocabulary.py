@@ -5,12 +5,12 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.vocabulary import UsesBugsDistributionVocabulary
+from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class UsesBugsDistributionVocabularyTestCase(TestCaseWithFactory):

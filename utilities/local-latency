@@ -2,8 +2,8 @@
 
 __metaclass__ = type
 
-import sys
 import subprocess
+import sys
 
 from script_commands import (
     helps,

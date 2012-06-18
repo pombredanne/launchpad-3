@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SSH session support on the codehosting SSH server."""
@@ -12,20 +12,21 @@ from twisted.conch.ssh import connection
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from canonical.config import config
 from lp.codehosting import (
     get_bzr_path,
     get_BZR_PLUGIN_PATH_for_subprocess,
     )
 from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.codehosting.sshserver.session import (
+    _WaitForExit,
     ExecOnlySession,
     ForbiddenCommand,
     ForkingRestrictedExecOnlySession,
+    lookup_command_template,
     RestrictedExecOnlySession,
-    _WaitForExit,
     )
 from lp.codehosting.tests.helpers import AvatarTestCase
+from lp.services.config import config
 from lp.testing import TestCase
 
 
@@ -277,9 +278,9 @@ class TestExecOnlySession(AvatarTestCase):
 class TestRestrictedExecOnlySession(AvatarTestCase):
     """Tests for RestrictedExecOnlySession.
 
-    bzr+ssh requests to the code hosting SSH server ask the server to execute a
-    particular command: 'bzr serve --inet /'. The SSH server rejects all other
-    commands.
+    bzr+ssh requests to the code hosting SSH server ask the server to execute
+    a particular command: 'bzr serve --inet /'. The SSH server rejects all
+    other commands.
 
     When it receives the expected command, the SSH server doesn't actually
     execute the exact given command. Instead, it executes another pre-defined
@@ -290,8 +291,14 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         AvatarTestCase.setUp(self)
         self.avatar = CodehostingAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
+
+        def lookup_template(command):
+            if command == 'foo':
+                return 'bar baz %(user_id)s'
+            raise ForbiddenCommand("Not allowed to execute %r." % command)
+
         self.session = RestrictedExecOnlySession(
-            self.avatar, self.reactor, 'foo', 'bar baz %(user_id)s')
+            self.avatar, self.reactor, lookup_template)
 
     def test_makeRestrictedExecOnlySession(self):
         # A RestrictedExecOnlySession is constructed with an avatar, a reactor
@@ -302,9 +309,10 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
             % (self.session,))
         self.assertEqual(self.avatar, self.session.avatar)
         self.assertEqual(self.reactor, self.session.reactor)
-        self.assertEqual('foo', self.session.allowed_command)
         self.assertEqual('bar baz %(user_id)s',
-                         self.session.executed_command_template)
+                         self.session.lookup_command_template('foo'))
+        self.assertRaises(ForbiddenCommand,
+            self.session.lookup_command_template, 'notfoo')
 
     def test_execCommandRejectsUnauthorizedCommands(self):
         # execCommand rejects all commands except for the command specified in
@@ -336,8 +344,14 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         # RestrictedExecOnlySession can be easily registered as an adapter for
         # Conch avatars.
         from twisted.internet import reactor
+
+        def lookup_template(command):
+            if command == 'foo':
+                return 'bar baz'
+            raise ForbiddenCommand(command)
+
         adapter = RestrictedExecOnlySession.getAvatarAdapter(
-            allowed_command='foo', executed_command_template='bar baz')
+            lookup_template)
         session = adapter(self.avatar)
         self.failUnless(
             isinstance(session, RestrictedExecOnlySession),
@@ -345,8 +359,10 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
             "Got %r instead." % (session,))
         self.assertIs(self.avatar, session.avatar)
         self.assertIs(reactor, session.reactor)
-        self.assertEqual('foo', session.allowed_command)
-        self.assertEqual('bar baz', session.executed_command_template)
+        self.assertEqual('bar baz',
+                         session.lookup_command_template('foo'))
+        self.assertRaises(ForbiddenCommand,
+            session.lookup_command_template, 'notfoo')
 
 
 class TestSessionIntegration(AvatarTestCase):
@@ -411,3 +427,16 @@ class TestSessionIntegration(AvatarTestCase):
              ['bzr', 'lp-serve',
               '--inet', str(self.avatar.user_id)],
              list(arguments))
+
+
+class TestLookupCommand(TestCase):
+
+    def test_other(self):
+        self.assertRaises(ForbiddenCommand, lookup_command_template, 'foo')
+
+    def test_bzr(self):
+        self.assertEquals(
+            config.root + '/bin/py ' + get_bzr_path() +
+            ' lp-serve --inet %(user_id)s',
+            lookup_command_template(
+                'bzr serve --inet --directory=/ --allow-writes'))

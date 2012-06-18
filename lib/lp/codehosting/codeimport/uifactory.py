@@ -11,9 +11,7 @@ import sys
 import time
 
 from bzrlib.ui import NoninteractiveUIFactory
-from bzrlib.ui.text import (
-    TextProgressView,
-    )
+from bzrlib.ui.text import TextProgressView
 
 
 class LoggingUIFactory(NoninteractiveUIFactory):

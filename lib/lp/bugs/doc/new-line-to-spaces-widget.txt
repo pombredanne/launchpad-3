@@ -3,7 +3,7 @@ NewLineToSpaces Widget
 
 This custom widget is used to replace new line characters to spaces.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSearch
 

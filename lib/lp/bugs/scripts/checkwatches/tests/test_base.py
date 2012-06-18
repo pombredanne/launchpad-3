@@ -9,19 +9,19 @@ from contextlib import contextmanager
 
 import transaction
 
-from canonical.launchpad.webapp.adapter import get_request_statements
-from canonical.launchpad.webapp.interaction import (
-    endInteraction,
-    queryInteraction,
-    )
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.scripts.checkwatches.base import WorkingBase
 from lp.services.database.isolation import (
     is_transaction_in_progress,
     TransactionInProgress,
     )
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.adapter import get_request_statements
+from lp.services.webapp.interaction import (
+    endInteraction,
+    queryInteraction,
+    )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class StubTransactionManager:

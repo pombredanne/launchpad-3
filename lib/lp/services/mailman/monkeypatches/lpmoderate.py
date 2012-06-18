@@ -12,8 +12,8 @@ from email.Utils import (
 import xmlrpclib
 
 from Mailman import Errors
-from Mailman.Queue import XMLRPCRunner
 from Mailman.Logging.Syslog import syslog
+from Mailman.Queue import XMLRPCRunner
 
 
 def process(mlist, msg, msgdata):

@@ -6,11 +6,10 @@ codehosting service and puller to find and update the status of
 branches.  It is available as the codehosting attribute of our private
 XMLRPC instance.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     IPrivateApplication)
+    >>> from lp.xmlrpc.interfaces import IPrivateApplication
     >>> from lp.code.interfaces.codehosting import (
     ...     ICodehostingApplication)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(
@@ -20,7 +19,7 @@ XMLRPC instance.
 
 The CodehostingAPI view provides the ICodehostingAPI XML-RPC API:
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.code.interfaces.codehosting import ICodehostingAPI
     >>> from lp.code.xmlrpc.codehosting import CodehostingAPI
 

@@ -28,8 +28,8 @@ getSubscriptions named operation. There are none just yet.
 
 Now Eric subscribes to Fooix's bug notifications.
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> eric_webservice = webservice_for_person(
     ...     eric_db, permission=OAuthPermission.WRITE_PRIVATE)
 

@@ -30,8 +30,6 @@ bug listing.
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
       mozilla-firefox (Debian) Unknown New
-    15 Nonsensical bugs are useless
-      Mozilla Thunderbird Unknown New
     3 Bug Title Test
       mozilla-firefox (Debian Woody) Medium New
     3 Bug Title Test
@@ -40,8 +38,6 @@ bug listing.
       Evolution Medium New
     10 another test bug
       linux-source-2.6.15 (Ubuntu) Medium New
-    15 Nonsensical bugs are useless
-      Redfish Undecided New
 
 Even if a product is specified in the bug target widget, all bug reports
 will be searched.
@@ -128,7 +124,7 @@ project group.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    Bugs in The Evolution Groupware...
+    Bugs : Evolution...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
@@ -158,7 +154,7 @@ project group.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    Bugs in Ubuntu Linux...
+    Bugs : Ubuntu...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)

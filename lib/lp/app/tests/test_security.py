@@ -1,25 +1,42 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
 from zope.component import (
     getSiteManager,
-    queryAdapter,
+    getUtility,
     )
 from zope.interface import (
     implements,
     Interface,
     )
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
     AuthorizationBase,
     DelegatedAuthorization,
     )
-from lp.testing import TestCaseWithFactory
+from lp.registry.interfaces.person import (
+    IPerson,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.security import PublicOrPrivateTeamsExistence
+from lp.testing import (
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def registerFakeSecurityAdapter(interface, permission, adapter=None):
@@ -60,27 +77,16 @@ class TestAuthorizationBase(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_checkAccountAuthenticated_for_full_fledged_account(self):
-        # AuthorizationBase.checkAccountAuthenticated should delegate to
-        # checkAuthenticated() when the given account can be adapted into an
-        # IPerson.
+    def test_checkAuthenticated_for_full_fledged_account(self):
+        # AuthorizationBase.checkAuthenticated should delegate to
+        # checkAuthenticated() when the given account can be adapted
+        # into an IPerson.
         full_fledged_account = self.factory.makePerson().account
         adapter = FakeSecurityAdapter()
-        adapter.checkAccountAuthenticated(full_fledged_account)
+        adapter.checkAuthenticated(IPerson(full_fledged_account))
         self.assertVectorEqual(
             (1, adapter.checkAuthenticated.call_count),
             (0, adapter.checkUnauthenticated.call_count))
-
-    def test_checkAccountAuthenticated_for_personless_account(self):
-        # AuthorizationBase.checkAccountAuthenticated should delegate to
-        # checkUnauthenticated() when the given account can't be adapted into
-        # an IPerson.
-        personless_account = self.factory.makeAccount('Test account')
-        adapter = FakeSecurityAdapter()
-        adapter.checkAccountAuthenticated(personless_account)
-        self.assertVectorEqual(
-            (0, adapter.checkAuthenticated.call_count),
-            (1, adapter.checkUnauthenticated.call_count))
 
     def test_forwardCheckAuthenticated_object_changes(self):
         # Requesting a check for the same permission on a different object.
@@ -145,56 +151,72 @@ class TestAuthorizationBase(TestCaseWithFactory):
             adapter.forwardCheckAuthenticated(None, Dummy()))
 
 
-class FakeDelegatedAuthorization(DelegatedAuthorization):
-    def __init__(self, obj, permission=None):
-        super(FakeDelegatedAuthorization, self).__init__(
-            obj, obj.child_obj, permission)
+class TestDelegatedAuthorization(TestCase):
+    """Tests for `DelegatedAuthorization`."""
+
+    def test_checkAuthenticated(self):
+        # DelegatedAuthorization.checkAuthenticated() punts the checks back up
+        # to the security policy by generating (object, permission) tuples.
+        # The security policy is in a much better position to, well, apply
+        # policy.
+        obj, delegated_obj = object(), object()
+        authorization = DelegatedAuthorization(
+            obj, delegated_obj, "dedicatemyselfto.Evil")
+        # By default DelegatedAuthorization.checkAuthenticated() ignores its
+        # user argument, so we pass None in below, but it is required for
+        # IAuthorization, and may be useful for subclasses.
+        self.assertEqual(
+            [(delegated_obj, "dedicatemyselfto.Evil")],
+            list(authorization.checkAuthenticated(None)))
+
+    def test_checkUnauthenticated(self):
+        # DelegatedAuthorization.checkUnauthenticated() punts the checks back
+        # up to the security policy by generating (object, permission) tuples.
+        # The security policy is in a much better position to, well, apply
+        # policy.
+        obj, delegated_obj = object(), object()
+        authorization = DelegatedAuthorization(
+            obj, delegated_obj, "dedicatemyselfto.Evil")
+        self.assertEqual(
+            [(delegated_obj, "dedicatemyselfto.Evil")],
+            list(authorization.checkUnauthenticated()))
 
 
-class FakeForwardedObject:
-    implements(IDummy)
+class TestPublicOrPrivateTeamsExistence(TestCaseWithFactory):
+    """Tests for the PublicOrPrivateTeamsExistence security adapter."""
 
-    def __init__(self):
-        self.child_obj = Dummy()
+    layer = DatabaseFunctionalLayer
 
+    def test_members_of_parent_teams_get_limited_view(self):
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE)
+        public_team = self.factory.makeTeam(owner=team_owner)
+        team_user = self.factory.makePerson()
+        other_user = self.factory.makePerson()
+        with person_logged_in(team_owner):
+            public_team.addMember(team_user, team_owner)
+            public_team.addMember(private_team, team_owner)
+        checker = PublicOrPrivateTeamsExistence(
+            removeSecurityProxy(private_team))
+        self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
+        self.assertFalse(checker.checkAuthenticated(IPersonRoles(other_user)))
 
-class TestDelegatedAuthorizationBase(TestCaseWithFactory):
-
-    layer = ZopelessDatabaseLayer
-
-    def test_DelegatedAuthorization_same_permissions(self):
-
-        permission = self.factory.getUniqueString()
-        fake_obj = FakeForwardedObject()
-        outer_adapter = FakeDelegatedAuthorization(fake_obj)
-        outer_adapter.permission = permission
-
-        inner_adapter = FakeSecurityAdapter()
-        inner_adapter.permission = permission
-        registerFakeSecurityAdapter(IDummy, permission, inner_adapter)
-        user = object()
-        outer_adapter.checkAuthenticated(user)
-        outer_adapter.checkUnauthenticated()
-        self.assertVectorEqual(
-            (1, inner_adapter.checkAuthenticated.call_count),
-            (1, inner_adapter.checkUnauthenticated.call_count))
-
-    def test_DelegatedAuthorization_different_permissions(self):
-        perm_inner = 'inner'
-        perm_outer = 'outer'
-        fake_obj = FakeForwardedObject()
-        outer_adapter = FakeDelegatedAuthorization(fake_obj, perm_inner)
-        registerFakeSecurityAdapter(IDummy, perm_outer, outer_adapter)
-
-        inner_adapter = FakeSecurityAdapter()
-        inner_adapter.permission = perm_inner
-        registerFakeSecurityAdapter(IDummy, perm_inner, inner_adapter)
-
-        user = object()
-        adapter = queryAdapter(
-            FakeForwardedObject(), IAuthorization, perm_outer)
-        adapter.checkAuthenticated(user)
-        adapter.checkUnauthenticated()
-        self.assertVectorEqual(
-            (1, inner_adapter.checkAuthenticated.call_count),
-            (1, inner_adapter.checkUnauthenticated.call_count))
+    def test_members_of_pending_parent_teams_get_limited_view(self):
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE)
+        public_team = self.factory.makeTeam(owner=team_owner)
+        team_user = self.factory.makePerson()
+        other_user = self.factory.makePerson()
+        with person_logged_in(team_owner):
+            public_team.addMember(team_user, team_owner)
+            getUtility(ITeamMembershipSet).new(
+               private_team,
+               public_team,
+               TeamMembershipStatus.INVITED,
+               team_owner)
+        checker = PublicOrPrivateTeamsExistence(
+            removeSecurityProxy(private_team))
+        self.assertTrue(checker.checkAuthenticated(IPersonRoles(team_user)))
+        self.assertFalse(checker.checkAuthenticated(IPersonRoles(other_user)))

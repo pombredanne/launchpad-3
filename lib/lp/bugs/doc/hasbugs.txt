@@ -6,7 +6,7 @@ between the object and some of the bug tasks connected to it, and allows
 searching through the list of bugs.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.bugtarget import IHasBugs
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> distroset = getUtility(IDistributionSet)
@@ -45,7 +45,7 @@ values to have some sample data for the examples that follow.
     >>> bug_two_in_debian_firefox.transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Critical bugtasks:

@@ -168,7 +168,7 @@ that changes the default sort order.
 
 We need to login so we can poke at the potemplates.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('foo.bar@canonical.com')
 
 We set their priorities so that the lowest alpha-sort one has the highest
@@ -179,7 +179,7 @@ priority.
     >>> man2.priority = 7
     >>> mozconf.priority = 8
     >>> pm.priority = 9
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 And now we can confirm that priority does in fact dominate:

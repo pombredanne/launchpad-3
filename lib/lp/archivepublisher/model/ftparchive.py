@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -11,15 +11,6 @@ from storm.expr import (
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.command_spawner import (
@@ -27,7 +18,14 @@ from lp.services.command_spawner import (
     OutputLineHandler,
     ReturnCodeReceiver,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.stormexpr import Concatenate
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -121,14 +119,6 @@ class FTPArchiveHandler:
         self.distro = distro
         self.publisher = publisher
 
-        # We need somewhere to note down where the debian-installer
-        # components came from. in _di_release_components we store
-        # sets, keyed by distroseries name of the component names
-        # which contain debian-installer binaries.  This is filled out
-        # when generating overrides and file lists, and then consumed
-        # when generating apt-ftparchive configuration.
-        self._di_release_components = {}
-
     def run(self, is_careful):
         """Do the entire generation and run process."""
         self.createEmptyPocketRequests(is_careful)
@@ -216,21 +206,15 @@ class FTPArchiveHandler:
 
     def createEmptyPocketRequest(self, distroseries, pocket, comp):
         """Creates empty files for a release pocket and distroseries"""
-        if pocket == PackagePublishingPocket.RELEASE:
-            # organize distroseries and component pair as
-            # debian-installer -> distroseries_component
-            # internal map. Only the main pocket actually
-            # needs these, though.
-            self._di_release_components.setdefault(
-                distroseries.name, set()).add(comp)
-            f_touch(self._config.overrideroot,
-                    ".".join(["override", distroseries.name, comp,
-                              "debian-installer"]))
-
         suite = distroseries.getSuite(pocket)
 
         # Create empty override lists.
-        for path in ((comp, ), ("extra", comp), (comp, "src")):
+        for path in (
+            (comp, ),
+            ("extra", comp),
+            (comp, "debian-installer"),
+            (comp, "src"),
+            ):
             f_touch(os.path.join(
                 self._config.overrideroot,
                 ".".join(("override", suite) + path)))
@@ -421,12 +405,6 @@ class FTPArchiveHandler:
             if priority:
                 # We pick up debian-installer packages here
                 if section.endswith("debian-installer"):
-                    # XXX: kiko 2006-08-24: This is actually redundant with
-                    # what is done in createEmptyPocketRequests. However,
-                    # this code does make it possible to unit test this
-                    # method, so I'm sure if it should be removed.
-                    self._di_release_components.setdefault(
-                        suite, set()).add(component)
                     suboverride['d-i'].add((packagename, priority, section))
                 else:
                     suboverride['bin'].add((packagename, priority, section))
@@ -465,11 +443,11 @@ class FTPArchiveHandler:
 
         # Set up filepaths for the overrides we read
         extra_extra_overrides = os.path.join(self._config.miscroot,
-            "more-extra.override.%s.%s" % (distroseries, component))
+            "more-extra.override.%s.main" % distroseries)
         if not os.path.exists(extra_extra_overrides):
             unpocketed_series = "-".join(distroseries.split('-')[:-1])
             extra_extra_overrides = os.path.join(self._config.miscroot,
-                "more-extra.override.%s.%s" % (unpocketed_series, component))
+                "more-extra.override.%s.main" % unpocketed_series)
         # And for the overrides we write out
         main_override = os.path.join(self._config.overrideroot,
                                      "override.%s.%s" %
@@ -595,7 +573,7 @@ class FTPArchiveHandler:
             SourcePackageName.name,
             LibraryFileAlias.filename,
             Component.name,
-            Concatenate("binary-", DistroArchSeries.architecturetag),
+            Concatenate(u"binary-", DistroArchSeries.architecturetag),
             )
         join_conditions = [
             BinaryPackageRelease.id ==
@@ -697,9 +675,9 @@ class FTPArchiveHandler:
                             architecture, file_names, suite, component)
 
     def writeFileList(self, arch, file_names, dr_pocketed, component):
-        """Outputs a file list for a series and architecture.
+        """Output file lists for a series and architecture.
 
-        Also outputs a debian-installer file list if necessary.
+        This includes a debian-installer file list.
         """
         files = []
         di_files = []
@@ -708,11 +686,7 @@ class FTPArchiveHandler:
         f = file(f_path, "w")
         for name in file_names:
             if name.endswith(".udeb"):
-                # Once again, note that this component in this
-                # distroseries has d-i elements
-                self._di_release_components.setdefault(
-                    dr_pocketed, set()).add(component)
-                # And note the name for output later
+                # Note the name for output later
                 di_files.append(name)
             else:
                 files.append(name)
@@ -721,18 +695,18 @@ class FTPArchiveHandler:
         f.write("\n")
         f.close()
 
-        if len(di_files):
-            # Once again, some d-i stuff to write out...
-            self.log.debug("Writing d-i file list for %s/%s/%s" % (
+        # Once again, some d-i stuff to write out...
+        self.log.debug(
+            "Writing d-i file list for %s/%s/%s" % (
                 dr_pocketed, component, arch))
-            di_overrides = os.path.join(self._config.overrideroot,
-                                        "%s_%s_debian-installer_%s" %
-                                        (dr_pocketed, component, arch))
-            f = open(di_overrides, "w")
-            di_files.sort(key=package_name)
-            f.write("\n".join(di_files))
-            f.write("\n")
-            f.close()
+        di_overrides = os.path.join(
+            self._config.overrideroot,
+            "%s_%s_debian-installer_%s" % (dr_pocketed, component, arch))
+        f = open(di_overrides, "w")
+        di_files.sort(key=package_name)
+        f.write("\n".join(di_files))
+        f.write("\n")
+        f.close()
 
     #
     # Config Generation
@@ -810,8 +784,8 @@ class FTPArchiveHandler:
                                     else "false",
                          })
 
-        if archs and suite in self._di_release_components:
-            for component in self._di_release_components[suite]:
+        if archs:
+            for component in comps:
                 apt_config.write(STANZA_TEMPLATE % {
                     "LISTPATH": self._config.overrideroot,
                     "DISTRORELEASEONDISK": "%s/%s" % (suite, component),
@@ -830,15 +804,10 @@ class FTPArchiveHandler:
         for comp in comps:
             component_path = os.path.join(
                 self._config.distsroot, suite, comp)
-            base_paths = [component_path]
-            if suite in self._di_release_components:
-                if comp in self._di_release_components[suite]:
-                    base_paths.append(os.path.join(component_path,
-                                                   "debian-installer"))
-            for base_path in base_paths:
-                if "debian-installer" not in base_path:
-                    safe_mkdir(os.path.join(base_path, "source"))
-                    if not distroseries.include_long_descriptions:
-                        safe_mkdir(os.path.join(base_path, "i18n"))
-                for arch in archs:
-                    safe_mkdir(os.path.join(base_path, "binary-" + arch))
+            safe_mkdir(os.path.join(component_path, "source"))
+            if not distroseries.include_long_descriptions:
+                safe_mkdir(os.path.join(component_path, "i18n"))
+            for arch in archs:
+                safe_mkdir(os.path.join(component_path, "binary-" + arch))
+                safe_mkdir(os.path.join(
+                    component_path, "debian-installer", "binary-" + arch))

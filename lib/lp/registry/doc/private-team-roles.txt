@@ -18,7 +18,7 @@ Bug subscriptions
     ...     TeamSubscriptionPolicy,
     ...     )
     >>> admin_user = getUtility(IPersonSet).getByEmail('admin@canonical.com')
-    >>> login_person(admin_user)
+    >>> ignored = login_person(admin_user)
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=team_owner,
     ...     visibility=PersonVisibility.PRIVATE,
@@ -140,7 +140,7 @@ Private teams can be subscribed to private PPAs.
     ...     visibility=PersonVisibility.PRIVATE)
 
     >>> # We must login as the archive owner to add the subscription.
-    >>> login_person(team_owner)
+    >>> ignored = login_person(team_owner)
     >>> subscription = private_archive.newSubscription(
     ...     subscriber=another_priv_team,
     ...     registrant=team_owner)
@@ -184,7 +184,7 @@ Registrant
 Only a person can register a project, not a team, so no team, public
 or private, can be the project registrant.
 
-    >>> login_person(admin_user)
+    >>> ignored = login_person(admin_user)
     >>> public_team = factory.makeTeam(name='public-team',
     ...     owner=team_owner,
     ...     visibility=PersonVisibility.PUBLIC,
@@ -294,7 +294,6 @@ Team Membership
 ===============
 
 Mixing public and private teams can create interesting situations.
-Not every type of team can become a member of other types.
 
     >>> from lp.registry.interfaces.person import PrivatePersonLinkageError
     >>> reviewer = factory.makePerson()
@@ -321,8 +320,8 @@ Not every type of team can become a member of other types.
     ...         join_team(joined, joiner)
     ...     print "---"
     Public <- Public:  Allowed
-    Public <- Private:  Not Allowed
+    Public <- Private: Allowed
     ---
     Private <- Public:  Allowed
-    Private <- Private:  Not Allowed
+    Private <- Private: Allowed
     ---

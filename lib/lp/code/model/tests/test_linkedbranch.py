@@ -10,7 +10,6 @@ import unittest
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch,
     get_linked_to_branch,
@@ -24,6 +23,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestProductSeriesLinkedBranch(TestCaseWithFactory):

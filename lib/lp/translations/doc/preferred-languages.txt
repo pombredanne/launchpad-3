@@ -2,7 +2,7 @@ RequestPreferredLanguages.getPreferredLanguages() returns language objects
 based on the Accept-language header. If we can't encode the language code
 in ASCII we just skip them.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.geoip.model import RequestPreferredLanguages
 
     >>> langs = {'HTTP_ACCEPT_LANGUAGE': 'pt_BR, Espa\xf1ol'}

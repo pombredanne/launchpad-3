@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -32,10 +32,10 @@ from zope.schema import (
     Timedelta,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -140,6 +140,13 @@ class IBuildFarmJobOld(Interface):
         has an entry associated with `job`.
         """
 
+    def getByJobs(jobs):
+        """Get the specific `IBuildFarmJob`s for the given `Job`s.
+
+        Invoked on the specific `IBuildFarmJob`-implementing class that
+        has entries associated with `job`s.
+        """
+
     def generateSlaveBuildCookie():
         """Produce a cookie for the slave as a token of the job it's doing.
 
@@ -202,9 +209,10 @@ class IBuildFarmJob(IBuildFarmJobOld):
                           "is dispatched the first time and not changed in "
                           "subsequent build attempts.")))
 
-    builder = Reference(
-        title=_("Builder"), schema=IBuilder, required=False, readonly=True,
-        description=_("The builder assigned to this job."))
+    builder = exported(
+        Reference(
+            title=_("Builder"), schema=IBuilder, required=False, readonly=True,
+            description=_("The builder assigned to this job.")))
 
     buildqueue_record = Reference(
         # Really IBuildQueue, set in _schema_circular_imports to avoid
@@ -321,12 +329,6 @@ class IBuildFarmJobSource(Interface):
 
 class IBuildFarmJobSet(Interface):
     """A utility representing a set of build farm jobs."""
-
-    def getSpecificJobs(jobs):
-        """Return the specific build jobs associated with each of the jobs
-        in the provided job list.
-
-        """
 
     def getBuildsForBuilder(builder_id, status=None, user=None):
         """Return `IBuildFarmJob` records touched by a builder.

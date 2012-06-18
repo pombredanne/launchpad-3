@@ -10,13 +10,14 @@ __all__ = [
     ]
 
 from psycopg2.extensions import TransactionRollbackError
-from storm.exceptions import DisconnectionError, IntegrityError
+from storm.exceptions import (
+    DisconnectionError,
+    IntegrityError,
+    )
 import transaction
 from twisted.python.util import mergeFunctionMetadata
 
-from canonical.database.sqlbase import (
-    reset_store,
-    )
+from lp.services.database.sqlbase import reset_store
 
 
 RETRY_ATTEMPTS = 3
@@ -35,7 +36,7 @@ def retry_transaction(func):
             try:
                 return func(*args, **kwargs)
             except (DisconnectionError, IntegrityError,
-                    TransactionRollbackError), exc:
+                    TransactionRollbackError):
                 if attempt >= RETRY_ATTEMPTS:
                     raise # tried too many times
     return mergeFunctionMetadata(func, retry_transaction_decorator)

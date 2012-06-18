@@ -14,12 +14,7 @@ import os
 import tempfile
 
 import pytz
-from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp import canonical_url
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
@@ -27,13 +22,17 @@ from lp.archivepublisher.htaccess import (
     write_htpasswd,
     )
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
 from lp.services.scripts.base import LaunchpadCronScript
-from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.utils import total_seconds
+from lp.services.webapp import canonical_url
 from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
@@ -79,20 +78,21 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             write_htaccess(htaccess_filename, pub_config.htaccessroot)
             self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
-    def generateHtpasswd(self, ppa, tokens):
+    def generateHtpasswd(self, ppa):
         """Generate a htpasswd file for `ppa`s `tokens`.
 
         :param ppa: The context PPA (an `IArchive`).
-        :param tokens: A iterable containing `IArchiveAuthToken`s.
         :return: The filename of the htpasswd file that was generated.
         """
         # Create a temporary file that will be a new .htpasswd.
         pub_config = getPubConfig(ppa)
+        if not os.path.exists(pub_config.htaccessroot):
+            os.makedirs(pub_config.htaccessroot)
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
         os.close(fd)
 
         write_htpasswd(
-            temp_filename, htpasswd_credentials_for_archive(ppa, tokens))
+            temp_filename, htpasswd_credentials_for_archive(ppa))
 
         return temp_filename
 
@@ -120,13 +120,18 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def sendCancellationEmail(self, token):
         """Send an email to the person whose subscription was cancelled."""
+        if token.archive.suppress_subscription_notifications:
+            # Don't send an email if they should be suppresed for the
+            # archive
+            return
         send_to_person = token.person
         ppa_name = token.archive.displayname
         ppa_owner_url = canonical_url(token.archive.owner)
         subject = "PPA access cancelled for %s" % ppa_name
-        template = get_email_template("ppa-subscription-cancelled.txt")
+        template = get_email_template(
+            "ppa-subscription-cancelled.txt", app='soyuz')
 
-        assert not send_to_person.isTeam(), (
+        assert not send_to_person.is_team, (
             "Token.person is a team, it should always be individuals.")
 
         if send_to_person.preferredemail is None:
@@ -153,16 +158,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         simple_sendmail(from_address, to_address, subject, body, headers)
 
-    def deactivateTokens(self, send_email=False):
-        """Deactivate tokens as necessary.
+    def _getInvalidTokens(self):
+        """Return all invalid tokens.
 
-        If a subscriber no longer has an active token for the PPA, we
-        deactivate it.
-
-        :param send_email: Whether to send a cancellation email to the owner
-            of the token.  This defaults to False to speed up the test
-            suite.
-        :return: the set of ppas affected by token deactivations.
+        A token is invalid if it is active and the token owner is *not* a
+        subscriber to the archive that the token is for. The subscription can
+        be either direct or through a team.
         """
         # First we grab all the active tokens for which there is a
         # matching current archive subscription for a team of which the
@@ -181,18 +182,43 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         all_active_tokens = store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.date_deactivated == None)
-        invalid_tokens = all_active_tokens.difference(valid_tokens)
 
-        # We note the ppas affected by these token deactivations so that
-        # we can later update their htpasswd files.
+        return all_active_tokens.difference(valid_tokens)
+
+    def deactivateTokens(self, tokens, send_email=False):
+        """Deactivate the given tokens.
+
+        :return: A set of PPAs affected by the deactivations.
+        """
         affected_ppas = set()
-        for token in invalid_tokens:
+        num_tokens = 0
+        for token in tokens:
             if send_email:
                 self.sendCancellationEmail(token)
+            # Deactivate tokens one at a time, as 'tokens' is the result of a
+            # set expression and storm does not allow setting on such things.
             token.deactivate()
             affected_ppas.add(token.archive)
-
+            num_tokens += 1
+        self.logger.debug(
+            "Deactivated %s tokens, %s PPAs affected"
+            % (num_tokens, len(affected_ppas)))
         return affected_ppas
+
+    def deactivateInvalidTokens(self, send_email=False):
+        """Deactivate tokens as necessary.
+
+        If an active token for a PPA no longer has any subscribers,
+        we deactivate the token.
+
+        :param send_email: Whether to send a cancellation email to the owner
+            of the token.  This defaults to False to speed up the test
+            suite.
+        :return: the set of ppas affected by token deactivations so that we
+            can later update their htpasswd files.
+        """
+        invalid_tokens = self._getInvalidTokens()
+        return self.deactivateTokens(invalid_tokens, send_email=send_email)
 
     def expireSubscriptions(self):
         """Expire subscriptions as necessary.
@@ -217,61 +243,40 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             self.logger.info(
                 "Expired subscriptions: %s" % ", ".join(subscription_names))
 
-    def getNewTokensSinceLastRun(self):
-        """Return result set of new tokens created since the last run."""
-        store = IStore(ArchiveAuthToken)
-        # If we don't know when we last ran, we include all active
-        # tokens by default.
-        last_success = getUtility(IScriptActivitySet).getLastActivity(
-            'generate-ppa-htaccess')
-        extra_expr = []
-        if last_success:
-            # NTP is running on our servers and therefore we can assume
-            # only minimal skew, we include a fudge-factor of 1s so that
-            # even the minimal skew cannot demonstrate bug 627608.
-            last_script_start_with_skew = last_success.date_started - (
-                timedelta(seconds=1))
-            extra_expr = [
-                ArchiveAuthToken.date_created >= last_script_start_with_skew]
+    def getTimeToSyncFrom(self):
+        """Return the time we'll synchronize from.
 
+        Any new PPAs or tokens created since this time will be used to
+        generate passwords.
+        """
+        # NTP is running on our servers and therefore we can assume
+        # only minimal skew, we include a fudge-factor of 1s so that
+        # even the minimal skew cannot demonstrate bug 627608.
+        last_activity = self.get_last_activity()
+        if not last_activity:
+            return
+        return last_activity.date_started - timedelta(seconds=1)
+
+    def getNewTokens(self, since=None):
+        """Return result set of new tokens created since the given time."""
+        store = IStore(ArchiveAuthToken)
+        extra_expr = []
+        if since:
+            extra_expr = [ArchiveAuthToken.date_created >= since]
         new_ppa_tokens = store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.date_deactivated == None,
             *extra_expr)
-
         return new_ppa_tokens
 
-    def _getValidTokensForPPAs(self, ppas):
-        """Returns a dict keyed by archive with all the tokens for each."""
-        affected_ppas_with_tokens = dict([
-            (ppa, []) for ppa in ppas])
-
-        store = IStore(ArchiveAuthToken)
-        affected_ppa_tokens = store.find(
-            ArchiveAuthToken,
-            ArchiveAuthToken.date_deactivated == None,
-            ArchiveAuthToken.archive_id.is_in(
-                [ppa.id for ppa in ppas]))
-
-        for token in affected_ppa_tokens:
-            affected_ppas_with_tokens[token.archive].append(token)
-
-        return affected_ppas_with_tokens
-
-    def getNewPrivatePPAs(self):
+    def getNewPrivatePPAs(self, since=None):
         """Return the recently created private PPAs."""
         # Avoid circular import.
         from lp.soyuz.model.archive import Archive
         store = IStore(Archive)
-        # If we don't know when we last ran, we include all active
-        # tokens by default.
-        last_success = getUtility(IScriptActivitySet).getLastActivity(
-            'generate-ppa-htaccess')
         extra_expr = []
-        if last_success:
-            extra_expr = [
-                Archive.date_created >= last_success.date_completed]
-
+        if since:
+            extra_expr = [Archive.date_created >= since]
         return store.find(
             Archive, Archive._private == True, *extra_expr)
 
@@ -279,45 +284,62 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         """Script entry point."""
         self.logger.info('Starting the PPA .htaccess generation')
         self.expireSubscriptions()
-        affected_ppas = self.deactivateTokens(send_email=True)
+        affected_ppas = self.deactivateInvalidTokens(send_email=True)
+        current_ppa_count = len(affected_ppas)
+        self.logger.debug(
+            '%s PPAs with deactivated tokens' % current_ppa_count)
+
+        last_success = self.getTimeToSyncFrom()
 
         # In addition to the ppas that are affected by deactivated
         # tokens, we also want to include any ppas that have tokens
         # created since the last time we ran.
-        for token in self.getNewTokensSinceLastRun():
+        num_tokens = 0
+        for token in self.getNewTokens(since=last_success):
             affected_ppas.add(token.archive)
+            num_tokens += 1
 
-        affected_ppas.update(self.getNewPrivatePPAs())
+        new_ppa_count = len(affected_ppas)
+        self.logger.debug(
+            "%s new tokens since last run, %s PPAs affected"
+            % (num_tokens, new_ppa_count - current_ppa_count))
+        current_ppa_count = new_ppa_count
 
-        affected_ppas_with_tokens = {}
-        if affected_ppas:
-            affected_ppas_with_tokens = self._getValidTokensForPPAs(
-                affected_ppas)
+        affected_ppas.update(self.getNewPrivatePPAs(since=last_success))
+        new_ppa_count = len(affected_ppas)
+        self.logger.debug(
+            "%s new private PPAs since last run"
+            % (new_ppa_count - current_ppa_count))
 
-        for ppa, valid_tokens in affected_ppas_with_tokens.iteritems():
+        self.logger.debug('%s PPAs require updating' % new_ppa_count)
+        for ppa in affected_ppas:
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
             # files.
             blacklisted_ppa_names_for_owner = self.blacklist.get(
                 ppa.owner.name, [])
             if ppa.name in blacklisted_ppa_names_for_owner:
                 self.logger.info(
-                    "Skipping htacess updates for blacklisted PPA "
+                    "Skipping htaccess updates for blacklisted PPA "
                     " '%s' owned by %s.",
                         ppa.name,
                         ppa.owner.displayname)
                 continue
             elif ppa.status == ArchiveStatus.DELETED or ppa.enabled is False:
                 self.logger.info(
-                    "Skipping htacess updates for deleted or disabled PPA "
+                    "Skipping htaccess updates for deleted or disabled PPA "
                     " '%s' owned by %s.",
                         ppa.name,
                         ppa.owner.displayname)
                 continue
 
             self.ensureHtaccess(ppa)
-            temp_htpasswd = self.generateHtpasswd(ppa, valid_tokens)
-            if not self.replaceUpdatedHtpasswd(ppa, temp_htpasswd):
-                os.remove(temp_htpasswd)
+            htpasswd_write_start = datetime.now()
+            temp_htpasswd = self.generateHtpasswd(ppa)
+            self.replaceUpdatedHtpasswd(ppa, temp_htpasswd)
+            htpasswd_write_duration = datetime.now() - htpasswd_write_start
+            self.logger.debug(
+                "Wrote htpasswd for '%s': %ss"
+                % (ppa.name, total_seconds(htpasswd_write_duration)))
 
         if self.options.no_deactivation or self.options.dryrun:
             self.logger.info('Dry run, so not committing transaction.')

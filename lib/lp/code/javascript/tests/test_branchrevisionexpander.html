@@ -1,35 +1,58 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
+<!--
+Copyright 2012 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
 
 <html>
   <head>
-  <title>Test page for branch revisionexpander JavaScript unit tests</title>
+      <title>Test branchrevisionexpander</title>
 
-  <!-- YUI 3.0 Setup -->
-  <script type="text/javascript" src="../../../../canonical/launchpad/icing/yui/yui/yui.js"></script>
-  <script type="text/javascript" src="../../../../canonical/launchpad/icing/lazr/build/lazr.js"></script>
-  <script type="text/javascript" src="../../../app/javascript/client.js"></script>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssreset/reset.css"/>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssfonts/fonts.css"/>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssbase/base.css"/>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/javascript/test.css" />
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/lazr/build/lazr-sam.css" />
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/skins/sam/console.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test/assets/skins/sam/test.css" />
 
-  <!-- expected variable -->
-  <script type="text/javascript">
-    var LP = {
-        cache: {},
-        links: {}
-    };
-  </script>
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
 
-  <!-- The module under test -->
-  <script type="text/javascript" src="../branch.revisionexpander.js"></script>
+      <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
 
-  <!-- The test suite -->
-  <script type="text/javascript" src="test_branchrevisionexpander.js"></script>
-  </head>
+      <!-- Dependencies -->
+      <script type="text/javascript" src="../../../../../build/js/lp/app/client.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/lazr/lazr.js"></script>
 
-<body class="yui3-skin-sam">
-</body>
+      <link rel="stylesheet"
+      href="../../../../canonical/launchpad/icing/lazr/assets/skins/sam/lazr.css" />
+
+
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../branch.revisionexpander.js"></script>
+
+      <!-- Any css assert for this module. -->
+      <!-- <link rel="stylesheet" href="../assets/branchrevisionexpander-core.css" /> -->
+
+      <!-- The test suite. -->
+      <script type="text/javascript" src="test_branchrevisionexpander.js"></script>
+
+      <!-- expected variable -->
+      <script type="text/javascript">
+        var LP = {
+            cache: {},
+            links: {}
+        };
+      </script>
+    </head>
+    <body class="yui3-skin-sam">
+        <ul id="suites">
+            <!-- <li>lp.large_indicator.test</li> -->
+            <li>lp.branchrevisionexpander.test</li>
+        </ul>
+    </body>
 </html>
-

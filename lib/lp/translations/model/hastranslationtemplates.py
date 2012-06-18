@@ -14,12 +14,12 @@ from storm.expr import (
     )
 from zope.interface import implements
 
-from canonical.launchpad import helpers
+from lp.services import helpers
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )
-from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import POTemplate
 
 
 class HasTranslationTemplatesMixin:

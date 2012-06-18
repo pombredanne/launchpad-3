@@ -5,31 +5,39 @@ __metaclass__ = type
 
 from operator import attrgetter
 import os.path
+
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.database.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.librarianserver.testing.fake import FakeLibrarian
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.model.translationimportqueue import (
     compose_approval_conflict_notice,
+    list_distroseries_request_targets,
+    list_product_request_targets,
     TranslationImportQueueEntry,
     )
 
@@ -55,8 +63,7 @@ class TestCanSetStatusBase:
 
     def _switch_dbuser(self):
         if self.dbuser != None:
-            transaction.commit()
-            self.layer.switchDbUser(self.dbuser)
+            switch_dbuser(self.dbuser)
 
     def _assertCanSetStatus(self, user, entry, expected_list):
         # Helper to check for all statuses.
@@ -491,6 +498,11 @@ class TestHelpers(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def clearQueue(self):
+        """Clear the translations import queue."""
+        store = IStore(TranslationImportQueueEntry)
+        store.find(TranslationImportQueueEntry).remove()
+
     def test_compose_approval_conflict_notice_summarizes_conflict(self):
         # The output from compose_approval_conflict_notice summarizes
         # the conflict: what translation domain is affected and how many
@@ -544,3 +556,140 @@ class TestHelpers(TestCaseWithFactory):
         self.assertIn(
             '"%s";\nand more (not shown here).\n' % samples[-1].displayname,
             notice)
+
+    def test_list_product_request_targets_orders_by_product_name(self):
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        names = ['c', 'a', 'b']
+        products = [self.factory.makeProduct(name=name) for name in names]
+        productseries = [
+            self.factory.makeProductSeries(product=product)
+            for product in products]
+        for series in productseries:
+            self.factory.makeTranslationImportQueueEntry(productseries=series)
+        self.assertEqual(
+            sorted(names),
+            [
+                product.name
+                for product in list_product_request_targets(True)])
+
+    def test_list_product_request_targets_ignores_distro_uploads(self):
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        self.factory.makeTranslationImportQueueEntry(
+            distroseries=self.factory.makeDistroSeries())
+        self.assertEqual([], list_product_request_targets(True))
+
+    def test_list_product_request_targets_ignores_inactive_products(self):
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        product = self.factory.makeProduct()
+        product.active = False
+        self.factory.makeTranslationImportQueueEntry(
+            productseries=self.factory.makeProductSeries(product=product))
+        self.assertEqual([], list_product_request_targets(False))
+
+    def test_list_product_request_targets_does_not_duplicate(self):
+        # list_product_request_targets will list a product only once.
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        product = self.factory.makeProduct()
+        productseries = [
+            self.factory.makeProductSeries(product=product)
+            for counter in range(2)]
+        for series in productseries:
+            for counter in range(2):
+                self.factory.makeTranslationImportQueueEntry(
+                    productseries=series)
+        self.assertEqual([product], list_product_request_targets(True))
+
+    def test_list_product_request_targets_filters_status(self):
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        entry_status = RosettaImportStatus.APPROVED
+        other_status = RosettaImportStatus.NEEDS_REVIEW
+        entry = self.factory.makeTranslationImportQueueEntry(
+            productseries=self.factory.makeProductSeries())
+        removeSecurityProxy(entry).status = entry_status
+        self.assertEqual(
+            [],
+            list_product_request_targets(
+                TranslationImportQueueEntry.status == other_status))
+        self.assertEqual(
+            [entry.productseries.product],
+            list_product_request_targets(
+                TranslationImportQueueEntry.status == entry_status))
+
+    def test_list_distroseries_request_targets_orders_by_names(self):
+        # list_distroseries_request_targets returns distroseries sorted
+        # primarily by Distribution.name, and secondarily by
+        # DistroSeries.name.
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        names = ['c', 'a', 'b']
+        distros = [
+            self.factory.makeDistribution(name=distro_name)
+            for distro_name in names]
+        for distro in distros:
+            for series_name in names:
+                series = self.factory.makeDistroSeries(
+                    distribution=distro, name=series_name)
+                series.defer_translation_imports = False
+                self.factory.makeTranslationImportQueueEntry(
+                    distroseries=series)
+        self.assertEqual(
+            [
+                ('a', 'a'), ('a', 'b'), ('a', 'c'),
+                ('b', 'a'), ('b', 'b'), ('b', 'c'),
+                ('c', 'a'), ('c', 'b'), ('c', 'c'),
+            ],
+            [
+                (series.distribution.name, series.name)
+                for series in list_distroseries_request_targets(True)])
+
+    def test_list_distroseries_request_targets_ignores_product_uploads(self):
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        self.factory.makeTranslationImportQueueEntry(
+            productseries=self.factory.makeProductSeries())
+        self.assertEqual([], list_distroseries_request_targets(True))
+
+    def test_list_distroseries_request_targets_ignores_inactive_series(self):
+        # Distroseries whose imports have been suspended are not
+        # included in list_distroseries_request_targets.
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        series = self.factory.makeDistroSeries()
+        series.defer_translation_imports = True
+        self.factory.makeTranslationImportQueueEntry(distroseries=series)
+        self.assertEqual([], list_distroseries_request_targets(True))
+
+    def test_list_distroseries_request_targets_does_not_duplicate(self):
+        # list_distroseries_request_targets will list a distroseries
+        # only once.
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        series = self.factory.makeDistroSeries()
+        series.defer_translation_imports = False
+        for counter in range(2):
+            self.factory.makeTranslationImportQueueEntry(distroseries=series)
+        self.assertEqual([series], list_distroseries_request_targets(True))
+
+    def test_list_distroseries_request_targets_filters_status(self):
+        self.clearQueue()
+        self.useFixture(FakeLibrarian())
+        entry_status = RosettaImportStatus.APPROVED
+        other_status = RosettaImportStatus.NEEDS_REVIEW
+        series = self.factory.makeDistroSeries()
+        series.defer_translation_imports = False
+        entry = self.factory.makeTranslationImportQueueEntry(
+            distroseries=series)
+        removeSecurityProxy(entry).status = entry_status
+        self.assertEqual(
+            [],
+            list_distroseries_request_targets(
+                TranslationImportQueueEntry.status == other_status))
+        self.assertEqual(
+            [entry.distroseries],
+            list_distroseries_request_targets(
+                TranslationImportQueueEntry.status == entry_status))

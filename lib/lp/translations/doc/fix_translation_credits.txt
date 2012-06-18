@@ -3,7 +3,7 @@ Script `fix_translation_credits.py`
 
 Marks all existing translation credits as translated.
 
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.testing.script import run_script
     >>> (returncode, out, err) = run_script(
     ...     'scripts/rosetta/fix_translation_credits.py')
     >>> print returncode
@@ -19,5 +19,5 @@ Marks all existing translation credits as translated.
 After altering the database from a separate process, we must tell the
 test setup that the database is dirty in spite of appearances.
 
-    >>> from canonical.testing.layers import DatabaseLayer
+    >>> from lp.testing.layers import DatabaseLayer
     >>> DatabaseLayer.force_dirty_database()

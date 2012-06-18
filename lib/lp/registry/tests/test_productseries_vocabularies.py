@@ -7,9 +7,9 @@ __metaclass__ = type
 
 from operator import attrgetter
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import ProductSeriesVocabulary
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestProductSeriesVocabulary(TestCaseWithFactory):

@@ -6,8 +6,8 @@ search and update questions. This demonstration will use a project, it's
 contact, and asker, and three questions.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.app.enums import ServiceUsage
     >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet

@@ -1,4 +1,5 @@
-= Bug Nomination =
+Bug Nomination
+==============
 
 A bug supervisor can nominate a bug to be fixed in a specific
 distribution or product series. Nominations are created by
@@ -7,7 +8,7 @@ calling IBug.addNomination.
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyClass
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.ftests import login_person
+    >>> from lp.testing import login_person
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugnomination import IBugNomination
     >>> from lp.bugs.model.bugnomination import BugNomination
@@ -23,9 +24,7 @@ calling IBug.addNomination.
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> firefox = removeSecurityProxy(firefox)
     >>> firefox.bug_supervisor = nominator
-    >>> logout()
-
-    >>> login_person(nominator)
+    >>> ignored = login_person(nominator)
 
 The BugNomination class implements IBugNomination.
 
@@ -154,7 +153,8 @@ This method also accepts a target argument, for further filtering.
     [u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
 
-== Nomination Status ==
+Nomination Status
+-----------------
 
 A nomination is created with an initial status of "Nominated".
 Internally this state is called PROPOSED, but in the UI we display it
@@ -186,8 +186,8 @@ The status of a nomination is changed by calling either the approve() or
 decline() method. Only users with launchpad.Driver permission on the
 nomination can approve or decline it.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.authorization import check_permission
+    >>> from lp.services.webapp.interfaces import ILaunchBag
 
     >>> current_user = getUtility(ILaunchBag).user
 
@@ -216,7 +216,8 @@ nomination can approve or decline it.
     >>> login("no-priv@canonical.com")
 
 
-== Approving a nomination ==
+Approving a nomination
+----------------------
 
 When a nomination is approved, the appropriate bugtask(s) are created on
 the target of the nomination and the status is set to APPROVED.
@@ -349,7 +350,8 @@ no problems.
     >>> ubuntu_warty.driver = None
 
 
-== Declining a nomination ==
+Declining a nomination
+----------------------
 
 Declining a nomination simply sets its status to DECLINED. No tasks are
 created.
@@ -379,8 +381,27 @@ created.
     >>> ubuntu_breezy_autotest_nomination.date_decided
     datetime...
 
+If a nomination is declined, the bug can be re-nominated for the same target.
+The decider and date declined are reset to None.
 
-== Automatic targeting of new source packages ==
+    >>> bug_one.canBeNominatedFor(ubuntu_breezy_autotest)
+    True
+    >>> breezy_nomination = bug_one.addNomination(
+    ...     target=ubuntu_breezy_autotest, owner=no_privs)
+    >>> ubuntu_breezy_autotest_nomination.isApproved()
+    False
+    >>> breezy_nomination.isDeclined()
+    False
+    >>> breezy_nomination.isProposed()
+    True
+    >>> print breezy_nomination.decider
+    None
+    >>> print breezy_nomination.date_decided
+    None
+
+
+Automatic targeting of new source packages
+------------------------------------------
 
 If a another distribution task is added, and nomination for that
 distribution's series already exists, the nominations will be valid
@@ -420,7 +441,8 @@ automatically.
     ...
 
 
-== Changing the Source Package of a Targeted Bugtask ==
+Changing the Source Package of a Targeted Bugtask
+-------------------------------------------------
 
 The nomination model requires that a generic distribution task exists
 for each distroseries task. This causes some problem when renaming the
@@ -441,7 +463,8 @@ be acceptable.
     u'thunderbird (Ubuntu Grumpy)'
 
     >>> thunderbird_grumpy.transitionToTarget(
-    ...     ubuntu.getSeries('grumpy').getSourcePackage('pmount'))
+    ...     ubuntu.getSeries('grumpy').getSourcePackage('pmount'),
+    ...     getUtility(ILaunchBag).user)
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
@@ -468,7 +491,8 @@ The same is done if the distribution task's source package is changed.
     u'pmount (Ubuntu)'
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
-    >>> pmount_ubuntu.transitionToTarget(ubuntu_thunderbird)
+    >>> pmount_ubuntu.transitionToTarget(
+    ...     ubuntu_thunderbird, getUtility(ILaunchBag).user)
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
@@ -489,7 +513,8 @@ The same is done if the distribution task's source package is changed.
     thunderbird (Ubuntu)
 
 
-== Bug Nomination Set ==
+Bug Nomination Set
+------------------
 
 IBugNominationSet is used to fetch bug nominations by ID. This is useful
 mainly in traversal code.
@@ -507,7 +532,8 @@ If a nomination is not found, a NotFoundError is raised.
     NotFoundError: ...
 
 
-== Error Handling ==
+Error Handling
+--------------
 
 Trying to nominate a bug for a series for which it's already nominated
 or targeted raises a NominationError.

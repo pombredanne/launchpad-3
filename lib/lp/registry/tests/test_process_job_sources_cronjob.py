@@ -8,17 +8,17 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import LaunchpadScriptLayer
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.services.config import config
+from lp.services.scripts.tests import run_script
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadScriptLayer
 from lp.testing.matchers import DocTestMatches
 
 
@@ -62,7 +62,7 @@ class ProcessJobSourceTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', 'IMembershipNotificationJobSource'])
         self.assertIn(
-            ('DEBUG   Running <MembershipNotificationJob '
+            ('INFO    Running <MembershipNotificationJob '
              'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
@@ -99,8 +99,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
             output)
         self.assertIn('-e JOB_SOURCE, --exclude=JOB_SOURCE', output)
         self.assertIn('At least one group must be specified.', output)
-        self.assertIn('Group: MAIN\n    IMembershipNotificationJobSource',
-                      output)
+        self.assertIn('Group: MAIN\n    I', output)
 
     def test_empty_queue(self):
         # The script should just create a lockfile, launch a child for
@@ -126,7 +125,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', '--wait', 'MAIN'])
         self.assertTextMatchesExpressionIgnoreWhitespace(
-            ('DEBUG Running <MembershipNotificationJob '
+            ('INFO Running <MembershipNotificationJob '
              'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)

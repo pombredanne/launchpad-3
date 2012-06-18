@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of Branch and BranchSet."""
@@ -6,8 +6,6 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
@@ -16,11 +14,14 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.codehosting import SUPPORTED_SCHEMES
 from lp.code.tests.helpers import make_official_package_branch
+from lp.registry.enums import InformationType
+from lp.services.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import (
     run_with_login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class PermissionTest(TestCaseWithFactory):
@@ -106,13 +107,15 @@ class TestAccessBranch(PermissionTest):
 
     def test_privateBranchUnauthenticated(self):
         # Private branches cannot be accessed without authentication.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         self.assertUnauthenticatedView(branch, False)
 
     def test_privateBranchOwner(self):
         # The owner of a branch can always access it.
         owner = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(private=True, owner=owner)
+        branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         self.assertAuthenticatedView(branch, owner, True)
 
     def test_privateBranchOwnerMember(self):
@@ -121,18 +124,21 @@ class TestAccessBranch(PermissionTest):
         team = self.factory.makeTeam(team_owner)
         person = self.factory.makePerson()
         removeSecurityProxy(team).addMember(person, team_owner)
-        branch = self.factory.makeAnyBranch(private=True, owner=team)
+        branch = self.factory.makeAnyBranch(
+            owner=team, information_type=InformationType.USERDATA)
         self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchAdmins(self):
         # Launchpad admins can access any branch.
         celebs = getUtility(ILaunchpadCelebrities)
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         self.assertAuthenticatedView(branch, celebs.admin.teamowner, True)
 
     def test_privateBranchSubscriber(self):
         # If you are subscribed to a branch, you can access it.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         person = self.factory.makePerson()
         removeSecurityProxy(branch).subscribe(
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
@@ -142,14 +148,16 @@ class TestAccessBranch(PermissionTest):
 
     def test_privateBranchAnyoneElse(self):
         # In general, you can't access a private branch.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         person = self.factory.makePerson()
         self.assertAuthenticatedView(branch, person, False)
 
     def test_stackedOnPrivateBranchUnauthenticated(self):
         # If a branch is stacked on a private branch, then you cannot access
         # it when unauthenticated.
-        stacked_on_branch = self.factory.makeAnyBranch(private=True)
+        stacked_on_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         stacked_branch = self.factory.makeAnyBranch(
             stacked_on=stacked_on_branch)
         self.assertUnauthenticatedView(stacked_branch, False)
@@ -157,7 +165,8 @@ class TestAccessBranch(PermissionTest):
     def test_stackedOnPrivateBranchAuthenticated(self):
         # If a branch is stacked on a private branch, you can only access it
         # if you can access both branches.
-        stacked_on_branch = self.factory.makeAnyBranch(private=True)
+        stacked_on_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         stacked_branch = self.factory.makeAnyBranch(
             stacked_on=stacked_on_branch)
         person = self.factory.makePerson()
@@ -166,7 +175,8 @@ class TestAccessBranch(PermissionTest):
     def test_manyLevelsOfStackingUnauthenticated(self):
         # If a branch is stacked on a branch stacked on a private branch, you
         # still can't access it when unauthenticated.
-        stacked_on_branch = self.factory.makeAnyBranch(private=True)
+        stacked_on_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         branch_a = self.factory.makeAnyBranch(stacked_on=stacked_on_branch)
         branch_b = self.factory.makeAnyBranch(stacked_on=branch_a)
         self.assertUnauthenticatedView(branch_b, False)
@@ -174,7 +184,8 @@ class TestAccessBranch(PermissionTest):
     def test_manyLevelsOfStackingAuthenticated(self):
         # If a branch is stacked on a branch stacked on a private branch, you
         # still can't access it when unauthenticated.
-        stacked_on_branch = self.factory.makeAnyBranch(private=True)
+        stacked_on_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         branch_a = self.factory.makeAnyBranch(stacked_on=stacked_on_branch)
         branch_b = self.factory.makeAnyBranch(stacked_on=branch_a)
         person = self.factory.makePerson()
@@ -195,7 +206,8 @@ class TestAccessBranch(PermissionTest):
         # loop. e.g., branch A is stacked on branch B is stacked on branch A.
         # If all of these branches are private, then only people who can
         # access all of them can get to them.
-        stacked_branch = self.factory.makeAnyBranch(private=True)
+        stacked_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         removeSecurityProxy(stacked_branch).stacked_on = stacked_branch
         person = self.factory.makePerson()
         self.assertAuthenticatedView(stacked_branch, person, False)
@@ -262,25 +274,7 @@ class TestWriteToBranch(PermissionTest):
             None,
             archive.verifyUpload(
                 person, spn, component, distroseries,
-                strict_component))
-
-    def assertCannotUpload(
-        self, reason, person, spn, archive, component, distroseries=None):
-        """Assert that 'person' cannot upload to the archive.
-
-        :param reason: The expected reason for not being able to upload. A
-            string.
-        :param person: The person trying to upload.
-        :param spn: The `ISourcePackageName` being uploaded to. None if the
-            package does not yet exist.
-        :param archive: The `IArchive` being uploaded to.
-        :param component: The IComponent to which the package belongs.
-        """
-        if distroseries is None:
-            distroseries = archive.distribution.currentseries
-        exception = archive.verifyUpload(
-            person, spn, component, distroseries)
-        self.assertEqual(reason, str(exception))
+                strict_component=strict_component))
 
     def test_package_upload_permissions_grant_branch_edit(self):
         # If you can upload to the package, then you are also allowed to write
@@ -368,7 +362,8 @@ class TestComposePublicURL(TestCaseWithFactory):
 
     def test_composePublicURL_http_private(self):
         # Private branches don't have public http URLs.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         self.assertRaises(AssertionError, branch.composePublicURL, 'http')
 
     def test_composePublicURL_no_https(self):

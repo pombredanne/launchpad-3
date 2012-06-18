@@ -16,16 +16,16 @@ from signal import (
     )
 import time
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.mailman.runmailman import stop_mailman
-from canonical.launchpad.scripts import (
-    logger,
-    logger_options,
-    )
-from canonical.lazr.pidfile import (
+from lp.services.pidfile import (
     get_pid,
     pidfile_path,
     remove_pidfile,
+    )
+from lp.services.scripts import (
+    logger,
+    logger_options,
     )
 
 
@@ -105,11 +105,11 @@ def main():
 def process_exists(pid):
     """True if the given process exists."""
     try:
-        pgid = os.getpgid(pid)
+        os.getpgid(pid)
     except OSError, x:
         if x.errno == 3:
             return False
-        log.error("Unknown exception from getpgid - %s", str(x))
+        logging.error("Unknown exception from getpgid - %s", str(x))
     return True
 
 

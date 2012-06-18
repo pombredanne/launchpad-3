@@ -5,16 +5,14 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     celebrity_logged_in,
+    login,
+    logout,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class CanBeNominatedForTestMixin:
@@ -116,11 +114,15 @@ class TestCanApprove(TestCaseWithFactory):
             target=self.factory.makeProductSeries())
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
 
-    def test_driver_can_approve(self):
+    def test_privileged_users_can_approve(self):
         product = self.factory.makeProduct(driver=self.factory.makePerson())
-        nomination = self.factory.makeBugNomination(
-            target=self.factory.makeProductSeries(product=product))
+        series = self.factory.makeProductSeries(product=product)
+        with celebrity_logged_in('admin'):
+            series.driver = self.factory.makePerson()
+        nomination = self.factory.makeBugNomination(target=series)
+        self.assertTrue(nomination.canApprove(product.owner))
         self.assertTrue(nomination.canApprove(product.driver))
+        self.assertTrue(nomination.canApprove(series.driver))
 
     def publishSource(self, series, sourcepackagename, component):
         return self.factory.makeSourcePackagePublishingHistory(

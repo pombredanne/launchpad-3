@@ -4,7 +4,7 @@ Users can mark bugs as affecting them. Let's create a sample bug to
 try this out.
 
    >>> login(ANONYMOUS)
-   >>> from canonical.launchpad.webapp import canonical_url
+   >>> from lp.services.webapp import canonical_url
    >>> test_bug = factory.makeBug()
    >>> test_bug_url = canonical_url(test_bug)
    >>> logout()

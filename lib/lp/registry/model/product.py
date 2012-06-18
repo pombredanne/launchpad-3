@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0611,W0212
 
@@ -6,6 +6,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'LicensesModifiedEvent',
     'Product',
     'ProductSet',
     'ProductWithLicenses',
@@ -15,6 +16,7 @@ __all__ = [
 import calendar
 import datetime
 import httplib
+import itertools
 import operator
 
 from lazr.delegates import delegates
@@ -37,7 +39,6 @@ from storm.expr import (
 from storm.locals import (
     And,
     Desc,
-    Int,
     Join,
     Not,
     Or,
@@ -52,33 +53,9 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -95,6 +72,9 @@ from lp.app.enums import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
@@ -111,7 +91,6 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
@@ -119,7 +98,6 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
-    HasBugHeatMixin,
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
@@ -138,6 +116,9 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.enums import InformationType
+from lp.registry.errors import CommercialSubscribersOnly
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -147,11 +128,13 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
+    ILicensesModifiedEvent,
     IProduct,
     IProductSet,
     License,
     LicenseStatus,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -172,9 +155,25 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
@@ -191,8 +190,17 @@ from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
+class LicensesModifiedEvent(ObjectModifiedEvent):
+    """See `ILicensesModifiedEvent`."""
+    implements(ILicensesModifiedEvent)
+
+    def __init__(self, product, user=None):
+        super(LicensesModifiedEvent, self).__init__(
+            product, product, [], user)
+
+
 def get_license_status(license_approved, project_reviewed, licenses):
-    """Decide the license status for an `IProduct`.
+    """Decide the licence status for an `IProduct`.
 
     :return: A LicenseStatus enum value.
     """
@@ -203,22 +211,21 @@ def get_license_status(license_approved, project_reviewed, licenses):
     if license_approved:
         return LicenseStatus.OPEN_SOURCE
     if len(licenses) == 0:
-        # We don't know what the license is.
+        # This can only happen in bad sample data.
         return LicenseStatus.UNSPECIFIED
     elif License.OTHER_PROPRIETARY in licenses:
-        # Notice the difference between the License and LicenseStatus.
         return LicenseStatus.PROPRIETARY
     elif License.OTHER_OPEN_SOURCE in licenses:
         if project_reviewed:
-            # The OTHER_OPEN_SOURCE license was not manually approved
+            # The OTHER_OPEN_SOURCE licence was not manually approved
             # by setting license_approved to true.
             return LicenseStatus.PROPRIETARY
         else:
             # The OTHER_OPEN_SOURCE is pending review.
             return LicenseStatus.UNREVIEWED
     else:
-        # The project has at least one license and does not have
-        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+        # The project has at least one licence and does not have
+        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a licence.
         return LicenseStatus.OPEN_SOURCE
 
 
@@ -262,10 +269,10 @@ class ProductWithLicenses:
 
     @classmethod
     def composeLicensesColumn(cls, for_class=None):
-        """Compose a Storm column specification for licenses.
+        """Compose a Storm column specification for licences.
 
         Use this to render a list of `Product` linkes without querying
-        licenses for each one individually.
+        licences for each one individually.
 
         It lets you prefetch the licensing information in the same
         query that fetches a `Product`.  Just add the column spec
@@ -306,11 +313,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin, HasCodeImportsMixin, TranslationPolicyMixin):
+              HasCodeImportsMixin, TranslationPolicyMixin):
     """A Product."""
 
     implements(
-        IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
         IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
@@ -383,7 +390,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
-    max_bug_heat = Int()
     date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
@@ -491,7 +497,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
             # Clear the project_reviewed and license_approved flags
-            # if the license changes.
+            # if the licence changes.
             self._resetLicenseReview()
         return value
 
@@ -499,16 +505,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                              storm_validator=_validate_license_info)
 
     def _validate_license_approved(self, attr, value):
-        """Ensure license approved is only applied to the correct licenses."""
+        """Ensure licence approved is only applied to the correct licences."""
         if not self._SO_creating:
             licenses = list(self.licenses)
             if value:
                 if (License.OTHER_PROPRIETARY in licenses
                     or [License.DONT_KNOW] == licenses):
                     raise ValueError(
-                        "Projects without a license or have "
+                        "Projects without a licence or have "
                         "'Other/Proprietary' may not be approved.")
-                # Approving a license implies it has been reviewed.  Force
+                # Approving a licence implies it has been reviewed.  Force
                 # `project_reviewed` to be True.
                 self.project_reviewed = True
         return value
@@ -517,9 +523,49 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
+    def checkPrivateBugsTransitionAllowed(self, private_bugs, user):
+        """See `IProductPublic`."""
+        from lp.security import (
+            BugTargetOwnerOrBugSupervisorOrAdmins,
+            ModerateByRegistryExpertsOrAdmins,
+            )
+        if user is not None:
+            person_roles = IPersonRoles(user)
+            moderator_check = ModerateByRegistryExpertsOrAdmins(self)
+            moderator = moderator_check.checkAuthenticated(person_roles)
+            if moderator:
+                return True
+
+            bug_supervisor_check = BugTargetOwnerOrBugSupervisorOrAdmins(self)
+            bug_supervisor = (
+                bug_supervisor_check.checkAuthenticated(person_roles))
+            if (bug_supervisor and
+                    (not private_bugs
+                     or self.has_current_commercial_subscription)):
+                return
+        if private_bugs:
+            raise CommercialSubscribersOnly(
+                'A valid commercial subscription is required to turn on '
+                'default private bugs.')
+        raise Unauthorized(
+            'Only bug supervisors can turn off default private bugs.')
+
+    def setPrivateBugs(self, private_bugs, user):
+        """ See `IProductEditRestricted`."""
+        if self.private_bugs == private_bugs:
+            return
+        self.checkPrivateBugsTransitionAllowed(private_bugs, user)
+        self.private_bugs = private_bugs
+
     @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
+
+    @property
+    def has_current_commercial_subscription(self):
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        return (self.commercial_subscription
+            and self.commercial_subscription.date_expires > now)
 
     def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -585,7 +631,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def qualifies_for_free_hosting(self):
         """See `IProduct`."""
         if self.license_approved:
-            # The license was manually approved for free hosting.
+            # The licence was manually approved for free hosting.
             return True
         elif License.OTHER_PROPRIETARY in self.licenses:
             # Proprietary licenses need a subscription without
@@ -594,15 +640,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         elif (self.project_reviewed and
               (License.OTHER_OPEN_SOURCE in self.licenses or
                self.license_info not in ('', None))):
-            # We only know that an unknown open source license
+            # We only know that an unknown open source licence
             # requires a subscription after we have reviewed it
             # when we have not set license_approved to True.
             return False
         elif len(self.licenses) == 0:
-            # The owner needs to choose a license.
+            # The owner needs to choose a licence.
             return False
         else:
-            # The project has only valid open source license(s).
+            # The project has only valid open source licence(s).
             return True
 
     @property
@@ -652,7 +698,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.license_approved, self.project_reviewed, self.licenses)
 
     def _resetLicenseReview(self):
-        """When the license is modified, it must be reviewed again."""
+        """When the licence is modified, it must be reviewed again."""
         self.project_reviewed = False
         self.license_approved = False
 
@@ -709,7 +755,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._cached_licenses
 
     def _setLicenses(self, licenses, reset_project_reviewed=True):
-        """Set the licenses from a tuple of license enums.
+        """Set the licences from a tuple of license enums.
 
         The licenses parameter must not be an empty tuple.
         """
@@ -718,20 +764,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if licenses == old_licenses:
             return
         # Clear the project_reviewed and license_approved flags
-        # if the license changes.
+        # if the licence changes.
         # ProductSet.createProduct() passes in reset_project_reviewed=False
         # to avoid changing the value when a Launchpad Admin sets
-        # project_reviewed & licenses at the same time.
+        # project_reviewed & licences at the same time.
         if reset_project_reviewed:
             self._resetLicenseReview()
-        # $product/+edit doesn't require a license if a license hasn't
-        # already been set, but updateContextFromData() updates all the
-        # fields, so we have to avoid this assertion when the attribute
-        # isn't actually being changed.
-        assert len(licenses) != 0, "licenses argument must not be empty"
+        if len(licenses) == 0:
+            raise ValueError('licenses argument must not be empty.')
         for license in licenses:
             if license not in License:
-                raise AssertionError("%s is not a License" % license)
+                raise ValueError("%s is not a License." % license)
 
         for license in old_licenses.difference(licenses):
             product_license = ProductLicense.selectOneBy(product=self,
@@ -741,6 +784,21 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
         get_property_cache(self)._cached_licenses = tuple(sorted(licenses))
+        if (License.OTHER_PROPRIETARY in licenses
+            and self.commercial_subscription is None):
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            now = datetime.datetime.now(pytz.UTC)
+            date_expires = now + datetime.timedelta(days=30)
+            sales_system_id = 'complimentary-30-day-%s' % now
+            whiteboard = (
+                "Complimentary 30 day subscription. -- Launchpad %s" %
+                now.date().isoformat())
+            subscription = CommercialSubscription(
+                product=self, date_starts=now, date_expires=date_expires,
+                registrant=lp_janitor, purchaser=lp_janitor,
+                sales_system_id=sales_system_id, whiteboard=whiteboard)
+            get_property_cache(self).commercial_subscription = subscription
+        notify(LicensesModifiedEvent(self))
 
     licenses = property(_getLicenses, _setLicenses)
 
@@ -829,7 +887,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def name_with_project(self):
-        """See lib.canonical.launchpad.interfaces.IProduct"""
+        """See `IProduct`"""
         if self.project and self.project.name != self.name:
             return self.project.name + ": " + self.name
         return self.name
@@ -932,10 +990,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        return Milestone.selectOne("""
+        results = Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
+        return results
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""
@@ -1454,6 +1513,12 @@ class ProductSet:
              'rather than a stable release branch. This is sometimes also '
              'called MAIN or HEAD.'))
         product.development_focus = trunk
+
+        # Add default AccessPolicies.
+        policies = itertools.product(
+            (product,), (InformationType.USERDATA,
+                InformationType.EMBARGOEDSECURITY))
+        getUtility(IAccessPolicySource).create(policies)
 
         return product
 

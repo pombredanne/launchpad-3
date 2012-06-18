@@ -18,7 +18,7 @@ from math import ceil
 import re
 from xml.sax.saxutils import escape as xml_escape
 
-from canonical.launchpad import helpers
+from lp.services import helpers
 from lp.translations.interfaces.translations import TranslationConstants
 
 

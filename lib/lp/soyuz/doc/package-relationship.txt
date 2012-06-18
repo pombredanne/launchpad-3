@@ -55,7 +55,7 @@ Now for each parsed element we can build an IPackageRelationship:
 
   >>> from lp.soyuz.browser.packagerelationship import PackageRelationship
   >>> from lp.soyuz.interfaces.packagerelationship import IPackageRelationship
-  >>> from canonical.launchpad.webapp.testing import verifyObject
+  >>> from lp.services.webapp.testing import verifyObject
 
   >>> name, version, operator = parsed_relationships[1]
   >>> fake_url = 'http://host/path'

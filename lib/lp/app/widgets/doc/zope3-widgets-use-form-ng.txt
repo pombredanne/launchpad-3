@@ -10,7 +10,7 @@ the form value.
 
 The monkey patch is installed by default:
 
-    >>> from canonical.launchpad.webapp.servers import (
+    >>> from lp.services.webapp.servers import (
     ...     Zope3WidgetsUseIBrowserFormNGMonkeyPatch)
     >>> Zope3WidgetsUseIBrowserFormNGMonkeyPatch.installed
     True
@@ -20,7 +20,7 @@ exception:
 
     >>> import zope.schema as schema
     >>> from zope.app.form.browser import IntWidget, TextWidget
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> Zope3WidgetsUseIBrowserFormNGMonkeyPatch.uninstall()
 
@@ -53,7 +53,7 @@ contains more than one argument.
       ...
     UnexpectedFormData: ...
 
-Since the SimpleInputWidget._getFormValue is overriden, it also works
+Since the SimpleInputWidget._getFormValue is overridden, it also works
 with the Launchpad widgets extending it:
 
     >>> from lp.app.widgets.textwidgets import StrippedTextWidget

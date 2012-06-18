@@ -6,13 +6,13 @@ __all__ = ['TranslationsOverview']
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    cursor,
-    sqlvalues,
-    )
 from lp.app.enums import ServiceUsage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.product import Product
+from lp.services.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview,
     MalformedKarmaCacheData,

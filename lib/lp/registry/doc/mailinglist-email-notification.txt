@@ -107,7 +107,7 @@ individual team members.
 
     # Make sure the sub-team has a preferred email, so we can show
     # that it is being bypassed.
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> email = emailset.new('foo@baz.com', sub_team)
     >>> transaction.commit()

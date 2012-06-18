@@ -45,7 +45,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 # One week before a membership expires we send a notification to the member,
 # either inviting him to renew his own membership or asking him to get a team

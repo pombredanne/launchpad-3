@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from lazr.lifecycle.interfaces import IDoNotSnapshot
 from lazr.restfulclient.errors import (
     BadRequest,
@@ -21,27 +22,26 @@ from testtools.matchers import (
     )
 from zope.component import getMultiAdapter
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.launchpad.webapp import snapshot
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
+from lp.registry.enums import InformationType
+from lp.services.webapp import snapshot
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     api_url,
     launchpadlib_for,
+    login,
     login_person,
+    logout,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     USER_EMAIL,
@@ -134,10 +134,14 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
 class TestBugCommentRepresentation(TestCaseWithFactory):
     """Test ways of interacting with BugComment webservice representations."""
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
         login('guilherme.salgado@canonical.com ')
         self.bug = self.factory.makeBug()
         commenter = self.factory.makePerson()
@@ -349,12 +353,13 @@ class TestErrorHandling(TestCaseWithFactory):
         self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product))
 
-    def test_add_invalid_bugtask_to_private_bug_gives_bad_request(self):
+    def test_add_invalid_bugtask_to_proprietary_bug_gives_bad_request(self):
         # Test we get an error when we attempt to invalidly add a bug task to
-        # a private bug. In this case, we cannot mark a private bug as
-        # affecting more than one project.
+        # a proprietary bug. In this case, we cannot mark a proprietary bug
+        # as affecting more than one project.
         owner = self.factory.makePerson()
-        bug = self.factory.makeBug(private=True, owner=owner)
+        bug = self.factory.makeBug(
+            owner=owner, information_type=InformationType.PROPRIETARY)
         product = self.factory.makeProduct()
 
         login_person(owner)

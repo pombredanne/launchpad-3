@@ -23,8 +23,9 @@ Adding a private branch that is only visible by No Privileges Person
 (and Launchpad administrators).
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.code.enums import BranchType
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> login('no-priv@canonical.com')
@@ -32,7 +33,7 @@ Adding a private branch that is only visible by No Privileges Person
     >>> landscape = getUtility(IProductSet).getByName('landscape')
     >>> branch = factory.makePersonalBranch(
     ...     branch_type=BranchType.HOSTED, name='testing-branch',
-    ...     owner=no_priv, title='A Private Branch', private=True)
+    ...     owner=no_priv, information_type=InformationType.USERDATA)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(branch).product = landscape
     >>> flush_database_updates()

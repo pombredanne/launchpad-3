@@ -19,7 +19,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potmsgset import IPOTMsgSet
 from lp.translations.interfaces.translations import TranslationConstants

@@ -47,28 +47,28 @@ from zope.component import (
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.readonly import is_read_only
+from lp.services.database.sqlbase import (
     flush_database_updates,
     quote,
     quote_like,
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.readonly import is_read_only
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.mail.helpers import get_email_template
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import validate_public_person
-from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import canonical_url
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import (
     IPOFile,
@@ -102,7 +102,6 @@ from lp.translations.model.potmsgset import (
     credits_message_str,
     POTMsgSet,
     )
-from lp.translations.model.translatablemessage import TranslatableMessage
 from lp.translations.model.translationimportqueue import collect_import_info
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment,
@@ -328,10 +327,6 @@ class POFileMixIn(RosettaStats):
     def getFullLanguageName(self):
         """See `IPOFile`."""
         return self.language.englishname
-
-    def makeTranslatableMessage(self, potmsgset):
-        """See `IPOFile`."""
-        return TranslatableMessage(potmsgset, self)
 
     def markChanged(self, translator=None, timestamp=None):
         """See `IPOFile`."""
@@ -1173,7 +1168,7 @@ class POFile(SQLBase, POFileMixIn):
             # Now we update the statistics after this new import
             self.updateStatistics()
 
-        template = helpers.get_email_template(template_mail, 'translations')
+        template = get_email_template(template_mail, 'translations')
         message = template % replacements
         return (subject, message)
 

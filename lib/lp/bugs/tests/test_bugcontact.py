@@ -7,14 +7,14 @@ implementations.
 
 import unittest
 
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    tearDown,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.tests.test_structuralsubscriptiontarget import (
     distributionSetUp,
     productSetUp,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    tearDown,
     )
 
 
@@ -27,8 +27,12 @@ def test_suite():
         distributionSetUp,
         ]
 
+    testname = 'has-bug-supervisor.txt'
     for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('has-bug-supervisor.txt',
+        id_ext = "%s-%s" % (testname, setUpMethod.func_name)
+        test = LayeredDocFileSuite(
+            testname,
+            id_extensions=[id_ext],
             setUp=setUpMethod, tearDown=tearDown,
             layer=DatabaseFunctionalLayer)
         suite.addTest(test)

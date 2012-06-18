@@ -6,27 +6,18 @@
         metal:use-macro="view/macro:page/main_only">
 
   <metal:block fill-slot="head_epilogue">
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:content="string:var yui_base='${yui}';"></script>
     <script type="text/javascript">
-      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
-      function(Y) {
-      Y.on('domready', function() {
-      Y.lp.bugs.filebug_dupefinder.setup_dupes();
-      Y.lp.bugs.filebug_dupefinder.setup_dupe_finder();
-      var search_button = Y.one(Y.DOM.byId('field.actions.projectgroupsearch'));
-      if (search_button != null)
-        search_button.set('value', 'Check again');
-      });
-      });
+        LPJS.use(
+          'lp.bugs.filebug',
+          function(Y) {
+            Y.on('domready', function() {
+              Y.lp.bugs.filebug.setup_filebug();
+            });
+        });
     </script>
   </metal:block>
 
   <div metal:fill-slot="heading">
-    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
-      This report will be private, though you can disclose it later.
-    </div>
     <h1>Report a bug</h1>
   </div>
 

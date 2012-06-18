@@ -136,9 +136,7 @@
         tal:condition="context/preview_diff">
       <th>Diff against target:</th>
       <td>
-        <tal:diff replace="structure context/preview_diff/fmt:link"/>
-        <pre tal:condition="context/preview_diff/has_conflicts"
-             tal:content="context/preview_diff/conflicts"/>
+        <div tal:replace="structure context/@@++diff-stats" />
       </td>
     </tr>
     <tr id="summary-row-merge-instruction">

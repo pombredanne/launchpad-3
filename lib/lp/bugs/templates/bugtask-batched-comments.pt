@@ -5,7 +5,7 @@
 
   <tal:comments>
     <div
-      style="display: none"
+      class="hidden"
       id="next-batch-url"
       tal:condition="view/has_more_comments_and_activity"
       tal:content="view/next_batch_url"></div>

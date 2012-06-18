@@ -20,27 +20,22 @@
           </a>
         </li>
         <li>
-          <a href="/people/+me/+addbranch">
-            <img
-               alt="Register a branch"
-               src="/+icing/but-lrg-registerabranch.gif"
-               />
-          </a>
-        </li>
-        <li>
           <a href="/+code-imports/+new" id="new-code-import">
             <img alt="Import your project"
                  src="/+icing/but-lrg-importyourproject.gif"/>
           </a>
         </li>
       </ul>
-      <form class="central" action="/projects/" method="get">
-        <input id="text" type="text" name="text" size="50" />
-        <input type="submit" value="Find a Project" />
+      <form id="search-projects-form" class="central" method="get"
+        tal:attributes="action string:${rooturl}projects">
+        <input type="text" name="text" size="50" />
+        <input type="submit" name="search" value="Find a Project" />
       </form>
-      <script type="text/javascript"><!--
-         setFocusByName('text');
-       // --></script>
+      <script type="text/javascript">
+          LPJS.use('lp', function (Y) {
+              setFocusByName('text');
+          });
+      </script>
 
       <p id="application-summary">
         Launchpad can host your project&#8217;s source code
@@ -63,7 +58,7 @@
         (<a href="https://help.launchpad.net/Packaging/SourceBuilds">Learn more about recipes</a>)
       </p>
 
-      <div id="project-cloud-preview" tal:content="cache:public,6 hours">
+      <div id="project-cloud-preview">
         <h2>Most active projects in the last month</h2>
         <a tal:repeat="product view/short_product_tag_cloud"
            tal:attributes="href product/url;
@@ -74,8 +69,7 @@
       </div>
 
       <div class="columns">
-        <div class="three column left" id="recent-imports"
-              tal:content="cache:private,15 minutes">
+        <div class="three column left" id="recent-imports">
           <h2>Recent imports</h2>
           <ul>
             <li tal:repeat="branch view/recently_imported_branches">
@@ -89,8 +83,7 @@
           </ul>
           <p><a href="/+recently-imported-branches">more&#8230;</a></p>
         </div>
-        <div class="three column middle" id="recently-registered"
-            tal:content="cache:private,3 minutes">
+        <div class="three column middle" id="recently-registered">
           <h2>Recently registered</h2>
           <ul>
             <li tal:repeat="branch view/recently_registered_branches">
@@ -104,8 +97,7 @@
           </ul>
           <p><a href="/+recently-registered-branches">more&#8230;</a></p>
         </div>
-        <div class="three column right" id="recently-changed"
-            tal:content="cache:private,5 minutes">
+        <div class="three column right" id="recently-changed">
           <h2>Recently changed</h2>
           <ul>
             <li tal:repeat="branch view/recently_changed_branches">
@@ -121,7 +113,7 @@
         </div>
       </div>
       <div class="clear"></div>
-      <div id="application-footer" tal:content="cache:public,30 minutes">
+      <div id="application-footer">
         <div>
           <strong tal:content="view/branch_count">123</strong>
           branches registered in

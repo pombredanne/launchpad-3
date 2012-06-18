@@ -171,12 +171,12 @@ Similarly, references to private PPAs are not rendered unless the user has
 a subscription to the PPA.
 
     >>> ppa_user = factory.makePerson(name="jake", displayname="Jake Smith")
-    >>> login_person(ppa_user)
+    >>> ignored = login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> ignore = private_ppa.newSubscription(ppa_user, owner)
-    >>> login_person(ppa_user)
+    >>> ignored = login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
     ppa:joe/pppa
 
@@ -212,20 +212,16 @@ But the 'failed to build' build is 16x14:
 All objects can be represented as a boolean icon.
 
     >>> print test_tales("context/image:boolean", context=None)
-    <span class="sprite no">&nbsp;<span
-      class="invisible-link">no</span></span>
+    <span class="sprite no action-icon">no</span>
 
     >>> print test_tales("context/image:boolean", context=False)
-    <span class="sprite no">&nbsp;<span
-      class="invisible-link">no</span></span>
+    <span class="sprite no action-icon">no</span>
 
     >>> print test_tales("context/image:boolean", context=object())
-    <span class="sprite yes">&nbsp;<span
-      class="invisible-link">yes</span></span>
+    <span class="sprite yes action-icon">yes</span>
 
     >>> print test_tales("context/image:boolean", context=True)
-    <span class="sprite yes">&nbsp;<span
-      class="invisible-link">yes</span></span>
+    <span class="sprite yes action-icon">yes</span>
 
 
 The fmt: namespace to get strings
@@ -287,7 +283,7 @@ Add manual word breaks to long words in a string:
 
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
-    '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>...<wbr></wbr>launchpad&gt;'
+    '&lt;http:/<wbr />/launchpad.<wbr />...<wbr />launchpad&gt;'
 
 To get a int with its thousands separated by a comma, use fmt:intcomma.
 
@@ -315,7 +311,7 @@ You can also specify an extra argument (a view's name), if you want the
 URL of a given page under that object. For that to work, though, we need
 to simulate a browser request -- that's why we login() here.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> login(ANONYMOUS, LaunchpadTestRequest())
     >>> print test_tales("bug/fmt:url/+text", bug=bug)
     http://bugs.launchpad.dev/bugs/1/+text
@@ -496,7 +492,7 @@ The bzr-link formatter uses the bzr identity.
     <a href="http://code.launchpad.dev/~eric/fooix/bar"
       class="sprite branch">lp://dev/~eric/fooix/bar</a>
 
-    >>> login_person(fooix.owner, LaunchpadTestRequest())
+    >>> ignored = login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.branch = branch
     >>> from lp.services.propertycache import clear_property_cache
     >>> clear_property_cache(branch)
@@ -556,7 +552,7 @@ adequate permissions, a link is not generated.
 
 But if we log in as the subscriber, a link is presented.
 
-    >>> login_person(subscription.person)
+    >>> ignored = login_person(subscription.person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'<a href="http://.../+subscription/michael">Subscription
       of Michael the Viking to lp://dev/~eric/fooix/my-branch</a>'
@@ -924,8 +920,8 @@ a foldable span.
     Version: GnuPG v1.4.1 (GNU/Linux)<br />
     Comment: Using GnuPG with Thunderbird<br />
     <br />
-    iD8DBQFED60Y0F+<wbr></wbr>nu1YWqI0RAqrNAJ<wbr></wbr>...
-    T2PIWy0CUJsX8RX<wbr></wbr>St/M51WE=<br />
+    iD8DBQFED60Y0F+<wbr />nu1YWqI0RAqrNAJ<wbr />...
+    T2PIWy0CUJsX8RX<wbr />St/M51WE=<br />
     =J2S5<br />
     -----END PGP SIGNATURE-----
     </span></p>
@@ -942,7 +938,7 @@ span.
     Raise your hand if you can read this.</p>
     <p><span class="foldable"...>--<br />
     __C U R T I S  C.  H O V E Y_______<br />
-    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    sinzui.<wbr />is@example.<wbr />org<br />
     Guilty of stealing everything I am.
     </span></p>
 
@@ -1012,7 +1008,7 @@ must markup. We can format the three examples at the same time.
     </span></p>
     <p><span class="foldable"...>--<br />
     __C U R T I S  C.  H O V E Y_______<br />
-    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    sinzui.<wbr />is@example.<wbr />org<br />
     Guilty of stealing everything I am.
     </span></p>
 
@@ -1075,7 +1071,7 @@ personal information may be in the content, and it will be shown to
 unauthenticated users, the email address can be hidden. The address is
 replaced with the message '<email address hidden>'.
 
-    >>> logout() # Pretend we're unauthenticated.
+    >>> login(ANONYMOUS)
     >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
     '<email address hidden>'
 
@@ -1198,7 +1194,7 @@ Test the 'fmt:' namespace where the context is a dict.
 Test the 'fmt:url' namespace for canonical urls.
 
     >>> from zope.interface import implements
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+    >>> from lp.services.webapp.interfaces import ICanonicalUrlData
     >>> class ObjectThatHasUrl:
     ...     implements(ICanonicalUrlData)
     ...     path = 'bonobo/saki'
@@ -1215,7 +1211,7 @@ request.
 Make a mock-up IBrowserRequest, and use this as the interaction.
 
     >>> from zope.interface import implements
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     ILaunchpadBrowserApplicationRequest)
     >>> class MockBrowserRequest:
     ...     implements(ILaunchpadBrowserApplicationRequest,)
@@ -1445,8 +1441,8 @@ MenuLinks (ILink) can be formatted anchored text and icons.
 
     # Build a link like the MenuAPI does.
 
-    >>> from canonical.launchpad.webapp.menu import Link, MenuLink
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.menu import Link, MenuLink
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> request = LaunchpadTestRequest()
     >>> login(ANONYMOUS, request)
@@ -1459,8 +1455,8 @@ The link can be rendered as an anchored icon.
 
     >>> print test_tales('menu_link/fmt:icon', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite icon" title="summary"><span
-       class="invisible-link">text</span></a>
+       class="menu-link-test_link sprite icon action-icon"
+       title="summary">text</a>
 
 The default rendering can be explicitly called too, text with an icon to
 the left.
@@ -1533,7 +1529,7 @@ Any object can be converted to the 'public' CSS class. The object does
 not need to implement IPrivacy.
 
     >>> thing = object()
-    >>> print test_tales('context/fmt:public-private-css', context=thing)
+    >>> print test_tales('context/fmt:global-css', context=thing)
     public
 
 The CSS class honors the state of the object's privacy if the object
@@ -1544,18 +1540,18 @@ is 'public'.
     >>> print bug.private
     False
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
+    >>> print test_tales('context/fmt:global-css', context=bug)
     public
 
 If the private attribute is True, the class is 'private'.
 
     >>> owner = bug.bugtasks[0].target.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> bug.setPrivate(True, owner)
     True
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
-    private
+    >>> print test_tales('context/fmt:global-css', context=bug)
+    global-notification-visible private
 
     >>> login(ANONYMOUS)
 

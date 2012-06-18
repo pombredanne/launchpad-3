@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Copy latest custom uploads into a distribution release series.
@@ -13,10 +13,11 @@ __all__ = [
     ]
 
 from operator import attrgetter
-import re
 
 from zope.component import getUtility
 
+from lp.archivepublisher.debian_installer import DebianInstallerUpload
+from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
 from lp.soyuz.enums import PackageUploadCustomFormat
@@ -30,10 +31,16 @@ from lp.soyuz.model.queue import PackageUploadCustom
 class CustomUploadsCopier:
     """Copy `PackageUploadCustom` objects into a new `DistroSeries`."""
 
-    copyable_types = [
-        PackageUploadCustomFormat.DEBIAN_INSTALLER,
-        PackageUploadCustomFormat.DIST_UPGRADER,
-        ]
+    # This is a marker as per the comment in lib/lp/soyuz/enums.py:
+    ##CUSTOMFORMAT##
+    # Essentially, if you alter anything to do with what custom formats are,
+    # what their tags are, or anything along those lines, you should grep
+    # for the marker in the source tree and fix it up in every place so
+    # marked.
+    copyable_types = {
+        PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
+        PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
+        }
 
     def __init__(self, target_series):
         self.target_series = target_series
@@ -45,46 +52,16 @@ class CustomUploadsCopier:
     def getCandidateUploads(self, source_series):
         """Find custom uploads that may need copying."""
         uploads = source_series.getPackageUploads(
-            custom_type=self.copyable_types)
+            custom_type=self.copyable_types.keys())
         load_referencing(PackageUploadCustom, uploads, ['packageuploadID'])
         customs = sum([list(upload.customfiles) for upload in uploads], [])
         customs = filter(self.isCopyable, customs)
         customs.sort(key=attrgetter('id'), reverse=True)
         return customs
 
-    def extractNameFields(self, filename):
-        """Get the relevant fields out of `filename`.
-
-        Scans filenames of any of these forms:
-
-            <package>_<version>_<architecture>.tar.<compression_suffix>
-            <package>_<version>.tar[.<compression_suffix>]
-
-        Versions may contain dots, dashes etc. but no underscores.
-
-        :return: A tuple of (<architecture>, version); or None if the
-            filename does not match the expected pattern.  If no
-            architecture is found in the filename, it defaults to 'all'.
-        """
-        # XXX JeroenVemreulen 2011-08-17, bug=827973: Push this down
-        # into the CustomUpload-derived classes, and share it with their
-        # constructors.
-        regex_parts = {
-            'package': "[^_]+",
-            'version': "[^_]+",
-            'arch': "[^._]+",
-        }
-        filename_regex = (
-            "%(package)s_(%(version)s)(?:_(%(arch)s))?.tar" % regex_parts)
-        match = re.match(filename_regex, filename)
-        if match is None:
-            return None
-        default_arch = 'all'
-        fields = match.groups(default_arch)
-        if len(fields) != 2:
-            return None
-        version, architecture = fields
-        return (architecture, version)
+    def extractSeriesKey(self, custom_type, filename):
+        """Get the relevant fields out of `filename` for `custom_type`."""
+        return custom_type.getSeriesKey(filename)
 
     def getKey(self, upload):
         """Get an indexing key for `upload`."""
@@ -92,12 +69,13 @@ class CustomUploadsCopier:
         # translations tarballs, we'll have to include the component
         # name as well.
         custom_format = upload.customformat
-        name_fields = self.extractNameFields(upload.libraryfilealias.filename)
-        if name_fields is None:
+        series_key = self.extractSeriesKey(
+            self.copyable_types[custom_format],
+            upload.libraryfilealias.filename)
+        if series_key is None:
             return None
         else:
-            arch, version = name_fields
-            return (custom_format, arch)
+            return (custom_format, series_key)
 
     def getLatestUploads(self, source_series):
         """Find the latest uploads.

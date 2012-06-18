@@ -1,7 +1,9 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON=python2.6
+PYTHON:=$(shell sed -e \
+    '/RELEASE/!d; s/.*=12.*/python2.7/; s/.*=.*/python2.6/' /etc/lsb-release)
+
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -12,9 +14,10 @@ TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=utilities/shhh.py
-HERE:=$(shell pwd)
 
 LPCONFIG?=development
+
+LISTEN_ADDRESS?=127.0.0.88
 
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
@@ -32,14 +35,15 @@ lib -path 'lib/lp/*/javascript/*' \
 endef
 
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
-JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
-JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
+JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
+JS_ALL := $(JS_YUI) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
+
+CONVOY_ROOT?=/srv/launchpad.dev/convoy
 
 BZR_VERSION_INFO = bzr-version-info.py
 
@@ -58,10 +62,11 @@ BUILDOUT_BIN = \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
-    bin/harness bin/iharness bin/ipy bin/jsbuild \
+    bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
-    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache
+    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
+    bin/watch_jsbuild
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -79,13 +84,18 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
-	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
+	$(RM) -r $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
 	    --force "$(APIDOC_TMPDIR)"
 	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
-apidoc: compile $(API_INDEX)
+apidoc:
+ifdef LP_MAKE_NO_WADL
+	@echo "Skipping WADL generation."
+else
+	$(MAKE) compile $(API_INDEX)
+endif
 
 # Used to generate HTML developer documentation for Launchpad.
 doc:
@@ -93,7 +103,7 @@ doc:
 
 # Run by PQM.
 check_config: build
-	bin/test -m canonical.config.tests -vvt test_config
+	bin/test -m lp.services.config.tests -vvt test_config
 
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
@@ -127,7 +137,7 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build logs clean_logs
+codehosting-dir:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
@@ -135,7 +145,12 @@ inplace: build logs clean_logs
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
-build: compile apidoc jsbuild css_combine sprite_image
+inplace: build combobuild logs clean_logs codehosting-dir
+	if [ -d /srv/launchpad.dev ]; then \
+		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
+	fi
+
+build: compile apidoc jsbuild css_combine
 
 # LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
 # want the parent directory where the download-cache and eggs directory
@@ -149,36 +164,36 @@ else
 	@exit 1
 endif
 
-css_combine: sprite_css bin/combine-css
-	${SHHH} bin/combine-css
-
-sprite_css: ${LP_BUILT_JS_ROOT}/sprite.css
-
-${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
-		${ICING}/icon-sprites.positioning
-	${SHHH} bin/sprite-util create-css
-
-sprite_image: ${ICING}/icon-sprites ${ICING}/icon-sprites.positioning
-
-${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
-		${ICING}/sprite.css.in
+css_combine:
 	${SHHH} bin/sprite-util create-image
+	${SHHH} bin/sprite-util create-css
+	${SHHH} bin/combine-css
 
 jsbuild_widget_css: bin/jsbuild
 	${SHHH} bin/jsbuild \
 	    --srcdir lib/lp/app/javascript \
 	    --builddir $(LP_BUILT_JS_ROOT)
 
+jsbuild_watch:
+	$(PY) bin/watch_jsbuild
+
 $(JS_LP): jsbuild_widget_css
+$(JS_YUI):
+	cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
+	cat $^ | bin/lpjsmin > $@
 else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
+combobuild:
+	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
+	utilities/check-js-deps
+
 jsbuild: $(PY) $(JS_OUT)
+	bin/combo-rootdir build/js
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -209,7 +224,7 @@ bin/buildout: download-cache eggs
 # and the other bits might run into problems like bug 575037.  This
 # target runs buildout, and then removes everything created except for
 # the eggs.
-build_eggs: $(BUILDOUT_BIN)
+build_eggs: $(BUILDOUT_BIN) clean_buildout
 
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
@@ -231,10 +246,10 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
 compile: $(PY) $(BZR_VERSION_INFO)
-	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
+	ln -sf ../../../../build/js/yui-3.3.0 $(ICING)/yui
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -253,7 +268,8 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
+	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
@@ -270,8 +286,8 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
-	 -i $(LPCONFIG)
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
+	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -283,7 +299,7 @@ stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: build inplace stop
-	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
+	bin/run -r librarian,sftp,forker,codebrowse,rabbitmq -i $(LPCONFIG)
 
 start_librarian: compile
 	bin/start_librarian
@@ -348,21 +364,40 @@ rebuildfti:
 
 clean_js:
 	$(RM) $(JS_OUT)
-	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+	$(RM) -r $(ICING)/yui
 
 clean_buildout:
+	$(RM) -r build
+	if [ -d $(CONVOY_ROOT) ]; then $(RM) -r $(CONVOY_ROOT) ; fi
 	$(RM) -r bin
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
+	$(RM) scripts/mlist-sync.py
 
 clean_logs:
 	$(RM) logs/thread*.request
 
-clean: clean_js clean_buildout clean_logs
+clean_mailman:
+	$(RM) -r \
+			  /var/tmp/mailman \
+			  /var/tmp/mailman-xmlrpc.test
+ifdef LP_MAKE_KEEP_MAILMAN
+	@echo "Keeping previously built mailman."
+else
+	$(RM) -r lib/mailman
+endif
+
+lxc-clean: clean_js clean_mailman clean_buildout clean_logs
+	# XXX: BradCrittenden 2012-05-25 bug=1004514:
+	# It is important for parallel tests inside LXC that the
+	# $(CODEHOSTING_ROOT) directory not be completely removed.
+	# This target removes its contents but not the directory and
+	# it does everything expected from a clean target.  When the
+	# referenced bug is fixed, this target may be reunited with
+	# the 'clean' target.
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -375,14 +410,15 @@ clean: clean_js clean_buildout clean_logs
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) -r lib/mailman
-	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
-	$(RM) -rf $(CODEHOSTING_ROOT)
-	$(RM) -rf $(APIDOC_DIR)
-	$(RM) -rf $(APIDOC_DIR).tmp
+	$(RM) -r lib/subvertpy/*.so
+	$(RM) -r $(LP_BUILT_JS_ROOT)/*
+	$(RM) -r $(CODEHOSTING_ROOT)/*
+	$(RM) -r $(APIDOC_DIR)
+	$(RM) -r $(APIDOC_DIR).tmp
+	$(RM) -r build
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
-	$(RM) -rf \
+	$(RM) -r \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
@@ -398,9 +434,11 @@ clean: clean_js clean_buildout clean_logs
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then \
-		$(RM) -rf /var/tmp/launchpad_mailqueue; \
+		$(RM) -r /var/tmp/launchpad_mailqueue; \
 	fi
 
+clean: lxc-clean
+	$(RM) -r $(CODEHOSTING_ROOT)
 
 realclean: clean
 	$(RM) TAGS tags
@@ -430,16 +468,18 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
+		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
-	cp configs/development/local-vostok-apache \
-		/etc/apache2/sites-available/local-vostok
-	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
-	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
+	touch $(CODEHOSTING_ROOT)/rewrite.log
+	chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT)
+	if [ ! -d /srv/launchpad.dev ]; then \
+		mkdir /srv/launchpad.dev; \
+		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
+	fi	
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
-	a2ensite local-vostok
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart

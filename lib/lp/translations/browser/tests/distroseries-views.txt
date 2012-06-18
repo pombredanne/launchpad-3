@@ -3,7 +3,7 @@ DistroSeries translations view classes
 
 Let's use ubuntu/hoary for these tests.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.series import SeriesStatus
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -83,7 +83,7 @@ translations even when they're hidden.
     >>> membership = getUtility(ITeamMembershipSet).new(
     ...     expert, expert_team, TeamMembershipStatus.APPROVED,
     ...     expert_team)
-    >>> login_person(expert)
+    >>> ignored = login_person(expert)
     >>> check_effect_of_hiding(hoary)
     User can access revealed translations.
     User can access hidden translations.

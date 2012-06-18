@@ -14,7 +14,7 @@
     <ul>
       <li tal:repeat="attendance attendances">
         <a tal:replace="structure attendance/attendee/fmt:link">Foo Bar</a><br />
-        <div class="discreet">
+        <div class="lesser">
            <span tal:replace="python:view.formatDate(attendance.time_starts)">
              2005-08-05</span> till
            <span tal:replace="python:view.formatDate(attendance.time_ends)">

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for handling mailing lists."""
@@ -16,19 +16,19 @@ from urllib import quote
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.registry.interfaces.mailinglist import (
     IHeldMessageDetails,
     IMailingListSet,
     )
 from lp.registry.interfaces.person import ITeam
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 class HeldMessageView(LaunchpadView):
-    """A little helper view for for held messages."""
+    """A little helper view for held messages."""
 
     def __init__(self, context, request):
         super(HeldMessageView, self).__init__(context, request)
@@ -151,7 +151,7 @@ class enabled_with_active_mailing_list:
 
         def enable_if_active(*args, **kws):
             link = self._function(obj, *args, **kws)
-            if not ITeam.providedBy(obj.context) or not obj.context.isTeam():
+            if not ITeam.providedBy(obj.context) or not obj.context.is_team:
                 link.enabled = False
             mailing_list = getUtility(IMailingListSet).get(obj.context.name)
             if mailing_list is None or not mailing_list.is_usable:

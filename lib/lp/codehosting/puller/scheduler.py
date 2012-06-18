@@ -34,11 +34,10 @@ from twisted.python import (
     log,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.codehosting.puller.worker import get_canonical_url_for_branch_name
+from lp.services.config import config
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout,
     )
@@ -46,6 +45,7 @@ from lp.services.twistedsupport.task import (
     ParallelLimitedTaskConsumer,
     PollingTaskSource,
     )
+from lp.services.webapp import errorlog
 
 
 class BadMessage(Exception):

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401,W0611
@@ -68,10 +68,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
@@ -93,15 +90,19 @@ from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
+from lp.services.config import config
 from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
     URIField,
     Whiteboard,
     )
+from lp.services.webapp.interfaces import ITableBatchNavigator
+from lp.services.webapp.menu import structured
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -151,7 +152,7 @@ class BranchURIField(URIField):
 
     def _validate(self, value):
         # import here to avoid circular import
-        from canonical.launchpad.webapp import canonical_url
+        from lp.services.webapp import canonical_url
         from lazr.uri import URI
 
         # Can't use super-- this derives from an old-style class
@@ -247,11 +248,16 @@ class IBranchPublic(Interface):
             title=_('Date Last Modified'),
             required=True,
             readonly=False))
-
     explicitly_private = Bool(
         title=_("Explicitly Private"),
         description=_("This branch is explicitly marked private as opposed "
         "to being private because it is stacked on a private branch."))
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True, default=InformationType.PUBLIC,
+            description=_(
+                'The type of information contained in this branch.')))
 
 
 class IBranchAnyone(Interface):
@@ -292,7 +298,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         PersonChoice(
             title=_('Owner'),
             required=True, readonly=True,
-            vocabulary='UserTeamsParticipationPlusSelf',
+            vocabulary='AllUserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
                           "This controls who can modify the branch.")))
 
@@ -1114,6 +1120,16 @@ class IBranchEdit(Interface):
         :raise: CannotDeleteBranch if the branch cannot be deleted.
         """
 
+    def transitionToInformationType(information_type, who,
+                                    verify_policy=True):
+        """Set the information type for this branch.
+
+        :param information_type: The `InformationType` to transition to.
+        :param who: The `IPerson` who is making the change.
+        :param verify_policy: Check if the new information type complies
+            with the `IBranchNamespacePolicy`.
+        """
+
 
 class IMergeQueueable(Interface):
     """An interface for branches that can be queued."""
@@ -1337,6 +1353,37 @@ class IBranchSet(Interface):
         :param eager_load: If True (the default because this is used in the
             web service and it needs the related objects to create links)
             eager load related objects (products, code imports etc).
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(
+            title=_("The person whose branch visibility is being "
+                    "checked."),
+            schema=IPerson),
+        branch_names=List(value_type=Text(),
+            title=_('List of branch unique names'), required=True),
+    )
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBranchVisibilityInfo(user, person, branch_names):
+        """Return the named branches visible to both user and person.
+
+        Anonymous requesters don't get any information.
+
+        :param user: The user requesting the information. If the user is None
+            then we return an empty dict.
+        :param person: The person whose branch visibility we wish to check.
+        :param branch_names: The unique names of the branches to check.
+
+        Return a dict with the following values:
+        person_name: the displayname of the person.
+        visible_branches: a list of the unique names of the branches which
+        the requester and specified person can both see.
+
+        This API call is provided for use by the client Javascript. It is not
+        designed to efficiently scale to handle requests for large numbers of
+        branches.
         """
 
 

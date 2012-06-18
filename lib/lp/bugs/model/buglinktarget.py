@@ -13,7 +13,7 @@ from lazr.lifecycle.event import (
 from zope.event import notify
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.webapp.authorization import check_permission
 
 
 class BugLinkTargetMixin:

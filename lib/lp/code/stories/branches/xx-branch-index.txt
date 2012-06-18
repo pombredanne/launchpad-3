@@ -5,7 +5,7 @@ Imports used later in the document:
 
     >>> import pytz
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from datetime import datetime
     >>> from lp.code.enums import BranchType
     >>> from lp.code.bzr import BranchFormat, RepositoryFormat
@@ -112,7 +112,7 @@ This link can be followed to the bug's details page.
 
     >>> browser.getLink('bug 1').click()
     >>> print browser.title
-    Bug #1 in Mozilla Firefox...
+    Bug #1 ...
 
 
 Unscanned branches
@@ -408,21 +408,6 @@ The stacked branch is initially public:
     >>> content = find_tag_by_id(browser.contents, 'document')
     >>> print extract_text(find_tag_by_id(content, 'privacy'))
     This branch is public
-
-We mark the stacked-on branch as private:
-
-    >>> admin_browser.open(stacked_on_url)
-    >>> admin_browser.getLink('Change branch details').click()
-    >>> admin_browser.getControl('Keep branch confidential').selected = True
-    >>> admin_browser.getControl('Change Branch').click()
-
-Now the stacked branch is private:
-
-    >>> admin_browser.open(url)
-    >>> content = find_tag_by_id(admin_browser.contents, 'document')
-    >>> print extract_text(find_tag_by_id(content, 'privacy'))
-    This branch is private because it is stacked on a private branch.
-
 
 Navigation Context
 ..................

@@ -12,9 +12,9 @@ __all__ = [
 
 import errno
 from fcntl import (
-    fcntl,
     F_GETFL,
     F_SETFL,
+    fcntl,
     )
 from os import O_NONBLOCK
 import select

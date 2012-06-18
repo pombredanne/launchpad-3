@@ -15,11 +15,6 @@ from transaction._transaction import Status as TransactionStatus
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.launchpad.webapp.interfaces import FinishReadOnlyRequestEvent
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    RabbitMQLayer,
-    )
 from lp.services.messaging.interfaces import (
     IMessageConsumer,
     IMessageProducer,
@@ -38,9 +33,14 @@ from lp.services.messaging.rabbit import (
     session as global_session,
     unreliable_session as global_unreliable_session,
     )
+from lp.services.webapp.interfaces import FinishReadOnlyRequestEvent
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    RabbitMQLayer,
+    )
 from lp.testing.matchers import Provides
 
 # RabbitMQ is not (yet) torn down or reset between tests, so here are sources

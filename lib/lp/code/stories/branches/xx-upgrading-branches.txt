@@ -14,8 +14,7 @@ format.
 
     >>> from lp.code.bzr import BranchFormat, RepositoryFormat
     >>> login('foo.bar@canonical.com')
-    >>> domino = factory.makePerson(
-    ...     name='domino', email="fats@domino.com", password="test")
+    >>> domino = factory.makePerson(name='domino', email="fats@domino.com")
     >>> twist = factory.makeAnyBranch(
     ...     branch_format=BranchFormat.BZR_BRANCH_6,
     ...     repository_format=RepositoryFormat.BZR_CHK_2A,

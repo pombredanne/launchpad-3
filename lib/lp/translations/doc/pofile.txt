@@ -6,7 +6,7 @@ Get evolution template for Ubuntu Hoary
     >>> import datetime
     >>> import pytz
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -513,7 +513,7 @@ When it changes...
     # We change the plural form.
 
     >>> potmsgset.updatePluralForm(u'something else')
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> print potmsgset.plural_text
     something else
@@ -869,7 +869,7 @@ POFile Security tests
 
 Import the function that will help us to do this test.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
 A Launchpad admin must have permission to edit an IPOFile always.
 

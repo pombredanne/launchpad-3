@@ -18,9 +18,6 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.series import SeriesStatus
@@ -29,12 +26,15 @@ from lp.registry.model.sourcepackagename import (
     SourcePackageName,
     SourcePackageNameSet,
     )
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.webapp.testing import verifyObject
 from lp.services.worlddata.model.language import (
     Language,
     LanguageSet,
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (

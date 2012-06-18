@@ -5,7 +5,7 @@ Creating mailing lists
 No Privileges Person wants to create a mailing list on Launchpad.  She first
 starts by registering a team for her mailing list.
 
-    >>> from canonical.testing.layers import BaseLayer
+    >>> from lp.testing.layers import BaseLayer
     >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('%s/people/+newteam' % root_url)

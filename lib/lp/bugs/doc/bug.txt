@@ -90,6 +90,7 @@ we will register a handler to observe the event.
 The event can be seen when we file a bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.enums import InformationType
 
     >>> steve_harris = factory.makePerson(name='steve-harris')
     >>> params = CreateBugParams(
@@ -163,50 +164,12 @@ Interface check
 
 It is guaranteed to implement the correct interface, too:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(IBug, firefox_crashes)
     True
 
 (We grab the object directly from the database here to avoid it being
 security proxied, which doesn't make sense to test here.)
-
-
-Searching for Bugs
-------------------
-
-To search for bugs matching specific criteria, use IBugSet.searchAsUser:
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-    >>> def current_user():
-    ...     return getUtility(ILaunchBag).user
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> firefox = productset.get(4)
-    >>> firefox_test_bug = bugset.get(3)
-    >>> firefox_master_bug = factory.makeBug(product=firefox)
-    >>> firefox_test_bug.markAsDuplicate(firefox_master_bug)
-    >>> flush_database_updates()
-
-    >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_master_bug, user=current_user())
-    >>> print dups_of_bug_six.count()
-    1
-    >>> dups_of_bug_six[0].id
-    3
-
-    >>> firefox_test_bug.markAsDuplicate(None)
-    >>> flush_database_updates()
-    >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_crashes, user=current_user())
-    >>> print dups_of_bug_six.count()
-    0
-
-    >>> login(ANONYMOUS)
 
 
 Absolute URLs
@@ -215,7 +178,8 @@ Absolute URLs
 For things like bug notification emails, it's handy to be able to
 include a URL to the bug inside the email.
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
+    >>> login(ANONYMOUS)
     >>> print canonical_url(firefox_crashes)
     http://.../bugs/6
 
@@ -233,6 +197,11 @@ Marking Bugs Private
 
 For the purposes of demonstration, we'll make the firefox crashing bug
 private. A bug cannot be made private by an anonymous user.
+
+    >>> from lp.services.webapp.interfaces import ILaunchBag
+    
+    >>> def current_user():
+    ...     return getUtility(ILaunchBag).user
 
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
@@ -315,14 +284,18 @@ firefox_crashes bug, we can still access properties of this bug:
 Note that a search will return all public bugs, omitting bug 14 which is
 private:
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     IBugTaskSet, BugTaskSearchParams)
     >>> from lp.bugs.model.bug import Bug
+    >>> from lp.services.database.lpstorm import IStore
+
     >>> all_bugs = set(IStore(Bug).find(Bug).values(Bug.id))
 
+    >>> taskset = getUtility(IBugTaskSet)
     >>> def hidden_bugs():
     ...     found_bugs = set(
-    ...         bug.id for bug in bugset.searchAsUser(
-    ...             user=current_user()))
+    ...         task.bug.id for task in taskset.search(
+    ...             BugTaskSearchParams(current_user())))
     ...     return sorted(all_bugs - found_bugs)
 
     >>> login("test@canonical.com")
@@ -347,28 +320,18 @@ admin as well:
     >>> hidden_bugs()
     []
 
-If a bug is private, bugtask assignees can see the bug.  Previously
-sample person could not see bug 14.  But after making him the
-assignee it is visible.
-
-    >>> bug14 = bugset.get(14)
-    >>> bug14.default_bugtask.transitionToAssignee(sample_person)
-    >>> login("test@canonical.com")
-    >>> hidden_bugs()
-    []
-
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
 
-    >>> blackhole_trash_folder = bugset.get(2)
+    >>> reflow_problems_bug = bugset.get(4)
 
 And again, let's fake setting the bug private:
 
-    >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
-    >>> blackhole_trash_folder.setPrivate(True, current_user())
+    >>> old_state = Snapshot(reflow_problems_bug, providing=IBug)
+    >>> reflow_problems_bug.setPrivate(True, current_user())
     True
     >>> bug_set_private = ObjectModifiedEvent(
-    ...     blackhole_trash_folder, old_state,
+    ...     reflow_problems_bug, old_state,
     ...     ["id", "title", "private"])
 
     >>> notify(bug_set_private)
@@ -381,22 +344,22 @@ the Cc list:
     >>> personset = getUtility(IPersonSet)
 
     >>> ubuntu_team = personset.get(17)
-    >>> subscription = blackhole_trash_folder.subscribe(
+    >>> subscription = reflow_problems_bug.subscribe(
     ...     ubuntu_team, ubuntu_team)
 
 Jeff Waugh, a member of the Ubuntu Team, is able to access this bug:
 
     >>> login("jeff.waugh@ubuntulinux.com")
 
-    >>> old_title = blackhole_trash_folder.title
-    >>> blackhole_trash_folder.title = "new title"
-    >>> blackhole_trash_folder.title
+    >>> old_title = reflow_problems_bug.title
+    >>> reflow_problems_bug.title = "new title"
+    >>> reflow_problems_bug.title
     u'new title'
-    >>> blackhole_trash_folder.title = old_title
-    >>> blackhole_trash_folder.title
-    u'Blackhole Trash folder'
+    >>> reflow_problems_bug.title = old_title
+    >>> reflow_problems_bug.title
+    u'Reflow problems with complex page layouts'
 
-Bug #2 is visible to him in searches. Note that bugs #6 and #14 are
+Bug #4 is visible to him in searches. Note that bugs #6 and #14 are
 hidden from him.
 
     >>> hidden_bugs()
@@ -411,16 +374,17 @@ of this bug) though:
 Trying to access a property of this bug will again raise an
 Unauthorized:
 
-    >>> blackhole_trash_folder.title
+    >>> reflow_problems_bug.title
     Traceback (most recent call last):
       ...
     Unauthorized: (..., 'title', 'launchpad.View')
 
-And, as you might have guessed, bug #2 is invisible in searches, in
+And, as you might have guessed, bug #4 is invisible in searches, in
 addition to bugs #6 and #14:
 
     >>> hidden_bugs()
-    [2, 6, 14]
+    [4, 6, 14]
+
 
 
 Filing Public vs. Private Bugs
@@ -432,6 +396,9 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> firefox = productset.get(4)
     >>> foobar = personset.getByEmail('foo.bar@canonical.com')
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
@@ -476,7 +443,7 @@ When a private bug is filed:
 
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar,
-    ...     private=True)
+    ...     information_type=InformationType.USERDATA)
     >>> params.setBugTarget(product=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
@@ -506,7 +473,7 @@ sourcepackage. E.g.
     >>> evolution = spnset.get(9)
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah",
-    ...     owner=foobar, private=True)
+    ...     owner=foobar, information_type=InformationType.USERDATA)
     >>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
@@ -727,14 +694,15 @@ or oldest bugtask.
     Mozilla Firefox
 
 It's not always possible to add another bug task to a bug.
-Private bugs are only allowed to affect a single project or distribution.
+Proprietary bugs are only allowed to affect a single project or distribution.
 
     >>> params = CreateBugParams(
     ...     title="a test private bug",
     ...     comment="a description of the bug",
     ...     owner=current_user())
     >>> private_bug = firefox.createBug(params)
-    >>> private_bug.setPrivate(True, current_user())
+    >>> private_bug.transitionToInformationType(
+    ...     InformationType.PROPRIETARY, current_user())
     True
 
     >>> params = CreateBugParams(
@@ -758,14 +726,14 @@ If we try and add an invalid bug task to a private bug we get an exception.
     >>> private_bug.addTask(owner=foobar, target=tomcat)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Mozilla Firefox.
-    Private bugs cannot affect multiple projects.
+    IllegalTarget: This proprietary bug already affects Mozilla Firefox.
+    Proprietary bugs cannot affect multiple projects.
 
     >>> private_bug.addTask(owner=foobar, target=ubuntu)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Mozilla Firefox.
-    Private bugs cannot affect multiple projects.
+    IllegalTarget: This proprietary bug already affects Mozilla Firefox.
+    Proprietary bugs cannot affect multiple projects.
 
 We can add a new product series task so long as it's for the same product as
 is already targeted.
@@ -778,8 +746,8 @@ is already targeted.
     >>> private_bug.addTask(owner=foobar, target=target)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Mozilla Firefox.
-    Private bugs cannot affect multiple projects.
+    IllegalTarget: This proprietary bug already affects Mozilla Firefox.
+    Proprietary bugs cannot affect multiple projects.
 
 Now we create a bug on a distribution.
 
@@ -801,20 +769,21 @@ We can also add an allowed distro series source package.
 We cannot add distro series or source package tasks for different distros.
 
     >>> private_bug = tubuntu.createBug(params)
-    >>> private_bug.setPrivate(True, current_user())
+    >>> private_bug.transitionToInformationType(
+    ...     InformationType.PROPRIETARY, current_user())
     True
 
     >>> private_bug.addTask(owner=foobar, target=warty)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Tubuntu.
-    Private bugs cannot affect multiple projects.
+    IllegalTarget: This proprietary bug already affects Tubuntu.
+    Proprietary bugs cannot affect multiple projects.
 
     >>> private_bug.addTask(owner=foobar, target=warty_fox_package)
     Traceback (most recent call last):
     ...
-    IllegalTarget: This private bug already affects Tubuntu.
-    Private bugs cannot affect multiple projects.
+    IllegalTarget: This proprietary bug already affects Tubuntu.
+    Proprietary bugs cannot affect multiple projects.
 
 
 Changing bug visibility.
@@ -861,7 +830,7 @@ Marking as duplicate.
 
     >>> print firefox_bug.duplicateof
     None
-    >>> firefox_bug.markAsDuplicate(firefox_master_bug)
+    >>> firefox_bug.markAsDuplicate(factory.makeBug())
 
     >>> bug_duplicateof_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["duplicateof"])
@@ -877,7 +846,7 @@ Adding an attachment.
 
     >>> from StringIO import StringIO
     >>> from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> from lp.services.messages.interfaces.message import IMessageSet
 

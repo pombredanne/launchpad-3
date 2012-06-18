@@ -2,14 +2,15 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
+  itemscope=""
+  itemtype="http://schema.org/UserComments"
   tal:define="comment context;
               remote_bug_comment_class
               python: comment.bugwatch and 'remoteBugComment' or '';
               admin_comment_hidden_class
               python: comment.show_for_admin and 'adminHiddenComment' or ''"
   tal:attributes="class string:boardComment ${remote_bug_comment_class}
-                 ${admin_comment_hidden_class}"
-  tal:content="cache:authenticated noparam,comment/rendered_cache_time,comment/index">
+                 ${admin_comment_hidden_class}">
 
   <div class="boardCommentDetails">
     <table>
@@ -19,10 +20,13 @@
             <tal:comment_owner
                 replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
-            <span tal:attributes="title comment/datecreated/fmt:datetime"
-                  tal:content="comment/datecreated/fmt:displaydate">
-              7 minutes ago
-              </span>:
+            <time
+              itemprop="commentTime"
+              tal:attributes="title comment/datecreated/fmt:datetime;
+                datetime comment/datecreated/fmt:isodate"
+              tal:content="comment/datecreated/fmt:displaydate">
+                7 minutes ago
+            </time>:
               <a tal:attributes="href comment/fmt:url"
                  tal:condition="comment/display_title">
                 <strong tal:content="comment/title" />
@@ -31,23 +35,29 @@
           <td tal:condition="comment/bugwatch">
             <img width="14" height="14" src="/@@/bug-remote" alt=""/>
             In
-            <a tal:attributes="href comment/bugwatch/url"
-               tal:content="comment/bugwatch/title" />,
+            <a itemprop="url"
+              tal:attributes="href comment/bugwatch/url"
+              tal:content="comment/bugwatch/title" />,
             <tal:comment_owner
                 replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
-            <span tal:attributes="title comment/datecreated/fmt:datetime"
-                  tal:content="comment/datecreated/fmt:displaydate">
+            <time
+              itemprop="commentTime"
+              tal:attributes="title comment/datecreated/fmt:datetime;
+                datetime comment/datecreated/fmt:isodate"
+              tal:content="comment/datecreated/fmt:displaydate">
               7 minutes ago
-              </span>:
+              </time>:
               <a tal:attributes="href comment/fmt:url">
                 <strong tal:condition="comment/display_title"
                         tal:content="comment/title" />
               </a>
           </td>
+
           <td class="bug-comment-index">
-            <a tal:attributes="href comment/fmt:url"
-               tal:content="string: #${comment/index}" />
+          <a itemprop="url"
+             tal:attributes="href comment/fmt:url"
+             tal:content="string: #${comment/index}" />
           </td>
         </tr>
       </tbody>
@@ -61,7 +71,7 @@
         <a tal:attributes="href python: view.proxiedUrlOfLibraryFileAlias(attachment)"
             tal:content="attachment/title"
             class="sprite download-icon">foo.txt</a>
-        <a tal:attributes="href attachment/fmt:url" alt="edit" class="sprite edit"></a>
+        <a tal:attributes="href attachment/fmt:url" class="sprite edit action-icon">Edit</a>
         (<span
            tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
         <span tal:replace="attachment/libraryfile/mimetype" />)
@@ -72,22 +82,17 @@
       <li tal:repeat="attachment comment/patches" class="download-attachment">
         <a tal:attributes="href python: view.proxiedUrlOfLibraryFileAlias(attachment)"
            tal:content="attachment/title" class="sprite haspatch-icon">foo.txt</a>
-        <a tal:attributes="href attachment/fmt:url" alt="edit" class="sprite edit"></a>
+        <a tal:attributes="href attachment/fmt:url" class="sprite edit action-icon">Edit</a>
         (<span
            tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
         <span tal:replace="attachment/libraryfile/mimetype" />)
       </li>
     </ul>
 
-    <div class="bug-comment"
-      tal:content="structure
-        comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
-      Comment text.
-    </div>
-    <p tal:condition="comment/was_truncated">
-      <a tal:attributes="href comment/fmt:url">Read more...</a>
-    </p>
+    <tal:text
+      replace="structure comment/@@+comment-body-text" />
   </div>
+
   <div class="boardCommentFooter" tal:condition="comment/show_footer">
     <a tal:attributes="id string:mark-spam-${context/index};"
        tal:condition="view/show_spam_controls"
@@ -103,18 +108,14 @@
       <metal:activity-table
           metal:use-macro="context/@@bugcomment-macros/activity-table" />
     </tal:activity>
-    <tal:bugwatch-footer condition="comment/bugwatch">
+    <tal:bugwatch-footer condition="python: view.user and comment.bugwatch">
       <div>
-        <table style="width: 100%">
+        <table class="remote-comment-reply-parent" style="width: 100%">
           <tr>
             <td style="text-align: left; vertical-align: middle">
               <tal:reply-link condition="view/user">
-                <a tal:attributes="id string:remote_comment_reply_expand_link_${comment/index};
-                                   href comment/fmt:url"
-                   href="#">
-                  <img tal:attributes="id string:remote_comment_reply_tree_icon_${comment/index};
-                                       src python: '/@@/tree' + (view.expand_reply_box and 'Expanded' or 'Collapsed')"
-                       class="collapseIcon" height="14" width="14" />
+                <a class="remote-comment-reply-link"
+                    tal:attributes="href comment/fmt:url" href="#">
                   Reply on <tal:bugtracker replace="comment/bugwatch/bugtracker/title"/>
                 </a>
               </tal:reply-link>
@@ -126,10 +127,8 @@
               </tal:sync-state>
             </td>
           </tr>
-          <tr tal:condition="view/user">
+          <tr class="remote-comment-reply" tal:condition="view/user">
             <td colspan="2">
-              <div tal:attributes="id string:remote_comment_reply_div_${comment/index};
-                                   style python: 'display: ' + (view.expand_reply_box and 'block' or 'none')">
                 <form tal:attributes="action comment/add_comment_url"
                       name="launchpadform" method="post"
                       enctype="multipart/form-data"
@@ -154,14 +153,10 @@
                     </table>
                   </div>
                 </form>
-              </div>
             </td>
           </tr>
         </table>
       </div>
-      <script type="text/javascript"
-              tal:condition="view/user"
-              tal:content="string:connectRemoteCommentReply(${comment/index});" />
     </tal:bugwatch-footer>
   </div>
 </div>

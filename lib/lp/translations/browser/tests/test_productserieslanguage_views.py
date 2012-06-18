@@ -1,19 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
+from lp.registry.enums import InformationType
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.translations.browser.productseries import ProductSeriesView
 from lp.translations.browser.serieslanguage import ProductSeriesLanguageView
@@ -206,7 +207,8 @@ class TestProductSeriesViewBzrUsage(TestCaseWithFactory):
     def test_has_imports_enabled_private_branch_non_privileged(self):
         # Private branches are hidden from non-privileged users. The view
         # pretends that it is not used for imports.
-        self.productseries.branch = self.factory.makeBranch(private=True)
+        self.productseries.branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         self.productseries.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         view = self._createView()
@@ -214,7 +216,8 @@ class TestProductSeriesViewBzrUsage(TestCaseWithFactory):
 
     def test_has_imports_enabled_private_branch_privileged(self):
         # Private branches are visible for privileged users.
-        self.productseries.branch = self.factory.makeBranch(private=True)
+        self.productseries.branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         self.productseries.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         with person_logged_in(self.productseries.branch.owner):
@@ -230,14 +233,14 @@ class TestProductSeriesViewBzrUsage(TestCaseWithFactory):
         # Private branches are hidden from non-privileged users. The view
         # pretends that it is not used for exports.
         self.productseries.translations_branch = self.factory.makeBranch(
-            private=True)
+            information_type=InformationType.USERDATA)
         view = self._createView()
         self.assertFalse(view.has_exports_enabled)
 
     def test_has_exports_enabled_private_branch_privileged(self):
         # Private branches are visible for privileged users.
         self.productseries.translations_branch = self.factory.makeBranch(
-            private=True)
+            information_type=InformationType.USERDATA)
         with person_logged_in(self.productseries.translations_branch.owner):
             view = self._createView()
             self.assertTrue(view.has_exports_enabled)

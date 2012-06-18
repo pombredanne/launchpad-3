@@ -17,11 +17,11 @@ from testtools.matchers import (
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchjob import RosettaUploadJob
 from lp.services.osutils import override_environ
+from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -29,6 +29,16 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+
+
+def filter_out_disconnection_oopses(oopses):
+    """Remove the bug 884036-related oopses from a set of oopses.
+
+    :return: All non-DisconnectionError or AssertionError oopses.
+    """
+    unwanted_types = ('AssertionError', 'DisconnectionError')
+    return [
+        oops for oops in oopses if oops['type'] not in unwanted_types]
 
 
 class TestRosettaBranchesScript(TestCaseWithFactory):
@@ -95,16 +105,18 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         queue = getUtility(ITranslationImportQueue)
         self.assertEqual(0, queue.countEntries())
 
-        # XXX: Robert Collins - bug 884036 - test_rosetta_branches_script does
-        # a commit() which resets the test db out from under the running slave
-        # appserver, requests to it then (correctly) log oopses as a DB
-        # connection is *not normal*. So when both tests are run, we see 8 of
-        # these oopses (4 pairs of 2); when run alone we don't.
         self.oops_capture.sync()
+        # XXX 2012-04-20 bug=884036 gmb:
+        #     This filter_out_disconnection_oopses() call is here to
+        #     stop the above bug from biting us in parallel test runs.
+        #     We filter out all OOPSes related to the fact that the DB
+        #     connection gets reset from under the running slave during
+        #     these test runs.
+        oopses = filter_out_disconnection_oopses(self.oopses)
         self.assertThat(
-            len(self.oopses), MatchesAny(Equals(1), Equals(9)),
-            "Unexpected number of OOPSes %r" % self.oopses)
-        oops_report = self.oopses[-1]
+            len(oopses), Equals(1),
+            "Unexpected number of OOPSes %r" % oopses)
+        oops_report = oopses[-1]
         self.assertIn(
             'INFO    Job resulted in OOPS: %s\n' % oops_report['id'], stderr)
         self.assertEqual('NoSuchRevision', oops_report['type'])

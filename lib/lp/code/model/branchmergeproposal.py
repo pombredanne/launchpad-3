@@ -38,21 +38,11 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
     CodeReviewVote,
     )
 from lp.code.errors import (
@@ -86,12 +76,33 @@ from lp.code.model.diff import (
     IncrementalDiff,
     PreviewDiff,
     )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
+    IPersonSet,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.person import Person
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
+from lp.services.database.bulk import load_related
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import validate_message
@@ -184,22 +195,26 @@ class BranchMergeProposal(SQLBase):
     @property
     def private(self):
         return (
-            self.source_branch.transitively_private or
-            self.target_branch.transitively_private or
+            (self.source_branch.information_type
+             in PRIVATE_INFORMATION_TYPES) or
+            (self.target_branch.information_type
+             in PRIVATE_INFORMATION_TYPES) or
             (self.prerequisite_branch is not None and
-             self.prerequisite_branch.transitively_private))
+             (self.prerequisite_branch.information_type in
+              PRIVATE_INFORMATION_TYPES)))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False,
+        storm_validator=validate_person, notNull=False,
         default=None)
 
     @property
     def next_preview_diff_job(self):
         # circular dependencies
         from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob, BranchMergeProposalJobFactory,
-            BranchMergeProposalJobType)
+            BranchMergeProposalJob,
+            BranchMergeProposalJobType,
+        )
         jobs = Store.of(self).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
@@ -209,7 +224,7 @@ class BranchMergeProposal(SQLBase):
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         job = jobs.order_by(Job.scheduled_start, Job.date_created).first()
         if job is not None:
-            return BranchMergeProposalJobFactory.create(job)
+            return job.makeDerived()
         else:
             return None
 
@@ -606,6 +621,48 @@ class BranchMergeProposal(SQLBase):
                 review_type = review_type.lower()
         return review_type
 
+    def _subscribeUserToStackedBranch(self, branch, user,
+                                      checked_branches=None):
+        """Subscribe the user to the branch and those it is stacked on."""
+        if checked_branches is None:
+            checked_branches = []
+        branch.subscribe(
+            user,
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.FULL,
+            user)
+        if branch.stacked_on is not None:
+            checked_branches.append(branch)
+            if branch.stacked_on not in checked_branches:
+                self._subscribeUserToStackedBranch(
+                    branch.stacked_on, user, checked_branches)
+
+    def _acceptable_to_give_visibility(self, branch, reviewer):
+        # If the branch is private, only closed teams can be subscribed to
+        # prevent leaks.
+        if (branch.information_type in PRIVATE_INFORMATION_TYPES and
+            reviewer.is_team and reviewer.anyone_can_join()):
+            return False
+        return True
+
+    def _ensureAssociatedBranchesVisibleToReviewer(self, reviewer):
+        """ A reviewer must be able to see the source and target branches.
+
+        Currently, we ensure the required visibility by subscribing the user
+        to the branch and those on which it is stacked. We do not subscribe
+        the reviewer if the branch is private and the reviewer is an open
+        team.
+        """
+        source = self.source_branch
+        if (not source.visibleByUser(reviewer) and
+            self._acceptable_to_give_visibility(source, reviewer)):
+            self._subscribeUserToStackedBranch(source, reviewer)
+        target = self.target_branch
+        if (not target.visibleByUser(reviewer) and
+            self._acceptable_to_give_visibility(source, reviewer)):
+            self._subscribeUserToStackedBranch(target, reviewer)
+
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
@@ -623,6 +680,7 @@ class BranchMergeProposal(SQLBase):
                 registrant=registrant,
                 reviewer=reviewer,
                 date_created=_date_created)
+            self._ensureAssociatedBranchesVisibleToReviewer(reviewer)
         vote_reference.review_type = review_type
         if _notify_listeners:
             notify(ReviewerNominatedEvent(vote_reference))
@@ -691,8 +749,7 @@ class BranchMergeProposal(SQLBase):
             if not subject.startswith('Re: '):
                 subject = 'Re: ' + subject
 
-        # Until these are moved into the lp module, import here to avoid
-        # circular dependencies from canonical.launchpad.database.__init__.py
+        # Avoid circular dependencies.
         from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(
@@ -903,6 +960,61 @@ class BranchMergeProposal(SQLBase):
         ranges = self.getIncrementalDiffRanges()
         diffs = self.getIncrementalDiffs(ranges)
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
+
+    @staticmethod
+    def preloadDataForBMPs(branch_merge_proposals, user):
+        # Utility to load the data related to a list of bmps.
+        # Circular imports.
+        from lp.code.model.branch import Branch
+        from lp.code.model.branchcollection import GenericBranchCollection
+        from lp.registry.model.product import Product
+        from lp.registry.model.distroseries import DistroSeries
+
+        source_branch_ids = set()
+        person_ids = set()
+        diff_ids = set()
+        for mp in branch_merge_proposals:
+            source_branch_ids.add(mp.source_branchID)
+            person_ids.add(mp.registrantID)
+            person_ids.add(mp.merge_reporterID)
+            diff_ids.add(mp.preview_diff_id)
+
+        branches = load_related(
+            Branch, branch_merge_proposals, (
+                "target_branchID", "prerequisite_branchID",
+                "source_branchID"))
+        # The stacked on branches are used to check branch visibility.
+        GenericBranchCollection.preloadVisibleStackedOnBranches(
+            branches, user)
+
+        if len(branches) == 0:
+            return
+
+        store = IStore(BranchMergeProposal)
+
+        # Pre-load PreviewDiffs and Diffs.
+        preview_diffs_and_diffs = list(store.find(
+            (PreviewDiff, Diff),
+            PreviewDiff.id.is_in(diff_ids),
+            Diff.id == PreviewDiff.diff_id))
+        PreviewDiff.preloadData(
+            [preview_diff_and_diff[0] for preview_diff_and_diff
+                in preview_diffs_and_diffs])
+
+        # Add source branch owners' to the list of pre-loaded persons.
+        person_ids.update(
+            branch.ownerID for branch in branches
+            if branch.id in source_branch_ids)
+
+        # Pre-load Person and ValidPersonCache.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
+
+        # Pre-load branches' data.
+        load_related(SourcePackageName, branches, ['sourcepackagenameID'])
+        load_related(DistroSeries, branches, ['distroseriesID'])
+        load_related(Product, branches, ['productID'])
+        GenericBranchCollection.preloadDataForBranches(branches)
 
 
 class BranchMergeProposalGetter:

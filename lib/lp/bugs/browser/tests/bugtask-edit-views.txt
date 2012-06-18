@@ -10,7 +10,7 @@ Let's start simple and edit the status of a bug task logged in as Sample
 Person:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)
@@ -70,7 +70,8 @@ changed to the corresponding source package.
     ...     distroseries=
     ...         ubuntu_thunderbird_task.target.distribution.currentseries,
     ...     sourcepackagename='thunderbird')
-    >>> ubuntu_thunderbird_task.transitionToTarget(ubuntu_thunderbird)
+    >>> ubuntu_thunderbird_task.transitionToTarget(
+    ...     ubuntu_thunderbird, getUtility(ILaunchBag).user)
 
 If we try to change the source package to package name that doesn't
 exist in Launchpad. we'll get an error message.
@@ -83,8 +84,8 @@ exist in Launchpad. we'll get an error message.
     >>> for error in edit_view.errors:
     ...     print error
     (u'ubuntu_thunderbird.target', u'Target',
-     LaunchpadValidationError(u"There is no package name 'no-such-package'
-     published in Ubuntu"))
+     LaunchpadValidationError(u"There is no package named 'no-such-package'
+     published in Ubuntu."))
 
 An error is reported to the user when a bug is retargeted and there is
 an existing task for the same target.

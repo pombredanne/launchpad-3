@@ -29,6 +29,7 @@ from urlparse import urlparse
 # etc.
 from bzrlib.trace import enable_default_logging
 enable_default_logging()
+
 from bzrlib.branch import Branch
 from bzrlib.plugin import load_plugins
 load_plugins()

@@ -8,7 +8,7 @@ That action is only available to project owners and answer contacts.
 That's why the link doesn't appear for the anonymous user nor
 No Privileges Person:
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> anon_browser.open('http://answers.launchpad.dev/firefox/+faq/7')
     >>> print backslashreplace(anon_browser.title)
     FAQ #7 : Questions : Mozilla Firefox

@@ -14,7 +14,7 @@ method accepts a single parameter; an BugTaskSearchParams instance.
 
     >>> from lp.bugs.model.bugtask import BugTask
     >>> all_public_bugtasks = BugTask.select(
-    ...     "BugTask.bug = Bug.id AND Bug.private = false",
+    ...     "BugTask.bug = Bug.id AND Bug.information_type IN (1, 2)",
     ...     clauseTables=['Bug'])
     >>> found_bugtasks.count() == all_public_bugtasks.count()
     True
@@ -128,67 +128,6 @@ twice.
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
 
-
-== Searching in comments ==
-
-Comments can be searched when specifying a search text in the bugtask
-search. Whether comments are searched is controlled by the
-search_comments config option.
-
-For example, no Firefox bugs are found when searching for
-'wordincomment'.
-
-    >>> comment_search = BugTaskSearchParams(
-    ...     user=None, searchtext='wordincomment')
-    >>> found_bugtasks = firefox.searchTasks(comment_search)
-    >>> found_bugtasks.count()
-    0
-
-If we add a comment containing the search string to bug one, that bug
-will be returned by the search only if search_comments is True.
-
-    >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
-    <Message at ...>
-
-    # Add another comment to make sure that it won't cause the same
-    # bugtask to be returned twice.
-    >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
-    <Message at ...>
-
-When the search_comments config option is False, the bug is not found.
-
-    >>> from canonical.config import config
-    >>> search_comments = """
-    ...     [malone]
-    ...     search_comments: %s
-    ...     """
-    >>> config.push('search_comments', search_comments % False)
-    >>> found_bugtasks = firefox.searchTasks(comment_search)
-    >>> [bugtask.bug.id for bugtask in found_bugtasks]
-    []
-
-    >>> config_data = config.pop('search_comments')
-
-If the search_comments config option is True, the bug is found.
-
-    >>> config.push('search_comments', search_comments % True)
-
-    >>> found_bugtasks = firefox.searchTasks(comment_search)
-    >>> for bugtask in found_bugtasks:
-    ...     print "#%s" % bugtask.bug.id
-    #1
-
-    # Of course, searching in a project not containing bug #1 doesn't
-    # return any matches.
-    >>> evolution = getUtility(IProductSet).getByName('evolution')
-    >>> found_bugtasks = evolution.searchTasks(comment_search)
-    >>> found_bugtasks.count()
-    0
-
-    >>> config_data = config.pop('search_comments')
-
 == Searching using bug full-text index ==
 
 The searchtext parameter does an extensive and expensive search (it
@@ -199,13 +138,14 @@ expensive search on other related information.
 
 For example, there are no bugs with the word 'Fnord' in Firefox.
 
-    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext='Fnord')
+    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext=u'Fnord')
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> found_bugtasks.count()
     0
 
 But if we put that word in the bug #4 description, it will be found.
 
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> bug_four.description += (
     ...     '\nThat happens pretty often with the Fnord Highlighter '
@@ -382,8 +322,8 @@ The search filter can also return bugs that are related to CVE reports:
 
     >>> from lp.bugs.interfaces.cve import ICveSet
     >>> def getCves(bugtask):
-    ...     bugcve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
-    ...     return bugcve.cve.sequence
+    ...     bug, cve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
+    ...     return cve.sequence
     >>> params = BugTaskSearchParams(
     ...     has_cve=True, orderby='id', user=None)
     >>> tasks_with_cves = ubuntu.searchTasks(params)
@@ -591,7 +531,7 @@ The second bug is tagged with only 'test-tag-1'.
 Searching for bugs with any of the tags returns both of them.
 
     >>> from operator import attrgetter
-    >>> from canonical.launchpad.searchbuilder import all, any
+    >>> from lp.services.searchbuilder import all, any
 
     >>> def search_tasks_and_print_bugs(user=None, **args):
     ...     params = BugTaskSearchParams(user=user, **args)
@@ -705,7 +645,7 @@ closed after a certain date.
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.searchbuilder import greater_than
+    >>> from lp.services.searchbuilder import greater_than
     >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
@@ -733,7 +673,7 @@ closed after a certain date.
 It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bugattachment import (
     ...     BugAttachmentType,
@@ -1040,7 +980,7 @@ None of these bugs have any duplicates.
     ...  if bugtask.bug.duplicateof is not None]
     []
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
 
 We mark bug #10 as a duplicate of bug #9.
 
@@ -1089,7 +1029,7 @@ Another way of sorting searches is by bug heat.
     ...     orderby='id', user=None)
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for task in ubuntu_tasks:
-    ...     task.bug.setHeat(task.bug.id)
+    ...     removeSecurityProxy(task.bug).heat = task.bug.id
     >>> transaction.commit()
     >>> params = BugTaskSearchParams(
     ...     orderby='-heat', user=None)
@@ -1119,11 +1059,11 @@ a "second level" sort order to ensure reliable sorting).
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     print bugTaskInfo(bugtask)
-    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    23 9 thunderbird (Ubuntu) Thunderbird crashes
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    26 2 Ubuntu Blackhole Trash folder
     41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    26 2 Ubuntu Blackhole Trash folder
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
 
 If we add a patch attachment to bug 2 and bug 10, they are listed first.
 
@@ -1139,9 +1079,9 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
     ...     print bugTaskInfo(bugtask)
     26 2 Ubuntu Blackhole Trash folder
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    23 9 thunderbird (Ubuntu) Thunderbird crashes
     41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
 
 
 == Searching using a flat interface ==
@@ -1195,7 +1135,7 @@ Or we can search a certain milestone (only getting bugs targeted to it).
 We can restrict our search for firefox bugs with a text search.
 
     >>> print_bugtasks(firefox.searchTasks(
-    ...     None, user=None, search_text='instructions'))
+    ...     None, user=None, search_text=u'instructions'))
     5 Mozilla Firefox Firefox install instructions should be complete NEW CRITICAL
 
 Or restrict our search (over the mozilla project this time) to a list of

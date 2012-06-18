@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This makefile is used for two task:
@@ -15,7 +15,7 @@
 #
 #  $ mkdir -p /srv/staging.launchpad.net/staging-logs
 #  $ cd database/replication
-#  $ pg_dump --format=c launchpad_dev > launchpad.dump
+#  $ pg_dump --exclude-schema=_sl --format=c launchpad_dev > launchpad.dump
 #  $ make stagingsetup \
 #        STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
 #  $ make stagingswitch STAGING_CONFIG=dev-staging
@@ -104,20 +104,52 @@ devsetup:
 
 
 # Build _new staging databases from a production dump.
+stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
 	make _prelim LPCONFIG=${NEW_STAGING_CONFIG} \
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
 	    LAG="0 seconds"
 	# Create the DB with the desired default tablespace.
 	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging_new
+	# Drop the plpgsql language if it was installed, as it will be
+	# recreated with the dump from PostgreSQL 8.4
+	-droplang plpgsql lpmain_staging_new
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
+	# Unfortunately, we need to dump production databases using
+	# --exclude-schema=_sl, or the read locks opened by pg_dump will
+	# cause the replication to appear lagged and set off alerts.
+	# This makes the restoration process more complex - a human being
+	# can just restore the dump, scan the errors and confirm it worked.
+	# For this automation, we need to massage the list of data to
+	# restore from the dump to avoid the spurious errors and get a
+	# valid error code.
+	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
 	pg_restore --dbname=lpmain_staging_new --no-owner ${EXIT_ON_ERROR} \
-	    ${MULTIPROC} ${STAGING_DUMP}
+	    --use-list=${DUMPLIST} ${MULTIPROC} ${STAGING_DUMP}
+	rm ${DUMPLIST}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
-	# Slony-I installed isn't usable without this step.
+	# Slony-I installed isn't usable without this step. This is likely
+	# irrelevant, as if our dump was created with --exclude-schema=_sl
+	# it will not contain anything to remove.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
+	# Apply database patches now. This is unfortunate, as it means
+	# the patches are not being applied to a replicated database.
+	# With this update, we get incorrect patch application times and
+	# won't catch patches incompatible with Slony. We do this now,
+	# because we are running short of disk space on the staging
+	# database server. With the patches being applied before
+	# replication, we can swap the slave database into place before
+	# it has finished building and we end up using only 3*production
+	# amount of disk space rather than 4*production.
+	@echo Running upgrade.py `date` non-replicated. Times need adjustment.
+	LPCONFIG=${NEW_STAGING_CONFIG} ${SHHH} ../schema/upgrade.py \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
+	@echo Running security.py `date`
+	LPCONFIG=${NEW_STAGING_CONFIG} ${SHHH} ../schema/security.py -U slony \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	# Setup replication
 	make _replicate LPCONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
@@ -145,14 +177,18 @@ stagingswitch:
 	# Start the slon daemons, with requested lag.
 	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
 
+dogfood: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpdogf)
 dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
-	# Stop ignoring error code after are dumps come from an 8.4 system.
-	-pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
-	    ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	# May be needed with PG 9.1 if the dump is from PG 8.4.
+	-droplang plpgsql ${DOGFOOD_DBNAME}
+	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
+	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	rm ${DUMPLIST}
 	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
-	../schema/fti.py -d ${DOGFOOD_DBNAME}
 	../schema/security.py -d ${DOGFOOD_DBNAME}
 
 _prelim:
@@ -182,18 +218,8 @@ _replicate:
 	# Setup the slave
 	./new-slave.py 2 "dbname=${_SLAVE}" \
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
-	# Upgrade all databases in the cluster and reset security.
-	@echo Running upgrade.py `date`
-	${SHHH} ../schema/upgrade.py \
-	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
-	@echo Running fti.py `date`
-	${SHHH} ../schema/fti.py \
-	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
-	@echo Running security.py `date`
-	./slon_ctl.py stop # security.py can deadlock with slony
-	${SHHH} ../schema/security.py --cluster -U slony \
-	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	# Restart slon daemons with default lag setting.
+	./slon_ctl.py stop
 	./slon_ctl.py --lag="${LAG}" start
 	# Generate a preamble for manual slonik(1) usage.
 	./preamble.py > preamble.sk

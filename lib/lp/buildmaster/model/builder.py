@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009,2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -18,7 +18,7 @@ import logging
 import os
 import socket
 import tempfile
-import transaction
+from urlparse import urlparse
 import xmlrpclib
 
 from lazr.restful.utils import safe_hasattr
@@ -34,6 +34,7 @@ from storm.expr import (
     Count,
     Sum,
     )
+import transaction
 from twisted.internet import (
     defer,
     reactor as default_reactor,
@@ -43,22 +44,6 @@ from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.buildd.slave import BuilderStatus
-from canonical.config import config
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
-from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
@@ -77,11 +62,29 @@ from lp.buildmaster.model.buildqueue import (
     specific_job_classes,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.config import config
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import filenameToContentType
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.propertycache import cachedproperty
-from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import copy_and_close
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.twistedsupport import cancel_on_timeout
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+from lp.services.webapp import urlappend
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -254,8 +257,11 @@ class BuilderSlave(object):
         :return: a Deferred that returns a
             (stdout, stderr, subprocess exitcode) triple
         """
+        url_components = urlparse(self.url)
+        buildd_name = url_components.hostname.split('.')[0]
         resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self._vm_host}
+            'vm_host': self._vm_host,
+            'buildd_name': buildd_name}
         # Twisted API requires string but the configuration provides unicode.
         resume_argv = [
             term.encode('utf-8') for term in resume_command.split()]
@@ -312,8 +318,8 @@ class BuilderSlave(object):
 def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
-    # token in the sentence received from status(), according the
-    # two status we care about. See see lib/canonical/buildd/slave.py
+    # token in the sentence received from status(), according to the
+    # two statuses we care about. See lp:launchpad-buildd
     # for further information about sentence format.
     ident_position = {
         'BuilderStatus.BUILDING': 1,
@@ -328,7 +334,6 @@ def rescueBuilderIfLost(builder, logger=None):
         Always return status_sentence.
         """
         # Isolate the BuilderStatus string, always the first token in
-        # see lib/canonical/buildd/slave.py and
         # IBuilder.slaveStatusSentence().
         status = status_sentence[0]
 
@@ -405,7 +410,6 @@ class Builder(SQLBase):
     url = StringCol(dbName='url', notNull=True)
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -429,6 +433,7 @@ class Builder(SQLBase):
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
+        self._clean_currentjob_cache()
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
 
@@ -477,10 +482,12 @@ class Builder(SQLBase):
     def gotFailure(self):
         """See `IBuilder`."""
         self.failure_count += 1
+        self._clean_currentjob_cache()
 
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
+        self._clean_currentjob_cache()
 
     def rescueIfLost(self, logger=None):
         """See `IBuilder`."""
@@ -496,10 +503,13 @@ class Builder(SQLBase):
 
     # XXX 2010-08-24 Julian bug=623281
     # This should not be a property!  It's masking a complicated query.
-    @property
+    @cachedproperty
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
+
+    def _clean_currentjob_cache(self):
+        del get_property_cache(self).currentjob
 
     def requestAbort(self):
         """See IBuilder."""
@@ -531,15 +541,7 @@ class Builder(SQLBase):
     @cachedproperty
     def slave(self):
         """See IBuilder."""
-        # A cached attribute is used to allow tests to replace
-        # the slave object, which is usually an XMLRPC client, with a
-        # stub object that removes the need to actually create a buildd
-        # slave in various states - which can be hard to create.
         return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
-
-    def setSlaveForTesting(self, proxy):
-        """See IBuilder."""
-        self.slave = proxy
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
@@ -692,7 +694,7 @@ class Builder(SQLBase):
             return False
 
         def check_available(status):
-            return status[0] == BuilderStatus.IDLE
+            return status[0] == 'BuilderStatus.IDLE'
         return d.addCallbacks(check_available, catch_fault)
 
     def _getSlaveScannerLogger(self):
@@ -827,7 +829,7 @@ class Builder(SQLBase):
             self.failBuilder(error_message)
             return defer.succeed(None)
 
-    def findAndStartJob(self, buildd_slave=None):
+    def findAndStartJob(self):
         """See IBuilder."""
         # XXX This method should be removed in favour of two separately
         # called methods that find and dispatch the job.  It will
@@ -838,9 +840,6 @@ class Builder(SQLBase):
         if candidate is None:
             logger.debug("No build candidates available for builder.")
             return defer.succeed(None)
-
-        if buildd_slave is not None:
-            self.setSlaveForTesting(buildd_slave)
 
         d = self._dispatchBuildCandidate(candidate)
         return d.addCallback(lambda ignored: candidate)
@@ -883,13 +882,12 @@ class BuilderSet(object):
     def __getitem__(self, name):
         return self.getByName(name)
 
-    def new(self, processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None, manual=True):
+    def new(self, processor, url, name, title, owner, active=True,
+            virtualized=False, vm_host=None, manual=True):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
-                       description=description, owner=owner, active=active,
-                       virtualized=virtualized, vm_host=vm_host,
-                       _builderok=True, manual=manual)
+                       owner=owner, active=active, virtualized=virtualized,
+                       vm_host=vm_host, _builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""

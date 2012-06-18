@@ -1,12 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import __builtin__
 import atexit
 import itertools
 from operator import attrgetter
 import types
-
-import __builtin__
 
 
 original_import = __builtin__.__import__
@@ -31,27 +30,28 @@ permitted_database_imports = text_lines_to_set("""
     lp.codehosting.inmemory
     canonical.launchpad.browser.branchlisting
     lp.code.browser.branchlisting
-    canonical.launchpad.browser.librarian
+    lp.services.librarian.browser
     canonical.launchpad.feed.branch
     lp.code.feed.branch
-    canonical.launchpad.interfaces.person
     lp.scripts.garbo
-    canonical.launchpad.vocabularies.dbobjects
+    lp.bugs.vocabularies
+    lp.registry.interfaces.person
     lp.registry.vocabularies
-    canonical.librarian.client
-    canonical.librarian.db
+    lp.services.worlddata.vocabularies
+    lp.soyuz.vocabularies
+    lp.translations.vocabularies
+    lp.services.librarian.client
+    lp.services.librarianserver.db
     doctest
     """)
 
 
 warned_database_imports = text_lines_to_set("""
-    canonical.launchpad.scripts.ftpmaster
-    canonical.launchpad.scripts.gina.handlers
-    canonical.launchpad.browser.distroseries
-    canonical.launchpad.scripts.builddmaster
+    lp.soyuz.scripts.obsolete_distroseries
+    lp.soyuz.scripts.gina.handlers
+    lp.registry.browser.distroseries
     lp.translations.scripts.po_import
-    canonical.launchpad.systemhomes
-    canonical.rosetta
+    lp.systemhomes
     """)
 
 
@@ -65,6 +65,7 @@ valid_imports_not_in_all = {
     'openid.fetchers': set(['Urllib2Fetcher']),
     'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
+    'testtools.testresult.real': set(['_details_to_str']),
     'twisted.internet.threads': set(['deferToThreadPool']),
     'zope.component': set(
         ['adapter',

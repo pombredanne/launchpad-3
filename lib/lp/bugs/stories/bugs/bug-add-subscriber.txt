@@ -119,9 +119,9 @@ The subscribers portlet displays the new subscribed team.
 Subscription of private teams
 -----------------------------
 
-Private teams can be subscribed to bugs. The logged in user can see
-the private team in the subscribers list if she is a member of the
-private team.
+Private teams can be subscribed to bugs. Any logged in user can see
+the private team in the subscribers list. Additionally if she is a member of
+the private team she can unsubscribe the team.
 
     >>> # Create a private team with Foo Bar as the owner.
     >>> from zope.component import getUtility
@@ -150,8 +150,8 @@ private team.
     Sample Person (Unsubscribe)
     Steve Alexander (Unsubscribe)
 
-Someone not in the team will not see the private team in the
-subscribers list.
+Someone not in the team will see the private team in the subscribers list but
+cannot unsubscribe them.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/bugs/1/'
@@ -159,6 +159,7 @@ subscribers list.
     >>> print_direct_subscribers(user_browser.contents)
     David Allouche (Unsubscribe)
     Landscape Developers (Unsubscribe)
+    Private Team
     Sample Person
     Steve Alexander
 

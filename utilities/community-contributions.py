@@ -47,6 +47,7 @@ from bzrlib import log
 from bzrlib.branch import Branch
 from bzrlib.osutils import format_date
 
+
 try:
     from editmoin import editshortcut
 except:
@@ -134,6 +135,7 @@ known_canonical_lp_devs = \
                               u'Edwin Grubbs',
                               u'Elliot Murphy',
                               u'Firstname Lastname',
+                              u'Francesco Banconi',
                               u'Francis Lacoste',
                               u'Francis J. Lacoste',
                               u'Gary Poster',
@@ -185,6 +187,8 @@ known_canonical_lp_devs = \
                               u'Paul Hummer',
                               u'Raphael Badin',
                               u'Raphaël Badin',
+                              u'Richard Harding',
+                              u'Rick Harding',
                               u'Robert Collins',
                               u'root <root {_AT_} ubuntu>',
                               u'rvb',

@@ -87,7 +87,7 @@ admin or expert, but he is one of the owners of a translation group.
 
     >>> from zope.component import getUtility
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -97,13 +97,15 @@ admin or expert, but he is one of the owners of a translation group.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
     >>> carlos = personset.getByName('carlos')
-    >>> oofy = factory.makePerson(email='oofy@drones.example.com',
-    ...     name='oofy', password='test', displayname='Oofy Prosser')
+    >>> oofy = factory.makePerson(
+    ...     email='oofy@drones.example.com', name='oofy',
+    ...     displayname='Oofy Prosser')
     >>> rosetta_admins = personset.getByName('rosetta-admins')
     >>> ignored = rosetta_admins.addMember(oofy, carlos)
 
-    >>> gussie = factory.makePerson(email='gussie@drones.example.com',
-    ...     name='gussie', password='test', displayname='Gussie Fink-Nottle')
+    >>> gussie = factory.makePerson(
+    ...     email='gussie@drones.example.com', name='gussie',
+    ...     displayname='Gussie Fink-Nottle')
     >>> translators = factory.makeTeam(gussie)
     >>> group = factory.makeTranslationGroup(translators)
 
@@ -149,7 +151,7 @@ expert.
 "cprov" is able to download translations as an Ubuntu uploader.
 
     >>> ubuntu_member_browser = setupBrowser(
-    ...     auth='Basic cprov@ubuntu.com:cprov')
+    ...     auth='Basic cprov@ubuntu.com:test')
     >>> can_download_translations(ubuntu_member_browser)
     True
 
@@ -186,7 +188,7 @@ warning about this.
 Evolution's package in Hoary has two current templates, both with PO as
 their native file format.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> from lp.translations.interfaces.translationfileformat import (
     ...     TranslationFileFormat)

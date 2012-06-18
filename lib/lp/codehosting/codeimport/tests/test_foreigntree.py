@@ -14,7 +14,6 @@ import subvertpy.client
 import subvertpy.ra
 import subvertpy.wc
 
-from canonical.testing.layers import BaseLayer
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree,
     SubversionWorkingTree,
@@ -23,6 +22,7 @@ from lp.codehosting.codeimport.tests.servers import (
     CVSServer,
     SubversionServer,
     )
+from lp.testing.layers import BaseLayer
 
 
 class TestSubversionWorkingTree(TestCaseWithTransport):

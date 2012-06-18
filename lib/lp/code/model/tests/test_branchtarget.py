@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch contexts."""
@@ -7,9 +7,6 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
     BranchType,
     RevisionControlSystems,
@@ -22,12 +19,16 @@ from lp.code.model.branchtarget import (
     PersonBranchTarget,
     ProductBranchTarget,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import IPrimaryContext
 from lp.testing import (
     person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class BaseBranchTargetTests:
@@ -544,13 +545,15 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
     def test_invisible(self):
         # `check_default_stacked_on` returns None for branches invisible to
         # the current user.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         self.assertIs(None, check_default_stacked_on(branch))
 
     def test_invisible_been_mirrored(self):
         # `check_default_stacked_on` returns None for branches invisible to
         # the current user, even if those branches have already been mirrored.
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.branchChanged(
             '', self.factory.getUniqueString(), None, None, None)

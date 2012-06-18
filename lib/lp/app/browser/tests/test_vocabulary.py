@@ -20,16 +20,6 @@ from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    VocabularyFilter,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.browser.vocabulary import (
     IPickerEntrySource,
     MAX_DESCRIPTION_LENGTH,
@@ -38,9 +28,20 @@ from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    VocabularyFilter,
+    )
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_view
 
@@ -317,6 +318,31 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
         self.assertEqual(
             'http://launchpad.dev/fnord',
             self.getPickerEntry(product).alt_title_link)
+
+    def test_provides_commercial_subscription_none(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.assertEqual(
+            'Commercial Subscription: None',
+            self.getPickerEntry(product).details[1])
+
+    def test_provides_commercial_subscription_active(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.factory.makeCommercialSubscription(product)
+        self.assertEqual(
+            'Commercial Subscription: Active',
+            self.getPickerEntry(product).details[1])
+
+    def test_provides_commercial_subscription_expired(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.factory.makeCommercialSubscription(product)
+        import datetime
+        import pytz
+        then = datetime.datetime(2005, 6, 15, 0, 0, 0, 0, pytz.UTC)
+        with celebrity_logged_in('admin'):
+            product.commercial_subscription.date_expires = then
+        self.assertEqual(
+            'Commercial Subscription: Expired',
+            self.getPickerEntry(product).details[1])
 
 
 class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):

@@ -7,9 +7,9 @@ __metaclass__ = type
 
 
 from lp.code.interfaces.branchcollection import IBranchCollection
-from lp.testing import TestCaseWithFactory
 from lp.registry.model.personproduct import PersonProduct
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestPersonProduct(TestCaseWithFactory):

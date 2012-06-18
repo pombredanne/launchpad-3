@@ -3,35 +3,45 @@
 
 """tales.py doctests."""
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lxml import html
 from pytz import utc
 from zope.component import (
     getAdapter,
-    getUtility
+    getUtility,
     )
 from zope.traversing.interfaces import (
     IPathAdapter,
     TraversalError,
     )
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.browser.tales import (
-    format_link,
     DateTimeFormatterAPI,
+    format_link,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.person import PersonVisibility
+from lp.services.webapp.authorization import (
+    clear_cache,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    login_person,
     test_tales,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -140,6 +150,93 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         expected = '<a href="%s" class="sprite person">%s (%s)</a>' % (
             formatter.url(), person.displayname, person.name)
         self.assertEqual(expected, result)
+
+
+class TestTeamFormatterAPI(TestCaseWithFactory):
+    """ Test permissions required to access TeamFormatterAPI methods.
+
+    A user must have launchpad.LimitedView permission to use
+    TeamFormatterAPI with private teams.
+    """
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamFormatterAPI, self).setUp()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        self.team = self.factory.makeTeam(
+            name='team', displayname='a team', icon=icon,
+            visibility=PersonVisibility.PRIVATE)
+
+    def _make_formatter(self, cache_permission=False):
+        # Helper to create the formatter and optionally cache the permission.
+        formatter = getAdapter(self.team, IPathAdapter, 'fmt')
+        clear_cache()
+        request = LaunchpadTestRequest()
+        any_person = self.factory.makePerson()
+        if cache_permission:
+            login_person(any_person, request)
+            precache_permission_for_objects(
+                request, 'launchpad.LimitedView', [self.team])
+        return formatter, request, any_person
+
+    def _tales_value(self, attr, request, path='fmt'):
+        # Evaluate the given formatted attribute value on team.
+        result = test_tales(
+            "team/%s:%s" % (path, attr), team=self.team, request=request)
+        return result
+
+    def _test_can_view_attribute_no_login(self, attr, hidden=None):
+        # Test attribute access with no login.
+        formatter, request, ignore = self._make_formatter()
+        value = self._tales_value(attr, request)
+        if value is not None:
+            if hidden is None:
+                hidden = formatter.hidden
+            self.assertEqual(hidden, value)
+
+    def _test_can_view_attribute_no_permission(self, attr, hidden=None):
+        # Test attribute access when user has no permission.
+        formatter, request, any_person = self._make_formatter()
+        login_person(any_person, request)
+        value = self._tales_value(attr, request)
+        if value is not None:
+            if hidden is None:
+                hidden = formatter.hidden
+            self.assertEqual(hidden, value)
+
+    def _test_can_view_attribute_with_permission(self, attr):
+        # Test attr access when user has launchpad.LimitedView permission.
+        formatter, request, any_person = self._make_formatter(
+            cache_permission=True)
+        self.assertNotEqual(
+            formatter.hidden, self._tales_value(attr, request))
+
+    def _test_can_view_attribute(self, attr, hidden=None):
+        # Test the visibility of the given attribute
+        self._test_can_view_attribute_no_login(attr, hidden)
+        self._test_can_view_attribute_no_permission(attr, hidden)
+        self._test_can_view_attribute_with_permission(attr)
+
+    def test_can_view_displayname(self):
+        self._test_can_view_attribute('displayname')
+
+    def test_can_view_unique_displayname(self):
+        self._test_can_view_attribute('unique_displayname')
+
+    def test_can_view_link(self):
+        self._test_can_view_attribute(
+            'link', u'<span class="sprite team">&lt;hidden&gt;</span>')
+
+    def test_can_view_api_url(self):
+        self._test_can_view_attribute('api_url')
+
+    def test_can_view_url(self):
+        self._test_can_view_attribute('url')
+
+    def test_can_view_icon(self):
+        self._test_can_view_attribute(
+            'icon', '<span class="sprite team"></span>')
 
 
 class TestObjectFormatterAPI(TestCaseWithFactory):
@@ -299,7 +396,7 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
             'nick/fmt:formatted_displayname', nick=ircID)
         self.assertEquals(
             u'<strong>fred</strong>\n'
-            '<span class="discreet"> on </span>\n'
+            '<span class="lesser"> on </span>\n'
             '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',
             expected_html)
 

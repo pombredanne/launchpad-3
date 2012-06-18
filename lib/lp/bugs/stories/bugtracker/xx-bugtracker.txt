@@ -424,8 +424,8 @@ The first and second restrictions both apply to the GNOME Bugzilla:
     Please note, this bug tracker cannot be deleted because:
       This is the bug tracker for The GNOME Project and The GNOME Terminal
       Emulator.
-      There are linked bug watches and only members of Launchpad
-        Administrators and Registry Administrators can delete them en masse.
+      There are linked bug watches and only members of ...Launchpad
+        Administrators...
 
     >>> user_browser.getControl('Delete')
     Traceback (most recent call last):
@@ -448,10 +448,8 @@ Tracker:
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bugtracker-delete-not-possible-reasons'))
     Please note, this bug tracker cannot be deleted because:
-      There are linked bug watches and only members of Launchpad
-        Administrators and Registry Administrators can delete them en masse.
-      Bug comments have been imported via this bug tracker.
-      This bug tracker is protected from deletion.
+      There are linked bug watches and only members of ...Launchpad
+        Administrators...
 
     >>> user_browser.getControl('Delete')
     Traceback (most recent call last):
@@ -608,7 +606,7 @@ If the user is not permitted to view one of the watches only very basic
 details are displayed. For example, when a bug watch is associated with
 a private bug:
 
-    >>> admin_browser.open('http://launchpad.dev/bugs/15')
+    >>> admin_browser.open('http://launchpad.dev/bugs/3')
     >>> admin_browser.getLink('This report is public').click()
     >>> admin_browser.getControl(
     ...     'This bug report should be private').selected = True
@@ -619,8 +617,8 @@ a private bug:
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'latestwatches'))
     Launchpad bug                      Remote bug  Status...
-    #15: (Private)                     -
-    #3:  Bug Title Test                327549
+    #15: Nonse...                      308994...
+    #3:  (Private)                     -
     #2:  Blackhole Trash folder        327452
     #1:  Firefox does not support SVG  304014
     #7:  A test bug                    280883

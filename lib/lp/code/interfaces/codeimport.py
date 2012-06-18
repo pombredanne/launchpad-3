@@ -38,7 +38,7 @@ from zope.schema import (
     Timedelta,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     CodeImportReviewStatus,
@@ -121,7 +121,7 @@ class ICodeImport(Interface):
     url = exported(
         URIField(title=_("URL"), required=False, readonly=True,
             description=_("The URL of the VCS branch."),
-            allowed_schemes=["http", "https", "svn", "git"],
+            allowed_schemes=["http", "https", "svn", "git", "bzr", "ftp"],
             allow_userinfo=True,
             allow_port=True,
             allow_query=False,      # Query makes no sense in Subversion.

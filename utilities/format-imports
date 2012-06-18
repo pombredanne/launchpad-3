@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ Format import sections in python files
@@ -65,7 +65,7 @@ are only formatted in this manner if the statement exceeds 78 characters in
 length.
 
 Comments stick with the import statement that followed them. Comments at the
-end of one-line statements are moved to be be in front of it, .i.e.
+end of one-line statements are moved to be in front of it, .i.e.
 {{{
   from sys import exit # Have a way out
 }}}
@@ -152,6 +152,7 @@ from_import_multi_regex = re.compile(
 comment_regex = re.compile(
     "(?P<comment>(^#.+\n)+)(^import|^from) +(?P<module>[a-zA-Z0-9_.]+)", re.M)
 split_regex = re.compile(",\s*")
+module_base_regex = re.compile("([^. ]+)")
 
 # Module docstrings are multiline (""") strings that are not indented and are
 # followed at some point by an import .
@@ -285,20 +286,28 @@ def parse_import_statements(import_section):
 
     return imports
 
+LOCAL_PACKAGES = (
+    'canonical', 'lp', 'launchpad_loggerhead', 'devscripts',
+    # database/* have some implicit relative imports.
+    'fti', 'replication', 'preflight', 'security', 'upgrade',
+    )
 
 def format_imports(imports):
     """Group and order imports, return the new import statements."""
+    early_section = {}
     standard_section = {}
     first_section = {}
     thirdparty_section = {}
     local_section = {}
     # Group modules into sections.
     for module, statement in imports.iteritems():
-        module_base = module.split('.')[0]
+        module_base = module_base_regex.findall(module)[0]
         comment = statement.comment
-        if comment is not None and comment.startswith("# FIRST"):
+        if module_base == '_pythonpath':
+            early_section[module] = statement
+        elif comment is not None and comment.startswith("# FIRST"):
             first_section[module] = statement
-        elif module_base in ('canonical', 'lp'):
+        elif module_base in LOCAL_PACKAGES:
             local_section[module] = statement
         elif module_base in python_standard_libs:
             standard_section[module] = statement
@@ -308,6 +317,7 @@ def format_imports(imports):
     all_import_lines = []
     # Sort within each section and generate statement strings.
     sections = (
+        early_section,
         standard_section,
         first_section,
         thirdparty_section,
@@ -339,7 +349,11 @@ def reformat_importsection(filename):
     imports_section = pyfile[import_start:import_end]
     imports = parse_import_statements(imports_section)
 
-    if pyfile[import_end:import_end + 1] != '#':
+    next_char = pyfile[import_end:import_end + 1]
+
+    if next_char == '':
+        number_of_newlines = 1
+    elif next_char != '#':
         # Two newlines before anything but comments.
         number_of_newlines = 3
     else:

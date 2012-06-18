@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401,E1002
 
@@ -22,23 +22,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import LaunchpadFormHarness
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    find_tags_by_class,
-    get_feedback_messages,
-    get_radio_button_text_for_field,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
@@ -52,10 +35,16 @@ from lp.code.browser.sourcepackagerecipebuild import (
     )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
@@ -66,10 +55,23 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.deprecated import LaunchpadFormHarness
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     MatchesPickerText,
     MatchesTagText,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    get_feedback_messages,
+    get_radio_button_text_for_field,
     )
 from lp.testing.views import create_initialized_view
 
@@ -94,7 +96,7 @@ class TestCaseForRecipe(BrowserTestCase):
         """Provide useful defaults."""
         super(TestCaseForRecipe, self).setUp()
         self.chef = self.factory.makePerson(
-            displayname='Master Chef', name='chef', password='test')
+            displayname='Master Chef', name='chef')
         self.user = self.chef
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')
@@ -310,9 +312,10 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual('daily', extract_text(content.h1))
+        self.assertEqual('daily\nEdit', extract_text(content.h1))
         self.assertThat(
-            'Make some food!', MatchesTagText(content, 'edit-description'))
+            'Edit Make some food!',
+            MatchesTagText(content, 'edit-description'))
         self.assertThat(
             'Master Chef', MatchesPickerText(content, 'edit-owner'))
         self.assertThat(
@@ -322,7 +325,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_new_recipe_private_branch(self):
         # Recipes can't be created on private branches.
         with person_logged_in(self.chef):
-            branch = self.factory.makeBranch(private=True, owner=self.chef)
+            branch = self.factory.makeBranch(
+                owner=self.chef, information_type=InformationType.USERDATA)
             branch_url = canonical_url(branch)
 
         browser = self.getUserBrowser(branch_url, user=self.chef)
@@ -516,7 +520,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_recipe_private_branch(self):
         # If a user tries to create source package recipe with a private
         # base branch, they should get an error.
-        branch = self.factory.makeAnyBranch(private=True, owner=self.user)
+        branch = self.factory.makeAnyBranch(
+            owner=self.user, information_type=InformationType.USERDATA)
         with person_logged_in(self.user):
             bzr_identity = branch.bzr_identity
         recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
@@ -603,7 +608,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_ppa_selector_not_shown_if_user_has_no_ppas(self):
         # If the user creating a recipe has no existing PPAs, the selector
         # isn't shown, but the field to enter a new PPA name is.
-        self.user = self.factory.makePerson(password='test')
+        self.user = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
         with person_logged_in(self.user):
             content = self.getMainContent(branch, '+new-recipe')
@@ -643,7 +648,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_create_new_ppa(self):
         # If the user doesn't have any PPAs, a new once can be created.
-        self.user = self.factory.makePerson(name='eric', password='test')
+        self.user = self.factory.makePerson(name='eric')
         branch = self.factory.makeAnyBranch()
 
         # A new recipe can be created from the branch page.
@@ -665,9 +670,10 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_new_ppa_duplicate(self):
         # If a new PPA is being created, and the user already has a ppa of the
         # name specifed an error is shown.
-        self.user = self.factory.makePerson(name='eric', password='test')
+        self.user = self.factory.makePerson(name='eric')
         # Make a PPA called 'ppa' using the default.
-        self.user.createPPA(name='foo')
+        with person_logged_in(self.user):
+            self.user.createPPA(name='foo')
         branch = self.factory.makeAnyBranch()
 
         # A new recipe can be created from the branch page.
@@ -686,7 +692,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_new_ppa_missing_name(self):
         # If a new PPA is being created, and the user has not specified a
         # name, an error is shown.
-        self.user = self.factory.makePerson(name='eric', password='test')
+        self.user = self.factory.makePerson(name='eric')
         branch = self.factory.makeAnyBranch()
 
         # A new recipe can be created from the branch page.
@@ -703,10 +709,13 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_create_new_ppa_owned_by_recipe_owner(self):
         # The new PPA that is created is owned by the recipe owner.
-        self.user = self.factory.makePerson(name='eric', password='test')
+        self.user = self.factory.makePerson(name='eric')
         team = self.factory.makeTeam(
             name='vikings', members=[self.user],
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        with person_logged_in(team.teamowner):
+            team.setMembershipData(
+                self.user, TeamMembershipStatus.ADMIN, team.teamowner)
         branch = self.factory.makeAnyBranch(owner=team)
 
         # A new recipe can be created from the branch page.
@@ -766,8 +775,9 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
         content = find_main_content(browser.contents)
         self.assertThat(
-            'This is stuff', MatchesTagText(content, 'edit-description'))
+            'Edit This is stuff', MatchesTagText(content, 'edit-description'))
         self.assertThat(
+            'Edit '
             '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
             'lp://dev/~chef/ratatouille/meat',
             MatchesTagText(content, 'edit-recipe_text'))
@@ -830,10 +840,11 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl('Update Recipe').click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual('fings', extract_text(content.h1))
+        self.assertEqual('fings\nEdit', extract_text(content.h1))
         self.assertThat(
-            'This is stuff', MatchesTagText(content, 'edit-description'))
+            'Edit This is stuff', MatchesTagText(content, 'edit-description'))
         self.assertThat(
+            'Edit '
             '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
             'lp://dev/~chef/ratatouille/meat',
             MatchesTagText(content, 'edit-recipe_text'))
@@ -933,7 +944,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         # If a user tries to set source package recipe to use a private
         # branch, they should get an error.
         recipe = self.factory.makeSourcePackageRecipe(owner=self.user)
-        branch = self.factory.makeAnyBranch(private=True, owner=self.user)
+        branch = self.factory.makeAnyBranch(
+            owner=self.user, information_type=InformationType.USERDATA)
         with person_logged_in(self.user):
             bzr_identity = branch.bzr_identity
         recipe_text = MINIMAL_RECIPE_TEXT % bzr_identity
@@ -1065,11 +1077,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
             .*
-            Description
+            Description Edit
             This recipe .*changes.
 
             Recipe information
-            Build schedule: Tag help Built on request
+            Build schedule: .* Built on request Edit
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
@@ -1081,7 +1093,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
 
-            Recipe contents
+            Recipe contents Edit
             # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
@@ -1170,6 +1182,20 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
               Secret PPA chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
+    def test_index_success_with_sprb_into_private_ppa(self):
+        # The index page hides builds into archives the user can't view.
+        recipe = self.makeRecipe()
+        archive = self.factory.makeArchive(private=True)
+        sprb = removeSecurityProxy(
+            self.factory.makeSourcePackageRecipeBuild(
+                recipe=recipe, distroseries=self.squirrel, archive=archive))
+        sprb.status = BuildStatus.FULLYBUILT
+        sprb.date_started = datetime(2010, 04, 16, tzinfo=UTC)
+        sprb.date_finished = datetime(2010, 04, 16, tzinfo=UTC)
+        sprb.log = self.factory.makeLibraryFileAlias()
+        self.assertIn(
+            "This recipe has not been built yet.", self.getMainText(recipe))
+
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
@@ -1239,7 +1265,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
                     naked_build.date_created + timedelta(minutes=10))
         set_status(build6, BuildStatus.FULLYBUILT)
         set_status(build5, BuildStatus.FAILEDTOBUILD)
-        # When there are 4+ pending builds, only the the most
+        # When there are 4+ pending builds, only the most
         # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
             [build4, build3, build2, build1, build6],
@@ -1567,7 +1593,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Provide useful defaults."""
         super(TestSourcePackageRecipeBuildView, self).setUp()
         self.user = self.factory.makePerson(
-            displayname='Owner', name='build-owner', password='test')
+            displayname='Owner', name='build-owner')
 
     def makeBuild(self):
         """Make a build suitabe for testing."""

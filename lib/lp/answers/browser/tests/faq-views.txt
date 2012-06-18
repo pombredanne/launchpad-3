@@ -4,7 +4,7 @@ Answer Tracker FAQ Pages
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> firefox_faq = firefox.newFAQ(
     ...     firefox.owner, 'A FAQ', 'FAQ for test purpose')
 
@@ -15,7 +15,7 @@ Latest FAQs portlet
 The latest FAQs portlet allows an `IFAQTarget` to show the latest FAQs.
 It's view provided latest_faqs to get the FAQs to display.
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> view = create_initialized_view(
@@ -59,7 +59,7 @@ permission, such as the project owner.
 Other users do not see the link.
 
     >>> user = factory.makePerson(name='a-user')
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> view = create_initialized_view(
     ...     firefox, '+portlet-listfaqs', principal=user)
     >>> content = find_tag_by_id(view.render(), 'portlet-latest-faqs')

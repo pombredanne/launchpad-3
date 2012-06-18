@@ -11,7 +11,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IBranchRef(Interface):

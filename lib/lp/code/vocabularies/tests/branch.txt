@@ -20,21 +20,22 @@ concerned).
     # Just use None as the context.
     >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
     >>> def print_vocab_branches(vocab, search):
-    ...     for term in vocab.searchForTerms(search):
-    ...         print term.value.unique_name
+    ...     terms = vocab.searchForTerms(search)
+    ...     for name in sorted(term.value.unique_name for term in terms):
+    ...         print name
 
     >>> print_vocab_branches(branch_vocabulary, 'main')
-    ~name12/firefox/main
-    ~stevea/thunderbird/main
     ~justdave/+junk/main
     ~kiko/+junk/main
-    ~vcs-imports/evolution/main
+    ~name12/firefox/main
     ~name12/gnome-terminal/main
+    ~stevea/thunderbird/main
+    ~vcs-imports/evolution/main
 
     >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/gnome-terminal/import
     ~vcs-imports/evolution/import
     ~vcs-imports/evolution/main
+    ~vcs-imports/gnome-terminal/import
 
     >>> print_vocab_branches(branch_vocabulary, 'evolution')
     ~carlos/evolution/2.0
@@ -81,14 +82,14 @@ able to see.
 
     >>> login(ADMIN_EMAIL)
     >>> print_vocab_branches(branch_vocabulary, 'trunk')
-    ~spiv/+junk/trunk
-    ~limi/+junk/trunk
     ~landscape-developers/landscape/trunk
+    ~limi/+junk/trunk
+    ~spiv/+junk/trunk
 
     >>> login(ANONYMOUS)
     >>> print_vocab_branches(branch_vocabulary, 'trunk')
-    ~spiv/+junk/trunk
     ~limi/+junk/trunk
+    ~spiv/+junk/trunk
 
 
 BranchRestrictedOnProduct

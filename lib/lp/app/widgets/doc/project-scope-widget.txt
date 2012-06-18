@@ -8,8 +8,8 @@ we will use the Project vocabulary which allows any project to be
 selected.
 
     >>> from zope.schema import Choice
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.app.widgets.project import ProjectScopeWidget
 
     >>> empty_request = LaunchpadTestRequest()

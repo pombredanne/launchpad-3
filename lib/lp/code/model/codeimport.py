@@ -34,12 +34,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
     BranchType,
@@ -63,6 +57,12 @@ from lp.code.mail.codeimport import code_import_updated
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.config import config
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 
 
 class CodeImport(SQLBase):

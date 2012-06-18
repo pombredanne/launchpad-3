@@ -28,7 +28,7 @@ The custom field's missing value (i.e. None) represents the 'no bug tracker'
 option.  This is displayed by the widget as the project having a bug tracker
 in a specified external location.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.app.widgets.product import ProductBugTrackerWidget
     >>> from lp.registry.interfaces.product import IProduct
 
@@ -43,7 +43,7 @@ Firefox has not yet selected a bug tracker.
     None
 
     >>> from BeautifulSoup import BeautifulSoup, Tag
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
     >>> def print_items(html):
     ...     soup = BeautifulSoup(html)
     ...     labels = soup('label')
@@ -237,7 +237,7 @@ the 4 choices.
 Choosing a License
 ==================
 
-A custom widget is used to display a link to the license policy.
+A custom widget is used to display a link to the licence policy.
 
     >>> from lp.app.widgets.product import LicenseWidget
 
@@ -249,41 +249,41 @@ A custom widget is used to display a link to the license policy.
     >>> request = LaunchpadTestRequest(form=form)
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
 
-The widget has one checkbox for each license, and it also has a link to the
-license policy.  The licenses are split up into categories, and they are
+The widget has one checkbox for each licence, and it also has a link to the
+licence policy.  The licences are split up into categories, and they are
 presented ordered to appear in a 3 column list.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> html = license_widget()
     >>> print extract_text(find_tag_by_id(html, 'recommended'))
-    Apache License view license
-    GNU Affero GPL v3 view license
-    GNU LGPL v2.1 view license
-    Simplified BSD License view license
-    GNU GPL v2 view license
-    GNU LGPL v3 view license
-    Creative Commons - No Rights Reserved view license
-    GNU GPL v3 view license
-    MIT / X / Expat License view license
+    Apache Licence view licence
+    GNU Affero GPL v3 view licence
+    GNU LGPL v2.1 view licence
+    Simplified BSD Licence view licence
+    GNU GPL v2 view licence
+    GNU LGPL v3 view licence
+    Creative Commons - No Rights Reserved view licence
+    GNU GPL v3 view licence
+    MIT / X / Expat Licence view licence
 
     >>> print extract_text(find_tag_by_id(html, 'more'))
-    Academic Free License view license
-    Eclipse Public License view license
-    PHP License view license
-    Artistic License 1.0 view license
-    Educational Community License view license
-    Public Domain view license
-    Artistic License 2.0 view license
-    GNU GFDL no options view license
-    Python License view license
-    Common Public License view license
-    Mozilla Public License view license
-    Zope Public License view license
-    Creative Commons - Attribution view license
-    Open Font License v1.1 view license
-    Creative Commons - Attribution Share Alike view license
-    Open Software License v 3.0 view license
+    Academic Free Licence view licence
+    Eclipse Public Licence view licence
+    PHP Licence view licence
+    Artistic Licence 1.0 view licence
+    Educational Community Licence view licence
+    Public Domain view licence
+    Artistic Licence 2.0 view licence
+    GNU GFDL no options view licence
+    Python Licence view licence
+    Common Public Licence view licence
+    Mozilla Public Licence view licence
+    Zope Public Licence view licence
+    Creative Commons - Attribution view licence
+    Open Font Licence v1.1 view licence
+    Creative Commons - Attribution Share Alike view licence
+    Open Software Licence v 3.0 view licence
 
 
     >>> print extract_text(find_tag_by_id(html, 'special'))
@@ -296,16 +296,16 @@ There is a deprecated section that is generally not visible...
     >>> print find_tag_by_id(html, 'deprecated')
     None
 
-...unless the old "Perl license" is selected.
+...unless the old "Perl licence" is selected.
 
     >>> form['field.licenses'] = ['PERL']
     >>> request = LaunchpadTestRequest(form=form)
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
     >>> html = license_widget()
     >>> print extract_text(find_tag_by_id(html, 'deprecated'))
-    Perl License
+    Perl Licence
 
-One license, the GNU GPL v2, is selected.
+One licence, the GNU GPL v2, is selected.
 
     >>> form['field.licenses'] = ['GNU_GPL_V2']
     >>> request = LaunchpadTestRequest(form=form)
@@ -330,17 +330,17 @@ One license, the GNU GPL v2, is selected.
     set([<DBItem License.GNU_GPL_V2, (130) ...>])
 
     >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    [ ] GNU Affero GPL v3 view license
-    [ ] GNU LGPL v2.1 view license
-    [ ] Simplified BSD License view license
-    [X] GNU GPL v2 view license
-    [ ] GNU LGPL v3 view license
-    [ ] Creative Commons - No Rights Reserved view license
-    [ ] GNU GPL v3 view license
+    [ ] Apache Licence ...
+    [ ] GNU Affero GPL v3 view licence
+    [ ] GNU LGPL v2.1 view licence
+    [ ] Simplified BSD Licence view licence
+    [X] GNU GPL v2 view licence
+    [ ] GNU LGPL v3 view licence
+    [ ] Creative Commons - No Rights Reserved view licence
+    [ ] GNU GPL v3 view licence
     ...
 
-A second license is selected.
+A second licence is selected.
 
     >>> form['field.licenses'] = ['GNU_LGPL_V2_1', 'GNU_GPL_V2']
     >>> request = LaunchpadTestRequest(form=form)
@@ -351,102 +351,26 @@ A second license is selected.
      <DBItem License.GNU_LGPL_V2_1, (150) GNU LGPL v2.1>]
 
     >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    [ ] GNU Affero GPL v3 view license
-    [X] GNU LGPL v2.1 view license
-    [ ] Simplified BSD License view license
-    [X] GNU GPL v2 view license
-    [ ] GNU LGPL v3 view license
-    [ ] Creative Commons - No Rights Reserved view license
-    [ ] GNU GPL v3 view license
+    [ ] Apache Licence ...
+    [ ] GNU Affero GPL v3 view licence
+    [X] GNU LGPL v2.1 view licence
+    [ ] Simplified BSD Licence view licence
+    [X] GNU GPL v2 view licence
+    [ ] GNU LGPL v3 view licence
+    [ ] Creative Commons - No Rights Reserved view licence
+    [ ] GNU GPL v3 view licence
     ...
 
-There are three Creative Commons licenses.
-
-    >>> form['field.licenses'] = []
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [ ] Creative Commons - No Rights Reserved ...
-    ...
-    [ ] Creative Commons - Attribution ...
-    ...
-    [ ] Creative Commons - Attribution Share Alike ...
-    ...
-
-Any of the three Creative Commons licenses can be selected.
-
-    >>> form['field.licenses'] = ['CC_BY', 'CC_BY_SA', 'CC_0']
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [X] Creative Commons - No Rights Reserved ...
-    ...
-    [X] Creative Commons - Attribution ...
-    ...
-    [X] Creative Commons - Attribution Share Alike ...
-    ...
-
-The BSD License can be selected.
-
-    >>> form['field.licenses'] = ['BSD']
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [X] Simplified BSD License ...
-    ...
-
-There's also a placeholder for when a user knows they want an open source
-license but hasn't yet decided on one.  In this case, the user should not be
-blocked from creating their project.
-
-    >>> form['field.licenses'] = ['DONT_KNOW']
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [X] I don't know yet
-    ...
-
-There are two Perl-inspired Artistic licenses.  The first is the original 1.0
-license which most of Perl-land is licensed by, and there's the 2.0 version
-that is used by newer project such as Parrot.
-
-    >>> form['field.licenses'] = ['ARTISTIC', 'ARTISTIC_2_0']
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [X] Artistic License 1.0 ...
-    ...
-    [X] Artistic License 2.0 ...
-    ...
-
-Many licenses have links to the official pages describing their licenses.
+Many licences have links to the official pages describing their licences.
 
     >>> print_checked_items(license_widget(), links=True)
-    [ ] Apache License ... <http://www.opensource.org/licenses/apache2.0.php>
-    [ ] GNU LGPL v2.1 ... <http://www.opensource.org/licenses/lgpl-2.1.php>
-    [ ] GNU Affero GPL v3 ... <http://www.opensource.org/licenses/agpl-v3...>
+    [ ] Apache Licence ... <http://www.opensource.org/licenses/apache2.0.php>
     ...
 
 But not all of them.
 
     >>> print_checked_items(license_widget(), links=True)
-    [ ] Apache License ... <http://www.opensource.org/licenses/apache2.0.php>
+    [ ] Apache Licence ... <http://www.opensource.org/licenses/apache2.0.php>
     ...
     [ ] I don't know yet
     [ ] Other/Proprietary
@@ -476,7 +400,7 @@ GhostWidget to suppress the markup.
 
 Launchpad form macros do not generate table rows for the GhostWidget.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)

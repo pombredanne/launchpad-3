@@ -14,20 +14,20 @@ __all__ = [
 from lazr.restful.interfaces import IJSONRequestCache
 from zope.publisher.interfaces import NotFound
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.productseries import ProductSeriesOverviewMenu
 from lp.registry.browser.sourcepackage import SourcePackageOverviewMenu
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.features import getFeatureFlag
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import LaunchpadView
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.product import ProductTranslationsMenu
 from lp.translations.browser.productseries import (
@@ -339,12 +339,11 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     def icon_link(self, id, icon, url, text, hidden):
         """The HTML link to a configuration page."""
         if hidden:
-            css_class = 'sprite %s unseen' % icon
+            css_class = 'sprite %s action-icon hidden' % icon
         else:
-            css_class = 'sprite %s' % icon
+            css_class = 'sprite %s action-icon' % icon
         return structured(
-            '<a id="%s" class="%s" href="%s">'
-            '<span class="invisible-link">%s</span></a>',
+            '<a id="%s" class="%s" href="%s">%s</a>',
             id, css_class, url, text)
 
     @property

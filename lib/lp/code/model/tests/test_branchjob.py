@@ -28,18 +28,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.testing.librarianhelpers import (
-    get_newest_librarian_file,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -72,14 +60,36 @@ from lp.code.model.branchjob import (
     RosettaUploadJob,
     )
 from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.model.revision import RevisionSet
+from lp.code.model.tests.test_branch import create_knit
 from lp.codehosting.vfs import branch_id_to_path
 from lp.scripts.helpers import TransactionFreeOperation
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.features.testing import FeatureFixture
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import block_on_job
 from lp.services.osutils import override_environ
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp import canonical_url
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
+from lp.testing.layers import (
+    CeleryJobLayer,
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.librarianhelpers import get_newest_librarian_file
 from lp.testing.mail_helpers import pop_notifications
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
@@ -148,9 +158,8 @@ class TestBranchScanJob(TestCaseWithFactory):
             LaunchpadZopelessLayer.commit()
 
             job = BranchScanJob.create(db_branch)
-            LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-            job.run()
-            LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+            with dbuser(config.branchscanner.dbuser):
+                job.run()
 
             self.assertEqual(db_branch.revision_count, 3)
 
@@ -158,8 +167,8 @@ class TestBranchScanJob(TestCaseWithFactory):
             bzr_tree.commit('Fifth commit', rev_id='rev5')
 
         job = BranchScanJob.create(db_branch)
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        job.run()
+        with dbuser(config.branchscanner.dbuser):
+            job.run()
 
         self.assertEqual(db_branch.revision_count, 5)
 
@@ -192,7 +201,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_knit()
+        db_branch, tree = create_knit(self)
         self.assertEqual(
             tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
@@ -221,17 +230,11 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             AlreadyLatestFormat, BranchUpgradeJob.create, branch,
             self.factory.makePerson())
 
-    def create_knit(self):
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
-        return db_branch, tree
-
     def test_existing_bzr_backup(self):
         # If the target branch already has a backup.bzr dir, the upgrade copy
         # should remove it.
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_knit()
+        db_branch, tree = create_knit(self)
 
         # Add a fake backup.bzr dir
         source_branch_transport = get_transport(db_branch.getInternalBzrUrl())
@@ -391,10 +394,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             existing = branch.getBranchRevision(
                 revision_id=bzr_revision.revision_id)
             if existing is None:
-                revision = RevisionSet().newFromBazaarRevision(bzr_revision)
-            else:
-                revision = RevisionSet().getByRevisionId(
-                    bzr_revision.revision_id)
+                RevisionSet().newFromBazaarRevisions([bzr_revision])
+            revision = RevisionSet().getByRevisionId(
+                bzr_revision.revision_id)
             try:
                 revno = bzr_branch.revision_id_to_revno(revision.revision_id)
             except bzr_errors.NoSuchRevision:
@@ -418,8 +420,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 tree.commit('rev1', rev_id='rev1')
                 tree.commit('rev2', rev_id='rev2')
                 tree.commit('rev3', rev_id='rev3')
-            transaction.commit()
-            self.layer.switchDbUser('branchscanner')
+            switch_dbuser('branchscanner')
             self.updateDBRevisions(
                 branch, tree.branch, ['rev1', 'rev2', 'rev3'])
         finally:
@@ -654,9 +655,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
     def test_getRevisionMessage_with_related_BMP(self):
         """Information about related proposals is displayed."""
         job, bmp = self.makeJobAndBMP()
-        transaction.commit()
-        self.layer.switchDbUser(config.sendbranchmail.dbuser)
-        message = job.getRevisionMessage('rev2d-id', 1)
+        with dbuser(config.sendbranchmail.dbuser):
+            message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
         '  bar@\n'
@@ -678,9 +678,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         """Superseded proposals are skipped."""
         job, bmp = self.makeJobAndBMP()
         bmp2 = bmp.resubmit(bmp.registrant)
-        transaction.commit()
-        self.layer.switchDbUser(config.sendbranchmail.dbuser)
-        message = job.getRevisionMessage('rev2d-id', 1)
+        with dbuser(config.sendbranchmail.dbuser):
+            message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
         '  bar@\n'
@@ -707,9 +706,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         job, bmp = self.makeJobAndBMP()
         reviewer = self.factory.makePerson()
         bmp.nominateReviewer(reviewer, bmp.registrant)
-        transaction.commit()
-        self.layer.switchDbUser(config.sendbranchmail.dbuser)
-        message = job.getRevisionMessage('rev2d-id', 1)
+        with dbuser(config.sendbranchmail.dbuser):
+            message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
         '  bar@\n'
@@ -778,8 +776,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 rev_id=second_revision, message="Extended contents",
                 committer="Joe Bloggs <joe@example.com>",
                 timestamp=1000100000.0, timezone=0)
-        transaction.commit()
-        self.layer.switchDbUser('branchscanner')
+        switch_dbuser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch)
         expected = (
             u"-" * 60 + '\n'
@@ -822,8 +819,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 rev_id=rev_id, message=u"Non ASCII: \xe9",
                 committer=u"Non ASCII: \xed", timestamp=1000000000.0,
                 timezone=0)
-        transaction.commit()
-        self.layer.switchDbUser('branchscanner')
+        switch_dbuser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch)
         job = RevisionsAddedJob.create(db_branch, '', '', '')
         message = job.getRevisionMessage(rev_id, 1)
@@ -852,7 +848,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_only_nodiff_subscribers_means_no_diff_generated(self):
         """No diff is generated when no subscribers need it."""
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         subscriptions = branch.getSubscriptionsByLevel(
@@ -1233,6 +1229,38 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.assertEqual([], unfinished_jobs)
 
 
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_RosettaUploadJob(self):
+        """Ensure RosettaUploadJob can run under Celery."""
+        self.useBzrBranches(direct_database=True)
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchScanJob RosettaUploadJob'
+        }))
+        db_branch = self.factory.makeAnyBranch()
+        self.createBzrBranch(db_branch)
+        commit = DirectBranchCommit(db_branch, no_race_check=True)
+        commit.writeFile('foo.pot', 'gibberish')
+        with person_logged_in(db_branch.owner):
+            # wait for branch scan
+            with block_on_job(self):
+                commit.commit('message')
+                transaction.commit()
+        series = self.factory.makeProductSeries(branch=db_branch)
+        with block_on_job(self):
+            RosettaUploadJob.create(
+                commit.db_branch, NULL_REVISION,
+                force_translations_upload=True)
+            transaction.commit()
+        queue = getUtility(ITranslationImportQueue)
+        entries = list(queue.getAllEntries(target=series))
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual('foo.pot', entry.path)
+
+
 class TestReclaimBranchSpaceJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -1282,10 +1310,7 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
     def runReadyJobs(self):
         """Run all ready `ReclaimBranchSpaceJob`s with the appropriate dbuser.
         """
-        # switchDbUser aborts the current transaction, so we need to commit to
-        # make sure newly added jobs are still there after we call it.
-        self.layer.txn.commit()
-        self.layer.switchDbUser(config.reclaimbranchspace.dbuser)
+        switch_dbuser(config.reclaimbranchspace.dbuser)
         job_count = 0
         for job in ReclaimBranchSpaceJob.iterReady():
             job.run()

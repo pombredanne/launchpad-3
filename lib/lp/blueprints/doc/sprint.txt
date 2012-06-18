@@ -90,7 +90,7 @@ exact functionality we're testing.
 
 Flush the updates to the database so we'll see them.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 See, there are no ubuntu sprints.
@@ -155,7 +155,7 @@ And if we ask just for specs, we get them all
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')

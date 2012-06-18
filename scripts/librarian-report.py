@@ -13,9 +13,13 @@ import _pythonpath
 from optparse import OptionParser
 import sys
 
-from canonical.database.sqlbase import connect, quoteIdentifier, sqlvalues
-from canonical.database.postgresql import listReferences
-from canonical.launchpad.scripts import db_options
+from lp.services.database.postgresql import listReferences
+from lp.services.database.sqlbase import (
+    connect,
+    quoteIdentifier,
+    sqlvalues,
+    )
+from lp.services.scripts import db_options
 
 
 def main():

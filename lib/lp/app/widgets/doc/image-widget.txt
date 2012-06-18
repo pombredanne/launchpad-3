@@ -51,7 +51,7 @@ Since Salgado has no logo, the widget will display the default person-
 logo image and the 'Keep' radio button will be selected. The other radio
 button allows the user to upload a new image.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.app.widgets.image import ImageChangeWidget
     >>> add_style = ImageChangeWidget.ADD_STYLE
     >>> edit_style = ImageChangeWidget.EDIT_STYLE
@@ -80,7 +80,7 @@ button allows the user to upload a new image.
 If we set any random file as salgado's logo, we'll see it there, as well
 as an option to delete the image that was just uploaded.
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> login('guilherme.salgado@canonical.com')
     >>> logo = getUtility(ILibraryFileAliasSet)[53]
@@ -128,7 +128,7 @@ And now we change it to a random image.
     >>> from StringIO import StringIO
     >>> logo_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'images/nyet-logo.png')
+    ...     'images/team-logo.png')
     >>> logo = StringIO(open(logo_file_name, 'r').read())
     >>> logo.filename = 'logo.png'
     >>> form = {'field.logo.action': 'change',
@@ -251,7 +251,7 @@ dimensions smaller than person_mugshot.dimensions, it must be rejected.
     >>> person_mugshot = IPerson['mugshot'].bind(salgado)
     >>> logo_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'images/nyet-logo.png')
+    ...     'images/team-logo.png')
     >>> logo = StringIO(open(logo_file_name, 'r').read())
     >>> logo.filename = 'logo.png'
     >>> logo.len <= person_mugshot.max_size
@@ -276,7 +276,7 @@ the max_size:
 
     >>> mugshot_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'images/nyet-mugshot.png')
+    ...     'images/team-mugshot.png')
     >>> mugshot = StringIO(open(mugshot_file_name, 'r').read())
     >>> mugshot.filename = 'mugshot.png'
 

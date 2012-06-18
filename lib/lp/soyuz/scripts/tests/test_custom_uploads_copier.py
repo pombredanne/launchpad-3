@@ -1,14 +1,10 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test copying of custom package uploads for a new `DistroSeries`."""
 
 __metaclass__ = type
 
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessLayer,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -19,6 +15,10 @@ from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessLayer,
+    )
 
 
 def list_custom_uploads(distroseries):
@@ -64,12 +64,8 @@ class TestCustomUploadsCopierLite(TestCaseWithFactory, CommonTestHelpers):
         # isCopyable checks a custom upload's customformat field to
         # determine whether the upload is a candidate for copying.  It
         # approves only those whose customformats are in copyable_types.
-        class FakePackageUploadCustom:
-            def __init__(self, customformat):
-                self.customformat = customformat
-
         uploads = [
-            FakePackageUploadCustom(custom_type)
+            FakeUpload(custom_type, None)
             for custom_type in PackageUploadCustomFormat.items]
 
         copier = CustomUploadsCopier(FakeDistroSeries())
@@ -78,48 +74,27 @@ class TestCustomUploadsCopierLite(TestCaseWithFactory, CommonTestHelpers):
             CustomUploadsCopier.copyable_types,
             [upload.customformat for upload in copied_uploads])
 
-    def test_extractNameFields_extracts_architecture_and_version(self):
-        # extractNameFields picks up the architecture and version out
-        # of an upload's filename field.
-        # XXX JeroenVermeulen 2011-08-17, bug=827941: For ddtp
-        # translations tarballs, we'll have to include the component
-        # name as well.
-        package_name = self.factory.getUniqueString('package')
-        version = self.makeVersion()
-        architecture = self.factory.getUniqueString('arch')
-        filename = '%s_%s_%s.tar.gz' % (package_name, version, architecture)
+    def test_getKey_calls_correct_custom_upload_method(self):
+        # getKey calls the getSeriesKey method on the correct custom upload.
+        class FakeCustomUpload:
+            @classmethod
+            def getSeriesKey(cls, tarfile_path):
+                return "dummy"
+
         copier = CustomUploadsCopier(FakeDistroSeries())
+        copier.copyable_types = {
+            PackageUploadCustomFormat.DEBIAN_INSTALLER: FakeCustomUpload,
+            }
+        custom_format, series_key = copier.getKey(
+            FakeUpload(PackageUploadCustomFormat.DEBIAN_INSTALLER, "anything"))
         self.assertEqual(
-            (architecture, version), copier.extractNameFields(filename))
-
-    def test_extractNameFields_does_not_require_architecture(self):
-        # When extractNameFields does not see an architecture, it
-        # defaults to 'all'.
-        package_name = self.factory.getUniqueString('package')
-        version = self.makeVersion()
-        filename = '%s_%s.tar.gz' % (package_name, version)
-        copier = CustomUploadsCopier(FakeDistroSeries())
-        self.assertEqual(
-            ('all', version), copier.extractNameFields(filename))
-
-    def test_extractNameFields_returns_None_on_mismatch(self):
-        # If the filename does not match the expected pattern,
-        # extractNameFields returns None.
-        copier = CustomUploadsCopier(FakeDistroSeries())
-        self.assertIs(None, copier.extractNameFields('argh_1.0.jpg'))
-
-    def test_extractNameFields_ignores_names_with_too_many_fields(self):
-        # As one particularly nasty case that might break
-        # extractNameFields, a name with more underscore-seprated fields
-        # than the search pattern allows for is sensibly rejected.
-        copier = CustomUploadsCopier(FakeDistroSeries())
-        self.assertIs(
-            None, copier.extractNameFields('one_two_three_four_5.tar.gz'))
+            PackageUploadCustomFormat.DEBIAN_INSTALLER, custom_format)
+        self.assertEqual("dummy", series_key)
 
     def test_getKey_returns_None_on_name_mismatch(self):
-        # If extractNameFields returns None, getKey also returns None.
+        # If extractSeriesKey returns None, getKey also returns None.
         copier = CustomUploadsCopier(FakeDistroSeries())
-        copier.extractNameFields = FakeMethod()
+        copier.extractSeriesKey = FakeMethod()
         self.assertIs(
             None,
             copier.getKey(FakeUpload(
@@ -142,8 +117,9 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         package_name = self.factory.getUniqueString("package")
         if version is None:
             version = self.makeVersion()
-        filename = "%s.tar.gz" % '_'.join(
-            filter(None, [package_name, version, arch]))
+        if arch is None:
+            arch = self.factory.getUniqueString()
+        filename = "%s.tar.gz" % '_'.join([package_name, version, arch])
         package_upload = self.factory.makeCustomPackageUpload(
             distroseries=distroseries, custom_type=custom_type,
             filename=filename)

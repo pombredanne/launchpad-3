@@ -18,7 +18,7 @@ There are several builders in the sample data. Let's examine the first.
 
 As expected, it implements IBuilder.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> print builder.name
     bob
@@ -82,8 +82,8 @@ And also by ID.
 
 The 'new' method will create a new builder in the database.
 
-    >>> bnew = builderset.new(1, 'http://dummy.com:8221/', 'dummy',
-    ...                    'Dummy Title', 'eh ?', 1)
+    >>> bnew = builderset.new(
+    ...     1, 'http://dummy.com:8221/', 'dummy', 'Dummy Title', 1)
     >>> bnew.name
     u'dummy'
 

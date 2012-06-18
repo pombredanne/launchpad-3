@@ -2,13 +2,13 @@
 
 Branch merge proposals can be created through the API.
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> login('admin@canonical.com')
     >>> target = factory.makeBranch()
 
-    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    >>> from lp.services.webapp.servers import WebServiceTestRequest
     >>> request = WebServiceTestRequest(version="beta")
     >>> request.processInputs()
 
@@ -338,6 +338,7 @@ merge would look like if the source branch was merged into the target branch.
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
+    ...
     Vary: ...
     ...
 
@@ -375,6 +376,7 @@ It is possible that the diff will be empty.
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
+    ...
     Vary: ...
     ...
 
@@ -418,8 +420,11 @@ If the branch is private it is not visible to an unpriveleged user.
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(fixit_proposal.source_branch).explicitly_private = True
+    >>> from lp.registry.enums import InformationType
     >>> branch_owner = fixit_proposal.source_branch.owner
+    >>> removeSecurityProxy(
+    ...     fixit_proposal.source_branch).transitionToInformationType(
+    ...     InformationType.USERDATA, branch_owner, verify_policy=False)
     >>> logout()
 
     >>> print_proposals(
@@ -437,7 +442,9 @@ the proposal if they have allowed the API to access private bits.
     http://.../~source/fooix/fix-it/+merge/... - Approved
 
     >>> login('admin@canonical.com')
-    >>> removeSecurityProxy(fixit_proposal.source_branch).explicitly_private = False
+    >>> removeSecurityProxy(
+    ...     fixit_proposal.source_branch).transitionToInformationType(
+    ...     InformationType.PUBLIC, branch_owner)
     >>> logout()
 
 

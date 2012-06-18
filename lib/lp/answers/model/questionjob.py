@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to QuestionJob."""
@@ -22,10 +22,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts import log
 from lp.answers.enums import (
     QuestionJobType,
     QuestionRecipientSet,
@@ -37,6 +33,9 @@ from lp.answers.interfaces.questionjob import (
     )
 from lp.answers.model.question import Question
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
@@ -48,6 +47,7 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.scripts import log
 
 
 class QuestionJob(StormBase):
@@ -94,6 +94,11 @@ class QuestionJob(StormBase):
         """See `IQuestionJob`."""
         return simplejson.loads(self._json_data)
 
+    def makeDerived(self):
+        if self.job_type != QuestionJobType.EMAIL:
+            raise ValueError('Unsupported Job type')
+        return QuestionEmailJob(self)
+
 
 class QuestionEmailJob(BaseRunnableJob):
     """Intermediate class for deriving from QuestionJob."""
@@ -101,6 +106,7 @@ class QuestionEmailJob(BaseRunnableJob):
     delegates(IQuestionJob)
     implements(IQuestionEmailJob)
     classProvides(IQuestionEmailJobSource)
+    config = config.IQuestionEmailJobSource
 
     def __init__(self, job):
         self.context = job
@@ -119,7 +125,9 @@ class QuestionEmailJob(BaseRunnableJob):
             }
         job = QuestionJob(
             question=question, job_type=cls.class_job_type, metadata=metadata)
-        return cls(job)
+        derived = cls(job)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def iterReady(cls):

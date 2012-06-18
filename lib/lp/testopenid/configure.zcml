@@ -9,7 +9,7 @@
     i18n_domain="launchpad">
 
     <securedutility
-        class="canonical.launchpad.systemhomes.TestOpenIDApplication"
+        class="lp.systemhomes.TestOpenIDApplication"
         provides="lp.testopenid.interfaces.server.ITestOpenIDApplication">
       <allow interface="lp.testopenid.interfaces.server.ITestOpenIDApplication"/>
     </securedutility>

@@ -7,13 +7,13 @@ from email import message_from_string
 
 import transaction
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import RevisionControlSystems
 from lp.services.mail import stub
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestNewCodeImports(TestCaseWithFactory):

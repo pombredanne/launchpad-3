@@ -1,9 +1,8 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
 
 """Unit tests for BranchMergeProposals."""
 
@@ -17,6 +16,7 @@ from difflib import unified_diff
 
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
+import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -30,16 +30,6 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
-    BrowserNotificationLevel,
-    IPrimaryContext,
-    )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView,
@@ -55,6 +45,7 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    BranchVisibilityRule,
     CodeReviewVote,
     )
 from lp.code.model.diff import PreviewDiff
@@ -62,7 +53,19 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.services.messages.model.message import MessageSet
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IPrimaryContext,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
@@ -71,6 +74,10 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     time_counter,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_initialized_view
 
@@ -200,6 +207,51 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # The vote table should not be shown, because there are no votes, and
         # the logged-in user cannot request reviews.
         self.assertFalse(view.show_table)
+
+    def _createPrivateVotes(self, is_branch_visible=True):
+        # Create a branch with a public and private reviewer.
+        owner = self.bmp.source_branch.owner
+        if not is_branch_visible:
+            branch = self.bmp.source_branch
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+            branch.setPrivate(True, owner)
+
+        # Set up some review requests.
+        public_person1 = self.factory.makePerson()
+        private_team1 = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        self._nominateReviewer(public_person1, owner)
+        self._nominateReviewer(private_team1, owner)
+
+        return private_team1, public_person1
+
+    def testPrivateVotesNotVisibleIfBranchNotVisible(self):
+        # User can't see votes for private teams if they can't see the branch.
+        private_team1, public_person1 = self._createPrivateVotes(False)
+        login_person(self.factory.makePerson())
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+
+        # Check the requested reviews.
+        requested_reviews = view.requested_reviews
+        self.assertEqual(1, len(requested_reviews))
+        self.assertContentEqual(
+            [public_person1],
+            [review.reviewer for review in requested_reviews])
+
+    def testPrivateVotesVisibleIfBranchVisible(self):
+        # User can see votes for private teams if they can see the branch.
+        private_team1, public_person1 = self._createPrivateVotes()
+        login_person(self.factory.makePerson())
+        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
+
+        # Check the requested reviews.
+        requested_reviews = view.requested_reviews
+        self.assertEqual(2, len(requested_reviews))
+        self.assertContentEqual(
+            [public_person1, private_team1],
+            [review.reviewer for review in requested_reviews])
 
     def testRequestedOrdering(self):
         # No votes should return empty lists
@@ -366,9 +418,9 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         self.user = self.factory.makePerson()
         login_person(self.user)
 
-    def _makeTargetBranch(self):
+    def _makeTargetBranch(self, **kwargs):
         return self.factory.makeProductBranch(
-            product=self.source_branch.product)
+            product=self.source_branch.product, **kwargs)
 
     def _makeTargetBranchWithReviewer(self):
         albert = self.factory.makePerson(name='albert')
@@ -376,10 +428,11 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
             reviewer=albert, product=self.source_branch.product)
         return target_branch, albert
 
-    def _createView(self):
+    def _createView(self, request=None):
         # Construct the view and initialize it.
-        view = RegisterBranchMergeProposalView(
-            self.source_branch, LaunchpadTestRequest())
+        if not request:
+            request = LaunchpadTestRequest()
+        view = RegisterBranchMergeProposalView(self.source_branch, request)
         view.initialize()
         return view
 
@@ -416,6 +469,86 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, target_branch.owner)
         self.assertIs(None, proposal.description)
+
+    def test_register_ajax_request_with_confirmation(self):
+        # Ajax submits return json data containing info about what the visible
+        # branches are if they are not all visible to the reviewer.
+
+        # Make a branch the reviewer cannot see.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        reviewer = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', principal=owner, **extra)
+        view = self._createView(request=request)
+        with person_logged_in(owner):
+            branches_to_check = [self.source_branch.unique_name,
+                target_branch.unique_name]
+            expected_data = {
+                'person_name': reviewer.displayname,
+                'branches_to_check': branches_to_check,
+                'visible_branches': [self.source_branch.unique_name]}
+            result_data = view.register_action.success(
+                {'target_branch': target_branch,
+                 'reviewer': reviewer,
+                 'needs_review': True})
+        self.assertEqual(
+            '400 Branch Visibility',
+            view.request.response.getStatusString())
+        self.assertEqual(expected_data, simplejson.loads(result_data))
+
+    def test_register_ajax_request_with_validation_errors(self):
+        # Ajax submits where there is a validation error in the submitted data
+        # return the expected json response containing the error info.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_branch.target_branch':
+                        target_branch.unique_name},
+                **extra)
+            view = create_initialized_view(
+                target_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.target_branch':
+                    ('The target branch cannot be the same as the '
+                    'source branch.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
+
+    def test_register_ajax_request_with_no_confirmation(self):
+        # Ajax submits where there is no confirmation required return a 201
+        # with the new location.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', principal=owner, **extra)
+        view = self._createView(request=request)
+        with person_logged_in(owner):
+            result_data = view.register_action.success(
+                {'target_branch': target_branch,
+                 'reviewer': reviewer,
+                 'needs_review': True})
+        self.assertEqual(None, result_data)
+        self.assertEqual(201, view.request.response.getStatus())
+        mp = target_branch.getMergeProposals()[0]
+        self.assertEqual(
+            canonical_url(mp), view.request.response.getHeader('Location'))
 
     def test_register_work_in_progress(self):
         # The needs review checkbox can be unchecked to create a work in
@@ -537,6 +670,26 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
         matcher = Not(HTMLContains(reviewer.within(extra)))
         self.assertThat(browser.contents, matcher)
+
+    def test_branch_visibility_notification(self):
+        # If the reviewer cannot see the source and/or target branches, a
+        # notification message is displayed.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        reviewer = self.factory.makePerson()
+        with person_logged_in(owner):
+            view = self._createView()
+            view.register_action.success(
+                {'target_branch': target_branch,
+                 'reviewer': reviewer,
+                 'needs_review': True})
+
+        (notification,) = view.request.response.notifications
+        self.assertThat(
+            notification.message, MatchesRegex(
+                'To ensure visibility, .* is now subscribed to:.*'))
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
 
 
 class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
@@ -744,7 +897,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         """List bugs that are linked to the source only."""
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
-        private_bug = self.factory.makeBug(owner=person, private=True)
+        private_bug = self.factory.makeBug(
+            owner=person, information_type=InformationType.USERDATA)
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
         with person_logged_in(person):
             self.bmp.source_branch.linkBug(private_bug, self.bmp.registrant)
@@ -842,6 +996,22 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         cache = IJSONRequestCache(view.request)
         self.assertIn("longpoll", cache.objects)
         self.assertIn("merge_proposal_event_key", cache.objects)
+
+    def test_description_is_meta_description(self):
+        description = (
+            "I'd like to make the bmp description appear as the meta "
+            "description: this does that "
+            + "abcdef " * 300)
+        bmp = self.factory.makeBranchMergeProposal(
+            description=description)
+        browser = self.getUserBrowser(
+            canonical_url(bmp, rootsite='code'))
+        expected_meta = Tag(
+            'meta description',
+            'meta', attrs=dict(
+                name='description',
+                content=description[:497] + '...'))
+        self.assertThat(browser.contents, HTMLContains(expected_meta))
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
@@ -1038,6 +1208,69 @@ class TestBranchMergeProposal(BrowserTestCase):
         browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
 
+    def test_pending_diff_message_with_longpoll_enabled(self):
+        # If the longpoll feature flag is enabled then the message
+        # displayed for a pending diff indicates that it'll update
+        # automatically. See also
+        # lib/lp/code/stories/branches/xx-branchmergeproposals.txt
+        self.useContext(feature_flags())
+        set_feature_flag(u'longpoll.merge_proposals.enabled', u'enabled')
+        bmp = self.factory.makeBranchMergeProposal()
+        browser = self.getViewBrowser(bmp)
+        self.assertIn(
+            "An updated diff is being calculated and will appear "
+                "automatically when ready.",
+            browser.contents)
+
+    def test_short_conversation_comments_not_truncated(self):
+        """Short comments should not be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 100)
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        self.assertIn('x y' * 100, browser.contents)
+
+    def has_read_more(self, comment):
+        url = canonical_url(comment, force_local_path=True)
+        read_more = Tag(
+            'Read more link', 'a', {'href': url}, text='Read more...')
+        return HTMLContains(read_more)
+
+    def test_long_conversation_comments_truncated(self):
+        """Long comments in a conversation should be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
+        has_read_more = self.has_read_more(comment)
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        self.assertNotIn('x y' * 2000, browser.contents)
+        self.assertThat(browser.contents, has_read_more)
+
+    def test_short_conversation_comments_no_download(self):
+        """Short comments should not have a download link."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 100)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        body = Tag(
+            'Download', 'a', {'href': download_url},
+            text='Download full text')
+        self.assertThat(browser.contents, Not(HTMLContains(body)))
+
+    def test_long_conversation_comments_download_link(self):
+        """Long comments in a conversation should be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        body = Tag(
+            'Download', 'a', {'href': download_url},
+            text='Download full text')
+        self.assertThat(browser.contents, HTMLContains(body))
+
+    def test_excessive_conversation_comments_no_redirect(self):
+        """An excessive comment does not force a redict on proposal page."""
+        comment = self.factory.makeCodeReviewComment(body='x' * 10001)
+        mp_url = canonical_url(comment.branch_merge_proposal)
+        has_read_more = self.has_read_more(comment)
+        browser = self.getUserBrowser(mp_url)
+        self.assertThat(browser.contents, Not(has_read_more))
+        self.assertEqual(mp_url, browser.url)
+
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):
     """Confirm that the latest branch is returned."""
@@ -1063,7 +1296,8 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
         bmp2 = self.factory.makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
-        removeSecurityProxy(bmp2.source_branch).explicitly_private = True
+        removeSecurityProxy(bmp2.source_branch).information_type = (
+            InformationType.USERDATA)
         self.assertEqual(
             [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
 

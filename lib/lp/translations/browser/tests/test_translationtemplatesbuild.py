@@ -6,15 +6,16 @@
 __metaclass__ = type
 
 from datetime import datetime
+
 from pytz import utc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.translations.browser.translationtemplatesbuild import (
     TranslationTemplatesBuildView,
     )

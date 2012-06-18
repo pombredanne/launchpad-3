@@ -7,9 +7,8 @@ codeimportscheduler attribute of our private XMLRPC instance.
 
     >>> from lp.code.interfaces.codeimportscheduler import (
     ...     ICodeImportSchedulerApplication)
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     IPrivateApplication)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.xmlrpc.interfaces import IPrivateApplication
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(
@@ -19,7 +18,7 @@ codeimportscheduler attribute of our private XMLRPC instance.
 The CodeImportSchedulerAPI view provides the ICodeImportScheduler
 XML-RPC API:
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.code.interfaces.codeimportscheduler import (
     ...     ICodeImportScheduler)
     >>> from lp.code.xmlrpc.codeimportscheduler import (

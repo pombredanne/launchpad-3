@@ -6,7 +6,7 @@ Set up required objects
     >>> # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
     >>> eric = factory.makePerson(
-    ...     name="eric", email="eric@example.com", password="test",
+    ...     name="eric", email="eric@example.com",
     ...     displayname="Eric the Viking")
     >>> merge_proposal = factory.makeBranchMergeProposal(reviewer=eric)
     >>> merge_proposal_url = canonical_url(merge_proposal)
@@ -112,8 +112,8 @@ are also displayed in the new proposal.
     source branch to land it. When this comment is replied to, it should
     wrap the line properly.
     >>> print_comments('boardCommentDetails', anon_browser, index=0)
-    Eric the Viking (eric) wrote ... ago
-    Posted in a previous version of this proposal
+    Eric the Viking (eric) wrote ... ago:
+    Posted in a previous version of this proposal #
     >>> details = find_tags_by_class(
     ...     anon_browser.contents, 'boardCommentDetails')[0]
     >>> links = details.findAll('a')
@@ -133,7 +133,7 @@ comment' link.
     >>> eric_browser.getControl('Save Comment').click()
 
     >>> print_comments('boardCommentDetails', eric_browser, index=2)
-    Eric the Viking ... a moment ago
+    Eric the Viking ... ago: #
     >>> print_comments('boardCommentFooter', eric_browser, index=0)
     review: Abstain (timeless)
     >>> print_comments('boardCommentBody', eric_browser, index=2)

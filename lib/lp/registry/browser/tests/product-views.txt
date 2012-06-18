@@ -20,7 +20,7 @@ if one exists.  If the product does not have a driver, then the driver
 for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> from lp.testing import ANONYMOUS
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -117,7 +117,7 @@ Reviewing a project's licensing
 ===============================
 
 Launchpad admins and members of the registry experts team can review a
-project's licenses.
+project's licences.
 
 The Commercial Admin user is not in the registry admins team so he
 cannot access the page.
@@ -150,7 +150,7 @@ him access.
     Review project
 
 The view allow the reviewer to see and change project privileges and
-judge the licenses.
+judge the licences.
 
     >>> view.field_names
     ['project_reviewed', 'license_approved', 'active', 'private_bugs',
@@ -208,34 +208,6 @@ also reactivate the project at the same time.
     >>> view = create_initialized_view(
     ...     firefox, name='+review-license', form=form)
 
-He encounters an error, though, as the project does not have a bug
-supervisor set, which is required for turning on private bugs.
-
-    >>> from canonical.launchpad.testing.pages import extract_text
-    >>> for error in view.errors:
-    ...     print extract_text(error)
-    Set a bug supervisor for this project first.
-
-    >>> firefox.bug_supervisor is None
-    True
-
-After setting the bug supervisor the project can have private bugs enabled.
-
-    >>> login('mark@example.com')
-    >>> firefox.setBugSupervisor(cprov, mark)
-    >>> login('commercial-member@canonical.com')
-
-    >>> firefox.private_bugs
-    False
-
-    >>> form = {
-    ...     'field.active': 'on',
-    ...     'field.private_bugs': 'on',
-    ...     'field.reviewer_whiteboard': 'Reinstated old project',
-    ...     'field.actions.change': 'Change',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     firefox, name='+review-license', form=form)
     >>> view.errors
     []
     >>> firefox.active
@@ -245,12 +217,12 @@ After setting the bug supervisor the project can have private bugs enabled.
     >>> print firefox.reviewer_whiteboard
     Reinstated old project
 
-A project with proprietary license cannot be approved; the owner must
+A project with proprietary licence cannot be approved; the owner must
 purchase a commercial subscription.
 
     >>> from lp.registry.interfaces.product import License
 
-    >>> firefox.private_bugs = False
+    >>> firefox.setPrivateBugs(False, commercial_member)
     >>> login('test@canonical.com')
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
 
@@ -275,7 +247,7 @@ purchase a commercial subscription.
     >>> print firefox.reviewer_whiteboard
     None
 
-A project with additional license information must be approved by a reviewer.
+A project with additional licence information must be approved by a reviewer.
 If the reviewer does not approve the project, just review, the project does
 not qualify for free hosting. The owner must purchase a commercial
 subscription.
@@ -305,7 +277,7 @@ subscription.
     >>> firefox.qualifies_for_free_hosting
     False
 
-The owner can correct the license information and have it re-reviewed for
+The owner can correct the licence information and have it re-reviewed for
 approval.
 
     >>> login('test@canonical.com')
@@ -318,7 +290,7 @@ approval.
 
     >>> form = {
     ...     'field.active': 'on',
-    ...     'field.reviewer_whiteboard': 'This is not a free license',
+    ...     'field.reviewer_whiteboard': 'This is not a free licence',
     ...     'field.license_approved': 'on',
     ...     'field.actions.change': 'Change',
     ...     }
@@ -333,7 +305,7 @@ approval.
     >>> firefox.qualifies_for_free_hosting
     True
 
-If the owner updated the license by adding an Other/Open Source licenses,
+If the owner updated the licence by adding an Other/Open Source licences,
 the project must be reviewed again
 
     >>> login('test@canonical.com')
@@ -368,15 +340,15 @@ Adding a product series
 Drivers, which include project driver and owners can access the
 +addseries view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> view = create_view(firefox, name='+addseries')
     >>> check_permission('launchpad.Driver', view)
     True
 
     >>> firefox.driver = factory.makePerson()
-    >>> login_person(firefox.driver)
+    >>> ignored = login_person(firefox.driver)
     >>> view = create_view(firefox, name='+addseries')
     >>> check_permission('launchpad.Driver', view)
     True
@@ -447,11 +419,11 @@ Product index view
 The index page of a product only shows the application portlets that it
 officially supports.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> product = factory.makeProduct(name='cucumber')
     >>> owner = product.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> question = factory.makeQuestion(target=product)
     >>> faq = factory.makeFAQ(target=product)
     >>> bug = factory.makeBug(product=product)

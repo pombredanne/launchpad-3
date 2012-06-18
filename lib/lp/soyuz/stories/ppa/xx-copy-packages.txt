@@ -49,10 +49,10 @@ the form is not rendered, instead he is advised to activate his own
 PPA in order to be able to copy packages.
 
     >>> jblack_browser = setupBrowser(
-    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+    ...     auth="Basic james.blackwell@ubuntulinux.com:test")
 
     >>> jblack_extra_browser = setupBrowser(
-    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+    ...     auth="Basic james.blackwell@ubuntulinux.com:test")
 
     >>> jblack_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
@@ -108,10 +108,10 @@ for packages. This is certainly not part of the doctest story.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet,
     ...     )
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -136,7 +136,7 @@ for packages. This is certainly not part of the doctest story.
     >>> grumpy.nominatedarchindep = grumpy_i386
     >>> trash = grumpy_i386.addOrUpdateChroot(fake_chroot)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 
@@ -482,7 +482,6 @@ pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
     ...     pmount_binary, jblack.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> flush_database_updates()
-    >>> logout()
 
     >>> for binary in pmount_binaries:
     ...     print binary.displayname
@@ -492,6 +491,7 @@ pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
 The binaries have now been published, so James requests the copy
 including binaries.
 
+    >>> logout()
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
     >>> jblack_browser.getControl(

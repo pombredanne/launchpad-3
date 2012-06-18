@@ -12,11 +12,12 @@ from zope.interface import (
     implements,
     )
 
-from canonical.launchpad.interfaces.lpstorm import (
+from lp.registry.model.distroseries import DistroSeries
+from lp.services.config import config
+from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.registry.model.distroseries import DistroSeries
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
@@ -45,6 +46,8 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
     classProvides(IInitializeDistroSeriesJobSource)
 
     user_error_types = (InitializationError,)
+
+    config = config.initializedistroseries
 
     @classmethod
     def create(cls, child, parents, arches=(), archindep_archtag=None,
@@ -106,7 +109,9 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         distribution_job = DistributionJob(
             child.distribution, child, cls.class_job_type, metadata)
         store.add(distribution_job)
-        return cls(distribution_job)
+        derived_job = cls(distribution_job)
+        derived_job.celeryRunOnCommit()
+        return derived_job
 
     @classmethod
     def get(cls, distroseries):

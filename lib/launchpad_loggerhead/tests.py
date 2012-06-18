@@ -4,26 +4,28 @@
 import cStringIO
 import errno
 import logging
-import urllib
-import socket
 import re
+import socket
+import urllib
 
 import lazr.uri
-import wsgi_intercept
-from wsgi_intercept.urllib2_intercept import install_opener, uninstall_opener
-import wsgi_intercept.zope_testbrowser
 from paste import httpserver
 from paste.httpexceptions import HTTPExceptionHandler
+import wsgi_intercept
+from wsgi_intercept.urllib2_intercept import (
+    install_opener,
+    uninstall_opener,
+    )
+import wsgi_intercept.zope_testbrowser
 import zope.event
 
-from canonical.config import config
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.testing.layers import DatabaseFunctionalLayer
-from launchpad_loggerhead.app import (
-    RootApp,
-    )
+from launchpad_loggerhead.app import RootApp
 from launchpad_loggerhead.session import SessionHandler
+from lp.services.config import config
+from lp.services.webapp.vhosts import allvhosts
 from lp.testing import TestCase
+from lp.testing.layers import DatabaseFunctionalLayer
+
 
 SESSION_VAR = 'lh.session'
 
@@ -130,7 +132,7 @@ class TestLogout(TestCase):
         # When we visit +logout with a 'next_to' value in the query string,
         # the logout page will redirect to the given URI.  As of this
         # writing, this is used by Launchpad to redirect to our OpenId
-        # provider (see canonical.launchpad.tests.test_login.
+        # provider (see lp.testing.tests.test_login.
         # TestLoginAndLogout.test_CookieLogoutPage).
 
         # Here, we will have a more useless example of the basic machinery.

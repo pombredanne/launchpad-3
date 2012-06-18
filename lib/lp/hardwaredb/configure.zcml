@@ -11,7 +11,7 @@
     <!-- HWDBApplication -->
     
     <class
-        class="canonical.launchpad.systemhomes.HWDBApplication">
+        class="lp.systemhomes.HWDBApplication">
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <require
@@ -19,7 +19,7 @@
             interface="lp.hardwaredb.interfaces.hwdb.IHWDBApplication"/>
     </class>
     <securedutility
-        class="canonical.launchpad.systemhomes.HWDBApplication"
+        class="lp.systemhomes.HWDBApplication"
         provides="lp.hardwaredb.interfaces.hwdb.IHWDBApplication">
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>

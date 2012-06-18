@@ -11,11 +11,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
@@ -34,6 +29,11 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -240,6 +240,42 @@ class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
         # should automatically pick it up from the parent.
         found_build = spr.getBuildByArch(das_derived, derived_archive)
         self.assertEqual(orig_build, found_build)
+
+
+class TestFindBuildsByArchitecture(TestCaseWithFactory):
+    """Tests for SourcePackageRelease.findBuildsByArchitecture."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_finds_build_with_matching_pub(self):
+        # findBuildsByArchitecture finds builds for a source package
+        # release.  In particular, an arch-independent BPR is published in
+        # multiple architectures.  But findBuildsByArchitecture only counts
+        # the publication for the same architecture it was built in.
+        distroseries = self.factory.makeDistroSeries()
+        archive = distroseries.main_archive
+        # The series has a nominated arch-indep architecture.
+        distroseries.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=distroseries)
+
+        bpb = self.factory.makeBinaryPackageBuild(
+            distroarchseries=distroseries.nominatedarchindep)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=bpb, architecturespecific=False)
+        spr = bpr.build.source_package_release
+
+        # The series also has other architectures.
+        self.factory.makeDistroArchSeries(distroseries=distroseries)
+
+        for das in distroseries.architectures:
+            self.factory.makeBinaryPackagePublishingHistory(
+                binarypackagerelease=bpr, distroarchseries=das,
+                archive=archive)
+
+        naked_spr = removeSecurityProxy(spr)
+        self.assertEqual(
+            {distroseries.nominatedarchindep.architecturetag: bpr.build},
+            naked_spr.findBuildsByArchitecture(distroseries, archive))
 
 
 class TestSourcePackageReleaseTranslationFiles(TestCaseWithFactory):

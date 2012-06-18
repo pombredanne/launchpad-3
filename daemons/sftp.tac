@@ -8,8 +8,8 @@
 from twisted.application import service
 from twisted.protocols.policies import TimeoutFactory
 
-from canonical.config import config
-from canonical.launchpad.daemons import readyservice
+from lp.services.config import config
+from lp.services.daemons import readyservice
 
 from lp.codehosting.sshserver.daemon import (
     ACCESS_LOG_NAME,

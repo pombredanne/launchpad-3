@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveOverrider',
     'ArchiveOverriderError',
+    'ChangeOverride',
     ]
 
 from zope.component import getUtility

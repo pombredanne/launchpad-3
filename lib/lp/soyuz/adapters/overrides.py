@@ -29,12 +29,10 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -193,7 +191,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
                                  source_component=None):
         # Avoid circular imports.
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
         def eager_load(rows):
@@ -203,7 +200,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
-                (SourcePackageRelease.sourcepackagenameID,
+                (SourcePackagePublishingHistory.sourcepackagenameID,
                  SourcePackagePublishingHistory.componentID,
                  SourcePackagePublishingHistory.sectionID),
                 SourcePackagePublishingHistory.archiveID == archive.id,
@@ -211,15 +208,14 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
                     active_publishing_status),
-                SourcePackageRelease.id ==
-                    SourcePackagePublishingHistory.sourcepackagereleaseID,
-                SourcePackageRelease.sourcepackagenameID.is_in(
+                SourcePackagePublishingHistory.sourcepackagenameID.is_in(
                     spn.id for spn in spns)).order_by(
-                        SourcePackageRelease.sourcepackagenameID,
+                        SourcePackagePublishingHistory.sourcepackagenameID,
                         Desc(SourcePackagePublishingHistory.datecreated),
                         Desc(SourcePackagePublishingHistory.id),
                 ).config(
-                    distinct=(SourcePackageRelease.sourcepackagenameID,)),
+                    distinct=(
+                        SourcePackagePublishingHistory.sourcepackagenameID,)),
             id_resolver((SourcePackageName, Component, Section)),
             pre_iter_hook=eager_load)
         return [
@@ -358,10 +354,10 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
             self, archive, distroseries, pocket, binaries)
         existing = set(
             (
-                overide.binary_package_name,
-                overide.distro_arch_series.architecturetag,
+                override.binary_package_name,
+                override.distro_arch_series.architecturetag,
             )
-            for overide in overrides)
+            for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateBinaryOverrides(

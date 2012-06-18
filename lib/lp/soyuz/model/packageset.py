@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,11 +17,6 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
@@ -29,6 +24,11 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet,
     )
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.helpers import ensure_unicode
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName,
     IPackageset,
@@ -69,6 +69,8 @@ class Packageset(Storm):
 
     packagesetgroup_id = Int(name='packagesetgroup', allow_none=False)
     packagesetgroup = Reference(packagesetgroup_id, 'PackagesetGroup.id')
+
+    relative_build_score = Int(allow_none=False)
 
     def add(self, data):
         """See `IPackageset`."""

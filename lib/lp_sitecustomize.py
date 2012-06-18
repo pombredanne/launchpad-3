@@ -19,12 +19,18 @@ from zope.interface import alsoProvides
 import zope.publisher.browser
 from zope.security import checker
 
-from canonical.launchpad.webapp.interfaces import IUnloggedException
+# Load bzr plugins
+import lp.codehosting
+lp.codehosting
+# Force LoomBranch classes to be listed as subclasses of Branch
+import bzrlib.plugins.loom.branch
+bzrlib.plugins.loom.branch
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
+from lp.services.webapp.interfaces import IUnloggedException
 
 
 def add_custom_loglevels():
@@ -129,10 +135,6 @@ def silence_warnings():
     filter_pattern = '.*(Zope 3.6|provide.*global site manager).*'
     warnings.filterwarnings(
         'ignore', filter_pattern, category=DeprecationWarning)
-    # XXX wgrant 2010-03-30 bug=551510:
-    # Also filter apt_pkg warnings, since Lucid's python-apt has a new API.
-    warnings.filterwarnings(
-        'ignore', '.*apt_pkg.*', category=DeprecationWarning)
 
 
 def customize_logger():

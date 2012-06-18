@@ -6,7 +6,7 @@ NameBlacklist pages
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.nameblacklist import INameBlacklistSet
     >>> name_blacklist_set = getUtility(INameBlacklistSet)
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> registry_expert = factory.makePerson()
@@ -20,7 +20,7 @@ View all
 All the blacklisted regular expressions that filter pillar names and
 person names can be seen on the /+nameblacklist page.
 
-    >>> login_person(registry_expert)
+    >>> ignored = login_person(registry_expert)
     >>> view = create_initialized_view(name_blacklist_set, '+index',
     ...                                principal=registry_expert)
     >>> print extract_text(find_tag_by_id(view.render(), 'blacklist'))

@@ -14,7 +14,6 @@ from zope.component import adapts
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
@@ -24,6 +23,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component,
     get_sources_list_for_building,
@@ -85,6 +85,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             None)
         args['archives'] = get_sources_list_for_building(self.build,
             distroarchseries, None)
+        args['archive_private'] = self.build.archive.private
 
         # config.builddmaster.bzr_builder_sources_list can contain a
         # sources.list entry for an archive that will contain a

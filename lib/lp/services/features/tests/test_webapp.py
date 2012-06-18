@@ -7,11 +7,17 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from canonical.config import config
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import layers
-from lp.services.features import webapp
+from lp.services.config import config
+from lp.services.features import (
+    getFeatureFlag,
+    webapp,
+    )
+from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    CaptureOops,
+    layers,
     login_as,
     TestCase,
     TestCaseWithFactory,
@@ -97,3 +103,24 @@ class TestDBScopes(TestCaseWithFactory):
         team = self.factory.makeTeam(members=[member])
         login_as(member, request)
         self.assertTrue(scopes.lookup('team:%s' % team.name))
+
+
+class TestFeaturesIntoOops(TestCaseWithFactory):
+
+    layer = layers.DatabaseFunctionalLayer
+
+    def test_get_features_into_oops(self):
+        with FeatureFixture({'feature_name': 'value'}):
+            with CaptureOops() as capture:
+                request = LaunchpadTestRequest()
+
+                self.assertEquals(getFeatureFlag('feature_name'), 'value')
+
+                # Simulate an oops here.
+                globalErrorUtility.raising(None, request=request)
+
+                oops = capture.oopses[0]
+                self.assertTrue('features.usedScopes' in oops)
+                self.assertTrue('features.usedFlags' in oops)
+                self.assertEquals(oops['features.usedFlags'],
+                    u"{'feature_name': u'value'}")

@@ -205,17 +205,16 @@ autonomously.
     >>> template = templatesubset.new(
     ...     'foo', 'foo', 'foo.pot', template_owner)
 
-    >>> distro_owner = factory.makePerson('do@example.com', password='test')
+    >>> distro_owner = factory.makePerson('do@example.com')
     >>> ubuntu.owner = distro_owner
 
-    >>> group_owner = factory.makePerson('go@example.com', password='test')
+    >>> group_owner = factory.makePerson('go@example.com')
     >>> translation_group = factory.makeTranslationGroup(group_owner)
     >>> ubuntu.translationgroup = translation_group
-    >>> logout()
-
     >>> template_admin_url = str(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/%s/+pots/%s/+admin' % (package.name, template.name))
+    >>> logout()
 
 A distribution's owner can manage the distribution's templates.
 

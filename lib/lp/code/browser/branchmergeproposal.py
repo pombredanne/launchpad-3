@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0322,F0401
@@ -64,25 +64,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -119,6 +101,7 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     Summary,
@@ -126,6 +109,23 @@ from lp.services.fields import (
     )
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 
 
 def latest_proposals_for_each_branch(proposals):
@@ -573,8 +573,16 @@ class CodeReviewNewRevisions:
         self.extra_css_class = None
         self.comment_author = None
         self.body_text = None
+        self.text_for_display = None
+        self.download_url = None
+        self.too_long = False
+        self.too_long_to_render = False
         self.comment_date = None
         self.display_attachments = False
+        self.index = None
+
+    def download(self, request):
+        pass
 
 
 class CodeReviewNewRevisionsView(LaunchpadView):
@@ -594,7 +602,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     implements(IBranchMergeProposalActionMenu)
 
-    label = "Proposal to merge branch"
     schema = ClaimButton
 
     def initialize(self):
@@ -649,7 +656,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
-                CodeReviewDisplayComment(comment, from_superseded)
+                CodeReviewDisplayComment(
+                    comment, from_superseded, limit_length=True)
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
@@ -675,6 +683,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+    @property
+    def label(self):
+        return "Merge %s into %s" % (
+            self.context.source_branch.bzr_identity,
+            self.context.target_branch.bzr_identity)
 
     @property
     def pending_diff(self):
@@ -766,10 +780,7 @@ class DecoratedCodeReviewVoteReference:
 
     def __init__(self, context, user, users_vote):
         self.context = context
-        proposal = self.context.branch_merge_proposal
         self.can_change_review = (user == context.reviewer)
-        self.trusted = proposal.target_branch.isPersonTrustedReviewer(
-            context.reviewer)
         if user is None:
             self.user_can_review = False
         else:
@@ -785,6 +796,13 @@ class DecoratedCodeReviewVoteReference:
             self.user_can_reassign = True
         else:
             self.user_can_reassign = False
+
+    @cachedproperty
+    def trusted(self):
+        """ Is the person a trusted reviewer."""
+        proposal = self.context.branch_merge_proposal
+        return proposal.target_branch.isPersonTrustedReviewer(
+            self.context.reviewer)
 
     @property
     def show_date_requested(self):
@@ -841,7 +859,8 @@ class BranchMergeProposalVoteView(LaunchpadView):
         """Return the decorated votes for the proposal."""
         users_vote = self.context.getUsersVoteReference(self.user)
         return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
-                for vote in self.context.votes]
+                for vote in self.context.votes
+                if check_permission('launchpad.LimitedView', vote.reviewer)]
 
     @cachedproperty
     def current_reviews(self):
@@ -1416,7 +1435,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     schema = IAddVote
     field_names = ['vote', 'review_type', 'comment']
 
-    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
 
     @cachedproperty
     def initial_values(self):

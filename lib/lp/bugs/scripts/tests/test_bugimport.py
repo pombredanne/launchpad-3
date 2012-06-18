@@ -1,29 +1,18 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
 
 import os
 import re
-import shutil
-import subprocess
-import sys
-import tempfile
-import unittest
 
 import pytz
+from testtools.content import text_content
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor
-from lp.bugs.model.bugnotification import BugNotification
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -37,6 +26,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
 from lp.bugs.scripts.checkwatches import (
@@ -49,11 +39,20 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.model.person import generate_nick
-from lp.testing import TestCaseWithFactory
+from lp.services.config import config
+from lp.services.database.sqlbase import cursor
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.testing import (
+    login,
+    logout,
+    run_process,
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class UtilsTestCase(unittest.TestCase):
+class UtilsTestCase(TestCase):
     """Tests for the various utility functions used by the importer."""
 
     def test_parse_date(self):
@@ -283,7 +282,7 @@ class GetPersonTestCase(TestCaseWithFactory):
         transaction.commit()
         self.failIf(person.account is None, 'Person must have an account.')
         email = getUtility(IEmailAddressSet).new(
-            'foo@preferred.com', person, account=person.account)
+            'foo@preferred.com', person)
         person.setPreferredEmail(email)
         transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
@@ -298,36 +297,8 @@ class GetPersonTestCase(TestCaseWithFactory):
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
-    def test_person_from_account(self):
-        # If an Account record exists for a user's email address, but
-        # no Person record is linked to it, the bug importer creates a
-        # Person and links the three piece of information together.
-        account = self.factory.makeAccount("Sam")
-        personnode = ET.fromstring(
-            '<person xmlns="https://launchpad.net/xmlns/2006/bugs" />')
-        personnode.set('name', generate_nick(account.preferredemail.email))
-        personnode.set('email', account.preferredemail.email)
-        personnode.text = account.displayname
 
-        product = getUtility(IProductSet).getByName('netapplet')
-        importer = bugimport.BugImporter(
-            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
-        person = importer.getPerson(personnode)
-
-        # The person returned is associated with the account.
-        self.failUnlessEqual(account.id, person.accountID)
-        # The creation comment and rationale are set correctly.
-        self.failUnlessEqual(
-            'when importing bugs for %s' % product.displayname,
-            person.creation_comment)
-        self.failUnlessEqual(
-            PersonCreationRationale.BUGIMPORT,
-            person.creation_rationale)
-        # The person's email addresses are hidden by default.
-        self.failUnless(person.hide_email_addresses)
-
-
-class GetMilestoneTestCase(unittest.TestCase):
+class GetMilestoneTestCase(TestCase):
     """Tests for the BugImporter.getMilestone() method."""
     layer = LaunchpadZopelessLayer
 
@@ -482,14 +453,16 @@ public_security_bug = '''\
 </bug>'''
 
 
-class ImportBugTestCase(unittest.TestCase):
+class ImportBugTestCase(TestCase):
     """Test importing of a bug from XML"""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(ImportBugTestCase, self).setUp()
         login('bug-importer@launchpad.net')
 
     def tearDown(self):
+        super(ImportBugTestCase, self).tearDown()
         logout()
 
     def assertNoPendingNotifications(self, bug):
@@ -561,7 +534,7 @@ class ImportBugTestCase(unittest.TestCase):
             message1.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(message1.subject, 'A test bug')
         self.assertEqual(message1.text_contents, 'Original description')
-        self.assertEqual(message1.bugattachments.count(), 1)
+        self.assertEqual(len(message1.bugattachments), 1)
         attachment = message1.bugattachments[0]
         self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
         self.assertEqual(attachment.title, 'Hello')
@@ -587,7 +560,7 @@ class ImportBugTestCase(unittest.TestCase):
             message3.text_contents,
             'A comment from mark about CVE-2005-2730\n\n'
             ' * list item 1\n * list item 2\n\nAnother paragraph')
-        self.assertEqual(message3.bugattachments.count(), 2)
+        self.assertEqual(len(message3.bugattachments), 2)
         # grab the attachments in the appropriate order
         [attachment1, attachment2] = list(message3.bugattachments)
         if attachment1.type == BugAttachmentType.PATCH:
@@ -612,7 +585,7 @@ class ImportBugTestCase(unittest.TestCase):
             message4.datecreated.isoformat(), '2005-01-01T14:00:00+00:00')
         self.assertEqual(message4.subject, 'Re: A test bug')
         self.assertEqual(message4.text_contents, '<empty comment>')
-        self.assertEqual(message4.bugattachments.count(), 0)
+        self.assertEqual(len(message4.bugattachments), 0)
 
         # Message 5:
         self.assertEqual(
@@ -621,7 +594,7 @@ class ImportBugTestCase(unittest.TestCase):
             message5.datecreated.isoformat(), '2005-01-01T15:00:00+00:00')
         self.assertEqual(message5.subject, 'Re: A test bug')
         self.assertEqual(message5.text_contents, '')
-        self.assertEqual(message5.bugattachments.count(), 1)
+        self.assertEqual(len(message5.bugattachments), 1)
         attachment = message5.bugattachments[0]
         self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
         self.assertEqual(attachment.title, 'Hello')
@@ -683,16 +656,27 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(bug101.private, False)
         self.assertEqual(bug101.security_related, True)
 
+    def test_public_bug_product_private_bugs(self):
+        # Test that if we import a public bug into a product with 
+        # private_bugs, the bug is private.
+        product = getUtility(IProductSet).getByName('netapplet')
+        removeSecurityProxy(product).private_bugs = True
+        importer = bugimport.BugImporter(
+            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
+        bugnode = ET.fromstring(public_security_bug)
+        bug101 = importer.importBug(bugnode)
+        self.assertIsNot(None, bug101)
+        self.assertTrue(bug101.private)
+        self.assertTrue(bug101.security_related)
 
-class BugImportCacheTestCase(unittest.TestCase):
+
+class BugImportCacheTestCase(TestCase):
     """Test of bug mapping cache load/save routines."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        super(BugImportCacheTestCase, self).setUp()
+        self.tmpdir = self.makeTemporaryDirectory()
 
     def test_load_no_cache(self):
         # Test that loadCache() when no cache file exists resets the
@@ -769,52 +753,75 @@ class BugImportCacheTestCase(unittest.TestCase):
         importer.importBugs(self.layer.txn)
 
 
-class BugImportScriptTestCase(unittest.TestCase):
+class BugImportScriptTestCase(TestCase):
     """Test that the driver script can be called, and does its job."""
+
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+        super(BugImportScriptTestCase, self).setUp()
+        self.tmpdir = self.makeTemporaryDirectory()
+        # We'll be running subprocesses that may change the database, so force
+        # the test system to treat it as dirty.
+        self.addCleanup(self.layer.force_dirty_database)
 
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-        # We ran a subprocess that may have changed the database, so
-        # force the test system to treat it as dirty.
-        self.layer.force_dirty_database()
+    def write_example_xml(self):
+        xml_file = os.path.join(self.tmpdir, 'bugs.xml')
+        with open(xml_file, 'w') as fp:
+            ns = "https://launchpad.net/xmlns/2006/bugs"
+            fp.write('<launchpad-bugs xmlns="%s">\n' % ns)
+            fp.write(sample_bug)
+            fp.write('</launchpad-bugs>\n')
+        return xml_file
 
     def test_bug_import_script(self):
-        # Test that the bug import script can do its job
-        xml_file = os.path.join(self.tmpdir, 'bugs.xml')
-        fp = open(xml_file, 'w')
-        fp.write('<launchpad-bugs '
-                 'xmlns="https://launchpad.net/xmlns/2006/bugs">\n')
-        fp.write(sample_bug)
-        fp.write('</launchpad-bugs>\n')
-        fp.close()
+        # Test that the bug import script can do its job.
+        script = os.path.join(config.root, 'scripts', 'bug-import.py')
         cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
-        # Run the bug import script as a subprocess:
-        proc = subprocess.Popen(
-            [sys.executable,
-             os.path.join(config.root, 'scripts', 'bug-import.py'),
-             '--product', 'netapplet',
-             '--cache', cache_filename,
-             xml_file],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        output, error = proc.communicate()
-        self.assertEqual(proc.returncode, 0)
+        stdout, stderr, returncode = run_process(
+            (script, '--product', 'netapplet', '--cache', cache_filename,
+             self.write_example_xml()))
+        self.addDetail("stdout", text_content(stdout))
+        self.addDetail("stderr", text_content(stderr))
+        self.assertEqual(0, returncode)
 
         # Find the imported bug number:
-        match = re.search(r'Creating Launchpad bug #(\d+)', error)
-        self.assertNotEqual(match, None)
+        match = re.search(r'Creating Launchpad bug #(\d+)', stderr)
+        self.assertIsNotNone(match)
         bug_id = int(match.group(1))
 
         # Abort transaction so we can see the result:
-        self.layer.txn.abort()
+        transaction.abort()
         bug = getUtility(IBugSet).get(bug_id)
-        self.assertEqual(bug.title, 'A test bug')
-        self.assertEqual(bug.bugtasks[0].product.name, 'netapplet')
+        self.assertEqual('A test bug', bug.title)
+        self.assertEqual('netapplet', bug.bugtasks[0].product.name)
+
+    def test_bug_import_script_in_testing_mode(self):
+        # Test that the bug import script works with --testing.
+        script = os.path.join(config.root, 'scripts', 'bug-import.py')
+        cache_filename = os.path.join(self.tmpdir, 'bug-map.pickle')
+        stdout, stderr, returncode = run_process(
+            (script, '--testing', '--cache', cache_filename,
+             self.write_example_xml()))
+        self.addDetail("stdout", text_content(stdout))
+        self.addDetail("stderr", text_content(stderr))
+        self.assertEqual(0, returncode)
+
+        # Find the product that was created:
+        match = re.search(r'Product ([^ ]+) created', stderr)
+        self.assertIsNotNone(match)
+        product_name = match.group(1)
+
+        # Find the imported bug number:
+        match = re.search(r'Creating Launchpad bug #(\d+)', stderr)
+        self.assertIsNotNone(match)
+        bug_id = int(match.group(1))
+
+        # Abort transaction so we can see the result:
+        transaction.abort()
+        bug = getUtility(IBugSet).get(bug_id)
+        self.assertEqual('A test bug', bug.title)
+        self.assertEqual(product_name, bug.bugtasks[0].product.name)
 
 
 class FakeResultSet:
@@ -1006,7 +1013,7 @@ class TestCheckwatchesMaster(CheckwatchesMaster):
             unmodified_remote_ids, server_time, self.bugtracker)
 
 
-class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
+class CheckwatchesErrorRecoveryTestCase(TestCase):
     """Test that errors in the bugwatch import process don't
     invalidate the entire run.
     """

@@ -14,17 +14,19 @@ from urllib2 import (
     HTTPError,
     urlopen,
     )
+
 from BeautifulSoup import BeautifulSoup
-from canonical.launchpad.scripts.logger import log as default_log
+import transaction
 from zope.component import getUtility
+
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,
     )
-from lp.bugs.model.bugtracker import (
-    BugTrackerComponent,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.model.bugtracker import BugTrackerComponent
+from lp.services.database import bulk
+from lp.services.database.lpstorm import IStore
+from lp.services.scripts.logger import log as default_log
 
 
 def dictFromCSV(line):
@@ -199,18 +201,15 @@ class BugzillaRemoteComponentFinder:
             # added to launchpad.  Record them for now.
             for component in product['components'].values():
                 components_to_add.append(
-                    "('%s', %d, 'True', 'False')" % (
-                        component['name'], lp_component_group.id))
+                    (component['name'], lp_component_group, True, False))
 
         if len(components_to_add) > 0:
-            sqltext = """
-            INSERT INTO BugTrackerComponent
-            (name, component_group, is_visible, is_custom)
-            VALUES %s""" % ",\n ".join(components_to_add)
-
             self.logger.debug("...Inserting components into database")
-            store = IStore(BugTrackerComponent)
-            store.execute(sqltext)
-            store.commit()
-            store.flush()
+            bulk.create(
+                (BugTrackerComponent.name,
+                 BugTrackerComponent.component_group,
+                 BugTrackerComponent.is_visible,
+                 BugTrackerComponent.is_custom),
+                components_to_add)
+            transaction.commit()
             self.logger.debug("...Done")

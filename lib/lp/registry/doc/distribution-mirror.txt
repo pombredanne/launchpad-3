@@ -5,7 +5,7 @@ to create a new mirror you should use the Distribution.newMirror method.
 
     >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distributionmirror import (
     ...     IDistributionMirrorSet,
@@ -146,7 +146,7 @@ We also have a property which returns all unofficial mirrors.
 
 It's possible to retrieve a mirror by its name:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distributionmirror import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
@@ -158,7 +158,7 @@ It's possible to retrieve a mirror by its name:
 Or by any of its URLs (HTTP, FTP or Rsync)
 First we'll have to add some of this URLs to sample data:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("mark@example.com")
     >>> example_mirror.ftp_base_url = 'ftp://localhost/example-ftp'
     >>> example_mirror.rsync_base_url = 'rsync://localhost/example-rsync'
@@ -369,7 +369,7 @@ up on the public mirror listings.
     ...
 
     # Enable the mirror again.
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> valid_mirror.enabled = True
 
 If we pass notify_owner=False to the disable() method, then we'll send a
@@ -800,7 +800,7 @@ First we import the classes required to test the view:
   >>> from zope.component import getMultiAdapter
   >>> from lp.registry.browser.distribution import (
   ...     DistributionMirrorsView)
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
 Create a view to test:
 
@@ -838,7 +838,7 @@ The mirror owner can change the owner to another user.
     ...     owner, speed, brazil, content, http_base_url='http://a.ab/')
 
 
-    >>> login_person(mirror.owner)
+    >>> ignored = login_person(mirror.owner)
     >>> mirror.owner = new_owner
     >>> print mirror.owner.name
     bear
@@ -855,7 +855,7 @@ bogus mirrors on their list of unapproved mirrors, so we allow admins
 
 Only mirrors which have never been probed can be deleted this way.
 
-    >>> login_person(cdimage_mirror.owner)
+    >>> ignored = login_person(cdimage_mirror.owner)
     >>> cdimage_mirror.destroySelf()
     Traceback (most recent call last):
     ...
@@ -896,7 +896,6 @@ tracked in Launchpad.
     ...     official_candidate=True)
     >>> de_archive_mirror.status = MirrorStatus.OFFICIAL
     >>> de_archive_prober_log = factory.makeMirrorProbeRecord(de_archive_mirror)
-    >>> logout()
 
 Normal users can access country_dns_mirror, can see if a mirror is eligible
 for the status, however, they may not change it:
@@ -909,7 +908,6 @@ for the status, however, they may not change it:
     ...
     Unauthorized: (<DistributionMirror at ...>, 'transitionToCountryMirror',
       'launchpad.Admin')
-    >>> logout()
 
 Mirror listing administrators may change the status however:
 
@@ -922,7 +920,6 @@ again:
     >>> de_archive_mirror.canTransitionToCountryMirror()
     False
     >>> de_archive_mirror.transitionToCountryMirror(True)
-    >>> logout()
 
 There cannot be multiple country mirrors of one type for one country:
 
@@ -966,7 +963,6 @@ Mirrors which have not been probed may not be marked as country mirrors:
     ...
     MirrorNotProbed: This mirror may not be set as a country mirror as it has
       not been probed.
-    >>> logout()
 
 Mirrors which are not official or do not have an HTTP URL may not be set as
 country mirrors:

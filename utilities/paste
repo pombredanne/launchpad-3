@@ -1,24 +1,26 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import _pythonpath
 
 import base64
+from cookielib import (
+    Cookie,
+    CookieJar,
+    )
 import httplib
+from optparse import OptionParser
 import os
 import pwd
 import sys
 import urllib
-import webbrowser
-from optparse import OptionParser
 from urlparse import urljoin
-from cookielib import Cookie, CookieJar
+import webbrowser
+
 from mechanize import HTTPRobotRulesProcessor
-
 from zope.testbrowser.browser import Browser
-
 
 # Should we be able to override any of these?
 AUTH_FILE = '~/.lp_auth_cookie'
@@ -129,7 +131,7 @@ def main():
         cookiejar.set_cookie(lp_cookie)
         browser.mech_browser.set_cookiejar(cookiejar)
 
-    # Remove the the check for robots.txt, since the one on
+    # Remove the check for robots.txt, since the one on
     # pastebin.ubuntu.com doesn't allow us to open the page. We're not
     # really a robot.
     browser.mech_browser.handlers = [

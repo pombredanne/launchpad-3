@@ -1,4 +1,5 @@
-= PPA package deletion =
+PPA package deletion
+====================
 
 The PPA 'Delete packages' view allows users to delete packages form
 their PPAs via the web UI. Only the owner of the PPA and Launchpad
@@ -37,7 +38,7 @@ Only Celso and Foo bar can access the 'Delete packages' page for
 Celso's PPA.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> cprov_browser.getLink('Delete packages').click()
@@ -111,7 +112,7 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     iceweasel 1.0 in breezy-autotest
     Deletion comment: None
 
@@ -155,7 +156,7 @@ entirely readable content.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO &lt;where is my XSS ?&gt; IT
 
@@ -242,7 +243,7 @@ Multiple packages can be deleted in one single batch.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
@@ -307,7 +308,8 @@ message is presented.
     ...
     This PPA does not contain any source packages published.
 
-== Removing source partially deleted ==
+Removing source partially deleted
+---------------------------------
 
 The 'delete-packages' interface should allow users to enforce removal
 of packages partially removed or superseded. It happens, for instance,
@@ -323,9 +325,9 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
 
     >>> from zope.component import getUtility
 
-    >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.database.constants import UTC_NOW
+    >>> from lp.testing import login, logout
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.enums import PackagePublishingStatus
@@ -459,7 +461,7 @@ source and binaries are marked as DELETED and the corresponding
     >>> messages = get_feedback_messages(user_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by No Privileges Person request:
+    Source and binaries deleted by No Privileges Person:
     foo 1.0 in hoary
     Deletion comment: Deletion of a number of base pairs that is ...
 
@@ -470,7 +472,7 @@ section is omitted, however the source and binary files can be
 downloaded from librarian.
 
 Please note also how the deletion comment is diplayed in its entirety as
-opposed to being truncated after the fisrt 20 characters.
+opposed to being truncated after the first 20 characters.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/~no-priv/+archive/ppa/+packages')
@@ -488,7 +490,8 @@ opposed to being truncated after the fisrt 20 characters.
     >>> print extract_text(anon_browser.contents)
     Publishing details
     Deleted ... ago by No Privileges Person
-    Deletion of a number of base pairs that is not evenly divisible by three will lead to a frameshift mutation.
+    Deletion of a number of base pairs that is not evenly divisible by three
+    will lead to a frameshift mutation.
     Changelog
     Builds
       i386
@@ -511,12 +514,11 @@ Remove the just deleted publication from disk setting its
     >>> deleted_pub.dateremoved = deleted_pub.datecreated
     >>> logout()
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-Now, not only the 'Removed from disk' notice is rendered inside the
-expandable area, but also the message mentioned pointing to the file
-links at the end of the section.
+Now the 'Removed from disk' notice is rendered inside the expandable
+area.
 
     >>> user_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
@@ -530,7 +532,6 @@ links at the end of the section.
     Removed from disk ... ago.
     Deleted ... ago by No Privileges Person
     Deletion of a number of base pairs that is not evenly divisible by ...
-    Removed files can still be downloaded from the Librarian; see below.
     Changelog
     Builds
       i386

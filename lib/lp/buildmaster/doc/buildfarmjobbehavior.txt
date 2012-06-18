@@ -65,7 +65,7 @@ finds itself with a binary package build behavior which defines binary-build
 specific information.
 
     >>> from lp.buildmaster.model.builder import Builder
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     >>> bob = store.find(Builder, Builder.name == 'bob').one()

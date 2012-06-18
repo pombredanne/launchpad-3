@@ -7,18 +7,17 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.bugs.browser.bug import BugContextMenu
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.services.features import get_relevant_feature_controller
+from lp.services.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     feature_flags,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -78,4 +77,4 @@ class TestBugContextMenu(TestCaseWithFactory):
                 view = create_initialized_view(
                     self.bug, name="+portlet-subscription", request=request)
                 html = view.render()
-        self.assertTrue('class="sprite maybe mute-help"' in html)
+        self.assertTrue('class="sprite maybe action-icon mute-help"' in html)

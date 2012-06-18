@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -14,9 +14,6 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesdifference import (
@@ -24,6 +21,8 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -53,6 +52,7 @@ from lp.soyuz.scripts.initialize_distroseries import (
     InitializeDistroSeries,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class InitializationHelperTestCase(TestCaseWithFactory):
@@ -156,9 +156,13 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             distroseries=distroseries,
             sourcepackagename=spn,
             pocket=PackagePublishingPocket.RELEASE)
-        packageset = getUtility(IPackagesetSet).new(
-            packageset_name, packageset_name, distroseries.owner,
-            distroseries=distroseries)
+        try:
+            packageset = getUtility(IPackagesetSet).getByName(
+                packageset_name, distroseries=distroseries)
+        except NoSuchPackageSet:
+            packageset = getUtility(IPackagesetSet).new(
+                packageset_name, packageset_name, distroseries.owner,
+                distroseries=distroseries)
         packageset.addSources(package_name)
         if create_build:
             source.createMissingBuilds()
@@ -686,6 +690,48 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
             pub_sources)
 
+    def test_copying_packagesets_no_duplication(self):
+        # Copying packagesets only copies the packageset from the most
+        # recent series, rather than merging those from all series.
+        previous_parent, _ = self.setupParent()
+        parent = self._fullInitialize([previous_parent])
+        self.factory.makeSourcePackagePublishingHistory(distroseries=parent)
+        p1, parent_packageset, _ = self.createPackageInPackageset(
+            parent, u"p1", u"packageset")
+        uploader1 = self.factory.makePerson()
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            parent.main_archive, uploader1, parent_packageset)
+        child = self._fullInitialize(
+            [previous_parent], previous_series=parent,
+            distribution=parent.distribution)
+        # Make sure the child's packageset has disjoint packages and
+        # permissions.
+        p2, child_packageset, _ = self.createPackageInPackageset(
+            child, u"p2", u"packageset")
+        child_packageset.removeSources([u"p1"])
+        uploader2 = self.factory.makePerson()
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            child.main_archive, uploader2, child_packageset)
+        getUtility(IArchivePermissionSet).deletePackagesetUploader(
+            parent.main_archive, uploader1, child_packageset)
+        grandchild = self._fullInitialize(
+            [previous_parent], previous_series=child,
+            distribution=parent.distribution)
+        grandchild_packageset = getUtility(IPackagesetSet).getByName(
+            parent_packageset.name, distroseries=grandchild)
+        # The copied grandchild set has sources matching the child.
+        self.assertContentEqual(
+            child_packageset.getSourcesIncluded(),
+            grandchild_packageset.getSourcesIncluded())
+        # It also has permissions matching the child.
+        perms2 = getUtility(IArchivePermissionSet).uploadersForPackageset(
+            parent.main_archive, child_packageset)
+        perms3 = getUtility(IArchivePermissionSet).uploadersForPackageset(
+            parent.main_archive, grandchild_packageset)
+        self.assertContentEqual(
+            [perm.person.name for perm in perms2],
+            [perm.person.name for perm in perms3])
+
     def test_intra_distro_perm_copying(self):
         # If child.distribution equals parent.distribution, we also
         # copy the archivepermissions.
@@ -853,39 +899,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(len(das), 1)
         self.assertEqual(
             das[0].architecturetag, self.parent_das.architecturetag)
-
-    def test_script(self):
-        # Do an end-to-end test using the command-line tool.
-        self.parent, self.parent_das = self.setupParent()
-        uploader = self.factory.makePerson()
-        test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', self.parent.owner,
-            distroseries=self.parent)
-        test1.addSources('udev')
-        getUtility(IArchivePermissionSet).newPackagesetUploader(
-            self.parent.main_archive, uploader, test1)
-        child = self.factory.makeDistroSeries(previous_series=self.parent)
-        # Create an initialized series in the distribution.
-        other_series = self.factory.makeDistroSeries(
-            distribution=child.parent)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=other_series)
-        transaction.commit()
-        ifp = os.path.join(
-            config.root, 'scripts', 'ftpmaster-tools',
-            'initialize-from-parent.py')
-        process = subprocess.Popen(
-            [sys.executable, ifp, "-vv", "-d", child.parent.name,
-            child.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        self.addDetail("stdout", Content(UTF8_TEXT, lambda: stdout))
-        self.addDetail("stderr", Content(UTF8_TEXT, lambda: stderr))
-        self.assertEqual(process.returncode, 0)
-        self.assertTrue(
-            "DEBUG   Committing transaction." in stderr.split('\n'))
-        transaction.commit()
-        self.assertDistroSeriesInitializedCorrectly(
-            child, self.parent, self.parent_das)
 
     def test_is_initialized(self):
         # At the end of the initialization, the distroseriesparent is marked

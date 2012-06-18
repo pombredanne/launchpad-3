@@ -7,15 +7,6 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.testing.pages import setupBrowser
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    PageTestLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.packaging import (
@@ -24,8 +15,16 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.testing import TestCaseWithFactory
-from lp.testing.memcache import MemcacheTestCase
+from lp.testing import (
+    login,
+    logout,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    PageTestLayer,
+    )
+from lp.testing.pages import setupBrowser
 from lp.testing.views import create_initialized_view
 
 
@@ -189,37 +188,3 @@ class TestBrowserDeletePackaging(TestCaseWithFactory):
             productseries=productseries,
             sourcepackagename=package_name,
             distroseries=distroseries))
-
-
-class TestDistroseriesPackagingMemcache(MemcacheTestCase):
-    """Tests distroseries packaging cache rules."""
-
-    def setUp(self):
-        super(TestDistroseriesPackagingMemcache, self).setUp()
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.hoary = ubuntu.getSeries('hoary')
-        self.observer = self.factory.makePerson()
-
-    def test_needs_packaging_memcache(self):
-        # Verify that the packages table is cached.
-        # Miss the cache on first render.
-        view = create_initialized_view(
-            self.hoary, name='+needs-packaging', principal=self.observer)
-        self.assertCacheMiss('<table id="packages"', view.render())
-        # Hit the cache on the second render.
-        view = create_initialized_view(
-            self.hoary, name='+needs-packaging', principal=self.observer)
-        self.assertCacheHit(
-            '<table id="packages"', 'public, 30 minute', view.render())
-
-    def test_packaging_memcache(self):
-        # Verify that the packagings table is cached.
-        # Miss the cache on first render.
-        view = create_initialized_view(
-            self.hoary, name='+packaging', principal=self.observer)
-        self.assertCacheMiss('<table id="packagings"', view.render())
-        # Hit the cache on the second render.
-        view = create_initialized_view(
-            self.hoary, name='+packaging', principal=self.observer)
-        self.assertCacheHit(
-            '<table id="packagings"', 'public, 30 minute', view.render())

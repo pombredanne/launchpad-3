@@ -8,7 +8,7 @@
       <a tal:replace="structure context/translationgroup/fmt:link"
          >translators</a>
     </tal:hasgroup>
-    with <a target="help" href="/+help/permissions-policies.html"
+    with <a target="help" href="/+help-translations/permissions-policies.html"
             tal:content="context/translationpermission/title">certain</a>
     permissions.
   </p>

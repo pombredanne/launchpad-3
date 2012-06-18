@@ -7,6 +7,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 import soupmatchers
 from testtools.matchers import (
@@ -20,15 +21,14 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import StormRangeFactoryError
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.build import BuildContextMenu
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -38,6 +38,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
@@ -55,6 +56,24 @@ class TestBuildViews(TestCaseWithFactory):
             build_view = getMultiAdapter(
                 (build, self.empty_request), name="+index")
             self.assertEquals(build_view.user_can_retry_build, expected)
+
+    def test_view_with_component(self):
+        # The component name is provided when the component is known.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        removeSecurityProxy(archive).require_virtualized = False
+        build = self.factory.makeBinaryPackageBuild(archive=archive)
+        view = create_initialized_view(build, name="+index")
+        self.assertEqual('multiverse', view.component_name)
+
+    def test_view_without_component(self):
+        # Production has some buggy builds without source publications.
+        # current_component used by the view returns None in that case.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        other_das = self.factory.makeDistroArchSeries()
+        build = spph.sourcepackagerelease.createBuild(
+            other_das, PackagePublishingPocket.RELEASE, spph.archive)
+        view = create_initialized_view(build, name="+index")
+        self.assertEqual('unknown', view.component_name)
 
     def test_build_menu_primary(self):
         # The menu presented in the build page depends on the targeted
@@ -106,7 +125,7 @@ class TestBuildViews(TestCaseWithFactory):
             (build, self.empty_request), name="+index")
         self.assertFalse(build_view.is_ppa)
         self.assertEquals(build_view.buildqueue, None)
-        self.assertEquals(build_view.component.name, 'multiverse')
+        self.assertEquals(build_view.component_name, 'multiverse')
         self.assertFalse(build.can_be_retried)
         self.assertFalse(build_view.user_can_retry_build)
 
@@ -405,3 +424,15 @@ class TestBuildViews(TestCaseWithFactory):
             self.assertThat(
                 test_range_factory,
                 Not(Raises(MatchesException(StormRangeFactoryError))))
+
+    def test_name_filter_with_storm_range_factory(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroArchSeries(distroseries=distroseries)
+        view = create_initialized_view(
+            distroseries.distribution, name="+builds",
+            form={
+                'build_state': 'built',
+                'build_text': 'foo',
+                'start': 75,
+                'memo': '["2012-01-01T01:01:01", 0]'})
+        view.setupBuildList()

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gina db handlers.
@@ -27,13 +27,6 @@ from sqlobject import (
     )
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
-    quote,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts import log
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile
@@ -48,6 +41,13 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.scripts import log
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
@@ -654,7 +654,7 @@ class SourcePackageHandler:
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,
             dsc_standards_version=src.standards_version,
-            dsc_binaries=" ".join(src.binaries),
+            dsc_binaries=", ".join(src.binaries),
             upload_archive=distroseries.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))

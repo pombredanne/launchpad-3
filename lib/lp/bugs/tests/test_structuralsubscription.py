@@ -13,11 +13,7 @@ from storm.store import (
 from testtools.matchers import StartsWith
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -31,8 +27,10 @@ from lp.bugs.model.bugsubscriptionfilter import (
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscribers,
     get_structural_subscription_targets,
+    get_structural_subscriptions,
     get_structural_subscriptions_for_bug,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.testing import (
     anonymous_logged_in,
     login_person,
@@ -40,6 +38,13 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.factory import is_security_proxied_or_harmless
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+
+
+RESULT_SETS = ResultSet, EmptyResultSet, DecoratedResultSet
 
 
 class TestStructuralSubscription(TestCaseWithFactory):
@@ -634,6 +639,99 @@ class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
         self.assertEqual(set([self_sub]), set(subscriptions))
 
 
+class TestGetStructuralSubscriptions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def make_product_with_bug(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        return product, bug
+
+    def test_get_structural_subscriptions_no_subscriptions(self):
+        # If there are no subscriptions for any of the bug's targets then no
+        # subscriptions will be returned by get_structural_subscriptions().
+        product, bug = self.make_product_with_bug()
+        subscriptions = get_structural_subscriptions(bug, None)
+        self.assertIsInstance(subscriptions, RESULT_SETS)
+        self.assertEqual([], list(subscriptions))
+
+    def test_get_structural_subscriptions_single_target(self):
+        # Subscriptions for any of the bug's targets are returned.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        subscription = product.addBugSubscription(subscriber, subscriber)
+        self.assertContentEqual(
+            [subscription], get_structural_subscriptions(bug, None))
+
+    def test_get_structural_subscriptions_multiple_targets(self):
+        # Subscriptions for any of the bug's targets are returned.
+        actor = self.factory.makePerson()
+        login_person(actor)
+
+        subscriber1 = self.factory.makePerson()
+        subscriber2 = self.factory.makePerson()
+
+        product1 = self.factory.makeProduct(owner=actor)
+        subscription1 = product1.addBugSubscription(subscriber1, subscriber1)
+        product2 = self.factory.makeProduct(owner=actor)
+        subscription2 = product2.addBugSubscription(subscriber2, subscriber2)
+
+        bug = self.factory.makeBug(product=product1)
+        bug.addTask(actor, product2)
+
+        subscriptions = get_structural_subscriptions(bug, None)
+        self.assertIsInstance(subscriptions, RESULT_SETS)
+        self.assertContentEqual(
+            [subscription1, subscription2], subscriptions)
+
+    def test_get_structural_subscriptions_multiple_targets_2(self):
+        # Only the first of multiple subscriptions for a person is returned
+        # when they have multiple matching subscriptions.
+        actor = self.factory.makePerson()
+        login_person(actor)
+
+        subscriber = self.factory.makePerson()
+        product1 = self.factory.makeProduct(owner=actor)
+        subscription1 = product1.addBugSubscription(subscriber, subscriber)
+        product2 = self.factory.makeProduct(owner=actor)
+        product2.addBugSubscription(subscriber, subscriber)
+
+        bug = self.factory.makeBug(product=product1)
+        bug.addTask(actor, product2)
+
+        subscriptions = get_structural_subscriptions(bug, None)
+        self.assertIsInstance(subscriptions, RESULT_SETS)
+        self.assertContentEqual([subscription1], subscriptions)
+
+    def test_get_structural_subscriptions_level(self):
+        # get_structural_subscriptions() respects the given level.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        subscription = product.addBugSubscription(subscriber, subscriber)
+        filter = subscription.bug_filters.one()
+        filter.bug_notification_level = BugNotificationLevel.METADATA
+        self.assertContentEqual(
+            [subscription], get_structural_subscriptions(
+                bug, BugNotificationLevel.METADATA))
+        self.assertContentEqual(
+            [], get_structural_subscriptions(
+                bug, BugNotificationLevel.COMMENTS))
+
+    def test_get_structural_subscriptions_exclude(self):
+        # Subscriptions for any of the given excluded subscribers are not
+        # returned.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        product.addBugSubscription(subscriber, subscriber)
+        self.assertContentEqual(
+            [], get_structural_subscriptions(
+                bug, None, exclude=[subscriber]))
+
+
 class TestGetStructuralSubscribers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -648,7 +746,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         # subscribers will be returned by get_structural_subscribers().
         product, bug = self.make_product_with_bug()
         subscribers = get_structural_subscribers(bug, None, None, None)
-        self.assertIsInstance(subscribers, (ResultSet, EmptyResultSet))
+        self.assertIsInstance(subscribers, RESULT_SETS)
         self.assertEqual([], list(subscribers))
 
     def test_getStructuralSubscribers_single_target(self):
@@ -678,7 +776,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         bug.addTask(actor, product2)
 
         subscribers = get_structural_subscribers(bug, None, None, None)
-        self.assertIsInstance(subscribers, ResultSet)
+        self.assertIsInstance(subscribers, RESULT_SETS)
         self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
 
     def test_getStructuralSubscribers_recipients(self):

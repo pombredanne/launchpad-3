@@ -4,18 +4,22 @@ Bug Lists on the Front Page
 On the bugs front page there is a list of the most recently reported
 and recently fixed bugs, across all products and distributions.
 
-To demonstrate this, a few fixed bugs must be created.
+To demonstrate this, a few fixed bugs must be created. date_closed isn't
+always set in old real data, so we create a bug without it set to
+confirm it doesn't show up.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.testing import login, logout
     >>> import transaction
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance,
     ...     BugTaskStatus,
     ...     )
     >>> login('foo.bar@canonical.com')
     >>> bigfixer = factory.makeProduct(name='bigfixer')
+    >>> bugs = []
     >>> for bug_x in range(1, 11):
     ...     summary = 'Summary for new bug %d' % bug_x
     ...     bug = factory.makeBug(title=summary, product=bigfixer)
@@ -23,6 +27,8 @@ To demonstrate this, a few fixed bugs must be created.
     ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     ...     bug.default_bugtask.transitionToImportance(
     ...         BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
+    ...     bugs.append(bug)
+    >>> removeSecurityProxy(bugs[7].default_bugtask).date_closed = None
     >>> transaction.commit()
     >>> logout()
 
@@ -76,7 +82,8 @@ The bugs front page also can be consulted for the list of fixed bugs.
     >>> fixed_bugs = find_tag_by_id(anon_browser.contents, 'fixed-bugs')
 
 The list of recently fixed bugs contains up to the last 5 bugs fixed
-across Launchpad.
+across Launchpad. The 8th new bug is not listed because it has a null
+date_closed.
 
     >>> for li in fixed_bugs('li'):
     ...     print_bugs_links(li)
@@ -89,14 +96,14 @@ across Launchpad.
     /bugs/...
     /bigfixer
     Bigfixer:
-             Bug #...: Summary for new bug 8
-    /bugs/...
-    /bigfixer
-    Bigfixer:
              Bug #...: Summary for new bug 7
     /bugs/...
     /bigfixer
     Bigfixer:
              Bug #...: Summary for new bug 6
+    /bugs/...
+    /bigfixer
+    Bigfixer:
+             Bug #...: Summary for new bug 5
     /bugs/...
     /bigfixer

@@ -25,12 +25,8 @@ Review account
 
 The review page has a link to the review account page.
 
-    >>> admin_browser.getLink('Administer').click()
-    >>> link = admin_browser.getLink(url='+reviewaccount')
-    >>> print link.text
-    edit[IMG] Review the user's account information
-
-    >>> link.click()
+    >>> admin_browser.open('http://launchpad.dev/~salgado')
+    >>> admin_browser.getLink('Administer Account').click()
     >>> print admin_browser.title
     Review person's account...
 
@@ -51,45 +47,6 @@ The page also contains a link back to the +review page.
     >>> print link.text
     edit[IMG] Review the user's Launchpad information
 
-The admin can update the user's account. Suspending an account will give a
-feedback message.
-
-    >>> admin_browser.getControl(
-    ...     'The status of this account').value = ['SUSPENDED']
-    >>> admin_browser.getControl(
-    ...     name='field.status_comment').value = 'Bad boy.'
-    >>> admin_browser.getControl('Change').click()
-
-    >>> print admin_browser.title
-    The one and only Salgado does not use Launchpad
-    >>> print get_feedback_messages(admin_browser.contents)[0]
-    The account "Guilherme Salgado" has been suspended.
-
-The admin can see the account information of a user that does not use
-Launchpad, and can change the account too. Note that all pages that belong
-to a suspended user have a 410 status code to ensure search engines remove
-them from their index.
-
-    >>> admin_browser.getLink('Administer').click()
-    >>> admin_browser.getLink(url='+reviewaccount').click()
-    >>> print admin_browser.title
-    Review person's account...
-
-    >>> control = admin_browser.getControl(name='field.status_comment')
-    >>> print control.value
-    Bad boy.
-
-    >>> control.value = 'Reinstated after he apologised'
-    >>> admin_browser.getControl(
-    ...     'The status of this account').value = ['ACTIVE']
-    >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.title
-    The one and only Salgado does not use Launchpad
-
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    The user is reactivated. He must use the "forgot password" to log in.
-
 
 Registry experts
 ----------------
@@ -97,9 +54,8 @@ Registry experts
 Registry experts can see the +review page, minus the displayname.
 
     >>> email = "expert@example.com"
-    >>> password = "test"
-    >>> expert= factory.makeRegistryExpert(email=email, password=password)
-    >>> expert_browser = setupBrowser(auth='Basic %s:%s' % (email, password))
+    >>> expert = factory.makeRegistryExpert(email=email)
+    >>> expert_browser = setupBrowser(auth='Basic %s:test' % email)
     >>> logout()
     >>> expert_browser.open('http://launchpad.dev/~no-priv/+review')
     >>> print expert_browser.title

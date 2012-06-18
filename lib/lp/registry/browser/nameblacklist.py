@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,21 +19,8 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.webapp import action
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
-from canonical.launchpad.webapp.menu import (
-    ApplicationMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    )
 from lp.app.browser.launchpadform import (
+    action,
     custom_widget,
     LaunchpadFormView,
     )
@@ -41,6 +28,19 @@ from lp.registry.browser import RegistryEditFormView
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
     )
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question views."""
@@ -56,28 +56,7 @@ from zope.schema.vocabulary import (
     )
 import zope.security
 
-from canonical.launchpad import _
-from canonical.launchpad.helpers import (
-    is_english_variant,
-    preferred_or_request_languages,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import (
     QuestionAction,
@@ -118,6 +97,25 @@ from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.personroles import PersonRoles
 from lp.services.propertycache import cachedproperty
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.services.webapp.menu import structured
+from lp.services.worlddata.helpers import (
+    is_english_variant,
+    preferred_or_request_languages,
+    )
 
 
 class QuestionLinksMixin:
@@ -1301,7 +1299,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
 
         Those found in `values` are marked as selected. The list of rendered
         values is controlled by the search query. The currently selected
-        value is always added the the set.
+        value is always added to the set.
         """
         rendered_items = []
         rendered_values = set()

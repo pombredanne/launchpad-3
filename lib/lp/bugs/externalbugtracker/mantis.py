@@ -19,7 +19,6 @@ from BeautifulSoup import (
     SoupStrainer,
     )
 
-from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
@@ -37,6 +36,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.services.database.isolation import ensure_no_transaction
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.url import urlparse
 
 
 class MantisLoginHandler(urllib2.HTTPRedirectHandler):
@@ -376,7 +376,7 @@ class Mantis(ExternalBugTracker):
         The Mantis bug view page uses HTML tables for both layout and
         representing tabular data, often within the same table. This
         method assumes that the key and value are on the same row,
-        adjacent to one another, with the key preceeding the value:
+        adjacent to one another, with the key preceding the value:
 
         ...
         <td>Key</td>
@@ -409,7 +409,7 @@ class Mantis(ExternalBugTracker):
         The Mantis bug view page uses HTML tables for both layout and
         representing tabular data, often within the same table. This
         method assumes that the key and value are within the same
-        column on adjacent rows, with the key preceeding the value:
+        column on adjacent rows, with the key preceding the value:
 
         ...
         <tr>...<td>Key</td>...</tr>

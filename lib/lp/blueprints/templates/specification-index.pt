@@ -260,27 +260,17 @@
           </div>
         </div>
 
-        <div id="feedback-requests">
-          <h3 tal:condition="not:context/feedbackrequests">Feedback requests</h3>
-
-          <div tal:replace="structure context/@@+portlet-feedbackqueue" />
-
-          <ul class="horizontal">
-            <li tal:define="link context_menu/givefeedback"
-                tal:condition="link/enabled">
-              <a tal:replace="structure link/fmt:link" />
-            </li>
-            <li tal:define="link context_menu/requestfeedback"
-                tal:condition="link/enabled">
-              <a tal:replace="structure link/fmt:link" />
-            </li>
-          </ul>
-        </div>
       </div>
     </div>
 
     <div class="portlet">
       <div class="wide" tal:content="structure view/whiteboard_widget" />
+    </div>
+
+    <div class="portlet">
+      <a href="/+help-blueprints/workitems-help.html" target="help"
+         class="sprite maybe action-icon">(?)</a>
+      <div class="wide" tal:content="structure view/workitems_text_widget" />
     </div>
 
     <div class="portlet">
@@ -320,7 +310,7 @@
     </div>
 
   <script type="text/javascript">
-    LPS.use('lp.anim', 'lp.ui', function(Y) {
+    LPJS.use('lp.anim', 'lp.ui', 'node', 'widget', function(Y) {
 
         Y.on('lp:context:implementation_status:changed', function(e) {
             var icon = Y.one('#informational-icon');
@@ -359,6 +349,25 @@
             var title = window.document.title;
             title = e.new_value + title.substring(e.old_value.length);
             window.document.title = title;
+        });
+
+        // Watch for the whiteboard for edit mode so we can show/hide a
+        // message to the user to make sure not to put work items in there.
+        var whiteboard_node = Y.one('#edit-whiteboard');
+        var whiteboard = Y.Widget.getByNode(whiteboard_node);
+        var notice_node = Y.Node.create('<p/>');
+        notice_node.set('id', 'wimessage');
+        notice_node.addClass('informational message');
+        notice_node.setContent('Please note that work items go in the separate Work Items input field below.');
+        whiteboard.editor.on('visibleChange', function (ev) {
+                var par = whiteboard_node.get('parentNode');
+                // If we're visible, show the message
+                if (ev.newVal) {
+                    par.insertBefore(notice_node, whiteboard_node);
+                } else {
+                    // Otherwise we need to remove the node
+                    par.removeChild(notice_node)
+                }
         });
 
       });

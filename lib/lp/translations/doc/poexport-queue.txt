@@ -340,7 +340,7 @@ are. This pofile has both kind of messages.
 To see what is being exported we need to retrieve the exported file from
 the librarian.
 
-    >>> from canonical.launchpad.testing.librarianhelpers import (
+    >>> from lp.testing.librarianhelpers import (
     ...     get_newest_librarian_file)
 
 Exporting this pofile yields both messages in the resulting file.

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -29,19 +29,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -53,7 +41,24 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
-from lp.services.propertycache import cachedproperty
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.services.database.lpstorm import IStore
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.browser.build import (
     BuildNavigationMixin,
     BuildRecordsView,
@@ -144,7 +149,22 @@ class BuilderSetView(LaunchpadView):
     @cachedproperty
     def builders(self):
         """All active builders"""
-        return list(self.context.getBuilders())
+        builders = list(self.context.getBuilders())
+
+        # Populate builders' currentjob cachedproperty.
+        queues = IStore(BuildQueue).find(
+            BuildQueue,
+            BuildQueue.builderID.is_in(
+                builder.id for builder in builders))
+        queue_builders = dict(
+            (queue.builderID, queue) for queue in queues)
+        for builder in builders:
+            cache = get_property_cache(builder)
+            cache.currentjob = queue_builders.get(builder.id, None)
+        # Prefetch the jobs' data.
+        BuildQueue.preloadSpecificJobData(queues)
+
+        return builders
 
     @property
     def number_of_registered_builders(self):
@@ -301,12 +321,11 @@ class BuilderSetAddView(LaunchpadFormView):
     label = "Register a new build machine"
 
     field_names = [
-        'name', 'title', 'description', 'processor', 'url',
-        'active', 'virtualized', 'vm_host', 'owner'
+        'name', 'title', 'processor', 'url', 'active', 'virtualized',
+        'vm_host', 'owner'
         ]
 
     custom_widget('owner', HiddenUserWidget)
-    custom_widget('description', TextAreaWidget, height=3)
     custom_widget('url', TextWidget, displayWidth=30)
     custom_widget('vm_host', TextWidget, displayWidth=30)
 
@@ -318,7 +337,6 @@ class BuilderSetAddView(LaunchpadFormView):
             url=data.get('url'),
             name=data.get('name'),
             title=data.get('title'),
-            description=data.get('description'),
             owner=data.get('owner'),
             active=data.get('active'),
             virtualized=data.get('virtualized'),
@@ -344,9 +362,8 @@ class BuilderEditView(LaunchpadEditFormView):
     schema = IBuilder
 
     field_names = [
-        'name', 'title', 'description', 'processor', 'url', 'manual',
-        'owner', 'virtualized', 'builderok', 'failnotes', 'vm_host',
-        'active',
+        'name', 'title', 'processor', 'url', 'manual', 'owner',
+        'virtualized', 'builderok', 'failnotes', 'vm_host', 'active',
         ]
 
     @action(_('Change'), name='update')
