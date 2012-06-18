@@ -109,8 +109,9 @@ def parse_commands(content, command_names):
     """
     commands = []
     for line in content.splitlines():
-        # All commands have to be indented.
+        # Capitalization gets ignored
         line = line.lower()
+        # All commands have to be indented.
         if line.startswith(' ') or line.startswith('\t'):
             command_string = line.strip()
             if command_string == 'done':
