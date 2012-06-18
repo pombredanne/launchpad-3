@@ -56,6 +56,13 @@ class TestParseCommands(TestCase):
             [('command', ['arg1', 'arg2'])],
             parse_commands(' command arg1 arg2', ['command']))
 
+    def test_parse_commands_args_uppercase(self):
+        """Commands and args containing uppercase letters are converted to
+        lowercase."""
+        self.assertEqual(
+            [('command', ['arg1', 'arg2'])],
+            parse_commands(' comMand Arg1 aRg2', ['command']))
+
     def test_parse_commands_args_quoted(self):
         """Commands indented with spaces are recognized."""
         self.assertEqual(
