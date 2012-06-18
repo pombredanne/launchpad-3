@@ -705,7 +705,8 @@ forth parameter:
 
     >>> nl_phrase_search(
     ...     'firefox gets very slow on flickr', Question,
-    ...     "Question.product = %s AND Product.active = 't'" % firefox_product.id,
+    ...     "Question.product = %s AND Product.active = 't'"
+    ...     % firefox_product.id,
     ...     ['Product'], fast_enabled=False)
     u'slow|flickr'
 
