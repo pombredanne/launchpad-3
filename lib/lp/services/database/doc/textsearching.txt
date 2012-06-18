@@ -332,9 +332,14 @@ Treatment of characters that are used as operators in to_tsquery():
 Email addresses are retained as a whole, both by to_tsvector() and by
 ftq().
 
-    >>> ftq('foo@bar.com')
-    foo@bar.com <=> 'foo@bar.com'
+    >>> print search_same('foo@bar.com')
+    FTI data: 'foo@bar.com':1 query: 'foo@bar.com' match: True
 
+
+File names are retained as a whole.
+
+    >>> print search_same('foo-bar.txt')
+    FTI data: 'foo-bar.txt':1 query: 'foo-bar.txt' match: True
 
 Some punctuation we pass through to tsearch2 for it to handle.
 NB. This gets stemmed, see below.
