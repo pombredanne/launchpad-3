@@ -57,7 +57,7 @@
         <tbody>
           <tr>
             <td>
-              <span class="sprite arrowRight">&nbsp;</span>
+              <span class="sprite arrowRight"></span>
               <span tal:replace="num_hidden">42</span> comments hidden
               <span id="more-comments-spinner" class="hidden">
                 Loading more comments
@@ -85,6 +85,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="comment-form">
+  <div>
   <div tal:define="comment_form nocall:context/@@+addcomment-form;
        dummy comment_form/initialize" id="add-comment-form">
     <div tal:condition="context/bug/duplicateof"
@@ -115,15 +116,18 @@
           tal:content="structure
           comment_form/actions/field.actions.save/render" />
     </form>
-    <script type="text/javascript">
-      LPJS.use('lp.app.comment', function(Y) {
-          var comment = new Y.lp.app.comment.Comment();
-          comment.render();
-      });
-    </script>
   </div>
   <tal:attachment-link
       define="add_attachment_link context_menu/addcomment"
       replace="structure add_attachment_link/render" />
   </div>
+  <script type="text/javascript">
+    LPJS.use('lp.app.comment', function(Y) {
+        Y.on('domready', function(){
+            var comment = new Y.lp.app.comment.Comment();
+            comment.render();
+            }, window);
+    });
+  </script>
+</div>
 </tal:root>

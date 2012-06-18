@@ -404,7 +404,6 @@ will be automatically subscribed.
     Foo Bar
     Mark Shuttleworth
     Robert Collins
-    Ubuntu Team
 
 A private bug never has indirect subscribers. Let's add an indirect subscriber
 to show that they still aren't included in the indirect subscriptions.
@@ -429,19 +428,20 @@ any subscribers not converted to direct subscribers.
     Foo Bar
     Mark Shuttleworth
     Robert Collins
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     Martin Pitt
     No Privileges Person
     Sample Person
     Scott James Remnant
+    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Martin Pitt
     No Privileges Person
     Sample Person
     Scott James Remnant
+    Ubuntu Team
 
 To find out which email addresses should receive a notification email on
 a bug, and why, IBug.getBugNotificationRecipients() assembles an
@@ -457,7 +457,7 @@ You can query for the addresses and reasons:
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
-     ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
+     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 If IBug.getBugNotificationRecipients() is passed a  BugNotificationLevel
@@ -471,7 +471,7 @@ notification level or higher will be returned.
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
-     ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
+     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 When Sample Person is unsubscribed from linux_source_bug, he is no
@@ -486,7 +486,7 @@ the COMMENTS level...
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
-     ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
+     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 ...but remains included for the level LIFECYCLE.
@@ -500,7 +500,7 @@ the COMMENTS level...
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
-     ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
+     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 To find out if someone is already directly subscribed to a bug, call

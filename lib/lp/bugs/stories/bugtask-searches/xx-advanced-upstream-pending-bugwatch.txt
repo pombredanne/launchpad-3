@@ -28,7 +28,7 @@ product. He does not provide bug watch information.
 
     >>> browser.getLink('Also affects project').click()
     >>> browser.getControl(
-    ...     'I just want to register that it is upstream').selected = True
+    ...     'I want to add this upstream project').selected = True
     >>> browser.getControl('Add to Bug Report').click()
     >>> browser.title
     'Bug #... : Bugs : alsa-utils'

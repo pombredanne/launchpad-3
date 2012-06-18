@@ -158,20 +158,15 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
             utility._oops_datedir_repo.root)
-        # Some external processes may use another config section to
-        # provide the error log configuration.
+        # Some external processes may extend the reporter/prefix with
+        # extra information.
         utility.configure(section_name='branchscanner')
-        self.assertEqual(config.branchscanner.oops_prefix,
-            utility.oops_prefix)
-        self.assertEqual(config.branchscanner.error_dir,
-            utility._oops_datedir_repo.root)
+        self.assertEqual('T-branchscanner', utility.oops_prefix)
 
         # The default error section can be restored.
         utility.configure()
         self.assertEqual(config.error_reports.oops_prefix,
             utility.oops_prefix)
-        self.assertEqual(config.error_reports.error_dir,
-            utility._oops_datedir_repo.root)
 
         # We should have had three publishers setup:
         oops_config = utility._oops_config

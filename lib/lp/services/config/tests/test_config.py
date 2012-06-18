@@ -84,6 +84,9 @@ class TestLaunchpadConfig(unittest.TestCase):
     def test_iter(self):
         # iter(config) returns an iterator of sections.
         config = lp.services.config.config
+        # Reload the config if needed: without this call,
+        # `config._config` can be None (see bug 987904).
+        config._getConfig()
         sections = set(config._config)
         self.assertEqual(sections, set(config))
 

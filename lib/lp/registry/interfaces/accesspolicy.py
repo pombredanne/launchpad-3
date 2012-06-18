@@ -33,6 +33,8 @@ class IAccessArtifact(Interface):
 
     id = Attribute("ID")
     concrete_artifact = Attribute("Concrete artifact")
+    bug_id = Attribute("bug_id")
+    branch_id = Attribute("branch_id")
 
 
 class IAccessArtifactGrant(Interface):
@@ -157,6 +159,13 @@ class IAccessPolicyArtifactSource(Interface):
             pairs.
         """
 
+    def delete(links):
+        """Delete the specified `IAccessPolicyArtifacts`s.
+
+        :param links: a collection of (`IAccessArtifact`, `IAccessPolicy`)
+            pairs.
+        """
+
     def findByArtifact(artifacts):
         """Return all `IAccessPolicyArtifact` objects for the artifacts."""
 
@@ -241,16 +250,20 @@ class IAccessPolicyGrantFlatSource(Interface):
         :param policies: a collection of `IAccesPolicy`s.
         :param grantees: if not None, the result only includes people in the
             specified list of grantees.
-        :return: a collection of (`IPerson`, `IAccessPolicy`, permission)
+        :return: a collection of
+            (`IPerson`, `IAccessPolicy`, permission, shared_artifact_types)
             where permission is a SharingPermission enum value.
             ALL means the person has an access policy grant and can see all
             artifacts for the associated pillar.
             SOME means the person only has specified access artifact grants.
+            shared_artifact_types contains the information_types for which the
+            user has been granted access for one or more artifacts of that
+            type.
         """
 
     def findArtifactsByGrantee(grantee, policies):
         """Find the `IAccessArtifact`s for grantee and policies.
 
         :param grantee: the access artifact grantee.
-        :param policies: a collection of `IAccesPolicy`s.
+        :param policies: a collection of `IAccessPolicy`s.
         """

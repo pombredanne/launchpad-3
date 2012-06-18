@@ -268,8 +268,8 @@ class LicenseWidget(CheckBoxMatrixWidget):
     """A CheckBox widget with a custom template.
 
     The allow_pending_license is provided so that $product/+edit
-    can display radio buttons to show that the license field is
-    optional for pre-existing products that have never had a license set.
+    can display radio buttons to show that the licence field is
+    optional for pre-existing products that have never had a licence set.
     """
     template = ViewPageTemplateFile('templates/license.pt')
     allow_pending_license = False
@@ -311,7 +311,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def __init__(self, field, vocabulary, request):
         # pylint: disable-msg=E1002
         super(LicenseWidget, self).__init__(field, vocabulary, request)
-        # We want to put the license_info widget inside the licenses widget's
+        # We want to put the license_info widget inside the licences widget's
         # HTML, for better alignment and JavaScript dynamism.  This is
         # accomplished by ghosting the form's license_info widget (see
         # lp/registry/browser/product.py and the GhostWidget implementation
@@ -331,9 +331,9 @@ class LicenseWidget(CheckBoxMatrixWidget):
             context=field.context)
         self.source_package_release = None
         # These will get filled in by _categorize().  They are the number of
-        # selected licenses in the category.  The actual count doesn't matter,
+        # selected licences in the category.  The actual count doesn't matter,
         # since if it's greater than 0 it will start opened.  NOte that we
-        # always want the recommended licenses to be opened, so we initialize
+        # always want the recommended licences to be opened, so we initialize
         # its value to 1.
         self.recommended_count = 1
         self.more_count = 0
@@ -343,7 +343,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def textForValue(self, term):
         """See `ItemsWidgetBase`."""
         # This will return just the DBItem's text.  We want to wrap that text
-        # in the URL to the license, which is stored in the DBItem's
+        # in the URL to the licence, which is stored in the DBItem's
         # description.
         # pylint: disable-msg=E1002
         value = super(LicenseWidget, self).textForValue(term)
@@ -351,8 +351,8 @@ class LicenseWidget(CheckBoxMatrixWidget):
             return value
         else:
             return structured(
-                '%s&nbsp;<a href="%s" class="sprite external-link">'
-                '<span class="invisible-link">view license</span></a>'
+                '%s&nbsp;<a href="%s" class="sprite external-link action-icon">'
+                'view licence</a>'
                 % (value, term.value.url))
 
     def renderItem(self, index, text, value, name, cssClass):
@@ -380,7 +380,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         if self.items_by_category is None:
             self.items_by_category = {}
         # When allow_pending_license is set, we'll see a radio button labeled
-        # "I haven't specified the license yet".  In that case, do not show
+        # "I haven't specified the licence yet".  In that case, do not show
         # the "I don't know" option.
         if self.allow_pending_license and value == 'DONT_KNOW':
             return

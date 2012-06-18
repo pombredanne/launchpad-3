@@ -56,6 +56,10 @@ from lp.code.model.codeimport import CodeImport
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.registry.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
@@ -71,7 +75,10 @@ from lp.services.database.bulk import (
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import quote
+from lp.services.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.interfaces import (
@@ -381,7 +388,7 @@ class GenericBranchCollection:
         scope_tables = [Branch] + self._tables.values()
         scope_expressions = self._branch_filter_expressions
         select = self.store.using(*scope_tables).find(
-            (Branch.id, Branch.transitively_private, Branch.ownerID),
+            (Branch.id, Branch.information_type, Branch.ownerID),
             *scope_expressions)
         branches_query = select._get_select()
         with_expr = [With("scope_branches", branches_query)
@@ -740,13 +747,18 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy([Branch.last_scanned > epoch], symmetric=False)
 
+    def withIds(self, *branch_ids):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.id.is_in(branch_ids)], symmetric=False)
+
 
 class AnonymousBranchCollection(GenericBranchCollection):
     """Branch collection that only shows public branches."""
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility."""
-        return [branch_class.transitively_private == False]
+        return [
+            branch_class.information_type.is_in(PUBLIC_INFORMATION_TYPES)]
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
@@ -758,7 +770,8 @@ class AnonymousBranchCollection(GenericBranchCollection):
         return [
             With("candidate_branches",
                 SQL("""select id from scope_branches
-                    where not transitively_private"""))
+                    where information_type in %s"""
+                % sqlvalues(PUBLIC_INFORMATION_TYPES)))
             ]
 
 
@@ -838,7 +851,8 @@ class VisibleBranchCollection(GenericBranchCollection):
             Select(Branch.id,
                    And(Branch.owner == TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.transitively_private == True)),
+                       Branch.information_type.is_in(
+                           PRIVATE_INFORMATION_TYPES))),
             # Private branches the person is subscribed to, either directly or
             # indirectly.
             Select(Branch.id,
@@ -846,7 +860,8 @@ class VisibleBranchCollection(GenericBranchCollection):
                        BranchSubscription.person ==
                        TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.transitively_private == True)))
+                       Branch.information_type.is_in(
+                           PRIVATE_INFORMATION_TYPES))))
         return private_branches
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
@@ -855,7 +870,8 @@ class VisibleBranchCollection(GenericBranchCollection):
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        public_branches = branch_class.transitively_private == False
+        public_branches = branch_class.information_type.is_in(
+            PUBLIC_INFORMATION_TYPES)
         if self._private_branch_ids is None:
             # Public only.
             return [public_branches]
@@ -876,24 +892,26 @@ class VisibleBranchCollection(GenericBranchCollection):
             # Really an anonymous sitation
             return [
                 With("candidate_branches",
-                    SQL("""
-                        select id from scope_branches
-                        where not transitively_private"""))
+                    SQL("""select id from scope_branches
+                        where information_type in %s"""
+                    % sqlvalues(PUBLIC_INFORMATION_TYPES)))
                 ]
         return [
             With("teams", self.store.find(TeamParticipation.teamID,
                 TeamParticipation.personID == person.id)._get_select()),
             With("private_branches", SQL("""
                 SELECT scope_branches.id FROM scope_branches WHERE
-                scope_branches.transitively_private AND (
+                scope_branches.information_type in %s AND (
                     (scope_branches.owner in (select team from teams) OR
                      EXISTS(SELECT true from BranchSubscription, teams WHERE
                          branchsubscription.branch = scope_branches.id AND
-                         branchsubscription.person = teams.team)))""")),
+                         branchsubscription.person = teams.team)))"""
+                % sqlvalues(PRIVATE_INFORMATION_TYPES))),
             With("candidate_branches", SQL("""
                 (SELECT id FROM private_branches) UNION
                 (select id FROM scope_branches
-                WHERE not transitively_private)"""))
+                WHERE information_type in %s)"""
+                % sqlvalues(PUBLIC_INFORMATION_TYPES)))
             ]
 
     def visibleByUser(self, person):

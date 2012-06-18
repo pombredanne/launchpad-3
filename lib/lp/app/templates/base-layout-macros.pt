@@ -151,9 +151,10 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script id="base-layout-load-scripts" type="text/javascript">
+        //<![CDATA[
         LPJS.use('base', 'node', 'console', 'event',
-            'oop', 'lp', 'lp.app.privacy',
-            'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
+            'oop', 'lp', 'lp.app.banner.privacy',
+            'lp.app.banner.beta', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
             'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
             'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
@@ -161,10 +162,10 @@
 
             Y.on("domready", function () {
                 if (Y.one(document.body).hasClass('private')) {
-                    Y.lp.app.privacy.setup_privacy_notification();
-                    Y.lp.app.privacy.display_privacy_notification();
+                    banner = Y.lp.app.banner.privacy.getPrivacyBanner();
+                    banner.show();
                 }
-                Y.lp.app.beta_features.display_beta_notification();
+                Y.lp.app.banner.beta.show_beta_if_needed();
                 Y.lp.app.sorttable.SortTable.init();
                 Y.lp.app.inlinehelp.init_help();
                 Y.lp.activate_collapsibles();
@@ -184,6 +185,7 @@
                   window.location = e.new_value;
             });
         });
+        //]]>
     </script>
     <script id="base-helper-functions" type="text/javascript">
          //<![CDATA[

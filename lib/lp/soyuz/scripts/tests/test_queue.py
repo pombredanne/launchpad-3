@@ -28,6 +28,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -1084,9 +1085,10 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # we're testing.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
         archive_admin = self.factory.makePerson()
-        bug_task = self.factory.makeBugTask(
-            target=spr.sourcepackage, private=True)
-        bug = bug_task.bug
+        bug = self.factory.makeBug(
+            sourcepackagename=spr.sourcepackagename,
+            distribution=spr.upload_distroseries.distribution,
+            information_type=InformationType.USERDATA)
         changes = StringIO(changes_file_template % bug.id)
 
         with person_logged_in(archive_admin):
@@ -1097,7 +1099,8 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
 
         # Verify it was closed.
         with celebrity_logged_in("admin"):
-            self.assertEqual(bug_task.status, BugTaskStatus.FIXRELEASED)
+            self.assertEqual(
+                bug.default_bugtask.status, BugTaskStatus.FIXRELEASED)
 
 
 class TestQueueToolInJail(TestQueueBase, TestCase):

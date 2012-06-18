@@ -280,7 +280,7 @@ class PropertyFile:
                         # Comments must end always with a new line.
                         last_comment += '\n'
                     elif line.startswith(self.license_block_text):
-                        # It's a comment with a license notice, this
+                        # It's a comment with a licence notice, this
                         # comment can be ignored.
                         ignore_comment = True
                         # Jump the whole tag

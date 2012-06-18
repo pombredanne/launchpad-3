@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -118,6 +118,7 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.person import (
     IPerson,
+    IPersonEditRestricted,
     IPersonLimitedView,
     IPersonViewRestricted,
     ITeam,
@@ -309,7 +310,7 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 patch_reference_property(IPersonViewRestricted, 'archive', IArchive)
 patch_collection_property(IPersonViewRestricted, 'ppas', IArchive)
 patch_entry_return_type(IPersonLimitedView, 'getPPAByName', IArchive)
-patch_entry_return_type(IPersonViewRestricted, 'createPPA', IArchive)
+patch_entry_return_type(IPersonEditRestricted, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
@@ -370,6 +371,8 @@ patch_reference_property(
 patch_reference_property(
     ISourcePackagePublishingHistory, 'ancestor',
     ISourcePackagePublishingHistory)
+patch_reference_property(
+    ISourcePackagePublishingHistory, 'packageupload', IPackageUpload)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -394,9 +397,14 @@ patch_collection_return_type(
     IArchive, 'getQueueAdminsForComponent', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getComponentsForQueueAdmin', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getPocketsForUploader', IArchivePermission)
+patch_collection_return_type(
+    IArchive, 'getUploadersForPocket', IArchivePermission)
 patch_entry_return_type(IArchive, 'newPackageUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newPackagesetUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newComponentUploader', IArchivePermission)
+patch_entry_return_type(IArchive, 'newPocketUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
@@ -430,6 +438,12 @@ patch_plain_parameter_type(
     IArchive, '_checkUpload', 'distroseries', IDistroSeries)
 patch_choice_parameter_type(
     IArchive, '_checkUpload', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IArchive, 'getUploadersForPocket', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IArchive, 'newPocketUploader', 'pocket', PackagePublishingPocket)
+patch_choice_parameter_type(
+    IArchive, 'deletePocketUploader', 'pocket', PackagePublishingPocket)
 patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
@@ -470,8 +484,6 @@ patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
     IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
-patch_collection_return_type(
-    IDistribution, 'getCommercialPPAs', IArchive)
 patch_reference_property(
     IDistribution, 'main_archive', IArchive)
 IDistribution['all_distro_archives'].value_type.schema = IArchive
@@ -861,9 +873,9 @@ patch_entry_explicit_version(ICve, 'beta')
 
 # IDistribution
 patch_operations_explicit_version(
-    IDistribution, 'beta', "getArchive", "getCommercialPPAs",
-    "getCountryMirror", "getDevelopmentSeries", "getMirrorByName",
-    "getSeries", "getSourcePackage", "searchSourcePackages")
+    IDistribution, 'beta', "getArchive", "getCountryMirror",
+    "getDevelopmentSeries", "getMirrorByName", "getSeries",
+    "getSourcePackage", "searchSourcePackages")
 
 # IDistributionMirror
 patch_entry_explicit_version(IDistributionMirror, 'beta')

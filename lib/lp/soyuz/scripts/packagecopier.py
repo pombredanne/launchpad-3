@@ -533,7 +533,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
             overrides=None, send_email=False, strict_binaries=True,
             close_bugs=True, create_dsd_job=True,  announce_from_person=None,
-            sponsored=None):
+            sponsored=None, packageupload=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -579,7 +579,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         being sponsored for this copy. May be None, but if present will
         affect the "From:" address on notifications and the creator of the
         publishing record will be set to this person.
-
+    :param packageupload: The `IPackageUpload` that caused this publication
+        to be created.
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -661,7 +662,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
                 close_bugs_since_version=old_version, creator=creator,
-                sponsor=sponsor)
+                sponsor=sponsor, packageupload=packageupload)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
@@ -678,7 +679,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
                     close_bugs_since_version=None, creator=None,
-                    sponsor=None):
+                    sponsor=None, packageupload=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -706,6 +707,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         for bugs to close.  See `close_bugs_for_sourcepackagerelease`.
     :param creator: the requester `IPerson`.
     :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
+    :param packageupload: The `IPackageUpload` that caused this publication
+        to be created.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -736,7 +739,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             override = overrides[0]
         source_copy = source.copyTo(
             series, pocket, archive, override, create_dsd_job=create_dsd_job,
-            creator=creator, sponsor=sponsor)
+            creator=creator, sponsor=sponsor, packageupload=packageupload)
         if close_bugs:
             close_bugs_for_sourcepublication(
                 source_copy, close_bugs_since_version)

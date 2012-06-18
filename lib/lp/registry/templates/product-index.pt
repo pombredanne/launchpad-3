@@ -14,11 +14,6 @@
 
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
-    <noscript>
-      <style type="text/css">
-        div.collapsible, div.collapsed {display: block;}
-      </style>
-    </noscript>
     <tal:uses_launchpad_bugtracker
        condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <script type="text/javascript">
@@ -127,7 +122,7 @@
               </dl>
 
               <dl id="licences">
-                <dt>Licenses:</dt>
+                <dt>Licences:</dt>
                 <dd>
                   <tal:licenses repeat="license context/licenses">
                     <tal:license replace="license/title">GPL</tal:license><tal:comma
@@ -156,7 +151,7 @@
             <div id="project-admin-whiteboard" class="whiteboard"
               tal:condition="context/required:launchpad.Moderate">
               <div>
-                <strong>Whiteboard</strong>
+                <strong>Whiteboard</strong>&nbsp;
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
               </div>
               <tal:whiteboard replace="structure context/reviewer_whiteboard/fmt:text-to-html" />

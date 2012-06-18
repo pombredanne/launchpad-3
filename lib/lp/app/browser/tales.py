@@ -71,7 +71,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.features import getFeatureFlag
+from lp.services.utils import total_seconds
 from lp.services.webapp import (
     canonical_url,
     urlappend,
@@ -560,7 +560,7 @@ class ObjectFormatterAPI:
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
         'pagetitle': 'pagetitle',
-        'public-private-css': 'public_private_css',
+        'global-css': 'global_css',
         }
 
     def __init__(self, context):
@@ -659,22 +659,19 @@ class ObjectFormatterAPI:
             "No link implementation for %r, IPathAdapter implementation "
             "for %r." % (self, self._context))
 
-    def public_private_css(self):
-        """Return the CSS class that represents the object's privacy."""
-        # If a view is marked as private, the context doesn't matter. It will
-        # always be displayed as private.
+    def global_css(self):
+        css_classes = set([])
         view = self._context
-        private_view = getattr(view, 'private', False)
-        if private_view:
-            return 'private'
-
-        # If the view is not marked as private, privacy is determined by the
-        # view's context.
-        privacy = IPrivacy(getattr(view, 'context', None), None)
-        if privacy is not None and privacy.private:
-            return 'private'
+        private = getattr(view, 'private', False)
+        if private:
+            css_classes.add('private')
+            css_classes.add('global-notification-visible')
         else:
-            return 'public'
+            css_classes.add('public')
+        beta = getattr(view, 'beta_features', [])
+        if beta != []:
+            css_classes.add('global-notification-visible')
+        return ' '.join(list(css_classes))
 
     def _getSaneBreadcrumbDetail(self, breadcrumb):
         text = breadcrumb.detail
@@ -885,9 +882,7 @@ class ObjectImageDisplayAPI:
             icon = 'yes'
         else:
             icon = 'no'
-        markup = (
-            '<span class="sprite %(icon)s">&nbsp;'
-            '<span class="invisible-link">%(icon)s</span></span>')
+        markup = '<span class="sprite %(icon)s action-icon">%(icon)s</span>'
         return markup % dict(icon=icon)
 
 
@@ -909,10 +904,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
+        '<span alt="%s" title="%s" class="%s"></span>')
 
     linked_icon_template = (
-        '<a href="%s" alt="%s" title="%s" class="%s">&nbsp;</a>')
+        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
@@ -1320,13 +1315,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
     def _report_visibility_leak(self):
-        if bool(getFeatureFlag('disclosure.log_private_team_leaks.enabled')):
-            request = get_current_browser_request()
-            try:
-                raise MixedVisibilityError()
-            except MixedVisibilityError:
-                getUtility(IErrorReportingUtility).raising(
-                    sys.exc_info(), request)
+        request = get_current_browser_request()
+        try:
+            raise MixedVisibilityError()
+        except MixedVisibilityError:
+            getUtility(IErrorReportingUtility).raising(
+                sys.exc_info(), request)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -2312,11 +2306,7 @@ class DurationFormatterAPI:
         # a useful name. It's also unlikely that these numbers will be
         # changed.
 
-        # Calculate the total number of seconds in the duration,
-        # including the decimal part.
-        seconds = self._duration.days * (3600 * 24)
-        seconds += self._duration.seconds
-        seconds += (float(self._duration.microseconds) / 10 ** 6)
+        seconds = total_seconds(self._duration)
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
@@ -2415,10 +2405,7 @@ class DurationFormatterAPI:
         return "%d weeks" % weeks
 
     def millisecondduration(self):
-        return str(
-            (self._duration.days * 24 * 3600
-             + self._duration.seconds * 1000
-             + self._duration.microseconds // 1000)) + 'ms'
+        return '%sms' % (total_seconds(self._duration) * 1000,)
 
 
 class LinkFormatterAPI(ObjectFormatterAPI):

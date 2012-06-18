@@ -17,7 +17,6 @@ __all__ = [
     'BranchMergeProposalJobSource',
     'BranchMergeProposalJobType',
     'CodeReviewCommentEmailJob',
-    'CreateMergeProposalJob',
     'GenerateIncrementalDiffJob',
     'MergeProposalNeedsReviewEmailJob',
     'MergeProposalUpdatedEmailJob',
@@ -30,7 +29,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from email.utils import parseaddr
 
 from lazr.delegates import delegates
 from lazr.enum import (
@@ -69,8 +67,6 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     ICodeReviewCommentEmailJob,
     ICodeReviewCommentEmailJobSource,
-    ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource,
     IGenerateIncrementalDiffJob,
     IGenerateIncrementalDiffJobSource,
     IMergeProposalNeedsReviewEmailJob,
@@ -89,10 +85,7 @@ from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff
 from lp.codehosting.bzrutils import server
-from lp.codehosting.vfs import (
-    get_ro_server,
-    get_rw_server,
-    )
+from lp.codehosting.vfs import get_ro_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
@@ -107,16 +100,9 @@ from lp.services.job.runner import (
     BaseRunnableJobSource,
     )
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.messages.interfaces.message import IMessageJob
-from lp.services.messages.model.message import (
-    MessageJob,
-    MessageJobAction,
-    )
 from lp.services.webapp import errorlog
-from lp.services.webapp.interaction import setupInteraction
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
-    IPlacelessAuthUtility,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
@@ -401,83 +387,6 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         """Return a list of email-ids to notify about user errors."""
         registrant = self.branch_merge_proposal.registrant
         return format_address_for_person(registrant)
-
-
-class CreateMergeProposalJob(BaseRunnableJob):
-    """See `ICreateMergeProposalJob` and `ICreateMergeProposalJobSource`."""
-
-    classProvides(ICreateMergeProposalJobSource)
-
-    delegates(IMessageJob)
-
-    class_action = MessageJobAction.CREATE_MERGE_PROPOSAL
-
-    implements(ICreateMergeProposalJob)
-
-    def __init__(self, context):
-        """Create an instance of CreateMergeProposalJob.
-
-        :param context: a MessageJob.
-        """
-        self.context = context
-
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.context == other.context)
-
-    @classmethod
-    def create(klass, message_bytes):
-        """See `ICreateMergeProposalJobSource`."""
-        context = MessageJob(
-            message_bytes, MessageJobAction.CREATE_MERGE_PROPOSAL)
-        return klass(context)
-
-    @classmethod
-    def iterReady(klass):
-        """Iterate through all ready BranchMergeProposalJobs."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
-            (MessageJob),
-            And(MessageJob.action == klass.class_action,
-                MessageJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs)))
-        return (klass(job) for job in jobs)
-
-    def run(self):
-        """See `ICreateMergeProposalJob`."""
-        # Avoid circular import
-        from lp.code.mail.codehandler import CodeHandler
-        url = self.context.message_bytes.getURL()
-        with errorlog.globalErrorUtility.oopsMessage('Mail url: %r' % url):
-            message = self.getMessage()
-            # Since the message was checked as signed before it was saved in
-            # the Librarian, just create the principal from the sender and set
-            # up the interaction.
-            name, email_addr = parseaddr(message['From'])
-            authutil = getUtility(IPlacelessAuthUtility)
-            principal = authutil.getPrincipalByLogin(email_addr)
-            if principal is None:
-                raise AssertionError('No principal found for %s' % email_addr)
-            setupInteraction(principal, email_addr)
-
-            server = get_rw_server()
-            server.start_server()
-            try:
-                return CodeHandler().processMergeProposal(message)
-            finally:
-                server.stop_server()
-
-    def getOopsRecipients(self):
-        message = self.getMessage()
-        from_ = message['From']
-        if from_ is None:
-            return []
-        return [from_]
-
-    def getOperationDescription(self):
-        message = self.getMessage()
-        return ('creating a merge proposal from message with subject %s' %
-                message['Subject'])
 
 
 class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):

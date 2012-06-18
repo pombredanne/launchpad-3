@@ -127,6 +127,48 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         self.assertEqual(1, len(container.items))
         self.assertEqual(current_wi, container.items[0].actual_workitem)
 
+    def test_multiple_milestone_separation(self):
+        # A single blueprint with workitems targetted to multiple
+        # milestones is processed so that the same blueprint appears
+        # in both with only the relevant work items.
+        spec = self.factory.makeSpecification(
+            product=self.current_milestone.product,
+            assignee=self.team.teamowner)
+        current_workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec,
+            milestone=self.current_milestone)
+        future_workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=spec,
+            milestone=self.future_milestone)
+
+        workitems = getWorkItemsDueBefore(
+            self.team, self.future_milestone.dateexpected, user=None)
+
+        # Both milestone dates are present in the returned results.
+        self.assertContentEqual(
+            [self.current_milestone.dateexpected,
+             self.future_milestone.dateexpected],
+            workitems.keys())
+
+        # Current milestone date has a single specification
+        # with only the matching work item.
+        containers_current = workitems[self.current_milestone.dateexpected]
+        self.assertContentEqual(
+            [spec], [container.spec for container in containers_current])
+        self.assertContentEqual(
+            [current_workitem],
+            [item.actual_workitem for item in containers_current[0].items])
+
+        # Future milestone date has the same specification
+        # containing only the work item targetted to future.
+        containers_future = workitems[self.future_milestone.dateexpected]
+        self.assertContentEqual(
+            [spec],
+            [container.spec for container in containers_future])
+        self.assertContentEqual(
+            [future_workitem],
+            [item.actual_workitem for item in containers_future[0].items])
+
 
 class TestGenericWorkItem(TestCaseWithFactory):
 
@@ -163,15 +205,34 @@ class TestWorkItemContainer(TestCase):
 
     class MockWorkItem:
 
-        def __init__(self, is_complete):
+        def __init__(self, is_complete, is_postponed):
             self.is_complete = is_complete
 
-    def test_percent_done(self):
+            if is_postponed:
+                self.status = SpecificationWorkItemStatus.POSTPONED
+            else:
+                self.status = None
+
+    def test_percent_done_or_postponed(self):
         container = WorkItemContainer()
-        container.append(self.MockWorkItem(True))
-        container.append(self.MockWorkItem(False))
-        container.append(self.MockWorkItem(True))
-        self.assertEqual('67', container.percent_done)
+        container.append(self.MockWorkItem(True, False))
+        container.append(self.MockWorkItem(False, False))
+        container.append(self.MockWorkItem(False, True))
+        self.assertEqual('67', container.percent_done_or_postponed)
+
+    def test_has_incomplete_work(self):
+        # If there are incomplete work items,
+        # WorkItemContainer.has_incomplete_work will return True.
+        container = WorkItemContainer()
+        item = self.MockWorkItem(False, False)
+        container.append(item)
+        self.assertTrue(container.has_incomplete_work)
+        item.is_complete = True
+        self.assertFalse(container.has_incomplete_work)
+        item.status = SpecificationWorkItemStatus.POSTPONED
+        self.assertFalse(container.has_incomplete_work)
+        item.is_complete = False
+        self.assertFalse(container.has_incomplete_work)
 
 
 class TestPersonUpcomingWork(BrowserTestCase):
@@ -270,6 +331,9 @@ class TestPersonUpcomingWork(BrowserTestCase):
         spec2 = self.factory.makeSpecification(
             product=self.today_milestone.product,
             priority=SpecificationPriority.LOW)
+        spec3 = self.factory.makeSpecification(
+            product=self.today_milestone.product,
+            priority=SpecificationPriority.LOW)
         self.factory.makeSpecificationWorkItem(
             specification=spec1, assignee=self.team.teamowner,
             milestone=self.today_milestone,
@@ -278,6 +342,10 @@ class TestPersonUpcomingWork(BrowserTestCase):
             specification=spec2, assignee=self.team.teamowner,
             milestone=self.today_milestone,
             status=SpecificationWorkItemStatus.INPROGRESS)
+        self.factory.makeSpecificationWorkItem(
+            specification=spec3, assignee=self.team.teamowner,
+            milestone=self.today_milestone,
+            status=SpecificationWorkItemStatus.POSTPONED)
 
         browser = self.getViewBrowser(
             self.team, view_name='+upcomingwork', no_login=True)
@@ -289,8 +357,11 @@ class TestPersonUpcomingWork(BrowserTestCase):
             browser.contents, 'container_progressbar_0')
         container2_progressbar = find_tag_by_id(
             browser.contents, 'container_progressbar_1')
+        container3_progressbar = find_tag_by_id(
+            browser.contents, 'container_progressbar_2')
         self.assertEqual('100%', container1_progressbar.get('width'))
         self.assertEqual('0%', container2_progressbar.get('width'))
+        self.assertEqual('100%', container3_progressbar.get('width'))
 
     def test_basic_for_person(self):
         """Check that the page shows the bugs/work items assigned to a person.

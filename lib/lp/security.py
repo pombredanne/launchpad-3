@@ -12,11 +12,20 @@ __all__ = [
     ]
 
 from zope.component import (
-    getAdapter,
     getUtility,
     queryAdapter,
     )
 from zope.interface import Interface
+
+from storm.expr import (
+    Exists,
+    And,
+    Or,
+    Select,
+    SQL,
+    Union,
+    With,
+    )
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -42,9 +51,14 @@ from lp.blueprints.interfaces.specificationsubscription import (
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
+from lp.blueprints.model.specificationsubscription import (
+    SpecificationSubscription,
+    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
+from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -160,10 +174,9 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import quote
-from lp.services.features import getFeatureFlag
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
@@ -958,71 +971,39 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # For efficiency, we do not want to perform several
             # TeamParticipation joins and we only want to do the user visible
             # bug filtering once. We use a With statement for the team
-            # participation check. For the bug query, we first filter on team
-            # association (subscribed to, assigned to etc) and then on user
-            # visibility.
-
-            # The extra checks may be expensive so we'll use a feature flag.
-            extra_checks_enabled = bool(getFeatureFlag(
-                'disclosure.extra_private_team_LimitedView_security.enabled'))
-            if not extra_checks_enabled:
-                return False
+            # participation check.
 
             store = IStore(Person)
-            team_bugs_visible_select = """
-                SELECT bug_id FROM (
-                    -- The direct team bug subscriptions
-                    SELECT BugSubscription.bug as bug_id
-                    FROM BugSubscription
-                    WHERE BugSubscription.person IN
-                        (SELECT team FROM teams)
-                    UNION
-                    -- The bugs assigned to the team
-                    SELECT BugTask.bug as bug_id
-                    FROM BugTask
-                    WHERE BugTask.assignee IN (SELECT team FROM teams)
-                    ) as TeamBugs
-                """
-            user_private_bugs_visible_filter = get_bug_privacy_filter(
-                user.person, private_only=True)
+            user_bugs_visible_filter = get_bug_privacy_filter(user.person)
+            teams_select = Select(SQL('team'), tables="teams")
+            blueprint_subscription_sql = Select(
+                1,
+                tables=SpecificationSubscription,
+                where=SpecificationSubscription.personID.is_in(teams_select))
+            visible_bug_sql = Select(
+                1,
+                tables=(BugTaskFlat,),
+                where=And(
+                    user_bugs_visible_filter,
+                    Or(
+                        BugTaskFlat.bug_id.is_in(
+                            Select(
+                                BugSubscription.bug_id,
+                                tables=(BugSubscription,),
+                                where=BugSubscription.person_id.is_in(
+                                    teams_select))),
+                        BugTaskFlat.assignee_id.is_in(teams_select))))
+            bugs = Union(blueprint_subscription_sql, visible_bug_sql, all=True)
+            with_teams = With('teams',
+                    Select(
+                        TeamParticipation.teamID,
+                        where=TeamParticipation.personID == self.obj.id)),
 
-            # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY
-            query = """
-                SELECT TRUE WHERE
-                EXISTS (
-                    WITH teams AS (
-                        SELECT team from TeamParticipation
-                        WHERE person = %(personid)s
-                    )
-                    -- The team blueprint subscriptions
-                    SELECT 1
-                    FROM SpecificationSubscription
-                    WHERE SpecificationSubscription.person IN
-                        (SELECT team FROM teams)
-                    UNION ALL
-                    -- Find the bugs associated with the team and filter by
-                    -- those that are visible to the user.
-                    -- Public bugs are simple to check and always visible so
-                    -- do those first.
-                    %(team_bug_select)s
-                    WHERE bug_id in (
-                        SELECT Bug.id FROM Bug WHERE Bug.information_type IN
-                        (1, 2)
-                    )
-                    UNION ALL
-                    -- Now do the private bugs the user can see.
-                    %(team_bug_select)s
-                    WHERE bug_id in (
-                        SELECT Bug.id FROM Bug WHERE %(user_bug_filter)s
-                    )
-                )
-                """ % dict(
-                        personid=quote(self.obj.id),
-                        team_bug_select=team_bugs_visible_select,
-                        user_bug_filter=user_private_bugs_visible_filter)
-
-            rs = store.execute(query)
-            if rs.rowcount > 0:
+            rs = store.with_(with_teams).using(Person).find(
+                SQL("1"),
+                Exists(bugs)
+            )
+            if rs.any():
                 return True
         return False
 
@@ -1846,7 +1827,7 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         return auth_spr.checkUnauthenticated()
 
 
-class ViewBuildFarmJobOld(AuthorizationBase):
+class ViewBuildFarmJobOld(DelegatedAuthorization):
     """Permission to view an `IBuildFarmJobOld`.
 
     This permission is based entirely on permission to view the
@@ -1869,29 +1850,15 @@ class ViewBuildFarmJobOld(AuthorizationBase):
         else:
             return None
 
-    def _checkBuildPermission(self, user=None):
-        """Check access to `IPackageBuild` for this job."""
-        permission = getAdapter(
-            self.obj.build, IAuthorization, self.permission)
-        if user is None:
-            return permission.checkUnauthenticated()
-        else:
-            return permission.checkAuthenticated(user)
-
-    def _checkAccess(self, user=None):
-        """Unified access check for anonymous and authenticated users."""
+    def iter_objects(self):
         branch = self._getBranch()
-        if branch is not None and not branch.visibleByUser(user):
-            return False
-
         build = self._getBuild()
-        if build is not None and not self._checkBuildPermission(user):
-            return False
-
-        return True
-
-    checkAuthenticated = _checkAccess
-    checkUnauthenticated = _checkAccess
+        objects = []
+        if branch:
+            objects.append(branch)
+        if build:
+            objects.append(build)
+        return objects
 
 
 class SetQuestionCommentVisibility(AuthorizationBase):
@@ -2400,10 +2367,6 @@ class ViewArchive(AuthorizationBase):
             if archive_subs:
                 return True
 
-        # The software center agent can view commercial archives
-        if self.obj.commercial:
-            return user.in_software_center_agent
-
         return False
 
     def checkUnauthenticated(self):
@@ -2458,11 +2421,23 @@ class AppendArchive(AuthorizationBase):
             user.in_ubuntu_security):
             return True
 
-        # The software center agent can change commercial archives
-        if self.obj.commercial:
-            return user.in_software_center_agent
-
         return False
+
+
+class ModerateArchive(AuthorizationBase):
+    """Restrict changing the build score on archives.
+
+    Buildd admins can change this, as a site-wide resource that requires
+    arbitration, especially between distribution builds and builds in
+    non-virtualized PPAs.  Commercial admins can also change this since it
+    affects the relative priority of (private) PPAs.
+    """
+    permission = 'launchpad.Moderate'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        return (user.in_buildd_admin or user.in_commercial_admin or
+                user.in_admin)
 
 
 class ViewArchiveAuthToken(AuthorizationBase):
@@ -2702,6 +2677,11 @@ class EditPackageset(AuthorizationBase):
     def checkAuthenticated(self, user):
         """The owner of a package set can edit the object."""
         return user.isOwner(self.obj) or user.in_admin
+
+
+class ModeratePackageset(AdminByBuilddAdmin):
+    permission = 'launchpad.Moderate'
+    usedfor = IPackageset
 
 
 class EditPackagesetSet(AuthorizationBase):

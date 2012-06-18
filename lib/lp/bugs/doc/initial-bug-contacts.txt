@@ -143,7 +143,7 @@ subscriber to the new package is already subscribed to the bug:
     >>> old_state = Snapshot(
     ...        bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount, daf)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...        bug_one_in_ubuntu_firefox, old_state,
@@ -240,7 +240,7 @@ to None.
     >>> old_state = Snapshot(
     ...        bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu, daf)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...        bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
@@ -273,7 +273,7 @@ contact address. Let's add such a team as a subscriber.
     >>> old_state = Snapshot(
     ...        bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount, daf)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...        bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
@@ -322,7 +322,7 @@ Bar gets subscribed to the bug in the process:
 
     >>> old_state = Snapshot(bug_two_in_ubuntu, providing=IBugTask)
 
-    >>> bug_two_in_ubuntu.transitionToTarget(mozilla_firefox)
+    >>> bug_two_in_ubuntu.transitionToTarget(mozilla_firefox, daf)
 
     >>> product_changed = ObjectModifiedEvent(
     ...        bug_two_in_ubuntu, old_state, ["id", "title", "product"])

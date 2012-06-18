@@ -294,7 +294,7 @@ def get_email_notifications(bug_notifications):
         # being sent, so catch and log all exceptions.
         try:
             yield construct_email_notifications(batch)
-        except (KeyboardInterrupt, SystemExit):
+        except (KeyboardInterrupt, SystemExit, GeneratorExit):
             raise
         except:
             log.exception("Error while building email notifications.")

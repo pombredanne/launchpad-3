@@ -23,6 +23,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugsummary import BugSummary
+from lp.bugs.model.bugtasksearch import _process_order_by
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -31,20 +32,72 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.services.features.testing import FeatureFixture
+from lp.services.database.sqlbase import convert_storm_clause_to_string
 from lp.services.searchbuilder import (
     all,
     any,
     greater_than,
     )
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     person_logged_in,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+
+
+class TestProcessOrderBy(TestCase):
+
+    def assertOrderForParams(self, expected, user=None, product=None,
+                             distribution=None, **kwargs):
+        params = BugTaskSearchParams(user, **kwargs)
+        if product:
+            params.setProduct(product)
+        if distribution:
+            params.setProduct(distribution)
+        self.assertEqual(
+            expected,
+            convert_storm_clause_to_string(_process_order_by(params)[0]))
+
+    def test_tiebreaker(self):
+        # Requests for ambiguous sorts get a disambiguator of BugTask.id
+        # glued on.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bugtask',
+            orderby='-importance')
+
+    def test_tiebreaker_direction(self):
+        # The tiebreaker direction is the reverse of the primary
+        # direction. This is mostly to retain the old default sort order
+        # of (-importance, bugtask), and could probably be reversed if
+        # someone wants to.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance, BugTaskFlat.bugtask DESC',
+            orderby='importance')
+
+    def test_tiebreaker_in_unique_context(self):
+        # The tiebreaker is Bug.id if the context is unique, so we'll
+        # find no more than a single task for each bug. This applies to
+        # searches within a product, distribution source package, or
+        # source package.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bug',
+            orderby='-importance',
+            product='foo')
+
+    def test_tiebreaker_in_duplicated_context(self):
+        # If the context can have multiple tasks for a single bug, we
+        # still use BugTask.id.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bug',
+            orderby='-importance',
+            distribution='foo')
 
 
 class SearchTestBase:
@@ -269,6 +322,17 @@ class OnceTests:
         params = self.getBugTaskSearchParams(
             user=None, created_since=one_day_ago)
         self.assertSearchFinds(params, self.bugtasks[1:])
+
+    def test_created_before(self):
+        # Search results can be limited to bugtasks created before a
+        # given time.
+        one_day_ago = self.bugtasks[0].datecreated - timedelta(days=1)
+        two_days_ago = self.bugtasks[0].datecreated - timedelta(days=2)
+        with person_logged_in(self.owner):
+            self.bugtasks[0].datecreated = two_days_ago
+        params = self.getBugTaskSearchParams(
+            user=None, created_before=one_day_ago)
+        self.assertSearchFinds(params, self.bugtasks[:1])
 
     def test_modified_since(self):
         # Search results can be limited to bugs modified after a
@@ -668,6 +732,48 @@ class ProjectGroupAndDistributionTests:
         self.assertSearchFinds(params, self.bugtasks)
 
 
+class DistributionAndDistroSeriesTests:
+    """Tests which are useful for distributions and their series."""
+
+    def makeBugInComponent(self, archive, series, component):
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, distroseries=series, component=component,
+            status=PackagePublishingStatus.PUBLISHED)
+        return self.factory.makeBugTask(
+            target=self.searchtarget.getSourcePackage(pub.sourcepackagename))
+
+    def test_search_by_component(self):
+        series = self.getCurrentSeries()
+        distro = series.distribution
+        self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+
+        main = getUtility(IComponentSet)['main']
+        main_task = self.makeBugInComponent(
+            distro.main_archive, series, main)
+        universe = getUtility(IComponentSet)['universe']
+        universe_task = self.makeBugInComponent(
+            distro.main_archive, series, universe)
+        partner = getUtility(IComponentSet)['partner']
+        partner_task = self.makeBugInComponent(
+            distro.getArchiveByComponent('partner'), series, partner)
+
+        # Searches for a single component work.
+        params = self.getBugTaskSearchParams(user=None, component=main)
+        self.assertSearchFinds(params, [main_task])
+        params = self.getBugTaskSearchParams(user=None, component=universe)
+        self.assertSearchFinds(params, [universe_task])
+
+        # Non-primary-archive component searches also work.
+        params = self.getBugTaskSearchParams(user=None, component=partner)
+        self.assertSearchFinds(params, [partner_task])
+
+        # A combination of archives works.
+        params = self.getBugTaskSearchParams(
+            user=None, component=any(partner, main))
+        self.assertSearchFinds(params, [main_task, partner_task])
+
+
 class BugTargetTestBase:
     """A base class for the bug target mixin classes.
 
@@ -1011,7 +1117,8 @@ class MilestoneTarget(BugTargetTestBase):
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
                          BugTargetWithBugSuperVisor,
-                         ProjectGroupAndDistributionTests):
+                         ProjectGroupAndDistributionTests,
+                         DistributionAndDistroSeriesTests):
     """Use a distribution as the bug target."""
 
     def setUp(self):
@@ -1036,6 +1143,11 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
         """See `ProductAndDistributionTests`."""
         return self.factory.makeDistroSeries(distribution=self.searchtarget)
 
+    def getCurrentSeries(self):
+        if self.searchtarget.currentseries is None:
+            self.makeSeries()
+        return self.searchtarget.currentseries
+
     def setUpStructuralSubscriptions(self):
         # See `ProjectGroupAndDistributionTests`.
         subscriber = self.factory.makePerson()
@@ -1059,7 +1171,8 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
         return self.bugtasks[1:] + self.bugtasks[:1]
 
 
-class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests):
+class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests,
+                         DistributionAndDistroSeriesTests):
     """Use a distro series as the bug target."""
 
     def setUp(self):
@@ -1080,6 +1193,9 @@ class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests):
 
     def setBugParamsTarget(self, params, target):
         params.setDistroSeries(target)
+
+    def getCurrentSeries(self):
+        return self.searchtarget
 
     def setUpMilestoneSorting(self):
         with person_logged_in(self.owner):
@@ -1524,31 +1640,6 @@ class QueryBugIDs:
         return [bugtask.bug.id for bugtask in expected_bugtasks]
 
 
-class UsingFlat:
-    """Use BugTaskFlat for searching."""
-
-    def setUp(self):
-        super(UsingFlat, self).setUp()
-        self.useFixture(
-            FeatureFixture({'bugs.bugtaskflat.search.enabled': 'on'}))
-
-
-class UsingLegacy:
-    """Use Bug and BugTask directly for searching."""
-
-    def test_private_bug_in_search_result_assignees(self):
-        # Private bugs are included in search results for the assignee.
-        with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.setPrivate(True, self.owner)
-        bugtask = self.bugtasks[-1]
-        user = self.factory.makePerson()
-        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        with person_logged_in(admin):
-            bugtask.transitionToAssignee(user)
-        params = self.getBugTaskSearchParams(user=user)
-        self.assertSearchFinds(params, self.bugtasks)
-
-
 class TestMilestoneDueDateFiltering(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -1583,33 +1674,27 @@ def test_suite():
     loader = unittest.TestLoader()
     for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
-        for feature_mixin in (UsingLegacy, UsingFlat):
+        class_name = 'Test%s' % bug_target_search_type_class.__name__
+        class_bases = (
+            bug_target_search_type_class, ProductTarget, OnceTests,
+            SearchTestBase, TestCaseWithFactory)
+        test_class = type(class_name, class_bases, {})
+        suite.addTest(loader.loadTestsFromTestCase(test_class))
+
+        for target_mixin in bug_targets_mixins:
             class_name = 'Test%s%s' % (
                 bug_target_search_type_class.__name__,
-                feature_mixin.__name__)
-            mixins = [bug_target_search_type_class, feature_mixin]
+                target_mixin.__name__)
+            mixins = [
+                target_mixin, bug_target_search_type_class]
             class_bases = (
                 tuple(mixins)
-                + (ProductTarget, OnceTests, SearchTestBase,
-                   TestCaseWithFactory))
+                + (TargetTests, SearchTestBase, TestCaseWithFactory))
+            # Dynamically build a test class from the target mixin class,
+            # from the search type mixin class, from the mixin class
+            # having all tests and from a unit test base class.
             test_class = type(class_name, class_bases, {})
+            # Add the new unit test class to the suite.
             suite.addTest(loader.loadTestsFromTestCase(test_class))
-
-            for target_mixin in bug_targets_mixins:
-                class_name = 'Test%s%s%s' % (
-                    bug_target_search_type_class.__name__,
-                    target_mixin.__name__,
-                    feature_mixin.__name__)
-                mixins = [
-                    target_mixin, bug_target_search_type_class, feature_mixin]
-                class_bases = (
-                    tuple(mixins)
-                    + (TargetTests, SearchTestBase, TestCaseWithFactory))
-                # Dynamically build a test class from the target mixin class,
-                # from the search type mixin class, from the mixin class
-                # having all tests and from a unit test base class.
-                test_class = type(class_name, class_bases, {})
-                # Add the new unit test class to the suite.
-                suite.addTest(loader.loadTestsFromTestCase(test_class))
     suite.addTest(loader.loadTestsFromName(__name__))
     return suite

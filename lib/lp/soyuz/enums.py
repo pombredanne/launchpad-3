@@ -1,11 +1,10 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/soyuz modules."""
 
 __metaclass__ = type
 __all__ = [
-    'ArchiveJobType',
     'ArchivePermissionType',
     'ArchivePurpose',
     'ArchiveStatus',
@@ -38,17 +37,6 @@ re_closes = re.compile(
     r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)
 re_lp_closes = re.compile(r"lp:\s+\#\d+(?:,\s*\#\d+)*", re.I)
 re_bug_numbers = re.compile(r"\#?\s?(\d+)")
-
-
-class ArchiveJobType(DBEnumeratedType):
-    """Values that IArchiveJob.job_type can take."""
-
-    COPY_ARCHIVE = DBItem(0, """
-        Create a copy archive.
-
-        This job creates a copy archive from the current state of
-        the archive.
-        """)
 
 
 class ArchivePermissionType(DBEnumeratedType):
@@ -435,8 +423,8 @@ class PackagePublishingStatus(DBEnumeratedType):
 
 
 # If you change this (add items, change the meaning, whatever) search for
-# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
-# update the stuff marked with it.
+# the token ##CUSTOMFORMAT## e.g. queue.py or nascentupload.py and update
+# the stuff marked with it.
 class PackageUploadCustomFormat(DBEnumeratedType):
     """Custom formats valid for the upload queue
 

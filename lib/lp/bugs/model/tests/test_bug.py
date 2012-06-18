@@ -15,6 +15,7 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
     BugNotificationLevel,
@@ -29,11 +30,16 @@ from lp.bugs.model.bug import (
     BugSubscriptionInfo,
     )
 from lp.bugs.model.bugnotification import BugNotificationRecipient
-from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessPolicyArtifactSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.database.lpstorm import IStore
+from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.testing import (
+    admin_logged_in,
     feature_flags,
     login_person,
     person_logged_in,
@@ -42,12 +48,20 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbtriggers import triggers_disabled
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
     HasQueryCount,
     LessThan,
     )
+
+
+LEGACY_ACCESS_TRIGGERS = [
+    ('bug', 'bug_mirror_legacy_access_t'),
+    ('bugtask', 'bugtask_mirror_legacy_access_t'),
+    ('bugsubscription', 'bugsubscription_mirror_legacy_access_t'),
+    ]
 
 
 class TestBug(TestCaseWithFactory):
@@ -457,7 +471,8 @@ class TestBug(TestCaseWithFactory):
         bug = self.factory.makeBug()
         private_branch_owner = self.factory.makePerson()
         private_branch = self.factory.makeBranch(
-            owner=private_branch_owner, private=True)
+            owner=private_branch_owner,
+            information_type=InformationType.USERDATA)
         with person_logged_in(private_branch_owner):
             bug.linkBranch(private_branch, private_branch.registrant)
         public_branch_owner = self.factory.makePerson()
@@ -762,59 +777,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
 
-    def _fetch_notifications(self, bug, reason_header):
-        store = IStore(BugNotification)
-        return store.find(
-            BugNotification,
-            BugNotificationRecipient.bug_notificationID == BugNotification.id,
-            BugNotificationRecipient.reason_header == reason_header,
-            BugNotification.bug == bug,
-            BugNotification.status == BugNotificationStatus.PENDING,
-            BugNotification.date_emailed == None)
-
-    def _check_email_content(self, message, expected_headers,
-                             expected_body_text):
-        # Ensure that the email header values and message body text is as
-        # expected.
-        headers = {}
-        for header in ['X-Launchpad-Message-Rationale',
-                       'X-Launchpad-Bug-Security-Vulnerability',
-                       'X-Launchpad-Bug-Private']:
-            if message[header]:
-                headers[header] = message[header]
-        self.assertEqual(expected_headers, headers)
-        body_text = message.get_payload(decode=True)
-        self.assertTrue(expected_body_text in body_text)
-
-    def _check_notifications(self, bug, expected_recipients,
-                             expected_body_text, expected_reason_body,
-                             is_private, is_security_related, role):
-        # Ensure that the content of the pending email notifications is
-        # correct.
-        notifications = self._fetch_notifications(bug, role)
-        actual_recipients = []
-        email_notifications = get_email_notifications(notifications)
-        for bug_notifications, omitted, messages in email_notifications:
-            for message in messages:
-                expected_headers = {
-                    'X-Launchpad-Bug-Private':
-                        'yes' if is_private else 'no',
-                    'X-Launchpad-Bug-Security-Vulnerability':
-                        'yes' if is_security_related else 'no',
-                    'X-Launchpad-Message-Rationale': role,
-                }
-                self._check_email_content(
-                    message, expected_headers, expected_body_text)
-            expected_reason_header = role
-            for notification in bug_notifications:
-                for recipient in notification.recipients:
-                    self.assertEqual(
-                        expected_reason_header, recipient.reason_header)
-                    self.assertEqual(
-                        expected_reason_body, recipient.reason_body)
-                    actual_recipients.append(recipient.person)
-        self.assertContentEqual(expected_recipients, actual_recipients)
-
     def test_structural_bug_supervisor_becomes_direct_on_private(self):
         # If a bug supervisor has a structural subscription to the bug, and
         # the bug is marked as private, the supervisor should get a direct
@@ -854,9 +816,10 @@ class TestBugPrivacy(TestCaseWithFactory):
         # Public security bugs are currently untested since it is impossible
         # to create one at the moment.
         bug = self.factory.makeBug()
-        private_bug = self.factory.makeBug(private=True)
+        private_bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
         private_sec_bug = self.factory.makeBug(
-            private=True, security_related=True)
+            information_type=InformationType.EMBARGOEDSECURITY)
         mapping = (
             (bug, InformationType.PUBLIC),
             (private_bug, InformationType.USERDATA),
@@ -864,11 +827,30 @@ class TestBugPrivacy(TestCaseWithFactory):
             )
         [self.assertEqual(m[1], m[0].information_type) for m in mapping]
 
+    def test_accesspolicyartifacts_updated(self):
+        # transitionToTarget updates the AccessPolicyArtifacts related
+        # to the bug.
+        bug = self.factory.makeBug(
+            information_type=InformationType.EMBARGOEDSECURITY)
+
+        # There are also transitional triggers that do this. Disable
+        # them temporarily so we can be sure the application side works.
+        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+            with admin_logged_in():
+                product = bug.default_bugtask.product
+                bug.transitionToInformationType(
+                    InformationType.USERDATA, bug.owner)
+
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        self.assertContentEqual([policy], get_policies_for_artifact(bug))
+
     def test_private_to_public_information_type(self):
         # A private bug transitioning to public has the correct information
         # type.
         owner = self.factory.makePerson()
-        bug = self.factory.makeBug(private=True, owner=owner)
+        bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA, owner=owner)
         with person_logged_in(owner):
             bug.setPrivate(False, owner)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
@@ -878,7 +860,7 @@ class TestBugPrivacy(TestCaseWithFactory):
         # correct information type.
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            private=True, security_related=True, owner=owner)
+            information_type=InformationType.EMBARGOEDSECURITY, owner=owner)
         with person_logged_in(owner):
             bug.setPrivate(False, owner)
         self.assertEqual(
@@ -889,7 +871,7 @@ class TestBugPrivacy(TestCaseWithFactory):
         # information type.
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            private=True, security_related=True, owner=owner)
+            information_type=InformationType.EMBARGOEDSECURITY, owner=owner)
         with person_logged_in(owner):
             bug.transitionToInformationType(InformationType.PUBLIC, owner)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
@@ -910,7 +892,8 @@ class TestBugPrivacy(TestCaseWithFactory):
             product.addSubscription(product.owner, product.owner)
         reporter = self.factory.makePerson()
         bug = self.factory.makeBug(
-            private=True, product=product, owner=reporter)
+            information_type=InformationType.USERDATA, product=product,
+            owner=reporter)
         recipients = Store.of(bug).using(
             BugNotificationRecipient,
             Join(BugNotification, BugNotification.bugID == bug.id)).find(
@@ -919,6 +902,33 @@ class TestBugPrivacy(TestCaseWithFactory):
                 BugNotification.id)
         self.assertEqual(
             [reporter], [recipient.person for recipient in recipients])
+
+    def test__reconcileAccess_handles_all_targets(self):
+        # _reconcileAccess gets the pillar from any task
+        # type.
+        product = self.factory.makeProduct()
+        productseries = self.factory.makeProductSeries()
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage()
+        sp = self.factory.makeSourcePackage()
+
+        targets = [product, productseries, distro, distroseries, dsp, sp]
+        pillars = [
+            product, productseries.product, distro, distroseries.distribution,
+            dsp.distribution, sp.distribution]
+
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+        for target in targets[1:]:
+            self.factory.makeBugTask(bug, target=target)
+        [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
+        removeSecurityProxy(bug)._reconcileAccess()
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(
+                (pillar, InformationType.USERDATA) for pillar in pillars),
+            get_policies_for_artifact(bug))
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
@@ -937,6 +947,34 @@ class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
         s = super(TestBugPrivateAndSecurityRelatedUpdatesPublicProject, self)
         s.setUp()
         self.private_project = False
+
+
+class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_transition_special_cased_for_ubuntu(self):
+        # When a bug on ubuntu is transitioned to USERDATA from
+        # EMBARGOEDSECURITY, the bug supervisor is not subscribed, and the
+        # bug's subscribers do not change.
+        # This is to protect ubuntu's workflow, which differs from the
+        # Launchpad norm.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        admin = getUtility(ILaunchpadCelebrities).admin
+        ubuntu = removeSecurityProxy(ubuntu)
+        ubuntu.setBugSupervisor(
+            self.factory.makePerson(name='supervisor'), admin)
+        bug = self.factory.makeBug(
+            information_type=InformationType.EMBARGOEDSECURITY,
+            distribution=ubuntu)
+        bug = removeSecurityProxy(bug)
+        initial_subscribers = bug.getDirectSubscribers()
+        self.assertTrue(ubuntu.bug_supervisor not in initial_subscribers)
+        bug.transitionToInformationType(
+            InformationType.USERDATA, who=bug.owner)
+        subscribers = bug.getDirectSubscribers()
+        self.assertContentEqual(initial_subscribers, subscribers)
+        ubuntu.setBugSupervisor(None, ubuntu.owner)
 
 
 class TestBugActivityMethods(TestCaseWithFactory):

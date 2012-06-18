@@ -43,7 +43,6 @@ __all__ = [
     'PersonSetActionNavigationMenu',
     'PersonSetContextMenu',
     'PersonSetNavigation',
-    'PersonSpecFeedbackView',
     'PersonSpecWorkloadTableView',
     'PersonSpecWorkloadView',
     'PersonSpecsMenu',
@@ -148,11 +147,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
-from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.enums import (
-    SpecificationFilter,
-    SpecificationWorkItemStatus,
-    )
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
@@ -602,8 +597,7 @@ class PersonSpecsMenu(NavigationMenu):
     usedfor = IPerson
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
-             'subscriber', 'registrant', 'feedback',
-             'workload']
+             'subscriber', 'registrant', 'workload']
 
     def registrant(self):
         text = 'Registrant'
@@ -630,12 +624,6 @@ class PersonSpecsMenu(NavigationMenu):
     def subscriber(self):
         text = 'Subscriber'
         return Link('+specs?role=subscriber', text, icon='blueprint')
-
-    def feedback(self):
-        text = 'Feedback requests'
-        summary = 'List specs where feedback has been requested from %s' % (
-            self.context.displayname)
-        return Link('+specfeedback', text, summary, icon='info')
 
     def workload(self):
         text = 'Workload'
@@ -1354,17 +1342,6 @@ class PersonSpecWorkloadTableView(LaunchpadView):
         """
         return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
                 for spec in self.context.specifications()]
-
-
-class PersonSpecFeedbackView(HasSpecificationsView):
-
-    label = 'Feature feedback requests'
-    page_title = label
-
-    @cachedproperty
-    def feedback_specs(self):
-        filter = [SpecificationFilter.FEEDBACK]
-        return self.context.specifications(filter=filter)
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -4115,12 +4092,12 @@ class ContactViaWebNotificationRecipientSet:
         :type person_or_team: `IPerson`.
         """
         if person_or_team.is_team:
-            if self.user.inTeam(person_or_team):
+            if person_or_team in self.user.getAdministratedTeams():
+                # Team admins can broadcast messages to all members.
                 return self.TO_MEMBERS
             else:
-                # A non-member can only send emails to a single person to
-                # hinder spam and to prevent leaking membership
-                # information for private teams when the members reply.
+                # A non-team-admins can make inquiries to the people who
+                # lead the team.
                 return self.TO_ADMINS
         else:
             # Send to the user
@@ -4451,12 +4428,14 @@ class PersonUpcomingWorkView(LaunchpadView):
         for date, containers in self.work_item_containers:
             total_items = 0
             total_done = 0
+            total_postponed = 0
             milestones = set()
             self.bugtask_counts[date] = 0
             self.workitem_counts[date] = 0
             for container in containers:
                 total_items += len(container.items)
                 total_done += len(container.done_items)
+                total_postponed += len(container.postponed_items)
                 if isinstance(container, AggregatedBugsContainer):
                     self.bugtask_counts[date] += len(container.items)
                 else:
@@ -4465,8 +4444,12 @@ class PersonUpcomingWorkView(LaunchpadView):
                     milestones.add(item.milestone)
             self.milestones_per_date[date] = sorted(
                 milestones, key=attrgetter('displayname'))
-            self.progress_per_date[date] = '{0:.0f}'.format(
-                100.0 * total_done / float(total_items))
+
+            percent_done = 0
+            if total_items > 0:
+                done_or_postponed = total_done + total_postponed
+                percent_done = 100.0 * done_or_postponed / total_items
+            self.progress_per_date[date] = '{0:.0f}'.format(percent_done)
 
     @property
     def label(self):
@@ -4516,9 +4499,25 @@ class WorkItemContainer:
         return [item for item in self._items if item.is_complete]
 
     @property
-    def percent_done(self):
-        return '{0:.0f}'.format(
-            100.0 * len(self.done_items) / len(self._items))
+    def postponed_items(self):
+        return [item for item in self._items
+                if item.status == SpecificationWorkItemStatus.POSTPONED]
+
+    @property
+    def percent_done_or_postponed(self):
+        """Returns % of work items to be worked on."""
+        percent_done = 0
+        if len(self._items) > 0:
+            done_or_postponed = (len(self.done_items) +
+                                 len(self.postponed_items))
+            percent_done = 100.0 * done_or_postponed / len(self._items)
+        return '{0:.0f}'.format(percent_done)
+
+    @property
+    def has_incomplete_work(self):
+        """Return True if there are incomplete work items."""
+        return (len(self.done_items) + len(self.postponed_items) <
+                len(self._items))
 
     def append(self, item):
         self._items.append(item)
@@ -4679,10 +4678,10 @@ def getWorkItemsDueBefore(person, cutoff_date, user):
             milestone = spec.milestone
         if milestone.dateexpected not in containers_by_date:
             containers_by_date[milestone.dateexpected] = []
-        container = containers_by_spec.get(spec)
+        container = containers_by_spec.setdefault(milestone, {}).get(spec)
         if container is None:
             container = SpecWorkItemContainer(spec)
-            containers_by_spec[spec] = container
+            containers_by_spec[milestone][spec] = container
             containers_by_date[milestone.dateexpected].append(container)
         container.append(GenericWorkItem.from_workitem(workitem))
 

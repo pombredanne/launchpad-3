@@ -207,8 +207,6 @@ COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of P
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
-COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
-COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
 COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attached to this Bug. Maintained by a trigger on the BugMessage table.';
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
@@ -304,7 +302,6 @@ COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
 COMMENT ON COLUMN BugTask.importance IS 'The importance of fixing the bug.';
-COMMENT ON COLUMN BugTask.binarypackagename IS 'The name of the binary package built from the source package. This column may only contain a value if this bug task is linked to a sourcepackage (not a product)';
 COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
 COMMENT ON COLUMN BugTask.date_assigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
 COMMENT ON COLUMN BugTask.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it''s the date the bug was assigned to this product, which could have come later.';
@@ -323,8 +320,6 @@ COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transiti
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
 COMMENT ON COLUMN BugTask.date_milestone_set IS 'The date when this bug was targed to the milestone that is currently set.';
-COMMENT ON COLUMN BugTask.heat_rank IS 'The heat bin in which this bugtask appears, as a value from the BugTaskHeatRank enumeration.';
-COMMENT ON COLUMN BugTask.heat IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 
 
 -- BugNotification
@@ -1830,6 +1825,7 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsib
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.packageupload IS 'The PackageUpload that caused this publication to be created.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -2063,7 +2059,7 @@ COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days b
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
 COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
-COMMENT ON COLUMN Archive.commercial IS 'Whether this archive is a commercial Archive and should appear in the Software Center.';
+COMMENT ON COLUMN Archive.suppress_subscription_notifications IS 'Whether to suppress notifications about subscriptions.';
 COMMENT ON COLUMN Archive.build_debug_symbols IS 'Whether builds for this archive should create debug symbol packages.';
 
 -- ArchiveAuthToken
@@ -2160,8 +2156,6 @@ COMMENT ON COLUMN PillarName.alias_for IS 'An alias for another pillarname. Rows
 COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
 COMMENT ON COLUMN POFileTranslator.person IS 'The person who submitted the translation.';
 COMMENT ON COLUMN POFileTranslator.pofile IS 'The pofile the translation was submitted for.';
-COMMENT ON COLUMN POFileTranslator.latest_message IS 'Latest translation
-message added to the translation file.';
 COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When was added latest
 translation message.';
 

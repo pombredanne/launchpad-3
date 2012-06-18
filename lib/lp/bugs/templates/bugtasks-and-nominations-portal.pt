@@ -36,17 +36,17 @@
             <img class="editicon" src="/@@/edit" alt="Edit" />
           </a>
         </span>
-        <script type="text/javascript" tal:content="string:
+      </span>
+      <script type="text/javascript" tal:content="string:
           LPJS.use('event', 'lp.bugs.bugtask_index', function(Y) {
-              Y.on('load', function(e) {
+              Y.on('domready', function(e) {
                   Y.lp.bugs.bugtask_index.setup_me_too(
                       ${view/current_user_affected_js_status},
                       ${view/other_users_affected_count});
               }, window);
           });
           ">
-        </script>
-      </span>
+      </script>
     </div>
   </tal:editable>
   <tal:not-editable
@@ -75,9 +75,7 @@
         replace="structure link/render" />
         <a href="/+help-bugs/also-affects-project-help.html"
            target="help"
-           class="sprite maybe">&nbsp;
-             <span class="invisible-link">(?)</span>
-        </a>
+           class="sprite maybe action-icon">(?)</a>
     </span>
     <span id="also-affects-package"
           tal:attributes="class python:not view.canAddPackageTask() and 'private-disallow' or ''"

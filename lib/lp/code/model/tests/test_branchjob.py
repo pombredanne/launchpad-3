@@ -61,8 +61,8 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.directbranchcommit import DirectBranchCommit
-from lp.code.model.tests.test_branch import create_knit
 from lp.code.model.revision import RevisionSet
+from lp.code.model.tests.test_branch import create_knit
 from lp.codehosting.vfs import branch_id_to_path
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
@@ -73,9 +73,7 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
-from lp.services.job.tests import (
-    block_on_job,
-    )
+from lp.services.job.tests import block_on_job
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -1247,11 +1245,11 @@ class TestViaCelery(TestCaseWithFactory):
         commit.writeFile('foo.pot', 'gibberish')
         with person_logged_in(db_branch.owner):
             # wait for branch scan
-            with block_on_job():
+            with block_on_job(self):
                 commit.commit('message')
                 transaction.commit()
         series = self.factory.makeProductSeries(branch=db_branch)
-        with block_on_job():
+        with block_on_job(self):
             RosettaUploadJob.create(
                 commit.db_branch, NULL_REVISION,
                 force_translations_upload=True)

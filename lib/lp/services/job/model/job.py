@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ORM object representing jobs."""
@@ -18,7 +18,6 @@ import datetime
 import time
 
 from lazr.jobrunner.jobrunner import LeaseHeld
-
 import pytz
 from sqlobject import (
     IntCol,
@@ -33,12 +32,9 @@ from storm.locals import (
     Int,
     Reference,
     )
-from storm.zope.interfaces import IZStorm
 import transaction
-from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import dbconfig
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -49,7 +45,6 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
-from lp.services import scripts
 
 
 UTC = pytz.timezone('UTC')
@@ -189,7 +184,8 @@ class Job(SQLBase):
         if manage_transaction:
             transaction.commit()
 
-    def queue(self, manage_transaction=False, abort_transaction=False):
+    def queue(self, manage_transaction=False, abort_transaction=False,
+              add_commit_hook=None):
         """See `IJob`."""
         if manage_transaction:
             if abort_transaction:
@@ -198,6 +194,8 @@ class Job(SQLBase):
             transaction.commit()
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
+        if add_commit_hook is not None:
+            add_commit_hook()
         if manage_transaction:
             transaction.commit()
 
@@ -255,48 +253,22 @@ class UniversalJobSource:
 
     memory_limit = 2 * (1024 ** 3)
 
-    needs_init = True
-
     @staticmethod
-    def getDerived(job_id):
-        """Return the derived branch job associated with the job id."""
-        # Avoid circular imports.
-        from lp.code.model.branchjob import (
-            BranchJob,
-            )
-        from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob,
-            )
-        store = IStore(Job)
-        for cls in [BranchJob, BranchMergeProposalJob]:
-            base_job = store.find(cls, cls.job == job_id).one()
-            if base_job is not None:
-                break
-        if base_job is None:
-            raise ValueError('No BranchJob with job=%s.' % job_id)
+    def get(ujob_id):
+        """Return the named job database class.
 
-        return base_job.makeDerived(), store
-
-    @staticmethod
-    def clearStore(store):
-        transaction.abort()
-        getUtility(IZStorm).remove(store)
-        store.close()
-
-    @classmethod
-    def switchDBUser(cls, job_id):
-        """Switch to the DB user associated with this Job ID."""
-        cls.clearStore(IStore(Job))
-        derived, store = cls.getDerived(job_id)
-        dbconfig.override(
-            dbuser=derived.config.dbuser, isolation_level='read_committed')
-        cls.clearStore(store)
-
-    @classmethod
-    def get(cls, job_id):
-        transaction.abort()
-        if cls.needs_init:
-            scripts.execute_zcml_for_scripts(use_web_security=False)
-            cls.needs_init = False
-        cls.switchDBUser(job_id)
-        return cls.getDerived(job_id)[0]
+        :param ujob_id: A tuple of Job.id, module name, class name for the
+            class to retrieve.
+        Return derived job class.
+        """
+        job_id, module_name, class_name = ujob_id
+        bc_module = __import__(module_name, fromlist=[class_name])
+        db_class = getattr(bc_module, class_name)
+        factory = getattr(db_class, 'makeInstance', None)
+        if factory is not None:
+            return factory(job_id)
+        store = IStore(db_class)
+        db_job = store.find(db_class, db_class.job == job_id).one()
+        if db_job is None:
+            return None
+        return db_job.makeDerived()

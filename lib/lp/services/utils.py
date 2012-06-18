@@ -26,6 +26,7 @@ __all__ = [
     'save_bz2_pickle',
     'synchronize',
     'text_delta',
+    'total_seconds',
     'traceback_info',
     'utc_now',
     'value_string',
@@ -81,7 +82,7 @@ def base(number, radix):
     """Convert 'number' to an arbitrary base numbering scheme, 'radix'.
 
     This function is based on work from the Python Cookbook and is under the
-    Python license.
+    Python licence.
 
     Inverse function to int(str, radix) and long(str, radix)
     """
@@ -383,3 +384,14 @@ def obfuscate_structure(o):
             for key, value in o.iteritems())
     else:
         return o
+
+
+def total_seconds(duration):
+    """The number of total seconds in a timedelta.
+    """
+    # XXX: JonathanLange 2012-05-12: In Python 2.7, spell this as
+    # duration.total_seconds().  Only needed for Python 2.6 or earlier.
+    return (
+        (duration.microseconds +
+         (duration.seconds + duration.days * 24 * 3600) * 1e6)
+        / 1e6)

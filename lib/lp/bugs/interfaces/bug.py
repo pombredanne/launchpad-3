@@ -1075,18 +1075,20 @@ class IBugDelta(Interface):
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
 
-    # fields on the bug itself
+    # Fields on the bug itself.
     title = Attribute("A dict with two keys, 'old' and 'new', or None.")
     description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     security_related = Attribute(
+        "A dict with two keys, 'old' and 'new', or None.")
+    information_type = Attribute(
         "A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBug's")
 
-    # other things linked to the bug
+    # Other things linked to the bug.
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")
@@ -1195,13 +1197,6 @@ class IBugSet(Interface):
         """Get a specific bug by its ID or nickname
 
         If it can't be found, NotFoundError will be raised.
-        """
-
-    def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
-        """Find bugs matching the search criteria provided.
-
-        To search as an anonymous user, the user argument passed
-        should be None.
         """
 
     def queryByRemoteBug(bugtracker, remotebug):

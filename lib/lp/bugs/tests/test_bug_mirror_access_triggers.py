@@ -74,7 +74,12 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
 
     def makeBugAndPolicies(self, private=False):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(private=private, product=product)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
+        bug = self.factory.makeBug(
+            product=product, information_type=information_type)
         return removeSecurityProxy(bug)
 
     def getPoliciesForArtifact(self, artifact):
@@ -88,7 +93,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
             policy.type for policy in self.getPoliciesForArtifact(artifact))
 
     def test_public_has_nothing(self):
-        bug = self.factory.makeBug(private=False)
+        bug = self.factory.makeBug(information_type=InformationType.PUBLIC)
         artifact = getUtility(IAccessArtifactSource).find([bug]).one()
         self.assertIs(None, artifact)
 
@@ -123,7 +128,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         bug = self.makeBugAndPolicies(private=True)
         task = bug.addTask(bug.owner, product)
         Store.of(bug).flush()
-        removeSecurityProxy(task).destroySelf()
+        removeSecurityProxy(task).delete(who=bug.owner)
         self.assertEqual((1, 1), self.assertMirrored(bug))
 
     def test_make_public(self):

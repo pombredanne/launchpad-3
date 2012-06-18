@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
@@ -30,6 +30,8 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.tests.helpers import remove_all_sample_data_branches
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -158,7 +160,8 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         for i in range(branch_number):
             branches.append(
                 self.factory.makeStackedOnBranchChain(
-                    owner=person, private=True, depth=depth))
+                    owner=person, depth=depth,
+                    information_type=InformationType.USERDATA))
         with person_logged_in(person):
             all_branches = (
                 GenericBranchCollection.preloadVisibleStackedOnBranches(
@@ -172,8 +175,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         branches = []
         for i in range(branch_number):
             branches.append(
-                self.factory.makeStackedOnBranchChain(
-                    private=False, depth=depth))
+                self.factory.makeStackedOnBranchChain(depth=depth))
         all_branches = (
             GenericBranchCollection.preloadVisibleStackedOnBranches(branches))
         self.assertEqual(len(all_branches), branch_number * depth)
@@ -187,7 +189,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         for i in range(branch_number):
             branches.append(
                 self.factory.makeStackedOnBranchChain(
-                    owner=person, private=False, depth=depth))
+                    owner=person, depth=depth))
         with person_logged_in(person):
             all_branches = (
                 GenericBranchCollection.preloadVisibleStackedOnBranches(
@@ -221,7 +223,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # IBranchCollection.count() returns the number of branches that
         # getBranches() yields, even when the visibleByUser filter is applied.
         branch = self.factory.makeAnyBranch()
-        self.factory.makeAnyBranch(private=True)
+        self.factory.makeAnyBranch(information_type=InformationType.USERDATA)
         collection = self.all_branches.visibleByUser(branch.owner)
         self.assertEqual(1, collection.getBranches().count())
         self.assertEqual(1, len(list(collection.getBranches())))
@@ -429,6 +431,18 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             sorted([branch1, branch3, branch4]),
             sorted(collection.getBranches()))
 
+    def test_withIds(self):
+        # 'withIds' returns a new collection that only has branches with the
+        # given ids.
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        self.factory.makeAnyBranch()
+        ids = [branch1.id, branch2.id]
+        collection = self.all_branches.withIds(*ids)
+        self.assertEqual(
+            sorted([branch1, branch2]),
+            sorted(collection.getBranches()))
+
     def test_registeredBy(self):
         # 'registeredBy' returns a new collection that only has branches that
         # were registered by the given user.
@@ -575,13 +589,13 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # We make private branch by stacking a public branch on top of a
         # private one.
         self.private_stacked_on_branch = self.factory.makeAnyBranch(
-            private=True)
+            information_type=InformationType.USERDATA)
         self.public_stacked_on_branch = self.factory.makeAnyBranch(
             stacked_on=self.private_stacked_on_branch)
         self.private_branch1 = self.factory.makeAnyBranch(
             stacked_on=self.public_stacked_on_branch, name='private1')
         self.private_branch2 = self.factory.makeAnyBranch(
-            private=True, name='private2')
+            name='private2', information_type=InformationType.USERDATA)
         self.all_branches = getUtility(IAllBranches)
 
     def test_all_branches(self):
@@ -671,8 +685,11 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # A person in a team that is subscribed to a branch can see that
         # branch, even if it's private.
         team_owner = self.factory.makePerson()
-        team = self.factory.makeTeam(team_owner)
-        private_branch = self.factory.makeAnyBranch(private=True)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            owner=team_owner)
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         # Subscribe the team.
         removeSecurityProxy(private_branch).subscribe(
             team, BranchSubscriptionNotificationLevel.NOEMAIL,
@@ -768,11 +785,13 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
         linked_bugtasks = []
         with person_logged_in(branch.owner):
             for x in range(0, 4):
-                private = x % 2
+                information_type = InformationType.PUBLIC
+                if x % 2:
+                    information_type = InformationType.USERDATA
                 bug = self.factory.makeBug(
-                    owner=branch.owner, private=private)
+                    owner=branch.owner, information_type=information_type)
                 merge_proposals[0].source_branch.linkBug(bug, branch.owner)
-                if not private:
+                if information_type == InformationType.PUBLIC:
                     linked_bugtasks.append(bug.default_bugtask)
         expected_rev_details[0]['linked_bugtasks'] = linked_bugtasks
 
@@ -874,8 +893,10 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the
         # source branch.
-        mp1 = self.factory.makeBranchMergeProposal()
-        removeSecurityProxy(mp1.target_branch).explicitly_private = True
+        registrant = self.factory.makePerson()
+        mp1 = self.factory.makeBranchMergeProposal(registrant=registrant)
+        removeSecurityProxy(mp1.target_branch).transitionToInformationType(
+            InformationType.USERDATA, registrant, verify_policy=False)
         collection = self.all_branches.visibleByUser(None)
         proposals = collection.getMergeProposals()
         self.assertEqual([], list(proposals))
@@ -958,7 +979,8 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         # Don't include proposals if the target branch is private for
         # anonymous views.
         reviewer = self.factory.makePerson()
-        target_branch = self.factory.makeAnyBranch(private=True)
+        target_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch)
         proposal.nominateReviewer(reviewer, reviewer)
@@ -972,7 +994,7 @@ class TestBranchMergeProposalsForReviewer(TestCaseWithFactory):
         reviewer = self.factory.makePerson()
         product = self.factory.makeProduct()
         source_branch = self.factory.makeProductBranch(
-            product=product, private=True)
+            product=product, information_type=InformationType.USERDATA)
         target_branch = self.factory.makeProductBranch(product=product)
         proposal = self.factory.makeBranchMergeProposal(
             source_branch=source_branch, target_branch=target_branch)

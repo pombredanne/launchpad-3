@@ -1,3 +1,6 @@
+.yui3-ichoicelist {
+   min-width: 15%;
+}
 .yui3-ichoicelist span.disabled {
   color: #ccc;
 }
@@ -26,6 +29,7 @@
 .yui3-ichoicelist li a, .yui3-ichoicelist li span{
   padding: 6px 3px;
   display: block;
+  white-space: nowrap;
 }
 .yui3-ichoicelist li a:hover {
   background-color: #eee;
@@ -43,11 +47,12 @@
 }
 .yui3-ichoicelist-content .choice-link {
   padding: 0;
+  font-weight: bold;
 }
 .yui3-ichoicelist-content .choice-description {
   font-weight: normal;
   padding: 0;
-  color: #777;
+  color: #666;
 }
 .yui3-ichoicelist-content .choice-link:hover {
   text-decoration: underline;

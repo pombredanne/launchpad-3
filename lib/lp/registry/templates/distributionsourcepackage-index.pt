@@ -150,9 +150,7 @@
         <td style="white-space: nowrap">
           <a class="expander"
              tal:attributes="id string:pub${pubid}-expander;
-                             href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra">
-            &nbsp;
-          </a>
+                             href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra"></a>
           <a tal:attributes="href row/version">
             <img src="/@@/package-source" />
             <tal:version content="row/version"/>
@@ -163,12 +161,11 @@
           (<tal:component content="row/component"/>)
         </td>
         <td>
-          <tal:last_published condition="row/published_since">
-            <span tal:replace="row/published_since/fmt:approximateduration"/>
-            ago
-          </tal:last_published>
+          <tal:date_published condition="row/date_published">
+            <span tal:replace="row/date_published/fmt:date"/>
+          </tal:date_published>
           <tal:not_published
-               condition="not: row/published_since"
+               condition="not: row/date_published"
                content="string:(not published)"/>
         </td>
       </tr>

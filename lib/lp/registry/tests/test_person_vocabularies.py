@@ -20,6 +20,8 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.webapp.vocabulary import FilteredVocabularyBase
 from lp.testing import (
     login_person,
@@ -154,6 +156,18 @@ class ValidPersonOrTeamVocabularyMixin(VocabularyTestBase):
             self.assertTrue(personorteam.is_team)
         results = self.searchVocabulary(None, u'fred', 'TEAM')
         self.assertContentEqual(teams, list(results))
+
+    def test_inactive_people_ignored(self):
+        # Only people with active accounts (or teams) are returned.
+        for status in AccountStatus:
+            if status.value != AccountStatus.ACTIVE:
+                self.factory.makePerson(
+                    name='fred' + status.token.lower(),
+                    account_status=status.value)
+        active_person = self.factory.makePerson(name='fredactive')
+        team = self.factory.makePerson(name='fredteam')
+        results = self.searchVocabulary(None, 'fred')
+        self.assertContentEqual([active_person, team], list(results))
 
 
 class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
@@ -357,6 +371,14 @@ class TestValidTeamVocabulary(VocabularyTestBase,
         # The vocab shouldn't support person or team filters.
         self.assertEqual([], self.getVocabulary(None).supportedFilters())
 
+    def test_unvalidated_emails_ignored(self):
+        person = self.factory.makePerson()
+        unvalidated_email = self.factory.makeEmail(
+            'fnord@example.com',
+            person,
+            email_status=EmailAddressStatus.NEW)
+        search = self.searchVocabulary(None, 'fnord@example.com')
+        self.assertEqual([], [s for s in search])
 
 class TestNewPillarShareeVocabulary(VocabularyTestBase,
                                         TestCaseWithFactory):

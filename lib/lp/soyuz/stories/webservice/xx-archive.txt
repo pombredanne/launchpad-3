@@ -17,7 +17,6 @@ We publish a subset of their attributes.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
     authorized_size: 1024
-    commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
@@ -27,10 +26,12 @@ We publish a subset of their attributes.
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
+    relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
+    suppress_subscription_notifications: False
     web_link: u'http://launchpad.../~cprov/+archive/ppa'
 
 For "devel" additional attributes are available.
@@ -39,7 +40,6 @@ For "devel" additional attributes are available.
     ...     "/~cprov/+archive/ppa", api_version='devel').jsonBody()
     >>> pprint_entry(cprov_archive_devel)
     authorized_size: 1024
-    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
@@ -49,10 +49,12 @@ For "devel" additional attributes are available.
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
+    relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
+    suppress_subscription_notifications: False
     web_link: u'http://launchpad.../~cprov/+archive/ppa'
 
 While the Archive signing key is being generated its
@@ -108,7 +110,6 @@ The archive has the following attributes:
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(ubuntu_main_archive)
     authorized_size: None
-    commercial: False
     dependencies_collection_link:
         u'http://.../ubuntutest/+archive/primary/dependencies'
     description: None
@@ -118,10 +119,12 @@ The archive has the following attributes:
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
     private: False
+    relative_build_score: 0
     require_virtualized: False
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
     signing_key_fingerprint: None
+    suppress_subscription_notifications: False
     web_link: u'http://launchpad.../ubuntutest/+archive/primary'
 
 A distribution can also provide a list of all its archives:
@@ -165,6 +168,7 @@ This is a permission that allows a team to upload to a component:
     date_created: ...
     permission: u'Archive Upload Rights'
     person_link: u'http://.../~ubuntu-team'
+    pocket: None
     resource_type_link: ...
     self_link: u'http://.../ubuntu/+archive/primary/+upload/ubuntu-team?type=component&item=main'
     source_package_name: None
@@ -180,6 +184,7 @@ This is a permission that allows an individual to upload a source package.
     date_created: ...
     permission: u'Archive Upload Rights'
     person_link: u'http://.../~carlos'
+    pocket: None
     resource_type_link: ...
     self_link:
         u'http://.../ubuntu/+archive/primary/+upload/carlos?type=packagename&item=mozilla-firefox'
@@ -196,6 +201,7 @@ This is a queue admin right for ubuntu-team:
     date_created: ...
     permission: u'Queue Administration Rights'
     person_link: u'http://.../~ubuntu-team'
+    pocket: None
     resource_type_link: ...
     self_link:
         u'http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team?type=component&item=main'
@@ -212,6 +218,7 @@ And one for an individual:
     date_created: ...
     permission: u'Queue Administration Rights'
     person_link: u'http://.../~name12'
+    pocket: None
     resource_type_link: ...
     self_link:
         u'http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=universe'
@@ -235,7 +242,8 @@ archive.
     ...      return (entry['permission'],
     ...              entry['person_link'],
     ...              entry['component_name'],
-    ...              entry['source_package_name']),
+    ...              entry['source_package_name'],
+    ...              entry['pocket']),
 
     >>> def show_permission_entries(permissions):
     ...     for entry in sorted(permissions['entries'],
@@ -244,10 +252,11 @@ archive.
     ...         print entry['person_link']
     ...         print entry['component_name']
     ...         print entry['source_package_name']
+    ...         print entry['pocket']
 
     >>> show_permission_entries(permissions)
-    Archive Upload Rights ...~ubuntu-team main None
-    Archive Upload Rights ...~ubuntu-team universe None
+    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team universe None None
 
 `getUploadersForPackage` returns all the permissions where someone can
 upload a particular package.
@@ -259,7 +268,7 @@ upload a particular package.
     ...     show_permission_entries(permissions)
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox
+    Archive Upload Rights ...~carlos None mozilla-firefox None
 
 Passing a bad package name results in an error:
 
@@ -361,8 +370,8 @@ for a person to upload a package.
     http://.../ubuntu/+archive/primary/+upload/name12?type=packagename&item=mozilla-firefox
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox
-    Archive Upload Rights ...~name12 None mozilla-firefox
+    Archive Upload Rights ...~carlos None mozilla-firefox None
+    Archive Upload Rights ...~name12 None mozilla-firefox None
 
 deletePackageUploader() removes that permission:
 
@@ -376,7 +385,7 @@ deletePackageUploader() removes that permission:
 And we can see that it's gone:
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox
+    Archive Upload Rights ...~carlos None mozilla-firefox None
 
 getUploadersForComponent returns all the permissions where someone can
 upload to a particular component:
@@ -388,7 +397,7 @@ upload to a particular component:
     ...     show_permission_entries(permissions)
 
     >>> show_component_permissions("main")
-    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team main None None
 
 Passing a bad component name results in an error:
 
@@ -402,8 +411,8 @@ If you don't specify the component, you get all the uploaders for
 all components.
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~ubuntu-team main None
-    Archive Upload Rights ...~ubuntu-team universe None
+    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team universe None None
 
 newComponentUploader adds a new permission for a person to upload to a
 component.
@@ -422,10 +431,10 @@ component.
     http://.../ubuntu/+archive/primary/+upload/name12?type=component&item=restricted
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~name12 restricted None
-    Archive Upload Rights ...~ubuntu-team main None
-    Archive Upload Rights ...~ubuntu-team restricted None
-    Archive Upload Rights ...~ubuntu-team universe None
+    Archive Upload Rights ...~name12 restricted None None
+    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team restricted None None
+    Archive Upload Rights ...~ubuntu-team universe None None
 
 We can use ``checkUpload`` to verify that a person can upload a
 sourcepackage.
@@ -452,9 +461,9 @@ deleteComponentUploader() removes that permission:
 And we can see that it's gone:
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~ubuntu-team main None
-    Archive Upload Rights ...~ubuntu-team restricted None
-    Archive Upload Rights ...~ubuntu-team universe None
+    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team restricted None None
+    Archive Upload Rights ...~ubuntu-team universe None None
 
 And ``checkUpload`` now also no longer passes:
 
@@ -518,8 +527,8 @@ can administer distroseries queues in a particular component.
     ...     show_permission_entries(permissions)
 
     >>> show_admins_for_component("main")
-    Queue Administration Rights ...~name12 main None
-    Queue Administration Rights ...~ubuntu-team main None
+    Queue Administration Rights ...~name12 main None None
+    Queue Administration Rights ...~ubuntu-team main None None
 
 getComponentsForQueueAdmin returns all the permissions relating to components
 where the user is able to administer distroseries queues.
@@ -531,10 +540,10 @@ where the user is able to administer distroseries queues.
     ...     show_permission_entries(permissions)
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None
-    Queue Administration Rights ...~name12 multiverse None
-    Queue Administration Rights ...~name12 restricted None
-    Queue Administration Rights ...~name12 universe None
+    Queue Administration Rights ...~name12 main None None
+    Queue Administration Rights ...~name12 multiverse None None
+    Queue Administration Rights ...~name12 restricted None None
+    Queue Administration Rights ...~name12 universe None None
 
 newQueueAdmin adds a new permission for a person to administer distroseries
 queues in a particular component.
@@ -553,11 +562,11 @@ queues in a particular component.
     http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=partner
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None
-    Queue Administration Rights ...~name12 multiverse None
-    Queue Administration Rights ...~name12 partner None
-    Queue Administration Rights ...~name12 restricted None
-    Queue Administration Rights ...~name12 universe None
+    Queue Administration Rights ...~name12 main None None
+    Queue Administration Rights ...~name12 multiverse None None
+    Queue Administration Rights ...~name12 partner None None
+    Queue Administration Rights ...~name12 restricted None None
+    Queue Administration Rights ...~name12 universe None None
 
 deleteQueueAdmin removes that permission.
 
@@ -571,10 +580,86 @@ deleteQueueAdmin removes that permission.
 And we can see that it's gone:
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None
-    Queue Administration Rights ...~name12 multiverse None
-    Queue Administration Rights ...~name12 restricted None
-    Queue Administration Rights ...~name12 universe None
+    Queue Administration Rights ...~name12 main None None
+    Queue Administration Rights ...~name12 multiverse None None
+    Queue Administration Rights ...~name12 restricted None None
+    Queue Administration Rights ...~name12 universe None None
+
+getUploadersForPocket returns all the permissions where someone can upload
+to a particular pocket:
+
+    >>> ubuntu_devel = webservice.get(
+    ...     '/distros', api_version='devel').jsonBody()['entries'][0]
+
+    >>> def show_pocket_permissions(pocket):
+    ...     permissions = user_webservice.named_get(
+    ...         ubuntu_devel['main_archive_link'], 'getUploadersForPocket',
+    ...         api_version='devel', pocket=pocket).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_pocket_permissions('Proposed')
+
+Passing a bad pocket name results in an error:
+
+    >>> print cjwatson_webservice.named_get(
+    ...     ubuntu_devel['main_archive_link'], 'getUploadersForPocket',
+    ...     api_version='devel', pocket='badpocket')
+    HTTP/1.1 400 Bad Request
+    ...
+    pocket: Invalid value "badpocket". Acceptable values are: ...
+
+newPocketUploader adds a new permission for a person to upload to a pocket.
+
+    >>> response = ubuntu_owner_webservice.named_post(
+    ...     ubuntu_devel['main_archive_link'], 'newPocketUploader', {},
+    ...     api_version='devel', person=name12['self_link'],
+    ...     pocket='Proposed')
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = user_webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+upload/name12?type=pocket&item=PROPOSED
+
+    >>> show_pocket_permissions('Proposed')
+    Archive Upload Rights ...~name12 None None Proposed
+
+The person named in the permission can upload a package to this pocket.
+
+    >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
+    >>> response = user_webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'checkUpload',
+    ...     distroseries=grumpy['self_link'],
+    ...     sourcepackagename='mozilla-firefox', pocket='Proposed',
+    ...     component='restricted', person=name12['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+
+deletePocketUploader removes that permission:
+
+    >>> print ubuntu_owner_webservice.named_post(
+    ...     ubuntu_devel['main_archive_link'], 'deletePocketUploader', {},
+    ...     api_version='devel', person=name12['self_link'],
+    ...     pocket='Proposed')
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> show_pocket_permissions('Proposed')
+
+    >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
+    >>> response = user_webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'checkUpload',
+    ...     distroseries=grumpy['self_link'],
+    ...     sourcepackagename='mozilla-firefox', pocket='Proposed',
+    ...     component='restricted', person=name12['self_link'])
+    >>> print(response)
+    HTTP/1.1 403 Forbidden
+    ...
+    The signer of this package has no upload rights to
+    this distribution's primary archive.  Did you mean to upload to a PPA?
 
 Malformed archive permission URLs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -977,7 +1062,6 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/p3a").jsonBody())
     authorized_size: u'tag:launchpad.net:2008:redacted'
-    commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
@@ -987,15 +1071,16 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    relative_build_score: 0
     require_virtualized: u'tag:launchpad.net:2008:redacted'
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
+    suppress_subscription_notifications: False
     web_link: u'http://launchpad.../~cprov/+archive/p3a'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/p3a").jsonBody())
     authorized_size: 2048
-    commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'packages to help my friends.'
@@ -1005,10 +1090,12 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    relative_build_score: 0
     require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
+    suppress_subscription_notifications: False
     web_link: u'http://launchpad.../~cprov/+archive/p3a'
 
 Creating subscriptions to a (private) archive
@@ -1172,6 +1259,18 @@ error is returned.
     foocomm 1.0-2 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
 
+Suppressing notifications
+-------------------------
+
+The owner of the archive can suppress notifications on subscription
+changes over the API.
+
+    >>> private_archive = cprov_webservice.get(
+    ...     cprov_private_ppa['self_link']).jsonBody()
+    >>> private_archive['suppress_subscription_notifications'] = True
+    >>> print modify_archive(cprov_webservice, private_archive)
+    HTTP/1.1 209 ...
+    ...
 
 Archive dependencies
 ====================

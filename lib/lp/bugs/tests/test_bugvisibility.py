@@ -1,23 +1,30 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for visibility of a bug."""
 
+from lp.registry.enums import InformationType
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
+
+
+LEGACY_VISIBILITY_FLAG = {
+    u"disclosure.enhanced_sharing.writable": "true",
+    u"disclosure.legacy_subscription_visibility.enabled": u"true"}
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):
     """Test visibility for a public bug."""
 
     layer = DatabaseFunctionalLayer
-    #layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestPublicBugVisibility, self).setUp()
@@ -37,7 +44,7 @@ class TestPublicBugVisibility(TestCaseWithFactory):
 class TestPrivateBugVisibility(TestCaseWithFactory):
     """Test visibility for a private bug."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestPrivateBugVisibility, self).setUp()
@@ -54,7 +61,8 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
                 bug_supervisor=self.bug_team,
                 user=self.product.owner)
         self.bug = self.factory.makeBug(
-            owner=self.owner, private=True, product=self.product)
+            owner=self.owner, product=self.product,
+            information_type=InformationType.USERDATA)
 
     def test_privateBugRegularUser(self):
         # A regular (non-privileged) user can not view a private bug.
@@ -76,13 +84,64 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
             self.bug.subscribe(user, self.owner)
         self.assertTrue(self.bug.userCanView(user))
 
-    def test_privateBugAssignee(self):
-        # The bug assignee can see the private bug.
-        bug_assignee = self.factory.makePerson(name="bugassignee")
-        with celebrity_logged_in('admin'):
-            self.bug.default_bugtask.transitionToAssignee(bug_assignee)
-        self.assertTrue(self.bug.userCanView(bug_assignee))
-
-    def test_publicBugAnonUser(self):
+    def test_privateBugAnonUser(self):
         # Since the bug is private, the anonymous user cannot see it.
         self.assertFalse(self.bug.userCanView(None))
+
+    @property
+    def disable_trigger_fixture(self):
+        # XXX 2012-05-22 wallyworld bug=1002596
+        # No need to use this fixture when triggers are removed.
+        return DisableTriggerFixture(
+                {'bugsubscription':
+                     'bugsubscription_mirror_legacy_access_t',
+                 'bug': 'bug_mirror_legacy_access_t',
+                 'bugtask': 'bugtask_mirror_legacy_access_t',
+            })
+
+    def test_privateBugUnsubscribeRevokesVisibility(self):
+        # A person unsubscribed from a private bug can no longer see it.
+        # Requires feature flag since the default model behaviour is to leave
+        # any access grants untouched.
+        # This test disables the current temporary database triggers which
+        # mirror subscription status into visibility.
+        with FeatureFixture(LEGACY_VISIBILITY_FLAG):
+            user = self.factory.makePerson()
+            with celebrity_logged_in('admin'):
+                self.bug.subscribe(user, self.owner)
+                self.assertTrue(self.bug.userCanView(user))
+                with self.disable_trigger_fixture:
+                    self.bug.unsubscribe(user, self.owner)
+            self.assertFalse(self.bug.userCanView(user))
+
+    def test_privateBugUnsubscribeRetainsVisibility(self):
+        # A person unsubscribed from a private bug can still see it if the
+        # feature flag to enable legacy subscription visibility is not set.
+        # This test disables the current temporary database triggers which
+        # mirror subscription status into visibility.
+        user = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            self.bug.subscribe(user, self.owner)
+            self.assertTrue(self.bug.userCanView(user))
+            with self.disable_trigger_fixture:
+                self.bug.unsubscribe(user, self.owner)
+        self.assertTrue(self.bug.userCanView(user))
+
+    def test_subscribeGrantsVisibilityWithTriggersRemoved(self):
+        # When a user is subscribed to a bug, they are granted access. In this
+        # test, the database triggers are removed and so model code is used.
+        with self.disable_trigger_fixture:
+            user = self.factory.makePerson()
+            self.assertFalse(self.bug.userCanView(user))
+            with celebrity_logged_in('admin'):
+                self.bug.subscribe(user, self.owner)
+                self.assertTrue(self.bug.userCanView(user))
+
+    def test_subscribeGrantsVisibilityUsingTriggers(self):
+        # When a user is subscribed to a bug, they are granted access. In this
+        # test, the database triggers are used.
+        user = self.factory.makePerson()
+        self.assertFalse(self.bug.userCanView(user))
+        with celebrity_logged_in('admin'):
+            self.bug.subscribe(user, self.owner)
+            self.assertTrue(self.bug.userCanView(user))

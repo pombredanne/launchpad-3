@@ -105,6 +105,9 @@ from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
+from lp.translations.scripts.scrub_pofiletranslator import (
+    ScrubPOFileTranslator,
+    )
 
 
 ONE_DAY_IN_SECONDS = 24 * 60 * 60
@@ -1100,11 +1103,19 @@ class BugTaskFlattener(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(BugTaskFlattener, self).__init__(log, abort_time)
-        watermark = getUtility(IMemcacheClient).get(
-            '%s:bugtask-flattener' % config.instance_name)
-        self.start_at = watermark or 0
+        generation = getFeatureFlag('bugs.bugtaskflattener.generation')
+        if generation is None:
+            self.start_at = None
+        else:
+            self.memcache_key = (
+                '%s:bugtask-flattener:%s'
+                % (config.instance_name, generation.encode('utf-8')))
+            watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+            self.start_at = watermark or 0
 
     def findTaskIDs(self):
+        if self.start_at is None:
+            return EmptyResultSet()
         return IMasterStore(BugTask).find(
             (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
 
@@ -1119,8 +1130,7 @@ class BugTaskFlattener(TunableLoop):
 
         self.start_at = ids[-1] + 1
         result = getUtility(IMemcacheClient).set(
-            '%s:bugtask-flattener' % config.instance_name,
-            self.start_at)
+            self.memcache_key, self.start_at)
         if not result:
             self.log.warning('Failed to set start_at in memcache.')
 
@@ -1277,10 +1287,13 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     threading.currentThread().name)
                 break
 
-            num_remaining_tasks = len(tunable_loops)
-            if not num_remaining_tasks:
+            try:
+                tunable_loop_class = tunable_loops.pop(0)
+            except IndexError:
+                # We catch the exception rather than checking the
+                # length first to avoid race conditions with other
+                # threads.
                 break
-            tunable_loop_class = tunable_loops.pop(0)
 
             loop_name = tunable_loop_class.__name__
 
@@ -1315,7 +1328,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             try:
                 loop_logger.info("Running %s", loop_name)
 
-                abort_time = self.get_loop_abort_time(num_remaining_tasks)
+                abort_time = self.get_loop_abort_time(len(tunable_loops) + 1)
                 loop_logger.debug2(
                     "Task will be terminated in %0.3f seconds",
                     abort_time)
@@ -1408,6 +1421,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
+        ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,

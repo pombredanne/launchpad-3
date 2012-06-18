@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import get_current_web_service_request
 import simplejson
@@ -24,11 +25,13 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -49,53 +52,88 @@ ENABLED_FLAG = {'disclosure.enhanced_sharing.enabled': 'true'}
 WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
 
-class PillarSharingDetailsMixin:
-    """Test the pillar sharing details view."""
+class SharingBaseTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _create_sharing(self, grantee, security=False):
+    pillar_type = None
+
+    def setUp(self):
+        super(SharingBaseTestCase, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        if self.pillar_type == 'distribution':
+            self.pillar = self.factory.makeDistribution(
+                owner=self.owner, driver=self.driver)
+        elif self.pillar_type == 'product':
+            self.pillar = self.factory.makeProduct(
+                owner=self.owner, driver=self.driver)
+        self.access_policy = self.factory.makeAccessPolicy(
+            pillar=self.pillar, type=InformationType.PROPRIETARY)
+        self.grantees = []
+
+    def makeGrantee(self, name=None):
+        grantee = self.factory.makePerson(name=name)
+        self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
+        return grantee
+
+    def makeArtifactGrantee(
+            self, grantee=None, with_bug=True,
+            with_branch=False, security=False):
+        if grantee is None:
+            grantee = self.factory.makePerson()
+
+        branch = None
+        bug = None
+        artifacts = []
+
+        if with_branch and self.pillar_type == 'product':
+            branch = self.factory.makeBranch(
+                product=self.pillar, owner=self.pillar.owner,
+                information_type=InformationType.USERDATA)
+            artifacts.append(
+                self.factory.makeAccessArtifact(concrete=branch))
+
+        if with_bug:
             if security:
                 owner = self.factory.makePerson()
             else:
                 owner = self.pillar.owner
             if self.pillar_type == 'product':
-                self.bug = self.factory.makeBug(
-                    product=self.pillar,
-                    owner=owner,
-                    private=True)
-                self.branch = self.factory.makeBranch(
-                    product=self.pillar,
-                    owner=self.pillar.owner,
-                    private=True)
+                bug = self.factory.makeBug(
+                    product=self.pillar, owner=owner,
+                    information_type=InformationType.USERDATA)
             elif self.pillar_type == 'distribution':
-                self.branch = None
-                self.bug = self.factory.makeBug(
-                    distribution=self.pillar,
-                    owner=owner,
-                    private=True)
-            artifact = self.factory.makeAccessArtifact(concrete=self.bug)
-            policy = self.factory.makeAccessPolicy(pillar=self.pillar)
+                bug = self.factory.makeBug(
+                    distribution=self.pillar, owner=owner,
+                    information_type=InformationType.USERDATA)
+            artifacts.append(
+                self.factory.makeAccessArtifact(concrete=bug))
+
+        for artifact in artifacts:
             self.factory.makeAccessPolicyArtifact(
-                artifact=artifact, policy=policy)
+                artifact=artifact, policy=self.access_policy)
             self.factory.makeAccessArtifactGrant(
-                artifact=artifact, grantee=grantee, grantor=self.pillar.owner)
+                artifact=artifact,
+                grantee=grantee,
+                grantor=self.pillar.owner)
+        return grantee
 
-            if self.branch:
-                artifact = self.factory.makeAccessArtifact(
-                    concrete=self.branch)
-                self.factory.makeAccessPolicyArtifact(
-                    artifact=artifact, policy=policy)
-                self.factory.makeAccessArtifactGrant(
-                    artifact=artifact, grantee=grantee,
-                    grantor=self.pillar.owner)
+    def setupSharing(self, sharees):
+        with person_logged_in(self.owner):
+            # Make grants in ascending order so we can slice off the first
+            # elements in the pillar observer results to check batching.
+            for x in range(10):
+                self.makeArtifactGrantee()
+                grantee = self.makeGrantee('name%s' % x)
+                sharees.append(grantee)
 
-    def getPillarPerson(self, person=None, with_sharing=True):
-        if person is None:
-            person = self.factory.makePerson()
-        if with_sharing:
-            self._create_sharing(person)
 
+class PillarSharingDetailsMixin:
+    """Test the pillar sharing details view."""
+
+    def getPillarPerson(self, person=None, security=False):
+        person = self.makeArtifactGrantee(person, True, True, security)
         return PillarPerson(self.pillar, person)
 
     def test_view_filters_security_wisely(self):
@@ -103,13 +141,11 @@ class PillarSharingDetailsMixin:
         # `launchpad.Driver` -- the permission level for the page -- should be
         # able to see.
         with FeatureFixture(DETAILS_ENABLED_FLAG):
-            pillarperson = self.getPillarPerson(with_sharing=False)
-            self._create_sharing(grantee=pillarperson.person, security=True)
+            pillarperson = self.getPillarPerson(security=True)
             view = create_initialized_view(pillarperson, '+index')
             # The page loads
             self.assertEqual(pillarperson.person.displayname, view.page_title)
             # The bug, which is not shared with the owner, is not included.
-
             self.assertEqual(0, view.shared_bugs_count)
 
     def test_view_traverses_plus_sharingdetails(self):
@@ -118,7 +154,7 @@ class PillarSharingDetailsMixin:
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
             pillarperson = self.getPillarPerson()
-            expected = "Sharing details for %s : %s" % (
+            expected = "Sharing details for %s : Sharing : %s" % (
                     pillarperson.person.displayname,
                     pillarperson.pillar.displayname)
             url = 'http://launchpad.dev/%s/+sharing/%s' % (
@@ -132,7 +168,8 @@ class PillarSharingDetailsMixin:
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
-            pillarperson = self.getPillarPerson(with_sharing=False)
+            pillarperson = PillarPerson(
+                self.pillar, self.factory.makePerson())
             url = 'http://launchpad.dev/%s/+sharing/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
             browser = self.getUserBrowser(user=self.owner, url=url)
@@ -159,6 +196,8 @@ class PillarSharingDetailsMixin:
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             pillarperson = self.getPillarPerson()
             view = create_initialized_view(pillarperson, '+index')
+            bugtask = list(view.bugtasks)[0]
+            bug = bugtask.bug
             cache = IJSONRequestCache(view.request)
             request = get_current_web_service_request()
             self.assertEqual({
@@ -168,25 +207,39 @@ class PillarSharingDetailsMixin:
             self.assertEqual({
                 'self_link': absoluteURL(pillarperson.pillar, request),
             }, cache.objects.get('pillar'))
-            bugtask = self.bug.default_bugtask
             self.assertEqual({
-                'bug_id': self.bug.id,
-                'bug_summary': self.bug.title,
+                'bug_id': bug.id,
+                'bug_summary': bug.title,
                 'bug_importance': bugtask.importance.title.lower(),
-                'information_type': self.bug.information_type.title,
+                'information_type': bug.information_type.title,
                 'web_link': canonical_url(
                     bugtask, path_only_if_possible=True),
-                'self_link': absoluteURL(self.bug, request),
+                'self_link': absoluteURL(bug, request),
             }, cache.objects.get('bugs')[0])
             if self.pillar_type == 'product':
+                branch = list(view.branches)[0]
                 self.assertEqual({
-                    'branch_id': self.branch.id,
-                    'branch_name': self.branch.unique_name,
+                    'branch_id': branch.id,
+                    'branch_name': branch.unique_name,
                     'information_type': InformationType.USERDATA.title,
                     'web_link': canonical_url(
-                        self.branch, path_only_if_possible=True),
-                    'self_link': absoluteURL(self.branch, request),
+                        branch, path_only_if_possible=True),
+                    'self_link': absoluteURL(branch, request),
                 }, cache.objects.get('branches')[0])
+
+    def test_view_query_count(self):
+        # Test that the view bulk loads artifacts.
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
+            person = self.factory.makePerson()
+            for x in range(0, 15):
+                self.makeArtifactGrantee(person, True, True, False)
+            pillarperson = PillarPerson(self.pillar, person)
+
+            # Invalidate the Storm cache and check the query count.
+            IStore(self.pillar).invalidate()
+            with StormStatementRecorder() as recorder:
+                create_initialized_view(pillarperson, '+index')
+            self.assertThat(recorder, HasQueryCount(LessThan(12)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
@@ -206,55 +259,27 @@ class PillarSharingDetailsMixin:
 
 
 class TestProductSharingDetailsView(
-    TestCaseWithFactory, PillarSharingDetailsMixin):
+    SharingBaseTestCase, PillarSharingDetailsMixin):
 
     pillar_type = 'product'
 
     def setUp(self):
         super(TestProductSharingDetailsView, self).setUp()
-        self.owner = self.factory.makePerson()
-        self.pillar = self.factory.makeProduct(owner=self.owner)
         login_person(self.owner)
 
 
 class TestDistributionSharingDetailsView(
-    TestCaseWithFactory, PillarSharingDetailsMixin):
+    SharingBaseTestCase, PillarSharingDetailsMixin):
 
     pillar_type = 'distribution'
 
     def setUp(self):
         super(TestDistributionSharingDetailsView, self).setUp()
-        self.owner = self.factory.makePerson()
-        self.pillar = self.factory.makeProduct(owner=self.owner)
         login_person(self.owner)
 
 
 class PillarSharingViewTestMixin:
     """Test the PillarSharingView."""
-
-    layer = DatabaseFunctionalLayer
-
-    def createSharees(self):
-        login_person(self.owner)
-        self.access_policy = self.factory.makeAccessPolicy(
-            pillar=self.pillar,
-            type=InformationType.PROPRIETARY)
-        self.grantees = []
-
-        def makeGrants(name):
-            grantee = self.factory.makePerson(name=name)
-            self.grantees.append(grantee)
-            # Make access policy grant so that 'All' is returned.
-            self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
-            # Make access artifact grants so that 'Some' is returned.
-            artifact_grant = self.factory.makeAccessArtifactGrant()
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact_grant.abstract_artifact,
-                policy=self.access_policy)
-        # Make grants for grantees in ascending order so we can slice off the
-        # first elements in the pillar observer results to check batching.
-        for x in range(10):
-            makeGrants('name%s' % x)
 
     def test_init_without_feature_flag(self):
         # We need a feature flag to enable the view.
@@ -292,7 +317,7 @@ class PillarSharingViewTestMixin:
             picker_config = simplejson.loads(view.json_sharing_picker_config)
             self.assertTrue('vocabulary_filters' in picker_config)
             self.assertEqual(
-                'Grant access to project artifacts',
+                'Share project information',
                 picker_config['header'])
             self.assertEqual(
                 'Search for user or exclusive team with whom to share',
@@ -346,7 +371,7 @@ class PillarSharingViewTestMixin:
             view = create_view(self.pillar, name='+sharing')
             with StormStatementRecorder() as recorder:
                 view.initialize()
-            self.assertThat(recorder, HasQueryCount(LessThan(6)))
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
@@ -369,28 +394,27 @@ class PillarSharingViewTestMixin:
 
 
 class TestProductSharingView(PillarSharingViewTestMixin,
-                                 TestCaseWithFactory):
+                                 SharingBaseTestCase):
     """Test the PillarSharingView with products."""
+
+    pillar_type = 'product'
 
     def setUp(self):
         super(TestProductSharingView, self).setUp()
-        self.driver = self.factory.makePerson()
-        self.owner = self.factory.makePerson()
-        self.pillar = self.factory.makeProduct(
-            owner=self.owner, driver=self.driver)
-        self.createSharees()
+        self.setupSharing(self.grantees)
         login_person(self.driver)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,
-                                      TestCaseWithFactory):
+                                      SharingBaseTestCase):
     """Test the PillarSharingView with distributions."""
+
+    pillar_type = 'distribution'
 
     def setUp(self):
         super(TestDistributionSharingView, self).setUp()
-        self.driver = self.factory.makePerson()
-        self.owner = self.factory.makePerson()
-        self.pillar = self.factory.makeDistribution(
-            owner=self.owner, driver=self.driver)
-        self.createSharees()
+        self.setupSharing(self.grantees)
         login_person(self.driver)

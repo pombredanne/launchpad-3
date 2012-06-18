@@ -5,28 +5,35 @@ LaunchpadWriteTarFile is a helper class to make .tar.gz generation
 easy.
 
     >>> from StringIO import StringIO
+    >>> import tarfile
     >>> from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 
 First, we are going to define a function we are going to use to validate the
 output we will get.
 
-    >>> def examine_tarfile(tarfile):
-    ...     names = tarfile.getnames()
+    >>> def examine_tarfile(tar):
+    ...     members = tar.getmembers()
     ...     # Calculate the length of the longest name.
-    ...     max_length = max(len(name) for name in names)
+    ...     max_length = max(len(member.name) for member in members)
     ...     # Use this length to generate an appropriate format string.
     ...     format = '%%-%ds | %%s' % max_length
     ...
-    ...     for name in names:
-    ...         file = tarfile.extractfile(name)
+    ...     for member in members:
+    ...         if member.type == tarfile.REGTYPE:
+    ...             file = tar.extractfile(member)
     ...
-    ...         # XXX: 2010-04-26, Salgado, bug=570244: This is to make the
-    ...         # test pass on python2.5 and 2.6.
-    ...         name = name.rstrip('/')
-    ...         if file is not None:
-    ...             print format % (name, file.read())
-    ...         else:
-    ...             print format % (name, '')
+    ...             # XXX: 2010-04-26, Salgado, bug=570244: This is to make
+    ...             # the test pass on python2.5 and 2.6.
+    ...             name = member.name.rstrip('/')
+    ...             if file is not None:
+    ...                 print format % (name, file.read())
+    ...             else:
+    ...                 print format % (name, '')
+    ...         elif member.type == tarfile.SYMTYPE:
+    ...             print format % (
+    ...                 member.name, "<link to %s>" % member.linkname)
+    ...         elif member.type == tarfile.DIRTYPE:
+    ...             print format % (member.name, "<directory>")
 
     # Start off by creating a blank archive.
     # We'll need a filehandle to store it in.
@@ -43,19 +50,28 @@ the file name and the value the file content.
 
     >>> archive.add_files({'bar': '2', 'baz': '3'})
 
+We can add symbolic links.
+
+    >>> archive.add_symlink('link', 'foo')
+
+We can add directories.
+
+    >>> archive.add_directory('dir')
+
 Once we are done adding files, the archive needs to be closed.
 
     >>> archive.close()
 
 And now we can inspect the produced file.
 
-    >>> import tarfile
     >>> buffer.seek(0)
     >>> archive = tarfile.open('', 'r', buffer)
     >>> examine_tarfile(archive)
-    foo | 1
-    bar | 2
-    baz | 3
+    foo  | 1
+    bar  | 2
+    baz  | 3
+    link | <link to foo>
+    dir  | <directory>
 
 There are also some convenience methods for getting directly from several
 files, represented with a dictionary, which have the file name as key and
@@ -99,9 +115,9 @@ created.
     ...     'uno/dos/tres/cuatro': 'blah'
     ...     })
     >>> examine_tarfile(archive)
-    uno                 |
-    uno/dos             |
-    uno/dos/tres        |
+    uno                 | <directory>
+    uno/dos             | <directory>
+    uno/dos/tres        | <directory>
     uno/dos/tres/cuatro | blah
 
 Also, if there is a duplicated file, last one is the one that remains there.

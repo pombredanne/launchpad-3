@@ -488,7 +488,7 @@ Registry Admins team while keeping the user as the registrant.
     >>> print foo_product.registrant.displayname
     Sample Person
 
-The license is set to DONT_KNOW for now.
+The licence is set to DONT_KNOW for now.
     >>> [license.name for license in foo_product.licenses]
     ['DONT_KNOW']
 

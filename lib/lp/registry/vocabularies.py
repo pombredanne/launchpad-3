@@ -180,7 +180,12 @@ from lp.services.helpers import (
     ensure_unicode,
     shortlist,
     )
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    VALID_EMAIL_STATUSES,
+    )
+from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
     cachedproperty,
@@ -232,6 +237,7 @@ class BasePersonVocabulary:
             # lookup based on that.
             email = IStore(EmailAddress).find(
                 EmailAddress,
+                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
                 EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
                 raise LookupError(token)
@@ -701,6 +707,7 @@ class ValidPersonOrTeamVocabulary(
                 SQL("MatchingPerson"),
                 Person,
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+                LeftJoin(Account, Account.id == Person.accountID),
                 ]
 
             # If private_tables is empty, we are searching for all private
@@ -720,6 +727,9 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 And(
                     SQL("Person.id = MatchingPerson.id"),
+                    Or(
+                        Account.status == AccountStatus.ACTIVE,
+                        Person.teamowner != None),
                     Or(
                         And(  # A public person or team
                             Person.visibility == PersonVisibility.PUBLIC,
@@ -833,6 +843,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
             email_storm_query = self.store.find(
                 EmailAddress.personID,
+                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
                 EmailAddress.email.lower().startswith(text))
             email_subquery = Alias(email_storm_query._get_select(),
                                    'EmailAddress')
@@ -1053,7 +1064,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
     existing sharee for the pillar.
     """
 
-    displayname = 'Grant access to project artifacts'
+    displayname = 'Share project information'
     step_title = 'Search for user or exclusive team with whom to share'
 
     def __init__(self, context):
@@ -2231,10 +2242,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self):
+    def __init__(self, context=None):
         types = [
-            InformationType.PUBLIC,
-            InformationType.UNEMBARGOEDSECURITY,
             InformationType.EMBARGOEDSECURITY,
             InformationType.USERDATA]
         proprietary_disabled = bool(getFeatureFlag(
@@ -2243,6 +2252,12 @@ class InformationTypeVocabulary(SimpleVocabulary):
             'disclosure.display_userdata_as_private.enabled'))
         if not proprietary_disabled:
             types.append(InformationType.PROPRIETARY)
+        if (context is None or
+            not IProduct.providedBy(context) or
+            not context.private_bugs):
+            types = [InformationType.PUBLIC,
+                     InformationType.UNEMBARGOEDSECURITY] + types
+
         terms = []
         for type in types:
             title = type.title
@@ -2250,8 +2265,10 @@ class InformationTypeVocabulary(SimpleVocabulary):
             if type == InformationType.USERDATA and show_userdata_as_private:
                 title = 'Private'
                 description = (
-                    description.replace('user data', 'private information'))
+                    'Visible only to users with whom the project has '
+                    'shared private information.')
             term = SimpleTerm(type, type.name, title)
+            term.name = type.name
             term.description = description
             terms.append(term)
         super(InformationTypeVocabulary, self).__init__(terms)

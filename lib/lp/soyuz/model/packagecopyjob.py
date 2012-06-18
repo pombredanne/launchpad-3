@@ -40,6 +40,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.config import config
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
@@ -48,10 +49,11 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import (
-    JobStatus,
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
     )
-from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.adapters.overrides import (
     FromExistingOverridePolicy,
@@ -170,9 +172,14 @@ class PackageCopyJob(StormBase):
         """See `IPackageCopyJob`."""
         return self.metadata.get("section_override")
 
+    def makeDerived(self):
+        return PackageCopyJobDerived.makeSubclass(self)
+
 
 class PackageCopyJobDerived(BaseRunnableJob):
     """Abstract class for deriving from PackageCopyJob."""
+
+    __metaclass__ = EnumeratedSubclass
 
     delegates(IPackageCopyJob)
 
@@ -235,6 +242,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     class_job_type = PackageCopyJobType.PLAIN
     classProvides(IPlainPackageCopyJobSource)
+    config = config.IPlainPackageCopyJobSource
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
@@ -272,7 +280,9 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             metadata=metadata,
             requester=requester)
         IMasterStore(PackageCopyJob).add(job)
-        return cls(job)
+        derived = cls(job)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def _composeJobInsertionTuple(cls, target_distroseries, copy_policy,
@@ -540,7 +550,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
             send_email=send_email, announce_from_person=self.requester,
-            sponsored=self.sponsored)
+            sponsored=self.sponsored, packageupload=pu)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if ancestry is not None:

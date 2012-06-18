@@ -34,9 +34,9 @@ from bzrlib import (
     )
 from bzrlib.errors import (
     NotStacked,
-    UnsupportedProtocol,
     UnstackableBranchFormat,
     UnstackableRepositoryFormat,
+    UnsupportedProtocol,
     )
 from bzrlib.remote import (
     RemoteBranch,
