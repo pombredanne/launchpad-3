@@ -1809,7 +1809,10 @@ class Bug(SQLBase):
 
         # If the transition makes the bug private, then we need to ensure all
         # subscribers can see the bug. For any who can't, we create an access
-        # artifact grant.
+        # artifact grant. Note that the previous value of information_type may
+        # also have been private but we still need to perform the access check
+        # since any access policy grants will not confer access with the new
+        # information type value.
         if information_type in PRIVATE_INFORMATION_TYPES:
             # Grant the subscriber access if they can't see the bug.
             service = getUtility(IService, 'sharing')

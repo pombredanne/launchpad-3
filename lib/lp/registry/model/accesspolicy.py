@@ -18,8 +18,6 @@ import pytz
 from storm.expr import (
     And,
     In,
-    Join,
-    Not,
     Or,
     Select,
     SQL,
@@ -559,28 +557,3 @@ class AccessPolicyGrantFlat(StormBase):
             AccessArtifact.id == cls.abstract_artifact_id,
             cls.grantee_id == grantee.id,
             cls.policy_id.is_in(ids))
-
-    @classmethod
-    def findPeopleWithoutAccess(cls, artifact, people):
-        """See `IAccessPolicyGrantFlatSource`."""
-        person_ids = [person.id for person in people]
-        person_filter = TeamParticipation.personID.is_in(person_ids)
-
-        store = IStore(cls)
-        with_expr = With("grantees", store.find(
-            cls.grantee_id,
-            cls.abstract_artifact_id == artifact.id)
-            .config(distinct=True)._get_select())
-        grantee_select = (
-            Select(
-                (TeamParticipation.personID,),
-                tables=(TeamParticipation, Join("grantees",
-                    SQL("grantees.grantee = TeamParticipation.team"))),
-                where=person_filter,
-                distinct=True))
-        result_set = store.with_(with_expr).find(
-            Person,
-            Not(In(Person.id, grantee_select)),
-            In(Person.id, person_ids))
-
-        return result_set

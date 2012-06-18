@@ -1051,7 +1051,7 @@ class TestSharingService(TestCaseWithFactory):
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
         self.assertContentEqual(branches[:9], shared_branches)
 
-    def test_getPeopleWithoutAccess(self):
+    def test_getPeopleWithoutAccess_bugs(self):
         # Test the getPeopleWithoutAccess method.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
@@ -1067,14 +1067,17 @@ class TestSharingService(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         access_artifact = self.factory.makeAccessArtifact(concrete=bug)
 
-        def grant_access(person):
+        # Grant access to some of the people.
+        # Some access policy grants.
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        for person in people[:2]:
+            self.factory.makeAccessPolicyGrant(
+                policy=policy, grantee=person, grantor=owner)
+        # Some access artifact grants.
+        for person in people[2:5]:
             self.factory.makeAccessArtifactGrant(
                 artifact=access_artifact, grantee=person, grantor=owner)
-            return access_artifact
-
-        # Grant access to some of the people.
-        for person in people[:5]:
-            grant_access(person)
 
         # Check the results.
         without_access = self.service.getPeopleWithoutAccess(bug, people)

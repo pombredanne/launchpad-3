@@ -10,6 +10,13 @@ __all__ = [
 
 from itertools import product
 
+from storm.expr import (
+    And,
+    In,
+    Not,
+    Select,
+    )
+
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import (
     get_current_web_service_request,
@@ -37,13 +44,20 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sharingjob import (
     IRemoveBugSubscriptionsJobSource,
     )
 from lp.registry.interfaces.sharingservice import ISharingService
+from lp.registry.model.accesspolicy import (
+    AccessPolicyGrant,
+    AccessPolicyGrantFlat,
+    )
 from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.lpstorm import IStore
 from lp.services.features import getFeatureFlag
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
@@ -127,14 +141,68 @@ class SharingService:
 
         return visible_bugs, visible_branches
 
-    def getPeopleWithoutAccess(self, artifact, people):
+    def getPeopleWithoutAccess(self, concrete_artifact, people):
         """See `ISharingService`."""
-        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        # Public artifacts allow everyone to have access.
         access_artifacts = list(
-            getUtility(IAccessArtifactSource).find([artifact]))
-        return (
-            access_artifacts and
-            ap_grant_flat.findPeopleWithoutAccess(access_artifacts[0], people))
+            getUtility(IAccessArtifactSource).find([concrete_artifact]))
+        if not access_artifacts:
+            return []
+
+        # All artifacts have an information_type attribute.
+        access_artifact = access_artifacts[0]
+        information_type = concrete_artifact.information_type
+
+        person_ids = [person.id for person in people]
+        person_filter = TeamParticipation.personID.is_in(person_ids)
+
+        # Determine the pillars via which an access policy grant will give
+        # access.
+        affected_pillars = []
+        if access_artifact.bug_id:
+            affected_pillars = concrete_artifact.affected_pillars
+        else:
+            target_context = concrete_artifact.target.context
+            if IPillar.providedBy(target_context):
+                affected_pillars.append(target_context)
+
+        # Determine the grantees who have access via an access policy grant.
+        policy_grantees = []
+        if affected_pillars:
+            policies_to_check = getUtility(IAccessPolicySource).find(
+                product(affected_pillars, (information_type,)))
+            policy_ids = [policy.id for policy in policies_to_check]
+            policy_grantees = (
+                Select(
+                    (TeamParticipation.personID,),
+                    where=And(
+                        person_filter,
+                        AccessPolicyGrant.policy_id.is_in(policy_ids),
+                        AccessPolicyGrant.grantee_id ==
+                            TeamParticipation.teamID),
+                    distinct=True))
+
+        # Determine the grantees who have access via an access artifact grant.
+        artifact_grantees = (
+            Select(
+                (TeamParticipation.personID,),
+                where=And(
+                    person_filter,
+                    AccessPolicyGrantFlat.abstract_artifact_id ==
+                        access_artifact.id,
+                    AccessPolicyGrantFlat.grantee_id ==
+                        TeamParticipation.teamID),
+                distinct=True))
+
+        store = IStore(AccessPolicyGrantFlat)
+        result_set = store.find(
+            Person,
+            And(
+                Not(In(Person.id, policy_grantees)),
+                Not(In(Person.id, artifact_grantees))),
+            In(Person.id, person_ids))
+
+        return result_set
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
