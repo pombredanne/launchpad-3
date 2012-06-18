@@ -712,6 +712,8 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             public_series.branch = public_branch
             private_series = product.newSeries(
                 product.owner, 'special', 'testing', branch=private_branch)
+            # Verify that branchless series do not raise an error.
+            product.newSeries(product.owner, 'unused', 'no branch')
         self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()
