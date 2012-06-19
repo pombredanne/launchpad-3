@@ -277,11 +277,11 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks for 'ubuntu' main distro.
-        if not self.archive.allowUpdatesToReleasePocket():
-            assert self.distroseries.canUploadToPocket(self.pocket), (
-                "Not permitted acceptance in the %s pocket in a "
-                "series in the '%s' state." % (
-                self.pocket.name, self.distroseries.status.name))
+        assert self.distroseries.canUploadToPocket(
+            self.pocket, self.archive), (
+            "Not permitted acceptance in the %s pocket in a "
+            "series in the '%s' state." % (
+            self.pocket.name, self.distroseries.status.name))
 
         if self.status == PackageUploadStatus.ACCEPTED:
             raise QueueInconsistentStateError(
@@ -738,11 +738,11 @@ class PackageUpload(SQLBase):
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
-        if not self.archive.allowUpdatesToReleasePocket():
-            assert self.distroseries.canUploadToPocket(self.pocket), (
-                "Not permitted to publish to the %s pocket in a "
-                "series in the '%s' state." % (
-                self.pocket.name, self.distroseries.status.name))
+        assert self.distroseries.canUploadToPocket(
+            self.pocket, self.archive), (
+            "Not permitted to publish to the %s pocket in a "
+            "series in the '%s' state." % (
+            self.pocket.name, self.distroseries.status.name))
 
         publishing_records = []
         # In realising an upload we first load all the sources into

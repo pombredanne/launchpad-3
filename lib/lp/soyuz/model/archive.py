@@ -1247,7 +1247,7 @@ class Archive(SQLBase):
             # state.
             # XXX julian 2005-05-29 bug=117557:
             # This is a greasy hack until bug #117557 is fixed.
-            if not distroseries.canUploadToPocket(pocket):
+            if not distroseries.canUploadToPocket(pocket, self):
                 return CannotUploadToPocket(distroseries, pocket)
 
     def _checkUpload(self, person, distroseries, sourcepackagename, component,

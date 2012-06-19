@@ -808,9 +808,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Refuse to create new publication records that will never be
         # published.
-        if self.distroseries.cannotModifySuite(self.pocket, self.archive):
+        if not self.distroseries.canUploadToPocket(self.pocket, self.archive):
             raise ArchiveOverriderError(
-                "Cannot change overrides in immutable suite %s" %
+                "Cannot change overrides in suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
 
         return getUtility(IPublishingSet).newSourcePublication(
@@ -1229,9 +1229,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Refuse to create new publication records that will never be
         # published.
-        if self.distroseries.cannotModifySuite(self.pocket, self.archive):
+        if not self.distroseries.canUploadToPocket(self.pocket, self.archive):
             raise ArchiveOverriderError(
-                "Cannot change overrides in immutable suite %s" %
+                "Cannot change overrides in suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
 
         # Append the modified package publishing entry

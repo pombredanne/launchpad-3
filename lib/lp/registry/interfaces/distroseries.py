@@ -402,11 +402,13 @@ class IDistroSeriesPublic(
         development moves on to the other pockets.
         """
 
-    def canUploadToPocket(pocket):
-        """Decides whether or not allow uploads for a given pocket.
+    def canUploadToPocket(pocket, archive):
+        """Decides whether or not to allow uploads for a given pocket/archive.
 
-        Only allow uploads for RELEASE pocket in unreleased
-        distroseries and the opposite, only allow uploads for
+        Some archive types (e.g. PPAs) allow uploads to the RELEASE pocket
+        regardless of the distroseries state.  For others (principally
+        primary archives), only allow uploads for RELEASE pocket in
+        unreleased distroseries, and conversely only allow uploads for
         non-RELEASE pockets in released distroseries.
         For instance, in edgy time :
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -302,7 +302,7 @@ class Publisher(object):
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.series:
             for pocket in self.archive.getPockets():
-                if distroseries.cannotModifySuite(pocket, self.archive):
+                if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
                     # stable distroseries, no matter what other bugs
                     # that precede here have dirtied it.
@@ -458,6 +458,12 @@ class Publisher(object):
             package_index.close()
             di_index.close()
 
+    def cannotModifySuite(self, distroseries, pocket):
+        """Return True if the distroseries is stable and pocket is release."""
+        return (not distroseries.isUnstable() and
+                not self.archive.allowUpdatesToReleasePocket() and
+                pocket == PackagePublishingPocket.RELEASE)
+
     def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
         """Last check before publishing a dirty suite.
 
@@ -465,7 +471,7 @@ class Publisher(object):
         in RELEASE pocket (primary archives) we certainly have a problem,
         better stop.
         """
-        if distroseries.cannotModifySuite(pocket, self.archive):
+        if self.cannotModifySuite(distroseries, pocket):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 

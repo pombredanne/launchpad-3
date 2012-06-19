@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -327,9 +327,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def can_be_retried(self):
         """See `IBuild`."""
         # First check that the slave scanner would pick up the build record
-        # if we reset it.  PPA and Partner builds are always ok.
-        if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            not self.distro_series.canUploadToPocket(self.pocket)):
+        # if we reset it.
+        if not self.distro_series.canUploadToPocket(self.pocket, self.archive):
             # The slave scanner would not pick this up, so it cannot be
             # re-tried.
             return False

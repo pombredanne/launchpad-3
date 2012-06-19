@@ -170,6 +170,7 @@ canUploadToPocket method helps us to decide if an upload is allowed or
 not, according to the distroseries status and the upload target pocket.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> archive = ubuntu.main_archive
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> hoary = ubuntu['hoary']
 
@@ -178,16 +179,18 @@ not, according to the distroseries status and the upload target pocket.
 
     >>> warty.status.name
     'CURRENT'
-    >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE, archive)
     False
-    >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY, archive)
     True
 
     >>> breezy_autotest.status.name
     'EXPERIMENTAL'
-    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    >>> breezy_autotest.canUploadToPocket(
+    ...     PackagePublishingPocket.RELEASE, archive)
     True
-    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    >>> breezy_autotest.canUploadToPocket(
+    ...     PackagePublishingPocket.SECURITY, archive)
     False
 
 The FROZEN status is special.  Uploads are allowed for all pockets as
@@ -198,20 +201,21 @@ the upload will have to wait for manual approval anyway:
 
     >>> hoary.status.name
     'FROZEN'
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    >>> hoary.canUploadToPocket(PackagePublishingPocket.RELEASE, archive)
     True
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY, archive)
     True
 
 The PROPOSED pocket is also special.  Pre-release, it may be used for
 staging uploads on their way into the RELEASE pocket; post-release, it may
 be used for staging uploads on their way into the UPDATES pocket.
 
-    >>> warty.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    >>> warty.canUploadToPocket(PackagePublishingPocket.PROPOSED, archive)
     True
-    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    >>> breezy_autotest.canUploadToPocket(
+    ...     PackagePublishingPocket.PROPOSED, archive)
     True
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    >>> hoary.canUploadToPocket(PackagePublishingPocket.PROPOSED, archive)
     True
 
 Package searching

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -330,11 +330,11 @@ class PackageBuildDerived:
                 return self._release_builder_and_remove_queue_item()
 
         # Explode before collect a binary that is denied in this
-        # distroseries/pocket
-        if not self.archive.allowUpdatesToReleasePocket():
-            assert self.distro_series.canUploadToPocket(self.pocket), (
-                "%s (%s) can not be built for pocket %s: illegal status"
-                % (self.title, self.id, self.pocket.name))
+        # distroseries/pocket/archive
+        assert self.distro_series.canUploadToPocket(
+            self.pocket, self.archive), (
+            "%s (%s) can not be built for pocket %s in %s: illegal status"
+            % (self.title, self.id, self.pocket.name, self.archive))
 
         # Ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]

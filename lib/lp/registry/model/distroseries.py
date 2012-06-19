@@ -709,8 +709,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `HasMilestonesMixin`."""
         return (Milestone.distroseries == self)
 
-    def canUploadToPocket(self, pocket):
+    def canUploadToPocket(self, pocket, archive):
         """See `IDistroSeries`."""
+        # PPA and PARTNER allow everything.
+        if archive.allowUpdatesToReleasePocket():
+            return True
+
         # Allow everything for distroseries in FROZEN state.
         if self.status == SeriesStatus.FROZEN:
             return True
@@ -1610,43 +1614,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if is_careful:
             return True
 
-        # PPA and PARTNER allow everything.
-        if publication.archive.allowUpdatesToReleasePocket():
-            return True
-
-        # FROZEN state also allow all pockets to be published.
-        if self.status == SeriesStatus.FROZEN:
-            return True
-
-        # If we're not republishing, we want to make sure that
-        # we're not publishing packages into the wrong pocket.
-        # Unfortunately for careful mode that can't hold true
-        # because we indeed need to republish everything.
-        pre_release_pockets = (
-            PackagePublishingPocket.RELEASE,
-            PackagePublishingPocket.PROPOSED,
-            )
-        if self.isUnstable() and publication.pocket not in pre_release_pockets:
-            log.error("Tried to publish %s (%s) into a non-release "
-                      "pocket on unstable series %s, skipping"
-                      % (publication.displayname, publication.id,
-                         self.displayname))
-            return False
-        if (not self.isUnstable() and
-            publication.pocket == PackagePublishingPocket.RELEASE):
-            log.error("Tried to publish %s (%s) into release pocket "
-                      "on stable series %s, skipping"
-                      % (publication.displayname, publication.id,
-                         self.displayname))
+        if not self.canUploadToPocket(publication.pocket, publication.archive):
+            log.error(
+                "Tried to publish %s (%s) into the %s pocket on series %s "
+                "(%s), skipping" % (
+                    publication.displayname, publication.id,
+                    publication.pocket, self.displayname, self.status.name))
             return False
 
         return True
-
-    def cannotModifySuite(self, pocket, archive):
-        """RELEASE pockets of stable DSes in some archives are immutable."""
-        return (not self.isUnstable() and
-                not archive.allowUpdatesToReleasePocket() and
-                pocket == PackagePublishingPocket.RELEASE)
 
     @property
     def main_archive(self):
