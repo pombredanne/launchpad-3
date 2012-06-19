@@ -521,8 +521,12 @@ DistroSeries can build meta objects for packages
 ------------------------------------------------
 
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
-    >>> from lp.soyuz.interfaces.distroseriesbinarypackage import IDistroSeriesBinaryPackage
-    >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease
+    >>> from lp.soyuz.interfaces.distroseriesbinarypackage import (
+    ...     IDistroSeriesBinaryPackage,
+    ...     )
+    >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+    ...     IDistroSeriesSourcePackageRelease,
+    ...     )
 
     >>> pmount_src_name = SourcePackageName.byName('pmount')
     >>> pmount_source = hoary.getSourcePackage(pmount_src_name)
@@ -726,7 +730,9 @@ publication in question:
     4
     >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
-    >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     IBinaryPackagePublishingHistory,
+    ...     )
     >>> verifyObject(IBinaryPackagePublishingHistory, warty_mozilla_pub_bin)
     True
 
