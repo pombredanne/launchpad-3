@@ -23,6 +23,7 @@ import tempfile
 import apt_pkg
 from lazr.delegates import delegates
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
@@ -150,9 +151,13 @@ def update_files_privacy(pub_record):
             old_lfa.restricted == archive.private or
             old_lfa.restricted == False):
             continue
-        new_lfa = re_upload_file(
-            old_lfa, restricted=archive.private)
-        setattr(obj, attr_name, new_lfa)
+        new_lfa = re_upload_file(old_lfa, restricted=archive.private)
+        # Most of the attributes set here are not normally editable.
+        # However, since we've just created all the publication records
+        # here, and since we know that the calling user must have access to
+        # the private source archive, we can get away with removing the
+        # security proxy.
+        setattr(removeSecurityProxy(obj), attr_name, new_lfa)
         re_uploaded_files.append(new_lfa)
 
     return re_uploaded_files
@@ -240,8 +245,8 @@ class CopyChecker:
     Allows the checker function to identify conflicting copy candidates
     within the copying batch.
     """
-    def __init__(self, archive, include_binaries, allow_delayed_copies=True,
-                 strict_binaries=True):
+    def __init__(self, archive, include_binaries, allow_delayed_copies=False,
+                 strict_binaries=True, unembargo=False):
         """Initialize a copy checker.
 
         :param archive: the target `IArchive`.
@@ -253,11 +258,14 @@ class CopyChecker:
         :param strict_binaries: If 'include_binaries' is True then setting
             this to True will make the copy fail if binaries cannot be also
             copied.
+        :param unembargo: If True, allow copying from a private archive to a
+            public archive.
         """
         self.archive = archive
         self.include_binaries = include_binaries
         self.strict_binaries = strict_binaries
         self.allow_delayed_copies = allow_delayed_copies
+        self.unembargo = unembargo
         self._inventory = {}
 
     def _getInventoryKey(self, candidate):
@@ -510,10 +518,9 @@ class CopyChecker:
                     "version older than the %s published in %s" %
                     (ancestry.displayname, ancestry.distroseries.name))
 
-        delayed = (
-            self.allow_delayed_copies and
-            not self.archive.private and
-            has_restricted_files(source))
+        requires_unembargo = (
+            not self.archive.private and has_restricted_files(source))
+        delayed = self.allow_delayed_copies and requires_unembargo
 
         if delayed:
             upload_conflict = getUtility(IPackageUploadSet).findSourceUpload(
@@ -524,16 +531,20 @@ class CopyChecker:
                 raise CannotCopy(
                     'same version already uploaded and waiting in '
                     'ACCEPTED queue')
+        elif requires_unembargo and not self.unembargo:
+            raise CannotCopy(
+                "Cannot copy restricted files to a public archive without "
+                "explicit unembargo option.")
 
         # Copy is approved, update the copy inventory.
         self.addCopy(source, delayed)
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=True, person=None, check_permissions=True,
+            allow_delayed_copies=False, person=None, check_permissions=True,
             overrides=None, send_email=False, strict_binaries=True,
             close_bugs=True, create_dsd_job=True,  announce_from_person=None,
-            sponsored=None, packageupload=None):
+            sponsored=None, packageupload=None, unembargo=False, logger=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -554,7 +565,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         copied along with the source.
     :param allow_delayed_copies: boolean indicating whether or not private
         sources can be copied to public archives using delayed_copies.
-        Defaults to True, only set as False in the UnembargoPackage context.
+        Defaults to False.
     :param person: the requester `IPerson`.
     :param check_permissions: boolean indicating whether or not the
         requester's permissions to copy should be checked.
@@ -581,6 +592,10 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         publishing record will be set to this person.
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
+    :param unembargo: If True, allow copying restricted files from a private
+        archive to a public archive, and re-upload them to the public
+        librarian when doing so.
+    :param logger: An optional logger.
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -593,7 +608,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     errors = []
     copy_checker = CopyChecker(
         archive, include_binaries, allow_delayed_copies,
-        strict_binaries=strict_binaries)
+        strict_binaries=strict_binaries, unembargo=unembargo)
 
     for source in sources:
         if series is None:
@@ -662,7 +677,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
                 close_bugs_since_version=old_version, creator=creator,
-                sponsor=sponsor, packageupload=packageupload)
+                sponsor=sponsor, packageupload=packageupload, logger=logger)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
@@ -679,7 +694,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
                     close_bugs_since_version=None, creator=None,
-                    sponsor=None, packageupload=None):
+                    sponsor=None, packageupload=None, logger=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -709,6 +724,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
+    :param logger: An optional logger.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -747,24 +763,31 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     else:
         source_copy = source_in_destination.first()
 
-    if not include_binaries:
-        source_copy.createMissingBuilds()
-        return copies
+    if include_binaries:
+        # Copy missing binaries for the matching architectures in the
+        # destination series. ISPPH.getBuiltBinaries() return only unique
+        # publication per binary package releases (i.e. excludes irrelevant
+        # arch-indep publications) and IBPPH.copy is prepared to expand
+        # arch-indep publications.
+        binary_copies = getUtility(IPublishingSet).copyBinariesTo(
+            source.getBuiltBinaries(), series, pocket, archive, policy=policy)
 
-    # Copy missing binaries for the matching architectures in the
-    # destination series. ISPPH.getBuiltBinaries() return only
-    # unique publication per binary package releases (i.e. excludes
-    # irrelevant arch-indep publications) and IBPPH.copy is prepared
-    # to expand arch-indep publications.
-    binary_copies = getUtility(IPublishingSet).copyBinariesTo(
-        source.getBuiltBinaries(), series, pocket, archive, policy=policy)
-
-    if binary_copies is not None:
-        copies.extend(binary_copies)
+        if binary_copies is not None:
+            copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
     source_copy.createMissingBuilds()
+
+    if not archive.private and has_restricted_files(source):
+        # Fix copies by overriding them according to the current ancestry
+        # and re-upload files with privacy mismatch.
+        for pub_record in copies:
+            pub_record.overrideFromAncestry()
+            for new_file in update_files_privacy(pub_record):
+                if logger is not None:
+                    logger.info(
+                        "Re-uploaded %s to librarian" % new_file.filename)
 
     return copies
 
@@ -864,7 +887,7 @@ class PackageCopier(SoyuzScript):
 
     usage = '%prog -s warty mozilla-firefox --to-suite hoary'
     description = 'MOVE or COPY a published package to another suite.'
-    allow_delayed_copies = True
+    allow_delayed_copies = False
 
     def add_my_options(self):
 
@@ -896,6 +919,11 @@ class PackageCopier(SoyuzScript):
             '--to-partner', dest='to_partner', default=False,
             action='store_true', help='Destination set to PARTNER archive.')
 
+        self.parser.add_option(
+            '--unembargo', dest='unembargo', default=False,
+            action='store_true',
+            help='Allow copying from a private archive to a public archive.')
+
     def checkCopyOptions(self):
         """Check if the locations options are sane.
 
@@ -919,6 +947,27 @@ class PackageCopier(SoyuzScript):
             raise SoyuzScriptError(
                 "Cannot operate with destination PARTNER and PPA "
                 "simultaneously.")
+
+    def checkPrivacyOptions(self):
+        """Check privacy-related location options.
+
+        We can copy from a private archive to a public archive, but only
+        with the --unembargo option (to avoid accidents).  Unembargoing into
+        the release pocket of a distribution is not permitted.
+        """
+        if (self.location.archive.private and
+            not self.destination.archive.private):
+            if not self.options.unembargo:
+                raise SoyuzScriptError(
+                    "Copying from a private archive to a public archive "
+                    "requires the --unembargo option.")
+
+            if not self.destination.archive.canModifySuite(
+                self.destination.distroseries, self.destination.pocket):
+                raise SoyuzScriptError(
+                    "Can't unembargo into suite '%s' of a distribution." %
+                    self.destination.distroseries.getSuite(
+                        self.destination.pocket))
 
     def mainTask(self):
         """Execute package copy procedure.
@@ -944,6 +993,8 @@ class PackageCopier(SoyuzScript):
 
         self.setupDestination()
 
+        self.checkPrivacyOptions()
+
         self.logger.info("FROM: %s" % (self.location))
         self.logger.info("TO: %s" % (self.destination))
 
@@ -963,7 +1014,8 @@ class PackageCopier(SoyuzScript):
                 sources, self.destination.archive,
                 self.destination.distroseries, self.destination.pocket,
                 self.options.include_binaries, self.allow_delayed_copies,
-                check_permissions=False)
+                check_permissions=False, unembargo=self.options.unembargo,
+                logger=self.logger)
         except CannotCopy, error:
             self.logger.error(str(error))
             return []
@@ -1017,8 +1069,7 @@ class UnembargoSecurityPackage(PackageCopier):
     them from the PPA to the Ubuntu archive and re-upload any files
     from the restricted librarian into the non-restricted one.
 
-    This script simply wraps up PackageCopier with some nicer options,
-    and implements the file re-uploading.
+    This script simply wraps up PackageCopier with some nicer options.
 
     An assumption is made, to reduce the number of command line options,
     that packages are always copied between the same distroseries.  The user
@@ -1032,7 +1083,6 @@ class UnembargoSecurityPackage(PackageCopier):
     description = ("Unembargo packages in a private PPA by copying to the "
                    "specified location and re-uploading any files to the "
                    "unrestricted librarian.")
-    allow_delayed_copies = False
 
     def add_my_options(self):
         """Add -d, -s, dry-run and confirmation options."""
@@ -1050,36 +1100,26 @@ class UnembargoSecurityPackage(PackageCopier):
             help="Private PPA name.")
 
     def setUpCopierOptions(self):
-        """Set up options needed by PackageCopier.
-
-        :return: False if there is a problem with the options.
-        """
+        """Set up options needed by PackageCopier."""
         # Set up the options for PackageCopier that are needed in addition
         # to the ones that this class sets up.
         self.options.to_partner = False
         self.options.to_ppa = False
         self.options.partner_archive = None
         self.options.include_binaries = True
+        self.options.unembargo = True
         self.options.to_distribution = self.options.distribution_name
-        from_suite = self.options.suite.split("-")
-        if len(from_suite) == 1:
-            self.logger.error("Can't unembargo into the release pocket")
-            return False
-        else:
-            # The PackageCopier parent class uses options.suite as the
-            # source suite, so we need to override it to remove the
-            # pocket since PPAs are pocket-less.
-            self.options.to_suite = self.options.suite
-            self.options.suite = from_suite[0]
+        # The PackageCopier parent class uses options.suite as the source
+        # suite, so we need to override it to remove the pocket since PPAs
+        # are pocket-less.
+        self.options.to_suite = self.options.suite
+        self.options.suite = self.options.suite.split("-")[0]
         self.options.version = None
         self.options.component = None
 
-        return True
-
     def mainTask(self):
         """Invoke PackageCopier to copy the package(s) and re-upload files."""
-        if not self.setUpCopierOptions():
-            return None
+        self.setUpCopierOptions()
 
         # Generate the location for PackageCopier after overriding the
         # options.
@@ -1087,14 +1127,6 @@ class UnembargoSecurityPackage(PackageCopier):
 
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)
-
-        # Fix copies by overriding them according to the current ancestry
-        # and re-upload files with privacy mismatch.
-        for pub_record in copies:
-            pub_record.overrideFromAncestry()
-            for new_file in update_files_privacy(pub_record):
-                self.logger.info(
-                    "Re-uploaded %s to librarian" % new_file.filename)
 
         # Return this for the benefit of the test suite.
         return copies
