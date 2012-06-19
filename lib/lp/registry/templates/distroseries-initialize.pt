@@ -17,8 +17,7 @@
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
         <a href="/+help-registry/init-series-title-help.html" target="help"
-           class="sprite maybe actionicon"><span
-           class="invisible-link">Initialization help</span></a>
+           class="sprite maybe action-icon">Initialization help</a>
       </div>
       <p class="error message javascript-disabled">
         Javascript is required to use this page. Please enable

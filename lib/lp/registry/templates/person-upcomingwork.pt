@@ -93,7 +93,9 @@
       <tbody>
         <tr class="expandable">
           <td>
-            <a href="#" class="expander"></a>
+            <span class="expander">
+                <span class="action-icon">Expand or Collapse</span>
+            </span>
             <span tal:replace="structure container/html_link" />
           </td>
           <td tal:content="structure container/target_link" />

@@ -183,7 +183,9 @@ class BugImporter:
             person = None
 
         if person is None:
-            person = getUtility(IPersonSet).getByEmail(email)
+            person = getUtility(IPersonSet).getByEmail(
+                    email,
+                    filter_status=False)
 
             if person is None:
                 self.logger.debug('creating person for %s' % email)
