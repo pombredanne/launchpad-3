@@ -787,17 +787,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             raise AssertionError("changeOverride must be passed either a"
                                  " new component or new section")
 
-        # Retrieve current publishing info
-        current = self
-
         # Check there is a change to make
         if new_component is None:
-            new_component = current.component
+            new_component = self.component
         if new_section is None:
-            new_section = current.section
+            new_section = self.section
 
-        if (new_component == current.component and
-            new_section == current.section):
+        if new_component == self.component and new_section == self.section:
             return
 
         # See if the archive has changed by virtue of the component
@@ -805,18 +801,25 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         distribution = self.distroseries.distribution
         new_archive = distribution.getArchiveByComponent(
             new_component.name)
-        if new_archive != None and new_archive != current.archive:
+        if new_archive != None and new_archive != self.archive:
             raise ArchiveOverriderError(
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
+        # Refuse to create new publication records that will never be
+        # published.
+        if not self.archive.canModifySuite(self.distroseries, self.pocket):
+            raise ArchiveOverriderError(
+                "Cannot change overrides in suite '%s'" %
+                self.distroseries.getSuite(self.pocket))
+
         return getUtility(IPublishingSet).newSourcePublication(
-            distroseries=current.distroseries,
-            sourcepackagerelease=current.sourcepackagerelease,
-            pocket=current.pocket,
+            distroseries=self.distroseries,
+            sourcepackagerelease=self.sourcepackagerelease,
+            pocket=self.pocket,
             component=new_component,
             section=new_section,
-            archive=current.archive)
+            archive=self.archive)
 
     def copyTo(self, distroseries, pocket, archive, override=None,
                create_dsd_job=True, creator=None, sponsor=None,
@@ -1202,20 +1205,17 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             raise AssertionError("changeOverride must be passed a new"
                                  "component, section and/or priority.")
 
-        # Retrieve current publishing info
-        current = self
-
         # Check there is a change to make
         if new_component is None:
-            new_component = current.component
+            new_component = self.component
         if new_section is None:
-            new_section = current.section
+            new_section = self.section
         if new_priority is None:
-            new_priority = current.priority
+            new_priority = self.priority
 
-        if (new_component == current.component and
-            new_section == current.section and
-            new_priority == current.priority):
+        if (new_component == self.component and
+            new_section == self.section and
+            new_priority == self.priority):
             return
 
         # See if the archive has changed by virtue of the component changing:
@@ -1227,6 +1227,13 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
+        # Refuse to create new publication records that will never be
+        # published.
+        if not self.archive.canModifySuite(self.distroseries, self.pocket):
+            raise ArchiveOverriderError(
+                "Cannot change overrides in suite '%s'" %
+                self.distroseries.getSuite(self.pocket))
+
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
             binarypackagename=self.binarypackagerelease.binarypackagename,
@@ -1234,11 +1241,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            pocket=current.pocket,
+            pocket=self.pocket,
             component=new_component,
             section=new_section,
             priority=new_priority,
-            archive=current.archive)
+            archive=self.archive)
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
