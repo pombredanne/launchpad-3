@@ -16,6 +16,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
     BugNotificationLevel,
@@ -48,7 +49,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.dbtriggers import triggers_disabled
+from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
@@ -57,11 +58,15 @@ from lp.testing.matchers import (
     )
 
 
-LEGACY_ACCESS_TRIGGERS = [
-    ('bug', 'bug_mirror_legacy_access_t'),
-    ('bugtask', 'bugtask_mirror_legacy_access_t'),
-    ('bugsubscription', 'bugsubscription_mirror_legacy_access_t'),
-    ]
+def disable_trigger_fixture():
+    # XXX 2012-05-22 wallyworld bug=1002596
+    # No need to use this fixture when triggers are removed.
+    return DisableTriggerFixture(
+            {'bugsubscription':
+                 'bugsubscription_mirror_legacy_access_t',
+             'bug': 'bug_mirror_legacy_access_t',
+             'bugtask': 'bugtask_mirror_legacy_access_t',
+        })
 
 
 class TestBug(TestCaseWithFactory):
@@ -746,6 +751,24 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             subscribers_before_public,
             subscribers_after_public)
 
+    def test_transition_to_private_grants_subscribers_access(self):
+        # When a bug is made private, any direct subscribers should be granted
+        # access.
+        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
+            self.createBugTasksAndSubscribers())
+        some_person = self.factory.makePerson()
+        with disable_trigger_fixture():
+            with person_logged_in(bug_owner):
+                bug.subscribe(some_person, bug_owner)
+                subscribers = bug.getDirectSubscribers()
+                who = self.factory.makePerson(name='who')
+                bug.transitionToInformationType(
+                    InformationType.USERDATA, who)
+
+        service = getUtility(IService, 'sharing')
+        peopleWithoutAccess = service.getPeopleWithoutAccess(bug, subscribers)
+        self.assertContentEqual([], peopleWithoutAccess)
+
     def test_setPillarOwnerSubscribedIfNoBugSupervisor(self):
         # The pillar owner is subscribed if the bug supervisor is not set and
         # the bug is marked as USERDATA.
@@ -835,7 +858,7 @@ class TestBugPrivacy(TestCaseWithFactory):
 
         # There are also transitional triggers that do this. Disable
         # them temporarily so we can be sure the application side works.
-        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+        with disable_trigger_fixture():
             with admin_logged_in():
                 product = bug.default_bugtask.product
                 bug.transitionToInformationType(
