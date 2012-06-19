@@ -1973,11 +1973,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # count with single task
         url = canonical_url(product, view_name='+bugs')
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(24)))
+        self.assertThat(recorder, HasQueryCount(LessThan(25)))
         # count with many tasks
         buggy_url = canonical_url(buggy_product, view_name='+bugs')
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(24)))
+        self.assertThat(recorder, HasQueryCount(LessThan(25)))
 
     def test_mustache_model_missing_if_no_flag(self):
         """The IJSONRequestCache should contain mustache_model."""
