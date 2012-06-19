@@ -21,10 +21,8 @@ class TestPPAVocabulary(TestCaseWithFactory):
     def test_toTerm_empty_description(self):
         archive = self.factory.makeArchive(description='')
         vocab = PPAVocabulary()
-        token = '%s/%s' % (archive.owner.name, archive.name)
-        description = 'No description available'
         term = vocab.toTerm(archive)
         self.assertThat(term, MatchesStructure.byEquality(
             value=archive,
-            token=token,
-            title=description))
+            token='%s/%s' % (archive.owner.name, archive.name),
+            title='No description available'))
