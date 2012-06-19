@@ -18,9 +18,9 @@ from storm.expr import (
     And,
     In,
     Join,
-    Not,
+    Or,
     Select,
-    Or)
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
