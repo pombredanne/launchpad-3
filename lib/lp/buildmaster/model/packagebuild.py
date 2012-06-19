@@ -331,8 +331,7 @@ class PackageBuildDerived:
 
         # Explode before collect a binary that is denied in this
         # distroseries/pocket/archive
-        assert self.distro_series.canUploadToPocket(
-            self.pocket, self.archive), (
+        assert self.archive.canModifySuite(self.distro_series, self.pocket), (
             "%s (%s) can not be built for pocket %s in %s: illegal status"
             % (self.title, self.id, self.pocket.name, self.archive))
 

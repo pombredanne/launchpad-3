@@ -328,7 +328,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """See `IBuild`."""
         # First check that the slave scanner would pick up the build record
         # if we reset it.
-        if not self.distro_series.canUploadToPocket(self.pocket, self.archive):
+        if not self.archive.canModifySuite(self.distro_series, self.pocket):
             # The slave scanner would not pick this up, so it cannot be
             # re-tried.
             return False

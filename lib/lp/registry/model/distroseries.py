@@ -709,37 +709,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `HasMilestonesMixin`."""
         return (Milestone.distroseries == self)
 
-    def canUploadToPocket(self, pocket, archive):
-        """See `IDistroSeries`."""
-        # PPA and PARTNER allow everything.
-        if archive.allowUpdatesToReleasePocket():
-            return True
-
-        # Allow everything for distroseries in FROZEN state.
-        if self.status == SeriesStatus.FROZEN:
-            return True
-
-        # Define stable/released states.
-        stable_states = (SeriesStatus.SUPPORTED,
-                         SeriesStatus.CURRENT)
-
-        # Deny uploads for RELEASE pocket in stable states.
-        if (pocket == PackagePublishingPocket.RELEASE and
-            self.status in stable_states):
-            return False
-
-        # Deny uploads for post-release-only pockets in unstable states.
-        pre_release_pockets = (
-            PackagePublishingPocket.RELEASE,
-            PackagePublishingPocket.PROPOSED,
-            )
-        if (pocket not in pre_release_pockets and
-            self.status not in stable_states):
-            return False
-
-        # Allow anything else.
-        return True
-
     def updatePackageCount(self):
         """See `IDistroSeries`."""
         self.sourcecount = IStore(SourcePackagePublishingHistory).find(
@@ -1614,7 +1583,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if is_careful:
             return True
 
-        if not self.canUploadToPocket(publication.pocket, publication.archive):
+        if not publication.archive.canModifySuite(self, publication.pocket):
             log.error(
                 "Tried to publish %s (%s) into the %s pocket on series %s "
                 "(%s), skipping" % (

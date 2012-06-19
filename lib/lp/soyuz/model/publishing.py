@@ -808,7 +808,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Refuse to create new publication records that will never be
         # published.
-        if not self.distroseries.canUploadToPocket(self.pocket, self.archive):
+        if not self.archive.canModifySuite(self.distroseries, self.pocket):
             raise ArchiveOverriderError(
                 "Cannot change overrides in suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
@@ -1229,7 +1229,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Refuse to create new publication records that will never be
         # published.
-        if not self.distroseries.canUploadToPocket(self.pocket, self.archive):
+        if not self.archive.canModifySuite(self.distroseries, self.pocket):
             raise ArchiveOverriderError(
                 "Cannot change overrides in suite '%s'" %
                 self.distroseries.getSuite(self.pocket))

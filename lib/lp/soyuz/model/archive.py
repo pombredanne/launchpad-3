@@ -67,6 +67,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
@@ -1227,6 +1228,37 @@ class Archive(SQLBase):
             strict_component=True)
         return reason is None
 
+    def canModifySuite(self, distroseries, pocket):
+        """See `IArchive`."""
+        # PPA and PARTNER allow everything.
+        if self.allowUpdatesToReleasePocket():
+            return True
+
+        # Allow everything for distroseries in FROZEN state.
+        if distroseries.status == SeriesStatus.FROZEN:
+            return True
+
+        # Define stable/released states.
+        stable_states = (SeriesStatus.SUPPORTED,
+                         SeriesStatus.CURRENT)
+
+        # Deny uploads for RELEASE pocket in stable states.
+        if (pocket == PackagePublishingPocket.RELEASE and
+            distroseries.status in stable_states):
+            return False
+
+        # Deny uploads for post-release-only pockets in unstable states.
+        pre_release_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if (pocket not in pre_release_pockets and
+            distroseries.status not in stable_states):
+            return False
+
+        # Allow anything else.
+        return True
+
     def checkUploadToPocket(self, distroseries, pocket):
         """See `IArchive`."""
         if self.is_partner:
@@ -1247,7 +1279,7 @@ class Archive(SQLBase):
             # state.
             # XXX julian 2005-05-29 bug=117557:
             # This is a greasy hack until bug #117557 is fixed.
-            if not distroseries.canUploadToPocket(pocket, self):
+            if not self.canModifySuite(distroseries, pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
     def _checkUpload(self, person, distroseries, sourcepackagename, component,

@@ -166,8 +166,8 @@ Not found as empty list:
 
 See distroseries-publishing-lookups.txt for more information.
 
-canUploadToPocket method helps us to decide if an upload is allowed or
-not, according to the distroseries status and the upload target pocket.
+canModifySuite method helps us to decide if an upload is allowed or not,
+according to the distroseries status and the upload target pocket.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> archive = ubuntu.main_archive
@@ -179,18 +179,18 @@ not, according to the distroseries status and the upload target pocket.
 
     >>> warty.status.name
     'CURRENT'
-    >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE, archive)
+    >>> archive.canModifySuite(warty, PackagePublishingPocket.RELEASE)
     False
-    >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY, archive)
+    >>> archive.canModifySuite(warty, PackagePublishingPocket.SECURITY)
     True
 
     >>> breezy_autotest.status.name
     'EXPERIMENTAL'
-    >>> breezy_autotest.canUploadToPocket(
-    ...     PackagePublishingPocket.RELEASE, archive)
+    >>> archive.canModifySuite(
+    ...     breezy_autotest, PackagePublishingPocket.RELEASE)
     True
-    >>> breezy_autotest.canUploadToPocket(
-    ...     PackagePublishingPocket.SECURITY, archive)
+    >>> archive.canModifySuite(
+    ...     breezy_autotest, PackagePublishingPocket.SECURITY)
     False
 
 The FROZEN status is special.  Uploads are allowed for all pockets as
@@ -201,21 +201,21 @@ the upload will have to wait for manual approval anyway:
 
     >>> hoary.status.name
     'FROZEN'
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.RELEASE, archive)
+    >>> archive.canModifySuite(hoary, PackagePublishingPocket.RELEASE)
     True
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY, archive)
+    >>> archive.canModifySuite(hoary, PackagePublishingPocket.SECURITY)
     True
 
 The PROPOSED pocket is also special.  Pre-release, it may be used for
 staging uploads on their way into the RELEASE pocket; post-release, it may
 be used for staging uploads on their way into the UPDATES pocket.
 
-    >>> warty.canUploadToPocket(PackagePublishingPocket.PROPOSED, archive)
+    >>> archive.canModifySuite(warty, PackagePublishingPocket.PROPOSED)
     True
-    >>> breezy_autotest.canUploadToPocket(
-    ...     PackagePublishingPocket.PROPOSED, archive)
+    >>> archive.canModifySuite(
+    ...     breezy_autotest, PackagePublishingPocket.PROPOSED)
     True
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.PROPOSED, archive)
+    >>> archive.canModifySuite(hoary, PackagePublishingPocket.PROPOSED)
     True
 
 Package searching
