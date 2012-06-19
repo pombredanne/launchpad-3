@@ -31,6 +31,7 @@ class SoyuzScriptError(Exception):
     The textual content should explain the error.
     """
 
+
 class SoyuzScript(LaunchpadScript):
     """`LaunchpadScript` extended for Soyuz related use.
 
@@ -260,6 +261,3 @@ class SoyuzScript(LaunchpadScript):
     def mainTask(self):
         """Main task to be performed by the script"""
         raise NotImplementedError
-
-
-
