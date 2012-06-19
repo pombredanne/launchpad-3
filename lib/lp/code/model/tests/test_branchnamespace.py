@@ -44,6 +44,7 @@ from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.person import (
     NoSuchPerson,
     PersonVisibility,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
@@ -379,7 +380,9 @@ class TestProductNamespacePrivacy(TestCaseWithFactory):
         # Given a privacy policy for a namespace, branches are created with
         # the correct information type.
         person = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=person)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            owner=person)
         product = self.factory.makeProduct()
         namespace = ProductNamespace(team, product)
         product.setBranchVisibilityTeamPolicy(
@@ -1337,37 +1340,32 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
           * "charlie", who is a member of zulu.
           * "doug", who is a member of no teams.
         """
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        super(BranchVisibilityPolicyTestCase, self).setUp(
+            'admin@canonical.com')
         # Our test product.
         self.product = self.factory.makeProduct()
         # Create some test people.
         self.albert = self.factory.makePerson(
-            email='albert@code.ninja.nz',
             name='albert', displayname='Albert Tester')
         self.bob = self.factory.makePerson(
-            email='bob@code.ninja.nz',
             name='bob', displayname='Bob Tester')
         self.charlie = self.factory.makePerson(
-            email='charlie@code.ninja.nz',
             name='charlie', displayname='Charlie Tester')
         self.doug = self.factory.makePerson(
-            email='doug@code.ninja.nz',
             name='doug', displayname='Doug Tester')
-
         self.people = (self.albert, self.bob, self.charlie, self.doug)
 
         # And create some test teams.
-        self.xray = self.factory.makeTeam(name='xray')
-        self.yankee = self.factory.makeTeam(name='yankee')
-        self.zulu = self.factory.makeTeam(name='zulu')
+        self.xray = self.factory.makeTeam(
+            name='xray', members=[self.albert],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        self.yankee = self.factory.makeTeam(
+            name='yankee', members=[self.albert, self.bob],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        self.zulu = self.factory.makeTeam(
+            name='zulu', members=[self.albert, self.charlie],
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         self.teams = (self.xray, self.yankee, self.zulu)
-
-        # Set the memberships of our test people to the test teams.
-        self.albert.join(self.xray)
-        self.albert.join(self.yankee)
-        self.albert.join(self.zulu)
-        self.bob.join(self.yankee)
-        self.charlie.join(self.zulu)
 
     def defineTeamPolicies(self, team_policies):
         """Shortcut to help define team policies."""

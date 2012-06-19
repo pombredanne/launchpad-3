@@ -109,7 +109,7 @@
         <strong>does not use</strong> Launchpad as its bug tracker.
         <a tal:attributes="href context/menu:overview/configure_bugtracker/fmt:url"
            tal:condition="context/required:launchpad.Edit">
-          Change this<span class="sprite edit actionicon"></span>
+          Change this <span class="sprite edit action-icon">Edit</span>
         </a>
       </div>
       <span tal:condition="view/frontpage_form">
@@ -387,7 +387,7 @@
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-                  <a class="sprite new-window view-bug-link actionicon"
+                  <a class="sprite new-window view-bug-link action-icon"
                      target="_blank" tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>

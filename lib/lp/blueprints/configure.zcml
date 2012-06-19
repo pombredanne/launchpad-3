@@ -115,15 +115,6 @@
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
       handler="lp.blueprints.mail.notifications.notify_specification_subscription_modified"/>
 
-  <!-- SpecificationFeedback -->
-
-  <class class="lp.blueprints.model.specificationfeedback.SpecificationFeedback">
-    <allow interface="lp.blueprints.interfaces.specificationfeedback.ISpecificationFeedback"/>
-    <require
-        permission="zope.Public"
-        set_schema="lp.blueprints.interfaces.specificationfeedback.ISpecificationFeedback"/>
-  </class>
-
   <!-- SprintAttendance -->
 
   <class class="lp.blueprints.model.sprintattendance.SprintAttendance">

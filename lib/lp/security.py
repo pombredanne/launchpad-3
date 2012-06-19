@@ -17,6 +17,16 @@ from zope.component import (
     )
 from zope.interface import Interface
 
+from storm.expr import (
+    Exists,
+    And,
+    Or,
+    Select,
+    SQL,
+    Union,
+    With,
+    )
+
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
@@ -41,9 +51,14 @@ from lp.blueprints.interfaces.specificationsubscription import (
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
+from lp.blueprints.model.specificationsubscription import (
+    SpecificationSubscription,
+    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
+from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -159,9 +174,9 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import quote
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
@@ -960,40 +975,35 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
 
             store = IStore(Person)
             user_bugs_visible_filter = get_bug_privacy_filter(user.person)
+            teams_select = Select(SQL('team'), tables="teams")
+            blueprint_subscription_sql = Select(
+                1,
+                tables=SpecificationSubscription,
+                where=SpecificationSubscription.personID.is_in(teams_select))
+            visible_bug_sql = Select(
+                1,
+                tables=(BugTaskFlat,),
+                where=And(
+                    user_bugs_visible_filter,
+                    Or(
+                        BugTaskFlat.bug_id.is_in(
+                            Select(
+                                BugSubscription.bug_id,
+                                tables=(BugSubscription,),
+                                where=BugSubscription.person_id.is_in(
+                                    teams_select))),
+                        BugTaskFlat.assignee_id.is_in(teams_select))))
+            bugs = Union(blueprint_subscription_sql, visible_bug_sql, all=True)
+            with_teams = With('teams',
+                    Select(
+                        TeamParticipation.teamID,
+                        where=TeamParticipation.personID == self.obj.id)),
 
-            # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY
-            query = """
-                SELECT TRUE WHERE
-                EXISTS (
-                    WITH teams AS (
-                        SELECT team from TeamParticipation
-                        WHERE person = %(personid)s
-                    )
-                    -- The team blueprint subscriptions
-                    SELECT 1
-                    FROM SpecificationSubscription
-                    WHERE SpecificationSubscription.person IN
-                        (SELECT team FROM teams)
-                    UNION ALL
-                    -- Find the bugs associated with the team and filter by
-                    -- those that are visible to the user.
-                    SELECT 1
-                    FROM BugTaskFlat
-                    WHERE
-                        %(user_bug_filter)s
-                        AND (
-                            bug IN (
-                                SELECT bug FROM bugsubscription
-                                WHERE person IN (SELECT team FROM teams))
-                            OR assignee IN (SELECT team FROM teams)
-                            )
-                )
-                """ % dict(
-                        personid=quote(self.obj.id),
-                        user_bug_filter=user_bugs_visible_filter)
-
-            rs = store.execute(query)
-            if rs.rowcount > 0:
+            rs = store.with_(with_teams).using(Person).find(
+                SQL("1"),
+                Exists(bugs)
+            )
+            if rs.any():
                 return True
         return False
 

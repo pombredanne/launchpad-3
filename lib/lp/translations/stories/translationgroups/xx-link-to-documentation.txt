@@ -93,10 +93,11 @@ the documentation url through the edit view.
     Just a testing team
     Esperanto
     http://www.launchpad.net/
-    edit
+    Edit
 
 
-== Notification display ==
+Notification display
+--------------------
 
 You can see on Spanish Evolution translation page how are translation
 instructions displayed.
@@ -104,8 +105,8 @@ instructions displayed.
     >>> evolution_spanish_url = ('http://translations.launchpad.dev/'
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
 
-    >>> # We've already confirmed setting URLs works: define methods
-    >>> # to change them more easily.
+    # We've already confirmed setting URLs works: define methods
+    # to change them more easily.
     >>> def set_group_url(browser, url):
     ...     group_edit_url = ("http://translations.launchpad.dev/"
     ...         "+groups/testing-translation-team/+edit")

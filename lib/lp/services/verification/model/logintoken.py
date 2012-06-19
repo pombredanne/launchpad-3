@@ -230,7 +230,9 @@ class LoginToken(SQLBase):
         """See `ILoginToken`."""
         template = get_email_template('claim-team.txt', app=MAIL_APP)
         from_name = "Launchpad"
-        profile = getUtility(IPersonSet).getByEmail(self.email)
+        profile = getUtility(IPersonSet).getByEmail(
+                                            self.email,
+                                            filter_status=False)
         replacements = {'profile_name': (
                             "%s (%s)" % (profile.displayname, profile.name)),
                         'requester_name': (

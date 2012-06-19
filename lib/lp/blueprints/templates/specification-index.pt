@@ -260,22 +260,6 @@
           </div>
         </div>
 
-        <div id="feedback-requests">
-          <h3 tal:condition="not:context/feedbackrequests">Feedback requests</h3>
-
-          <div tal:replace="structure context/@@+portlet-feedbackqueue" />
-
-          <ul class="horizontal">
-            <li tal:define="link context_menu/givefeedback"
-                tal:condition="link/enabled">
-              <a tal:replace="structure link/fmt:link" />
-            </li>
-            <li tal:define="link context_menu/requestfeedback"
-                tal:condition="link/enabled">
-              <a tal:replace="structure link/fmt:link" />
-            </li>
-          </ul>
-        </div>
       </div>
     </div>
 
@@ -285,7 +269,7 @@
 
     <div class="portlet">
       <a href="/+help-blueprints/workitems-help.html" target="help"
-         class="sprite maybe actionicon"><span class="invisible-link">Tag help</span></a>
+         class="sprite maybe action-icon">(?)</a>
       <div class="wide" tal:content="structure view/workitems_text_widget" />
     </div>
 

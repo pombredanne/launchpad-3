@@ -7,8 +7,9 @@ __metaclass__ = type
 
 import string
 import tempfile
-from testtools import TestCase
 import unittest
+
+from testtools import TestCase
 
 from lp.services.testing.customresult import filter_tests
 from lp.testing.layers import BaseLayer
@@ -40,20 +41,23 @@ class TestFilterTests(TestCase):
         f.flush()
 
     @staticmethod
+    def make_suite(testnames=string.lowercase):
+        """Make a suite containing `testnames` (default: 'a'..'z')."""
+        suite = unittest.TestSuite()
+        for testname in testnames:
+            suite.addTest(FakeTestCase(testname))
+        return suite
+
+    @staticmethod
     def make_suites():
         """Make two suites.
 
         The first has 'a'..'m' and the second 'n'..'z'.
         """
-        suite_am = unittest.TestSuite()
-        suite_nz = unittest.TestSuite()
-        # Create one layer with the 'a'..'m'.
-        for letter in string.lowercase[:13]:
-            suite_am.addTest(FakeTestCase(letter))
-        # And another layer with 'n'..'z'.
-        for letter in string.lowercase[13:]:
-            suite_nz.addTest(FakeTestCase(letter))
-        return suite_am, suite_nz
+        return (
+            TestFilterTests.make_suite(string.lowercase[:13]),
+            TestFilterTests.make_suite(string.lowercase[13:]),
+            )
 
     @staticmethod
     def make_repeated_suite(testnames):
@@ -68,9 +72,7 @@ class TestFilterTests(TestCase):
         # Tests should be returned in the order seen in the testfile.
         layername = 'layer-1'
         testnames = ['d', 'c', 'a']
-        suite = unittest.TestSuite()
-        for letter in string.lowercase:
-            suite.addTest(FakeTestCase(letter))
+        suite = self.make_suite()
         with tempfile.NamedTemporaryFile() as f:
             self.writeFile(f, testnames)
             do_filter = filter_tests(f.name)
@@ -79,6 +81,18 @@ class TestFilterTests(TestCase):
         self.assertIn(layername, results)
         suite = results[layername]
         self.assertEqual(testnames, [t.id() for t in suite])
+
+    def test_reorder_tests(self):
+        # Tests can optionally be ordered by id.
+        layername = 'layer-1'
+        testnames = ['d', 'c', 'a']
+        suite = self.make_suite()
+        with tempfile.NamedTemporaryFile() as f:
+            self.writeFile(f, testnames)
+            do_filter = filter_tests(f.name, reorder_tests=True)
+            results = do_filter({layername: suite})
+        suite = results[layername]
+        self.assertEqual(sorted(testnames), [t.id() for t in suite])
 
     def test_layer_separation(self):
         # Tests must be kept in their layer.

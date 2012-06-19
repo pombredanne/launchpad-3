@@ -344,7 +344,8 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         # the team has any ppas.
 
         def setup_team(team):
-            team.createPPA()
+            with person_logged_in(team.teamowner):
+                team.createPPA()
 
         self._test_edit_team_view_expected_subscription_vocab(
             setup_team, CLOSED_TEAM_POLICY)
@@ -500,8 +501,7 @@ class TestTeamAddView(TestCaseWithFactory):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         with person_logged_in(team.teamowner):
             view = create_initialized_view(
                 personset, name=self.view_name, principal=team.teamowner)
@@ -513,8 +513,7 @@ class TestTeamAddView(TestCaseWithFactory):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         team_name = self.factory.getUniqueString()
         form = {
             'field.name': team_name,

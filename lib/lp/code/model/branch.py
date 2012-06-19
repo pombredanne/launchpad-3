@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource, IAccessPolicySource, IAccessArtifactSource
 
 __metaclass__ = type
 __all__ = [
@@ -19,7 +17,6 @@ from bzrlib.revision import NULL_REVISION
 import pytz
 import simplejson
 from sqlobject import (
-    BoolCol,
     ForeignKey,
     IntCol,
     SQLMultipleJoin,
@@ -52,11 +49,15 @@ from zope.security.proxy import (
     )
 
 from lp import _
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.errors import (
+    SubscriptionPrivacyViolation,
+    UserCannotUnsubscribePerson,
+    )
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
     )
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -181,17 +182,17 @@ class Branch(SQLBase, BzrIdentityMixin):
     control_format = EnumCol(enum=ControlFormat, dbName='metadir_format')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-
-    # This attribute signifies whether *this* branch is private, irrespective
-    # of the state of any stacked on branches.
-    explicitly_private = BoolCol(
-        default=False, notNull=True, dbName='private')
-    # A branch is transitively private if it is private or it is stacked on a
-    # transitively private branch. The value of this attribute is maintained
-    # by a database trigger.
-    transitively_private = BoolCol(dbName='transitively_private')
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
+
+    # These can die after the UI is dropped.
+    @property
+    def explicitly_private(self):
+        return self.private
+
+    @property
+    def transitively_private(self):
+        return self.private
 
     @property
     def private(self):
@@ -238,14 +239,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePublic()
         self.information_type = information_type
         self._reconcileAccess()
-        # Set the legacy values for now.
-        self.explicitly_private = private
-        # If this branch is private, then it is also transitively_private
-        # otherwise we need to reload the value.
-        if private:
-            self.transitively_private = True
-        else:
-            self.transitively_private = AutoReload
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -817,6 +810,11 @@ class Branch(SQLBase, BzrIdentityMixin):
     def subscribe(self, person, notification_level, max_diff_lines,
                   code_review_level, subscribed_by):
         """See `IBranch`."""
+        if (person.is_team and self.information_type in
+            PRIVATE_INFORMATION_TYPES and person.anyone_can_join()):
+            raise SubscriptionPrivacyViolation(
+                "Open and delegated teams cannot be subscribed to private "
+                "branches.")
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
         subscription = self.getSubscription(person)
@@ -831,6 +829,14 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
             subscription.review_level = code_review_level
+        # Grant the subscriber access if they can't see the branch.
+        service = getUtility(IService, 'sharing')
+        ignored, branches = service.getVisibleArtifacts(
+            person, branches=[self])
+        if not branches:
+            service.ensureAccessGrants(
+                [person], subscribed_by, branches=[self],
+                ignore_permissions=True)
         return subscription
 
     def getSubscription(self, person):
@@ -858,13 +864,12 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
 
-    def unsubscribe(self, person, unsubscribed_by, **kwargs):
+    def unsubscribe(self, person, unsubscribed_by, ignore_permissions=False):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
         if subscription is None:
             # Silent success seems order of the day (like bugs).
             return
-        ignore_permissions = kwargs.get('ignore_permissions', False)
         if (not ignore_permissions
             and not subscription.canBeUnsubscribedByUser(unsubscribed_by)):
             raise UserCannotUnsubscribePerson(
@@ -1496,7 +1501,6 @@ def update_trigger_modified_fields(branch):
     naked_branch.unique_name = AutoReload
     naked_branch.owner_name = AutoReload
     naked_branch.target_suffix = AutoReload
-    naked_branch.transitively_private = AutoReload
 
 
 def branch_modified_subscriber(branch, event):

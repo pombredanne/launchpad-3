@@ -34,12 +34,12 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
-from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.osutils import (
     ensure_directory_exists,
     remove_if_exists,
     write_file,
     )
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,

@@ -22,7 +22,7 @@ File size and mime type are displayed for each attachment
     >>> fileinfo = '(270 bytes, text/plain)'
     >>> for attachment in last_comment('li', 'download-attachment'):
     ...     print extract_text(attachment)
-    description text
+    description text Edit
     (270 bytes, text/plain)
 
 A filesize of 2700 byte is displayed in 'KiB'
@@ -53,7 +53,7 @@ A filesize of 2700 byte is displayed in 'KiB'
     >>> fileinfo = '(270 bytes, text/plain)'
     >>> for attachment in last_comment('li', 'download-attachment'):
     ...     print extract_text(attachment)
-    description text
+    description text Edit
     (2.6 KiB, text/plain)
 
     >>> config_data = config.pop('max_size_data')

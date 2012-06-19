@@ -10,16 +10,9 @@
 <head>
   <tal:block metal:fill-slot="head_epilogue">
     <script type="text/javascript">
-      LPJS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
+      LPJS.use('node', 'event', 'lp.app.widgets.expander', 'lp.workitems.expanders', function(Y) {
           Y.on('domready', function() {
-            Y.all('[class=expandable]').each(function(e) {
-              var expander_icon = e.one('[class=expander]');
-              // Our parent's first sibling is the tbody we want to collapse.
-              var widget_body = e.ancestor().next();
-              var expander = new Y.lp.app.widgets.expander.Expander(
-                  expander_icon, widget_body);
-              expander.setUp(true);
-            })
+            Y.lp.workitems.expanders.setUpWorkItemExpanders();
           })
         });
     </script>
@@ -38,7 +31,8 @@
 
 <div metal:fill-slot="main">
 
-  <div tal:repeat="pair view/work_item_containers" class="workitems-group">
+  <div tal:repeat="pair view/work_item_containers" class="workitems-group"
+       tal:attributes="id string:milestone_${repeat/pair/index}">
   <div tal:define="date python: pair[0]; containers python: pair[1]">
     <h2>Work items due in <span tal:replace="date/fmt:date" /></h2>
 
@@ -78,7 +72,17 @@
     <table class="listing">
       <thead>
       <tr>
-        <th>Blueprint</th>
+        <th>
+          <div style="float: right; font-weight: normal;">All:
+            <a href="#expandall" class="expandall_link"
+               tal:attributes="id string:expand_milestone_${repeat/pair/index}">Expand</a>
+            <a href="#collapseall" class="collapseall_link"
+               tal:attributes="id string:collapse_milestone_${repeat/pair/index}">Collapse</a>
+            <a href="#defaultall" class="defaultall_link"
+               tal:attributes="id string:default_milestone_${repeat/pair/index}">Default</a>
+          </div>
+          Blueprint
+        </th>
         <th>Target</th>
         <th>Assignee</th>
         <th>Priority</th>
@@ -89,7 +93,9 @@
       <tbody>
         <tr class="expandable">
           <td>
-            <a href="#" class="expander"></a>
+            <span class="expander">
+                <span class="action-icon">Expand or Collapse</span>
+            </span>
             <span tal:replace="structure container/html_link" />
           </td>
           <td tal:content="structure container/target_link" />
@@ -111,13 +117,15 @@
 
       <tal:conditional condition="container/has_incomplete_work">
         <tal:block define="global upcoming_work_class_name string:expanded"/>
+        <tal:block define="global expander_init_state string:default-expanded"/>
       </tal:conditional>
 
       <tal:conditional condition="not: container/has_incomplete_work">
         <tal:block define="global upcoming_work_class_name string:"/>
+        <tal:block define="global expander_init_state string:default-collapsed"/>
       </tal:conditional>
 
-      <tbody tal:attributes="class string:collapsible-body ${upcoming_work_class_name}">
+      <tbody tal:attributes="class string:collapsible-body ${upcoming_work_class_name} ${expander_init_state}">
         <tr tal:repeat="workitem container/items" class="padded">
           <td>
             <span tal:condition="not: container/spec|nothing"

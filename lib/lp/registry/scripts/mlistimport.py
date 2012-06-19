@@ -64,7 +64,7 @@ class Importer:
             # address could be empty or None.
             if not address:
                 continue
-            person = person_set.getByEmail(address)
+            person = person_set.getByEmail(address, filter_status=False)
             if person is None or person.is_team:
                 self.log.error('No person for address: %s', address)
                 continue
