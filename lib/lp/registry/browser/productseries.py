@@ -467,6 +467,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     @property
     def long_bzr_identity(self):
+        """The bzr identity of the branch including the unique_name."""
         return self.context.branch.branchIdentities()[-1][0]
 
     @property
