@@ -69,8 +69,8 @@
 
   <div id="branch-details">
     <a id="series-branch" class="sprite branch"
-      tal:attributes="href context/branch/fmt:url"
-      tal:content="context/branch/bzr_identity">Mozilla Thunderbird 0.9.1</a>
+      tal:attributes="href context/branch/fmt:url">lp:<tal:real-branch
+      replace="context/branch/unique_name" /></a>
     - <a tal:replace="structure context/branch/owner/fmt:link:code/+ownedbranches" />
     <a
       tal:replace="structure context/menu:overview/link_branch/fmt:icon" />
