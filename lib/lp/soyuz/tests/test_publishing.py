@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -24,6 +24,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
@@ -58,6 +59,7 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
+from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -1645,3 +1647,46 @@ class TestPublishBinaries(TestCaseWithFactory):
         # archive too.
         self.assertContentEqual(
             [], getUtility(IPublishingSet).publishBinaries(**args))
+
+
+class TestChangeOverride(TestNativePublishingBase):
+    """Test that changing overrides works."""
+
+    def setUpOverride(self, status, pocket=PackagePublishingPocket.RELEASE,
+                      binary=False):
+        self.distroseries.status = status
+        if binary:
+            pub = self.getPubBinaries(pocket=pocket)[0]
+        else:
+            pub = self.getPubSource(pocket=pocket)
+        universe = getUtility(IComponentSet)["universe"]
+        return pub.changeOverride(new_component=universe)
+
+    def assertCanOverride(self, *args, **kwargs):
+        new_pub = self.setUpOverride(*args, **kwargs)
+        self.assertEqual("universe", new_pub.component.name)
+
+    def assertCannotOverride(self, *args, **kwargs):
+        self.assertRaises(
+            ArchiveOverriderError, self.setUpOverride, *args, **kwargs)
+
+    def test_changeOverride_forbids_stable_RELEASE(self):
+        # changeOverride is not allowed in the RELEASE pocket of a stable
+        # distroseries.
+        self.assertCannotOverride(SeriesStatus.CURRENT)
+        self.assertCannotOverride(SeriesStatus.CURRENT, binary=True)
+
+    def test_changeOverride_allows_development_RELEASE(self):
+        # changeOverride is allowed in the RELEASE pocket of a development
+        # distroseries.
+        self.assertCanOverride(SeriesStatus.DEVELOPMENT)
+        self.assertCanOverride(SeriesStatus.DEVELOPMENT, binary=True)
+
+    def test_changeOverride_allows_stable_PROPOSED(self):
+        # changeOverride is allowed in the PROPOSED pocket of a stable
+        # distroseries.
+        self.assertCanOverride(
+            SeriesStatus.CURRENT, pocket=PackagePublishingPocket.PROPOSED)
+        self.assertCanOverride(
+            SeriesStatus.CURRENT, pocket=PackagePublishingPocket.PROPOSED,
+            binary=True)
