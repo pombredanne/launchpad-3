@@ -75,6 +75,19 @@ def get_bugsummary_rows(*args):
     return set(results)
 
 
+def rebuild_bugsummary_for_target(target_key, log):
+    target = load_target(*target_key)
+    log.debug("Rebuilding %s" % format_target(target))
+    bs_constraints = [
+        getattr(RawBugSummary, k) == v
+        for (k, v) in zip(
+            ('product_id', 'productseries_id', 'distribution_id',
+             'distroseries_id', 'sourcepackagename_id'), target_key)]
+    log.debug(
+        '%d existing BugSummary rows'
+        % len(get_bugsummary_rows(*bs_constraints)))
+
+
 class BugSummaryRebuildTunableLoop(TunableLoop):
 
     maximum_chunk_size = 100
@@ -93,6 +106,5 @@ class BugSummaryRebuildTunableLoop(TunableLoop):
         chunk = self.targets[self.offset:self.offset + chunk_size]
 
         for target_key in chunk:
-            target = load_target(*target_key)
-            self.log.info("Rebuilding %s" % format_target(target))
+            rebuild_bugsummary_for_target(target_key, self.log)
         self.offset += len(chunk)
