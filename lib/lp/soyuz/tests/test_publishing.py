@@ -1652,40 +1652,41 @@ class TestPublishBinaries(TestCaseWithFactory):
 class TestChangeOverride(TestNativePublishingBase):
     """Test that changing overrides works."""
 
-    def setUp(self):
-        super(TestChangeOverride, self).setUp()
-        self.universe = getUtility(IComponentSet)["universe"]
+    def setUpOverride(self, status, pocket=PackagePublishingPocket.RELEASE,
+                      binary=False):
+        self.distroseries.status = status
+        if binary:
+            pub = self.getPubBinaries(pocket=pocket)[0]
+        else:
+            pub = self.getPubSource(pocket=pocket)
+        universe = getUtility(IComponentSet)["universe"]
+        return pub.changeOverride(new_component=universe)
 
-    def test_source_changeOverride_forbids_stable_RELEASE(self):
-        # SPPH.changeOverride is not allowed in the RELEASE pocket of a
-        # stable distroseries.
-        self.distroseries.status = SeriesStatus.CURRENT
-        spph = self.getPubSource()
+    def assertCanOverride(self, *args, **kwargs):
+        new_pub = self.setUpOverride(*args, **kwargs)
+        self.assertEqual("universe", new_pub.component.name)
+
+    def assertCannotOverride(self, *args, **kwargs):
         self.assertRaises(
-            ArchiveOverriderError, spph.changeOverride,
-            new_component=self.universe)
+            ArchiveOverriderError, self.setUpOverride, *args, **kwargs)
 
-    def test_source_changeOverride_allows_development_RELEASE(self):
-        # SPPH.changeOverride is allowed in the RELEASE pocket of a
-        # development distroseries.
-        self.distroseries.status = SeriesStatus.DEVELOPMENT
-        spph = self.getPubSource()
-        new_spph = spph.changeOverride(new_component=self.universe)
-        self.assertEqual("universe", new_spph.component.name)
+    def test_changeOverride_forbids_stable_RELEASE(self):
+        # changeOverride is not allowed in the RELEASE pocket of a stable
+        # distroseries.
+        self.assertCannotOverride(SeriesStatus.CURRENT)
+        self.assertCannotOverride(SeriesStatus.CURRENT, binary=True)
 
-    def test_binary_changeOverride_forbids_stable_RELEASE(self):
-        # BPPH.changeOverride is not allowed in the RELEASE pocket of a
-        # stable distroseries.
-        self.distroseries.status = SeriesStatus.CURRENT
-        bpph = self.getPubBinaries()[0]
-        self.assertRaises(
-            ArchiveOverriderError, bpph.changeOverride,
-            new_component=self.universe)
+    def test_changeOverride_allows_development_RELEASE(self):
+        # changeOverride is allowed in the RELEASE pocket of a development
+        # distroseries.
+        self.assertCanOverride(SeriesStatus.DEVELOPMENT)
+        self.assertCanOverride(SeriesStatus.DEVELOPMENT, binary=True)
 
-    def test_binary_changeOverride_allows_development_RELEASE(self):
-        # BPPH.changeOverride is allowed in the RELEASE pocket of a
-        # development distroseries.
-        self.distroseries.status = SeriesStatus.DEVELOPMENT
-        bpph = self.getPubBinaries()[0]
-        new_bpph = bpph.changeOverride(new_component=self.universe)
-        self.assertEqual("universe", new_bpph.component.name)
+    def test_changeOverride_allows_stable_PROPOSED(self):
+        # changeOverride is allowed in the PROPOSED pocket of a stable
+        # distroseries.
+        self.assertCanOverride(
+            SeriesStatus.CURRENT, pocket=PackagePublishingPocket.PROPOSED)
+        self.assertCanOverride(
+            SeriesStatus.CURRENT, pocket=PackagePublishingPocket.PROPOSED,
+            binary=True)
