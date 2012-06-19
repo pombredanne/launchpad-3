@@ -42,3 +42,14 @@ def format_target(target):
     if spn:
         id += '/+source/%s' % spn.name
     return id
+
+
+def get_bugsummary_rows(*args):
+    results = IStore(BugSummary).find(
+        (BugSummary.product_id, BugSummary.productseries_id,
+         BugSummary.distribution_id, BugSummary.distroseries_id,
+         BugSummary.sourcepackagename_id, BugSummary.milestone_id,
+         BugSummary.status, BugSummary.importance, BugSummary.tag,
+         BugSummary.viewed_by_id, BugSummary.has_patch),
+        *args)
+    return set(results)

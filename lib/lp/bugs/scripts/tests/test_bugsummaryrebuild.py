@@ -9,6 +9,7 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.scripts.bugsummaryrebuild import (
     format_target,
+    get_bugsummary_rows,
     get_bugsummary_targets,
     get_bugtask_targets,
     )
@@ -63,6 +64,21 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         expected_targets = create_tasks(self.factory)
         new_targets = get_bugtask_targets()
         self.assertContentEqual(expected_targets, new_targets - orig_targets)
+
+
+class TestGetBugSummaryRows(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_get_bugsummary_rows(self):
+        product = self.factory.makeProduct()
+        orig_rows = get_bugsummary_rows(BugSummary.product == product)
+        task = self.factory.makeBug(product=product).default_bugtask
+        new_rows = get_bugsummary_rows(BugSummary.product == product)
+        self.assertContentEqual(
+            [(product.id, None, None, None, None, None, task.status,
+              task.importance, None, None, False)],
+            new_rows - orig_rows)
 
 
 class TestFormatTarget(TestCaseWithFactory):
