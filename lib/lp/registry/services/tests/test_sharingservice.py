@@ -1057,11 +1057,22 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
 
-        # Make some people to check.
+        # Make some people to check. people[:5] will not have access.
         people = []
+        # Make a team with access.
+        member_with_access = self.factory.makePerson()
+        team_with_access = self.factory.makeTeam(members=[member_with_access])
+        # Make a team without access.
+        team_without_access = (
+            self.factory.makeTeam(members=[member_with_access]))
+        people.append(team_without_access)
         for x in range(0, 10):
             person = self.factory.makePerson()
             people.append(person)
+        people.append(team_with_access)
+        people.append(member_with_access)
+
+        # Make the bug to use.
         bug = self.factory.makeBug(
             product=product, owner=owner,
             information_type=InformationType.USERDATA)
@@ -1071,17 +1082,17 @@ class TestSharingService(TestCaseWithFactory):
         # Some access policy grants.
         [policy] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)])
-        for person in people[:2]:
+        for person in people[5:7]:
             self.factory.makeAccessPolicyGrant(
                 policy=policy, grantee=person, grantor=owner)
         # Some access artifact grants.
-        for person in people[2:5]:
+        for person in people[7:]:
             self.factory.makeAccessArtifactGrant(
                 artifact=access_artifact, grantee=person, grantor=owner)
 
         # Check the results.
         without_access = self.service.getPeopleWithoutAccess(bug, people)
-        self.assertContentEqual(people[5:], without_access)
+        self.assertContentEqual(people[:5], without_access)
 
     def test_getVisibleArtifacts(self):
         # Test the getVisibleArtifacts method.
