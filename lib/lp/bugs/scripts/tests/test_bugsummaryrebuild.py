@@ -8,6 +8,7 @@ from zope.component import getUtility
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.scripts.bugsummaryrebuild import (
+    format_target,
     get_bugsummary_targets,
     get_bugtask_targets,
     )
@@ -62,3 +63,41 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         expected_targets = create_tasks(self.factory)
         new_targets = get_bugtask_targets()
         self.assertContentEqual(expected_targets, new_targets - orig_targets)
+
+
+class TestFormatTarget(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_product(self):
+        product = self.factory.makeProduct(name='fooix')
+        self.assertEqual('fooix', format_target(product))
+
+    def test_productseries(self):
+        productseries = self.factory.makeProductSeries(
+            product=self.factory.makeProduct(name='fooix'), name='1.0')
+        self.assertEqual('fooix/1.0', format_target(productseries))
+
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution(name='fooix')
+        self.assertEqual('fooix', format_target(distribution))
+
+    def test_distroseries(self):
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.factory.makeDistribution(name='fooix'),
+            name='1.0')
+        self.assertEqual('fooix/1.0', format_target(distroseries))
+
+    def test_distributionsourcepackage(self):
+        distribution = self.factory.makeDistribution(name='fooix')
+        dsp = distribution.getSourcePackage(
+            self.factory.makeSourcePackageName('bar'))
+        self.assertEqual('fooix/+source/bar', format_target(dsp))
+
+    def test_sourcepackage(self):
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.factory.makeDistribution(name='fooix'),
+            name='1.0')
+        sp = distroseries.getSourcePackage(
+            self.factory.makeSourcePackageName('bar'))
+        self.assertEqual('fooix/1.0/+source/bar', format_target(sp))

@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.series import ISeriesMixin
 from lp.services.database.lpstorm import IStore
 
 
@@ -27,3 +28,17 @@ def get_bugtask_targets():
     new_targets.update(set(
         (p, ps, d, ds, None) for (p, ps, d, ds, spn) in new_targets))
     return new_targets
+
+
+def format_target(target):
+    id = target.pillar.name
+    series = (
+        (ISeriesMixin.providedBy(target) and target)
+        or getattr(target, 'distroseries', None)
+        or getattr(target, 'productseries', None))
+    if series:
+        id += '/%s' % series.name
+    spn = getattr(target, 'sourcepackagename', None)
+    if spn:
+        id += '/+source/%s' % spn.name
+    return id
