@@ -402,26 +402,6 @@ class IDistroSeriesPublic(
         development moves on to the other pockets.
         """
 
-    def canUploadToPocket(pocket):
-        """Decides whether or not allow uploads for a given pocket.
-
-        Only allow uploads for RELEASE pocket in unreleased
-        distroseries and the opposite, only allow uploads for
-        non-RELEASE pockets in released distroseries.
-        For instance, in edgy time :
-
-                warty         -> DENY
-                edgy          -> ALLOW
-                warty-updates -> ALLOW
-                edgy-security -> DENY
-
-        Note that FROZEN is not considered either 'stable' or 'unstable'
-        state.  Uploads to a FROZEN distroseries will end up in the
-        UNAPPROVED queue.
-
-        Return True if the upload is allowed and False if denied.
-        """
-
     def getLatestUploads():
         """Return the latest five source uploads for this DistroSeries.
 

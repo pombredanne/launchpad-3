@@ -12,6 +12,7 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import PackagePublishingPriority
@@ -263,6 +264,7 @@ class TestChangeOverride(unittest.TestCase):
         This test checks the expected behaviour for each of them.
         """
         self._setupOverridePublishingContext()
+        self.warty.status = SeriesStatus.DEVELOPMENT
 
         changer = self.getChanger(
             component="universe", section="web", priority='extra')
@@ -364,6 +366,7 @@ class TestChangeOverride(unittest.TestCase):
         This behaviour is inherited from `SoyuzScript`.
         """
         self._setupOverridePublishingContext()
+        self.warty.status = SeriesStatus.DEVELOPMENT
         changer = self.getChanger(
             component="universe", section="web", priority='extra',
             package_version='0.9')
@@ -398,6 +401,7 @@ class TestChangeOverride(unittest.TestCase):
         This behaviour is inherited from `SoyuzScript`.
         """
         self._setupOverridePublishingContext()
+        self.warty.status = SeriesStatus.DEVELOPMENT
         changer = self.getChanger(
             component="universe", section="web", priority='extra',
             arch_tag='i386')
