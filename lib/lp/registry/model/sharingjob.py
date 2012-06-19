@@ -276,6 +276,8 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
 
     @property
     def bug_ids(self):
+        if not 'bug_ids' in self.metadata:
+            return []
         return self.metadata['bug_ids']
 
     @property
@@ -284,6 +286,8 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
 
     @property
     def information_types(self):
+        if not 'information_types' in self.metadata:
+            return []
         return [
             InformationType.items[value]
             for value in self.metadata['information_types']]

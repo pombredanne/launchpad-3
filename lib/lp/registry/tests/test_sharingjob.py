@@ -181,13 +181,12 @@ class TestRunViaCron(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
+        job, job_type = create_job(distro, bug, grantee, owner)
         # Subscribing grantee has created an artifact grant so we need to
         # revoke that to test the job.
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             getUtility(IAccessArtifactSource).find(
                 [bug]), [grantee])
-
-        job, job_type = create_job(distro, bug, grantee, owner)
         transaction.commit()
 
         out, err, exit_code = run_script(
