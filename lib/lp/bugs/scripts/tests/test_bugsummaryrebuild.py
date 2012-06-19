@@ -6,7 +6,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.bugs.model.bugsummary import BugSummary
+from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.scripts.bugsummaryrebuild import (
     format_target,
     get_bugsummary_rows,
@@ -19,7 +19,7 @@ from lp.testing.layers import ZopelessDatabaseLayer
 
 
 def rollup_journal():
-    IStore(BugSummary).execute('SELECT bugsummary_rollup_journal()')
+    IStore(RawBugSummary).execute('SELECT bugsummary_rollup_journal()')
 
 
 def create_tasks(factory):
@@ -72,12 +72,16 @@ class TestGetBugSummaryRows(TestCaseWithFactory):
 
     def test_get_bugsummary_rows(self):
         product = self.factory.makeProduct()
-        orig_rows = get_bugsummary_rows(BugSummary.product == product)
+        rollup_journal()
+        orig_rows = get_bugsummary_rows(
+            RawBugSummary.product_id == product.id)
         task = self.factory.makeBug(product=product).default_bugtask
-        new_rows = get_bugsummary_rows(BugSummary.product == product)
+        rollup_journal()
+        new_rows = get_bugsummary_rows(
+            RawBugSummary.product_id == product.id)
         self.assertContentEqual(
             [(product.id, None, None, None, None, None, task.status,
-              task.importance, None, None, False)],
+              task.importance, None, None, False, 1)],
             new_rows - orig_rows)
 
 

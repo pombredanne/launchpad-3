@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from lp.bugs.model.bugsummary import BugSummary
+from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.series import ISeriesMixin
 from lp.services.database.lpstorm import IStore
@@ -11,10 +11,10 @@ from lp.services.database.lpstorm import IStore
 
 def get_bugsummary_targets():
     """Get the current set of targets represented in BugSummary."""
-    return set(IStore(BugSummary).find(
-        (BugSummary.product_id, BugSummary.productseries_id,
-         BugSummary.distribution_id, BugSummary.distroseries_id,
-         BugSummary.sourcepackagename_id)).config(distinct=True))
+    return set(IStore(RawBugSummary).find(
+        (RawBugSummary.product_id, RawBugSummary.productseries_id,
+         RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
+         RawBugSummary.sourcepackagename_id)).config(distinct=True))
 
 
 def get_bugtask_targets():
@@ -45,11 +45,12 @@ def format_target(target):
 
 
 def get_bugsummary_rows(*args):
-    results = IStore(BugSummary).find(
-        (BugSummary.product_id, BugSummary.productseries_id,
-         BugSummary.distribution_id, BugSummary.distroseries_id,
-         BugSummary.sourcepackagename_id, BugSummary.milestone_id,
-         BugSummary.status, BugSummary.importance, BugSummary.tag,
-         BugSummary.viewed_by_id, BugSummary.has_patch),
+    results = IStore(RawBugSummary).find(
+        (RawBugSummary.product_id, RawBugSummary.productseries_id,
+         RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
+         RawBugSummary.sourcepackagename_id, RawBugSummary.milestone_id,
+         RawBugSummary.status, RawBugSummary.importance, RawBugSummary.tag,
+         RawBugSummary.viewed_by_id, RawBugSummary.has_patch,
+         RawBugSummary.count),
         *args)
     return set(results)

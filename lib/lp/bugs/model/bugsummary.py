@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BugSummary',
     'CombineBugSummaryConstraint',
+    'RawBugSummary',
     ]
 
 from storm.locals import (
@@ -78,6 +79,11 @@ class BugSummary(Storm):
     viewed_by = Reference(viewed_by_id, Person.id)
 
     has_patch = Bool()
+
+
+class RawBugSummary(BugSummary):
+
+    __storm_table__ = 'bugsummary'
 
 
 class CombineBugSummaryConstraint:
