@@ -1819,7 +1819,7 @@ class Bug(SQLBase):
             subscribers = self.getDirectSubscribers()
             blind_subscribers = service.getPeopleWithoutAccess(
                 self, subscribers)
-            if blind_subscribers.count():
+            if len(blind_subscribers):
                 service.ensureAccessGrants(
                     blind_subscribers, who, bugs=[self],
                     ignore_permissions=True)
