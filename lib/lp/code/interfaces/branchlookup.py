@@ -77,15 +77,15 @@ class IBranchLookup(Interface):
             branch is identified.
         """
 
-    def uriToUniqueName(uri):
-        """Return the unique name for the URI, if the URI is on codehosting.
+    def uriToHostingPath(uri):
+        """Return the path for the URI, if the URI is on codehosting.
 
-        This does not ensure that the unique name is valid.  It recognizes the
+        This does not ensure that the path is valid.  It recognizes the
         codehosting URIs of remote branches and mirrors, but not their
         remote URIs.
 
         :param uri: An instance of lazr.uri.URI
-        :return: The unique name if possible, None if the URI is not a valid
+        :return: The path if possible, None if the URI is not a valid
             codehosting URI.
         """
 

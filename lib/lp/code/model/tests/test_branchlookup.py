@@ -392,30 +392,30 @@ class TestGetByUrl(TestCaseWithFactory):
              branch2.bzr_identity: branch2,
              url3: None}, branches)
 
-    def test_uriToUniqueName(self):
-        """Ensure uriToUniqueName works.
+    def test_uriToHostingPath(self):
+        """Ensure uriToHostingPath works.
 
         Only codehosting-based using http, sftp or bzr+ssh URLs will
-        be handled. If any other URL gets passed the returned will be
-        None.
+        be handled. If any other URL gets passed (including lp), the return
+        value will be None.
         """
         branch_set = getUtility(IBranchLookup)
         uri = URI(config.codehosting.supermirror_root)
         uri.path = '/~foo/bar/baz'
         # Test valid schemes
         uri.scheme = 'http'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
         uri.scheme = 'sftp'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
         uri.scheme = 'bzr+ssh'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToUniqueName(uri))
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
         # Test invalid scheme
         uri.scheme = 'ftp'
-        self.assertIs(None, branch_set.uriToUniqueName(uri))
+        self.assertIs(None, branch_set.uriToHostingPath(uri))
         # Test valid scheme, invalid domain
         uri.scheme = 'sftp'
         uri.host = 'example.com'
-        self.assertIs(None, branch_set.uriToUniqueName(uri))
+        self.assertIs(None, branch_set.uriToHostingPath(uri))
 
 
 class TestLinkedBranchTraverser(TestCaseWithFactory):

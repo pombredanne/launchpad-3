@@ -224,7 +224,7 @@ class BranchLookup:
             return default
 
     @staticmethod
-    def uriToUniqueName(uri):
+    def uriToHostingPath(uri):
         """See `IBranchLookup`."""
         schemes = ('http', 'sftp', 'bzr+ssh')
         codehosting_host = URI(config.codehosting.supermirror_root).host
@@ -251,9 +251,9 @@ class BranchLookup:
         except InvalidURIError:
             return None
 
-        unique_name = self.uriToUniqueName(uri)
-        if unique_name is not None:
-            return self.getByUniqueName(unique_name)
+        path = self.uriToHostingPath(uri)
+        if path is not None:
+            return self.getByUniqueName(path)
 
         if uri.scheme == 'lp':
             if not self._uriHostAllowed(uri):
