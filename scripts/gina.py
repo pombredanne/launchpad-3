@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This module uses relative imports.
@@ -114,7 +114,7 @@ def run_gina(options, ztm, target_section):
     importer_handler = ImporterHandler(
         ztm, distro, distroseries, package_root, pocket, component_override)
 
-    import_sourcepackages(packages_map, package_root, importer_handler)
+    import_sourcepackages(distro, packages_map, package_root, importer_handler)
     importer_handler.commit()
 
     # XXX JeroenVermeulen 2011-09-07 bug=843728: Dominate binaries as well.
@@ -133,23 +133,26 @@ def run_gina(options, ztm, target_section):
             log.exception("Database setup required for run on %s", archtag)
             sys.exit(1)
 
-    import_binarypackages(packages_map, package_root, importer_handler)
+    import_binarypackages(distro, packages_map, package_root, importer_handler)
     importer_handler.commit()
 
 
-def attempt_source_package_import(source, package_root, importer_handler):
+def attempt_source_package_import(distro, source, package_root,
+                                  importer_handler):
     """Attempt to import a source package, and handle typical errors."""
     package_name = source.get("Package", "unknown")
     try:
         try:
-            do_one_sourcepackage(source, package_root, importer_handler)
+            do_one_sourcepackage(
+                distro, source, package_root, importer_handler)
         except psycopg2.Error:
             log.exception(
                 "Database error: unable to create SourcePackage for %s. "
                 "Retrying once..", package_name)
             importer_handler.abort()
             time.sleep(15)
-            do_one_sourcepackage(source, package_root, importer_handler)
+            do_one_sourcepackage(
+                distro, source, package_root, importer_handler)
     except (
         InvalidVersionError, MissingRequiredArguments,
         DisplayNameDecodingError):
@@ -168,7 +171,8 @@ def attempt_source_package_import(source, package_root, importer_handler):
             "Database duplication processing %s", package_name)
 
 
-def import_sourcepackages(packages_map, package_root, importer_handler):
+def import_sourcepackages(distro, packages_map, package_root,
+                          importer_handler):
     # Goes over src_map importing the sourcepackages packages.
     count = 0
     npacks = len(packages_map.src_map)
@@ -178,25 +182,26 @@ def import_sourcepackages(packages_map, package_root, importer_handler):
         for source in packages_map.src_map[package]:
             count += 1
             attempt_source_package_import(
-                source, package_root, importer_handler)
+                distro, source, package_root, importer_handler)
             if COUNTDOWN and (count % COUNTDOWN == 0):
                 log.warn('%i/%i sourcepackages processed', count, npacks)
 
 
-def do_one_sourcepackage(source, package_root, importer_handler):
+def do_one_sourcepackage(distro, source, package_root, importer_handler):
     source_data = SourcePackageData(**source)
     if importer_handler.preimport_sourcecheck(source_data):
         # Don't bother reading package information if the source package
         # already exists in the database
         log.info('%s already exists in the archive', source_data.package)
         return
-    source_data.process_package(package_root)
+    source_data.process_package(distro, package_root)
     source_data.ensure_complete()
     importer_handler.import_sourcepackage(source_data)
     importer_handler.commit()
 
 
-def import_binarypackages(packages_map, package_root, importer_handler):
+def import_binarypackages(distro, packages_map, package_root,
+                          importer_handler):
     nosource = []
 
     # Run over all the architectures we have
@@ -212,7 +217,8 @@ def import_binarypackages(packages_map, package_root, importer_handler):
             try:
                 try:
                     do_one_binarypackage(
-                        binary, archtag, package_root, importer_handler)
+                        distro, binary, archtag, package_root,
+                        importer_handler)
                 except psycopg2.Error:
                     log.exception(
                         "Database errors when importing a BinaryPackage "
@@ -220,7 +226,8 @@ def import_binarypackages(packages_map, package_root, importer_handler):
                     importer_handler.abort()
                     time.sleep(15)
                     do_one_binarypackage(
-                        binary, archtag, package_root, importer_handler)
+                        distro, binary, archtag, package_root,
+                        importer_handler)
             except (InvalidVersionError, MissingRequiredArguments):
                 log.exception(
                     "Unable to create BinaryPackageData for %s", package_name)
@@ -257,12 +264,13 @@ def import_binarypackages(packages_map, package_root, importer_handler):
                 log.warn(pkg)
 
 
-def do_one_binarypackage(binary, archtag, package_root, importer_handler):
+def do_one_binarypackage(distro, binary, archtag, package_root,
+                         importer_handler):
     binary_data = BinaryPackageData(**binary)
     if importer_handler.preimport_binarycheck(archtag, binary_data):
         log.info('%s already exists in the archive', binary_data.package)
         return
-    binary_data.process_package(package_root)
+    binary_data.process_package(distro, package_root)
     importer_handler.import_binarypackage(archtag, binary_data)
     importer_handler.commit()
 

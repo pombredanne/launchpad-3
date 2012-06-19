@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0631
@@ -100,11 +100,11 @@ def get_dsc_path(name, version, component, archive_root):
     raise PoolFileNotFound("File %s not in archive" % filename)
 
 
-def unpack_dsc(package, version, component, archive_root):
+def unpack_dsc(package, version, component, distro_name, archive_root):
     dsc_name, dsc_path, component = get_dsc_path(package, version,
                                                  component, archive_root)
     try:
-        extract_dpkg_source(dsc_path, ".")
+        extract_dpkg_source(dsc_path, ".", vendor=distro_name)
     except DpkgSourceError, e:
         raise ExecutionError("Error %d unpacking source" % e.result)
 
@@ -114,9 +114,9 @@ def unpack_dsc(package, version, component, archive_root):
     return source_dir, dsc_path
 
 
-def read_dsc(package, version, component, archive_root):
+def read_dsc(package, version, component, distro_name, archive_root):
     source_dir, dsc_path = unpack_dsc(package, version, component,
-                                      archive_root)
+                                      distro_name, archive_root)
 
     dsc = open(dsc_path).read().strip()
 
@@ -229,7 +229,7 @@ class AbstractPackageData:
         if missing:
             raise MissingRequiredArguments(missing)
 
-    def process_package(self, archive_root):
+    def process_package(self, distro_name, archive_root):
         """Process the package using the files located in the archive.
 
         Raises PoolFileNotFound if a file is not found in the pool.
@@ -240,7 +240,7 @@ class AbstractPackageData:
         cwd = os.getcwd()
         os.chdir(tempdir)
         try:
-            self.do_package(archive_root)
+            self.do_package(distro_name, archive_root)
         finally:
             os.chdir(cwd)
         # We only rmtree if everything worked as expected; otherwise,
@@ -250,7 +250,7 @@ class AbstractPackageData:
         self.date_uploaded = UTC_NOW
         return True
 
-    def do_package(self, archive_root):
+    def do_package(self, distro_name, archive_root):
         """To be provided by derived class."""
         raise NotImplementedError
 
@@ -332,14 +332,15 @@ class SourcePackageData(AbstractPackageData):
 
         AbstractPackageData.__init__(self)
 
-    def do_package(self, archive_root):
+    def do_package(self, distro_name, archive_root):
         """Get the Changelog and urgency from the package on archive.
 
         If successful processing of the package occurs, this method
         sets the changelog and urgency attributes.
         """
         dsc, changelog, copyright = read_dsc(
-            self.package, self.version, self.component, archive_root)
+            self.package, self.version, self.component, distro_name,
+            archive_root)
 
         self.dsc = encoding.guess(dsc)
         self.copyright = encoding.guess(copyright)
@@ -497,7 +498,7 @@ class BinaryPackageData(AbstractPackageData):
 
         AbstractPackageData.__init__(self)
 
-    def do_package(self, archive_root):
+    def do_package(self, distro_name, archive_root):
         """Grab shared library info from .deb."""
         fullpath = os.path.join(archive_root, self.filename)
         if not os.path.exists(fullpath):
