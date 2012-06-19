@@ -44,6 +44,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
+    OverrideError,
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
@@ -59,7 +60,6 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -1667,8 +1667,7 @@ class TestChangeOverride(TestNativePublishingBase):
         self.assertEqual("universe", new_pub.component.name)
 
     def assertCannotOverride(self, *args, **kwargs):
-        self.assertRaises(
-            ArchiveOverriderError, self.setUpOverride, *args, **kwargs)
+        self.assertRaises(OverrideError, self.setUpOverride, *args, **kwargs)
 
     def test_changeOverride_forbids_stable_RELEASE(self):
         # changeOverride is not allowed in the RELEASE pocket of a stable
