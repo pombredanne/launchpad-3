@@ -8,8 +8,8 @@ from zope.component import getUtility
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.scripts.bugsummaryrebuild import (
-    get_existing_targets,
-    get_expected_targets,
+    get_bugsummary_targets,
+    get_bugtask_targets,
     )
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
@@ -46,19 +46,19 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_get_existing_targets(self):
-        # get_existing_targets returns the set of target tuples that are
+    def test_get_bugsummary_targets(self):
+        # get_bugsummary_targets returns the set of target tuples that are
         # currently represented in BugSummary.
-        orig_targets = get_existing_targets()
+        orig_targets = get_bugsummary_targets()
         expected_targets = create_tasks(self.factory)
         rollup_journal()
-        new_targets = get_existing_targets()
+        new_targets = get_bugsummary_targets()
         self.assertContentEqual(expected_targets, new_targets - orig_targets)
 
-    def test_get_expected_targets(self):
-        # get_expected_targets returns the set of target tuples that are
+    def test_get_bugtask_targets(self):
+        # get_bugtask_targets returns the set of target tuples that are
         # currently represented in BugTask.
-        orig_targets = get_expected_targets()
+        orig_targets = get_bugtask_targets()
         expected_targets = create_tasks(self.factory)
-        new_targets = get_expected_targets()
+        new_targets = get_bugtask_targets()
         self.assertContentEqual(expected_targets, new_targets - orig_targets)

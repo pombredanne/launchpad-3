@@ -8,7 +8,7 @@ from lp.bugs.model.bugtask import BugTask
 from lp.services.database.lpstorm import IStore
 
 
-def get_existing_targets():
+def get_bugsummary_targets():
     """Get the current set of targets represented in BugSummary."""
     return set(IStore(BugSummary).find(
         (BugSummary.product_id, BugSummary.productseries_id,
@@ -16,7 +16,7 @@ def get_existing_targets():
          BugSummary.sourcepackagename_id)).config(distinct=True))
 
 
-def get_expected_targets():
+def get_bugtask_targets():
     """Get the current set of targets represented in BugTask."""
     new_targets = set(IStore(BugTask).find(
         (BugTask.productID, BugTask.productseriesID,
