@@ -24,6 +24,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
@@ -58,6 +59,7 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
+from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -1645,3 +1647,45 @@ class TestPublishBinaries(TestCaseWithFactory):
         # archive too.
         self.assertContentEqual(
             [], getUtility(IPublishingSet).publishBinaries(**args))
+
+
+class TestChangeOverride(TestNativePublishingBase):
+    """Test that changing overrides works."""
+
+    def setUp(self):
+        super(TestChangeOverride, self).setUp()
+        self.universe = getUtility(IComponentSet)["universe"]
+
+    def test_source_changeOverride_forbids_stable_RELEASE(self):
+        # SPPH.changeOverride is not allowed in the RELEASE pocket of a
+        # stable distroseries.
+        self.distroseries.status = SeriesStatus.CURRENT
+        spph = self.getPubSource()
+        self.assertRaises(
+            ArchiveOverriderError, spph.changeOverride,
+            new_component=self.universe)
+
+    def test_source_changeOverride_allows_development_RELEASE(self):
+        # SPPH.changeOverride is allowed in the RELEASE pocket of a
+        # development distroseries.
+        self.distroseries.status = SeriesStatus.DEVELOPMENT
+        spph = self.getPubSource()
+        new_spph = spph.changeOverride(new_component=self.universe)
+        self.assertEqual("universe", new_spph.component.name)
+
+    def test_binary_changeOverride_forbids_stable_RELEASE(self):
+        # BPPH.changeOverride is not allowed in the RELEASE pocket of a
+        # stable distroseries.
+        self.distroseries.status = SeriesStatus.CURRENT
+        bpph = self.getPubBinaries()[0]
+        self.assertRaises(
+            ArchiveOverriderError, bpph.changeOverride,
+            new_component=self.universe)
+
+    def test_binary_changeOverride_allows_development_RELEASE(self):
+        # BPPH.changeOverride is allowed in the RELEASE pocket of a
+        # development distroseries.
+        self.distroseries.status = SeriesStatus.DEVELOPMENT
+        bpph = self.getPubBinaries()[0]
+        new_bpph = bpph.changeOverride(new_component=self.universe)
+        self.assertEqual("universe", new_bpph.component.name)

@@ -1642,6 +1642,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         return True
 
+    def cannotModifySuite(self, pocket, archive):
+        """RELEASE pockets of stable DSes in some archives are immutable."""
+        return (not self.isUnstable() and
+                not archive.allowUpdatesToReleasePocket() and
+                pocket == PackagePublishingPocket.RELEASE)
+
     @property
     def main_archive(self):
         return self.distribution.main_archive
