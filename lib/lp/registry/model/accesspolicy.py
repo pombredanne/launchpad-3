@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AccessArtifact',
+    'AccessArtifactGrant',
     'AccessPolicy',
     'AccessPolicyArtifact',
     'AccessPolicyGrant',

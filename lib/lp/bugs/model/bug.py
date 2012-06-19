@@ -2691,7 +2691,7 @@ class BugSet:
             if params.information_type == InformationType.PUBLIC:
                 params.information_type = InformationType.USERDATA
 
-        bug, event = self.createBugWithoutTarget(params)
+        bug, event = self._makeBug(params)
 
         # Create the task on a product if one was passed.
         if params.product:
@@ -2728,6 +2728,12 @@ class BugSet:
             else:
                 bug.subscribe(params.product.owner, params.owner)
 
+        if params.subscribe_owner:
+            bug.subscribe(params.owner, params.owner)
+        # Subscribe other users.
+        for subscriber in params.subscribers:
+            bug.subscribe(subscriber, params.owner)
+
         bug_task = bug.default_bugtask
         if params.assignee:
             bug_task.transitionToAssignee(params.assignee)
@@ -2749,8 +2755,9 @@ class BugSet:
             return bug, event
         return bug
 
-    def createBugWithoutTarget(self, bug_params):
-        """See `IBugSet`."""
+    def _makeBug(self, bug_params):
+        """Construct a bew bug object using the specified parameters."""
+
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
@@ -2799,14 +2806,8 @@ class BugSet:
             _private=private, _security_related=security_related,
             **extra_params)
 
-        if params.subscribe_owner:
-            bug.subscribe(params.owner, params.owner)
         if params.tags:
             bug.tags = params.tags
-
-        # Subscribe other users.
-        for subscriber in params.subscribers:
-            bug.subscribe(subscriber, params.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg, index=0)

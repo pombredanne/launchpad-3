@@ -951,7 +951,7 @@ class TestSharingService(TestCaseWithFactory):
         # Create an existing access grant.
         grantee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
-            self.service.ensureAccessGrants(grantee, owner, bugs=[bug])
+            self.service.ensureAccessGrants([grantee], owner, bugs=[bug])
         # Test with a new bug as well as the one for which access is already
         # granted.
         self._assert_ensureAccessGrants(owner, [bug, bug2], None, grantee)

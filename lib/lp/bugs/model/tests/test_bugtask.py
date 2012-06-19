@@ -3347,7 +3347,8 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
         self.useFixture(disable_trigger_fixture())
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
 
-    def _assert_bug_change_unsubscribes(self, change_callback):
+    def _assert_bug_change_unsubscribes(self, change_callback,
+                                        ignore_policy_grantee_check=False):
         # Subscribers are unsubscribed if the bug becomes invisible due to a
         # task being retargetted.
         product = self.factory.makeProduct()
@@ -3387,7 +3388,12 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
 
         # Check the result. Policy grantees will be unsubscribed.
         subscribers = removeSecurityProxy(bug).getDirectSubscribers()
-        self.assertNotIn(policy_grantee, subscribers)
+        # XXX wallyworld 2912-06-19 bug=1014922
+        # All direct subscribers are granted access to the bug when it changes
+        # and this includes people with policy grants who could see the bug
+        # before a change in information type.
+        if not ignore_policy_grantee_check:
+            self.assertNotIn(policy_grantee, subscribers)
         self.assertIn(artifact_grantee, subscribers)
 
     def test_change_information_type(self):
@@ -3397,7 +3403,7 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
             bug.transitionToInformationType(
                 InformationType.EMBARGOEDSECURITY, owner)
 
-        self._assert_bug_change_unsubscribes(change_information_type)
+        self._assert_bug_change_unsubscribes(change_information_type, True)
 
     def test_change_target(self):
         # Changing the target of a bug unsubscribes users who can no
@@ -3999,8 +4005,9 @@ class TestTargetNameCache(TestCase):
         # accepted and have targetnamecache updated.
         ubuntu = getUtility(IDistributionSet).get(1)
 
-        new_bug, new_bug_event = getUtility(IBugSet).createBugWithoutTarget(
-            CreateBugParams(mark, 'New Bug', comment='New Bug'))
+        new_bug, new_bug_event = getUtility(IBugSet).createBug(
+            CreateBugParams(mark, 'New Bug', comment='New Bug'),
+            notify_event=False)
 
         # The first message of a new bug has index 0.
         self.assertEqual(new_bug.bug_messages[0].index, 0)
