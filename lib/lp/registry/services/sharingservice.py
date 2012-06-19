@@ -18,7 +18,7 @@ from storm.expr import (
     And,
     In,
     Join,
-    Not,
+    Or,
     Select,
     )
 from zope.component import getUtility
@@ -167,6 +167,7 @@ class SharingService:
                     AccessArtifactGrant.abstract_artifact_id ==
                         access_artifact.id)))
 
+        # Find the people who can see the artifacts.
         person_ids = [person.id for person in people]
         store = IStore(AccessArtifactGrant)
         tables = [
@@ -174,12 +175,12 @@ class SharingService:
             Join(TeamParticipation, TeamParticipation.personID == Person.id)]
         result_set = store.using(*tables).find(
             Person,
-            And(
-                Not(In(TeamParticipation.teamID, policy_grantees)),
-                Not(In(TeamParticipation.teamID, artifact_grantees))),
+            Or(
+                In(TeamParticipation.teamID, policy_grantees),
+                In(TeamParticipation.teamID, artifact_grantees)),
             In(Person.id, person_ids))
 
-        return result_set
+        return set(people).difference(set(result_set))
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
