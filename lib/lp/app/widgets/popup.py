@@ -41,6 +41,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     assign_me_text = 'Pick me'
     remove_person_text = 'Remove person'
     remove_team_text = 'Remove team'
+    include_create_team_link = False
 
     popup_name = 'popup-vocabulary-picker'
 
@@ -143,7 +144,9 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             vocabulary_name=self.vocabulary_name,
             vocabulary_filters=self.vocabulary_filters,
             input_element=self.input_id,
-            show_widget_id=self.show_widget_id)
+            show_widget_id=self.show_widget_id,
+            include_create_team_link=self.include_create_team_link,
+            enhanced_picker=self.include_create_team_link)
 
     @property
     def json_config(self):
@@ -206,8 +209,12 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         else:
             css = ''
         return ('<span class="%s">(<a id="%s" href="%s">'
-                'Find&hellip;</a>)</span>') % (
-            css, self.show_widget_id, self.nonajax_uri or '#')
+                'Find&hellip;</a>)%s</span>') % (
+            css, self.show_widget_id, self.nonajax_uri or '#',
+            self.extraChooseLink() or '')
+
+    def extraChooseLink(self):
+        return None
 
     @property
     def nonajax_uri(self):
@@ -230,12 +237,11 @@ class PersonPickerWidget(VocabularyPickerWidget):
         val = self._getFormValue()
         return get_person_picker_entry_metadata(val)
 
-    def chooseLink(self):
-        link = super(PersonPickerWidget, self).chooseLink()
+    def extraChooseLink(self):
         if self.include_create_team_link:
-            link += ('or (<a href="/people/+newteam">'
+            return ('or (<a href="/people/+newteam">'
                      'Create a new team&hellip;</a>)')
-        return link
+        return None
 
     @property
     def nonajax_uri(self):
@@ -251,10 +257,8 @@ class BugTrackerPickerWidget(VocabularyPickerWidget):
         >Register an external bug tracker&hellip;</a>)
         """
 
-    def chooseLink(self):
-        link = super(BugTrackerPickerWidget, self).chooseLink()
-        link += self.link_template
-        return link
+    def extraChooseLink(self):
+        return self.link_template
 
     @property
     def nonajax_uri(self):
