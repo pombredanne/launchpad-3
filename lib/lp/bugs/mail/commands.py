@@ -371,6 +371,7 @@ class SummaryEmailCommand(EditEmailCommand):
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
     RANK = 1
+    lowercase_args = False
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -451,6 +452,7 @@ class CVEEmailCommand(EmailCommand):
 
     _numberOfArguments = 1
     RANK = 5
+    lowercase_args = False
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
