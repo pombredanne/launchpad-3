@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive uploader utilities."""
@@ -28,6 +28,7 @@ __all__ = [
 
 
 import email.Header
+import os
 import re
 import signal
 import subprocess
@@ -267,7 +268,7 @@ def safe_fix_maintainer(content, fieldname):
     return fix_maintainer(content, fieldname)
 
 
-def extract_dpkg_source(dsc_filepath, target):
+def extract_dpkg_source(dsc_filepath, target, vendor=None):
     """Extract a source package by dsc file path.
 
     :param dsc_filepath: Path of the DSC file
@@ -281,9 +282,12 @@ def extract_dpkg_source(dsc_filepath, target):
         #   blosxom/2009-07-02-python-sigpipe.html
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     args = ["dpkg-source", "-sn", "-x", dsc_filepath]
+    env = dict(os.environ)
+    if vendor is not None:
+        env["DEB_VENDOR"] = vendor
     dpkg_source = subprocess.Popen(
         args, stdout=subprocess.PIPE, cwd=target, stderr=subprocess.PIPE,
-        preexec_fn=subprocess_setup)
+        preexec_fn=subprocess_setup, env=env)
     output, unused = dpkg_source.communicate()
     result = dpkg_source.wait()
     if result != 0:
