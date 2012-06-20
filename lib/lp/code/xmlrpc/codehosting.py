@@ -334,24 +334,47 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             {'default_stack_on': escape(path)},
             trailing_path)
 
-    def _translateBranchIdAlias(self, requester, path):
-        # If the path isn't a branch id alias, nothing more to do.
-        stripped_path = unescape(path.strip('/'))
+    def _getBranchByIdAlias(self, stripped_path, orig_path):
         if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
-            return None
+            return None, None
         try:
             parts = stripped_path.split('/', 2)
             branch_id = int(parts[1])
         except (ValueError, IndexError):
-            raise faults.PathTranslationError(path)
+            raise faults.PathTranslationError(orig_path)
         branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            raise faults.PathTranslationError(path)
         try:
             trailing = parts[2]
         except IndexError:
             trailing = ''
-        return self._serializeBranch(requester, branch, trailing, True)
+        return branch, trailing
+
+    def getBranchAndPath(self, path, orig_path):
+        branch, trailing = self._getBranchByIdAlias(path, orig_path)
+        if branch is not None:
+            return branch, trailing, True
+        if path.startswith(BRANCH_ALIAS_PREFIX + '/'):
+            # translatePath('/+branch/.bzr') *must* return not
+            # found, otherwise bzr will look for it and we don't
+            # have a global bzr dir.
+            lp_path = path[len(BRANCH_ALIAS_PREFIX + '/'):]
+            try:
+                branch, trailing = getUtility(
+                    IBranchLookup).getByLPPath(lp_path)
+            except (InvalidProductName, NoLinkedBranch,
+                    CannotHaveLinkedBranch, NameLookupFailed,
+                    InvalidNamespace):
+                # If we get one of these errors, then there is no
+                # point walking back through the path parts.
+                raise faults.PathTranslationError(orig_path)
+        else:
+            get_containing = getUtility(IBranchLookup).getContainingBranch
+            branch, second = get_containing(path)
+            if second is not None:
+                trailing = escape(second)
+            else:
+                trailing = None
+        return branch, trailing, False
 
     def translatePath(self, requester_id, path):
         """See `ICodehostingAPI`."""
@@ -359,46 +382,21 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
-            branch = self._translateBranchIdAlias(requester, path)
+            stripped_path = unescape(path.strip('/'))
+            branch, trailing, id_alias = self.getBranchAndPath(
+                stripped_path, path)
             if branch is not None:
-                return branch
-            stripped_path = path.strip('/')
-            branch_alias_path = unescape(stripped_path)
-            if branch_alias_path.startswith(BRANCH_ALIAS_PREFIX + '/'):
-                # translatePath('/+branch/.bzr') *must* return not
-                # found, otherwise bzr will look for it and we don't
-                # have a global bzr dir.
-                lp_path = branch_alias_path[len(BRANCH_ALIAS_PREFIX + '/'):]
-                try:
-                    branch, trailing = getUtility(
-                        IBranchLookup).getByLPPath(lp_path)
-                except (InvalidProductName, NoLinkedBranch,
-                        CannotHaveLinkedBranch, NameLookupFailed,
-                        InvalidNamespace):
-                    # If we get one of these errors, then there is no
-                    # point walking back through the path parts.
+                branch = self._serializeBranch(requester, branch, trailing,
+                                               id_alias)
+                if branch is None:
                     raise faults.PathTranslationError(path)
                 else:
-                    branch = self._serializeBranch(requester, branch, trailing)
-                    if branch is None:
-                        raise faults.PathTranslationError(path)
                     return branch
-            else:
-                get_containing = getUtility(IBranchLookup).getContainingBranch
-                branch, second = get_containing(branch_alias_path)
-                if branch is not None:
-                    branch = self._serializeBranch(
-                        requester, branch, escape(second))
-                    if branch is None:
-                        raise faults.PathTranslationError(path)
-                    return branch
-
-                for first, second in iter_split(stripped_path, '/'):
-                    first = unescape(first)
-                    # Is it a product control directory?
-                    product = self._serializeControlDirectory(
-                        requester, first, second)
-                    if product is not None:
-                        return product
+            for first, second in iter_split(stripped_path, '/'):
+                # Is it a product control directory?
+                product = self._serializeControlDirectory(
+                    requester, first, escape(second))
+                if product is not None:
+                    return product
             raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
