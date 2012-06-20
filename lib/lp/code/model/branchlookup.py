@@ -8,6 +8,8 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
+
+from bzrlib.urlutils import escape
 from lazr.enum import DBItem
 from lazr.uri import (
     InvalidURIError,
@@ -26,6 +28,7 @@ from zope.component import (
     )
 from zope.interface import implements
 
+from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import valid_name
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -39,7 +42,10 @@ from lp.code.interfaces.branchlookup import (
     ILinkedBranchTraverser,
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
+    BRANCH_ID_ALIAS_PREFIX,
+    )
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
 from lp.registry.enums import PUBLIC_INFORMATION_TYPES
@@ -271,8 +277,45 @@ class BranchLookup:
         return Branch.selectOneBy(url=url)
 
     def getByHostingPath(self, path):
+        if path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            return self._getBranchByIdAlias(path) + (True,)
+        elif path.startswith(BRANCH_ALIAS_PREFIX + '/'):
+            # translatePath('/+branch/.bzr') *must* return not
+            # found, otherwise bzr will look for it and we don't
+            # have a global bzr dir.
+            return self.getBranchByAlias(path) + (False,)
+        else:
+            branch, second = self.getContainingBranch(path)
+            if second is not None:
+                trailing = escape(second)
+            else:
+                trailing = None
+            return branch, trailing, False
+
         if path is not None:
             return self.getByUniqueName(path)
+
+    def _getBranchByIdAlias(self, stripped_path):
+        try:
+            parts = stripped_path.split('/', 2)
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            return None, None
+        branch = self.get(branch_id)
+        try:
+            trailing = parts[2]
+        except IndexError:
+            trailing = ''
+        return branch, trailing
+
+    def getBranchByAlias(self, path):
+        lp_path = path[len(BRANCH_ALIAS_PREFIX + '/'):]
+        try:
+            return getUtility(IBranchLookup).getByLPPath(lp_path)
+        except (InvalidProductName, NoLinkedBranch,
+                CannotHaveLinkedBranch, NameLookupFailed,
+                InvalidNamespace):
+            return None, None
 
     def getContainingBranch(self, path):
         path_mapping = dict(iter_split(path, '/'))
