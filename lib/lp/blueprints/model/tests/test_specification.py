@@ -494,6 +494,57 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         for data, obj in zip(work_items, list(spec.work_items)):
             self.assertThat(obj, MatchesStructure.byEquality(**data))
 
+    def _dup_work_items_set_up(self):
+        spec = self.factory.makeSpecification(
+            product=self.factory.makeProduct())
+        login_person(spec.owner)
+        # Create two work-items in our database.
+        wi1_data = self._createWorkItemAndReturnDataDict(spec)
+        wi2_data = self._createWorkItemAndReturnDataDict(spec)
+
+        # Create a duplicate and a near duplicate, insert into DB.
+        new_wi1_data = wi2_data.copy()
+        new_wi2_data = new_wi1_data.copy()
+        new_wi2_data['status'] = SpecificationWorkItemStatus.DONE
+        work_items = [new_wi1_data, wi1_data, new_wi2_data, wi2_data]
+        spec.updateWorkItems(work_items)
+
+        # Update our data dicts with the sequences to match data in DB
+        new_wi1_data['sequence'] = 0
+        wi1_data['sequence'] = 1
+        new_wi2_data['sequence'] = 2
+        wi2_data['sequence'] = 3
+
+        self.assertEqual(4, spec.work_items.count())
+        for data, obj in zip(work_items, list(spec.work_items)):
+            self.assertThat(obj, MatchesStructure.byEquality(**data))
+
+        return spec, work_items
+
+    def test_add_duplicate_work_item(self):
+        spec, work_items = self._dup_work_items_set_up()
+
+        # Test that we can insert another duplicate work item.
+        new_wi3_data = work_items[0].copy()
+        new_wi3_data['sequence'] = 4
+        work_items.append(new_wi3_data)
+        spec.updateWorkItems(work_items)
+
+        self.assertEqual(5, spec.work_items.count())
+        for data, obj in zip(work_items, list(spec.work_items)):
+            self.assertThat(obj, MatchesStructure.byEquality(**data))
+
+    def test_delete_duplicate_work_item(self):
+        spec, work_items = self._dup_work_items_set_up()
+
+        # Delete a duplicate work item
+        work_items.pop()
+        spec.updateWorkItems(work_items)
+
+        self.assertEqual(3, spec.work_items.count())
+        for data, obj in zip(work_items, list(spec.work_items)):
+            self.assertThat(obj, MatchesStructure.byEquality(**data))
+
     def test_updateWorkItems_updates_existing_ones(self):
         spec = self.factory.makeSpecification()
         login_person(spec.owner)
