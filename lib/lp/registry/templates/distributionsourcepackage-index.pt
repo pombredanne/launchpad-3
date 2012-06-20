@@ -162,7 +162,7 @@
         </td>
         <td>
           <tal:date_published condition="row/date_published">
-            <span tal:replace="row/date_published/fmt:date"/>
+            <span tal:replace="row/date_published/fmt:approximatedate"/>
           </tal:date_published>
           <tal:not_published
                condition="not: row/date_published"
