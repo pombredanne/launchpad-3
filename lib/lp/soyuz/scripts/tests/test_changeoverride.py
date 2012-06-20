@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`ChangeOverride` script class tests."""
@@ -12,15 +12,14 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import OverrideError
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.scripts.changeoverride import (
-    ArchiveOverriderError,
-    ChangeOverride,
-    )
+from lp.soyuz.scripts.changeoverride import ChangeOverride
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -263,6 +262,7 @@ class TestChangeOverride(unittest.TestCase):
         This test checks the expected behaviour for each of them.
         """
         self._setupOverridePublishingContext()
+        self.warty.status = SeriesStatus.DEVELOPMENT
 
         changer = self.getChanger(
             component="universe", section="web", priority='extra')
@@ -364,6 +364,7 @@ class TestChangeOverride(unittest.TestCase):
         This behaviour is inherited from `SoyuzScript`.
         """
         self._setupOverridePublishingContext()
+        self.warty.status = SeriesStatus.DEVELOPMENT
         changer = self.getChanger(
             component="universe", section="web", priority='extra',
             package_version='0.9')
@@ -398,6 +399,7 @@ class TestChangeOverride(unittest.TestCase):
         This behaviour is inherited from `SoyuzScript`.
         """
         self._setupOverridePublishingContext()
+        self.warty.status = SeriesStatus.DEVELOPMENT
         changer = self.getChanger(
             component="universe", section="web", priority='extra',
             arch_tag='i386')
@@ -486,11 +488,11 @@ class TestChangeOverride(unittest.TestCase):
             component="partner", section="base", priority="extra")
 
         self.assertRaises(
-            ArchiveOverriderError, changer.processSourceChange, 'boingo')
+            OverrideError, changer.processSourceChange, 'boingo')
         self.assertRaises(
-            ArchiveOverriderError, changer.processBinaryChange, 'boingo-bin')
+            OverrideError, changer.processBinaryChange, 'boingo-bin')
         self.assertRaises(
-            ArchiveOverriderError, changer.processChildrenChange, 'boingo')
+            OverrideError, changer.processChildrenChange, 'boingo')
 
     def test_target_publication_not_found(self):
         """Raises SoyuzScriptError when a source was not found."""
