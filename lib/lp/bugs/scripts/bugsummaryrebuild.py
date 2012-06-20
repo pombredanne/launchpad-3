@@ -5,8 +5,13 @@ __metaclass__ = type
 
 from storm.expr import (
     And,
+    Count,
     Select,
     With,
+    )
+from storm.properties import (
+    Int,
+    Unicode,
     )
 
 from lp.bugs.model.bugsummary import RawBugSummary
@@ -97,7 +102,7 @@ def rebuild_bugsummary_for_target(target_key, log):
 
 def calculate_bugsummary_rows(*bugtaskflat_constraints):
     relevant_tasks = With(
-        'relevant_tasks',
+        'relevant_task',
         Select(
             (BugTaskFlat.bug_id, BugTaskFlat.information_type,
              BugTaskFlat.status, BugTaskFlat.milestone_id,
@@ -107,11 +112,15 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
                 BugTaskFlat.duplicateof_id == None,
                 *bugtaskflat_constraints)))
 
-    class RelevantTasks(BugTaskFlat):
-        __storm_table__ = 'relevant_tasks'
+    class RelevantTask(BugTaskFlat):
+        __storm_table__ = 'relevant_task'
+
+        tag = Unicode()
+        viewed_by_id = Int(name='viewed_by')
 
     results = IStore(BugTaskFlat).with_(relevant_tasks).find(
-        RelevantTasks.bug_id)
+        (RelevantTask.information_type, Count())).group_by(
+            RelevantTask.information_type)
     return results
 
 
