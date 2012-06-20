@@ -17,7 +17,7 @@ class CommandOne(EmailCommand):
 
 
 class CommandTwo(EmailCommand):
-    lowercase_args = False
+    case_insensitive_args = False
 
 
 class SampleCommandCollection(EmailCommandCollection):
@@ -30,9 +30,7 @@ class SampleCommandCollection(EmailCommandCollection):
 class TestEmailCommandCollection(TestCase):
     def test_parsingParameters(self):
         self.assertEqual(
-            {'one': True,
-             'two': False,
-            },
+            {'one': True, 'two': False},
             SampleCommandCollection.parsingParameters())
 
 
