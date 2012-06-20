@@ -2918,6 +2918,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         # Create a source and binary private publication.
         hoary = ubuntu.getSeries('hoary')
+        hoary.status = SeriesStatus.CURRENT
         test_publisher = self.getTestPublisher(hoary)
         ppa_source = test_publisher.getPubSource(
             archive=joe_private_ppa, version='1.0', distroseries=hoary)
