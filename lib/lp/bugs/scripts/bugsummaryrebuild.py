@@ -3,11 +3,18 @@
 
 __metaclass__ = type
 
+from storm.expr import (
+    And,
+    Select,
+    With,
+    )
+
 from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     BugTask,
     )
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.registry.interfaces.series import ISeriesMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
@@ -86,6 +93,26 @@ def rebuild_bugsummary_for_target(target_key, log):
     log.debug(
         '%d existing BugSummary rows'
         % len(get_bugsummary_rows(*bs_constraints)))
+
+
+def calculate_bugsummary_rows(*bugtaskflat_constraints):
+    relevant_tasks = With(
+        'relevant_tasks',
+        Select(
+            (BugTaskFlat.bug_id, BugTaskFlat.information_type,
+             BugTaskFlat.status, BugTaskFlat.milestone_id,
+             BugTaskFlat.importance, BugTaskFlat.latest_patch_uploaded),
+            tables=[BugTaskFlat],
+            where=And(
+                BugTaskFlat.duplicateof_id == None,
+                *bugtaskflat_constraints)))
+
+    class RelevantTasks(BugTaskFlat):
+        __storm_table__ = 'relevant_tasks'
+
+    results = IStore(BugTaskFlat).with_(relevant_tasks).find(
+        RelevantTasks.bug_id)
+    return results
 
 
 class BugSummaryRebuildTunableLoop(TunableLoop):
