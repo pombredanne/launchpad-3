@@ -334,13 +334,13 @@ XXX Abel Deuring 2012-06-20 bug=1015519: XML tags cannot be searched.
 More specifically, tags are simply dropped from the FTI data and from
 search queries.
 
-   >>> print search('some text <div>whatever</div>', '<div>')
-   FTI data: 'text':2 'whatev':3 query: None match: None
+    >>> print search('some text <div>whatever</div>', '<div>')
+    FTI data: 'text':2 'whatev':3 query: None match: None
 
 Of course, omitting '<' and '>'from the query does not help.
 
-   >>> print search('some text <div>whatever</div>', 'div')
-   FTI data: 'text':2 'whatev':3 query: 'div' match: False
+    >>> print search('some text <div>whatever</div>', 'div')
+    FTI data: 'text':2 'whatev':3 query: 'div' match: False
 
 Treatment of characters that are used as operators in to_tsquery():
 
