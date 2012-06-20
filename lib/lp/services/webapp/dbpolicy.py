@@ -318,9 +318,12 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         # Attempt to retrieve PostgreSQL streaming replication lag
         # from the slave.
         slave_store = self.getStore(MAIN_STORE, SLAVE_FLAVOR)
-        streaming_lag = slave_store.execute(
-            "SELECT now() - pg_last_xact_replay_timestamp()").get_one()[0]
-        if streaming_lag is not None:
+        hot_standby, streaming_lag = slave_store.execute("""
+            SELECT
+                current_setting('hot_standby') = 'on',
+                now() - pg_last_xact_replay_timestamp()
+            """).get_one()
+        if hot_standby and streaming_lag is not None:
             # Slave is a PG 9.1 streaming replication hot standby.
             # Return the lag.
             return streaming_lag
