@@ -251,9 +251,9 @@ class BranchLookup:
         except InvalidURIError:
             return None
 
-        path = self.uriToHostingPath(uri)
-        if path is not None:
-            return self.getByUniqueName(path)
+        branch = self.getByHostingPath(self.uriToHostingPath(uri))
+        if branch is not None:
+            return branch
 
         if uri.scheme == 'lp':
             if not self._uriHostAllowed(uri):
@@ -268,6 +268,11 @@ class BranchLookup:
                 return None
 
         return Branch.selectOneBy(url=url)
+
+    def getByHostingPath(self, path):
+        if path is not None:
+            return self.getByUniqueName(path)
+
 
     def getByUrls(self, urls):
         """See `IBranchLookup`."""

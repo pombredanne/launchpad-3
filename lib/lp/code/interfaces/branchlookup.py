@@ -60,6 +60,9 @@ class IBranchLookup(Interface):
         Return the default value if there is no such branch.
         """
 
+    def getByHostingPath(path):
+        """Find a branch according to its path on codehosting."""
+
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 

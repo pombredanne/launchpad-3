@@ -390,7 +390,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                         trailing = ''
                     second = '/'.join([trailing, second]).strip('/')
                 else:
-                    branch = getUtility(IBranchLookup).getByUniqueName(first)
+                    branch = getUtility(IBranchLookup).getByHostingPath(first)
                 if branch is not None:
                     branch = self._serializeBranch(requester, branch, second)
                     if branch is None:

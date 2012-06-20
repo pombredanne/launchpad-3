@@ -178,7 +178,7 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         self.assertEqual((branch.id, '/foo'), result)
 
 
-class TestGetByPath(TestCaseWithFactory):
+class TestGetByLPPath(TestCaseWithFactory):
     """Test `IBranchLookup.getByLPPath`."""
 
     layer = DatabaseFunctionalLayer
