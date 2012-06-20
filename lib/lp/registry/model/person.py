@@ -587,7 +587,7 @@ class Person(
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         enum=TeamSubscriptionPolicy,
-        default=TeamSubscriptionPolicy.MODERATED,
+        default=TeamSubscriptionPolicy.RESTRICTED,
         storm_validator=validate_subscription_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',

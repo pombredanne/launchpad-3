@@ -1942,7 +1942,7 @@ class ITeamPublic(Interface):
     subscriptionpolicy = exported(
         TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
                vocabulary=TeamSubscriptionPolicy,
-               default=TeamSubscriptionPolicy.MODERATED, required=True,
+               default=TeamSubscriptionPolicy.RESTRICTED, required=True,
                description=_(
                 TeamSubscriptionPolicy.__doc__.split('\n\n')[1])),
         exported_as='subscription_policy')
