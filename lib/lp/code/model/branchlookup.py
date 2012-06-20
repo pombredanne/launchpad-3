@@ -69,6 +69,7 @@ from lp.services.config import config
 from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
+    IStore,
     )
 from lp.services.utils import iter_split
 from lp.services.webapp.authorization import check_permission
@@ -273,6 +274,15 @@ class BranchLookup:
         if path is not None:
             return self.getByUniqueName(path)
 
+    def getContainingBranch(self, path):
+        path_mapping = dict(iter_split(path, '/'))
+        store = IStore(Branch)
+        clause = Branch.unique_name.is_in(path_mapping.keys())
+        branch = store.find(Branch, clause).one()
+        if branch is None:
+            return None, None
+        else:
+            return branch, path_mapping[branch.unique_name]
 
     def getByUrls(self, urls):
         """See `IBranchLookup`."""

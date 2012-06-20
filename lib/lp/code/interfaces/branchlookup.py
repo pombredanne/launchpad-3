@@ -63,6 +63,9 @@ class IBranchLookup(Interface):
     def getByHostingPath(path):
         """Find a branch according to its path on codehosting."""
 
+    def getContainingBranch(self, path):
+        """Find a branch and contained path according to its unique name."""
+
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 

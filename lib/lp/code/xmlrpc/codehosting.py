@@ -384,20 +384,21 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                         raise faults.PathTranslationError(path)
                     return branch
             else:
+                get_containing = getUtility(IBranchLookup).getContainingBranch
+                branch, second = get_containing(branch_alias_path)
+                if branch is not None:
+                    branch = self._serializeBranch(
+                        requester, branch, escape(second))
+                    if branch is None:
+                        raise faults.PathTranslationError(path)
+                    return branch
+
                 for first, second in iter_split(stripped_path, '/'):
                     first = unescape(first)
-                    # Is it a branch?
-                    branch = getUtility(IBranchLookup).getByHostingPath(first)
-                    if branch is not None:
-                        branch = self._serializeBranch(requester, branch, second)
-                        if branch is None:
-                            break
-                        return branch
-                    else:
-                        # Is it a product control directory?
-                        product = self._serializeControlDirectory(
-                            requester, first, second)
-                        if product is not None:
-                            return product
+                    # Is it a product control directory?
+                    product = self._serializeControlDirectory(
+                        requester, first, second)
+                    if product is not None:
+                        return product
             raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
