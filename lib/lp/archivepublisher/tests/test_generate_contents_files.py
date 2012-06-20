@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for the `generate-contents-files` script."""
@@ -40,7 +40,7 @@ def fake_overrides(script, distroseries):
     os.makedirs(script.config.overrideroot)
 
     components = ['main', 'restricted', 'universe', 'multiverse']
-    architectures = script.getArchs()
+    architectures = script.getArchs(distroseries.name)
     suffixes = components + ['extra.' + component for component in components]
     for suffix in suffixes:
         write_file(os.path.join(
@@ -201,42 +201,35 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         script = self.makeScript(distro)
         self.assertEqual(distro, script.distribution)
 
-    def test_queryDistro(self):
-        # queryDistro is a helper that invokes LpQueryDistro.
-        distro = self.makeDistro()
-        distroseries = self.factory.makeDistroSeries(distro)
-        script = self.makeScript(distro)
-        script.processOptions()
-        self.assertEqual(distroseries.name, script.queryDistro('supported'))
-
     def test_getArchs(self):
-        # getArchs returns a list of architectures in the distribution.
+        # getArchs returns a list of architectures in the distroseries.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distro)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         script = self.makeScript(das.distroseries.distribution)
-        self.assertEqual([das.architecturetag], script.getArchs())
+        self.assertEqual(
+            [das.architecturetag], script.getArchs(distroseries.name))
 
-    def test_getSuites(self):
-        # getSuites returns the suites in the distribution.  The main
-        # suite has the same name as the distro, without suffix.
+    def test_getSupportedSeries(self):
+        # getSupportedSeries returns the supported distroseries in the
+        # distribution.
         script = self.makeScript()
         distroseries = self.factory.makeDistroSeries(
             distribution=script.distribution)
-        self.assertIn(distroseries.name, script.getSuites())
+        self.assertIn(distroseries, script.getSupportedSeries())
 
-    def test_getPockets(self):
-        # getPockets returns the full names (distroseries-pocket) of the
+    def test_getSuites(self):
+        # getSuites returns the full names (distroseries-pocket) of the
         # pockets that have packages to publish.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         package = self.factory.makeSuiteSourcePackage(distroseries)
         script = self.makeScript(distro)
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
-        self.assertEqual([package.suite], script.getPockets())
+        self.assertEqual([package.suite], list(script.getSuites()))
 
-    def test_getPockets_includes_release_pocket(self):
-        # getPockets also includes the release pocket, which is named
+    def test_getSuites_includes_release_pocket(self):
+        # getSuites also includes the release pocket, which is named
         # after the distroseries without a suffix.
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
@@ -244,7 +237,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             distroseries, pocket=PackagePublishingPocket.RELEASE)
         script = self.makeScript(distro)
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
-        self.assertEqual([package.suite], script.getPockets())
+        self.assertEqual([package.suite], list(script.getSuites()))
 
     def test_writeAptContentsConf_writes_header(self):
         # writeAptContentsConf writes apt-contents.conf.  At a minimum
@@ -252,7 +245,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         # with the right distribution name interpolated.
         distro = self.makeDistro()
         script = self.makeScript(distro)
-        script.writeAptContentsConf([], [])
+        script.writeAptContentsConf([])
         apt_contents_conf = file(
             "%s/%s-misc/apt-contents.conf"
             % (script.content_archive, distro.name)).read()
@@ -264,19 +257,22 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         # apt_conf_dist.template for every suite, with certain
         # parameters interpolated.
         distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         script = self.makeScript(distro)
         content_archive = script.content_archive
-        suite = self.factory.getUniqueString('suite')
-        arch = self.factory.getUniqueString('arch')
-        script.writeAptContentsConf([suite], [arch])
+        script.writeAptContentsConf([distroseries.name])
         apt_contents_conf = file(
             "%s/%s-misc/apt-contents.conf"
             % (script.content_archive, distro.name)).read()
-        self.assertIn('tree "dists/%s"\n' % suite, apt_contents_conf)
+        self.assertIn(
+            'tree "dists/%s"\n' % distroseries.name, apt_contents_conf)
         overrides_path = os.path.join(
             content_archive, distro.name + "-overrides")
         self.assertIn('FileList "%s' % overrides_path, apt_contents_conf)
-        self.assertIn('Architectures "%s source";' % arch, apt_contents_conf)
+        self.assertIn(
+            'Architectures "%s source";' % das.architecturetag,
+            apt_contents_conf)
 
     def test_writeContentsTop(self):
         # writeContentsTop writes a Contents.top file based on a
@@ -314,7 +310,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         suite = package.suite
         script = self.makeScript(distro)
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
-        self.assertNotEqual([], script.getPockets())
+        self.assertNotEqual([], list(script.getSuites()))
         fake_overrides(script, distroseries)
         script.process()
         self.assertTrue(file_exists(os.path.join(
