@@ -334,14 +334,12 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             {'default_stack_on': escape(path)},
             trailing_path)
 
-    def _getBranchByIdAlias(self, stripped_path, orig_path):
-        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
-            return None, None
+    def _getBranchByIdAlias(self, stripped_path):
         try:
             parts = stripped_path.split('/', 2)
             branch_id = int(parts[1])
         except (ValueError, IndexError):
-            raise faults.PathTranslationError(orig_path)
+            return None, None
         branch = getUtility(IBranchLookup).get(branch_id)
         try:
             trailing = parts[2]
@@ -349,24 +347,23 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             trailing = ''
         return branch, trailing
 
-    def getBranchAndPath(self, path, orig_path):
-        branch, trailing = self._getBranchByIdAlias(path, orig_path)
-        if branch is not None:
-            return branch, trailing, True
-        if path.startswith(BRANCH_ALIAS_PREFIX + '/'):
+    def getBranchByAlias(self, path):
+        lp_path = path[len(BRANCH_ALIAS_PREFIX + '/'):]
+        try:
+            return getUtility(IBranchLookup).getByLPPath(lp_path)
+        except (InvalidProductName, NoLinkedBranch,
+                CannotHaveLinkedBranch, NameLookupFailed,
+                InvalidNamespace):
+            return None, None
+
+    def getBranchAndPath(self, path):
+        if path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            return self._getBranchByIdAlias(path) + (True,)
+        elif path.startswith(BRANCH_ALIAS_PREFIX + '/'):
             # translatePath('/+branch/.bzr') *must* return not
             # found, otherwise bzr will look for it and we don't
             # have a global bzr dir.
-            lp_path = path[len(BRANCH_ALIAS_PREFIX + '/'):]
-            try:
-                branch, trailing = getUtility(
-                    IBranchLookup).getByLPPath(lp_path)
-            except (InvalidProductName, NoLinkedBranch,
-                    CannotHaveLinkedBranch, NameLookupFailed,
-                    InvalidNamespace):
-                # If we get one of these errors, then there is no
-                # point walking back through the path parts.
-                raise faults.PathTranslationError(orig_path)
+            return self.getBranchByAlias(path) + (False,)
         else:
             get_containing = getUtility(IBranchLookup).getContainingBranch
             branch, second = get_containing(path)
@@ -374,7 +371,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 trailing = escape(second)
             else:
                 trailing = None
-        return branch, trailing, False
+            return branch, trailing, False
 
     def translatePath(self, requester_id, path):
         """See `ICodehostingAPI`."""
@@ -383,8 +380,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
             stripped_path = unescape(path.strip('/'))
-            branch, trailing, id_alias = self.getBranchAndPath(
-                stripped_path, path)
+            branch, trailing, id_alias = self.getBranchAndPath(stripped_path)
             if branch is not None:
                 branch = self._serializeBranch(requester, branch, trailing,
                                                id_alias)
