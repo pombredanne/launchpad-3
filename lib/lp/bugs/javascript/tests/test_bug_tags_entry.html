@@ -43,5 +43,43 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         <ul id="suites">
             <li>lp.bug_tags_entry.test</li>
         </ul>
+
+        <div id="fixture"></div>
+
+        <script type="text/x-template" id="bug-tag-form">
+        <!-- Has tags -->
+         <div id="bug-tags" class="tags-show">
+            Tags:
+            <span id="tag-list">
+              <a class="official-tag"
+                  href="/fnord/+bugs?field.tag=project-tag">project-tag</a>
+              <a class="unofficial-tag"
+                  href="/fnord/+bugs?field.tag=user-tag">user-tag</a>
+            </span>
+
+            <form id="tags-form" style="display: inline">
+                <input type="text" id="tag-input" class="hidden" />
+                <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
+                <a href="+edit" title="Edit tags" id="edit-tags-trigger"
+                    class="sprite edit action-icon">Edit</a>
+
+              <button class="lazr-pos lazr-btn yui-ieditor-submit_button hidden"
+                  id="edit-tags-ok" type="button">Ok</button>
+              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button hidden"
+                  id="edit-tags-cancel" type="button">Cancel</button>
+           </form>
+
+           <a href="/+help-bugs/tag-help.html" target="help"
+               class="sprite maybe action-icon">Tag help</a>
+          </div>
+
+          <!-- No tags -->
+          <div id="add-bug-tags" class="tags-hide">
+            <a href="+edit" title="Add tags" id="add-tags-trigger"
+                class="sprite add">Add tags</a>
+            <a href="/+help-bugs/tag-help.html" target="help"
+                class="sprite maybe action-icon">Tag help</a>
+          </div>
+        </script>
     </body>
 </html>
