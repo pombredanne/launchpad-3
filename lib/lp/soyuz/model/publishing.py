@@ -84,6 +84,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
@@ -94,9 +95,12 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory,
+    name_priority_map,
+    OverrideError,
     PoolFileOverwriteError,
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease,
@@ -108,7 +112,6 @@ from lp.soyuz.model.files import (
     )
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.pas import determineArchitecturesToBuild
-from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
 def makePoolPath(source_name, component_name):
@@ -790,26 +793,31 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Check there is a change to make
         if new_component is None:
             new_component = self.component
+        elif isinstance(new_component, basestring):
+            new_component = getUtility(IComponentSet)[new_component]
         if new_section is None:
             new_section = self.section
+        elif isinstance(new_section, basestring):
+            new_section = getUtility(ISectionSet)[new_section]
 
         if new_component == self.component and new_section == self.section:
             return
 
-        # See if the archive has changed by virtue of the component
-        # changing:
-        distribution = self.distroseries.distribution
-        new_archive = distribution.getArchiveByComponent(
-            new_component.name)
-        if new_archive != None and new_archive != self.archive:
-            raise ArchiveOverriderError(
-                "Overriding component to '%s' failed because it would "
-                "require a new archive." % new_component.name)
+        if new_component != self.component:
+            # See if the archive has changed by virtue of the component
+            # changing:
+            distribution = self.distroseries.distribution
+            new_archive = distribution.getArchiveByComponent(
+                new_component.name)
+            if new_archive != None and new_archive != self.archive:
+                raise OverrideError(
+                    "Overriding component to '%s' failed because it would "
+                    "require a new archive." % new_component.name)
 
         # Refuse to create new publication records that will never be
         # published.
         if not self.archive.canModifySuite(self.distroseries, self.pocket):
-            raise ArchiveOverriderError(
+            raise OverrideError(
                 "Cannot change overrides in suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
 
@@ -1208,29 +1216,37 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Check there is a change to make
         if new_component is None:
             new_component = self.component
+        elif isinstance(new_component, basestring):
+            new_component = getUtility(IComponentSet)[new_component]
         if new_section is None:
             new_section = self.section
+        elif isinstance(new_section, basestring):
+            new_section = getUtility(ISectionSet)[new_section]
         if new_priority is None:
             new_priority = self.priority
+        elif isinstance(new_priority, basestring):
+            new_priority = name_priority_map[new_priority]
 
         if (new_component == self.component and
             new_section == self.section and
             new_priority == self.priority):
             return
 
-        # See if the archive has changed by virtue of the component changing:
-        distribution = self.distroarchseries.distroseries.distribution
-        new_archive = distribution.getArchiveByComponent(
-            new_component.name)
-        if new_archive != None and new_archive != self.archive:
-            raise ArchiveOverriderError(
-                "Overriding component to '%s' failed because it would "
-                "require a new archive." % new_component.name)
+        if new_component != self.component:
+            # See if the archive has changed by virtue of the component
+            # changing:
+            distribution = self.distroarchseries.distroseries.distribution
+            new_archive = distribution.getArchiveByComponent(
+                new_component.name)
+            if new_archive != None and new_archive != self.archive:
+                raise OverrideError(
+                    "Overriding component to '%s' failed because it would "
+                    "require a new archive." % new_component.name)
 
         # Refuse to create new publication records that will never be
         # published.
         if not self.archive.canModifySuite(self.distroseries, self.pocket):
-            raise ArchiveOverriderError(
+            raise OverrideError(
                 "Cannot change overrides in suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
 
