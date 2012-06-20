@@ -26,7 +26,7 @@ class LpQueryDistro(LaunchpadScript):
 
         Also initialize the list 'allowed_arguments'.
         """
-        self.allowed_actions = ['development', 'supported', 'archs']
+        self.allowed_actions = ['supported']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
 
@@ -118,35 +118,6 @@ class LpQueryDistro(LaunchpadScript):
                 "Action does not accept defined suite.")
 
     @property
-    def development(self):
-        """Return the name of the DEVELOPMENT distroseries.
-
-        It is restricted for the context distribution.
-
-        It may raise `LaunchpadScriptFailure` if a suite was passed on the
-        command-line.
-
-        Return the first FROZEN distroseries found if there is no
-        DEVELOPMENT one available.
-
-        Raises `NotFoundError` if neither a CURRENT nor a FROZEN
-        candidate could be found.
-        """
-        self.checkNoSuiteDefined()
-        series = None
-        wanted_status = (SeriesStatus.DEVELOPMENT,
-                         SeriesStatus.FROZEN)
-        for status in wanted_status:
-            series = self.location.distribution.getSeriesByStatus(status)
-            if series.count() > 0:
-                break
-        else:
-            raise LaunchpadScriptFailure(
-                'There is no DEVELOPMENT distroseries for %s' %
-                self.location.distribution.name)
-        return series[0].name
-
-    @property
     def supported(self):
         """Return the names of the distroseries currently supported.
 
@@ -174,12 +145,3 @@ class LpQueryDistro(LaunchpadScript):
                 self.location.distribution.name)
 
         return " ".join(supported_series)
-
-    @property
-    def archs(self):
-        """Return a space-separated list of architecture tags.
-
-        It is restricted for the context distribution and suite.
-        """
-        architectures = self.location.distroseries.architectures
-        return " ".join(arch.architecturetag for arch in architectures)

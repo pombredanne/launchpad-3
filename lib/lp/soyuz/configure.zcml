@@ -38,7 +38,7 @@
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryPublic"/>
             <require
                 permission="launchpad.Edit"
-                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
+                interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryEdit"/>
             <require
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
@@ -108,7 +108,7 @@
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryPublic"/>
             <require
                 permission="launchpad.Edit"
-                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
+                interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryEdit"/>
             <require
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
