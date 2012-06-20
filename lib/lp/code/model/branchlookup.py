@@ -426,8 +426,11 @@ class BranchLookup:
         else:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
+            # Ignore anything following /.bzr
+            split_path = path.split('/.bzr/', 1)
+            prefix = split_path[0]
             object_with_branch_link = getUtility(
-                ILinkedBranchTraverser).traverse(path)
+                ILinkedBranchTraverser).traverse(prefix)
             branch, bzr_path = self._getLinkedBranchAndPath(
                 object_with_branch_link)
             suffix = path[len(bzr_path) + 1:]

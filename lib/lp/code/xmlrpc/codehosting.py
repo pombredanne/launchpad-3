@@ -363,43 +363,41 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if branch is not None:
                 return branch
             stripped_path = path.strip('/')
-            for first, second in iter_split(stripped_path, '/'):
-                first = unescape(first)
-                # Is it a branch?
-                if first.startswith(BRANCH_ALIAS_PREFIX + '/'):
-                    try:
-                        # translatePath('/+branch/.bzr') *must* return not
-                        # found, otherwise bzr will look for it and we don't
-                        # have a global bzr dir.
-                        lp_path = first[len(BRANCH_ALIAS_PREFIX + '/'):]
-                        if lp_path == '.bzr' or lp_path.startswith('.bzr/'):
-                            raise faults.PathTranslationError(path)
-                        branch, trailing = getUtility(
-                            IBranchLookup).getByLPPath(lp_path)
-                    except (InvalidProductName, NoLinkedBranch,
-                            CannotHaveLinkedBranch):
-                        # If we get one of these errors, then there is no
-                        # point walking back through the path parts.
-                        break
-                    except (NameLookupFailed, InvalidNamespace):
-                        # The reason we're doing it is that getByLPPath thinks
-                        # that 'foo/.bzr' is a request for the '.bzr' series
-                        # of a product.
-                        continue
-                    if trailing is None:
-                        trailing = ''
-                    second = '/'.join([trailing, second]).strip('/')
+            branch_alias_path = unescape(stripped_path)
+            if branch_alias_path.startswith(BRANCH_ALIAS_PREFIX + '/'):
+                # translatePath('/+branch/.bzr') *must* return not
+                # found, otherwise bzr will look for it and we don't
+                # have a global bzr dir.
+                lp_path = branch_alias_path[len(BRANCH_ALIAS_PREFIX + '/'):]
+                try:
+                    branch, trailing = getUtility(
+                        IBranchLookup).getByLPPath(lp_path)
+                except (InvalidProductName, NoLinkedBranch,
+                        CannotHaveLinkedBranch, NameLookupFailed,
+                        InvalidNamespace):
+                    # If we get one of these errors, then there is no
+                    # point walking back through the path parts.
+                    raise faults.PathTranslationError(path)
                 else:
-                    branch = getUtility(IBranchLookup).getByHostingPath(first)
-                if branch is not None:
-                    branch = self._serializeBranch(requester, branch, second)
+                    branch = self._serializeBranch(requester, branch, trailing)
                     if branch is None:
-                        break
+                        raise faults.PathTranslationError(path)
                     return branch
-                # Is it a product control directory?
-                product = self._serializeControlDirectory(
-                    requester, first, second)
-                if product is not None:
-                    return product
+            else:
+                for first, second in iter_split(stripped_path, '/'):
+                    first = unescape(first)
+                    # Is it a branch?
+                    branch = getUtility(IBranchLookup).getByHostingPath(first)
+                    if branch is not None:
+                        branch = self._serializeBranch(requester, branch, second)
+                        if branch is None:
+                            break
+                        return branch
+                    else:
+                        # Is it a product control directory?
+                        product = self._serializeControlDirectory(
+                            requester, first, second)
+                        if product is not None:
+                            return product
             raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
