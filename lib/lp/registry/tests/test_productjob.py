@@ -574,9 +574,12 @@ class CommericialExpirationMixin(CommercialHelpers):
             product.development_focus.branch = private_branch
         self.expire_commercial_subscription(product)
         job = self.JOB_CLASS.create(product, reviewer)
-        # Create a proprietary project which will have different DB relations.
+        # Create a proprietary project owned by a team which will have
+        # different DB relations.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         proprietary_product = self.factory.makeProduct(
-            licenses=[License.OTHER_PROPRIETARY])
+            owner=team, licenses=[License.OTHER_PROPRIETARY])
         self.expire_commercial_subscription(proprietary_product)
         proprietary_job = self.JOB_CLASS.create(proprietary_product, reviewer)
         transaction.commit()
@@ -712,6 +715,8 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             public_series.branch = public_branch
             private_series = product.newSeries(
                 product.owner, 'special', 'testing', branch=private_branch)
+            # Verify that branchless series do not raise an error.
+            product.newSeries(product.owner, 'unused', 'no branch')
         self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()
