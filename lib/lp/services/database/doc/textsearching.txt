@@ -321,8 +321,26 @@ string finds the indexed text.
     '}' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & 'bb' & 'cc' match: True
     '~' FTI data: 'aa':1 'bb':2 'cc':3 query: 'aa' & '~bb' & 'cc' match: False
 
-XXX the last line is bad!
+XXX Abel Deuring 2012-06-20 bug=1015511: Note that the last line above
+shows a bug: The FTI data for the string "aa ~bb~ cc" contains the words
+'aa', 'bb', 'cc', while the ts_query object for the same text contains
+'aa', '~bb', 'cc', hence the query does not match the string. More details_
 
+XXX Abel Deuring 2012-06-20 bug=1015519: XML tags cannot be searched.
+
+    >>> print search_same('foo <bar> baz')
+    FTI data: 'baz':2 'foo':1 query: 'foo' & 'baz' match: True
+
+More specifically, tags are simply dropped from the FTI data and from
+search queries.
+
+   >>> print search('some text <div>whatever</div>', '<div>')
+   FTI data: 'text':2 'whatev':3 query: None match: None
+
+Of course, omitting '<' and '>'from the query does not help.
+
+   >>> print search('some text <div>whatever</div>', 'div')
+   FTI data: 'text':2 'whatev':3 query: 'div' match: False
 
 Treatment of characters that are used as operators in to_tsquery():
 
@@ -334,7 +352,6 @@ ftq().
 
     >>> print search_same('foo@bar.com')
     FTI data: 'foo@bar.com':1 query: 'foo@bar.com' match: True
-
 
 File names are retained as a whole.
 
