@@ -257,17 +257,9 @@ class FileBugReportingGuidelines(LaunchpadFormView):
     schema = IBug
 
     @property
-    def show_information_type_in_ui(self):
-        return bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled'))
-
-    @property
     def field_names(self):
         """Return the list of field names to display."""
-        if self.show_information_type_in_ui:
-            return ['information_type']
-        else:
-            return ['security_related']
+        return ['information_type']
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
@@ -276,8 +268,6 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         cache = IJSONRequestCache(self.request)
         cache.objects['private_types'] = [
             type.name for type in PRIVATE_INFORMATION_TYPES]
-        cache.objects['show_information_type_in_ui'] = (
-            self.show_information_type_in_ui)
         cache.objects['show_userdata_as_private'] = bool(getFeatureFlag(
             'disclosure.display_userdata_as_private.enabled'))
         cache.objects['bug_private_by_default'] = (
@@ -307,30 +297,20 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugReportingGuidelines, self).setUpFields()
 
-        if self.show_information_type_in_ui:
-            information_type_field = copy_field(
-                IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary(self.context))
-            self.form_fields = self.form_fields.omit('information_type')
-            self.form_fields += Fields(information_type_field)
-        else:
-            security_related_field = copy_field(
-                IBug['security_related'], readonly=False)
-            self.form_fields = self.form_fields.omit('security_related')
-            self.form_fields += Fields(security_related_field)
+        information_type_field = copy_field(
+            IBug['information_type'], readonly=False,
+            vocabulary=InformationTypeVocabulary(self.context))
+        self.form_fields = self.form_fields.omit('information_type')
+        self.form_fields += Fields(information_type_field)
 
     @property
     def initial_values(self):
         """See `LaunchpadFormView`."""
-        if self.show_information_type_in_ui:
-            value = InformationType.PUBLIC
-            if (
-                self.context and IProduct.providedBy(self.context) and
-                self.context.private_bugs):
-                value = InformationType.USERDATA
-            return {'information_type': value}
-        else:
-            return {}
+        value = InformationType.PUBLIC
+        if (self.context and IProduct.providedBy(self.context) and
+            self.context.private_bugs):
+            value = InformationType.USERDATA
+        return {'information_type': value}
 
     @property
     def bug_reporting_guidelines(self):
@@ -454,15 +434,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags']
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            field_names.append('information_type')
-        else:
-            field_names.append('security_related')
-        field_names.extend([
+        field_names = ['title', 'comment', 'tags', 'information_type',
             'bug_already_reported_as', 'filecontent', 'patch',
-            'attachment_description', 'subscribe_to_existing_bug'])
+            'attachment_description', 'subscribe_to_existing_bug']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -635,12 +609,8 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            information_type = data.get(
-                "information_type", InformationType.PUBLIC)
-        else:
-            security_related = data.get("security_related", False)
+        information_type = data.get(
+            "information_type", InformationType.PUBLIC)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
 
@@ -658,15 +628,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # enters a package name but then selects "I don't know".
         if self.request.form.get("packagename_option") == "none":
             packagename = None
-
-        if not bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            # If the old UI is enabled, security bugs are always embargoed
-            # when filed, but can be disclosed after they've been reported.
-            if security_related:
-                information_type = InformationType.EMBARGOEDSECURITY
-            else:
-                information_type = InformationType.PUBLIC
 
         linkified_ack = structured(FormattersAPI(
             self.getAcknowledgementMessage(self.context)).text_to_html(
@@ -702,12 +663,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                 params.comment, extra_data.extra_description)
             notifications.append(
                 'Additional information was added to the bug description.')
-
-        if (not bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')) and
-            extra_data.private):
-            if params.information_type == InformationType.PUBLIC:
-                params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
         if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):

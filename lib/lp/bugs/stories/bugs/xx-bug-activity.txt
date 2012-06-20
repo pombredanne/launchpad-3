@@ -339,10 +339,9 @@ Changes to information_type are shown when the feature flag is set.
     --------
 
     >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flags = {
-    ...     'disclosure.show_information_type_in_ui.enabled': 'on',
+    >>> feature_flag = {
     ...     'disclosure.information_type_notifications.enabled': 'on'}
-    >>> with FeatureFixture(feature_flags):
+    >>> with FeatureFixture(feature_flag):
     ...     admin_browser.open(
     ...         "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
     ...     admin_browser.getControl("User Data").selected = True

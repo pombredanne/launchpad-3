@@ -531,11 +531,6 @@ class BugView(InformationTypePortletMixin, LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
-    @property
-    def show_information_type_in_ui(self):
-        return bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled'))
-
     @cachedproperty
     def page_description(self):
         return IBug(self.context).description
@@ -817,80 +812,42 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
-# XXX: This can move to using LaunchpadEditFormView when
-# show_information_type_in_ui is removed.
-class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
+class BugSecrecyEditView(LaunchpadEditFormView,
+                         BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""
 
     @property
     def label(self):
-        label = 'Bug #%i - Set ' % self.context.bug.id
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            label += 'information type'
-        else:
-            label += 'visibility and security'
-        return label
+       return 'Bug #%i - Set information type' % self.context.bug.id
 
     page_title = label
 
     @property
     def field_names(self):
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            return ['information_type']
-        else:
-            return ['private', 'security_related']
+        return ['information_type']
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     @property
     def schema(self):
         """Schema for editing the information type of a `IBug`."""
-        class privacy_schema(Interface):
-            private_field = copy_field(IBug['private'], readonly=False)
-            security_related_field = copy_field(
-                IBug['security_related'], readonly=False)
-
         class information_type_schema(Interface):
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
                 vocabulary=InformationTypeVocabulary())
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            return information_type_schema
-        else:
-            return privacy_schema
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(BugSecrecyEditView, self).setUpFields()
-        if not bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            bug = self.context.bug
-            if (bug.information_type == InformationType.PROPRIETARY
-                and len(bug.affected_pillars) > 1):
-                self.form_fields = self.form_fields.omit('private')
+        return information_type_schema
 
     @property
     def next_url(self):
         """Return the next URL to call when this call completes."""
-        if not self.request.is_ajax:
-            return canonical_url(self.context)
-        return None
+        return canonical_url(self.context)
 
     cancel_url = next_url
 
     @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            return {'information_type': self.context.bug.information_type}
-        else:
-            return {
-                'private': self.context.bug.private,
-                'security_related': self.context.bug.security_related}
+        return {'information_type': self.context.bug.information_type}
 
     @action('Change', name='change')
     def change_action(self, action, data):
@@ -898,20 +855,8 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         data = dict(data)
         bug = self.context.bug
         bug_before_modification = Snapshot(bug, providing=providedBy(bug))
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            information_type = data.pop('information_type')
-            changed_fields = ['information_type']
-        else:
-            changed_fields = []
-            private = data.pop('private', bug.private)
-            if bug.private != private:
-                changed_fields.append('private')
-            security_related = data.pop('security_related')
-            if bug.security_related != security_related:
-                changed_fields.append('security_related')
-            information_type = convert_to_information_type(
-                private, security_related)
+        information_type = data.pop('information_type')
+        changed_fields = ['information_type']
         user_will_be_subscribed = (
             information_type in PRIVATE_INFORMATION_TYPES and
             bug.getSubscribersForPerson(self.user).is_empty())
@@ -923,33 +868,6 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
                 ObjectModifiedEvent(
                     bug, bug_before_modification, changed_fields,
                     user=self.user))
-        if self.request.is_ajax:
-            if changed:
-                return self._getSubscriptionDetails()
-            else:
-                return ''
-
-    def _getSubscriptionDetails(self):
-        cache = dict()
-        # The subscription details for the current user.
-        self.extractBugSubscriptionDetails(self.user, self.context.bug, cache)
-
-        # The subscription details for other users to populate the subscribers
-        # list in the portlet.
-        if IBugTask.providedBy(self.context):
-            bug = self.context.bug
-        else:
-            bug = self.context
-        subscribers_portlet = BugPortletSubscribersWithDetails(
-            bug, self.request)
-        subscription_data = subscribers_portlet.subscriber_data
-        result_data = dict(
-            cache_data=cache,
-            subscription_data=subscription_data)
-        self.request.response.setHeader('content-type', 'application/json')
-        return dumps(
-            result_data, cls=ResourceJSONEncoder,
-            media_type=EntryResource.JSON_TYPE)
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.

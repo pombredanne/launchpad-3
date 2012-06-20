@@ -908,15 +908,12 @@ class TestBranchEditView(TestCaseWithFactory):
         # the feature flag is enabled.
         person = self.factory.makePerson()
         branch = self.factory.makeProductBranch(owner=person)
-        feature_flag = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
         admins = getUtility(ILaunchpadCelebrities).admin
         admin = admins.teamowner
-        with FeatureFixture(feature_flag):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=admin)
-            browser.getControl("Embargoed Security").click()
-            browser.getControl("Change Branch").click()
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=admin)
+        browser.getControl("Embargoed Security").click()
+        browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEqual(
                 InformationType.EMBARGOEDSECURITY, branch.information_type)
@@ -926,12 +923,11 @@ class TestBranchEditView(TestCaseWithFactory):
         # has been correctly created.
         person = self.factory.makePerson()
         branch = self.factory.makeProductBranch(owner=person)
-        feature_flags = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
+        feature_flag = {
             'disclosure.proprietary_information_type.disabled': 'on'}
         admins = getUtility(ILaunchpadCelebrities).admin
         admin = admins.teamowner
-        with FeatureFixture(feature_flags):
+        with FeatureFixture(feature_flag):
             browser = self.getUserBrowser(
                 canonical_url(branch) + '/+edit', user=admin)
             self.assertRaises(LookupError, browser.getControl, "Proprietary")
@@ -978,17 +974,13 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_information_type_in_ui(self):
-        # With the show_information_type_in_branch_ui feature flag on, the
-        # privacy portlet shows the information_type.
+        # The privacy portlet shows the information_type.
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        feature_flag = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            with person_logged_in(owner):
-                view = create_initialized_view(branch, '+portlet-privacy')
-                soup = BeautifulSoup(view.render())
+        with person_logged_in(owner):
+            view = create_initialized_view(branch, '+portlet-privacy')
+            soup = BeautifulSoup(view.render())
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
         self.assertEqual('User Data', information_type.renderContents())
@@ -998,16 +990,14 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
             description.renderContents())
 
     def test_information_type_in_ui_with_display_as_private(self):
-        # With both show_information_type_in_branch_ui and
-        # display_userdata_as_private, the information_type is shown with
-        # User Data masked as Private.
+        # With display_userdata_as_private, the information_type is shown
+        # with User Data masked as Private.
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
             owner=owner, information_type=InformationType.USERDATA)
         feature_flags = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
             'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flags):
+        with FeatureFixture(feature_flag):
             with person_logged_in(owner):
                 view = create_initialized_view(branch, '+portlet-privacy')
                 soup = BeautifulSoup(view.render())
