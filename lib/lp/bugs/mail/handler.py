@@ -188,9 +188,10 @@ class MaloneHandler:
         content = get_main_body(signed_msg)
         if content is None:
             return []
-        return [BugEmailCommands.get(name=name, string_args=args) for
-                name, args in parse_commands(content,
-                                             BugEmailCommands.names())]
+        return [
+            BugEmailCommands.get(name=name, string_args=args) for
+            name, args in parse_commands(
+                content, BugEmailCommands.parsingParameters())]
 
     def extractAndAuthenticateCommands(self, signed_msg, to_addr):
         """Extract commands and handle special destinations.
