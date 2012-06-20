@@ -129,8 +129,9 @@ class TestSourcePackageData(TestCaseWithFactory):
     def test_unpack_dsc_with_vendor(self):
         # Some source packages unpack differently depending on dpkg's idea
         # of the "vendor", and in extreme cases may even fail with some
-        # vendors.  gina always sets the vendor to "debian" to ensure that
-        # it unpacks packages as if unpacking on Debian.
+        # vendors.  gina always sets the vendor to the target distribution
+        # name to ensure that it unpacks packages as if unpacking on that
+        # distribution.
         archive_root = self.useTempDir()
         pool_dir = os.path.join(archive_root, "pool/main/f/foo")
         os.makedirs(pool_dir)
