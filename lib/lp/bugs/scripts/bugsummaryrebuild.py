@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from storm.expr import (
+    Alias,
     And,
     Count,
     Select,
@@ -115,12 +116,18 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
     class RelevantTask(BugTaskFlat):
         __storm_table__ = 'relevant_task'
 
+    class BugSummaryPrototype(BugTaskFlat):
+        __storm_table__ = 'bugsummary_prototype'
+
         tag = Unicode()
         viewed_by_id = Int(name='viewed_by')
 
-    results = IStore(BugTaskFlat).with_(relevant_tasks).find(
-        (RelevantTask.information_type, Count())).group_by(
-            RelevantTask.information_type)
+    unions = Select(RelevantTask.information_type, tables=[RelevantTask])
+
+    results = IStore(BugTaskFlat).with_(relevant_tasks).using(
+        Alias(unions, 'bugsummary_prototype')).find(
+        (BugSummaryPrototype.information_type, Count())).group_by(
+            BugSummaryPrototype.information_type)
     return results
 
 
