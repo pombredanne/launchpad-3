@@ -49,7 +49,7 @@ class TestSourcePackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_interface_consistancy(self):
+    def test_interface_consistency(self):
         package = self.factory.makeSourcePackage()
         verifyObject(ISourcePackage, removeSecurityProxy(package))
 
