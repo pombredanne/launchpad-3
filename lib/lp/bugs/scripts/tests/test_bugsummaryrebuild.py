@@ -15,6 +15,7 @@ from lp.bugs.scripts.bugsummaryrebuild import (
     get_bugsummary_targets,
     get_bugtask_targets,
     )
+from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
@@ -105,6 +106,16 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         self.assertContentEqual(
             [(bug.status, None, bug.importance, False, None, None, 1),
              (bug.status, None, bug.importance, False, u'foo', None, 1)],
+            calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
+
+    def test_private_untagged(self):
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA).default_bugtask
+        self.assertContentEqual(
+            [(bug.status, None, bug.importance, False, None, owner.id, 1)],
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
 

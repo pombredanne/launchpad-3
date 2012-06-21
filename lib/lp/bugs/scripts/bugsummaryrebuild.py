@@ -20,12 +20,17 @@ from storm.properties import (
     )
 
 from lp.bugs.model.bug import BugTag
+from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     BugTask,
     )
 from lp.bugs.model.bugtaskflat import BugTaskFlat
+from lp.registry.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.series import ISeriesMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
@@ -135,21 +140,41 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
         RelevantTask.status, RelevantTask.milestone_id,
         RelevantTask.importance, RelevantTask.has_patch,
         Alias(Cast(None, 'text'), 'tag'),
-        Alias(Cast(None, 'text'), 'viewed_by'))
+        Alias(Cast(None, 'integer'), 'viewed_by'))
 
     tag_relevant_cols = (
         RelevantTask.status, RelevantTask.milestone_id,
         RelevantTask.importance, RelevantTask.has_patch,
         BugTag.tag,
-        Alias(Cast(None, 'text'), 'viewed_by'))
+        Alias(Cast(None, 'integer'), 'viewed_by'))
+
+    sub_relevant_cols = (
+        RelevantTask.status, RelevantTask.milestone_id,
+        RelevantTask.importance, RelevantTask.has_patch,
+        Alias(Cast(None, 'text'), 'tag'),
+        BugSubscription.person_id)
 
     unions = Union(
-        Select(relevant_cols, tables=[RelevantTask]),
+        Select(
+            relevant_cols, tables=[RelevantTask],
+            where=RelevantTask.information_type.is_in(
+                PUBLIC_INFORMATION_TYPES)),
         Select(
             tag_relevant_cols,
             tables=[
                 RelevantTask,
-                Join(BugTag, BugTag.bugID == RelevantTask.bug_id)]),
+                Join(BugTag, BugTag.bugID == RelevantTask.bug_id)],
+            where=RelevantTask.information_type.is_in(
+                PUBLIC_INFORMATION_TYPES)),
+        Select(
+            sub_relevant_cols,
+            tables=[
+                RelevantTask,
+                Join(
+                    BugSubscription,
+                    BugSubscription.bug_id == RelevantTask.bug_id)],
+            where=RelevantTask.information_type.is_in(
+                PRIVATE_INFORMATION_TYPES)),
         all=True)
 
     prototype_key_cols = (
