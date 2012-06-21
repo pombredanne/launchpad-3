@@ -938,7 +938,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, IProduct['owner'],
             format_link(self.context.owner),
             header='Change maintainer', edit_view='+edit-people',
-            step_title='Select a new maintainer')
+            step_title='Select a new maintainer', show_create_team=True)
 
     @property
     def driver_widget(self):
@@ -946,7 +946,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, IProduct['driver'],
             format_link(self.context.driver, empty_value="Not yet selected"),
             header='Change driver', edit_view='+edit-people',
-            step_title='Select a new driver',
+            step_title='Select a new driver', show_create_team=True,
             null_display_value="Not yet selected",
             help_link="/+help-registry/driver.html")
 
@@ -2269,11 +2269,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     initial_values = {'transfer_to_registry': False}
 
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
-                  include_create_team_link=True)
+                  show_create_team_link=True)
     custom_widget('transfer_to_registry', CheckBoxWidget,
                   widget_class='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
-                  include_create_team_link=True)
+                  show_create_team_link=True)
 
     @property
     def page_title(self):

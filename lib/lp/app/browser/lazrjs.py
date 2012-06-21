@@ -346,7 +346,8 @@ class InlineEditPickerWidget(WidgetBase):
 class InlinePersonEditPickerWidget(InlineEditPickerWidget):
     def __init__(self, context, exported_field, default_html,
                  content_box_id=None, header='Select an item',
-                 step_title='Search', assign_me_text='Pick me',
+                 step_title='Search', show_create_team=False,
+                 assign_me_text='Pick me',
                  remove_person_text='Remove person',
                  remove_team_text='Remove team',
                  null_display_value='None',
@@ -372,13 +373,13 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
         :param help_link: Used to set a link for help for the widget.
-        :param target_context: The target the person is being set for.
         """
         super(InlinePersonEditPickerWidget, self).__init__(
             context, exported_field, default_html, content_box_id, header,
             step_title, null_display_value,
             edit_view, edit_url, edit_title, help_link)
 
+        self._show_create_team = show_create_team
         self.assign_me_text = assign_me_text
         self.remove_person_text = remove_person_text
         self.remove_team_text = remove_team_text
@@ -399,11 +400,18 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
 
+    @property
+    def show_create_team(self):
+        return (self._show_create_team
+                and getFeatureFlag(
+                    "disclosure.add-team-person-picker.enabled"))
+
     def getConfig(self):
         config = super(InlinePersonEditPickerWidget, self).getConfig()
         config.update(dict(
             show_remove_button=self.optional_field,
             show_assign_me_button=self.show_assign_me_button,
+            show_create_team=self.show_create_team,
             assign_me_text=self.assign_me_text,
             remove_person_text=self.remove_person_text,
             remove_team_text=self.remove_team_text))

@@ -223,6 +223,12 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.add-team-person-picker.enabled',
+     'boolean',
+     'Allows users to add a new team directly from the person picker.',
+     '',
+     '',
+     ''),
     ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '

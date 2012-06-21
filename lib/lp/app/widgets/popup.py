@@ -23,6 +23,7 @@ from lp.app.browser.vocabulary import (
     get_person_picker_entry_metadata,
     vocabulary_filters,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
 
@@ -41,7 +42,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     assign_me_text = 'Pick me'
     remove_person_text = 'Remove person'
     remove_team_text = 'Remove team'
-    include_create_team_link = False
+    show_create_team_link = False
 
     popup_name = 'popup-vocabulary-picker'
 
@@ -56,6 +57,12 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     step_title = None
     # Defaults to self.vocabulary.displayname.
     header = None
+
+    @property
+    def enhanced_picker(self):
+        flag = getFeatureFlag(
+            "disclosure.add-team-person-picker.enabled")
+        return flag and self.show_create_team_link
 
     @cachedproperty
     def matches(self):
@@ -145,8 +152,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             vocabulary_filters=self.vocabulary_filters,
             input_element=self.input_id,
             show_widget_id=self.show_widget_id,
-            include_create_team_link=self.include_create_team_link,
-            enhanced_picker=self.include_create_team_link)
+            enhanced_picker=self.enhanced_picker,
+            show_create_team=self.enhanced_picker)
 
     @property
     def json_config(self):
@@ -227,7 +234,6 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
 class PersonPickerWidget(VocabularyPickerWidget):
 
-    include_create_team_link = False
     show_assign_me_button = True
     show_remove_button = False
     picker_type = 'person'
@@ -238,7 +244,7 @@ class PersonPickerWidget(VocabularyPickerWidget):
         return get_person_picker_entry_metadata(val)
 
     def extraChooseLink(self):
-        if self.include_create_team_link:
+        if self.show_create_team_link:
             return ('or (<a href="/people/+newteam">'
                      'Create a new team&hellip;</a>)')
         return None
