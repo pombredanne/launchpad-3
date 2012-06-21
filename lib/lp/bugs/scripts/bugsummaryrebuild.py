@@ -136,8 +136,13 @@ def rebuild_bugsummary_for_target(target, log):
 
 
 def calculate_bugsummary_rows(target):
-    bugtaskflat_constraints = get_bugtaskflat_constraint(target)
+    """Calculate BugSummary row fragments for the given `IBugTarget`.
 
+    The data is re-aggregated from BugTaskFlat, BugTag and BugSubscription.
+    """
+    # Use a CTE to prepare a subset of BugTaskFlat, filtered to the
+    # relevant target and to exclude duplicates, and with has_patch
+    # calculated.
     relevant_tasks = With(
         'relevant_task',
         Select(
@@ -148,13 +153,15 @@ def calculate_bugsummary_rows(target):
             tables=[BugTaskFlat],
             where=And(
                 BugTaskFlat.duplicateof_id == None,
-                *bugtaskflat_constraints)))
+                *get_bugtaskflat_constraint(target))))
 
+    # Storm class to reference the CTE.
     class RelevantTask(BugTaskFlat):
         __storm_table__ = 'relevant_task'
 
         has_patch = Bool()
 
+    # Storm class to reference the union.
     class BugSummaryPrototype(BugTaskFlat):
         __storm_table__ = 'bugsummary_prototype'
 
@@ -162,6 +169,9 @@ def calculate_bugsummary_rows(target):
         tag = Unicode()
         viewed_by_id = Int(name='viewed_by')
 
+    # Prepare a union for all combination of privacy and taggedness.
+    # It'll return a full set of
+    # (status, milestone, importance, has_patch, tag, viewed_by) rows.
     common_cols = (
         RelevantTask.status, RelevantTask.milestone_id,
         RelevantTask.importance, RelevantTask.has_patch)
@@ -179,26 +189,30 @@ def calculate_bugsummary_rows(target):
         PRIVATE_INFORMATION_TYPES)
 
     unions = Union(
+        # Public, tagless
         Select(
             common_cols + (null_tag, null_viewed_by),
             tables=[RelevantTask], where=public_constraint),
+        # Public, tagged
         Select(
             common_cols + (BugTag.tag, null_viewed_by),
             tables=[RelevantTask, tag_join], where=public_constraint),
+        # Private, tagless
         Select(
             common_cols + (null_tag, BugSubscription.person_id),
             tables=[RelevantTask, sub_join], where=private_constraint),
+        # Private, tagged
         Select(
             common_cols + (BugTag.tag, BugSubscription.person_id),
             tables=[RelevantTask, sub_join, tag_join],
             where=private_constraint),
         all=True)
 
+    # Select the relevant bits of the prototype rows and aggregate them.
     proto_key_cols = (
         BugSummaryPrototype.status, BugSummaryPrototype.milestone_id,
         BugSummaryPrototype.importance, BugSummaryPrototype.has_patch,
         BugSummaryPrototype.tag, BugSummaryPrototype.viewed_by_id)
-
     origin = IStore(BugTaskFlat).with_(relevant_tasks).using(
         Alias(unions, 'bugsummary_prototype'))
     results = origin.find(proto_key_cols + (Count(),))
