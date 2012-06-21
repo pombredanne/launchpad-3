@@ -55,6 +55,8 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
@@ -1149,6 +1151,30 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertEqual((task.id,), get_flat())
 
+    def test_PopulateBranchAccessPolicy(self):
+        # Branches without a access_policy have one set by the job.
+        with dbuser('testadmin'):
+            branch = self.factory.makeBranch()
+
+        def get_access_policy():
+            return IMasterStore(BugTask).execute(
+                'SELECT access_policy FROM branch WHERE id = ?',
+                (branch.id,)).get_one()[0]
+
+        # The branch is public, so running the garbo job will have no effect.
+        self.runHourly()
+        self.assertIs(None, get_access_policy())
+
+        with dbuser('testadmin'):
+            branch.transitionToInformationType(
+                InformationType.USERDATA, branch.owner, verify_policy=False)
+        access_artifact = self.factory.makeAccessArtifact(concrete=branch)
+        apas = getUtility(IAccessPolicyArtifactSource).findByArtifact(
+            (access_artifact,))
+        # Now it will be set.
+        self.runHourly()
+        self.assertEqual(apas[0].policy.id, get_access_policy())
+        
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer

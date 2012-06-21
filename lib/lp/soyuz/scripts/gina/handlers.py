@@ -179,7 +179,7 @@ class ImporterHandler:
         self.imported_bins = {}
 
         self.sphandler = SourcePackageHandler(
-            archive_root, pocket, component_override)
+            distro_name, archive_root, pocket, component_override)
         self.bphandler = BinaryPackageHandler(
             self.sphandler, archive_root, pocket)
 
@@ -454,8 +454,9 @@ class SourcePackageHandler:
     on the launchpad db a little easier.
     """
 
-    def __init__(self, archive_root, pocket, component_override):
+    def __init__(self, distro_name, archive_root, pocket, component_override):
         self.distro_handler = DistroHandler()
+        self.distro_name = distro_name
         self.archive_root = archive_root
         self.pocket = pocket
         self.component_override = component_override
@@ -492,7 +493,7 @@ class SourcePackageHandler:
             return None
 
         # Process the package
-        sp_data.process_package(self.archive_root)
+        sp_data.process_package(self.distro_name, self.archive_root)
         sp_data.ensure_complete()
 
         spr = self.createSourcePackageRelease(sp_data, distroseries)
