@@ -258,9 +258,11 @@ class BranchLookup:
         except InvalidURIError:
             return None
 
-        branch = self.getByHostingPath(self.uriToHostingPath(uri))
-        if branch is not None:
-            return branch
+        path = self.uriToHostingPath(uri)
+        if path is not None:
+            branch, trailing, path = self.getByHostingPath(path)
+            if branch is not None:
+                return branch
 
         if uri.scheme == 'lp':
             if not self._uriHostAllowed(uri):
@@ -280,9 +282,6 @@ class BranchLookup:
         if path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
             return self._getBranchByIdAlias(path) + (True,)
         elif path.startswith(BRANCH_ALIAS_PREFIX + '/'):
-            # translatePath('/+branch/.bzr') *must* return not
-            # found, otherwise bzr will look for it and we don't
-            # have a global bzr dir.
             return self.getBranchByAlias(path) + (False,)
         else:
             branch, second = self.getContainingBranch(path)
@@ -291,9 +290,6 @@ class BranchLookup:
             else:
                 trailing = None
             return branch, trailing, False
-
-        if path is not None:
-            return self.getByUniqueName(path)
 
     def _getBranchByIdAlias(self, stripped_path):
         try:
@@ -480,8 +476,7 @@ class BranchLookup:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
             # Ignore anything following /.bzr
-            split_path = path.split('/.bzr/', 1)
-            prefix = split_path[0]
+            prefix = path.split('/.bzr/', 1)[0]
             object_with_branch_link = getUtility(
                 ILinkedBranchTraverser).traverse(prefix)
             branch, bzr_path = self._getLinkedBranchAndPath(

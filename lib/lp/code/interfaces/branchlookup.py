@@ -61,10 +61,15 @@ class IBranchLookup(Interface):
         """
 
     def getByHostingPath(path):
-        """Find a branch according to its path on codehosting."""
+        """Get information about a given codehosting path.
 
-    def getContainingBranch(self, path):
-        """Find a branch and contained path according to its unique name."""
+        If the path includes a branch, it is returned.  Otherwise, None.
+        The portion of the path following the branch's portion is returned as
+        'trailing'.  A boolean indicates whether the branch was looked up via
+        the +branch-id alias.
+
+        :return: A tuple of (branch, trailing, id_alias).
+        """
 
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
