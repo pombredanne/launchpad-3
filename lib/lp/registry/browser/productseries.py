@@ -466,6 +466,11 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 check_permission('launchpad.View', branch))
 
     @property
+    def long_bzr_identity(self):
+        """The bzr identity of the branch including the unique_name."""
+        return self.context.branch.branchIdentities()[-1][0]
+
+    @property
     def is_obsolete(self):
         """Return True if the series is OBSOLETE.
 
