@@ -26,4 +26,4 @@ class TestSprintIndex(TestCaseWithFactory):
                 True)
         Store.of(sprint).flush()
         Store.of(sprint).invalidate()
-        self.assertThat(sprint, BrowsesWithQueryLimit(18, sprint.owner))
+        self.assertThat(sprint, BrowsesWithQueryLimit(17, sprint.owner))
