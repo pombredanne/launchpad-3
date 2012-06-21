@@ -315,24 +315,12 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         if _test_lag is not None:
             return _test_lag
 
-        # Attempt to retrieve PostgreSQL streaming replication lag
-        # from the slave.
+        # We need to ask our slave what node it is. We can't cache this,
+        # as we might have reconnected to a different slave.
         slave_store = self.getStore(MAIN_STORE, SLAVE_FLAVOR)
-        streaming_lag = slave_store.execute(
-            "SELECT now() - pg_last_xact_replay_timestamp()").get_one()[0]
-        if streaming_lag is not None:
-            # Slave is a PG 9.1 streaming replication hot standby.
-            # Return the lag.
-            return streaming_lag
-
-        # Slave might be a Slony-I slave. We need to ask our slave what
-        # node it is. We can't cache this, as we might have reconnect to
-        # a different slave between requests.
         slave_node_id = slave_store.execute(
             "SELECT getlocalnodeid()").get_one()[0]
         if slave_node_id is None:
-            # Unreplicated. This might be a dev system, or a production
-            # system running on a single database for some reason.
             return None
 
         # sl_status gives meaningful results only on the origin node.

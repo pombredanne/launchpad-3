@@ -63,6 +63,9 @@ class EmailCommand:
     """
     _numberOfArguments = None
 
+    # Should command arguments be converted to lowercase?
+    case_insensitive_args = True
+
     def __init__(self, name, string_args):
         self.name = name
         self.string_args = normalize_arguments(string_args)
@@ -139,9 +142,11 @@ class EmailCommandCollection:
     """A collection of email commands."""
 
     @classmethod
-    def names(klass):
+    def parsingParameters(klass):
         """Returns all the command names."""
-        return klass._commands.keys()
+        return dict(
+            (command_name, command.case_insensitive_args)
+            for command_name, command in klass._commands.items())
 
     @classmethod
     def get(klass, name, string_args):

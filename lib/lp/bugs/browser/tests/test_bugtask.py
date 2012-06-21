@@ -140,12 +140,12 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        # If this test is run in isolation, the query count is 89.
+        # If this test is run in isolation, the query count is 88.
         # Other tests in this TestCase could cache the
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(90)))
+        self.assertThat(recorder, HasQueryCount(LessThan(89)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -161,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                92, self.factory.makePerson())
+                91, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -206,7 +206,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(111)))
+        self.assertThat(recorder, HasQueryCount(LessThan(110)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -1973,11 +1973,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # count with single task
         url = canonical_url(product, view_name='+bugs')
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(25)))
+        self.assertThat(recorder, HasQueryCount(LessThan(24)))
         # count with many tasks
         buggy_url = canonical_url(buggy_product, view_name='+bugs')
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(25)))
+        self.assertThat(recorder, HasQueryCount(LessThan(24)))
 
     def test_mustache_model_missing_if_no_flag(self):
         """The IJSONRequestCache should contain mustache_model."""
