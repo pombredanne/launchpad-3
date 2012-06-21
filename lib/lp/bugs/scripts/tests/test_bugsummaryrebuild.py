@@ -99,6 +99,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_public_untagged(self):
+        # Public untagged bugs show up in a single row, with both tag
+        # and viewed_by = None.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product).default_bugtask
         self.assertContentEqual(
@@ -106,6 +108,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
     def test_public_tagged(self):
+        # Public tagged bugs show up in a row for each tag, plus an
+        # untagged row.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
             product=product, tags=[u'foo', u'bar']).default_bugtask
@@ -116,6 +120,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
     def test_private_untagged(self):
+        # Private untagged bugs show up with tag = None, viewed_by =
+        # subscriber. There's no viewed_by = None row.
         product = self.factory.makeProduct()
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
@@ -126,6 +132,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
     def test_private_tagged(self):
+        # Private tagged bugs show up with viewed_by = subscriber, with a
+        # row for each tag plus an untagged row.
         product = self.factory.makeProduct()
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
@@ -138,6 +146,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
     def test_aggregation(self):
+        # Multiple bugs with the same attributes appear in a single
+        # aggregate row with an increased count.
         product = self.factory.makeProduct()
         bug1 = self.factory.makeBug(product=product).default_bugtask
         self.factory.makeBug(product=product).default_bugtask
@@ -149,6 +159,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
     def test_has_patch(self):
+        # Bugs with a patch attachment (latest_patch_uploaded is not
+        # None) have has_patch=True.
         product = self.factory.makeProduct()
         bug1 = self.factory.makeBug(product=product).default_bugtask
         self.factory.makeBugAttachment(bug=bug1.bug, is_patch=True)
@@ -160,6 +172,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
     def test_milestone(self):
+        # Milestoned bugs only show up with the milestone set.
         product = self.factory.makeProduct()
         mile1 = self.factory.makeMilestone(product=product)
         mile2 = self.factory.makeMilestone(product=product)
