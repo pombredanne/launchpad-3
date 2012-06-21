@@ -84,10 +84,6 @@
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-      <div id="tags-autocomplete">
-        <div id="tags-autocomplete-content"></div>
-      </div>
-
       <p class="informational message"
          tal:condition="view/notices"
          tal:repeat="notice view/notices"
@@ -161,6 +157,7 @@
            <a href="/+help-bugs/tag-help.html" target="help"
               class="sprite maybe action-icon">Tag help</a>
           </div>
+
           <div id="add-bug-tags"
                tal:attributes="class python: (not(context.bug.tags) and
                                              'tags-show' or 'tags-hide')">
@@ -169,17 +166,22 @@
             </a>
             <a href="/+help-bugs/tag-help.html" target="help"
                class="sprite maybe action-icon">Tag help</a>
-            <script type="text/javascript">
-                LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
-                    Y.on('domready',
-                         function(e) {
-                             Y.lp.bugs.bug_tags_entry.setup_tag_entry(
-                                 available_official_tags);
-                         },
-                         window);
-                });
-            </script>
           </div>
+
+          <div id="tags-autocomplete">
+            <div id="tags-autocomplete-content"></div>
+          </div>
+
+          <script type="text/javascript">
+            LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
+                Y.on('domready',
+                     function(e) {
+                         Y.lp.bugs.bug_tags_entry.setup_tag_entry(
+                             available_official_tags);
+                     },
+                     window);
+            });
+          </script>
 
         <div class="clearfix"></div>
       </div>
