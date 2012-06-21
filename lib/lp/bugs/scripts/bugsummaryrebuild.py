@@ -90,24 +90,34 @@ def format_target(target):
 
 
 def get_bugsummary_constraint(target):
+    """Convert an `IBugTarget` to a list of constraints on RawBugSummary."""
     raw_key = bug_target_to_key(target)
+    # Map to ID columns to work around Storm bug #682989.
     return [
         getattr(RawBugSummary, '%s_id' % k) == (v.id if v else None)
         for (k, v) in raw_key.items()]
 
 
 def get_bugtaskflat_constraint(target):
+    """Convert an `IBugTarget` to a list of constraints on BugTaskFlat."""
     raw_key = bug_target_to_key(target)
     # For the purposes of BugSummary, DSP/SP tasks count for their
     # distro(series).
     if IDistribution.providedBy(target) or IDistroSeries.providedBy(target):
         del raw_key['sourcepackagename']
+    # Map to ID columns to work around Storm bug #682989.
     return [
         getattr(BugTaskFlat, '%s_id' % k) == (v.id if v else None)
         for (k, v) in raw_key.items()]
 
 
 def get_bugsummary_rows(target):
+    """Find the `RawBugSummary` rows for the given `IBugTarget`.
+
+    RawBugSummary is the bugsummary table in the DB, not to be confused
+    with BugSummary which is actually combinedbugsummary, a view over
+    bugsummary and bugsummaryjournal.
+    """
     return IStore(RawBugSummary).find(
         (RawBugSummary.product_id, RawBugSummary.productseries_id,
          RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
