@@ -7,7 +7,9 @@ from zope.component import getUtility
 
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.model.bugsummary import RawBugSummary
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.scripts.bugsummaryrebuild import (
+    calculate_bugsummary_rows,
     format_target,
     get_bugsummary_rows,
     get_bugsummary_targets,
@@ -83,6 +85,27 @@ class TestGetBugSummaryRows(TestCaseWithFactory):
             [(product.id, None, None, None, None, None, task.status,
               task.importance, None, None, False, 1)],
             new_rows - orig_rows)
+
+
+class TestCalculateBugSummaryRows(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_public_untagged(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product).default_bugtask
+        self.assertContentEqual(
+            [(bug.status, None, bug.importance, False, None, None, 1)],
+            calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
+
+    def test_public_tagged(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            product=product, tags=[u'foo']).default_bugtask
+        self.assertContentEqual(
+            [(bug.status, None, bug.importance, False, None, None, 1),
+             (bug.status, None, bug.importance, False, u'foo', None, 1)],
+            calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
 
 class TestFormatTarget(TestCaseWithFactory):

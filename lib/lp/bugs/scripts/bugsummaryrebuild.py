@@ -6,11 +6,13 @@ __metaclass__ = type
 from storm.expr import (
     Alias,
     And,
+    Cast,
     Count,
     Select,
     With,
     )
 from storm.properties import (
+    Bool,
     Int,
     Unicode,
     )
@@ -107,7 +109,8 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
         Select(
             (BugTaskFlat.bug_id, BugTaskFlat.information_type,
              BugTaskFlat.status, BugTaskFlat.milestone_id,
-             BugTaskFlat.importance, BugTaskFlat.latest_patch_uploaded),
+             BugTaskFlat.importance,
+             Alias(BugTaskFlat.latest_patch_uploaded != None, 'has_patch')),
             tables=[BugTaskFlat],
             where=And(
                 BugTaskFlat.duplicateof_id == None,
@@ -116,18 +119,31 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
     class RelevantTask(BugTaskFlat):
         __storm_table__ = 'relevant_task'
 
+        has_patch = Bool()
+
     class BugSummaryPrototype(BugTaskFlat):
         __storm_table__ = 'bugsummary_prototype'
 
+        has_patch = Bool()
         tag = Unicode()
         viewed_by_id = Int(name='viewed_by')
 
-    unions = Select(RelevantTask.information_type, tables=[RelevantTask])
+    relevant_cols = (
+        RelevantTask.status, RelevantTask.milestone_id,
+        RelevantTask.importance, RelevantTask.has_patch,
+        Alias(Cast(None, 'text'), 'tag'),
+        Alias(Cast(None, 'text'), 'viewed_by'))
+
+    unions = Select(relevant_cols, tables=[RelevantTask])
+
+    prototype_key_cols = (
+        BugSummaryPrototype.status, BugSummaryPrototype.milestone_id,
+        BugSummaryPrototype.importance, BugSummaryPrototype.has_patch,
+        BugSummaryPrototype.tag, BugSummaryPrototype.viewed_by_id)
 
     results = IStore(BugTaskFlat).with_(relevant_tasks).using(
         Alias(unions, 'bugsummary_prototype')).find(
-        (BugSummaryPrototype.information_type, Count())).group_by(
-            BugSummaryPrototype.information_type)
+            prototype_key_cols + (Count(),)).group_by(*prototype_key_cols)
     return results
 
 
