@@ -136,45 +136,35 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
         tag = Unicode()
         viewed_by_id = Int(name='viewed_by')
 
-    relevant_cols = (
+    common_cols = (
         RelevantTask.status, RelevantTask.milestone_id,
-        RelevantTask.importance, RelevantTask.has_patch,
-        Alias(Cast(None, 'text'), 'tag'),
-        Alias(Cast(None, 'integer'), 'viewed_by'))
+        RelevantTask.importance, RelevantTask.has_patch)
+    null_tag = Alias(Cast(None, 'text'), 'tag')
+    null_viewed_by = Alias(Cast(None, 'integer'), 'viewed_by')
 
-    tag_relevant_cols = (
-        RelevantTask.status, RelevantTask.milestone_id,
-        RelevantTask.importance, RelevantTask.has_patch,
-        BugTag.tag,
-        Alias(Cast(None, 'integer'), 'viewed_by'))
-
-    sub_relevant_cols = (
-        RelevantTask.status, RelevantTask.milestone_id,
-        RelevantTask.importance, RelevantTask.has_patch,
-        Alias(Cast(None, 'text'), 'tag'),
-        BugSubscription.person_id)
+    public_constraint = RelevantTask.information_type.is_in(
+        PUBLIC_INFORMATION_TYPES)
+    private_constraint = RelevantTask.information_type.is_in(
+        PRIVATE_INFORMATION_TYPES)
 
     unions = Union(
         Select(
-            relevant_cols, tables=[RelevantTask],
-            where=RelevantTask.information_type.is_in(
-                PUBLIC_INFORMATION_TYPES)),
+            common_cols + (null_tag, null_viewed_by), tables=[RelevantTask],
+            where=public_constraint),
         Select(
-            tag_relevant_cols,
+            common_cols + (BugTag.tag, null_viewed_by),
             tables=[
                 RelevantTask,
                 Join(BugTag, BugTag.bugID == RelevantTask.bug_id)],
-            where=RelevantTask.information_type.is_in(
-                PUBLIC_INFORMATION_TYPES)),
+            where=public_constraint),
         Select(
-            sub_relevant_cols,
+            common_cols + (null_tag, BugSubscription.person_id),
             tables=[
                 RelevantTask,
                 Join(
                     BugSubscription,
                     BugSubscription.bug_id == RelevantTask.bug_id)],
-            where=RelevantTask.information_type.is_in(
-                PRIVATE_INFORMATION_TYPES)),
+            where=private_constraint),
         all=True)
 
     prototype_key_cols = (
