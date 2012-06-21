@@ -154,8 +154,8 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
 
     unions = Union(
         Select(
-            common_cols + (null_tag, null_viewed_by), tables=[RelevantTask],
-            where=public_constraint),
+            common_cols + (null_tag, null_viewed_by),
+            tables=[RelevantTask], where=public_constraint),
         Select(
             common_cols + (BugTag.tag, null_viewed_by),
             tables=[RelevantTask, tag_join], where=public_constraint),
