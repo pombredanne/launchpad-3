@@ -20,7 +20,6 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.errors import SubscriptionPrivacyViolation
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.services.webapp import (
@@ -89,9 +88,11 @@ class _BranchSubscriptionView(LaunchpadFormView):
         # handle the case nicely.
         return self.context.getSubscription(self.user) is not None
 
-    def set_next_url(self):
-        self.next_url = canonical_url(self.context)
-        self.cancel_url = self.next_url
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
     def add_notification_message(self, initial,
                                  notification_level, max_diff_lines,
@@ -140,7 +141,6 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
             self.add_notification_message(
                 'You have subscribed to this branch with: ',
                 notification_level, max_diff_lines, review_level)
-        self.set_next_url()
 
 
 class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
@@ -184,7 +184,6 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
         else:
             self.request.response.addNotification(
                 'You are not subscribed to this branch.')
-        self.set_next_url()
 
     @action("Unsubscribe")
     def unsubscribe(self, action, data):
@@ -196,7 +195,6 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
         else:
             self.request.response.addNotification(
                 'You are not subscribed to this branch.')
-        self.set_next_url()
 
 
 class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
@@ -213,6 +211,14 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
 
     page_title = label = "Subscribe to branch"
 
+    def validate(self, data):
+        person = data['person']
+        subscription = self.context.getSubscription(person)
+        if (subscription is None and person.is_team and 
+            person.anyone_can_join()):
+            self.setFieldError('person', "Open and delegated teams cannot "
+                "be subscribed to private branches.")
+
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):
         """Subscribe the specified user to the branch.
@@ -228,25 +234,19 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         person = data['person']
         subscription = self.context.getSubscription(person)
         if subscription is None:
-            try:
-                self.context.subscribe(
-                    person, notification_level, max_diff_lines, review_level,
-                    self.user)
-            except SubscriptionPrivacyViolation as error:
-                self.setFieldError('person', unicode(error))
-                return
-            else:
-                self.add_notification_message(
-                    '%s has been subscribed to this branch with: '
-                    % person.displayname, notification_level, max_diff_lines,
-                    review_level)
+            self.context.subscribe(
+                person, notification_level, max_diff_lines, review_level,
+                self.user)
+            self.add_notification_message(
+                '%s has been subscribed to this branch with: '
+                % person.displayname, notification_level, max_diff_lines,
+                review_level)
         else:
             self.add_notification_message(
                 '%s was already subscribed to this branch with: '
                 % person.displayname,
                 subscription.notification_level, subscription.max_diff_lines,
                 review_level)
-        self.set_next_url()
 
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):

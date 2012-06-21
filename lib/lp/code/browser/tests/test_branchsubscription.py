@@ -50,4 +50,3 @@ class TestBranchSubscriptionAddOtherView(TestCaseWithFactory):
             self.assertContentEqual(
                 ['Open and delegated teams cannot be subscribed to private '
                 'branches.'], view.errors)
-            self.assertIs(None, view.next_url)
