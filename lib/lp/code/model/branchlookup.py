@@ -304,7 +304,10 @@ class BranchLookup:
     def getBranchByAlias(self, path):
         lp_path = path[len(BRANCH_ALIAS_PREFIX + '/'):]
         try:
-            return getUtility(IBranchLookup).getByLPPath(lp_path)
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(lp_path)
+            if branch is not None and trailing is None:
+                trailing = ''
+            return branch, trailing
         except (InvalidProductName, NoLinkedBranch,
                 CannotHaveLinkedBranch, NameLookupFailed,
                 InvalidNamespace):

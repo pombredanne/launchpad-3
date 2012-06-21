@@ -47,6 +47,7 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
     branch_id_alias,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
