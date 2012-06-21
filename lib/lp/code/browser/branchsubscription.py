@@ -212,12 +212,13 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     page_title = label = "Subscribe to branch"
 
     def validate(self, data):
-        person = data['person']
-        subscription = self.context.getSubscription(person)
-        if (subscription is None and person.is_team and 
-            person.anyone_can_join()):
-            self.setFieldError('person', "Open and delegated teams cannot "
-                "be subscribed to private branches.")
+        if data.has_key('person'):
+            person = data['person']
+            subscription = self.context.getSubscription(person)
+            if (subscription is None and person.is_team and 
+                person.anyone_can_join()):
+                self.setFieldError('person', "Open and delegated teams "
+                "cannot be subscribed to private branches.")
 
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):
