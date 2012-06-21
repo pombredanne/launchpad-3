@@ -8,7 +8,9 @@ from storm.expr import (
     And,
     Cast,
     Count,
+    Join,
     Select,
+    Union,
     With,
     )
 from storm.properties import (
@@ -17,6 +19,7 @@ from storm.properties import (
     Unicode,
     )
 
+from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
@@ -134,7 +137,20 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
         Alias(Cast(None, 'text'), 'tag'),
         Alias(Cast(None, 'text'), 'viewed_by'))
 
-    unions = Select(relevant_cols, tables=[RelevantTask])
+    tag_relevant_cols = (
+        RelevantTask.status, RelevantTask.milestone_id,
+        RelevantTask.importance, RelevantTask.has_patch,
+        BugTag.tag,
+        Alias(Cast(None, 'text'), 'viewed_by'))
+
+    unions = Union(
+        Select(relevant_cols, tables=[RelevantTask]),
+        Select(
+            tag_relevant_cols,
+            tables=[
+                RelevantTask,
+                Join(BugTag, BugTag.bugID == RelevantTask.bug_id)]),
+        all=True)
 
     prototype_key_cols = (
         BugSummaryPrototype.status, BugSummaryPrototype.milestone_id,
