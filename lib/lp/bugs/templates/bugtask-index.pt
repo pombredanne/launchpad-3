@@ -168,10 +168,6 @@
                class="sprite maybe action-icon">Tag help</a>
           </div>
 
-          <div id="tags-autocomplete">
-            <div id="tags-autocomplete-content"></div>
-          </div>
-
           <script type="text/javascript">
             LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
                 Y.on('domready',
