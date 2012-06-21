@@ -168,14 +168,15 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
             where=private_constraint),
         all=True)
 
-    prototype_key_cols = (
+    proto_key_cols = (
         BugSummaryPrototype.status, BugSummaryPrototype.milestone_id,
         BugSummaryPrototype.importance, BugSummaryPrototype.has_patch,
         BugSummaryPrototype.tag, BugSummaryPrototype.viewed_by_id)
 
-    results = IStore(BugTaskFlat).with_(relevant_tasks).using(
-        Alias(unions, 'bugsummary_prototype')).find(
-            prototype_key_cols + (Count(),)).group_by(*prototype_key_cols)
+    origin = IStore(BugTaskFlat).with_(relevant_tasks).using(
+        Alias(unions, 'bugsummary_prototype'))
+    results = origin.find(proto_key_cols + (Count(),))
+    results = results.group_by(*proto_key_cols).order_by(*proto_key_cols)
     return results
 
 

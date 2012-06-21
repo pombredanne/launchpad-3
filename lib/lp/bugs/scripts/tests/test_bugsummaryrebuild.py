@@ -137,6 +137,17 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
              (bug.status, None, bug.importance, False, u'bar', owner.id, 1)],
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
+    def test_aggregation(self):
+        product = self.factory.makeProduct()
+        bug1 = self.factory.makeBug(product=product).default_bugtask
+        self.factory.makeBug(product=product).default_bugtask
+        bug3 = self.factory.makeBug(
+            product=product, status=BugTaskStatus.TRIAGED).default_bugtask
+        self.assertContentEqual(
+            [(bug1.status, None, bug1.importance, False, None, None, 2),
+             (bug3.status, None, bug3.importance, False, None, None, 1)],
+            calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
+
     def test_has_patch(self):
         product = self.factory.makeProduct()
         bug1 = self.factory.makeBug(product=product).default_bugtask
