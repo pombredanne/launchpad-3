@@ -1163,7 +1163,7 @@ class PopulateBranchAccessPolicy(TunableLoop):
         for branch in self.findBranches()[:chunk_size]:
             branch._reconcileAccess()
             IMasterStore(Branch).execute(
-                'SELECT branch_denorm_access(?)', branch.id)
+                'SELECT branch_denorm_access(?)', (branch.id,))
             self.start_at = branch.id + 1
         result = getUtility(IMemcacheClient).set(
             self.memcache_key, self.start_at)
