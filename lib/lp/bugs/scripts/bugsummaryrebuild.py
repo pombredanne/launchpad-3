@@ -23,6 +23,7 @@ from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.model.bugtask import (
+    bug_target_to_key,
     bug_target_from_key,
     BugTask,
     )
@@ -31,6 +32,8 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import ISeriesMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
@@ -86,7 +89,25 @@ def format_target(target):
     return id
 
 
-def get_bugsummary_rows(*args):
+def get_bugsummary_constraint(target):
+    raw_key = bug_target_to_key(target)
+    return [
+        getattr(RawBugSummary, '%s_id' % k) == (v.id if v else None)
+        for (k, v) in raw_key.items()]
+
+
+def get_bugtaskflat_constraint(target):
+    raw_key = bug_target_to_key(target)
+    # For the purposes of BugSummary, DSP/SP tasks count for their
+    # distro(series).
+    if IDistribution.providedBy(target) or IDistroSeries.providedBy(target):
+        del raw_key['sourcepackagename']
+    return [
+        getattr(BugTaskFlat, '%s_id' % k) == (v.id if v else None)
+        for (k, v) in raw_key.items()]
+
+
+def get_bugsummary_rows(target):
     return IStore(RawBugSummary).find(
         (RawBugSummary.product_id, RawBugSummary.productseries_id,
          RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
@@ -94,23 +115,19 @@ def get_bugsummary_rows(*args):
          RawBugSummary.status, RawBugSummary.importance, RawBugSummary.tag,
          RawBugSummary.viewed_by_id, RawBugSummary.has_patch,
          RawBugSummary.count),
-        *args)
+        *get_bugsummary_constraint(target))
 
 
-def rebuild_bugsummary_for_target(target_key, log):
-    target = load_target(*target_key)
+def rebuild_bugsummary_for_target(target, log):
     log.debug("Rebuilding %s" % format_target(target))
-    bs_constraints = [
-        getattr(RawBugSummary, k) == v
-        for (k, v) in zip(
-            ('product_id', 'productseries_id', 'distribution_id',
-             'distroseries_id', 'sourcepackagename_id'), target_key)]
     log.debug(
         '%d existing BugSummary rows'
-        % len(get_bugsummary_rows(*bs_constraints)))
+        % len(get_bugsummary_rows(target)))
 
 
-def calculate_bugsummary_rows(*bugtaskflat_constraints):
+def calculate_bugsummary_rows(target):
+    bugtaskflat_constraints = get_bugtaskflat_constraint(target)
+
     relevant_tasks = With(
         'relevant_task',
         Select(
@@ -197,5 +214,6 @@ class BugSummaryRebuildTunableLoop(TunableLoop):
         chunk = self.targets[self.offset:self.offset + chunk_size]
 
         for target_key in chunk:
-            rebuild_bugsummary_for_target(target_key, self.log)
+            target = load_target(*target_key)
+            rebuild_bugsummary_for_target(target, self.log)
         self.offset += len(chunk)
