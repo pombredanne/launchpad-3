@@ -102,10 +102,11 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
     def test_public_tagged(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, tags=[u'foo']).default_bugtask
+            product=product, tags=[u'foo', u'bar']).default_bugtask
         self.assertContentEqual(
             [(bug.status, None, bug.importance, False, None, None, 1),
-             (bug.status, None, bug.importance, False, u'foo', None, 1)],
+             (bug.status, None, bug.importance, False, u'foo', None, 1),
+             (bug.status, None, bug.importance, False, u'bar', None, 1)],
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
     def test_private_untagged(self):
@@ -116,6 +117,18 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             information_type=InformationType.USERDATA).default_bugtask
         self.assertContentEqual(
             [(bug.status, None, bug.importance, False, None, owner.id, 1)],
+            calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
+
+    def test_private_tagged(self):
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            product=product, owner=owner, tags=[u'foo', u'bar'],
+            information_type=InformationType.USERDATA).default_bugtask
+        self.assertContentEqual(
+            [(bug.status, None, bug.importance, False, None, owner.id, 1),
+             (bug.status, None, bug.importance, False, u'foo', owner.id, 1),
+             (bug.status, None, bug.importance, False, u'bar', owner.id, 1)],
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
 

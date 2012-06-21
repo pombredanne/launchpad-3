@@ -162,6 +162,10 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
         Select(
             common_cols + (null_tag, BugSubscription.person_id),
             tables=[RelevantTask, sub_join], where=private_constraint),
+        Select(
+            common_cols + (BugTag.tag, BugSubscription.person_id),
+            tables=[RelevantTask, sub_join, tag_join],
+            where=private_constraint),
         all=True)
 
     prototype_key_cols = (
