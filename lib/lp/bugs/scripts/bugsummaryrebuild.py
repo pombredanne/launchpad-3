@@ -162,12 +162,8 @@ def calculate_bugsummary_rows(target):
         has_patch = Bool()
 
     # Storm class to reference the union.
-    class BugSummaryPrototype(BugTaskFlat):
+    class BugSummaryPrototype(RawBugSummary):
         __storm_table__ = 'bugsummary_prototype'
-
-        has_patch = Bool()
-        tag = Unicode()
-        viewed_by_id = Int(name='viewed_by')
 
     # Prepare a union for all combination of privacy and taggedness.
     # It'll return a full set of
