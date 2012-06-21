@@ -189,7 +189,6 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertFalse(picker_widget.config['show_create_team'])
         self.assertFalse(picker_widget.config['enhanced_picker'])
 
-
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.
         person = self.factory.makePerson()
