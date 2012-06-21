@@ -1143,11 +1143,18 @@ class PopulateBranchAccessPolicy(TunableLoop):
 
     maximum_chunk_size = 5000
 
+    def __init__(self, log, abort_time=None):
+        super(PopulateBranchAccessPolicy, self).__init__(log, abort_time)
+        self.memcache_key = '%s:branch-populate-ap' % config.instance_name
+        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+        self.start_at = watermark or 0
+
     def findBranches(self):
         return IMasterStore(Branch).find(
             Branch,
             Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES),
-            SQL("Branch.access_policy IS NULL"))
+            SQL("Branch.access_policy IS NULL"),
+            Branch.id >= self.start_at).order_by(Branch.id)
 
     def isDone(self):
         return self.findBranches().is_empty()
@@ -1155,6 +1162,13 @@ class PopulateBranchAccessPolicy(TunableLoop):
     def __call__(self, chunk_size):
         for branch in self.findBranches()[:chunk_size]:
             branch._reconcileAccess()
+            IMasterStore(Branch).execute(
+                'SELECT branch_denorm_access(?)', (branch.id,))
+            self.start_at = branch.id + 1
+        result = getUtility(IMemcacheClient).set(
+            self.memcache_key, self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
         transaction.commit()
 
 
