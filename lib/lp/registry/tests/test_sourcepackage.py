@@ -50,8 +50,8 @@ class TestSourcePackage(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_interface_consistancy(self):
-        package=self.factory.makeSourcePackage()
-        verifyObject (ISourcePackage, removeSecurityProxy(package))
+        package = self.factory.makeSourcePackage()
+        verifyObject(ISourcePackage, removeSecurityProxy(package))
 
     def test_path(self):
         sourcepackage = self.factory.makeSourcePackage()
