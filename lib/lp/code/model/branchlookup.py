@@ -298,10 +298,7 @@ class BranchLookup:
         except (ValueError, IndexError):
             return None, None
         branch = self.get(branch_id)
-        try:
-            trailing = parts[2]
-        except IndexError:
-            trailing = ''
+        trailing = '/'.join([''] + parts[2:])
         return branch, trailing
 
     def getBranchByAlias(self, path):
@@ -314,7 +311,7 @@ class BranchLookup:
             return None, None
 
     def getContainingBranch(self, path):
-        path_mapping = dict(iter_split(path, '/'))
+        path_mapping = self.candidateUniqueNames(path)
         store = IStore(Branch)
         clause = Branch.unique_name.is_in(path_mapping.keys())
         branch = store.find(Branch, clause).one()
@@ -348,52 +345,22 @@ class BranchLookup:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
 
-    def _getIdAndTrailingPathByIdAlias(self, store, path):
-        """Query by the integer id."""
-        parts = path.split('/', 2)
-        try:
-            branch_id = int(parts[1])
-        except (ValueError, IndexError):
-            return None, None
-        result = store.find(
-            (Branch.id),
-            Branch.id == branch_id,
-            Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES)).one()
-        if result is None:
-            return None, None
-        else:
-            try:
-                return branch_id, '/' + parts[2]
-            except IndexError:
-                return branch_id, ''
-
-    def _getIdAndTrailingPathByUniqueName(self, store, path):
-        """Query based on the unique name."""
-        prefixes = []
-        for first, second in iter_split(path, '/'):
-            prefixes.append(first)
-        result = store.find(
-            (Branch.id, Branch.unique_name),
-            Branch.unique_name.is_in(prefixes),
-            Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES)).one()
-        if result is None:
-            return None, None
-        else:
-            branch_id, unique_name = result
-            trailing = path[len(unique_name):]
-            return branch_id, trailing
+    def candidateUniqueNames(self, path):
+        unique_names = {}
+        segments = path.split('/')
+        for length in [3, 5]:
+            if len(segments) >= length:
+                name = '/'.join(segments[:length])
+                unique_names[name] = path[len(name):]
+        return unique_names
 
     def getIdAndTrailingPath(self, path, from_slave=False):
         """See `IBranchLookup`. """
-        if from_slave:
-            store = ISlaveStore(Branch)
-        else:
-            store = IMasterStore(Branch)
-        path = path.lstrip('/')
-        if path.startswith(BRANCH_ID_ALIAS_PREFIX):
-            return self._getIdAndTrailingPathByIdAlias(store, path)
-        else:
-            return self._getIdAndTrailingPathByUniqueName(store, path)
+        branch, trailing, _ignored = self.getByHostingPath(path.lstrip('/'))
+        if (branch is None or
+                branch.information_type not in PUBLIC_INFORMATION_TYPES):
+            return None, None
+        return branch.id, trailing
 
     def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':

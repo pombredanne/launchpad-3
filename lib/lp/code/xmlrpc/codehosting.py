@@ -339,6 +339,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             get_by_path = getUtility(IBranchLookup).getByHostingPath
             branch, trailing, id_alias = get_by_path(stripped_path)
             if branch is not None:
+                trailing = trailing.lstrip('/')
                 branch = self._serializeBranch(requester, branch, trailing,
                                                id_alias)
                 if branch is None:
