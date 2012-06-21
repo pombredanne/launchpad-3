@@ -613,10 +613,10 @@ if __name__ == '__main__':
         action="store_false", help="Don't actually commit changes")
     parser.add_option(
         "--partial", dest="partial", default=False,
-        action="store_true", help="Commit after applying each patch",)
+        action="store_true", help="Commit after applying each patch")
     parser.add_option(
         "--ignore-slony", dest="ignore_slony", default=False,
-        action="store_true", help="Ignore any Slony installations",)
+        action="store_true", help="Ignore any Slony installations")
     (options, args) = parser.parse_args()
 
     if args:
