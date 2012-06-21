@@ -82,12 +82,12 @@ class TestGetBugSummaryRows(TestCaseWithFactory):
     def test_get_bugsummary_rows(self):
         product = self.factory.makeProduct()
         rollup_journal()
-        orig_rows = get_bugsummary_rows(
-            RawBugSummary.product_id == product.id)
+        orig_rows = set(get_bugsummary_rows(
+            RawBugSummary.product_id == product.id))
         task = self.factory.makeBug(product=product).default_bugtask
         rollup_journal()
-        new_rows = get_bugsummary_rows(
-            RawBugSummary.product_id == product.id)
+        new_rows = set(get_bugsummary_rows(
+            RawBugSummary.product_id == product.id))
         self.assertContentEqual(
             [(product.id, None, None, None, None, None, task.status,
               task.importance, None, None, False, 1)],

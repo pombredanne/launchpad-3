@@ -87,7 +87,7 @@ def format_target(target):
 
 
 def get_bugsummary_rows(*args):
-    results = IStore(RawBugSummary).find(
+    return IStore(RawBugSummary).find(
         (RawBugSummary.product_id, RawBugSummary.productseries_id,
          RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
          RawBugSummary.sourcepackagename_id, RawBugSummary.milestone_id,
@@ -95,7 +95,6 @@ def get_bugsummary_rows(*args):
          RawBugSummary.viewed_by_id, RawBugSummary.has_patch,
          RawBugSummary.count),
         *args)
-    return set(results)
 
 
 def rebuild_bugsummary_for_target(target_key, log):
