@@ -5,7 +5,10 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.scripts.bugsummaryrebuild import (
@@ -18,7 +21,10 @@ from lp.bugs.scripts.bugsummaryrebuild import (
 from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def rollup_journal():
@@ -90,7 +96,7 @@ class TestGetBugSummaryRows(TestCaseWithFactory):
 
 class TestCalculateBugSummaryRows(TestCaseWithFactory):
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def test_public_untagged(self):
         product = self.factory.makeProduct()
@@ -129,6 +135,31 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             [(bug.status, None, bug.importance, False, None, owner.id, 1),
              (bug.status, None, bug.importance, False, u'foo', owner.id, 1),
              (bug.status, None, bug.importance, False, u'bar', owner.id, 1)],
+            calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
+
+    def test_has_patch(self):
+        product = self.factory.makeProduct()
+        bug1 = self.factory.makeBug(product=product).default_bugtask
+        self.factory.makeBugAttachment(bug=bug1.bug, is_patch=True)
+        bug2 = self.factory.makeBug(
+            product=product, status=BugTaskStatus.TRIAGED).default_bugtask
+        self.assertContentEqual(
+            [(bug1.status, None, bug1.importance, True, None, None, 1),
+             (bug2.status, None, bug2.importance, False, None, None, 1)],
+            calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
+
+    def test_milestone(self):
+        product = self.factory.makeProduct()
+        mile1 = self.factory.makeMilestone(product=product)
+        mile2 = self.factory.makeMilestone(product=product)
+        bug1 = self.factory.makeBug(
+            product=product, milestone=mile1).default_bugtask
+        bug2 = self.factory.makeBug(
+            product=product, milestone=mile2,
+            status=BugTaskStatus.TRIAGED).default_bugtask
+        self.assertContentEqual(
+            [(bug1.status, mile1.id, bug1.importance, False, None, None, 1),
+             (bug2.status, mile2.id, bug2.importance, False, None, None, 1)],
             calculate_bugsummary_rows(BugTaskFlat.product_id == product.id))
 
 
