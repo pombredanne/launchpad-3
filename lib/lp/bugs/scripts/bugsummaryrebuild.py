@@ -142,6 +142,11 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
     null_tag = Alias(Cast(None, 'text'), 'tag')
     null_viewed_by = Alias(Cast(None, 'integer'), 'viewed_by')
 
+    tag_join = Join(BugTag, BugTag.bugID == RelevantTask.bug_id)
+    sub_join = Join(
+        BugSubscription,
+        BugSubscription.bug_id == RelevantTask.bug_id)
+
     public_constraint = RelevantTask.information_type.is_in(
         PUBLIC_INFORMATION_TYPES)
     private_constraint = RelevantTask.information_type.is_in(
@@ -153,18 +158,10 @@ def calculate_bugsummary_rows(*bugtaskflat_constraints):
             where=public_constraint),
         Select(
             common_cols + (BugTag.tag, null_viewed_by),
-            tables=[
-                RelevantTask,
-                Join(BugTag, BugTag.bugID == RelevantTask.bug_id)],
-            where=public_constraint),
+            tables=[RelevantTask, tag_join], where=public_constraint),
         Select(
             common_cols + (null_tag, BugSubscription.person_id),
-            tables=[
-                RelevantTask,
-                Join(
-                    BugSubscription,
-                    BugSubscription.bug_id == RelevantTask.bug_id)],
-            where=private_constraint),
+            tables=[RelevantTask, sub_join], where=private_constraint),
         all=True)
 
     prototype_key_cols = (
