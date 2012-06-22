@@ -51,7 +51,6 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branch import Branch
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -59,7 +58,6 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database import postgresql
@@ -1139,25 +1137,6 @@ class BugTaskFlattener(TunableLoop):
         transaction.commit()
 
 
-class PopulateBranchAccessPolicy(TunableLoop):
-
-    maximum_chunk_size = 5000
-
-    def findBranches(self):
-        return IMasterStore(Branch).find(
-            Branch,
-            Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES),
-            SQL("Branch.access_policy IS NULL"))
-
-    def isDone(self):
-        return self.findBranches().is_empty()
-
-    def __call__(self, chunk_size):
-        for branch in self.findBranches()[:chunk_size]:
-            branch._reconcileAccess()
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1413,7 +1392,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         BugHeatUpdater,
         BugTaskFlattener,
-        PopulateBranchAccessPolicy,
         ]
     experimental_tunable_loops = []
 

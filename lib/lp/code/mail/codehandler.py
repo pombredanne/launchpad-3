@@ -209,7 +209,7 @@ class CodeEmailCommands(EmailCommandCollection):
             return []
         commands = [klass.get(name=name, string_args=args) for
                     name, args in parse_commands(message_body,
-                                                 klass._commands.keys())]
+                                                 klass.parsingParameters())]
         return sorted(commands, key=operator.attrgetter('sort_order'))
 
     @classmethod

@@ -108,6 +108,7 @@ def parse_commands(content, command_names):
     A list of (command, args) tuples is returned.
     """
     commands = []
+
     for line in content.splitlines():
         # All commands have to be indented.
         if line.startswith(' ') or line.startswith('\t'):
@@ -116,12 +117,18 @@ def parse_commands(content, command_names):
                 # If the 'done' statement is encountered,
                 # stop reading any more commands.
                 break
-            words = command_string.split(' ')
+            words = command_string.split(' ', 1)
             if len(words) > 0:
-                first = words.pop(0)
+                # Capitalization gets ignored
+                first = words.pop(0).lower()
                 if first.endswith(':'):
                     first = first[:-1]
                 if first in command_names:
+                    if len(words) > 0:
+                        words = words[0]
+                        if command_names[first]:
+                            words = words.lower()
+                        words = words.split(' ')
                     commands.append((first, words))
     return commands
 
