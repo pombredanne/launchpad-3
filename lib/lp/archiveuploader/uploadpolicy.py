@@ -32,7 +32,6 @@ from zope.interface import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.enums import PackageUploadCustomFormat
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
