@@ -889,7 +889,6 @@ class PackageCopier(SoyuzScript):
 
     usage = '%prog -s warty mozilla-firefox --to-suite hoary'
     description = 'MOVE or COPY a published package to another suite.'
-    allow_delayed_copies = False
 
     def add_my_options(self):
 
@@ -1015,7 +1014,7 @@ class PackageCopier(SoyuzScript):
             copies = do_copy(
                 sources, self.destination.archive,
                 self.destination.distroseries, self.destination.pocket,
-                self.options.include_binaries, self.allow_delayed_copies,
+                self.options.include_binaries, allow_delayed_copies=False,
                 check_permissions=False, unembargo=self.options.unembargo,
                 logger=self.logger)
         except CannotCopy, error:
