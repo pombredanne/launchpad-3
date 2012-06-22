@@ -45,6 +45,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login,
     login_person,
+    login_celebrity,
     TestCase,
     TestCaseWithFactory,
     )
@@ -86,7 +87,7 @@ class TestBugTrackerSet(TestCaseWithFactory):
         product2 = self.factory.makeProduct()
         project1 = self.factory.makeProject()
         project2 = self.factory.makeProject()
-        login(ADMIN_EMAIL)
+        login_celebrity('admin')
         product1.bugtracker = tracker
         product2.bugtracker = tracker
         project1.bugtracker = tracker
