@@ -17,10 +17,10 @@ import _pythonpath
 import os
 import sys
 
-from lp.code.model.branch import Branch
+import transaction
+
 from lp.codehosting.rewrite import BranchRewriter
 from lp.services.config import config
-from lp.services.database.lpstorm import ISlaveStore
 from lp.services.log.loglevels import (
     INFO,
     WARNING,
@@ -74,9 +74,9 @@ class BranchRewriteScript(LaunchpadScript):
                 # explicitly rolling back the store here as a workaround
                 # instead of using transaction.abort()
                 try:
-                    ISlaveStore(Branch).rollback()
+                    transaction.abort()
                 except Exception:
-                    self.logger.exception('Exception occurred in rollback:')
+                    self.logger.exception('Exception occurred in abort:')
 
 
 if __name__ == '__main__':
