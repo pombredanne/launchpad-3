@@ -77,6 +77,29 @@ class TestBugTrackerSet(TestCaseWithFactory):
         # but not in active.
         self.assertFalse(tracker in trackers.trackers(active=True))
 
+    def test_inactive_products_in_pillars(self):
+        # the list of pillars should only contain active
+        # products and projects
+        tracker = self.factory.makeBugTracker()
+        trackers = BugTrackerSet()
+        product1 = self.factory.makeProduct()
+        product2 = self.factory.makeProduct()
+        project1 = self.factory.makeProject()
+        project2 = self.factory.makeProject()
+        login(ADMIN_EMAIL)
+        product1.bugtracker = tracker
+        product2.bugtracker = tracker
+        project1.bugtracker = tracker
+        project2.bugtracker = tracker
+        pillars = trackers.getPillarsForBugtrackers(trackers)
+        self.assertContentEqual(
+            [product1, product2, project1, project2], pillars[tracker])
+        product1.active = False
+        project2.active = False
+        pillars = trackers.getPillarsForBugtrackers(trackers)
+        self.assertContentEqual(
+            [product2, project1], pillars[tracker])
+
 
 class BugTrackerTestCase(TestCaseWithFactory):
     """Unit tests for the `BugTracker` class."""
