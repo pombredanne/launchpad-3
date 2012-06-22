@@ -446,7 +446,14 @@ class BranchLookup:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
             # Ignore anything following /.bzr
-            prefix = path.split('/.bzr/', 1)[0]
+            segments = path.split('/')
+            try:
+                index = segments.index('.bzr')
+            except:
+                pass
+            else:
+                segments=segments[:index]
+            prefix = '/'.join(segments)
             object_with_branch_link = getUtility(
                 ILinkedBranchTraverser).traverse(prefix)
             branch, bzr_path = self._getLinkedBranchAndPath(

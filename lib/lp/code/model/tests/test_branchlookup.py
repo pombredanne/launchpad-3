@@ -468,18 +468,43 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(
             InvalidNamespace, self.branch_lookup.getByLPPath, path)
 
+    def make_product_with_branch(self):
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        product.development_focus.branch = branch
+        return product
+
     def test_too_long_product(self):
         # If the provided path points to an existing product with a linked
         # branch but there are also extra path segments, then raise a
         # NoSuchProductSeries error, since we can't tell the difference
         # between a trailing path and an attempt to load a non-existent series
         # branch.
-        branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        product.development_focus.branch = branch
+        product = self.make_product_with_branch()
         self.assertRaises(
             NoSuchProductSeries,
             self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
+
+    def test_product_with_bzr_suffix(self):
+        # A '.bzr' suffix is returned correctly.
+        product = self.make_product_with_branch()
+        branch, suffix = self.branch_lookup.getByLPPath(
+            '%s/.bzr' % product.name)
+        self.assertEqual('.bzr', suffix)
+
+    def test_product_with_bzr_slash_suffix(self):
+        # A '.bzr/' suffix is returned correctly.
+        product = self.make_product_with_branch()
+        branch, suffix = self.branch_lookup.getByLPPath(
+            '%s/.bzr/' % product.name)
+        self.assertEqual('.bzr/', suffix)
+
+    def test_product_with_bzr_extra_suffix(self):
+        # A '.bzr/extra' suffix is returned correctly.
+        product = self.make_product_with_branch()
+        branch, suffix = self.branch_lookup.getByLPPath(
+            '%s/.bzr/extra' % product.name)
+        self.assertEqual('.bzr/extra', suffix)
 
     def test_too_long_product_series(self):
         # If the provided path points to an existing product series with a
