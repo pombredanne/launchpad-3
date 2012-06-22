@@ -22,7 +22,7 @@ from lp.archivepublisher.customupload import CustomUpload
 class DdtpTarballUpload(CustomUpload):
     """DDTP (Debian Description Translation Project) tarball upload
 
-    The tarball should be name as:
+    The tarball filename must be of the form:
 
      <NAME>_<COMPONENT>_<VERSION>.tar.gz
 

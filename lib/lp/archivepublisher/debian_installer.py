@@ -22,7 +22,7 @@ from lp.archivepublisher.customupload import CustomUpload
 class DebianInstallerUpload(CustomUpload):
     """ Debian Installer custom upload.
 
-    The debian-installer filename should be something like:
+    The debian-installer filename must be of the form:
 
         <BASE>_<VERSION>_<ARCH>.tar.gz
 

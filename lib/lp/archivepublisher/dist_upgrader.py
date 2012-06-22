@@ -34,7 +34,7 @@ class DistUpgraderUpload(CustomUpload):
     Dist-Upgrader is a tarball containing files for performing automatic
     distroseries upgrades, driven by architecture.
 
-    The tarball should be name as:
+    The tarball filename must be of the form:
 
       <NAME>_<VERSION>_<ARCH>.tar.gz
 

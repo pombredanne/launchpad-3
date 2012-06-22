@@ -44,7 +44,7 @@ class UefiNothingToSign(CustomUploadError):
 class UefiUpload(CustomUpload):
     """UEFI boot loader custom upload.
 
-    The filename should be something like:
+    The filename must be of the form:
 
         <TYPE>_<VERSION>_<ARCH>.tar.gz
 
