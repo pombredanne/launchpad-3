@@ -42,16 +42,6 @@ span.see-all {
     text-decoration: underline;
     }
 
-.unseen,
-.hidden {
-    display: none;
-    }
-
-.invisible {
-    left: -9999em;
-    display: block;
-    }
-
 .transparent {
     opacity: 0;
     filter: alpha(opacity=0);
@@ -217,4 +207,10 @@ h3 a.sprite {
 
 h3 a.sprite {
     top: 4px;
+    }
+
+/* Hidden must be the last rule because it overides all other rules. */
+.unseen,
+.hidden {
+    display: none;
     }
