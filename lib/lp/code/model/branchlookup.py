@@ -73,11 +73,8 @@ from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
     IStore,
     )
-from lp.services.utils import iter_split
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -452,7 +449,7 @@ class BranchLookup:
             except:
                 pass
             else:
-                segments=segments[:index]
+                segments = segments[:index]
             prefix = '/'.join(segments)
             object_with_branch_link = getUtility(
                 ILinkedBranchTraverser).traverse(prefix)
