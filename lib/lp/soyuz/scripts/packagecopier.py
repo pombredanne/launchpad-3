@@ -771,12 +771,14 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # arch-indep publications.
         binary_copies = getUtility(IPublishingSet).copyBinariesTo(
             source.getBuiltBinaries(), series, pocket, archive, policy=policy)
+        # XXX cjwatson 20120622: This doesn't seem to copy custom uploads.
 
         if binary_copies is not None:
             copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
+    # XXX cjwatson 20120622: This apparently fails to honour P-a-s.
     source_copy.createMissingBuilds()
 
     if not archive.private and has_restricted_files(source):
