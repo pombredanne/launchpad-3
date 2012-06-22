@@ -212,5 +212,5 @@ h3 a.sprite {
 /* Hidden must be the last rule because it overides all other rules. */
 .unseen,
 .hidden {
-    display: none;
+    display: none !important;
     }
