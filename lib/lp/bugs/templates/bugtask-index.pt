@@ -84,10 +84,6 @@
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-      <div id="tags-autocomplete">
-        <div id="tags-autocomplete-content"></div>
-      </div>
-
       <p class="informational message"
          tal:condition="view/notices"
          tal:repeat="notice view/notices"
@@ -132,54 +128,40 @@
           >See <a href="comments/0">original description</a></span>
         </div>
 
-          <div id="bug-tags"
-               tal:attributes="class python: (context.bug.tags and
-                                             'tags-show' or 'tags-hide')">
-            Tags:
-            <span id="tag-list">
-              <a tal:repeat="tag view/official_tags"
-                 tal:content="python: tag[0]"
-                 class="official-tag"
-                 tal:attributes="href python: tag[1]">tag</a>
-              <a tal:repeat="tag view/unofficial_tags"
-                 tal:content="python: tag[0]"
-                 class="unofficial-tag"
-                 tal:attributes="href python: tag[1]">tag</a>
-            </span>
-            <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
-                <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
-                <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit action-icon">Edit</a>
+        <div id="bug-tags">
+          <span id="tags-heading">
+            <tal:heading condition="context/bug/tags">Tags:</tal:heading>
+          </span>
+          <span id="tag-list">
+            <a tal:repeat="tag view/official_tags"
+               tal:content="python: tag[0]"
+               class="official-tag"
+               tal:attributes="href python: tag[1]">tag</a>
+            <a tal:repeat="tag view/unofficial_tags"
+               tal:content="python: tag[0]"
+               class="unofficial-tag"
+               tal:attributes="href python: tag[1]">tag</a>
+          </span>
+          <a href="+edit" title="Add tags" id="tags-trigger"
+            class="sprite add action-icon"
+            tal:condition="not: context/bug/tags">Add tags</a>
+          <a href="+edit" title="Edit tags" id="tags-trigger"
+            class="sprite edit action-icon"
+            tal:condition="context/bug/tags">Edit</a>
+          <a href="/+help-bugs/tag-help.html" target="help"
+            class="sprite maybe action-icon">Tag help</a>
+        </div>
 
-              <button class="lazr-pos lazr-btn yui-ieditor-submit_button hidden"
-                      id="edit-tags-ok"
-                      type="button">Ok</button>
-              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button hidden"
-                      id="edit-tags-cancel"
-                      type="button">Cancel</button>
-           </form>
-           <a href="/+help-bugs/tag-help.html" target="help"
-              class="sprite maybe action-icon">Tag help</a>
-          </div>
-          <div id="add-bug-tags"
-               tal:attributes="class python: (not(context.bug.tags) and
-                                             'tags-show' or 'tags-hide')">
-            <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
-              Add tags
-            </a>
-            <a href="/+help-bugs/tag-help.html" target="help"
-               class="sprite maybe action-icon">Tag help</a>
-            <script type="text/javascript">
-                LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
-                    Y.on('domready',
-                         function(e) {
-                             Y.lp.bugs.bug_tags_entry.setup_tag_entry(
-                                 available_official_tags);
-                         },
-                         window);
-                });
-            </script>
-          </div>
+        <script type="text/javascript">
+          LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
+              Y.on('domready',
+                   function(e) {
+                       Y.lp.bugs.bug_tags_entry.setup_tag_entry(
+                           available_official_tags);
+                   },
+                   window);
+          });
+        </script>
 
         <div class="clearfix"></div>
       </div>

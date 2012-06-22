@@ -197,6 +197,10 @@ table.diff,
     overflow: hidden;
     }
 
+.action-icon + .action-icon {
+    margin-left: 0px;
+    }
+
 h1 a.sprite,
 h2 a.sprite,
 h3 a.sprite {
@@ -212,5 +216,5 @@ h3 a.sprite {
 /* Hidden must be the last rule because it overides all other rules. */
 .unseen,
 .hidden {
-    display: none;
+    display: none !important;
     }
