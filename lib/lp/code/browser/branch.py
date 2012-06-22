@@ -132,7 +132,6 @@ from lp.registry.vocabularies import (
 from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,

@@ -995,7 +995,7 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        feature_flags = {
+        feature_flag = {
             'disclosure.display_userdata_as_private.enabled': 'on'}
         with FeatureFixture(feature_flag):
             with person_logged_in(owner):

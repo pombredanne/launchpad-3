@@ -35,13 +35,8 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful import (
-    EntryResource,
-    ResourceJSONEncoder,
-    )
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
-from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
@@ -65,8 +60,6 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.project import ProjectScopeWidget
-from lp.bugs.adapters.bug import convert_to_information_type
-from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
@@ -81,7 +74,6 @@ from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
-    IBugTask,
     IFrontPageBugTaskSearch,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -91,12 +83,8 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.vocabularies import InformationTypeVocabulary
-from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
@@ -812,13 +800,12 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
-class BugSecrecyEditView(LaunchpadEditFormView,
-                         BugSubscriptionPortletDetails):
+class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""
 
     @property
     def label(self):
-       return 'Bug #%i - Set information type' % self.context.bug.id
+        return 'Bug #%i - Set information type' % self.context.bug.id
 
     page_title = label
 

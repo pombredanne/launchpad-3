@@ -384,11 +384,8 @@ the message.
     <BLANKLINE>
     This bug should be private.
 
-    >>> filebug_view.added_bug.private
-    True
-
-    >>> filebug_view.added_bug.security_related
-    False
+    >>> filebug_view.added_bug.information_type
+    <DBItem InformationType.USERDATA, (4) User Data>
 
 Since the bug was marked private before it was filed, only the bug
 reporter has been subscribed to the bug and there should be no indirect
@@ -688,9 +685,10 @@ Filing security bugs
 
 The base class allows security bugs to be filed.
 
+    >>> from lp.registry.enums import InformationType
     >>> bug_data = dict(
     ...     title=u'Security bug', comment=u'Test description.',
-    ...     security_related=True)
+    ...     information_type=InformationType.EMBARGOEDSECURITY)
 
     >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None

@@ -121,6 +121,7 @@ from lp.registry.browser.product import (
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
@@ -663,6 +664,10 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                 params.comment, extra_data.extra_description)
             notifications.append(
                 'Additional information was added to the bug description.')
+
+        if extra_data.private:
+            if params.information_type in PUBLIC_INFORMATION_TYPES:
+                params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
         if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):
