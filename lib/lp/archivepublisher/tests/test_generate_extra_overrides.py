@@ -29,6 +29,7 @@ from lp.services.log.logger import DevNullLogger
 from lp.services.osutils import (
     ensure_directory_exists,
     open_for_writing,
+    write_file,
     )
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
@@ -45,12 +46,6 @@ def file_contents(path):
     """Return the contents of the file at path."""
     with open(path) as handle:
         return handle.read()
-
-
-def touch(path):
-    """Create an empty file at path."""
-    with open_for_writing(path, "a"):
-        pass
 
 
 class TestAtomicFile(TestCaseWithFactory):
@@ -562,7 +557,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         other_file = "other-file"
         output = partial(os.path.join, self.script.config.germinateroot)
         for base in (seed_old_file, seed_new_file, other_file):
-            touch(output(base))
+            write_file(output(base), "")
         self.script.removeStaleOutputs(series_name, set([seed_new_file]))
         self.assertFalse(os.path.exists(output(seed_old_file)))
         self.assertTrue(os.path.exists(output(seed_new_file)))

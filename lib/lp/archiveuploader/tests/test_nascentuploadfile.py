@@ -25,6 +25,7 @@ from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
+from lp.services.osutils import write_file
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
@@ -286,8 +287,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "data.tar.%s" % data_format,
             ]
         for member in members:
-            with open(os.path.join(tempdir, member), "w") as f:
-                pass
+            write_file(os.path.join(tempdir, member), "")
         retcode = subprocess.call(
             ["ar", "rc", filename] + members, cwd=tempdir)
         self.assertEqual(0, retcode)

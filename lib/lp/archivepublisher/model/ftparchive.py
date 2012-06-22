@@ -21,6 +21,7 @@ from lp.services.command_spawner import (
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.stormexpr import Concatenate
 from lp.services.librarian.model import LibraryFileAlias
+from lp.services.osutils import write_file
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -40,12 +41,6 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 def package_name(filename):
     """Extract a package name from a debian package filename."""
     return (os.path.basename(filename).split("_"))[0]
-
-
-def f_touch(*parts):
-    """Touch the file named by the arguments concatenated as a path."""
-    fname = os.path.join(*parts)
-    open(fname, "w").close()
 
 
 def safe_mkdir(path):
@@ -215,15 +210,15 @@ class FTPArchiveHandler:
             (comp, "debian-installer"),
             (comp, "src"),
             ):
-            f_touch(os.path.join(
+            write_file(os.path.join(
                 self._config.overrideroot,
-                ".".join(("override", suite) + path)))
+                ".".join(("override", suite) + path)), "")
 
         # Create empty file lists.
         def touch_list(*parts):
-            f_touch(os.path.join(
+            write_file(os.path.join(
                 self._config.overrideroot,
-                "_".join((suite, ) + parts)))
+                "_".join((suite, ) + parts)), "")
         touch_list(comp, "source")
 
         arch_tags = [
