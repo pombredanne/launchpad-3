@@ -93,6 +93,18 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         self.assertEquals("bla.txt", libraryfile.filename)
         self.assertEquals("application/octet-stream", libraryfile.mimetype)
 
+    def test_debian_installer_auto_approved(self):
+        # debian-installer uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        self.assertTrue(uploadfile.autoApprove())
+
+    def test_uefi_not_auto_approved(self):
+        # UEFI uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-uefi", "extra")
+        self.assertFalse(uploadfile.autoApprove())
+
 
 class PackageUploadFileTestCase(NascentUploadFileTestCase):
     """Base class for all tests of classes deriving from PackageUploadFile."""

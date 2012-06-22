@@ -295,6 +295,13 @@ class CustomUploadFile(NascentUploadFile):
             restricted=self.policy.archive.private)
         return libraryfile
 
+    def autoApprove(self):
+        """Return whether this custom upload can be automatically approved."""
+        # UEFI uploads are signed, and must therefore be approved by a human.
+        if self.custom_type == PackageUploadCustomFormat.UEFI:
+            return False
+        return True
+
 
 class PackageUploadFile(NascentUploadFile):
     """Base class to model sources and binary files contained in a upload. """

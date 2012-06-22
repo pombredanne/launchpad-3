@@ -32,6 +32,7 @@ from zope.interface import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import PackageUploadCustomFormat
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -316,6 +317,14 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         elif not upload.sourceful and not upload.binaryful:
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
+
+    def autoApprove(self, upload):
+        """Check that all custom files in this upload can be auto-approved."""
+        if self.binaryful:
+            for custom_file in upload.changes.custom_files:
+                if not custom_file.autoApprove():
+                    return False
+        return True
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):
