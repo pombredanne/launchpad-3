@@ -4,12 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet"
   tal:define="latest_uploads context/getLatestUploads">
-  <h2>
-    <span class="see-all"><a
-      tal:attributes="href context/menu:overview/queue/fmt:url">All
-      uploads</a></span>
-    Latest uploads
-  </h2>
 
   <ul id="latest-uploads" class="binary package"
     tal:condition="latest_uploads">

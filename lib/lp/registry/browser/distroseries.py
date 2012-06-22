@@ -283,7 +283,7 @@ class DistroSeriesOverviewMenu(
         return Link('+builds', text, icon='info')
 
     def queue(self):
-        text = 'Show uploads'
+        text = 'Show upload queue'
         return Link('+queue', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
