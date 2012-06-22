@@ -12,8 +12,8 @@ secure to hold signing keys, so we sign them as a custom upload instead.
 __metaclass__ = type
 
 __all__ = [
-    "UefiUpload",
     "process_uefi",
+    "UefiUpload",
     ]
 
 import os
