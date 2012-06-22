@@ -201,6 +201,8 @@ class TestViaCelery(TestCaseWithFactory):
 
     def test_revisions_added(self):
         """RevisionsAddedJob for added revisions runs via Celery."""
+        # Enable RevisionMailJob to let celery activate a new connection
+        # before trying to flush sent emails calling pop_remote_notifications.
         db_branch, tree = self.prepare('RevisionMailJob RevisionsAddedJob')
         tree.commit('message')
         bzr_sync = BzrSync(db_branch)
