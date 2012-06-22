@@ -313,6 +313,7 @@ class BranchLookup:
     def getContainingBranch(self, path):
         path_mapping = self.candidateUniqueNames(path)
         store = IStore(Branch)
+        import transaction; transaction.commit()
         clause = Branch.unique_name.is_in(path_mapping.keys())
         branch = store.find(Branch, clause).one()
         if branch is None:
