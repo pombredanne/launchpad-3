@@ -293,6 +293,220 @@ class TestGetByLPPath(TestCaseWithFactory):
             person.name, self.factory.getUniqueString(), 'branch-name')
         self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
 
+    def test_error_fallthrough_product_branch(self):
+        # getByLPPath raises `NoSuchPerson` if the person component is not
+        # found, then `NoSuchProduct` if the person component is found but the
+        # product component isn't, then `NoSuchBranch` if the first two
+        # components are found.
+        self.assertRaises(
+            NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/bb/c')
+        self.factory.makePerson(name='aa')
+        self.assertRaises(
+            NoSuchProduct, self.branch_lookup.getByLPPath, '~aa/bb/c')
+        self.factory.makeProduct(name='bb')
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
+
+    def test_private_branch(self):
+        # If the unique name refers to an invisible branch, getByLPPath raises
+        # NoSuchBranch, just as if the branch weren't there at all.
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
+        path = removeSecurityProxy(branch).unique_name
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, path)
+
+    def test_transitive_private_branch(self):
+        # If the unique name refers to an invisible branch, getByLPPath raises
+        # NoSuchBranch, just as if the branch weren't there at all.
+        private_branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        path = removeSecurityProxy(branch).unique_name
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, path)
+
+    def test_resolve_product_branch_unique_name(self):
+        # getByLPPath returns the branch, no trailing path and no series if
+        # given the unique name of an existing product branch.
+        branch = self.factory.makeProductBranch()
+        self.assertEqual(
+            (branch, None),
+            self.branch_lookup.getByLPPath(branch.unique_name))
+
+    def test_resolve_product_branch_unique_name_with_trailing(self):
+        # getByLPPath returns the branch and the trailing path (with no
+        # series) if the given path is inside an existing branch.
+        branch = self.factory.makeProductBranch()
+        path = '%s/foo/bar/baz' % (branch.unique_name)
+        self.assertEqual(
+            (branch, 'foo/bar/baz'), self.branch_lookup.getByLPPath(path))
+
+    def test_error_fallthrough_personal_branch(self):
+        # getByLPPath raises `NoSuchPerson` if the first component doesn't
+        # match an existing person, and `NoSuchBranch` if the last component
+        # doesn't match an existing branch.
+        self.assertRaises(
+            NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/+junk/c')
+        self.factory.makePerson(name='aa')
+        self.assertRaises(
+            NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/+junk/c')
+
+    def test_resolve_personal_branch_unique_name(self):
+        # getByLPPath returns the branch, no trailing path and no series if
+        # given the unique name of an existing junk branch.
+        branch = self.factory.makePersonalBranch()
+        self.assertEqual(
+            (branch, None),
+            self.branch_lookup.getByLPPath(branch.unique_name))
+
+    def test_resolve_personal_branch_unique_name_with_trailing(self):
+        # getByLPPath returns the branch and the trailing path (with no
+        # series) if the given path is inside an existing branch.
+        branch = self.factory.makePersonalBranch()
+        path = '%s/foo/bar/baz' % (branch.unique_name)
+        self.assertEqual(
+            (branch, 'foo/bar/baz'),
+            self.branch_lookup.getByLPPath(path))
+
+    def test_resolve_distro_package_branch(self):
+        # getByLPPath returns the branch associated with the distribution
+        # source package referred to by the path.
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        distro_package = sourcepackage.distribution_sourcepackage
+        registrant = sourcepackage.distribution.owner
+        run_with_login(
+            registrant,
+            ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
+        self.assertEqual(
+            (branch, None),
+            self.branch_lookup.getByLPPath(
+                '%s/%s' % (
+                    distro_package.distribution.name,
+                    distro_package.sourcepackagename.name)))
+
+    def test_no_product_series_branch(self):
+        # getByLPPath raises `NoLinkedBranch` if there's no branch registered
+        # linked to the requested series.
+        series = self.factory.makeProductSeries()
+        short_name = '%s/%s' % (series.product.name, series.name)
+        exception = self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, short_name)
+        self.assertEqual(series, exception.component)
+
+    def test_product_with_no_dev_focus(self):
+        # getByLPPath raises `NoLinkedBranch` if the product is found but
+        # doesn't have a development focus branch.
+        product = self.factory.makeProduct()
+        exception = self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
+        self.assertEqual(product, exception.component)
+
+    def test_private_linked_branch(self):
+        # If the given path refers to an object with an invisible linked
+        # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
+        # weren't there at all.
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
+        product = removeSecurityProxy(branch).product
+        removeSecurityProxy(product).development_focus.branch = branch
+        self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
+
+    def test_transitive_private_linked_branch(self):
+        # If the given path refers to an object with an invisible linked
+        # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
+        # weren't there at all.
+        private_branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeProductBranch(stacked_on=private_branch)
+        product = removeSecurityProxy(branch).product
+        removeSecurityProxy(product).development_focus.branch = branch
+        self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
+
+    def test_no_official_branch(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        exception = self.assertRaises(
+            NoLinkedBranch,
+            self.branch_lookup.getByLPPath, sourcepackage.path)
+        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(
+            PackagePublishingPocket.RELEASE)
+        self.assertEqual(suite_sourcepackage, exception.component)
+
+    def test_distribution_linked_branch(self):
+        # Distributions cannot have linked branches, so `getByLPPath` raises a
+        # `CannotHaveLinkedBranch` error if we try to get the linked branch
+        # for a distribution.
+        distribution = self.factory.makeDistribution()
+        exception = self.assertRaises(
+            CannotHaveLinkedBranch,
+            self.branch_lookup.getByLPPath, distribution.name)
+        self.assertEqual(distribution, exception.component)
+
+    def test_distribution_with_no_series(self):
+        distro_package = self.factory.makeDistributionSourcePackage()
+        path = ICanHasLinkedBranch(distro_package).bzr_path
+        self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, path)
+
+    def test_project_linked_branch(self):
+        # ProjectGroups cannot have linked branches, so `getByLPPath` raises a
+        # `CannotHaveLinkedBranch` error if we try to get the linked branch
+        # for a project.
+        project = self.factory.makeProject()
+        exception = self.assertRaises(
+            CannotHaveLinkedBranch,
+            self.branch_lookup.getByLPPath, project.name)
+        self.assertEqual(project, exception.component)
+
+    def test_partial_lookup(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '~%s/%s' % (owner.name, product.name)
+        self.assertRaises(
+            InvalidNamespace, self.branch_lookup.getByLPPath, path)
+
+    def test_too_long_product(self):
+        # If the provided path points to an existing product with a linked
+        # branch but there are also extra path segments, then raise a
+        # NoSuchProductSeries error, since we can't tell the difference
+        # between a trailing path and an attempt to load a non-existent series
+        # branch.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        product.development_focus.branch = branch
+        self.assertRaises(
+            NoSuchProductSeries,
+            self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
+
+    def test_too_long_product_series(self):
+        # If the provided path points to an existing product series with a
+        # linked branch but is followed by extra path segments, then we return
+        # the linked branch but chop off the extra segments. We might want to
+        # change this behaviour in future.
+        branch = self.factory.makeBranch()
+        series = self.factory.makeProductSeries(branch=branch)
+        result = self.branch_lookup.getByLPPath(
+            '%s/%s/other/bits' % (series.product.name, series.name))
+        self.assertEqual((branch, u'other/bits'), result)
+
+    def test_too_long_sourcepackage(self):
+        # If the provided path points to an existing source package with a
+        # linked branch but is followed by extra path segments, then we return
+        # the linked branch but chop off the extra segments. We might want to
+        # change this behaviour in future.
+        package = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=package)
+        with person_logged_in(package.distribution.owner):
+            package.setBranch(
+                PackagePublishingPocket.RELEASE, branch,
+                package.distribution.owner)
+        result = self.branch_lookup.getByLPPath(
+            '%s/other/bits' % package.path)
+        self.assertEqual((branch, u'other/bits'), result)
+
 
 class TestGetByUrl(TestCaseWithFactory):
 
@@ -521,227 +735,3 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         path = '%s/doesntexist' % distribution.name
         self.assertRaises(
             NoSuchSourcePackageName, self.traverser.traverse, path)
-
-
-class TestGetByLPPath(TestCaseWithFactory):
-    """Ensure URLs are correctly expanded."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.branch_lookup = getUtility(IBranchLookup)
-
-    def test_error_fallthrough_product_branch(self):
-        # getByLPPath raises `NoSuchPerson` if the person component is not
-        # found, then `NoSuchProduct` if the person component is found but the
-        # product component isn't, then `NoSuchBranch` if the first two
-        # components are found.
-        self.assertRaises(
-            NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/bb/c')
-        self.factory.makePerson(name='aa')
-        self.assertRaises(
-            NoSuchProduct, self.branch_lookup.getByLPPath, '~aa/bb/c')
-        self.factory.makeProduct(name='bb')
-        self.assertRaises(
-            NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
-
-    def test_private_branch(self):
-        # If the unique name refers to an invisible branch, getByLPPath raises
-        # NoSuchBranch, just as if the branch weren't there at all.
-        branch = self.factory.makeAnyBranch(
-            information_type=InformationType.USERDATA)
-        path = removeSecurityProxy(branch).unique_name
-        self.assertRaises(
-            NoSuchBranch, self.branch_lookup.getByLPPath, path)
-
-    def test_transitive_private_branch(self):
-        # If the unique name refers to an invisible branch, getByLPPath raises
-        # NoSuchBranch, just as if the branch weren't there at all.
-        private_branch = self.factory.makeAnyBranch(
-            information_type=InformationType.USERDATA)
-        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
-        path = removeSecurityProxy(branch).unique_name
-        self.assertRaises(
-            NoSuchBranch, self.branch_lookup.getByLPPath, path)
-
-    def test_resolve_product_branch_unique_name(self):
-        # getByLPPath returns the branch, no trailing path and no series if
-        # given the unique name of an existing product branch.
-        branch = self.factory.makeProductBranch()
-        self.assertEqual(
-            (branch, None),
-            self.branch_lookup.getByLPPath(branch.unique_name))
-
-    def test_resolve_product_branch_unique_name_with_trailing(self):
-        # getByLPPath returns the branch and the trailing path (with no
-        # series) if the given path is inside an existing branch.
-        branch = self.factory.makeProductBranch()
-        path = '%s/foo/bar/baz' % (branch.unique_name)
-        self.assertEqual(
-            (branch, 'foo/bar/baz'), self.branch_lookup.getByLPPath(path))
-
-    def test_error_fallthrough_personal_branch(self):
-        # getByLPPath raises `NoSuchPerson` if the first component doesn't
-        # match an existing person, and `NoSuchBranch` if the last component
-        # doesn't match an existing branch.
-        self.assertRaises(
-            NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/+junk/c')
-        self.factory.makePerson(name='aa')
-        self.assertRaises(
-            NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/+junk/c')
-
-    def test_resolve_personal_branch_unique_name(self):
-        # getByLPPath returns the branch, no trailing path and no series if
-        # given the unique name of an existing junk branch.
-        branch = self.factory.makePersonalBranch()
-        self.assertEqual(
-            (branch, None),
-            self.branch_lookup.getByLPPath(branch.unique_name))
-
-    def test_resolve_personal_branch_unique_name_with_trailing(self):
-        # getByLPPath returns the branch and the trailing path (with no
-        # series) if the given path is inside an existing branch.
-        branch = self.factory.makePersonalBranch()
-        path = '%s/foo/bar/baz' % (branch.unique_name)
-        self.assertEqual(
-            (branch, 'foo/bar/baz'),
-            self.branch_lookup.getByLPPath(path))
-
-    def test_resolve_distro_package_branch(self):
-        # getByLPPath returns the branch associated with the distribution
-        # source package referred to by the path.
-        sourcepackage = self.factory.makeSourcePackage()
-        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        distro_package = sourcepackage.distribution_sourcepackage
-        registrant = sourcepackage.distribution.owner
-        run_with_login(
-            registrant,
-            ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
-        self.assertEqual(
-            (branch, None),
-            self.branch_lookup.getByLPPath(
-                '%s/%s' % (
-                    distro_package.distribution.name,
-                    distro_package.sourcepackagename.name)))
-
-    def test_no_product_series_branch(self):
-        # getByLPPath raises `NoLinkedBranch` if there's no branch registered
-        # linked to the requested series.
-        series = self.factory.makeProductSeries()
-        short_name = '%s/%s' % (series.product.name, series.name)
-        exception = self.assertRaises(
-            NoLinkedBranch, self.branch_lookup.getByLPPath, short_name)
-        self.assertEqual(series, exception.component)
-
-    def test_product_with_no_dev_focus(self):
-        # getByLPPath raises `NoLinkedBranch` if the product is found but
-        # doesn't have a development focus branch.
-        product = self.factory.makeProduct()
-        exception = self.assertRaises(
-            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
-        self.assertEqual(product, exception.component)
-
-    def test_private_linked_branch(self):
-        # If the given path refers to an object with an invisible linked
-        # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
-        # weren't there at all.
-        branch = self.factory.makeProductBranch(
-            information_type=InformationType.USERDATA)
-        product = removeSecurityProxy(branch).product
-        removeSecurityProxy(product).development_focus.branch = branch
-        self.assertRaises(
-            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
-
-    def test_transitive_private_linked_branch(self):
-        # If the given path refers to an object with an invisible linked
-        # branch, then getByLPPath raises `NoLinkedBranch`, as if the branch
-        # weren't there at all.
-        private_branch = self.factory.makeProductBranch(
-            information_type=InformationType.USERDATA)
-        branch = self.factory.makeProductBranch(stacked_on=private_branch)
-        product = removeSecurityProxy(branch).product
-        removeSecurityProxy(product).development_focus.branch = branch
-        self.assertRaises(
-            NoLinkedBranch, self.branch_lookup.getByLPPath, product.name)
-
-    def test_no_official_branch(self):
-        sourcepackage = self.factory.makeSourcePackage()
-        exception = self.assertRaises(
-            NoLinkedBranch,
-            self.branch_lookup.getByLPPath, sourcepackage.path)
-        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(
-            PackagePublishingPocket.RELEASE)
-        self.assertEqual(suite_sourcepackage, exception.component)
-
-    def test_distribution_linked_branch(self):
-        # Distributions cannot have linked branches, so `getByLPPath` raises a
-        # `CannotHaveLinkedBranch` error if we try to get the linked branch
-        # for a distribution.
-        distribution = self.factory.makeDistribution()
-        exception = self.assertRaises(
-            CannotHaveLinkedBranch,
-            self.branch_lookup.getByLPPath, distribution.name)
-        self.assertEqual(distribution, exception.component)
-
-    def test_distribution_with_no_series(self):
-        distro_package = self.factory.makeDistributionSourcePackage()
-        path = ICanHasLinkedBranch(distro_package).bzr_path
-        self.assertRaises(
-            NoLinkedBranch, self.branch_lookup.getByLPPath, path)
-
-    def test_project_linked_branch(self):
-        # ProjectGroups cannot have linked branches, so `getByLPPath` raises a
-        # `CannotHaveLinkedBranch` error if we try to get the linked branch
-        # for a project.
-        project = self.factory.makeProject()
-        exception = self.assertRaises(
-            CannotHaveLinkedBranch,
-            self.branch_lookup.getByLPPath, project.name)
-        self.assertEqual(project, exception.component)
-
-    def test_partial_lookup(self):
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        path = '~%s/%s' % (owner.name, product.name)
-        self.assertRaises(
-            InvalidNamespace, self.branch_lookup.getByLPPath, path)
-
-    def test_too_long_product(self):
-        # If the provided path points to an existing product with a linked
-        # branch but there are also extra path segments, then raise a
-        # NoSuchProductSeries error, since we can't tell the difference
-        # between a trailing path and an attempt to load a non-existent series
-        # branch.
-        branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        product.development_focus.branch = branch
-        self.assertRaises(
-            NoSuchProductSeries,
-            self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
-
-    def test_too_long_product_series(self):
-        # If the provided path points to an existing product series with a
-        # linked branch but is followed by extra path segments, then we return
-        # the linked branch but chop off the extra segments. We might want to
-        # change this behaviour in future.
-        branch = self.factory.makeBranch()
-        series = self.factory.makeProductSeries(branch=branch)
-        result = self.branch_lookup.getByLPPath(
-            '%s/%s/other/bits' % (series.product.name, series.name))
-        self.assertEqual((branch, u'other/bits'), result)
-
-    def test_too_long_sourcepackage(self):
-        # If the provided path points to an existing source package with a
-        # linked branch but is followed by extra path segments, then we return
-        # the linked branch but chop off the extra segments. We might want to
-        # change this behaviour in future.
-        package = self.factory.makeSourcePackage()
-        branch = self.factory.makePackageBranch(sourcepackage=package)
-        with person_logged_in(package.distribution.owner):
-            package.setBranch(
-                PackagePublishingPocket.RELEASE, branch,
-                package.distribution.owner)
-        result = self.branch_lookup.getByLPPath(
-            '%s/other/bits' % package.path)
-        self.assertEqual((branch, u'other/bits'), result)
