@@ -56,6 +56,7 @@ class BranchRewriteScript(LaunchpadScript):
         while True:
             try:
                 line = sys.stdin.readline()
+                transaction.abort()
                 # Mod-rewrite always gives us a newline terminated string.
                 if line:
                     print rewriter.rewriteLine(line.strip())
