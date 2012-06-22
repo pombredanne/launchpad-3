@@ -12,7 +12,10 @@ to enable developers to publish indexes of DDTP contents.
 
 __metaclass__ = type
 
-__all__ = ['process_ddtp_tarball']
+__all__ = [
+    'DdtpTarballUpload',
+    'process_ddtp_tarball',
+    ]
 
 import os
 
@@ -51,6 +54,14 @@ class DdtpTarballUpload(CustomUpload):
 
         self.targetdir = os.path.join(archive_root, 'dists',
                                       distroseries, component)
+
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
+        try:
+            _, component, _ = tarfile_path.split("_")
+            return component
+        except ValueError:
+            return None
 
     def checkForConflicts(self):
         # We just overwrite older files, so no conflicts are possible.

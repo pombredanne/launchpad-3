@@ -9,7 +9,10 @@ tests of ddtp-tarball upload and queue manipulation.
 
 import os
 
-from lp.archivepublisher.ddtp_tarball import process_ddtp_tarball
+from lp.archivepublisher.ddtp_tarball import (
+    DdtpTarballUpload,
+    process_ddtp_tarball,
+    )
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 
@@ -100,3 +103,19 @@ class TestDdtpTarball(TestCase):
             self.assertEqual("", ca_file.read())
         self.assertEqual(1, os.stat(bn).st_nlink)
         self.assertEqual(1, os.stat(ca).st_nlink)
+
+    def test_getSeriesKey_extracts_component(self):
+        # getSeriesKey extracts the component from an upload's filename.
+        self.openArchive("20060728")
+        self.assertEqual("main", DdtpTarballUpload.getSeriesKey(self.path))
+
+    def test_getSeriesKey_returns_None_on_mismatch(self):
+        # getSeriesKey returns None if the filename does not match the
+        # expected pattern.
+        self.assertIsNone(DdtpTarballUpload.getSeriesKey("argh_1.0.jpg"))
+
+    def test_getSeriesKey_refuses_names_with_wrong_number_of_fields(self):
+        # getSeriesKey requires exactly three fields.
+        self.assertIsNone(DdtpTarballUpload.getSeriesKey("package_1.0.tar.gz"))
+        self.assertIsNone(DdtpTarballUpload.getSeriesKey(
+            "one_two_three_four_5.tar.gz"))
