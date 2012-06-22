@@ -268,6 +268,7 @@ class CustomUploadFile(NascentUploadFile):
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
         'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
+        'raw-uefi': PackageUploadCustomFormat.UEFI,
         }
 
     @property

@@ -18,6 +18,7 @@ from zope.component import getUtility
 
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
+from lp.archivepublisher.uefi import UefiUpload
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
 from lp.soyuz.enums import PackageUploadCustomFormat
@@ -40,6 +41,7 @@ class CustomUploadsCopier:
     copyable_types = {
         PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
         PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
+        PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
     def __init__(self, target_series):

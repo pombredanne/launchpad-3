@@ -474,6 +474,12 @@ class PackageUploadCustomFormat(DBEnumeratedType):
         the Software Center.
         """)
 
+    UEFI = DBItem(6, """
+        uefi
+
+        A signed UEFI boot loader image.
+        """)
+
 
 class PackageUploadStatus(DBEnumeratedType):
     """Distro Release Queue Status
