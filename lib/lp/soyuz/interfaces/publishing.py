@@ -72,7 +72,6 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
-from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 
 #
 # Exceptions
@@ -105,9 +104,7 @@ class MissingSymlinkInPool(Exception):
 
 
 @error_status(httplib.BAD_REQUEST)
-# XXX cjwatson 2012-06-07: SoyuzScriptError should be changed to Exception
-# once lp.soyuz.scripts.changeoverride is removed.
-class OverrideError(SoyuzScriptError):
+class OverrideError(Exception):
     """Raised when an attempt to change an override fails."""
 
 
