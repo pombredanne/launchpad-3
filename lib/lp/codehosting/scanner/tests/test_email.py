@@ -200,11 +200,12 @@ class TestViaCelery(TestCaseWithFactory):
         self.assertEqual(1, len(pop_remote_notifications()))
 
     def test_revisions_added(self):
-        """RevisionMailJob for removed revisions runs via Celery."""
-        db_branch, tree = self.prepare('RevisionsAddedJob')
+        """RevisionsAddedJob for added revisions runs via Celery."""
+        db_branch, tree = self.prepare('RevisionMailJob RevisionsAddedJob')
         tree.commit('message')
         bzr_sync = BzrSync(db_branch)
-        bzr_sync.syncBranchAndClose(tree.branch)
+        with block_on_job():
+            bzr_sync.syncBranchAndClose(tree.branch)
         pop_remote_notifications()
         tree.commit('message2')
         with block_on_job():
