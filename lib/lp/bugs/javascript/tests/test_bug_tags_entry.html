@@ -76,5 +76,36 @@ GNU Affero General Public License version 3 (see the file LICENSE).
                 class="sprite maybe action-icon">Tag help</a>
           </div>
         </script>
+
+        <script type="text/x-template" id="edit-bug-tag-form">
+          <div id="bug-tags">
+            <span id="tags-heading">
+              Tags:
+            </span>
+            <span id="tag-list">
+              <a class="official-tag"
+                  href="/fnord/+bugs?field.tag=project-tag">project-tag</a>
+              <a class="unofficial-tag"
+                  href="/fnord/+bugs?field.tag=user-tag">user-tag</a>
+            </span>
+            <a href="+edit" title="Edit tags" id="tags-trigger"
+              class="sprite edit action-icon">Edit</a>
+            <a href="/+help-bugs/tag-help.html" target="help"
+              class="sprite maybe action-icon">Tag help</a>
+          </div>
+        </script>
+
+        <script type="text/x-template" id="add-bug-tag-form">
+          <div id="bug-tags">
+            <span id="tags-heading">
+            </span>
+            <span id="tag-list">
+            </span>
+            <a href="+edit" title="Add tags" id="tags-trigger"
+              class="sprite add action-icon">Add tags</a>
+            <a href="/+help-bugs/tag-help.html" target="help"
+              class="sprite maybe action-icon">Tag help</a>
+          </div>
+        </script>
     </body>
 </html>
