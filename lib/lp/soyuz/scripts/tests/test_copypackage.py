@@ -1675,6 +1675,41 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             copied_source.sponsor,
             None)
 
+    def test_copy_custom_upload_files(self):
+        # Custom upload files are queued for republication when they are
+        # copied.
+        self.test_publisher.breezy_autotest.status = SeriesStatus.CURRENT
+        source = self.test_publisher.getPubSource(
+            pocket=PackagePublishingPocket.PROPOSED)
+        self.test_publisher.getPubBinaries(
+            pocket=PackagePublishingPocket.PROPOSED, pub_source=source)
+        [build] = source.getBuilds()
+        custom_file = self.factory.makeLibraryFileAlias()
+        build.package_upload.addCustom(
+            custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
+        # Make the new librarian file available.
+        self.layer.txn.commit()
+
+        self.doCopy(
+            source, source.archive, source.distroseries,
+            PackagePublishingPocket.UPDATES, include_binaries=True)
+        [upload] = source.distroseries.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, archive=source.archive,
+            pocket=PackagePublishingPocket.UPDATES,
+            custom_type=PackageUploadCustomFormat.DIST_UPGRADER)
+
+        # The upload is targeted to the right publishing context.
+        self.assertEqual(source.archive, upload.archive)
+        self.assertEqual(source.distroseries, upload.distroseries)
+        self.assertEqual(PackagePublishingPocket.UPDATES, upload.pocket)
+
+        # It contains only the custom files.
+        self.assertEqual([], list(upload.sources))
+        self.assertEqual([], list(upload.builds))
+        self.assertEqual(
+            [custom_file],
+            [custom.libraryfilealias for custom in upload.customfiles])
+
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 
