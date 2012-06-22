@@ -1644,9 +1644,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=target_archive.owner, check_permissions=False,
             send_email=False)
 
-        self.assertEqual(
-            target_archive.owner,
-            copied_source.creator)
+        self.assertEqual(target_archive.owner, copied_source.creator)
 
     def test_unsponsored_copy_does_not_set_sponsor(self):
         # If the copy is not sponsored, SPPH.sponsor is none
@@ -1658,9 +1656,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=target_archive.owner, check_permissions=False,
             send_email=False)
 
-        self.assertEqual(
-            copied_source.sponsor,
-            None)
+        self.assertIsNone(copied_source.sponsor)
 
     def test_copy_custom_upload_files(self):
         # Custom upload files are queued for republication when they are
@@ -2075,8 +2071,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertEqual(len(copied), size)
 
         for candidate in copied:
-            self.assertEqual(
-                candidate.status, PackagePublishingStatus.PENDING)
+            self.assertEqual(PackagePublishingStatus.PENDING, candidate.status)
 
         def excludeOlds(found, old_pending_ids):
             return [pub.id for pub in found if pub.id not in old_pending_ids]
@@ -2406,16 +2401,14 @@ class CopyPackageTestCase(TestCaseWithFactory):
         active_warty_architectures = [
             arch.architecturetag for arch in warty.architectures
             if arch.getChroot()]
-        self.assertEqual(
-            active_warty_architectures, ['i386'])
+        self.assertEqual(active_warty_architectures, ['i386'])
 
         # Setup ubuntu/hoary supporting i386 and hppa architetures.
         hoary = ubuntu.getSeries('hoary')
         test_publisher.addFakeChroots(hoary)
         active_hoary_architectures = [
             arch.architecturetag for arch in hoary.architectures]
-        self.assertEqual(
-            sorted(active_hoary_architectures), ['hppa', 'i386'])
+        self.assertEqual(sorted(active_hoary_architectures), ['hppa', 'i386'])
 
         # We will create an architecture-specific source and its binaries
         # for i386 in ubuntu/warty. They will be copied over.
@@ -2507,8 +2500,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # architecture (hppa).
         [new_build] = copied_source.getBuilds()
         self.assertEqual(
-            new_build.title,
-            'hppa build of boing 1.0 in ubuntu hoary RELEASE')
+            new_build.title, 'hppa build of boing 1.0 in ubuntu hoary RELEASE')
 
     def testVersionConflictInDifferentPockets(self):
         """Copy-package stops copies conflicting in different pocket.
@@ -2633,8 +2625,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         [copied_source, original_source] = sources
 
-        self.assertEqual(
-            copied_source.pocket, PackagePublishingPocket.UPDATES)
+        self.assertEqual(copied_source.pocket, PackagePublishingPocket.UPDATES)
         self.assertEqual(
             original_source.pocket, PackagePublishingPocket.SECURITY)
 
@@ -2680,8 +2671,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         copied = copy_helper.mainTask()
 
         [source_copy, i386_copy] = copied
-        self.assertEqual(
-            source_copy.displayname, 'lazy-building 1.0 in hoary')
+        self.assertEqual(source_copy.displayname, 'lazy-building 1.0 in hoary')
         self.assertEqual(i386_copy.displayname, 'lazy-bin 1.0 in hoary i386')
 
         target_archive = copy_helper.destination.archive
@@ -2742,12 +2732,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
             from_suite='warty', to_suite='hoary', to_ppa='mark')
         copied = copy_helper.mainTask()
 
-        self.assertEqual(
-            str(copy_helper.location),
-            'cprov: warty-RELEASE')
-        self.assertEqual(
-            str(copy_helper.destination),
-            'mark: hoary-RELEASE')
+        self.assertEqual('cprov: warty-RELEASE', str(copy_helper.location))
+        self.assertEqual('mark: hoary-RELEASE', str(copy_helper.destination))
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
