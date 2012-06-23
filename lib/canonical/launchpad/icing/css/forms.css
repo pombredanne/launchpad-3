@@ -59,6 +59,10 @@ button.overlay-close-button {
     display: block;
     margin-top: 4px;
     }
+inout[type=input] + button,
+img[src$=spinner] + button  {
+    margin-left: 6px !important;
+    }
 .selection-choices {
     margin: 0.75em 0 0 1em
     }
