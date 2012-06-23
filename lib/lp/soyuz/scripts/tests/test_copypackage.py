@@ -462,7 +462,8 @@ class CopyCheckerHarness:
          * Finally check whether is a delayed-copy or not according to the
            given state.
         """
-        copy_checker = CopyChecker(self.archive, include_binaries=False)
+        copy_checker = CopyChecker(
+            self.archive, include_binaries=False, allow_delayed_copies=delayed)
         self.assertIs(
             None,
             copy_checker.checkCopy(
@@ -490,7 +491,8 @@ class CopyCheckerHarness:
          * Finally check whether is a delayed-copy or not according to the
            given state.
         """
-        copy_checker = CopyChecker(self.archive, include_binaries=True)
+        copy_checker = CopyChecker(
+            self.archive, include_binaries=True, allow_delayed_copies=delayed)
         self.assertIs(
             None,
             copy_checker.checkCopy(
@@ -1027,24 +1029,22 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         self.layer.txn.commit()
         do_copy(
             [source], archive, series, pocket, include_binaries=False,
-            check_permissions=False)
+            allow_delayed_copies=True, check_permissions=False)
 
         # Repeating the copy is denied.
-        copy_checker = CopyChecker(archive, include_binaries=False)
+        copy_checker = CopyChecker(
+            archive, include_binaries=False, allow_delayed_copies=True)
         self.assertRaisesWithContent(
             CannotCopy,
             'same version already uploaded and waiting in ACCEPTED queue',
             copy_checker.checkCopy, source, series, pocket, None, False)
 
     def test_checkCopy_suppressing_delayed_copies(self):
-        # `CopyChecker` by default will request delayed-copies when it's
-        # the case (restricted files being copied to public archives).
-        # However this feature can be turned off, and the operation can
-        # be performed as a direct-copy by passing 'allow_delayed_copies'
-        # as False when initializing `CopyChecker`.
-        # This aspect is currently only used in `UnembargoSecurityPackage`
-        # script class, because it performs the file privacy fixes in
-        # place.
+        # `CopyChecker` can request delayed-copies by passing
+        # `allow_delayed_copies` as True, which was an old mechanism to
+        # support restricted files being copied to public archives.  If this
+        # is disabled, which is the default, the operation will be performed
+        # as a direct-copy.
 
         # Create a private archive with a restricted source publication.
         private_archive = self.factory.makeArchive(
@@ -1058,19 +1058,21 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         series = source.distroseries
         pocket = source.pocket
 
-        # Normally `CopyChecker` would store a delayed-copy representing
-        # this operation, since restricted files are being copied to
-        # public archives.
-        copy_checker = CopyChecker(archive, include_binaries=False)
+        # `CopyChecker` can store a delayed-copy representing this
+        # operation, since restricted files are being copied to public
+        # archives.
+        copy_checker = CopyChecker(
+            archive, include_binaries=False, allow_delayed_copies=True)
         copy_checker.checkCopy(
             source, series, pocket, check_permissions=False)
         [checked_copy] = list(copy_checker.getCheckedCopies())
         self.assertTrue(checked_copy.delayed)
 
         # When 'allow_delayed_copies' is off, a direct-copy will be
-        # scheduled.
+        # scheduled.  This requires an explicit option to say that we know
+        # we're going to be exposing previously restricted files.
         copy_checker = CopyChecker(
-            archive, include_binaries=False, allow_delayed_copies=False)
+            archive, include_binaries=False, unembargo=True)
         copy_checker.checkCopy(
             source, series, pocket, check_permissions=False)
         [checked_copy] = list(copy_checker.getCheckedCopies())
@@ -2010,7 +2012,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
                   to_distribution='ubuntu', to_suite='hoary',
                   component=None, from_ppa=None, to_ppa=None,
                   from_partner=False, to_partner=False,
-                  confirm_all=True, include_binaries=True):
+                  confirm_all=True, include_binaries=True, unembargo=False):
         """Return a PackageCopier instance.
 
         Allow tests to use a set of default options and pass an
@@ -2026,6 +2028,9 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         if include_binaries:
             test_args.append('-b')
+
+        if unembargo:
+            test_args.append('--unembargo')
 
         if sourceversion is not None:
             test_args.extend(['-e', sourceversion])
@@ -2913,6 +2918,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         # Create a source and binary private publication.
         hoary = ubuntu.getSeries('hoary')
+        hoary.status = SeriesStatus.CURRENT
         test_publisher = self.getTestPublisher(hoary)
         ppa_source = test_publisher.getPubSource(
             archive=joe_private_ppa, version='1.0', distroseries=hoary)
@@ -2923,21 +2929,31 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Run the copy package script storing the logged information.
         copy_helper = self.getCopier(
             sourcename='foo', from_ppa='joe',
-            include_binaries=True, from_suite='hoary', to_suite='hoary')
+            include_binaries=True, from_suite='hoary',
+            to_suite='hoary-security', unembargo=True)
         copied = copy_helper.mainTask()
 
-        # The private files are copied via a delayed-copy request.
-        self.assertEqual(len(copied), 1)
+        # The private files are copied via a direct-copy request.
+        self.assertEqual(len(copied), 3)
         self.assertEqual(
             ['INFO FROM: joe: hoary-RELEASE',
-             'INFO TO: Primary Archive for Ubuntu Linux: hoary-RELEASE',
+             'INFO TO: Primary Archive for Ubuntu Linux: hoary-SECURITY',
              'INFO Copy candidates:',
              'INFO \tfoo 1.0 in hoary',
              'INFO \tfoo-bin 1.0 in hoary hppa',
              'INFO \tfoo-bin 1.0 in hoary i386',
+             'INFO Re-uploaded foo_1.0.dsc to librarian',
+             'INFO Re-uploaded foo_1.0_source.changes to librarian',
+             'INFO Re-uploaded foo-bin_1.0_all.deb to librarian',
+             'INFO Re-uploaded foo-bin_1.0_i386.changes to librarian',
+             'INFO Re-uploaded '
+                 'buildlog_ubuntu-hoary-i386.foo_1.0_FULLYBUILT.txt.gz to '
+                 'librarian',
              'INFO Copied:',
-             'INFO \tDelayed copy of foo - 1.0 (source, i386)',
-             'INFO 1 package successfully copied.',
+             'INFO \tfoo 1.0 in hoary',
+             'INFO \tfoo-bin 1.0 in hoary hppa',
+             'INFO \tfoo-bin 1.0 in hoary i386',
+             'INFO 3 packages successfully copied.',
              ],
             copy_helper.logger.getLogBuffer().splitlines())
 
@@ -3059,27 +3075,41 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
     def testUnembargoSuite(self):
         """Test that passing different suites works as expected."""
+        # Set up a private PPA.
+        joe = self.factory.makePerson(name="joe")
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        self.factory.makeArchive(
+            owner=joe, name='ppa', private=True, distribution=ubuntu)
+
         test_args = [
-            "--ppa", "cprov",
+            "--ppa", "joe",
             "-s", "warty-backports",
             "foo",
             ]
 
         script = UnembargoSecurityPackage(
             name='unembargo', test_args=test_args)
-        self.assertTrue(script.setUpCopierOptions())
-        self.assertEqual(
-            script.options.to_suite, "warty-backports",
-            "Got %s, expected warty-backports")
+        script.setUpCopierOptions()
+        script.setupLocation()
+        script.setupDestination()
+        script.destination.distroseries.status = SeriesStatus.CURRENT
+        script.checkPrivacyOptions()
+        self.assertEqual("warty-backports", script.options.to_suite)
 
-        # Change the suite to one with the release pocket, it should
-        # copy nothing as you're not allowed to unembargo into the
-        # release pocket.
-        test_args[3] = "hoary"
+        # Change the suite to one with the release pocket.  It should copy
+        # nothing as you're not allowed to unembargo into the release
+        # pocket of a stable series.
+        test_args[3] = "warty"
         script = UnembargoSecurityPackage(
             name='unembargo', test_args=test_args)
         script.logger = BufferLogger()
-        self.assertFalse(script.setUpCopierOptions())
+        script.setUpCopierOptions()
+        script.setupLocation()
+        script.setupDestination()
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Can't unembargo into suite 'warty' of a distribution.",
+            script.checkPrivacyOptions)
 
     def testCopyClosesBugs(self):
         """Copying packages closes bugs.
