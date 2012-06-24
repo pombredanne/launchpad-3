@@ -403,7 +403,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @property
     def unembargo(self):
-        return self.metadata['unembargo']
+        return self.metadata.get('unembargo', False)
 
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
