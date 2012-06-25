@@ -128,6 +128,20 @@ def get_bugsummary_rows(target):
         *get_bugsummary_constraint(target))
 
 
+def calculate_dict_delta(old, new):
+    """Calculate the delta between the new and old dicts."""
+    keys = set()
+    keys.update(old.iterkeys())
+    keys.update(new.iterkeys())
+    delta = {}
+    for key in keys:
+        old_val = old.get(key, 0)
+        new_val = new.get(key, 0)
+        if old_val != new_val:
+            delta[key] = new_val - old_val
+    return delta
+
+
 def rebuild_bugsummary_for_target(target, log):
     log.debug("Rebuilding %s" % format_target(target))
     log.debug(
