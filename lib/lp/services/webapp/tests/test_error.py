@@ -67,7 +67,7 @@ class TestDatabaseErrorViews(TestCase):
         else:
             self.fail("We should have gotten an HTTP error")
 
-    def retryConnection(self, url, retries=60):
+    def retryConnection(self, url, retries=180):
         """Retry to connect to *url* for *retries* times.
 
         Return the file-like object returned by *urllib2.urlopen(url)*.

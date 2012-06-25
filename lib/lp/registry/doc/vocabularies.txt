@@ -731,7 +731,8 @@ well as teams:
 
     >>> [(p.name, getattr(p.teamowner, 'name', None))
     ...  for p in vocab.search('ubuntu-team')]
-    [(u'ubuntu-team', u'mark')]
+    [(u'doc', None), (u'name18', u'mark'),
+     (u'ubuntu-security', u'kamion'), (u'ubuntu-team', u'mark')]
 
 But it doesn't include merged accounts:
 
