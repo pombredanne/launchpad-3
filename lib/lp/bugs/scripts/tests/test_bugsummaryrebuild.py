@@ -75,11 +75,12 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         self.assertContentEqual(expected_targets, new_targets - orig_targets)
 
     def test_calculate_bugsummary_changes(self):
-        # calculate_bugsummary_changes returns the rows required
-        # to make the old dict match the new.
+        # calculate_bugsummary_changes returns the changes required
+        # to make the old dict match the new, as a tuple of
+        # (added, updated, removed)
         changes = calculate_bugsummary_changes(
             dict(a=2, b=10, c=3), dict(a=2, c=5, d=4))
-        self.assertEqual(dict(b=0, c=5, d=4), changes)
+        self.assertEqual((dict(d=4), dict(c=5), ['b']), changes)
 
 
 class TestGetBugSummaryRows(TestCaseWithFactory):

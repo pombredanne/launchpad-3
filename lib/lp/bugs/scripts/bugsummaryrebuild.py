@@ -131,11 +131,21 @@ def calculate_bugsummary_changes(old, new):
     keys = set()
     keys.update(old.iterkeys())
     keys.update(new.iterkeys())
-    delta = {}
+    added = {}
+    updated = {}
+    removed = []
     for key in keys:
-        if old.get(key, 0) != new.get(key, 0):
-            delta[key] = new.get(key, 0)
-    return delta
+        old_val = old.get(key, 0)
+        new_val = new.get(key, 0)
+        if old_val == new_val:
+            continue
+        if old_val and not new_val:
+            removed.append(key)
+        elif new_val and not old_val:
+            added[key] = new_val
+        else:
+            updated[key] = new_val
+    return added, updated, removed
 
 
 def rebuild_bugsummary_for_target(target, log):
@@ -144,7 +154,13 @@ def rebuild_bugsummary_for_target(target, log):
         (v[:-1], v[-1]) for v in get_bugsummary_rows(target))
     expected = dict(
         (v[:-1], v[-1]) for v in calculate_bugsummary_rows(target))
-    log.debug(' delta: %r' % calculate_bugsummary_changes(existing, expected))
+    added, updated, removed = calculate_bugsummary_changes(existing, expected)
+    if added:
+        log.debug(' adding %r' % added)
+    if updated:
+        log.debug(' updating %r' % updated)
+    if removed:
+        log.debug(' removed %r' % removed)
 
 
 def calculate_bugsummary_rows(target):
