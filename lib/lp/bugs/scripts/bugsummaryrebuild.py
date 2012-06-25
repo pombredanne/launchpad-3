@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from operator import eq
+import transaction
 
 from storm.expr import (
     Alias,
@@ -159,6 +159,7 @@ def calculate_bugsummary_changes(old, new):
 
 
 def apply_bugsummary_changes(target, added, updated, removed):
+    """Apply a set of BugSummary changes to the DB."""
     bits = _get_bugsummary_constraint_bits(target)
     target_key = tuple(map(
         bits.__getitem__,
@@ -200,11 +201,12 @@ def rebuild_bugsummary_for_target(target, log):
         (v[:-1], v[-1]) for v in calculate_bugsummary_rows(target))
     added, updated, removed = calculate_bugsummary_changes(existing, expected)
     if added:
-        log.debug(' adding %r' % added)
+        log.debug('Added %r' % added)
     if updated:
-        log.debug(' updating %r' % updated)
+        log.debug('Updated %r' % updated)
     if removed:
-        log.debug(' removed %r' % removed)
+        log.debug('Removed %r' % removed)
+    apply_bugsummary_changes(target, added, updated, removed)
 
 
 def calculate_bugsummary_rows(target):
@@ -292,8 +294,9 @@ class BugSummaryRebuildTunableLoop(TunableLoop):
 
     maximum_chunk_size = 100
 
-    def __init__(self, log, abort_time=None):
+    def __init__(self, log, dry_run, abort_time=None):
         super(BugSummaryRebuildTunableLoop, self).__init__(log, abort_time)
+        self.dry_run = dry_run
         self.targets = list(
             get_bugsummary_targets().union(get_bugtask_targets()))
         self.offset = 0
@@ -309,3 +312,8 @@ class BugSummaryRebuildTunableLoop(TunableLoop):
             target = load_target(*target_key)
             rebuild_bugsummary_for_target(target, self.log)
         self.offset += len(chunk)
+
+        if not self.dry_run:
+            transaction.commit()
+        else:
+            transaction.abort()
