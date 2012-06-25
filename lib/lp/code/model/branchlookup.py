@@ -284,9 +284,7 @@ class BranchLookup:
             return self.getBranchByAlias(path) + (False,)
         else:
             branch, trailing = self.getContainingBranch(path)
-            if trailing is not None:
-                trailing = escape(trailing)
-            return branch, trailing, False
+            return branch, escape(trailing), False
 
     def _getBranchByIdAlias(self, stripped_path):
         try:
@@ -311,7 +309,7 @@ class BranchLookup:
         clause = Branch.unique_name.is_in(path_mapping.keys())
         branch = IStore(Branch).find(Branch, clause).one()
         if branch is None:
-            return None, None
+            return None, ''
         else:
             return branch, path_mapping[branch.unique_name]
 
