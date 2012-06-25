@@ -48,11 +48,11 @@ class RawBugSummary(BugSummary):
     """Like BugSummary, except based on the raw DB table.
 
     BugSummary is actually based on the combinedbugsummary view, and it omits
-    resolved_upstream, a column that's being removed.
+    fixed_upstream, a column that's being removed.
     """
     __storm_table__ = 'bugsummary'
 
-    resolved_upstream = Bool()
+    fixed_upstream = Bool()
 
 
 def get_bugsummary_targets():
@@ -138,8 +138,8 @@ def get_bugsummary_rows(target):
     return IStore(RawBugSummary).find(
         (RawBugSummary.status, RawBugSummary.milestone_id,
          RawBugSummary.importance, RawBugSummary.has_patch,
-         RawBugSummary.tag, RawBugSummary.viewed_by_id,
-         RawBugSummary.count),
+         RawBugSummary.fixed_upstream, RawBugSummary.tag,
+         RawBugSummary.viewed_by_id, RawBugSummary.count),
         *get_bugsummary_constraint(target))
 
 
@@ -183,7 +183,8 @@ def apply_bugsummary_changes(target, added, updated, removed):
     key_cols = (
         RawBugSummary.status, RawBugSummary.milestone_id,
         RawBugSummary.importance, RawBugSummary.has_patch,
-        RawBugSummary.tag, RawBugSummary.viewed_by_id)
+        RawBugSummary.fixed_upstream, RawBugSummary.tag,
+        RawBugSummary.viewed_by_id)
 
     # Postgres doesn't do bulk updates, so do a delete+add.
     for key, count in updated.iteritems():
@@ -255,7 +256,8 @@ def calculate_bugsummary_rows(target):
     # (status, milestone, importance, has_patch, tag, viewed_by) rows.
     common_cols = (
         RelevantTask.status, RelevantTask.milestone_id,
-        RelevantTask.importance, RelevantTask.has_patch)
+        RelevantTask.importance, RelevantTask.has_patch,
+        Alias(False, 'fixed_upstream'))
     null_tag = Alias(Cast(None, 'text'), 'tag')
     null_viewed_by = Alias(Cast(None, 'integer'), 'viewed_by')
 
@@ -293,7 +295,8 @@ def calculate_bugsummary_rows(target):
     proto_key_cols = (
         BugSummaryPrototype.status, BugSummaryPrototype.milestone_id,
         BugSummaryPrototype.importance, BugSummaryPrototype.has_patch,
-        BugSummaryPrototype.tag, BugSummaryPrototype.viewed_by_id)
+        BugSummaryPrototype.fixed_upstream, BugSummaryPrototype.tag,
+        BugSummaryPrototype.viewed_by_id)
     origin = IStore(BugTaskFlat).with_(relevant_tasks).using(
         Alias(unions, 'bugsummary_prototype'))
     results = origin.find(proto_key_cols + (Count(),))
