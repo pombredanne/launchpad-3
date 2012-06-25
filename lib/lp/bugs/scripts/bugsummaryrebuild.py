@@ -204,14 +204,20 @@ def apply_bugsummary_changes(target, added, updated, removed):
         removed.append(key)
         added[key] = count
 
-    if removed:
+    # Delete any excess rows. We do it in batches of 100 to avoid enormous ORs
+    while removed:
+        chunk = removed[:100]
+        removed = removed[100:]
         exprs = [
-            map(lambda (k, v): k == v, zip(key_cols, key)) for key in removed]
+            map(lambda (k, v): k == v, zip(key_cols, key))
+            for key in chunk]
         IStore(RawBugSummary).find(
             RawBugSummary,
             Or(*[And(*expr) for expr in exprs]),
             *get_bugsummary_constraint(target)).remove()
 
+    # Add any new rows. We know this scales up to tens of thousands, so just
+    # do it in one hit.
     if added:
         create(
             target_cols + key_cols + (RawBugSummary.count,),
