@@ -62,6 +62,11 @@
         links: {}
     };
   </script>
+
+  <script type="text/javascript" tal:condition="devmode">
+    LP.devmode = true;
+  </script>
+
   <tal:js-legacy condition="not: request/features/js.combo_loader.enabled">
     <script type="text/javascript"
           tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
@@ -86,10 +91,15 @@
    <script type="text/javascript"
         tal:attributes="src string:${combo_url}/?yui/yui/yui-min.js&amp;lp/meta.js&amp;yui/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
+        var raw = null;
+        if (LP.devmode) {
+           raw = 'raw';
+        }
         YUI.GlobalConfig = {
             combine: true,
             comboBase: '${combo_url}/?',
             root: 'yui/',
+            filter: raw,
             debug: ${yui_console_debug},
             fetchCSS: false,
             groups: {
