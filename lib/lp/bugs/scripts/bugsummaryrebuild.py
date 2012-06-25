@@ -3,12 +3,15 @@
 
 __metaclass__ = type
 
+from operator import eq
+
 from storm.expr import (
     Alias,
     And,
     Cast,
     Count,
     Join,
+    Or,
     Select,
     Union,
     With,
@@ -161,14 +164,27 @@ def apply_bugsummary_changes(target, added, updated, removed):
         bits.__getitem__,
         ('product_id', 'productseries_id', 'distribution_id',
          'distroseries_id', 'sourcepackagename_id')))
-    create(
-        (RawBugSummary.product_id, RawBugSummary.productseries_id,
-         RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
-         RawBugSummary.sourcepackagename_id, RawBugSummary.status,
-         RawBugSummary.milestone_id, RawBugSummary.importance,
-         RawBugSummary.has_patch, RawBugSummary.tag,
-         RawBugSummary.viewed_by_id, RawBugSummary.count),
-        [target_key + key + (count,) for key, count in added.iteritems()])
+    target_cols = (
+        RawBugSummary.product_id, RawBugSummary.productseries_id,
+        RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
+        RawBugSummary.sourcepackagename_id)
+    key_cols = (
+        RawBugSummary.status, RawBugSummary.milestone_id,
+        RawBugSummary.importance, RawBugSummary.has_patch,
+        RawBugSummary.tag, RawBugSummary.viewed_by_id)
+
+    if added:
+        create(
+            target_cols + key_cols + (RawBugSummary.count,),
+            [target_key + key + (count,) for key, count in added.iteritems()])
+
+    if removed:
+        exprs = [
+            map(lambda (k, v): k == v, zip(key_cols, key)) for key in removed]
+        IStore(RawBugSummary).find(
+            RawBugSummary,
+            Or(*[And(*exprs)]),
+            *get_bugsummary_constraint(target)).remove()
 
 
 def rebuild_bugsummary_for_target(target, log):
