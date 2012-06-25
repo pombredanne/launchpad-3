@@ -477,7 +477,7 @@ class PackageUploadCustomFormat(DBEnumeratedType):
     UEFI = DBItem(6, """
         uefi
 
-        A signed UEFI boot loader image.
+        A UEFI boot loader image to be signed.
         """)
 
 
