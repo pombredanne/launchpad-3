@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import subprocess
 
+from testtools.content import text_content
 from testtools.matchers import MatchesRegex
 import transaction
 from zope.component import getUtility
@@ -35,6 +36,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.testing.script import run_script
 
 
 def rollup_journal():
@@ -149,12 +151,12 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         self.assertEqual(0, get_bugsummary_rows(product).count())
         self.assertEqual(1, get_bugsummaryjournal_rows(product).count())
         transaction.commit()
-        process = subprocess.Popen(
-            'scripts/bugsummary-rebuild.py',
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate()
-        self.assertEqual(
-            process.returncode, 0, "stdout:%s, stderr:%s" % (out, err))
+
+        exit_code, out, err = run_script('scripts/bugsummary-rebuild.py')
+        self.addDetail("stdout", text_content(out))
+        self.addDetail("stderr", text_content(err))
+        self.assertEqual(0, exit_code)
+
         transaction.commit()
         self.assertEqual(1, get_bugsummary_rows(product).count())
         self.assertEqual(0, get_bugsummaryjournal_rows(product).count())
