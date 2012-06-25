@@ -283,11 +283,9 @@ class BranchLookup:
         elif path.startswith(BRANCH_ALIAS_PREFIX + '/'):
             return self.getBranchByAlias(path) + (False,)
         else:
-            branch, second = self.getContainingBranch(path)
-            if second is not None:
-                trailing = escape(second)
-            else:
-                trailing = None
+            branch, trailing = self.getContainingBranch(path)
+            if trailing is not None:
+                trailing = escape(trailing)
             return branch, trailing, False
 
     def _getBranchByIdAlias(self, stripped_path):
