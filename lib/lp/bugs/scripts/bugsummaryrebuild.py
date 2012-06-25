@@ -185,7 +185,6 @@ def apply_bugsummary_changes(target, added, updated, removed):
             RawBugSummary,
             Or(*[And(*expr) for expr in exprs]),
             *get_bugsummary_constraint(target)).remove()
-        IStore(RawBugSummary).flush()
 
     if added:
         create(
