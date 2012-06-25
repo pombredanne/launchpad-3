@@ -173,18 +173,24 @@ def apply_bugsummary_changes(target, added, updated, removed):
         RawBugSummary.importance, RawBugSummary.has_patch,
         RawBugSummary.tag, RawBugSummary.viewed_by_id)
 
-    if added:
-        create(
-            target_cols + key_cols + (RawBugSummary.count,),
-            [target_key + key + (count,) for key, count in added.iteritems()])
+    # Postgres doesn't do bulk updates, so do a delete+add.
+    for key, count in updated.iteritems():
+        removed.append(key)
+        added[key] = count
 
     if removed:
         exprs = [
             map(lambda (k, v): k == v, zip(key_cols, key)) for key in removed]
         IStore(RawBugSummary).find(
             RawBugSummary,
-            Or(*[And(*exprs)]),
+            Or(*[And(*expr) for expr in exprs]),
             *get_bugsummary_constraint(target)).remove()
+        IStore(RawBugSummary).flush()
+
+    if added:
+        create(
+            target_cols + key_cols + (RawBugSummary.count,),
+            [target_key + key + (count,) for key, count in added.iteritems()])
 
 
 def rebuild_bugsummary_for_target(target, log):
