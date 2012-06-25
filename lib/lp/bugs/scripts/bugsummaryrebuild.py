@@ -55,6 +55,12 @@ class RawBugSummary(BugSummary):
     fixed_upstream = Bool()
 
 
+class BugSummaryJournal(BugSummary):
+    """Just the necessary columns of BugSummaryJournal."""
+    # It's not really BugSummary, but the schema is the same.
+    __storm_table__ = 'bugsummaryjournal'
+
+
 def get_bugsummary_targets():
     """Get the current set of targets represented in BugSummary."""
     return set(IStore(RawBugSummary).find(
@@ -107,11 +113,11 @@ def _get_bugsummary_constraint_bits(target):
         ('%s_id' % k, v.id if v else None) for (k, v) in raw_key.items())
 
 
-def get_bugsummary_constraint(target):
+def get_bugsummary_constraint(target, cls=RawBugSummary):
     """Convert an `IBugTarget` to a list of constraints on RawBugSummary."""
     # Map to ID columns to work around Storm bug #682989.
     return [
-        getattr(RawBugSummary, k) == v
+        getattr(cls, k) == v
         for (k, v) in _get_bugsummary_constraint_bits(target).iteritems()]
 
 
@@ -141,6 +147,13 @@ def get_bugsummary_rows(target):
          RawBugSummary.fixed_upstream, RawBugSummary.tag,
          RawBugSummary.viewed_by_id, RawBugSummary.count),
         *get_bugsummary_constraint(target))
+
+
+def get_bugsummaryjournal_rows(target):
+    """Find the `BugSummaryJournal` rows for the given `IBugTarget`."""
+    return IStore(BugSummaryJournal).find(
+        BugSummaryJournal,
+        *get_bugsummary_constraint(target, cls=BugSummaryJournal))
 
 
 def calculate_bugsummary_changes(old, new):
@@ -219,6 +232,10 @@ def rebuild_bugsummary_for_target(target, log):
     if removed:
         log.debug('Removed %r' % removed)
     apply_bugsummary_changes(target, added, updated, removed)
+    # We've just made bugsummary match reality, ignoring any
+    # bugsummaryjournal rows. So any journal rows are at best redundant,
+    # or at worst incorrect. Kill them.
+    get_bugsummaryjournal_rows(target).remove()
 
 
 def calculate_bugsummary_rows(target):

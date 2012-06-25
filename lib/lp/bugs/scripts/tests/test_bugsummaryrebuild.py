@@ -16,6 +16,7 @@ from lp.bugs.scripts.bugsummaryrebuild import (
     calculate_bugsummary_rows,
     format_target,
     get_bugsummary_rows,
+    get_bugsummaryjournal_rows,
     get_bugsummary_targets,
     get_bugtask_targets,
     RawBugSummary,
@@ -127,10 +128,12 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.factory.makeBug(product=product)
         self.assertEqual(0, get_bugsummary_rows(product).count())
+        self.assertEqual(1, get_bugsummaryjournal_rows(product).count())
         log = BufferLogger()
         with dbuser('testadmin'):
             rebuild_bugsummary_for_target(product, log)
         self.assertEqual(1, get_bugsummary_rows(product).count())
+        self.assertEqual(0, get_bugsummaryjournal_rows(product).count())
 
 
 class TestGetBugSummaryRows(TestCaseWithFactory):
