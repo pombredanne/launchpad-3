@@ -9,6 +9,8 @@ __metaclass__ = type
 __all__ = []
 
 
+import re
+
 from bzrlib.urlutils import escape
 from lazr.enum import DBItem
 from lazr.uri import (
@@ -440,14 +442,7 @@ class BranchLookup:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
             # Ignore anything following /.bzr
-            segments = path.split('/')
-            try:
-                index = segments.index('.bzr')
-            except:
-                pass
-            else:
-                segments = segments[:index]
-            prefix = '/'.join(segments)
+            prefix = re.match('^(.*?)(/?.bzr(/.*)?)?$', path).group(1)
             object_with_branch_link = getUtility(
                 ILinkedBranchTraverser).traverse(prefix)
             branch, bzr_path = self._getLinkedBranchAndPath(
