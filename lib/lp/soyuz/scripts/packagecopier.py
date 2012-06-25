@@ -22,6 +22,7 @@ import tempfile
 
 import apt_pkg
 from lazr.delegates import delegates
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -790,6 +791,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
                 if logger is not None:
                     logger.info(
                         "Re-uploaded %s to librarian" % new_file.filename)
+        # Commit so that the caller can see the newly-public files.
+        transaction.commit()
 
     return copies
 
