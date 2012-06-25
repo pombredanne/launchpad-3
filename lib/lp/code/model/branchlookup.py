@@ -346,13 +346,10 @@ class BranchLookup:
         return self._getBranchInNamespace(namespace_data, branch_name)
 
     def candidateUniqueNames(self, path):
-        unique_names = {}
         segments = path.split('/')
-        for length in [3, 5]:
-            if len(segments) >= length:
-                name = '/'.join(segments[:length])
-                unique_names[name] = path[len(name):]
-        return unique_names
+        names = ('/'.join(segments[:length]) for length in [3, 5]
+                 if len(segments) >= length)
+        return dict((name, path[len(name):]) for name in names)
 
     def getIdAndTrailingPath(self, path, from_slave=False):
         """See `IBranchLookup`. """
