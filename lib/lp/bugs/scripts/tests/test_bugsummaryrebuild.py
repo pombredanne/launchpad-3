@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from testtools.matchers import MatchesRegex
 from zope.component import getUtility
 
 from lp.bugs.interfaces.bugtask import (
@@ -134,6 +135,10 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
             rebuild_bugsummary_for_target(product, log)
         self.assertEqual(1, get_bugsummary_rows(product).count())
         self.assertEqual(0, get_bugsummaryjournal_rows(product).count())
+        self.assertThat(
+            log.getLogBufferAndClear(),
+            MatchesRegex(
+                'DEBUG Rebuilding %s\nDEBUG Added {.*: 1L}' % product.name))
 
 
 class TestGetBugSummaryRows(TestCaseWithFactory):
