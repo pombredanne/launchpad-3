@@ -559,6 +559,35 @@ class TestTeamAddView(TestCaseWithFactory):
             browser.getControl(name="field.visibility").value)
 
 
+class TestSimpleTeamAddView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+simplenewteam'
+
+    def test_create_team(self):
+        personset = getUtility(IPersonSet)
+        team_name = self.factory.getUniqueString()
+        form = {
+            'field.name': team_name,
+            'field.displayname': 'New Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.defaultrenewalperiod': '5',
+            'field.defaultmembershipperiod': '10',
+            'field.actions.create': 'Create',
+            }
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            create_initialized_view(
+                personset, name=self.view_name, principal=person,
+                form=form)
+            team = personset.getByName(team_name)
+            self.assertIsNotNone(team)
+            self.assertEqual(
+                TeamSubscriptionPolicy.RESTRICTED, team.subscriptionpolicy)
+            self.assertEqual(5, team.defaultrenewalperiod)
+            self.assertEqual(10, team.defaultmembershipperiod)
+
+
 class TestTeamMenu(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

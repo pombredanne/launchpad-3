@@ -1059,6 +1059,37 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         return None
 
 
+class SimpleTeamAddView(LaunchpadFormView):
+    """View for adding a new team using a Javascript form.
+
+    This view is used to render a form used to create a new team. The form is
+    displayed in a popup overlay and submission is done using an XHR call.
+    """
+
+    for_input = True
+    schema = ITeam
+    next_url = None
+
+    field_names = [
+        "name", "displayname", "subscriptionpolicy",
+        "defaultmembershipperiod", "defaultrenewalperiod",
+        ]
+
+    @action('Create Team', name='create',
+        failure=LaunchpadFormView.ajax_failure_handler)
+    def create_action(self, action, data):
+        name = data.get('name')
+        displayname = data.get('displayname')
+        defaultmembershipperiod = data.get('defaultmembershipperiod')
+        defaultrenewalperiod = data.get('defaultrenewalperiod')
+        subscriptionpolicy = data.get('subscriptionpolicy')
+        teamowner = self.user
+        getUtility(IPersonSet).newTeam(
+            teamowner, name, displayname, None,
+            subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
+        return None
+
+
 class ProposedTeamMembersEditView(LaunchpadFormView):
     schema = Interface
     label = 'Proposed team members'
