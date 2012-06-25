@@ -22,7 +22,6 @@ import tempfile
 
 import apt_pkg
 from lazr.delegates import delegates
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -678,13 +677,28 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
                 close_bugs_since_version=old_version, creator=creator,
-                sponsor=sponsor, packageupload=packageupload, logger=logger)
+                sponsor=sponsor, packageupload=packageupload)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
                     destination_series, pocket, action='accepted',
                     announce_from_person=announce_from_person,
                     previous_version=old_version)
+            if not archive.private and has_restricted_files(source):
+                # Fix copies by overriding them according to the current
+                # ancestry and re-upload files with privacy mismatch.  We
+                # must do this *after* calling notify (which only actually
+                # sends mail on commit), because otherwise the new changelog
+                # LFA won't be visible without a commit, which may not be
+                # safe here.
+                for pub_record in sub_copies:
+                    pub_record.overrideFromAncestry()
+                    for new_file in update_files_privacy(pub_record):
+                        if logger is not None:
+                            logger.info(
+                                "Re-uploaded %s to librarian" %
+                                new_file.filename)
+
 
         overrides_index += 1
         copies.extend(sub_copies)
@@ -695,7 +709,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
                     close_bugs_since_version=None, creator=None,
-                    sponsor=None, packageupload=None, logger=None):
+                    sponsor=None, packageupload=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -725,7 +739,6 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
-    :param logger: An optional logger.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -781,18 +794,6 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     # after copying the binaries.
     # XXX cjwatson 2012-06-22 bug=869308: Fails to honour P-a-s.
     source_copy.createMissingBuilds()
-
-    if not archive.private and has_restricted_files(source):
-        # Fix copies by overriding them according to the current ancestry
-        # and re-upload files with privacy mismatch.
-        for pub_record in copies:
-            pub_record.overrideFromAncestry()
-            for new_file in update_files_privacy(pub_record):
-                if logger is not None:
-                    logger.info(
-                        "Re-uploaded %s to librarian" % new_file.filename)
-        # Commit so that the caller can see the newly-public files.
-        transaction.commit()
 
     return copies
 
