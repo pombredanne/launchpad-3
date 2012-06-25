@@ -1118,8 +1118,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             component='multiverse', section='web',
             archive=source_archive)
-        for source_file in spph.sourcepackagerelease.files:
+        spr = spph.sourcepackagerelease
+        for source_file in spr.files:
             self.assertTrue(source_file.libraryfile.restricted)
+        spr.changelog = self.factory.makeLibraryFileAlias(restricted=True)
 
         # Now, run the copy job.
         source = getUtility(IPlainPackageCopyJobSource)
