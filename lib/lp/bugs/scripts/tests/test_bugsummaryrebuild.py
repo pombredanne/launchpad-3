@@ -10,7 +10,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
-from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.scripts.bugsummaryrebuild import (
     apply_bugsummary_changes,
     calculate_bugsummary_changes,
@@ -19,6 +18,7 @@ from lp.bugs.scripts.bugsummaryrebuild import (
     get_bugsummary_rows,
     get_bugsummary_targets,
     get_bugtask_targets,
+    RawBugSummary,
     )
 from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore

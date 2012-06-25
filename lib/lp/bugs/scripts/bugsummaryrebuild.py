@@ -20,7 +20,7 @@ from storm.properties import Bool
 
 from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bugsummary import RawBugSummary
+from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import (
     bug_target_to_key,
     bug_target_from_key,
@@ -42,6 +42,17 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import create
 from lp.services.database.lpstorm import IStore
 from lp.services.looptuner import TunableLoop
+
+
+class RawBugSummary(BugSummary):
+    """Like BugSummary, except based on the raw DB table.
+
+    BugSummary is actually based on the combinedbugsummary view, and it omits
+    resolved_upstream, a column that's being removed.
+    """
+    __storm_table__ = 'bugsummary'
+
+    resolved_upstream = Bool()
 
 
 def get_bugsummary_targets():
