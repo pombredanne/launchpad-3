@@ -106,7 +106,7 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         HIGH = BugTaskImportance.HIGH
 
         # Add a couple of rows to start.
-        with dbuser('testadmin'):
+        with dbuser('bugsummaryrebuild'):
             apply_bugsummary_changes(
                 product,
                 {(NEW, None, HIGH, False, False, None, None): 2,
@@ -118,7 +118,7 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
             get_bugsummary_rows(product))
 
         # Delete one, mutate the other.
-        with dbuser('testadmin'):
+        with dbuser('bugsummaryrebuild'):
             apply_bugsummary_changes(
                 product,
                 {}, {(NEW, None, HIGH, False, False, None, None): 3},
@@ -136,7 +136,7 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         self.assertEqual(0, get_bugsummary_rows(product).count())
         self.assertEqual(1, get_bugsummaryjournal_rows(product).count())
         log = BufferLogger()
-        with dbuser('testadmin'):
+        with dbuser('bugsummaryrebuild'):
             rebuild_bugsummary_for_target(product, log)
         self.assertEqual(1, get_bugsummary_rows(product).count())
         self.assertEqual(0, get_bugsummaryjournal_rows(product).count())

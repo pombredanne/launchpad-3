@@ -25,5 +25,6 @@ class BugSummaryRebuild(LaunchpadScript):
         updater.run()
 
 if __name__ == '__main__':
-    script = BugSummaryRebuild('bugsummary-rebuild', dbuser='testadmin')
+    script = BugSummaryRebuild(
+        'bugsummary-rebuild', dbuser='bugsummaryrebuild')
     script.lock_and_run()
