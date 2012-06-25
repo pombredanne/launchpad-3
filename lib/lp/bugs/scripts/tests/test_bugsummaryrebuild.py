@@ -19,9 +19,11 @@ from lp.bugs.scripts.bugsummaryrebuild import (
     get_bugsummary_targets,
     get_bugtask_targets,
     RawBugSummary,
+    rebuild_bugsummary_for_target,
     )
 from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore
+from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
@@ -117,6 +119,18 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         self.assertContentEqual(
             [(NEW, None, HIGH, False, False, None, None, 3)],
             get_bugsummary_rows(product))
+
+    def test_rebuild_bugsummary_for_target(self):
+        # rebuild_bugsummary_for_target rebuilds BugSummary for a
+        # specific target from BugTaskFlat. Since it ignores the
+        # journal, it also removes any relevant journal entries.
+        product = self.factory.makeProduct()
+        self.factory.makeBug(product=product)
+        self.assertEqual(0, get_bugsummary_rows(product).count())
+        log = BufferLogger()
+        with dbuser('testadmin'):
+            rebuild_bugsummary_for_target(product, log)
+        self.assertEqual(1, get_bugsummary_rows(product).count())
 
 
 class TestGetBugSummaryRows(TestCaseWithFactory):
