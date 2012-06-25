@@ -328,7 +328,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         if suffix != '':
             # E.g. 'project/trunk/filename.txt' the suffix is 'filename.txt'
             # we want lp_path to be 'project/trunk'.
-            lp_path = lp_path[:-(len(suffix)+1)]
+            lp_path = lp_path[:-(len(suffix) + 1)]
         return self._getUrlsForBranch(
             branch, lp_path, suffix, supported_schemes)
 
