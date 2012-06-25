@@ -36,6 +36,7 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import create
 from lp.services.database.lpstorm import IStore
 from lp.services.looptuner import TunableLoop
 
@@ -85,13 +86,19 @@ def format_target(target):
     return id
 
 
-def get_bugsummary_constraint(target):
-    """Convert an `IBugTarget` to a list of constraints on RawBugSummary."""
+def _get_bugsummary_constraint_bits(target):
     raw_key = bug_target_to_key(target)
     # Map to ID columns to work around Storm bug #682989.
+    return dict(
+        ('%s_id' % k, v.id if v else None) for (k, v) in raw_key.items())
+
+
+def get_bugsummary_constraint(target):
+    """Convert an `IBugTarget` to a list of constraints on RawBugSummary."""
+    # Map to ID columns to work around Storm bug #682989.
     return [
-        getattr(RawBugSummary, '%s_id' % k) == (v.id if v else None)
-        for (k, v) in raw_key.items()]
+        getattr(RawBugSummary, k) == v
+        for (k, v) in _get_bugsummary_constraint_bits(target).iteritems()]
 
 
 def get_bugtaskflat_constraint(target):
@@ -146,6 +153,22 @@ def calculate_bugsummary_changes(old, new):
         else:
             updated[key] = new_val
     return added, updated, removed
+
+
+def apply_bugsummary_changes(target, added, updated, removed):
+    bits = _get_bugsummary_constraint_bits(target)
+    target_key = tuple(map(
+        bits.__getitem__,
+        ('product_id', 'productseries_id', 'distribution_id',
+         'distroseries_id', 'sourcepackagename_id')))
+    create(
+        (RawBugSummary.product_id, RawBugSummary.productseries_id,
+         RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
+         RawBugSummary.sourcepackagename_id, RawBugSummary.status,
+         RawBugSummary.milestone_id, RawBugSummary.importance,
+         RawBugSummary.has_patch, RawBugSummary.tag,
+         RawBugSummary.viewed_by_id, RawBugSummary.count),
+        [target_key + key + (count,) for key, count in added.iteritems()])
 
 
 def rebuild_bugsummary_for_target(target, log):

@@ -6,11 +6,13 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
     BugTaskStatus,
     IBugTaskSet,
     )
 from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.scripts.bugsummaryrebuild import (
+    apply_bugsummary_changes,
     calculate_bugsummary_changes,
     calculate_bugsummary_rows,
     format_target,
@@ -21,6 +23,7 @@ from lp.bugs.scripts.bugsummaryrebuild import (
 from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -81,6 +84,39 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         changes = calculate_bugsummary_changes(
             dict(a=2, b=10, c=3), dict(a=2, c=5, d=4))
         self.assertEqual((dict(d=4), dict(c=5), ['b']), changes)
+
+    def test_apply_bugsummary_changes(self):
+        # apply_bugsummary_changes takes a target and a tuple of changes
+        # from calculate_bugsummary_changes and flushes the changes to
+        # the DB.
+        product = self.factory.makeProduct()
+        self.assertContentEqual([], get_bugsummary_rows(product))
+        NEW = BugTaskStatus.NEW
+        TRIAGED = BugTaskStatus.TRIAGED
+        LOW = BugTaskImportance.LOW
+        HIGH = BugTaskImportance.HIGH
+
+        # Add a couple of rows to start.
+        with dbuser('testadmin'):
+            apply_bugsummary_changes(
+                product,
+                {(NEW, None, HIGH, False, None, None): 2,
+                (TRIAGED, None, LOW, False, None, None): 4},
+                {}, [])
+        self.assertContentEqual(
+            [(NEW, None, HIGH, False, None, None, 2),
+             (TRIAGED, None, LOW, False, None, None, 4)],
+            get_bugsummary_rows(product))
+
+        # Delete one, mutate the other.
+        with dbuser('testadmin'):
+            apply_bugsummary_changes(
+                product,
+                {}, {(NEW, None, HIGH, False, None, None): 3},
+                [(TRIAGED, None, LOW, False, None, None)])
+        self.assertContentEqual(
+            [(NEW, None, HIGH, False, None, None, 3)],
+            get_bugsummary_rows(product))
 
 
 class TestGetBugSummaryRows(TestCaseWithFactory):
