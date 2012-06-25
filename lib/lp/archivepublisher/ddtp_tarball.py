@@ -44,13 +44,16 @@ class DdtpTarballUpload(CustomUpload):
     """
     custom_type = "ddtp-tarball"
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
-        tarfile_base = os.path.basename(tarfile_path)
-        name, component, self.version = tarfile_base.split('_')
-        self.arch = None
+    @classmethod
+    def splitPath(cls, tarfile_path):
+        name, component, version = os.path.basename(tarfile_path).split("_")
+        return name, component, version
 
-        self.targetdir = os.path.join(archive_root, 'dists',
-                                      distroseries, component)
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+        _, component, self.version = self.splitPath(tarfile_path)
+        self.arch = None
+        self.targetdir = os.path.join(
+            archive_root, 'dists', distroseries, component)
 
     def checkForConflicts(self):
         # We just overwrite older files, so no conflicts are possible.

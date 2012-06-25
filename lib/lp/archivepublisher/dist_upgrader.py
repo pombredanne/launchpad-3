@@ -57,19 +57,20 @@ class DistUpgraderUpload(CustomUpload):
     """
     custom_type = "dist-upgrader"
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
-        tarfile_base = os.path.basename(tarfile_path)
-        name, self.version, self.arch = tarfile_base.split("_")
-        self.arch = self.arch.split(".")[0]
+    @classmethod
+    def splitPath(cls, tarfile_path):
+        name, version, arch = os.path.basename(tarfile_path).split("_")
+        return name, version, arch.split(".")[0]
 
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+        _, self.version, self.arch = self.splitPath(tarfile_path)
         self.targetdir = os.path.join(archive_root, 'dists', distroseries,
                                       'main', 'dist-upgrader-%s' % self.arch)
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
-            _, _, arch = os.path.basename(tarfile_path).split("_")
-            return arch.split(".")[0]
+            return cls.splitPath(tarfile_path)[2]
         except ValueError:
             return None
 

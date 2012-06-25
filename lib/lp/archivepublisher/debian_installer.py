@@ -40,11 +40,13 @@ class DebianInstallerUpload(CustomUpload):
     """
     custom_type = "installer"
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
-        tarfile_base = os.path.basename(tarfile_path)
-        _, self.version, self.arch = tarfile_base.split("_")
-        self.arch = self.arch.split(".")[0]
+    @classmethod
+    def splitPath(cls, tarfile_path):
+        base, version, arch = os.path.basename(tarfile_path).split("_")
+        return base, version, arch.split(".")[0]
 
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+        _, self.version, self.arch = self.splitPath(tarfile_path)
         self.targetdir = os.path.join(
             archive_root, 'dists', distroseries, 'main',
             'installer-%s' % self.arch)
@@ -52,8 +54,7 @@ class DebianInstallerUpload(CustomUpload):
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
-            _, _, arch = os.path.basename(tarfile_path).split("_")
-            return arch.split(".")[0]
+            return cls.splitPath(tarfile_path)[2]
         except ValueError:
             return None
 

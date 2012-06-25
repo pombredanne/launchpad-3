@@ -65,6 +65,11 @@ class UefiUpload(CustomUpload):
     """
     custom_type = "UEFI"
 
+    @classmethod
+    def splitPath(cls, tarfile_path):
+        loader_type, version, arch = os.path.basename(tarfile_path).split("_")
+        return loader_type, version, arch.split(".")[0]
+
     def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         self.uefi_key_location = config.archivepublisher.uefi_key_location
         self.uefi_cert_location = config.archivepublisher.uefi_cert_location
@@ -80,19 +85,16 @@ class UefiUpload(CustomUpload):
                 "configured certificate %s not readable" %
                 self.uefi_cert_location)
 
-        tarfile_base = os.path.basename(tarfile_path)
-        self.loader_type, self.version, self.arch = tarfile_base.split("_")
-        self.arch = self.arch.split(".")[0]
-
+        loader_type, self.version, self.arch = self.splitPath(tarfile_path)
         self.targetdir = os.path.join(
             archive_root, "dists", distroseries, "main", "uefi",
-            "%s-%s" % (self.loader_type, self.arch))
+            "%s-%s" % (loader_type, self.arch))
 
-    def getSeriesKey(self, tarfile_path):
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
         try:
-            loader_type, _, arch = os.path.basename(tarfile_path).split("_")
-            arch = arch.split(".")[0]
-            return (loader_type, arch)
+            loader_type, _, arch = cls.splitPath(tarfile_path)
+            return loader_type, arch
         except ValueError:
             return None
 
