@@ -178,7 +178,7 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         self.assertEqual((branch.id, '/foo'), result)
 
 
-class TestGetByLPPath(TestCaseWithFactory):
+class TestGetByPath(TestCaseWithFactory):
     """Test `IBranchLookup.getByLPPath`."""
 
     layer = DatabaseFunctionalLayer
@@ -292,6 +292,245 @@ class TestGetByLPPath(TestCaseWithFactory):
         branch_name = '~%s/%s/%s' % (
             person.name, self.factory.getUniqueString(), 'branch-name')
         self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
+
+
+class TestGetByUrl(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeProductBranch(self):
+        """Create a branch with aa/b/c as its unique name."""
+        # XXX: JonathanLange 2009-01-13 spec=package-branches: This test is
+        # bad because it assumes that the interesting branches for testing are
+        # product branches.
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        return self.factory.makeProductBranch(
+            owner=owner, product=product, name='c')
+
+    def test_getByUrl_with_none(self):
+        """getByUrl returns None if given None."""
+        self.assertIs(None, getUtility(IBranchLookup).getByUrl(None))
+
+    def test_getByUrl_with_trailing_slash(self):
+        # Trailing slashes are stripped from the url prior to searching.
+        branch = self.makeProductBranch()
+        lookup = getUtility(IBranchLookup)
+        branch2 = lookup.getByUrl('http://bazaar.launchpad.dev/~aa/b/c/')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_http(self):
+        """getByUrl recognizes LP branches for http URLs."""
+        branch = self.makeProductBranch()
+        branch_set = getUtility(IBranchLookup)
+        branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ssh(self):
+        """getByUrl recognizes LP branches for bzr+ssh URLs."""
+        branch = self.makeProductBranch()
+        branch_set = getUtility(IBranchLookup)
+        branch2 = branch_set.getByUrl(
+            'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_sftp(self):
+        """getByUrl recognizes LP branches for sftp URLs."""
+        branch = self.makeProductBranch()
+        branch_set = getUtility(IBranchLookup)
+        branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ftp(self):
+        """getByUrl does not recognize LP branches for ftp URLs.
+
+        This is because Launchpad doesn't currently support ftp.
+        """
+        self.makeProductBranch()
+        branch_set = getUtility(IBranchLookup)
+        branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertIs(None, branch2)
+
+    def test_getByURL_with_lp_prefix(self):
+        """lp: URLs for the configured prefix are supported."""
+        branch_set = getUtility(IBranchLookup)
+        url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
+        self.assertIs(None, branch_set.getByUrl(url))
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        branch2 = branch_set.getByUrl(url)
+        self.assertIs(None, branch2)
+        branch = self.factory.makeProductBranch(
+            owner=owner, product=product, name='c')
+        branch2 = branch_set.getByUrl(url)
+        self.assertEqual(branch, branch2)
+
+    def test_getByURL_for_production(self):
+        """test_getByURL works with production values."""
+        branch_set = getUtility(IBranchLookup)
+        branch = self.makeProductBranch()
+        self.pushConfig('codehosting', lp_url_hosts='production,,')
+        branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrls(self):
+        # getByUrls returns a dictionary mapping branches to URLs.
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        url3 = 'http://example.com/%s' % self.factory.getUniqueString()
+        branch_set = getUtility(IBranchLookup)
+        branches = branch_set.getByUrls(
+            [branch1.bzr_identity, branch2.bzr_identity, url3])
+        self.assertEqual(
+            {branch1.bzr_identity: branch1,
+             branch2.bzr_identity: branch2,
+             url3: None}, branches)
+
+    def test_uriToHostingPath(self):
+        """Ensure uriToHostingPath works.
+
+        Only codehosting-based using http, sftp or bzr+ssh URLs will
+        be handled. If any other URL gets passed (including lp), the return
+        value will be None.
+        """
+        branch_set = getUtility(IBranchLookup)
+        uri = URI(config.codehosting.supermirror_root)
+        uri.path = '/~foo/bar/baz'
+        # Test valid schemes
+        uri.scheme = 'http'
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
+        uri.scheme = 'sftp'
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
+        uri.scheme = 'bzr+ssh'
+        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
+        # Test invalid scheme
+        uri.scheme = 'ftp'
+        self.assertIs(None, branch_set.uriToHostingPath(uri))
+        # Test valid scheme, invalid domain
+        uri.scheme = 'sftp'
+        uri.host = 'example.com'
+        self.assertIs(None, branch_set.uriToHostingPath(uri))
+
+
+class TestLinkedBranchTraverser(TestCaseWithFactory):
+    """Tests for the linked branch traverser."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.traverser = getUtility(ILinkedBranchTraverser)
+
+    def assertTraverses(self, path, result):
+        """Assert that 'path' resolves to 'result'."""
+        self.assertEqual(result, self.traverser.traverse(path))
+
+    def test_error_fallthrough_product_series(self):
+        # For the short name of a series branch, `traverse` raises
+        # `NoSuchProduct` if the first component refers to a non-existent
+        # product, and `NoSuchProductSeries` if the second component refers to
+        # a non-existent series.
+        self.assertRaises(
+            NoSuchProduct, self.traverser.traverse, 'bb/dd')
+        self.factory.makeProduct(name='bb')
+        self.assertRaises(
+            NoSuchProductSeries, self.traverser.traverse, 'bb/dd')
+
+    def test_product_series(self):
+        # `traverse` resolves the path to a product series to the product
+        # series itself.
+        series = self.factory.makeProductSeries()
+        short_name = '%s/%s' % (series.product.name, series.name)
+        self.assertTraverses(short_name, series)
+
+    def test_product_that_doesnt_exist(self):
+        # `traverse` raises `NoSuchProduct` when resolving an lp path of
+        # 'product' if the product doesn't exist.
+        self.assertRaises(NoSuchProduct, self.traverser.traverse, 'bb')
+
+    def test_invalid_product(self):
+        # `traverse` raises `InvalidProductIdentifier` when resolving an lp
+        # path for a completely invalid product development focus branch.
+        self.assertRaises(
+            InvalidProductName, self.traverser.traverse, 'b')
+
+    def test_product(self):
+        # `traverse` resolves the name of a product to the product itself.
+        product = self.factory.makeProduct()
+        self.assertTraverses(product.name, product)
+
+    def test_source_package(self):
+        # `traverse` resolves 'distro/series/package' to the release pocket of
+        # that package in that series.
+        package = self.factory.makeSourcePackage()
+        ssp = package.getSuiteSourcePackage(PackagePublishingPocket.RELEASE)
+        self.assertTraverses(package.path, ssp)
+
+    def test_distribution_source_package(self):
+        # `traverse` resolves 'distro/package' to the distribution source
+        # package.
+        dsp = self.factory.makeDistributionSourcePackage()
+        path = '%s/%s' % (dsp.distribution.name, dsp.sourcepackagename.name)
+        self.assertTraverses(path, dsp)
+
+    def test_traverse_source_package_pocket(self):
+        # `traverse` resolves 'distro/series-pocket/package' to the official
+        # branch for 'pocket' on that package.
+        package = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.BACKPORTS
+        ssp = package.getSuiteSourcePackage(pocket)
+        package = self.factory.makeSourcePackage()
+        self.assertTraverses(ssp.path, ssp)
+
+    def test_no_such_distribution(self):
+        # `traverse` raises `NoSuchProduct` error if the distribution doesn't
+        # exist. That's because it can't tell the difference between the name
+        # of a product that doesn't exist and the name of a distribution that
+        # doesn't exist.
+        self.assertRaises(
+            NoSuchProduct, self.traverser.traverse,
+            'distro/series/package')
+
+    def test_no_such_distro_series(self):
+        # `traverse` raises `NoSuchDistroSeries` if the distro series doesn't
+        # exist.
+        self.factory.makeDistribution(name='distro')
+        self.assertRaises(
+            NoSuchDistroSeries, self.traverser.traverse,
+            'distro/series/package')
+
+    def test_no_such_sourcepackagename(self):
+        # `traverse` raises `NoSuchSourcePackageName` if the package in
+        # distro/series/package doesn't exist.
+        distroseries = self.factory.makeDistroSeries()
+        path = '%s/%s/doesntexist' % (
+            distroseries.distribution.name, distroseries.name)
+        self.assertRaises(
+            NoSuchSourcePackageName, self.traverser.traverse, path)
+
+    def test_no_such_distribution_sourcepackage(self):
+        # `traverse` raises `NoSuchSourcePackageName` if the package in
+        # distro/package doesn't exist.
+        distribution = self.factory.makeDistribution()
+        path = '%s/doesntexist' % distribution.name
+        self.assertRaises(
+            NoSuchSourcePackageName, self.traverser.traverse, path)
+
+
+class TestGetByLPPath(TestCaseWithFactory):
+    """Ensure URLs are correctly expanded."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch_lookup = getUtility(IBranchLookup)
 
     def test_error_fallthrough_product_branch(self):
         # getByLPPath raises `NoSuchPerson` if the person component is not
@@ -531,232 +770,3 @@ class TestGetByLPPath(TestCaseWithFactory):
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
         self.assertEqual((branch, u'other/bits'), result)
-
-
-class TestGetByUrl(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def makeProductBranch(self):
-        """Create a branch with aa/b/c as its unique name."""
-        # XXX: JonathanLange 2009-01-13 spec=package-branches: This test is
-        # bad because it assumes that the interesting branches for testing are
-        # product branches.
-        owner = self.factory.makePerson(name='aa')
-        product = self.factory.makeProduct('b')
-        return self.factory.makeProductBranch(
-            owner=owner, product=product, name='c')
-
-    def test_getByUrl_with_none(self):
-        """getByUrl returns None if given None."""
-        self.assertIs(None, getUtility(IBranchLookup).getByUrl(None))
-
-    def test_getByUrl_with_trailing_slash(self):
-        # Trailing slashes are stripped from the url prior to searching.
-        branch = self.makeProductBranch()
-        lookup = getUtility(IBranchLookup)
-        branch2 = lookup.getByUrl('http://bazaar.launchpad.dev/~aa/b/c/')
-        self.assertEqual(branch, branch2)
-
-    def test_getByUrl_with_http(self):
-        """getByUrl recognizes LP branches for http URLs."""
-        branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchLookup)
-        branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
-        self.assertEqual(branch, branch2)
-
-    def test_getByUrl_with_ssh(self):
-        """getByUrl recognizes LP branches for bzr+ssh URLs."""
-        branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchLookup)
-        branch2 = branch_set.getByUrl(
-            'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
-        self.assertEqual(branch, branch2)
-
-    def test_getByUrl_with_sftp(self):
-        """getByUrl recognizes LP branches for sftp URLs."""
-        branch = self.makeProductBranch()
-        branch_set = getUtility(IBranchLookup)
-        branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
-        self.assertEqual(branch, branch2)
-
-    def test_getByUrl_with_ftp(self):
-        """getByUrl does not recognize LP branches for ftp URLs.
-
-        This is because Launchpad doesn't currently support ftp.
-        """
-        self.makeProductBranch()
-        branch_set = getUtility(IBranchLookup)
-        branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
-        self.assertIs(None, branch2)
-
-    def test_getByURL_with_lp_prefix(self):
-        """lp: URLs for the configured prefix are supported."""
-        branch_set = getUtility(IBranchLookup)
-        url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
-        self.assertIs(None, branch_set.getByUrl(url))
-        owner = self.factory.makePerson(name='aa')
-        product = self.factory.makeProduct('b')
-        branch2 = branch_set.getByUrl(url)
-        self.assertIs(None, branch2)
-        branch = self.factory.makeProductBranch(
-            owner=owner, product=product, name='c')
-        branch2 = branch_set.getByUrl(url)
-        self.assertEqual(branch, branch2)
-
-    def test_getByURL_for_production(self):
-        """test_getByURL works with production values."""
-        branch_set = getUtility(IBranchLookup)
-        branch = self.makeProductBranch()
-        self.pushConfig('codehosting', lp_url_hosts='production,,')
-        branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
-        self.assertIs(None, branch2)
-        branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
-        self.assertIs(None, branch2)
-        branch2 = branch_set.getByUrl('lp:~aa/b/c')
-        self.assertEqual(branch, branch2)
-        branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
-        self.assertEqual(branch, branch2)
-
-    def test_getByUrls(self):
-        # getByUrls returns a dictionary mapping branches to URLs.
-        branch1 = self.factory.makeAnyBranch()
-        branch2 = self.factory.makeAnyBranch()
-        url3 = 'http://example.com/%s' % self.factory.getUniqueString()
-        branch_set = getUtility(IBranchLookup)
-        branches = branch_set.getByUrls(
-            [branch1.bzr_identity, branch2.bzr_identity, url3])
-        self.assertEqual(
-            {branch1.bzr_identity: branch1,
-             branch2.bzr_identity: branch2,
-             url3: None}, branches)
-
-    def test_uriToHostingPath(self):
-        """Ensure uriToHostingPath works.
-
-        Only codehosting-based using http, sftp or bzr+ssh URLs will
-        be handled. If any other URL gets passed (including lp), the return
-        value will be None.
-        """
-        branch_set = getUtility(IBranchLookup)
-        uri = URI(config.codehosting.supermirror_root)
-        uri.path = '/~foo/bar/baz'
-        # Test valid schemes
-        uri.scheme = 'http'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
-        uri.scheme = 'sftp'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
-        uri.scheme = 'bzr+ssh'
-        self.assertEqual('~foo/bar/baz', branch_set.uriToHostingPath(uri))
-        # Test invalid scheme
-        uri.scheme = 'ftp'
-        self.assertIs(None, branch_set.uriToHostingPath(uri))
-        # Test valid scheme, invalid domain
-        uri.scheme = 'sftp'
-        uri.host = 'example.com'
-        self.assertIs(None, branch_set.uriToHostingPath(uri))
-
-
-class TestLinkedBranchTraverser(TestCaseWithFactory):
-    """Tests for the linked branch traverser."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.traverser = getUtility(ILinkedBranchTraverser)
-
-    def assertTraverses(self, path, result):
-        """Assert that 'path' resolves to 'result'."""
-        self.assertEqual(result, self.traverser.traverse(path))
-
-    def test_error_fallthrough_product_series(self):
-        # For the short name of a series branch, `traverse` raises
-        # `NoSuchProduct` if the first component refers to a non-existent
-        # product, and `NoSuchProductSeries` if the second component refers to
-        # a non-existent series.
-        self.assertRaises(
-            NoSuchProduct, self.traverser.traverse, 'bb/dd')
-        self.factory.makeProduct(name='bb')
-        self.assertRaises(
-            NoSuchProductSeries, self.traverser.traverse, 'bb/dd')
-
-    def test_product_series(self):
-        # `traverse` resolves the path to a product series to the product
-        # series itself.
-        series = self.factory.makeProductSeries()
-        short_name = '%s/%s' % (series.product.name, series.name)
-        self.assertTraverses(short_name, series)
-
-    def test_product_that_doesnt_exist(self):
-        # `traverse` raises `NoSuchProduct` when resolving an lp path of
-        # 'product' if the product doesn't exist.
-        self.assertRaises(NoSuchProduct, self.traverser.traverse, 'bb')
-
-    def test_invalid_product(self):
-        # `traverse` raises `InvalidProductIdentifier` when resolving an lp
-        # path for a completely invalid product development focus branch.
-        self.assertRaises(
-            InvalidProductName, self.traverser.traverse, 'b')
-
-    def test_product(self):
-        # `traverse` resolves the name of a product to the product itself.
-        product = self.factory.makeProduct()
-        self.assertTraverses(product.name, product)
-
-    def test_source_package(self):
-        # `traverse` resolves 'distro/series/package' to the release pocket of
-        # that package in that series.
-        package = self.factory.makeSourcePackage()
-        ssp = package.getSuiteSourcePackage(PackagePublishingPocket.RELEASE)
-        self.assertTraverses(package.path, ssp)
-
-    def test_distribution_source_package(self):
-        # `traverse` resolves 'distro/package' to the distribution source
-        # package.
-        dsp = self.factory.makeDistributionSourcePackage()
-        path = '%s/%s' % (dsp.distribution.name, dsp.sourcepackagename.name)
-        self.assertTraverses(path, dsp)
-
-    def test_traverse_source_package_pocket(self):
-        # `traverse` resolves 'distro/series-pocket/package' to the official
-        # branch for 'pocket' on that package.
-        package = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.BACKPORTS
-        ssp = package.getSuiteSourcePackage(pocket)
-        package = self.factory.makeSourcePackage()
-        self.assertTraverses(ssp.path, ssp)
-
-    def test_no_such_distribution(self):
-        # `traverse` raises `NoSuchProduct` error if the distribution doesn't
-        # exist. That's because it can't tell the difference between the name
-        # of a product that doesn't exist and the name of a distribution that
-        # doesn't exist.
-        self.assertRaises(
-            NoSuchProduct, self.traverser.traverse,
-            'distro/series/package')
-
-    def test_no_such_distro_series(self):
-        # `traverse` raises `NoSuchDistroSeries` if the distro series doesn't
-        # exist.
-        self.factory.makeDistribution(name='distro')
-        self.assertRaises(
-            NoSuchDistroSeries, self.traverser.traverse,
-            'distro/series/package')
-
-    def test_no_such_sourcepackagename(self):
-        # `traverse` raises `NoSuchSourcePackageName` if the package in
-        # distro/series/package doesn't exist.
-        distroseries = self.factory.makeDistroSeries()
-        path = '%s/%s/doesntexist' % (
-            distroseries.distribution.name, distroseries.name)
-        self.assertRaises(
-            NoSuchSourcePackageName, self.traverser.traverse, path)
-
-    def test_no_such_distribution_sourcepackage(self):
-        # `traverse` raises `NoSuchSourcePackageName` if the package in
-        # distro/package doesn't exist.
-        distribution = self.factory.makeDistribution()
-        path = '%s/doesntexist' % distribution.name
-        self.assertRaises(
-            NoSuchSourcePackageName, self.traverser.traverse, path)
