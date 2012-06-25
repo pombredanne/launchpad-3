@@ -63,11 +63,11 @@ def get_bugtask_targets():
 
 def load_target(pid, psid, did, dsid, spnid):
     store = IStore(Product)
-    p = store.get(Product, pid)
-    ps = store.get(ProductSeries, psid)
-    d = store.get(Distribution, did)
-    ds = store.get(DistroSeries, dsid)
-    spn = store.get(SourcePackageName, spnid)
+    p, ps, d, ds, spn = map(
+        lambda (cls, id): store.get(cls, id) if id is not None else None,
+        zip((Product, ProductSeries, Distribution, DistroSeries,
+             SourcePackageName),
+            (pid, psid, did, dsid, spnid)))
     return bug_target_from_key(p, ps, d, ds, spn)
 
 
