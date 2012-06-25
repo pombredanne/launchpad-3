@@ -13,11 +13,7 @@ from storm.expr import (
     Union,
     With,
     )
-from storm.properties import (
-    Bool,
-    Int,
-    Unicode,
-    )
+from storm.properties import Bool
 
 from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsubscription import BugSubscription
