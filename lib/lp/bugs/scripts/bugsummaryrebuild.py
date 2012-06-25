@@ -115,10 +115,8 @@ def get_bugsummary_rows(target):
     bugsummary and bugsummaryjournal.
     """
     return IStore(RawBugSummary).find(
-        (RawBugSummary.product_id, RawBugSummary.productseries_id,
-         RawBugSummary.distribution_id, RawBugSummary.distroseries_id,
-         RawBugSummary.sourcepackagename_id, RawBugSummary.milestone_id,
-         RawBugSummary.status, RawBugSummary.importance, RawBugSummary.tag,
+        (RawBugSummary.status, RawBugSummary.milestone_id,
+         RawBugSummary.importance, RawBugSummary.tag,
          RawBugSummary.viewed_by_id, RawBugSummary.has_patch,
          RawBugSummary.count),
         *get_bugsummary_constraint(target))

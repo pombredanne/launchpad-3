@@ -94,8 +94,7 @@ class TestGetBugSummaryRows(TestCaseWithFactory):
         rollup_journal()
         new_rows = set(get_bugsummary_rows(product))
         self.assertContentEqual(
-            [(product.id, None, None, None, None, None, task.status,
-              task.importance, None, None, False, 1)],
+            [(task.status, None, task.importance, None, None, False, 1)],
             new_rows - orig_rows)
 
 
