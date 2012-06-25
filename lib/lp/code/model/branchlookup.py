@@ -296,17 +296,13 @@ class BranchLookup:
             branch_id = int(parts[1])
         except (ValueError, IndexError):
             return None, None
-        branch = self.get(branch_id)
         trailing = '/'.join([''] + parts[2:])
-        return branch, trailing
+        return self.get(branch_id), trailing
 
     def getBranchByAlias(self, path):
         lp_path = path[len(BRANCH_ALIAS_PREFIX + '/'):]
         try:
-            branch, trailing = getUtility(IBranchLookup).getByLPPath(lp_path)
-            if branch is not None and trailing is None:
-                trailing = ''
-            return branch, trailing
+            return getUtility(IBranchLookup).getByLPPath(lp_path)
         except (InvalidProductName, NoLinkedBranch,
                 CannotHaveLinkedBranch, NameLookupFailed,
                 InvalidNamespace):
@@ -314,9 +310,8 @@ class BranchLookup:
 
     def getContainingBranch(self, path):
         path_mapping = self.candidateUniqueNames(path)
-        store = IStore(Branch)
         clause = Branch.unique_name.is_in(path_mapping.keys())
-        branch = store.find(Branch, clause).one()
+        branch = IStore(Branch).find(Branch, clause).one()
         if branch is None:
             return None, None
         else:
@@ -448,8 +443,6 @@ class BranchLookup:
             branch, bzr_path = self._getLinkedBranchAndPath(
                 object_with_branch_link)
             suffix = path[len(bzr_path) + 1:]
-        if suffix == '':
-            suffix = None
         return branch, suffix
 
     def _getLinkedBranchAndPath(self, provided):

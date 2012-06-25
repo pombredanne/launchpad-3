@@ -618,10 +618,9 @@ class LaunchpadRootNavigation(Navigation):
         target_url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
-            branch_data = getUtility(IBranchLookup).getByLPPath(path)
-            branch, trailing = branch_data
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
             target_url = canonical_url(branch)
-            if trailing is not None:
+            if trailing != '':
                 target_url = urlappend(target_url, trailing)
         except (NoLinkedBranch), e:
             # A valid ICanHasLinkedBranch target exists but there's no

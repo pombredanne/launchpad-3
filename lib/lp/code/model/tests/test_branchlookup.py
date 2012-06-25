@@ -200,7 +200,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual(None, suffix)
+        self.assertEqual('', suffix)
 
     def test_finds_suffixed_personal_branch(self):
         branch = self.factory.makePersonalBranch()
@@ -228,7 +228,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual(None, suffix)
+        self.assertEqual('', suffix)
 
     def test_finds_suffixed_product_branch(self):
         branch = self.factory.makeProductBranch()
@@ -258,7 +258,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         found_branch, suffix = self.getByPath(branch.unique_name)
         self.assertEqual(branch, found_branch)
-        self.assertEqual(None, suffix)
+        self.assertEqual('', suffix)
 
     def test_missing_package_branch(self):
         owner = self.factory.makePerson()
@@ -331,7 +331,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # given the unique name of an existing product branch.
         branch = self.factory.makeProductBranch()
         self.assertEqual(
-            (branch, None),
+            (branch, ''),
             self.branch_lookup.getByLPPath(branch.unique_name))
 
     def test_resolve_product_branch_unique_name_with_trailing(self):
@@ -357,7 +357,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # given the unique name of an existing junk branch.
         branch = self.factory.makePersonalBranch()
         self.assertEqual(
-            (branch, None),
+            (branch, ''),
             self.branch_lookup.getByLPPath(branch.unique_name))
 
     def test_resolve_personal_branch_unique_name_with_trailing(self):
@@ -380,7 +380,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             registrant,
             ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
         self.assertEqual(
-            (branch, None),
+            (branch, ''),
             self.branch_lookup.getByLPPath(
                 '%s/%s' % (
                     distro_package.distribution.name,
