@@ -11,7 +11,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugsummary import RawBugSummary
 from lp.bugs.scripts.bugsummaryrebuild import (
-    calculate_dict_delta,
+    calculate_bugsummary_changes,
     calculate_bugsummary_rows,
     format_target,
     get_bugsummary_rows,
@@ -74,12 +74,12 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         new_targets = get_bugtask_targets()
         self.assertContentEqual(expected_targets, new_targets - orig_targets)
 
-    def test_calculate_dict_delta(self):
-        # calculate_dict_delta returns the delta rows required to
-        # make the old dict match the new.
-        delta = calculate_dict_delta(
+    def test_calculate_bugsummary_changes(self):
+        # calculate_bugsummary_changes returns the rows required
+        # to make the old dict match the new.
+        changes = calculate_bugsummary_changes(
             dict(a=2, b=10, c=3), dict(a=2, c=5, d=4))
-        self.assertEqual(dict(b=-10, c=2, d=4), delta)
+        self.assertEqual(dict(b=0, c=5, d=4), changes)
 
 
 class TestGetBugSummaryRows(TestCaseWithFactory):
