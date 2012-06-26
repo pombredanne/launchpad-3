@@ -370,6 +370,7 @@ class TestProduct(TestCaseWithFactory):
         grantees = set([grant.grantee for grant in grants])
         self.assertEqual(expected_grantess, grantees)
 
+
 class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
 
