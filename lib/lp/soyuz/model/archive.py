@@ -1632,7 +1632,7 @@ class Archive(SQLBase):
 
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None):
+                    sponsored=None, unembargo=False):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1653,11 +1653,11 @@ class Archive(SQLBase):
             target_pocket=pocket,
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE, requester=person,
-            sponsored=sponsored)
+            sponsored=sponsored, unembargo=unembargo)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, from_series=None,
-                     include_binaries=None, sponsored=None):
+                     include_binaries=None, sponsored=None, unembargo=False):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1698,7 +1698,8 @@ class Archive(SQLBase):
         job_source.createMultiple(
             series, copy_tasks, person,
             copy_policy=PackageCopyPolicy.MASS_SYNC,
-            include_binaries=include_binaries, sponsored=sponsored)
+            include_binaries=include_binaries, sponsored=sponsored,
+            unembargo=unembargo)
 
     def _collectLatestPublishedSources(self, from_archive, from_series,
                                        source_names):
@@ -1780,7 +1781,7 @@ class Archive(SQLBase):
         # copy packages they wouldn't otherwise be able to.
         do_copy(
             sources, self, series, pocket, include_binaries, person=person,
-            check_permissions=False)
+            check_permissions=False, allow_delayed_copies=True)
 
     def getAuthToken(self, person):
         """See `IArchive`."""

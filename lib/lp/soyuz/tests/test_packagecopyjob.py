@@ -1100,6 +1100,72 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask281.status)
         self.assertEqual(BugTaskStatus.NEW, bugtask280.status)
 
+    def test_copying_unembargoes_files(self):
+        # The unembargo flag causes the job to re-upload restricted files to
+        # the public librarian.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+        distroseries.status = SeriesStatus.CURRENT
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive(private=True)
+
+        # Publish a package in the source archive.
+        spph = publisher.getPubSource(
+            distroseries=distroseries, sourcename="copyme",
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            component='multiverse', section='web',
+            archive=source_archive)
+        spr = spph.sourcepackagerelease
+        for source_file in spr.files:
+            self.assertTrue(source_file.libraryfile.restricted)
+        spr.changelog = self.factory.makeLibraryFileAlias(restricted=True)
+
+        # Now, run the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newPocketUploader(
+                requester, PackagePublishingPocket.SECURITY)
+        job = source.create(
+            package_name="copyme",
+            package_version="2.8-1",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.SECURITY,
+            include_binaries=False,
+            unembargo=True,
+            requester=requester)
+        self.assertTrue(job.unembargo)
+
+        # Run the job so it gains a PackageUpload.
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        job.suspend()
+        switch_dbuser("launchpad_main")
+
+        # Accept the upload to release the job then run it.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        self.assertEqual(PackageUploadStatus.NEW, pu.status)
+        pu.acceptFromQueue()
+        self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
+        self.runJob(job)
+
+        # The job should have set the PU status to DONE:
+        self.assertEqual(PackageUploadStatus.DONE, pu.status)
+
+        # Make sure packages were actually copied.
+        copied_sources = target_archive.getPublishedSources(name="copyme")
+        self.assertIsNot(None, copied_sources.any())
+
+        # Check that files were unembargoed.
+        for copied_source in copied_sources:
+            for source_file in copied_source.sourcepackagerelease.files:
+                self.assertFalse(source_file.libraryfile.restricted)
+
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
         # in the job.
