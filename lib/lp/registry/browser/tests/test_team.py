@@ -571,8 +571,6 @@ class TestSimpleTeamAddView(TestCaseWithFactory):
             'field.name': team_name,
             'field.displayname': 'New Team',
             'field.subscriptionpolicy': 'RESTRICTED',
-            'field.defaultrenewalperiod': '5',
-            'field.defaultmembershipperiod': '10',
             'field.actions.create': 'Create',
             }
         person = self.factory.makePerson()
@@ -582,10 +580,9 @@ class TestSimpleTeamAddView(TestCaseWithFactory):
                 form=form)
             team = personset.getByName(team_name)
             self.assertIsNotNone(team)
+            self.assertEqual('New Team', team.displayname)
             self.assertEqual(
                 TeamSubscriptionPolicy.RESTRICTED, team.subscriptionpolicy)
-            self.assertEqual(5, team.defaultrenewalperiod)
-            self.assertEqual(10, team.defaultmembershipperiod)
 
 
 class TestTeamMenu(TestCaseWithFactory):

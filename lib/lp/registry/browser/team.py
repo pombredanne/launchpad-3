@@ -1072,7 +1072,6 @@ class SimpleTeamAddView(LaunchpadFormView):
 
     field_names = [
         "name", "displayname", "subscriptionpolicy",
-        "defaultmembershipperiod", "defaultrenewalperiod",
         ]
 
     @action('Create Team', name='create',
@@ -1080,14 +1079,11 @@ class SimpleTeamAddView(LaunchpadFormView):
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
-        defaultmembershipperiod = data.get('defaultmembershipperiod')
-        defaultrenewalperiod = data.get('defaultrenewalperiod')
         subscriptionpolicy = data.get('subscriptionpolicy')
         teamowner = self.user
         getUtility(IPersonSet).newTeam(
-            teamowner, name, displayname, None,
-            subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
-        return None
+            teamowner, name, displayname, None, subscriptionpolicy)
+        return ''
 
 
 class ProposedTeamMembersEditView(LaunchpadFormView):
