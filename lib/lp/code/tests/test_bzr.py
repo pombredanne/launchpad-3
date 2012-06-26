@@ -5,10 +5,14 @@
 
 __metaclass__ = type
 
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import (
+    TestCaseInTempDir,
+    TestCaseWithTransport,
+    )
 
 from lp.code.bzr import (
     BranchFormat,
+    branch_revision_history,
     ControlFormat,
     get_branch_formats,
     RepositoryFormat,
@@ -69,3 +73,19 @@ class TestGetBranchFormats(TestCaseInTempDir):
         self.assertEqual(ControlFormat.BZR_METADIR_1, formats[0])
         self.assertEqual(BranchFormat.BZR_BRANCH_5, formats[1])
         self.assertEqual(RepositoryFormat.BZR_KNIT_1, formats[2])
+
+
+class TestBranchRevisionHistory(TestCaseWithTransport):
+    """Tests for lp.code.bzr.branch_revision_history."""
+
+    def test_empty(self):
+        branch = self.make_branch('test')
+        self.assertEquals([], branch_revision_history(branch))
+
+    def test_some_commits(self):
+        branch = self.make_branch('test')
+        wt = branch.bzrdir.create_workingtree()
+        wt.commit('acommit', rev_id='A')
+        wt.commit('bcommit', rev_id='B')
+        wt.commit('ccommit', rev_id='C')
+        self.assertEquals(['A', 'B', 'C'], branch_revision_history(wt.branch))

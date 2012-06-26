@@ -899,8 +899,7 @@ class TestActualImportMixin:
             source_details.branch_id)
         branch = Branch.open(branch_url)
 
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def test_script_exit_codes(self):
         # After a successful import that imports revisions, the worker exits
