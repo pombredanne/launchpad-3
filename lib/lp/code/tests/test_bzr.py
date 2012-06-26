@@ -8,6 +8,7 @@ __metaclass__ = type
 from bzrlib.errors import (
     NoSuchRevision,
     )
+from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import (
     TestCaseInTempDir,
     TestCaseWithTransport,
@@ -113,5 +114,22 @@ class TestGetAncestry(TestCaseWithTransport):
             set(['A']), get_ancestry(branch.repository, 'A'))
         self.assertEqual(
             set(['A', 'B']), get_ancestry(branch.repository, 'B'))
+        self.assertEqual(
+            set(['A', 'B', 'C']), get_ancestry(branch.repository, 'C'))
+
+    def test_children(self):
+        branch = self.make_branch('test')
+        wt = branch.bzrdir.create_workingtree()
+        wt.commit('msg a', rev_id='A')
+        branch.generate_revision_history(NULL_REVISION)
+        wt.set_parent_ids([])
+        wt.commit('msg b', rev_id='B')
+        branch.generate_revision_history('A')
+        wt.set_parent_ids(['A', 'B'])
+        wt.commit('msg c', rev_id='C')
+        self.assertEqual(
+            set(['A']), get_ancestry(branch.repository, 'A'))
+        self.assertEqual(
+            set(['B']), get_ancestry(branch.repository, 'B'))
         self.assertEqual(
             set(['A', 'B', 'C']), get_ancestry(branch.repository, 'C'))
