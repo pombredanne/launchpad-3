@@ -49,6 +49,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadCustom,
     IPackageUploadSet,
     )
+from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -745,6 +746,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         publications.
     """
     copies = []
+    custom_files = []
 
     # Copy source if it's not yet copied.
     source_in_destination = archive.getPublishedSources(
@@ -776,6 +778,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         copies.append(source_copy)
     else:
         source_copy = source_in_destination.first()
+    if source_copy.packageupload is not None:
+        custom_files.extend(source_copy.packageupload.customfiles)
 
     if include_binaries:
         # Copy missing binaries for the matching architectures in the
@@ -785,10 +789,22 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # arch-indep publications.
         binary_copies = getUtility(IPublishingSet).copyBinariesTo(
             source.getBuiltBinaries(), series, pocket, archive, policy=policy)
-        # XXX cjwatson 2012-06-22 bug=231371: Copy custom uploads.
 
         if binary_copies is not None:
             copies.extend(binary_copies)
+            binary_uploads = set(
+                bpph.binarypackagerelease.build.package_upload
+                for bpph in binary_copies)
+            for binary_upload in binary_uploads:
+                if binary_upload is not None:
+                    custom_files.extend(binary_upload.customfiles)
+
+    if custom_files:
+        # Custom uploads aren't modelled as publication history records, so
+        # we have to send these through the upload queue.
+        custom_copier = CustomUploadsCopier(series, target_pocket=pocket)
+        for custom in custom_files:
+            custom_copier.copyUpload(custom)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
