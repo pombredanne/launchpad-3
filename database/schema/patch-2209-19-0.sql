@@ -5,6 +5,9 @@ SET client_min_messages=ERROR;
 
 -- Journal functions. Speed is critical -- these are run by appservers.
 
+ALTER TABLE bugsummary ALTER COLUMN fixed_upstream SET DEFAULT false;
+ALTER TABLE bugsummaryjournal ALTER COLUMN fixed_upstream SET DEFAULT false;
+
 ALTER TABLE bugsummary ADD COLUMN access_policy integer;
 ALTER TABLE bugsummaryjournal ADD COLUMN access_policy integer;
 
