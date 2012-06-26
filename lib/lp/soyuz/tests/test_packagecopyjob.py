@@ -34,6 +34,7 @@ from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageCopyPolicy,
+    PackageUploadCustomFormat,
     PackageUploadStatus,
     SourcePackageFormat,
     )
@@ -1165,6 +1166,68 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         for copied_source in copied_sources:
             for source_file in copied_source.sourcepackagerelease.files:
                 self.assertFalse(source_file.libraryfile.restricted)
+
+    def test_copy_custom_upload_files(self):
+        # Custom upload files are queued for republication when they are
+        # copied.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        publisher.breezy_autotest.status = SeriesStatus.CURRENT
+        spph = publisher.getPubSource(
+            pocket=PackagePublishingPocket.PROPOSED)
+        publisher.getPubBinaries(
+            pocket=PackagePublishingPocket.PROPOSED, pub_source=spph)
+        [build] = spph.getBuilds()
+        custom_file = self.factory.makeLibraryFileAlias()
+        build.package_upload.addCustom(
+            custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
+        # Make the new librarian file available.
+        self.layer.txn.commit()
+
+        # Create the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(spph.archive.owner):
+            spph.archive.newPocketUploader(
+                requester, PackagePublishingPocket.UPDATES)
+        job = source.create(
+            package_name=spph.sourcepackagerelease.name,
+            package_version=spph.sourcepackagerelease.version,
+            source_archive=spph.archive,
+            target_archive=spph.archive,
+            target_distroseries=spph.distroseries,
+            target_pocket=PackagePublishingPocket.UPDATES,
+            include_binaries=True,
+            requester=requester)
+
+        # Start, accept, and run the job.
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        job.suspend()
+        switch_dbuser("launchpad_main")
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        self.assertEqual(PackageUploadStatus.UNAPPROVED, pu.status)
+        pu.acceptFromQueue()
+        self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
+        self.runJob(job)
+        self.assertEqual(PackageUploadStatus.DONE, pu.status)
+
+        [upload] = spph.distroseries.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, archive=spph.archive,
+            pocket=PackagePublishingPocket.UPDATES,
+            custom_type=PackageUploadCustomFormat.DIST_UPGRADER)
+
+        # The upload is targeted to the right publishing context.
+        self.assertEqual(spph.archive, upload.archive)
+        self.assertEqual(spph.distroseries, upload.distroseries)
+        self.assertEqual(PackagePublishingPocket.UPDATES, upload.pocket)
+
+        # It contains only the custom files.
+        self.assertEqual([], list(upload.sources))
+        self.assertEqual([], list(upload.builds))
+        self.assertEqual(
+            [custom_file],
+            [custom.libraryfilealias for custom in upload.customfiles])
 
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
