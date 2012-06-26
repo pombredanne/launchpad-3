@@ -36,8 +36,6 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/lazr/lazr.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/mustache.js"></script>
-      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/overlay/overlay.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/effects/effects.js"></script>
@@ -49,6 +47,8 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           src="../../../../../../build/js/lp/app/picker/picker.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/picker/picker_patcher.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/testing/mockio.js"></script>
 
 
       <!-- The module under test. -->
@@ -69,9 +69,26 @@ GNU Affero General Public License version 3 (see the file LICENSE).
                 <span>
                   A picker widget test
                   <a id="edit-pickertest-btn"
-                    class="sprite edit lazr-btn yui3-activator-act"
+                    class="sprite edit action-icon yui3-activator-act"
                     href="/fnord/+edit-people"
-                    >&nbsp;Edit</a>
+                    >Edit</a>
+                </span>
+                <span class="yui3-activator-data-box">
+                </span>
+                <span class="yui3-activator-message-box yui3-activator-hidden"></span>
+              </span>
+            </span>
+        </div>
+
+        <div class="yui3-widget yui3-activator yui3-activator-focused">
+            <span id="anotherpicker_id" class="yui3-activator-content yui3-activator-success">
+              <span id="anotherpickertest">
+                <span>
+                  Another picker widget test
+                  <a id="edit-anotherpickertest-btn"
+                    class="sprite edit action-icon yui3-activator-act"
+                    href="/fnord/+edit-people"
+                    >Edit</a>
                 </span>
                 <span class="yui3-activator-data-box">
                 </span>
