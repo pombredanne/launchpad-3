@@ -33,7 +33,6 @@ from bzrlib.errors import (
     NotStacked,
     UnstackableBranchFormat,
     )
-from bzrlib.graph import 
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1,
     BzrBranchLoomFormat6,
@@ -56,6 +55,9 @@ from bzrlib.repofmt.knitpack_repo import (
     RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4,
     RepositoryFormatKnitPack5,
+    )
+from bzrlib.revision import (
+    NULL_REVISION,
     )
 from bzrlib.repofmt.knitrepo import (
     RepositoryFormatKnit1,
