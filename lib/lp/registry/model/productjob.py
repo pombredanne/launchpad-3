@@ -470,7 +470,7 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
         else:
             removeSecurityProxy(self.product).private_bugs = False
             for series in self.product.series:
-                if series.branch.private:
+                if series.branch is not None and series.branch.private:
                     removeSecurityProxy(series).branch = None
             self.product.commercial_subscription.delete()
 

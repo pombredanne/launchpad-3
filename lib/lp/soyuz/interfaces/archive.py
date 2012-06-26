@@ -576,6 +576,28 @@ class IArchiveView(IHasBuildRecords):
         :return: True if they can, False if they cannot.
         """
 
+    def canModifySuite(distroseries, pocket):
+        """Decides whether or not to allow uploads for a given DS/pocket.
+
+        Some archive types (e.g. PPAs) allow uploads to the RELEASE pocket
+        regardless of the distroseries state.  For others (principally
+        primary archives), only allow uploads for RELEASE pocket in
+        unreleased distroseries, and conversely only allow uploads for
+        non-RELEASE pockets in released distroseries.
+        For instance, in edgy time :
+
+                warty         -> DENY
+                edgy          -> ALLOW
+                warty-updates -> ALLOW
+                edgy-security -> DENY
+
+        Note that FROZEN is not considered either 'stable' or 'unstable'
+        state.  Uploads to a FROZEN distroseries will end up in the
+        UNAPPROVED queue.
+
+        Return True if the upload is allowed and False if denied.
+        """
+
     def checkUploadToPocket(distroseries, pocket):
         """Check if an upload to a particular archive and pocket is possible.
 
@@ -1255,13 +1277,14 @@ class IArchiveView(IHasBuildRecords):
         sponsored=Reference(
             schema=IPerson,
             title=_("Sponsored Person"),
-            description=_("The person who is being sponsored for this copy."))
+            description=_("The person who is being sponsored for this copy.")),
+        unembargo=Bool(title=_("Unembargo restricted files")),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None):
+                    sponsored=None, unembargo=False):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1282,6 +1305,9 @@ class IArchiveView(IHasBuildRecords):
             this will ensure that the person's email address is used as the
             "From:" on the announcement email and will also be recorded as
             the creator of the new source publication.
+        :param unembargo: if True, allow copying restricted files from a
+            private archive to a public archive, and re-upload them to the
+            public librarian when doing so.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -1313,13 +1339,14 @@ class IArchiveView(IHasBuildRecords):
         sponsored=Reference(
             schema=IPerson,
             title=_("Sponsored Person"),
-            description=_("The person who is being sponsored for this copy."))
+            description=_("The person who is being sponsored for this copy.")),
+        unembargo=Bool(title=_("Unembargo restricted files")),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
                      to_series=None, from_series=None, include_binaries=False,
-                     sponsored=None):
+                     sponsored=None, unembargo=False):
         """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
@@ -1343,6 +1370,9 @@ class IArchiveView(IHasBuildRecords):
             this will ensure that the person's email address is used as the
             "From:" on the announcement email and will also be recorded as
             the creator of the new source publication.
+        :param unembargo: if True, allow copying restricted files from a
+            private archive to a public archive, and re-upload them to the
+            public librarian when doing so.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid

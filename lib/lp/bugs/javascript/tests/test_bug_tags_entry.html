@@ -31,12 +31,15 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           src="../../../../../build/js/lp/app/client.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/testing/mockio.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/anim/anim.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/extras/extras.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/autocomplete/autocomplete.js"></script>
 
       <!-- The module under test. -->
       <script type="text/javascript" src="../bug_tags_entry.js"></script>
-
-      <!-- Any css assert for this module. -->
-      <!-- <link rel="stylesheet" href="../assets/bug_tags_entry-core.css" /> -->
 
       <!-- The test suite. -->
       <script type="text/javascript" src="test_bug_tags_entry.js"></script>
@@ -44,8 +47,40 @@ GNU Affero General Public License version 3 (see the file LICENSE).
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <!-- <li>lp.large_indicator.test</li> -->
             <li>lp.bug_tags_entry.test</li>
         </ul>
+
+        <div id="fixture"></div>
+
+        <script type="text/x-template" id="edit-bug-tag-form">
+          <div id="bug-tags">
+            <span id="tags-heading">
+              Tags:
+            </span>
+            <span id="tag-list">
+              <a class="official-tag"
+                  href="/fnord/+bugs?field.tag=project-tag">project-tag</a>
+              <a class="unofficial-tag"
+                  href="/fnord/+bugs?field.tag=user-tag">user-tag</a>
+            </span>
+            <a href="+edit" title="Edit tags" id="tags-trigger"
+              class="sprite edit action-icon">Edit</a>
+            <a href="/+help-bugs/tag-help.html" target="help"
+              class="sprite maybe action-icon">Tag help</a>
+          </div>
+        </script>
+
+        <script type="text/x-template" id="add-bug-tag-form">
+          <div id="bug-tags">
+            <span id="tags-heading">
+            </span>
+            <span id="tag-list">
+            </span>
+            <a href="+edit" title="Add tags" id="tags-trigger"
+              class="sprite add action-icon">Add tags</a>
+            <a href="/+help-bugs/tag-help.html" target="help"
+              class="sprite maybe action-icon">Tag help</a>
+          </div>
+        </script>
     </body>
 </html>
