@@ -821,7 +821,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 timezone=0)
         switch_dbuser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch,
-            branch_revision_history(tree.branch.revision_history))
+            branch_revision_history(tree.branch))
         job = RevisionsAddedJob.create(db_branch, '', '', '')
         message = job.getRevisionMessage(rev_id, 1)
         # The revision message must be a unicode object.
