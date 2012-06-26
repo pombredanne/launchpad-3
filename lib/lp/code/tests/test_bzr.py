@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+from bzrlib.errors import (
+    NoSuchRevision,
+    )
 from bzrlib.tests import (
     TestCaseInTempDir,
     TestCaseWithTransport,
@@ -14,6 +17,7 @@ from lp.code.bzr import (
     BranchFormat,
     branch_revision_history,
     ControlFormat,
+    get_ancestry,
     get_branch_formats,
     RepositoryFormat,
     )
@@ -89,3 +93,25 @@ class TestBranchRevisionHistory(TestCaseWithTransport):
         wt.commit('bcommit', rev_id='B')
         wt.commit('ccommit', rev_id='C')
         self.assertEquals(['A', 'B', 'C'], branch_revision_history(wt.branch))
+
+
+class TestGetAncestry(TestCaseWithTransport):
+    """Tests for lp.code.bzr.get_ancestry."""
+
+    def test_missing_revision(self):
+        branch = self.make_branch('test')
+        self.assertRaises(
+            NoSuchRevision, get_ancestry, branch.repository, 'orphan')
+
+    def test_some(self):
+        branch = self.make_branch('test')
+        wt = branch.bzrdir.create_workingtree()
+        wt.commit('msg a', rev_id='A')
+        wt.commit('msg b', rev_id='B')
+        wt.commit('msg c', rev_id='C')
+        self.assertEqual(
+            set(['A']), get_ancestry(branch.repository, 'A'))
+        self.assertEqual(
+            set(['A', 'B']), get_ancestry(branch.repository, 'B'))
+        self.assertEqual(
+            set(['A', 'B', 'C']), get_ancestry(branch.repository, 'C'))
