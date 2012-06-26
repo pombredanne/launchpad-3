@@ -809,9 +809,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
 
     page_title = label
 
-    @property
-    def field_names(self):
-        return ['information_type']
+    field_names = ['information_type']
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
