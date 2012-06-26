@@ -33,6 +33,7 @@ from bzrlib.errors import (
     NotStacked,
     UnstackableBranchFormat,
     )
+from bzrlib.graph import 
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1,
     BzrBranchLoomFormat6,
@@ -317,3 +318,24 @@ def branch_changed(db_branch, bzr_branch=None):
     last_revision = bzr_branch.last_revision()
     formats = get_branch_formats(bzr_branch)
     db_branch.branchChanged(stacked_on, last_revision, *formats)
+
+
+def branch_revision_history(branch):
+    """Find the revision history of a branch.
+
+    This is a compatibility wrapper for code that still requires
+    access to the full branch mainline and previously used
+    Branch.revision_history(), which is now deprecated.
+
+    :param branch: Branch object
+    :return: Revision ids on the main branch
+    """
+    branch.lock_read()
+    try:
+        graph = branch.repository.get_graph()
+        ret = list(graph.iter_lefthand_ancestry(
+                branch.last_revision(), (NULL_REVISION,)))
+        ret.reverse()
+        return ret
+    finally:
+        branch.unlock()

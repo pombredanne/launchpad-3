@@ -31,6 +31,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
+    branch_revision_history,
     )
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -776,7 +777,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 timestamp=1000100000.0, timezone=0)
         switch_dbuser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch,
-            tree.branch.revision_history())
+            branch_revision_history(tree.branch))
         expected = (
             u"-" * 60 + '\n'
             "revno: 1" '\n'
@@ -820,7 +821,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
                 timezone=0)
         switch_dbuser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch,
-            tree.branch.revision_history())
+            branch_revision_history(tree.branch.revision_history))
         job = RevisionsAddedJob.create(db_branch, '', '', '')
         message = job.getRevisionMessage(rev_id, 1)
         # The revision message must be a unicode object.
