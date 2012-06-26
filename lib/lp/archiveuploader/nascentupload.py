@@ -165,21 +165,16 @@ class NascentUpload:
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
 
-        if (len(self.changes.files) == 1 and
-            isinstance(self.changes.files[0], CustomUploadFile)):
-            self.logger.debug("Single Custom Upload detected.")
-        else:
-            policy.validateUploadType(self)
+        policy.validateUploadType(self)
 
-            if self.sourceful and not self.changes.dsc:
-                self.reject(
-                    "Unable to find the DSC file in the source upload.")
+        if self.sourceful and not self.changes.dsc:
+            self.reject("Unable to find the DSC file in the source upload.")
 
-            # Apply the overrides from the database. This needs to be done
-            # before doing component verifications because the component
-            # actually comes from overrides for packages that are not NEW.
-            self.find_and_apply_overrides()
-            self._overrideDDEBSs()
+        # Apply the overrides from the database. This needs to be done
+        # before doing component verifications because the component
+        # actually comes from overrides for packages that are not NEW.
+        self.find_and_apply_overrides()
+        self._overrideDDEBSs()
 
         # Override archive location if necessary.
         self.overrideArchive()
