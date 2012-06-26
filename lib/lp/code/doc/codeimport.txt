@@ -347,11 +347,6 @@ appropriate default value for the RCS type.
     >>> git_import.effective_update_interval
     datetime.timedelta(0, 21600)
 
-    >>> default_interval_hg
-    datetime.timedelta(0, 21600)
-    >>> hg_import.effective_update_interval
-    datetime.timedelta(0, 21600)
-
 
 If the update interval is set, then it overrides the default value.
 
