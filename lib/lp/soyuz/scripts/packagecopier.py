@@ -49,6 +49,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadCustom,
     IPackageUploadSet,
     )
+from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -677,13 +678,28 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
                 close_bugs_since_version=old_version, creator=creator,
-                sponsor=sponsor, packageupload=packageupload, logger=logger)
+                sponsor=sponsor, packageupload=packageupload)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
                     destination_series, pocket, action='accepted',
                     announce_from_person=announce_from_person,
                     previous_version=old_version)
+            if not archive.private and has_restricted_files(source):
+                # Fix copies by overriding them according to the current
+                # ancestry and re-upload files with privacy mismatch.  We
+                # must do this *after* calling notify (which only actually
+                # sends mail on commit), because otherwise the new changelog
+                # LFA won't be visible without a commit, which may not be
+                # safe here.
+                for pub_record in sub_copies:
+                    pub_record.overrideFromAncestry()
+                    for new_file in update_files_privacy(pub_record):
+                        if logger is not None:
+                            logger.info(
+                                "Re-uploaded %s to librarian" %
+                                new_file.filename)
+
 
         overrides_index += 1
         copies.extend(sub_copies)
@@ -694,7 +710,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
                     close_bugs_since_version=None, creator=None,
-                    sponsor=None, packageupload=None, logger=None):
+                    sponsor=None, packageupload=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -724,13 +740,13 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
-    :param logger: An optional logger.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
     """
     copies = []
+    custom_files = []
 
     # Copy source if it's not yet copied.
     source_in_destination = archive.getPublishedSources(
@@ -762,6 +778,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         copies.append(source_copy)
     else:
         source_copy = source_in_destination.first()
+    if source_copy.packageupload is not None:
+        custom_files.extend(source_copy.packageupload.customfiles)
 
     if include_binaries:
         # Copy missing binaries for the matching architectures in the
@@ -771,25 +789,27 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # arch-indep publications.
         binary_copies = getUtility(IPublishingSet).copyBinariesTo(
             source.getBuiltBinaries(), series, pocket, archive, policy=policy)
-        # XXX cjwatson 2012-06-22 bug=231371: Copy custom uploads.
 
         if binary_copies is not None:
             copies.extend(binary_copies)
+            binary_uploads = set(
+                bpph.binarypackagerelease.build.package_upload
+                for bpph in binary_copies)
+            for binary_upload in binary_uploads:
+                if binary_upload is not None:
+                    custom_files.extend(binary_upload.customfiles)
+
+    if custom_files:
+        # Custom uploads aren't modelled as publication history records, so
+        # we have to send these through the upload queue.
+        custom_copier = CustomUploadsCopier(series, target_pocket=pocket)
+        for custom in custom_files:
+            custom_copier.copyUpload(custom)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
     # XXX cjwatson 2012-06-22 bug=869308: Fails to honour P-a-s.
     source_copy.createMissingBuilds()
-
-    if not archive.private and has_restricted_files(source):
-        # Fix copies by overriding them according to the current ancestry
-        # and re-upload files with privacy mismatch.
-        for pub_record in copies:
-            pub_record.overrideFromAncestry()
-            for new_file in update_files_privacy(pub_record):
-                if logger is not None:
-                    logger.info(
-                        "Re-uploaded %s to librarian" % new_file.filename)
 
     return copies
 

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Launchpad object factory."""
@@ -781,10 +781,12 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         bpn = self.factory.makeBinaryPackageName()
         pu = self.factory.makeBuildPackageUpload(
-            distroseries=distroseries, binarypackagename=bpn)
+            distroseries=distroseries, pocket=PackagePublishingPocket.PROPOSED,
+            binarypackagename=bpn)
         build = list(pu.builds)[0].build
         self.assertEqual(distroseries, pu.distroseries)
         self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(PackagePublishingPocket.PROPOSED, pu.pocket)
         release = IStore(distroseries).find(
             BinaryPackageRelease, BinaryPackageRelease.build == build).one()
         self.assertEqual(bpn, release.binarypackagename)
@@ -803,11 +805,12 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
         custom_type = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
         filename = self.factory.getUniqueString()
         pu = self.factory.makeCustomPackageUpload(
-            distroseries=distroseries, custom_type=custom_type,
-            filename=filename)
+            distroseries=distroseries, pocket=PackagePublishingPocket.PROPOSED,
+            custom_type=custom_type, filename=filename)
         custom = list(pu.customfiles)[0]
         self.assertEqual(distroseries, pu.distroseries)
         self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(PackagePublishingPocket.PROPOSED, pu.pocket)
         self.assertEqual(custom_type, custom.customformat)
         self.assertEqual(filename, custom.libraryfilealias.filename)
 
