@@ -66,6 +66,23 @@
     <metal:widgets fill-slot="buttons" />
   </div>
 
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <metal:widgets fill-slot="widgets">
+      <table class="form">
+        <tal:widget define="widget nocall:view/widgets/newemail">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          <tr>
+            <td></td>
+            <td>
+              <input tal:replace="structure view/action_add_email/render" />
+            </td>
+          </tr>
+        </tal:widget>
+      </table>
+    </metal:widgets>
+    <metal:widgets fill-slot="buttons" />
+  </div>
+
 
   <form action=""
         method="post" enctype="multipart/form-data"
