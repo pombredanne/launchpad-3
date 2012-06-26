@@ -28,8 +28,7 @@
             <metal:block use-macro="context/@@launchpad_form/widget_row" />
           </tal:widget>
           <tr>
-            <td></td>
-            <td>
+            <td colspan="2">
               <input
                  tal:replace="structure view/action_set_preferred/render" />
               <input tal:replace="structure
@@ -52,15 +51,6 @@
           </tr>
         </tal:block>
 
-        <tal:widget define="widget nocall:view/widgets/newemail">
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-          <tr>
-            <td></td>
-            <td>
-              <input tal:replace="structure view/action_add_email/render" />
-            </td>
-          </tr>
-        </tal:widget>
       </table>
     </metal:widgets>
     <metal:widgets fill-slot="buttons" />
@@ -72,8 +62,7 @@
         <tal:widget define="widget nocall:view/widgets/newemail">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
           <tr>
-            <td></td>
-            <td>
+            <td colspan="2">
               <input tal:replace="structure view/action_add_email/render" />
             </td>
           </tr>
