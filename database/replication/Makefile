@@ -45,33 +45,29 @@ SHHH=
 default:
 	echo Need a target
 
-# Build _new staging databases from a production dump.
+# Destroy the existing staging db and reload it from dump. We no longer
+# have enough disk space to build it in a holding area and swap it into
+# place.
 stagingsetup:
-	# Kill the existing temporary staging database if it exists from an
-	# aborted run
-	-${PGMASSACRE} lpmain_staging_new
+	-${PGMASSACRE} lpmain_staging
 	# Create the DB with the desired default tablespace.
-	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging_new
+	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
-	pg_restore --dbname=lpmain_staging_new ${EXIT_ON_ERROR} \
+	pg_restore --dbname=lpmain_staging ${EXIT_ON_ERROR} \
 	    ${MULTIPROC} ${STAGING_DUMP}
 	# Apply database patches.
 	@echo Running upgrade.py `date`.
-	LPCONFIG=${NEW_STAGING_CONFIG} ${SHHH} ../schema/upgrade.py \
+	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/upgrade.py \
 	    --ignore-slony --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	@echo Running security.py `date`
-	LPCONFIG=${NEW_STAGING_CONFIG} ${SHHH} ../schema/security.py \
+	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/security.py \
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 
 # Switch the _new staging databases into place.
 stagingswitch:
-	# Kill the existing staging database if it exists.
-	-${PGMASSACRE} lpmain_staging
-	# Rename the newly build staging databases.
-	psql -d template1 -c \
-	    "ALTER DATABASE lpmain_staging_new RENAME TO lpmain_staging;"
+	echo Nothing to do. Staging already built inplace.
 
 dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
