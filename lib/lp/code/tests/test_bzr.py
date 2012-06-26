@@ -89,27 +89,30 @@ class TestBranchRevisionHistory(TestCaseWithTransport):
 
     def test_some_commits(self):
         branch = self.make_branch('test')
-        wt = branch.bzrdir.create_workingtree()
-        wt.commit('acommit', rev_id='A')
-        wt.commit('bcommit', rev_id='B')
-        wt.commit('ccommit', rev_id='C')
-        self.assertEquals(['A', 'B', 'C'], branch_revision_history(wt.branch))
+        tree = branch.bzrdir.create_workingtree()
+        tree.commit('acommit', rev_id='A')
+        tree.commit('bcommit', rev_id='B')
+        tree.commit('ccommit', rev_id='C')
+        self.assertEquals(
+            ['A', 'B', 'C'], branch_revision_history(tree.branch))
 
 
 class TestGetAncestry(TestCaseWithTransport):
     """Tests for lp.code.bzr.get_ancestry."""
 
     def test_missing_revision(self):
+        # If the revision does not exist, NoSuchRevision should be raised.
         branch = self.make_branch('test')
         self.assertRaises(
             NoSuchRevision, get_ancestry, branch.repository, 'orphan')
 
     def test_some(self):
+        # Verify ancestors are included.
         branch = self.make_branch('test')
-        wt = branch.bzrdir.create_workingtree()
-        wt.commit('msg a', rev_id='A')
-        wt.commit('msg b', rev_id='B')
-        wt.commit('msg c', rev_id='C')
+        tree = branch.bzrdir.create_workingtree()
+        tree.commit('msg a', rev_id='A')
+        tree.commit('msg b', rev_id='B')
+        tree.commit('msg c', rev_id='C')
         self.assertEqual(
             set(['A']), get_ancestry(branch.repository, 'A'))
         self.assertEqual(
@@ -118,15 +121,16 @@ class TestGetAncestry(TestCaseWithTransport):
             set(['A', 'B', 'C']), get_ancestry(branch.repository, 'C'))
 
     def test_children(self):
+        # Verify non-mainline children are included.
         branch = self.make_branch('test')
-        wt = branch.bzrdir.create_workingtree()
-        wt.commit('msg a', rev_id='A')
+        tree = branch.bzrdir.create_workingtree()
+        tree.commit('msg a', rev_id='A')
         branch.generate_revision_history(NULL_REVISION)
-        wt.set_parent_ids([])
-        wt.commit('msg b', rev_id='B')
+        tree.set_parent_ids([])
+        tree.commit('msg b', rev_id='B')
         branch.generate_revision_history('A')
-        wt.set_parent_ids(['A', 'B'])
-        wt.commit('msg c', rev_id='C')
+        tree.set_parent_ids(['A', 'B'])
+        tree.commit('msg c', rev_id='C')
         self.assertEqual(
             set(['A']), get_ancestry(branch.repository, 'A'))
         self.assertEqual(
