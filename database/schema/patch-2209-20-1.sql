@@ -3,6 +3,7 @@
 
 SET client_min_messages=ERROR;
 
-DROP TABLE SpecificationFeedback;
+ALTER TABLE SpecificationFeedback DROP CONSTRAINT specificationfeedback_specification_fk;
+ALTER TABLE SpecificationFeedback SET SCHEMA todrop;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 20, 1);
