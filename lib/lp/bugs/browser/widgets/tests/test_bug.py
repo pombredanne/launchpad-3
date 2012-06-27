@@ -77,5 +77,5 @@ class BugTagsWidgetTestCase(TestCaseWithFactory):
         self.assertIn(
             'Y.lp.bugs.bug_tags_entry.setup_tag_completer(', markup)
         self.assertIn(
-            """'input[id="field.official_bug_tags"]', official_tags, true)""",
-            markup)
+            """'input[id="field.official_bug_tags"][type="text"]',""", markup)
+        self.assertIn("official_tags, true)", markup)
