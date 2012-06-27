@@ -137,15 +137,15 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.model.accesspolicy import (
-    IAccessArtifactGrantSource,
-    IAccessArtifactSource,
-    reconcile_access_for_artifact,
-    )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
