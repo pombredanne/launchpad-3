@@ -1171,11 +1171,9 @@ class PopulateBranchAccessArtifactGrant(TunableLoop):
         grants = []
         for branch in branches:
             artifact = branch_to_artifact[branch.id]
-            bgrants = [(artifact, branchsub.person, branchsub.subscribed_by)
-                for branchsub in branch.subscriptions]
-            if branch.owner not in [grant[1] for grant in bgrants]:
-                bgrants.append((artifact, branch.owner, branch.owner))
-            grants.extend(bgrants)
+            grants.extend(
+                [(artifact, branchsub.person, branchsub.subscribed_by)
+                for branchsub in branch.subscriptions])
         getUtility(IAccessArtifactGrantSource).grant(grants)
         self.start_at = branches[-1].id + 1
         result = getUtility(IMemcacheClient).set(
