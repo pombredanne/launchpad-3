@@ -1114,8 +1114,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 self.assertFalse(source_file.libraryfile.restricted)
 
     def test_copy_custom_upload_files(self):
-        # Custom upload files are queued for republication when they are
-        # copied.
+        # Copyable custom upload files are queued for republication when
+        # they are copied.
         self.distroseries.status = SeriesStatus.CURRENT
         spph = self.publisher.getPubSource(
             pocket=PackagePublishingPocket.PROPOSED)
@@ -1125,6 +1125,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         custom_file = self.factory.makeLibraryFileAlias()
         build.package_upload.addCustom(
             custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
+        build.package_upload.addCustom(
+            self.factory.makeLibraryFileAlias(),
+            PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
         # Make the new librarian file available.
         self.layer.txn.commit()
 
@@ -1151,10 +1154,16 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.runJob(job)
         self.assertEqual(PackageUploadStatus.DONE, pu.status)
 
-        [upload] = self.distroseries.getPackageUploads(
+        uploads = list(self.distroseries.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED, archive=spph.archive,
-            pocket=PackagePublishingPocket.UPDATES,
-            custom_type=PackageUploadCustomFormat.DIST_UPGRADER)
+            pocket=PackagePublishingPocket.UPDATES))
+
+        # ROSETTA_TRANSLATIONS is not a copyable type, so is not copied.
+        self.assertEqual(1, len(uploads))
+        upload = uploads[0]
+        self.assertEqual(
+            PackageUploadCustomFormat.DIST_UPGRADER,
+            upload.customfiles[0].customformat)
 
         # The upload is targeted to the right publishing context.
         self.assertEqual(spph.archive, upload.archive)
