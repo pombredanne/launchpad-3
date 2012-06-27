@@ -13,7 +13,7 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class BugTargetTagsMixinTestCase(TestCaseWithFactory):
+class BugTagsWidgetTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
