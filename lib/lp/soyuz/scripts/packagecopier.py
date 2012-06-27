@@ -700,7 +700,6 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                                 "Re-uploaded %s to librarian" %
                                 new_file.filename)
 
-
         overrides_index += 1
         copies.extend(sub_copies)
 
@@ -804,7 +803,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # we have to send these through the upload queue.
         custom_copier = CustomUploadsCopier(series, target_pocket=pocket)
         for custom in custom_files:
-            custom_copier.copyUpload(custom)
+            if custom_copier.isCopyable(custom):
+                custom_copier.copyUpload(custom)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
