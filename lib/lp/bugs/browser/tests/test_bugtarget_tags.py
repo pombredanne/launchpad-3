@@ -6,7 +6,10 @@ __metaclass__ = type
 from lp.bugs.browser.bugtask import BugTargetTagsMixin
 from lp.bugs.publisher import BugsLayer
 from lp.services.webapp.publisher import LaunchpadView
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_view
 
@@ -71,8 +74,17 @@ class BugTargetTagsMixinTestCase(TestCaseWithFactory):
         self.assertEqual('var official_tags = [];', js)
 
     def test_official_tags_js_product_without_tags(self):
-        # Products without empty lists.
+        # Products without tags have an empty list.
         product = self.factory.makeProduct()
         view = self.FakeBugTagsView(product, None)
         js = view.official_tags_js
         self.assertEqual('var official_tags = [];', js)
+
+    def test_official_tags_js_product_with_tags(self):
+        # Products with tags have a list of tags.
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.official_bug_tags = [u'cows', u'pigs', u'sheep']
+        view = self.FakeBugTagsView(product, None)
+        js = view.official_tags_js
+        self.assertEqual('var official_tags = ["cows", "pigs", "sheep"];', js)
