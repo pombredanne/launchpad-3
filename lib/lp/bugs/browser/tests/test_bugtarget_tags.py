@@ -63,9 +63,16 @@ class BugTargetTagsMixinTestCase(TestCaseWithFactory):
     class FakeBugTagsView(LaunchpadView, BugTargetTagsMixin):
         """A test view."""
 
-    def test_official_tags_js_project_group(self):
+    def test_official_tags_js_not_adaptable_to_product_or_distro(self):
         # project groups are not full bug targets so they have no tags.
         project_group = self.factory.makeProject()
         view = self.FakeBugTagsView(project_group, None)
+        js = view.official_tags_js
+        self.assertEqual('var official_tags = [];', js)
+
+    def test_official_tags_js_product_without_tags(self):
+        # Products without empty lists.
+        product = self.factory.makeProduct()
+        view = self.FakeBugTagsView(product, None)
         js = view.official_tags_js
         self.assertEqual('var official_tags = [];', js)
