@@ -316,8 +316,6 @@ set in the Launchpad configuration system.
     ...     seconds=config.codeimport.default_interval_subversion)
     >>> default_interval_git = timedelta(
     ...     seconds=config.codeimport.default_interval_git)
-    >>> default_interval_hg = timedelta(
-    ...     seconds=config.codeimport.default_interval_hg)
 
 By default, code imports are created with an unspecified update interval.
 
