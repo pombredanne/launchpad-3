@@ -150,8 +150,7 @@ class BugTagsWidget(BugTagsWidgetBase, TextWidget):
                 Y.on('domready', function(e) {
                      Y.lp.bugs.bug_tags_entry.setup_tag_completer(
                          'input[id="field.%s"]', official_tags, true);
-                     },
-                     window);
+                     });
                 });
             </script>
             """ % (self.official_tags_js, self.context.__name__)
