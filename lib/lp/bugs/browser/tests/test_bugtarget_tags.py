@@ -88,3 +88,19 @@ class BugTargetTagsMixinTestCase(TestCaseWithFactory):
         view = self.FakeBugTagsView(product, None)
         js = view.official_tags_js
         self.assertEqual('var official_tags = ["cows", "pigs", "sheep"];', js)
+
+    def test_official_tags_js_distribution_without_tags(self):
+        # Distributions without tags have an empty list.
+        distribution = self.factory.makeDistribution()
+        view = self.FakeBugTagsView(distribution, None)
+        js = view.official_tags_js
+        self.assertEqual('var official_tags = [];', js)
+
+    def test_official_tags_js_distribution_with_tags(self):
+        # Distributions with tags have a list of tags.
+        distribution = self.factory.makeDistribution()
+        with person_logged_in(distribution.owner):
+            distribution.official_bug_tags = [u'cows', u'pigs', u'sheep']
+        view = self.FakeBugTagsView(distribution, None)
+        js = view.official_tags_js
+        self.assertEqual('var official_tags = ["cows", "pigs", "sheep"];', js)
