@@ -113,6 +113,14 @@ class CustomUpload:
         finally:
             self.cleanup()
 
+    @staticmethod
+    def parsePath(tarfile_path):
+        """Parse tarfile_path, returning its useful components.
+
+        :raises ValueError: If tarfile_path is incorrectly formed.
+        """
+        raise NotImplementedError
+
     def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         """Set self.targetdir based on parameters.
 

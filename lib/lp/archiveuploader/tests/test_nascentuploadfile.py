@@ -93,6 +93,24 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         self.assertEquals("bla.txt", libraryfile.filename)
         self.assertEquals("application/octet-stream", libraryfile.mimetype)
 
+    def test_debian_installer_verify(self):
+        # debian-installer uploads are required to have sensible filenames.
+        uploadfile = self.createCustomUploadFile(
+            "debian-installer-images_20120627_i386.tar.gz", "data",
+            "main/raw-installer", "extra")
+        self.assertEqual([], list(uploadfile.verify()))
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        errors = list(uploadfile.verify())
+        self.assertEqual(1, len(errors))
+        self.assertIsInstance(errors[0], UploadError)
+
+    def test_no_handler_no_verify(self):
+        # Uploads without special handlers have no filename checks.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-meta-data", "extra")
+        self.assertEqual([], list(uploadfile.verify()))
+
     def test_debian_installer_auto_approved(self):
         # debian-installer uploads are auto-approved.
         uploadfile = self.createCustomUploadFile(
