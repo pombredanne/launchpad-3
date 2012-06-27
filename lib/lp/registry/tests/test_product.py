@@ -362,8 +362,12 @@ class TestProduct(TestCaseWithFactory):
         self.assertContentEqual(expected, [policy.type for policy in ap])
 
     def test_product_creation_grants_maintainer_access(self):
-        # Creating a new product also creates AccessPolicies for it.
-        product = self.factory.makeProduct()
+        # Creating a new product creates an access grant for the maintainer
+        # for all default policies.
+        owner = self.factory.makePerson()
+        product = getUtility(IProductSet).createProduct(
+            owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+            licenses=[License.MIT])
         policies = getUtility(IAccessPolicySource).findByPillar((product,))
         grants = getUtility(IAccessPolicyGrantSource).findByPolicy(policies)
         expected_grantess = set([product.owner])
