@@ -143,7 +143,7 @@
                tal:attributes="href python: tag[1]">tag</a>
           </span>
           <a href="+edit" title="Add tags" id="tags-trigger"
-            class="sprite add action-icon"
+            class="sprite add"
             tal:condition="not: context/bug/tags">Add tags</a>
           <a href="+edit" title="Edit tags" id="tags-trigger"
             class="sprite edit action-icon"
