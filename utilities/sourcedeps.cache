@@ -4,20 +4,20 @@
         "launchpad@pqm.canonical.com-20111114140506-6bmt9isw6lcud7yt"
     ], 
     "bzr-git": [
-        274, 
-        "launchpad@pqm.canonical.com-20111215014415-hjc2z537k31pny0v"
+        276, 
+        "launchpad@pqm.canonical.com-20120627155618-3lv9t9jw3b5t9g6k"
     ], 
     "bzr-hg": [
-        292, 
-        "launchpad@pqm.canonical.com-20111011005914-kzwlk4nk5u44bntc"
+        295, 
+        "launchpad@pqm.canonical.com-20120627155504-04tt5fb9gq5lx7ee"
     ], 
     "bzr-loom": [
         51, 
         "launchpad@pqm.canonical.com-20110921142504-p5xovac1r571h5iq"
     ], 
     "bzr-svn": [
-        2720, 
-        "launchpad@pqm.canonical.com-20111102161617-u478fn7rhbkekhbe"
+        2724, 
+        "launchpad@pqm.canonical.com-20120627153220-6ntxuuhdup7ie8ea"
     ], 
     "cscvs": [
         432, 
@@ -28,8 +28,8 @@
         "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
     ], 
     "dulwich": [
-        435, 
-        "launchpad@pqm.canonical.com-20111215014116-j7lw563fh7kuqp0n"
+        437, 
+        "launchpad@pqm.canonical.com-20120627160422-60kkcr5wqn6ih1j1"
     ], 
     "loggerhead": [
         472, 
@@ -64,8 +64,8 @@
         "launchpad@pqm.canonical.com-20110329053617-irncjfr14k0m00zp"
     ], 
     "subvertpy": [
-        2049, 
-        "launchpad@pqm.canonical.com-20111102161913-94jrf4rhs0x9htah"
+        2051, 
+        "launchpad@pqm.canonical.com-20120627155818-0m7c94csgij9f1ee"
     ], 
     "testresources": [
         16, 
