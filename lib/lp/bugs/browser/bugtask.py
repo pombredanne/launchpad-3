@@ -513,6 +513,25 @@ def target_has_expirable_bugs_listing(target):
         return False
 
 
+class BugTargetTagsMixin:
+    """A mixin that provides bugtag helpers.
+
+    XXX sinzui 2012-06-27: This and several other bugtarget view classes
+    cannot be in the bug bugtarget module because of cyclic import issues.
+    """
+
+    @property
+    def official_tags_js(self):
+        """Return the JavaScript of bug tags used by the bug tag completer."""
+        tagged = (
+            IProduct(self.context, None) or IDistribution(self.context, None))
+        if tagged is not None:
+            official_tags = list(tagged.official_bug_tags)
+        else:
+            official_tags = []
+        return 'var official_tags = %s;' % dumps(official_tags)
+
+
 class BugTargetTraversalMixin:
     """Mix-in in class that provides .../+bug/NNN traversal."""
 
@@ -2522,7 +2541,8 @@ SORT_KEYS = [
     ]
 
 
-class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
+class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin,
+                               BugTargetTagsMixin):
     """View that renders a list of bugs for a given set of search criteria."""
 
     implements(IBugTaskSearchListingMenu)
