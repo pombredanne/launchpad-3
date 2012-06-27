@@ -700,7 +700,6 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                                 "Re-uploaded %s to librarian" %
                                 new_file.filename)
 
-
         overrides_index += 1
         copies.extend(sub_copies)
 

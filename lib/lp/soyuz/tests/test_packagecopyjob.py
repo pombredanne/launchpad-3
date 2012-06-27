@@ -1044,7 +1044,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             archive=target_archive)
 
         # Run the copy job.
-        source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
         with person_logged_in(target_archive.owner):
             target_archive.newComponentUploader(requester, "main")
@@ -1077,7 +1076,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         spr.changelog = self.factory.makeLibraryFileAlias(restricted=True)
 
         # Now, run the copy job.
-        source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
         with person_logged_in(target_archive.owner):
             target_archive.newPocketUploader(
@@ -1132,7 +1130,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.layer.txn.commit()
 
         # Create the copy job.
-        source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
         with person_logged_in(spph.archive.owner):
             spph.archive.newPocketUploader(
@@ -1307,7 +1304,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             version="1.0",
             archive=source_archive,
             status=PackagePublishingStatus.PUBLISHED)
-        job_source = getUtility(IPlainPackageCopyJobSource)
         job = self.createCopyJobForSPPH(
             source_pub, source_archive, target_archive)
 
