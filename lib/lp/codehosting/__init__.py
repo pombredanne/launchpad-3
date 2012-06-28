@@ -21,7 +21,9 @@ from bzrlib.plugin import load_plugins
 
 from lp.services.config import config
 
-bzrlib.initialize()
+# This import is needed so that bzr's logger gets registered.
+import bzrlib.trace
+
 
 def get_bzr_path():
     """Find the path to the copy of Bazaar for this rocketfuel instance"""
