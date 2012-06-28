@@ -5,9 +5,7 @@
 
 __metaclass__ = type
 
-from bzrlib.errors import (
-    NoSuchRevision,
-    )
+from bzrlib.errors import NoSuchRevision
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import (
     TestCaseInTempDir,
@@ -15,8 +13,8 @@ from bzrlib.tests import (
     )
 
 from lp.code.bzr import (
-    BranchFormat,
     branch_revision_history,
+    BranchFormat,
     ControlFormat,
     get_ancestry,
     get_branch_formats,

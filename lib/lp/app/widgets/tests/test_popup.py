@@ -1,6 +1,5 @@
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from lp.services.features.testing import FeatureFixture
 
 __metaclass__ = type
 
@@ -14,6 +13,7 @@ from lp.app.widgets.popup import (
     PersonPickerWidget,
     VocabularyPickerWidget,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
