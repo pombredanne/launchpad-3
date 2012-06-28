@@ -72,7 +72,6 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -1641,7 +1640,6 @@ class Archive(SQLBase):
         series = self._text_to_series(to_series)
         # Upload permission checks, this will raise CannotCopy as
         # necessary.
-        sourcepackagename = getUtility(ISourcePackageNameSet)[source_name]
         source = self._validateAndFindSource(
             from_archive, source_name, version)
         if series is None:
