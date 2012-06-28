@@ -247,6 +247,13 @@ class TestSharingService(TestCaseWithFactory):
                 artifact_grant.grantee,
                 [(InformationType.PROPRIETARY, SharingPermission.SOME)],
                 [InformationType.PROPRIETARY])]
+        if pillar_type == 'product':
+            owner_data = self._makeShareeData(
+                pillar.owner,
+                [(InformationType.USERDATA, SharingPermission.ALL),
+                 (InformationType.EMBARGOEDSECURITY, SharingPermission.ALL)],
+                [])
+            expected_sharees.append(owner_data)
         self.assertContentEqual(expected_sharees, sharees)
 
     def test_getProductShareeData(self):
@@ -254,7 +261,7 @@ class TestSharingService(TestCaseWithFactory):
         driver = self.factory.makePerson()
         product = self.factory.makeProduct(driver=driver)
         login_person(driver)
-        self._assert_getPillarShareeData(product)
+        self._assert_getPillarShareeData(product, pillar_type='product')
 
     def test_getDistroShareeData(self):
         # Users with launchpad.Driver can view sharees.
