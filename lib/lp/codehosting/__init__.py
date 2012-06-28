@@ -21,6 +21,7 @@ from bzrlib.plugin import load_plugins
 
 from lp.services.config import config
 
+bzrlib.initialize()
 
 def get_bzr_path():
     """Find the path to the copy of Bazaar for this rocketfuel instance"""
