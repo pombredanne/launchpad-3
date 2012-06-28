@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 from lp.services.features.testing import FeatureFixture
 
+
 __metaclass__ = type
 
 import simplejson

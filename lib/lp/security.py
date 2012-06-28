@@ -11,21 +11,20 @@ __all__ = [
     'ModerateByRegistryExpertsOrAdmins',
     ]
 
-from zope.component import (
-    getUtility,
-    queryAdapter,
-    )
-from zope.interface import Interface
-
 from storm.expr import (
-    Exists,
     And,
+    Exists,
     Or,
     Select,
     SQL,
     Union,
     With,
     )
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.interface import Interface
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -57,8 +56,8 @@ from lp.blueprints.model.specificationsubscription import (
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.bugs.model.bugtaskflat import BugTaskFlat
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
