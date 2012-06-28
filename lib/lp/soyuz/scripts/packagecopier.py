@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'PackageCopier',
-    'UnembargoSecurityPackage',
     'CopyChecker',
     'check_copy_permissions',
     'do_copy',
@@ -1080,74 +1079,3 @@ class PackageCopier(SoyuzScript):
             raise SoyuzScriptError(
                 "Can not sync between the same locations: '%s' to '%s'" % (
                 self.location, self.destination))
-
-
-class UnembargoSecurityPackage(PackageCopier):
-    """`SoyuzScript` that unembargoes security packages and their builds.
-
-    Security builds are done in the ubuntu-security private PPA.
-    When they are ready to be unembargoed, this script will copy
-    them from the PPA to the Ubuntu archive and re-upload any files
-    from the restricted librarian into the non-restricted one.
-
-    This script simply wraps up PackageCopier with some nicer options.
-
-    An assumption is made, to reduce the number of command line options,
-    that packages are always copied between the same distroseries.  The user
-    can, however, select which target pocket to unembargo into.  This is
-    useful to the security team when there are major version upgrades
-    and they want to stage it through -proposed first for testing.
-    """
-
-    usage = ("%prog [-d <distribution>] [-s <suite>] [--ppa <private ppa>] "
-             "<package(s)>")
-    description = ("Unembargo packages in a private PPA by copying to the "
-                   "specified location and re-uploading any files to the "
-                   "unrestricted librarian.")
-
-    def add_my_options(self):
-        """Add -d, -s, dry-run and confirmation options."""
-        SoyuzScript.add_distro_options(self)
-        SoyuzScript.add_transaction_options(self)
-
-        self.parser.add_option(
-            "-p", "--ppa", dest="archive_owner_name",
-            default="ubuntu-security", action="store",
-            help="Private PPA owner's name.")
-
-        self.parser.add_option(
-            "--ppa-name", dest="archive_name",
-            default="ppa", action="store",
-            help="Private PPA name.")
-
-    def setUpCopierOptions(self):
-        """Set up options needed by PackageCopier."""
-        # Set up the options for PackageCopier that are needed in addition
-        # to the ones that this class sets up.
-        self.options.to_partner = False
-        self.options.to_ppa = False
-        self.options.partner_archive = None
-        self.options.include_binaries = True
-        self.options.unembargo = True
-        self.options.to_distribution = self.options.distribution_name
-        # The PackageCopier parent class uses options.suite as the source
-        # suite, so we need to override it to remove the pocket since PPAs
-        # are pocket-less.
-        self.options.to_suite = self.options.suite
-        self.options.suite = self.options.suite.split("-")[0]
-        self.options.version = None
-        self.options.component = None
-
-    def mainTask(self):
-        """Invoke PackageCopier to copy the package(s) and re-upload files."""
-        self.setUpCopierOptions()
-
-        # Generate the location for PackageCopier after overriding the
-        # options.
-        self.setupLocation()
-
-        # Invoke the package copy operation.
-        copies = PackageCopier.mainTask(self)
-
-        # Return this for the benefit of the test suite.
-        return copies
