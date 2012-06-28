@@ -338,7 +338,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._assert_getPillarShareeDataUnauthorized(product)
 
-    def _assert_getPillarSharees(self, pillar):
+    def _assert_getPillarSharees(self, pillar, pillar_type=None):
         # getPillarSharees returns the expected data.
         access_policy = self.factory.makeAccessPolicy(
             pillar=pillar,
@@ -356,6 +356,15 @@ class TestSharingService(TestCaseWithFactory):
             (grantee, {access_policy: SharingPermission.ALL}, []),
             (artifact_grant.grantee, {access_policy: SharingPermission.SOME},
              [access_policy.type])]
+        if pillar_type == 'product':
+            policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+            policies = [policy for policy in policies
+                            if policy.type != InformationType.PROPRIETARY]
+            owner_data = (
+                pillar.owner,
+                dict.fromkeys(policies, SharingPermission.ALL),
+                [])
+            expected_sharees.append(owner_data)
         self.assertContentEqual(expected_sharees, sharees)
 
     def test_getProductSharees(self):
@@ -363,7 +372,7 @@ class TestSharingService(TestCaseWithFactory):
         driver = self.factory.makePerson()
         product = self.factory.makeProduct(driver=driver)
         login_person(driver)
-        self._assert_getPillarSharees(product)
+        self._assert_getPillarSharees(product, pillar_type='product')
 
     def test_getDistroSharees(self):
         # Users with launchpad.Driver can view sharees.
