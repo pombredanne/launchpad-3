@@ -145,10 +145,10 @@ class BugTagsWidget(BugTagsWidgetBase, TextWidget):
                class="sprite maybe action-icon"
                target="help">Tag search help</a>
             <script type="text/javascript">
-            LPJS.use('event', 'lp.bugs.bug_tags_entry', function(Y) {
+            LPJS.use('event', 'lp.bugs.tags_entry', function(Y) {
                 %s
                 Y.on('domready', function(e) {
-                     Y.lp.bugs.bug_tags_entry.setup_bug_tag_complete(
+                     Y.lp.bugs.tags_entry.setup_tag_complete(
                          'input[id="field.%s"][type="text"]', official_tags);
                      });
                 });
