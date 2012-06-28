@@ -7,7 +7,6 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-import select
 from SimpleXMLRPCServer import (
     SimpleXMLRPCRequestHandler,
     SimpleXMLRPCServer,
@@ -32,13 +31,6 @@ from lp.services.timeout import (
     )
 from lp.testing import TestCase
 from lp.testing.layers import BaseLayer
-
-
-@with_timeout(timeout=0.5)
-def wait_for(time):
-    """Function that waits for a supplied number of seconds."""
-    select.select((), (), (), time)
-    return "Succeeded."
 
 
 @with_timeout()
@@ -76,16 +68,33 @@ class TestTimeout(TestCase):
         """After decorating a function 'with_timeout', as long as that function
         finishes before the supplied timeout, it should function normally.
         """
-        self.assertEqual("Succeeded.", wait_for(0.1))
+        wait_evt = threading.Event()
+        @with_timeout(timeout=0.5)
+        def wait_100ms():
+            """Function that waits for a supplied number of seconds."""
+            wait_evt.wait(0.1)
+            return "Succeeded."
+        self.assertEqual("Succeeded.", wait_100ms())
 
     def test_timeout_overrun(self):
         """If the operation cannot be completed in the allotted time, a
         TimeoutError is raised.
         """
-        self.assertRaises(TimeoutError, wait_for, 1.0)
-        # Note: If with_timeout fails without a cleanup function, it leaves the
-        #       thread running, though the caller has gotten the TimeoutError
-        #       exception.
+        # We use interlocked events to help ensure the thread will have exited
+        # by the time this thread returns from the test.
+        # The wait_for_event thread waits for us to set the event (though it
+        # gets a timeout in the middle), and then we wait for it to wake up and
+        # inform us that it is about to exit.
+        wait_evt = threading.Event()
+        stopping_evt = threading.Event()
+        @with_timeout(timeout=0.5)
+        def wait_for_event():
+            """Function that waits for a supplied number of seconds."""
+            wait_evt.wait()
+            stopping_evt.set()
+        self.assertRaises(TimeoutError, wait_for_event)
+        wait_evt.set()
+        stopping_evt.wait()
 
     def test_timeout_with_failing_function(self):
         """Other exceptions are reported correctly to the caller."""
