@@ -148,7 +148,7 @@ class BugTagsWidget(BugTagsWidgetBase, TextWidget):
             LPJS.use('event', 'lp.bugs.bug_tags_entry', function(Y) {
                 %s
                 Y.on('domready', function(e) {
-                     Y.lp.bugs.bug_tags_entry.setup_tag_completer(
+                     Y.lp.bugs.bug_tags_entry.setup_bug_tag_complete(
                          'input[id="field.%s"][type="text"]', official_tags);
                      });
                 });

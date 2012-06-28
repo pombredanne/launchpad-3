@@ -75,7 +75,7 @@ class BugTagsWidgetTestCase(TestCaseWithFactory):
         self.assertIn('<a href="/+help-bugs/tag-search.html"', markup)
         self.assertIn('var official_tags = ["cows", "pigs", "sheep"];', markup)
         self.assertIn(
-            'Y.lp.bugs.bug_tags_entry.setup_tag_completer(', markup)
+            'Y.lp.bugs.bug_tags_entry.setup_bug_tag_complete(', markup)
         self.assertIn(
             """'input[id="field.official_bug_tags"][type="text"]',""", markup)
         self.assertIn("official_tags)", markup)
