@@ -44,9 +44,7 @@ from zope.interface import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat
-from lp.bugs.model.bugtasksearch import (
-    get_bug_privacy_filter_terms,
-    )
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
