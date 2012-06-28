@@ -3,8 +3,9 @@
 
 """Test UEFI custom uploads."""
 
+__metaclass__ = type
+
 import os
-from textwrap import dedent
 
 from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
@@ -15,11 +16,17 @@ from lp.archivepublisher.uefi import (
     UefiNothingToSign,
     UefiUpload,
     )
-from lp.services.config import config
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
+
+
+class FakeConfig:
+    """A fake publisher configuration."""
+    def __init__(self, archiveroot, uefiroot):
+        self.archiveroot = archiveroot
+        self.uefiroot = uefiroot
 
 
 class TestUefi(TestCase):
@@ -27,26 +34,18 @@ class TestUefi(TestCase):
     def setUp(self):
         super(TestUefi, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
+        self.uefi_dir = self.makeTemporaryDirectory()
+        self.pubconf = FakeConfig(self.temp_dir, self.uefi_dir)
         self.suite = "distroseries"
         # CustomUpload.installFiles requires a umask of 022.
         old_umask = os.umask(022)
         self.addCleanup(os.umask, old_umask)
 
-    def pushConfiguration(self, key_location, cert_location):
-        uefi_config = dedent("""
-            [archivepublisher]
-            uefi_key_location: %s
-            uefi_cert_location: %s
-            """ % (key_location, cert_location))
-        config.push("uefi_config", uefi_config)
-        self.addCleanup(config.pop, "uefi_config")
-
     def setUpKeyAndCert(self):
-        self.key_location = os.path.join(self.temp_dir, "test.key")
-        self.cert_location = os.path.join(self.temp_dir, "test.cert")
-        write_file(self.key_location, "")
-        write_file(self.cert_location, "")
-        self.pushConfiguration(self.key_location, self.cert_location)
+        self.key = os.path.join(self.uefi_dir, "uefi.key")
+        self.cert = os.path.join(self.uefi_dir, "uefi.crt")
+        write_file(self.key, "")
+        write_file(self.cert, "")
 
     def openArchive(self, loader_type, version, arch):
         self.path = os.path.join(
@@ -59,7 +58,7 @@ class TestUefi(TestCase):
         self.buffer.close()
         upload = UefiUpload()
         upload.sign = FakeMethod()
-        upload.process(self.temp_dir, self.path, self.suite)
+        upload.process(self.pubconf, self.path, self.suite)
         return upload
 
     def getUefiPath(self, loader_type, arch):
@@ -69,15 +68,12 @@ class TestUefi(TestCase):
 
     def test_unconfigured(self):
         # If there is no key/cert configuration, processing fails.
-        self.pushConfiguration("none", "none")
+        self.pubconf = FakeConfig(self.temp_dir, None)
         self.openArchive("test", "1.0", "amd64")
         self.assertRaises(UefiConfigurationError, self.process)
 
     def test_missing_key_and_cert(self):
         # If the configured key/cert are missing, processing fails.
-        self.pushConfiguration(
-            os.path.join(self.temp_dir, "key"),
-            os.path.join(self.temp_dir, "cert"))
         self.openArchive("test", "1.0", "amd64")
         self.archive.add_file("1.0/empty.efi", "")
         self.assertRaises(UefiConfigurationError, self.process)
@@ -110,10 +106,9 @@ class TestUefi(TestCase):
         self.setUpKeyAndCert()
         upload = UefiUpload()
         upload.setTargetDirectory(
-            self.temp_dir, "test_1.0_amd64.tar.gz", "distroseries")
+            self.pubconf, "test_1.0_amd64.tar.gz", "distroseries")
         expected_command = [
-            "sbsign", "--key", self.key_location, "--cert", self.cert_location,
-            "t.efi"]
+            "sbsign", "--key", self.key, "--cert", self.cert, "t.efi"]
         self.assertEqual(expected_command, upload.getSigningCommand("t.efi"))
 
     def test_signs_image(self):

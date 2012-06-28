@@ -52,11 +52,11 @@ class DdtpTarballUpload(CustomUpload):
         name, component, version = os.path.basename(tarfile_path).split("_")
         return name, component, version
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         _, component, self.version = self.parsePath(tarfile_path)
         self.arch = None
         self.targetdir = os.path.join(
-            archive_root, 'dists', distroseries, component)
+            pubconf.archiveroot, 'dists', distroseries, component)
 
     def checkForConflicts(self):
         # We just overwrite older files, so no conflicts are possible.
@@ -71,7 +71,7 @@ class DdtpTarballUpload(CustomUpload):
         pass
 
 
-def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
+def process_ddtp_tarball(pubconf, tarfile_path, distroseries):
     """Process a raw-ddtp-tarball tarfile.
 
     Unpacking it into the given archive for the given distroseries.
@@ -79,4 +79,4 @@ def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
     anything goes wrong.
     """
     upload = DdtpTarballUpload()
-    upload.process(archive_root, tarfile_path, distroseries)
+    upload.process(pubconf, tarfile_path, distroseries)

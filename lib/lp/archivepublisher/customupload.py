@@ -101,11 +101,11 @@ class CustomUpload:
 
         self.tmpdir = None
 
-    def process(self, archive_root, tarfile_path, distroseries):
+    def process(self, pubconf, tarfile_path, distroseries):
         """Process the upload and install it into the archive."""
         self.tarfile_path = tarfile_path
         try:
-            self.setTargetDirectory(archive_root, tarfile_path, distroseries)
+            self.setTargetDirectory(pubconf, tarfile_path, distroseries)
             self.checkForConflicts()
             self.extract()
             self.installFiles()
@@ -121,7 +121,7 @@ class CustomUpload:
         """
         raise NotImplementedError
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         """Set self.targetdir based on parameters.
 
         This should also set self.version and self.arch (if applicable) as a

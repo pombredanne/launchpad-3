@@ -23,7 +23,6 @@ from lp.archivepublisher.customupload import (
     CustomUpload,
     CustomUploadError,
     )
-from lp.services.config import config
 from lp.services.osutils import remove_if_exists
 
 
@@ -60,8 +59,11 @@ class UefiUpload(CustomUpload):
 
     A 'current' symbolic link points to the most recent version.  The
     tarfile must contain at least one file matching the wildcard *.efi, and
-    any such files are signed using the key configured in
-    config.archivepublisher.uefi_key_location.
+    any such files are signed using the archive's UEFI signing key.
+
+    Signing keys may be installed in the "uefiroot" directory specified in
+    publisher configuration.  In this directory, the private key is
+    "uefi.key" and the certificate is "uefi.crt".
     """
     custom_type = "UEFI"
 
@@ -70,24 +72,22 @@ class UefiUpload(CustomUpload):
         loader_type, version, arch = os.path.basename(tarfile_path).split("_")
         return loader_type, version, arch.split(".")[0]
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
-        self.uefi_key_location = config.archivepublisher.uefi_key_location
-        self.uefi_cert_location = config.archivepublisher.uefi_cert_location
-        if self.uefi_key_location is None:
-            raise UefiConfigurationError("no key configured")
-        if not os.access(self.uefi_key_location, os.R_OK):
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+        if pubconf.uefiroot is None:
             raise UefiConfigurationError(
-                "configured key %s not readable" % self.uefi_key_location)
-        if self.uefi_cert_location is None:
-            raise UefiConfigurationError("no certificate configured")
-        if not os.access(self.uefi_cert_location, os.R_OK):
+                "no UEFI root configured for this archive")
+        self.key = os.path.join(pubconf.uefiroot, "uefi.key")
+        self.cert = os.path.join(pubconf.uefiroot, "uefi.crt")
+        if not os.access(self.key, os.R_OK):
             raise UefiConfigurationError(
-                "configured certificate %s not readable" %
-                self.uefi_cert_location)
+                "UEFI private key %s not readable" % self.key)
+        if not os.access(self.cert, os.R_OK):
+            raise UefiConfigurationError(
+                "UEFI certificate %s not readable" % self.cert)
 
         loader_type, self.version, self.arch = self.parsePath(tarfile_path)
         self.targetdir = os.path.join(
-            archive_root, "dists", distroseries, "main", "uefi",
+            pubconf.archiveroot, "dists", distroseries, "main", "uefi",
             "%s-%s" % (loader_type, self.arch))
 
     @classmethod
@@ -107,10 +107,7 @@ class UefiUpload(CustomUpload):
 
     def getSigningCommand(self, image):
         """Return the command used to sign an image."""
-        return [
-            "sbsign", "--key", self.uefi_key_location,
-            "--cert", self.uefi_cert_location, image,
-            ]
+        return ["sbsign", "--key", self.key, "--cert", self.cert, image]
 
     def sign(self, image):
         """Sign an image."""
@@ -133,7 +130,7 @@ class UefiUpload(CustomUpload):
         return filename.startswith("%s/" % self.version)
 
 
-def process_uefi(archive_root, tarfile_path, distroseries):
+def process_uefi(pubconf, tarfile_path, distroseries):
     """Process a raw-uefi tarfile.
 
     Unpacking it into the given archive for the given distroseries.
@@ -141,4 +138,4 @@ def process_uefi(archive_root, tarfile_path, distroseries):
     wrong.
     """
     upload = UefiUpload()
-    upload.process(archive_root, tarfile_path, distroseries)
+    upload.process(pubconf, tarfile_path, distroseries)

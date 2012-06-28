@@ -1277,8 +1277,7 @@ class PackageUploadCustom(SQLBase):
         try:
             # See the XXX near the import for getPubConfig.
             archive_config = getPubConfig(self.packageupload.archive)
-            action_method(
-                archive_config.archiveroot, temp_filename, suite)
+            action_method(archive_config, temp_filename, suite)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
