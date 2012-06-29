@@ -309,12 +309,12 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             {'id': branch_id, 'writable': writable},
             trailing_path)
 
-    def _serializeControlDirectory(self, requester, product_path,
-                                   trailing_path):
+    def _serializeControlDirectory(self, requester, lookup):
         try:
-            namespace = lookup_branch_namespace(product_path)
+            namespace = lookup_branch_namespace(lookup['control_name'])
         except (InvalidNamespace, NotFoundError):
             return
+        trailing_path = lookup['trailing'].lstrip('/')
         if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
             # '.bzr' is OK, '.bzr/foo' is OK, '.bzrfoo' is not.
             return
@@ -328,7 +328,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         return (
             CONTROL_TRANSPORT,
             {'default_stack_on': escape(path)},
-            trailing_path)
+            escape(trailing_path))
 
     def translatePath(self, requester_id, path):
         """See `ICodehostingAPI`."""
@@ -341,8 +341,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             for lookup in path_lookups(stripped_path):
                 if lookup['type'] == 'control_name':
                     product = self._serializeControlDirectory(
-                        requester, lookup['control_name'],
-                        escape(lookup['trailing'].lstrip('/')))
+                        requester, lookup)
                     if product is not None:
                         return product
                     continue
