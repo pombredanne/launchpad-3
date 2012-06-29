@@ -189,7 +189,7 @@ class FileUploadClient:
 
             # Read in and upload the file 64kb at a time, by using the two-arg
             # form of iter (see
-            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
+            # /usr/share/doc/python/html/library/functions.html#iter).
             for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
@@ -258,7 +258,7 @@ class FileUploadClient:
 
             # Read in and upload the file 64kb at a time, by using the two-arg
             # form of iter (see
-            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
+            # /usr/share/doc/python/html/library/functions.html#iter).
             for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
