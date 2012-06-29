@@ -283,7 +283,7 @@ class BranchLookup:
         elif lookup['type'] == 'branch_name':
             store = IStore(Branch)
             result = store.find(Branch,
-                                Branch.unique_name==lookup['unique_name'])
+                                Branch.unique_name == lookup['unique_name'])
             return (result.one(), escape(lookup['trailing']), False)
         else:
             return None, '', False

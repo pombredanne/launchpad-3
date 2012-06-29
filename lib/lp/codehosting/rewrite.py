@@ -108,7 +108,8 @@ class BranchRewriter:
                 branch_id, trailing, cached = self._getBranchIdAndTrailingPath(
                     resource_location)
                 if branch_id is None:
-                    if resource_location.startswith('/' + BRANCH_ID_ALIAS_PREFIX):
+                    if resource_location.startswith(
+                            '/' + BRANCH_ID_ALIAS_PREFIX):
                         r = 'NULL'
                     else:
                         r = self._codebrowse_url(resource_location)

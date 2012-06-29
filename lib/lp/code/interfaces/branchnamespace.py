@@ -54,7 +54,7 @@ class IBranchNamespace(Interface):
 
     def getBranches(eager_load=False):
         """Return the branches in this namespace.
-        
+
         :param eager_load: If True eager load related data for the branches.
         """
 
