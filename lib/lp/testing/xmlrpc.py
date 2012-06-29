@@ -82,7 +82,7 @@ class HTTPCallerHTTPConnection(httplib.HTTPConnection):
     # py2.6 compatibility
     # in Python 2.6, XMLRPC uses their 'compatibility' HTTP class, which
     # expects getreply() and getfile() methods. Python 2.7 now uses the
-    # getresponse(buffering=True) api. Once we switch to python 2.6, the
+    # getresponse(buffering=True) api. Once we switch to python 2.7, the
     # following two methods can be removed.
     def getreply(self):
         """Return a tuple of status code, reason string, and headers."""
