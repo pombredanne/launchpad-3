@@ -451,7 +451,11 @@ class TestSharingService(TestCaseWithFactory):
                 pillar, sharee, grantor, permissions)
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        [grant] = policy_grant_source.findByPolicy(policies)
+        grants = policy_grant_source.findByPolicy(policies)
+
+        # Filter out the owner's grants if they exist. They're automatic and
+        # already tested.
+        [grant] = [g for g in grants if g.grantee != pillar.owner]
         self.assertEqual(grantor, grant.grantor)
         self.assertEqual(sharee, grant.grantee)
         expected_permissions = [
@@ -463,11 +467,16 @@ class TestSharingService(TestCaseWithFactory):
         self.assertEqual(expected_sharee_data, sharee_data)
         # Check that getPillarSharees returns what we expect.
         expected_sharee_grants = [
-            (sharee, {
-                es_policy: SharingPermission.ALL,
-                ud_policy: SharingPermission.SOME},
-             [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])]
+            (sharee,
+             {ud_policy: SharingPermission.SOME,
+              es_policy: SharingPermission.ALL},
+             [InformationType.EMBARGOEDSECURITY,
+              InformationType.USERDATA]),
+             ]
+            
         sharee_grants = list(self.service.getPillarSharees(pillar))
+        # Again, filter out the owner, if one exists.
+        sharee_grants = [s for s in sharee_grants if s[0] != pillar.owner]
         self.assertContentEqual(expected_sharee_grants, sharee_grants)
 
     def test_updateProjectGroupSharee_not_allowed(self):
