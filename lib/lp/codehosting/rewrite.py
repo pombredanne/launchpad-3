@@ -13,7 +13,6 @@ from zope.security.interfaces import Unauthorized
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.codehosting.vfs import branch_id_to_path
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.services.config import config
 from lp.services.utils import iter_split
 from lp.services.webapp.adapter import (
