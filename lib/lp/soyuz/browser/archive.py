@@ -1311,16 +1311,14 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         not permitted.
     """
     if check_permissions:
-        spns = [
-            spph.sourcepackagerelease.sourcepackagename
-            for spph in source_pubs]
         check_copy_permissions(
-            person, dest_archive, dest_series, dest_pocket, spns)
+            person, dest_archive, dest_series, dest_pocket, source_pubs)
 
     job_source = getUtility(IPlainPackageCopyJobSource)
     for spph in source_pubs:
         job_source.create(
-            spph.source_package_name, spph.archive, dest_archive, dest_series,
+            spph.source_package_name, spph.archive, dest_archive,
+            dest_series if dest_series is not None else spph.distroseries,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
             copy_policy=PackageCopyPolicy.INSECURE,
