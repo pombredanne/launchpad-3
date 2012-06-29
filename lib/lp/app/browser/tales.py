@@ -322,7 +322,7 @@ class MenuAPI:
             except NoCanonicalUrl:
                 menu = None
             return self._getMenuLinksAndAttributes(menu)
-        except AttributeError, e:
+        except AttributeError as e:
             # If this method gets an AttributeError, we rethrow it as a
             # AssertionError. Otherwise, zope will hide the root cause
             # of the error and just say that "navigation" can't be traversed.

@@ -1078,7 +1078,7 @@ class SpecificationWorkitemMigrator(TunableLoop):
         for spec in self.getNextBatch(chunk_size):
             try:
                 work_items = extractWorkItemsFromWhiteboard(spec)
-            except Exception, e:
+            except Exception as e:
                 self.log.info(
                     "Failed to parse whiteboard of %s: %s" % (
                         spec, unicode(e)))

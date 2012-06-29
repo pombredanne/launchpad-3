@@ -245,7 +245,7 @@ def wait_children(seconds=120):
     while True:
         try:
             os.waitpid(-1, os.WNOHANG)
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ECHILD:
                 raise
             break
@@ -868,7 +868,7 @@ class LibrarianLayer(DatabaseLayer):
         try:
             f = urlopen(config.librarian.download_url)
             f.read()
-        except Exception, e:
+        except Exception as e:
             raise LayerIsolationError(
                     "Librarian has been killed or has hung."
                     "Tests should use LibrarianLayer.hide() and "
@@ -1714,7 +1714,7 @@ class LayerProcessController:
         """
         try:
             os.kill(cls.appserver.pid, sig)
-        except OSError, error:
+        except OSError as error:
             if error.errno == errno.ESRCH:
                 # The child process doesn't exist.  Maybe it went away by the
                 # time we got here.
@@ -1777,7 +1777,7 @@ class LayerProcessController:
             # Don't worry if the process no longer exists.
             try:
                 os.kill(pid, signal.SIGTERM)
-            except OSError, error:
+            except OSError as error:
                 if error.errno != errno.ESRCH:
                     raise
             pidfile.remove_pidfile('launchpad', cls.appserver_config)
@@ -1809,7 +1809,7 @@ class LayerProcessController:
             try:
                 connection = urlopen(root_url)
                 connection.read()
-            except IOError, error:
+            except IOError as error:
                 # We are interested in a wrapped socket.error.
                 # urlopen() really sucks here.
                 if len(error.args) <= 1:

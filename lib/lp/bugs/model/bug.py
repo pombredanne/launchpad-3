@@ -1977,7 +1977,7 @@ class Bug(SQLBase):
                         change, empty_recipients, deferred=True)
 
             self.duplicateof = duplicate_of
-        except LaunchpadValidationError, validation_error:
+        except LaunchpadValidationError as validation_error:
             raise InvalidDuplicateValue(validation_error)
         if duplicate_of is not None:
             # Maybe confirm bug tasks, now that more people might be affected

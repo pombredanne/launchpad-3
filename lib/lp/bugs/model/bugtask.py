@@ -381,7 +381,7 @@ def validate_target(bug, target, retarget_existing=True):
             try:
                 target.distribution.guessPublishedSourcePackageName(
                     target.sourcepackagename.name)
-            except NotFoundError, e:
+            except NotFoundError as e:
                 raise IllegalTarget(e[0])
 
     if bug.information_type == InformationType.PROPRIETARY:

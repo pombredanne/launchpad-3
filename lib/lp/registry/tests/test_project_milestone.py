@@ -330,7 +330,7 @@ class TestDuplicateProductReleases(TestCaseWithFactory):
             milestone.createProductRelease, 1, now)
         try:
             milestone.createProductRelease(1, now)
-        except MultipleProductReleases, e:
+        except MultipleProductReleases as e:
             self.assert_(
                 str(e), 'A milestone can only have one ProductRelease.')
 

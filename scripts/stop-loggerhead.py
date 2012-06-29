@@ -18,7 +18,7 @@ pidfile = os.path.join(home, 'loggerhead.pid')
 
 try:
     f = open(pidfile, 'r')
-except IOError, e:
+except IOError as e:
     print 'No pid file found.'
     sys.exit(1)
 
@@ -26,7 +26,7 @@ pid = int(f.readline())
 
 try:
     os.kill(pid, 0)
-except OSError, e:
+except OSError as e:
     print 'Stale pid file; server is not running.'
     sys.exit(1)
 

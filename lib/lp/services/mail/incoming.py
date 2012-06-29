@@ -141,17 +141,17 @@ def _verifyDkimOrigin(signed_message):
     try:
         dkim_result = dkim.verify(
             signed_message.parsed_string, dkim_log, details=signing_details)
-    except dkim.DKIMException, e:
+    except dkim.DKIMException as e:
         log.warning('DKIM error: %r' % (e,))
-    except dns.resolver.NXDOMAIN, e:
+    except dns.resolver.NXDOMAIN as e:
         # This can easily happen just through bad input data, ie claiming to
         # be signed by a domain with no visible key of that name.  It's not an
         # operational error.
         log.info('DNS exception: %r' % (e,))
-    except dns.exception.DNSException, e:
+    except dns.exception.DNSException as e:
         # many of them have lame messages, thus %r
         log.warning('DNS exception: %r' % (e,))
-    except Exception, e:
+    except Exception as e:
         # DKIM leaks some errors when it gets bad input, as in bug 881237.  We
         # don't generally want them to cause the mail to be dropped entirely
         # though.  It probably is reasonable to treat them as potential
@@ -307,7 +307,7 @@ def _gpgAuthenticateEmail(mail, principal, person,
         sig = gpghandler.getVerifiedSignature(
             canonicalise_line_endings(mail.signedContent), signature)
         log.debug("got signature %r" % sig)
-    except GPGVerificationError, e:
+    except GPGVerificationError as e:
         # verifySignature failed to verify the signature.
         message = "Signature couldn't be verified: %s" % e
         log.debug(message)
@@ -521,7 +521,7 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
     try:
         principal = authenticateEmail(
             mail, signature_timestamp_checker)
-    except InvalidSignature, error:
+    except InvalidSignature as error:
         send_process_error_notification(
             mail['From'], 'Submit Request Failure', str(error), mail)
         return
@@ -534,7 +534,7 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
 
     try:
         do_paranoid_envelope_to_validation(addresses)
-    except AssertionError, e:
+    except AssertionError as e:
         log.info("Invalid email address: %s" % e)
         return
 

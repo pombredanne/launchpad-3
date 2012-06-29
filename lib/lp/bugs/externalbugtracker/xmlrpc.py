@@ -109,7 +109,7 @@ class UrlLib2Transport(Transport):
         request = Request(url, request_body, headers)
         try:
             response = self.opener.open(request).read()
-        except HTTPError, he:
+        except HTTPError as he:
             raise ProtocolError(
                 request.get_full_url(), he.code, he.msg, he.hdrs)
         else:

@@ -426,7 +426,7 @@ class CodeImportNewView(CodeImportBaseView):
         """Create the code_import, and subscribe the user to the branch."""
         try:
             code_import = self._create_import(data, None)
-        except BranchExists, e:
+        except BranchExists as e:
             self._setBranchExists(e.existing_branch)
             return
 

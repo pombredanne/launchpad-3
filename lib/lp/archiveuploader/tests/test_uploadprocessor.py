@@ -235,7 +235,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         """
         try:
             callableObj(*args, **kwargs)
-        except excClass, error:
+        except excClass as error:
             return error
         else:
             if getattr(excClass, '__name__', None) is not None:

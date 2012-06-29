@@ -171,7 +171,7 @@ class DistroSeriesVersionField(UniqueField):
             # have stricter version rules than the schema. The version must
             # be a debversion.
             Version(version)
-        except VersionError, error:
+        except VersionError as error:
             raise LaunchpadValidationError(
                 "'%s': %s" % (version, error))
 

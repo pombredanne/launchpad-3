@@ -94,7 +94,7 @@ class FileUploadClient:
             self.state.s = socket.socket(AF_INET, SOCK_STREAM)
             self.state.s.connect((self.upload_host, self.upload_port))
             self.state.f = self.state.s.makefile('w+', 0)
-        except socket.error, x:
+        except socket.error as x:
             raise UploadFailed(
                 '[%s:%s]: %s' % (self.upload_host, self.upload_port, x))
 
@@ -482,7 +482,7 @@ class FileDownloadClient:
         while 1:
             try:
                 return _File(urllib2.urlopen(url), url)
-            except urllib2.URLError, error:
+            except urllib2.URLError as error:
                 # 404 errors indicate a data inconsistency: more than one
                 # attempt to open the file is pointless.
                 #

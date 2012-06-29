@@ -143,7 +143,7 @@ class GPGHandler:
         for i in range(3):
             try:
                 signature = self.getVerifiedSignature(content, signature)
-            except GPGVerificationError, info:
+            except GPGVerificationError as info:
                 errors.append(info)
             else:
                 return signature
@@ -186,7 +186,7 @@ class GPGHandler:
         # process it
         try:
             signatures = ctx.verify(*args)
-        except gpgme.GpgmeError, e:
+        except gpgme.GpgmeError as e:
             # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
             # for python2.5 compatibility. We should remove it when we no
             # longer need to run on python2.5.
@@ -453,7 +453,7 @@ class GPGHandler:
 
         try:
             conn.request("POST", "/pks/add", params, headers)
-        except socket.error, err:
+        except socket.error as err:
             raise GPGUploadFailure(
                 'Could not reach keyserver at http://%s %s' % (
                     keyserver_http_url, str(err)))
@@ -495,7 +495,7 @@ class GPGHandler:
         # minutes." The details of the error do not matter for users
         # (and for the code in callsites), but we should be able to see
         # if this problem occurs too often.
-        except urllib2.HTTPError, exc:
+        except urllib2.HTTPError as exc:
             # The key server behaves a bit odd when queried for non
             # existent keys: Instead of responding with a 404, it
             # returns a 500 error. But we can extract the fact that
@@ -507,7 +507,7 @@ class GPGHandler:
                     raise GPGKeyDoesNotExistOnServer(fingerprint)
                 errorlog.globalErrorUtility.raising(sys.exc_info(), request)
                 raise GPGKeyTemporarilyNotFoundError(fingerprint)
-        except (TimeoutError, urllib2.URLError), exc:
+        except (TimeoutError, urllib2.URLError) as exc:
             errorlog.globalErrorUtility.raising(sys.exc_info(), request)
             raise GPGKeyTemporarilyNotFoundError(fingerprint)
         finally:

@@ -60,7 +60,7 @@ def run_upgrade(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
-    except SystemExit, x:
+    except SystemExit as x:
         log.fatal("upgrade.py failed [%s]", x)
 
 
@@ -83,7 +83,7 @@ def run_security(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
-    except SystemExit, x:
+    except SystemExit as x:
         log.fatal("security.py failed [%s]", x)
 
 

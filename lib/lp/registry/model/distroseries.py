@@ -1632,7 +1632,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             rebuild, overlays, overlay_pockets, overlay_components)
         try:
             initialize_series.check()
-        except InitializationError, e:
+        except InitializationError as e:
             raise DerivationError(e)
         getUtility(IInitializeDistroSeriesJobSource).create(
             self, parents, architectures, archindep_archtag, packagesets,

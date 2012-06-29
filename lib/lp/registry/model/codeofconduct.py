@@ -268,7 +268,7 @@ class SignedCodeOfConductSet:
 
         try:
             sig = gpghandler.getVerifiedSignature(sane_signedcode)
-        except GPGVerificationError, e:
+        except GPGVerificationError as e:
             return str(e)
 
         if not sig.fingerprint:

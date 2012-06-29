@@ -724,7 +724,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         tar_checker.reset()
         try:
             deb_file = apt_inst.DebFile(self.filepath)
-        except SystemError, error:
+        except SystemError as error:
             # We get an error from the constructor if the .deb does not
             # contain all the expected top-level members (debian-binary,
             # control.tar.gz, and data.tar.*).
@@ -753,7 +753,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                         timestamp))
         except (SystemExit, KeyboardInterrupt):
             raise
-        except Exception, error:
+        except Exception as error:
             # There is a very large number of places where we
             # might get an exception while checking the timestamps.
             # Many of them come from apt_inst/apt_pkg and they are

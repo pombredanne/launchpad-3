@@ -1167,7 +1167,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         """Make sure some keywords are provided."""
         try:
             data['title'] = self.widgets['title'].getInputValue()
-        except InputErrors, error:
+        except InputErrors as error:
             self.setFieldError("title", "A summary is required.")
             return [error]
 

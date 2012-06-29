@@ -639,7 +639,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         try:
             copy_checker.checkCopy(
                 source, destination_series, pocket, person, check_permissions)
-        except CannotCopy, reason:
+        except CannotCopy as reason:
             errors.append("%s (%s)" % (source.displayname, reason))
             continue
 
@@ -1057,7 +1057,7 @@ class PackageCopier(SoyuzScript):
                 self.options.include_binaries, allow_delayed_copies=False,
                 check_permissions=False, unembargo=self.options.unembargo,
                 logger=self.logger)
-        except CannotCopy, error:
+        except CannotCopy as error:
             self.logger.error(str(error))
             return []
 

@@ -172,10 +172,10 @@ class XMLRPCRunner(Runner):
         """See if there are any list actions to perform."""
         try:
             actions = self._proxy.getPendingActions()
-        except (xmlrpclib.ProtocolError, socket.error), error:
+        except (xmlrpclib.ProtocolError, socket.error) as error:
             log_exception('Cannot talk to Launchpad:\n%s', error)
             return
-        except xmlrpclib.Fault, error:
+        except xmlrpclib.Fault as error:
             log_exception('Launchpad exception: %s', error)
             return
         if actions:
@@ -222,9 +222,9 @@ class XMLRPCRunner(Runner):
             try:
                 self._proxy.reportStatus(this_status)
                 syslog('xmlrpc', '[%s] %s: %s' % (team_name, action, status))
-            except (xmlrpclib.ProtocolError, socket.error), error:
+            except (xmlrpclib.ProtocolError, socket.error) as error:
                 log_exception('Cannot talk to Launchpad:\n%s', error)
-            except xmlrpclib.Fault, error:
+            except xmlrpclib.Fault as error:
                 log_exception('Launchpad exception: %s', error)
 
     def _update_list_subscriptions(self, list_name, subscription_info):
@@ -354,11 +354,11 @@ class XMLRPCRunner(Runner):
             # Get the information for this batch of mailing lists.
             try:
                 info = self._proxy.getMembershipInformation(batch)
-            except (xmlrpclib.ProtocolError, socket.error), error:
+            except (xmlrpclib.ProtocolError, socket.error) as error:
                 log_exception('Cannot talk to Launchpad: %s', error)
                 syslog('xmlrpc', 'batch: %s', batch)
                 continue
-            except xmlrpclib.Fault, error:
+            except xmlrpclib.Fault as error:
                 log_exception('Launchpad exception: %s', error)
                 syslog('xmlrpc', 'batch: %s', batch)
                 continue
@@ -409,7 +409,7 @@ class XMLRPCRunner(Runner):
                 mm_cfg.VAR_PREFIX, 'backups', team_name + '.tgz')
             try:
                 tgz_file = tarfile.open(tgz_file_name, 'r:gz')
-            except IOError, error:
+            except IOError as error:
                 if error.errno != errno.ENOENT:
                     raise
                 # The archive tarfile does not exist, meaning this is the
@@ -593,10 +593,10 @@ class XMLRPCRunner(Runner):
         """See if any held messages have been accepted or rejected."""
         try:
             dispositions = self._proxy.getMessageDispositions()
-        except (xmlrpclib.ProtocolError, socket.error), error:
+        except (xmlrpclib.ProtocolError, socket.error) as error:
             log_exception('Cannot talk to Launchpad:\n%s', error)
             return
-        except xmlrpclib.Fault, error:
+        except xmlrpclib.Fault as error:
             log_exception('Launchpad exception: %s', error)
             return
         if dispositions:
@@ -732,5 +732,5 @@ def extractall(tgz_file):
             tgz_file.chown(tarinfo, path)
             tgz_file.utime(tarinfo, path)
             tgz_file.chmod(tarinfo, path)
-        except tarfile.ExtractError, e:
+        except tarfile.ExtractError as e:
             log_exception('xmlrpc', 'tarfile: %s', e)
