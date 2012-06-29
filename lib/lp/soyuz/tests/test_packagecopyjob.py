@@ -243,6 +243,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 "1.5mother1",
                 mother.parent_series.main_archive,
                 derived_series.main_archive,
+                derived_series,
                 PackagePublishingPocket.RELEASE,
                 ),
             (
@@ -250,12 +251,11 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 "0.9father1",
                 father.parent_series.main_archive,
                 derived_series.main_archive,
+                derived_series,
                 PackagePublishingPocket.UPDATES,
                 ),
             ]
-        job_ids = list(
-            job_source.createMultiple(mother.derived_series, copy_tasks,
-                                      requester))
+        job_ids = list(job_source.createMultiple(copy_tasks, requester))
         jobs = list(job_source.getActiveJobs(derived_series.main_archive))
         self.assertContentEqual(job_ids, [job.id for job in jobs])
         self.assertEqual(len(copy_tasks), len(set([job.job for job in jobs])))
@@ -269,6 +269,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 job.package_version,
                 job.source_archive,
                 job.target_archive,
+                job.target_distroseries,
                 job.target_pocket,
                 )
             for job in jobs]

@@ -56,7 +56,7 @@ Viewing the current queue, by default the NEW queue.
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
-    >>> anon_browser.getLink("Show uploads").click()
+    >>> anon_browser.getLink("All uploads").click()
 
     >>> anon_browser.getControl(
     ...     name="queue_state", index=0).displayValue
