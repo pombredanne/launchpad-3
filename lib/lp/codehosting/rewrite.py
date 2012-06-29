@@ -55,7 +55,7 @@ class BranchRewriter:
                 branch_id, inserted_time = self._cache[first]
                 if (self._now() < inserted_time +
                     config.codehosting.branch_rewrite_cache_lifetime):
-                    return branch_id, '/' + second, "HIT"
+                    return branch_id, second, "HIT"
         branch_id, trailing = getUtility(IBranchLookup).getIdAndTrailingPath(
             location, from_slave=True)
         if branch_id is None:

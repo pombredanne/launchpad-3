@@ -10,6 +10,7 @@ __all__ = [
     'IBranchLookup',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
+    'path_lookups',
     ]
 
 from zope.interface import Interface
@@ -168,17 +169,6 @@ class IBranchLookup(Interface):
         """
 
 
-def candidate_unique_names(path):
-    """"Given a path, return possible the unique name and suffixes.
-
-    :param path: A plausible codehosting filesystem path.
-    """
-    segments = path.split('/')
-    names = ('/'.join(segments[:length]) for length in [3, 5]
-             if len(segments) >= length)
-    return dict((name, path[len(name):]) for name in names)
-
-
 def path_lookups(path):
     if path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
         try:
@@ -193,15 +183,15 @@ def path_lookups(path):
     if path.startswith(alias_prefix_trailing):
         yield {'type': 'alias', 'lp_path': path[len(alias_prefix_trailing):]}
         return
-    for unique_name, trailing in candidate_unique_names(path).iteritems():
+    for unique_name, trailing in iter_split(path, '/', [5, 3]):
         yield {
             'type': 'branch_name',
             'unique_name': unique_name,
             'trailing': trailing,
         }
-        for control_name, trailing in iter_split(path, '/'):
-            yield {
-                'type': 'control_name',
-                'control_name': control_name,
-                'trailing': trailing,
-            }
+    for control_name, trailing in iter_split(path, '/', [4, 2]):
+        yield {
+            'type': 'control_name',
+            'control_name': control_name,
+            'trailing': trailing,
+        }

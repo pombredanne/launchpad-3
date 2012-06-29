@@ -850,7 +850,8 @@ class FakeCodehosting:
         for lookup in self.pathLookups(unescape(stripped_path)):
             if lookup['type'] == 'control_name':
                 product = self._serializeControlDirectory(
-                    requester_id, lookup['control_name'], lookup['trailing'])
+                    requester_id, lookup['control_name'],
+                    lookup['trailing'].lstrip('/'))
                 if product:
                     return product
             elif lookup['type'] == 'id':

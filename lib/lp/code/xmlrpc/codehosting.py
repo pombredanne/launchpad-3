@@ -342,7 +342,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 if lookup['type'] == 'control_name':
                     product = self._serializeControlDirectory(
                         requester, lookup['control_name'],
-                        escape(lookup['trailing']))
+                        escape(lookup['trailing'].lstrip('/')))
                     if product is not None:
                         return product
                     continue

@@ -116,23 +116,28 @@ def compress_hash(hash_obj):
     return base(int(hash_obj.hexdigest(), 16), 62)
 
 
-def iter_split(string, splitter):
+def iter_split(string, splitter, splits=None):
     """Iterate over ways to split 'string' in two with 'splitter'.
 
     If 'string' is empty, then yield nothing. Otherwise, yield tuples like
-    ('a/b/c', ''), ('a/b', 'c'), ('a', 'b/c') for a string 'a/b/c' and a
+    ('a/b/c', ''), ('a/b', '/c'), ('a', '/b/c') for a string 'a/b/c' and a
     splitter '/'.
 
-    The tuples are yielded such that the first tuple has everything in the
+    The tuples are yielded such that the first result has everything in the
     first tuple. With each iteration, the first element gets smaller and the
     second gets larger. It stops iterating just before it would have to yield
     ('', 'a/b/c').
+
+    Splits, if specified, is an iterable of splitters to split the string at.
     """
     if string == '':
         return
     tokens = string.split(splitter)
-    for i in reversed(range(1, len(tokens) + 1)):
-        yield splitter.join(tokens[:i]), splitter.join(tokens[i:])
+    if splits is None:
+        splits = reversed(range(1, len(tokens) + 1))
+    for i in splits:
+        first = splitter.join(tokens[:i])
+        yield first, string[len(first):]
 
 
 def iter_list_chunks(a_list, size):
