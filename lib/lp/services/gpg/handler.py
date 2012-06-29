@@ -187,14 +187,7 @@ class GPGHandler:
         try:
             signatures = ctx.verify(*args)
         except gpgme.GpgmeError, e:
-            # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
-            # for python2.5 compatibility. We should remove it when we no
-            # longer need to run on python2.5.
-            if hasattr(e, 'strerror'):
-                msg = e.strerror
-            else:
-                msg = e.message
-            error = GPGVerificationError(msg)
+            error = GPGVerificationError(e.strerror)
             for attr in ("args", "code", "signatures", "source"):
                 if hasattr(e, attr):
                     value = getattr(e, attr)
