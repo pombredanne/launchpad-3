@@ -800,13 +800,13 @@ class FakeCodehosting:
         return self._factory.makeSourcePackage(
             distroseries, sourcepackagename)
 
-    def _serializeControlDirectory(self, requester, product_path,
-                                   trailing_path):
+    def _serializeControlDirectory(self, requester, lookup):
+        trailing_path = lookup['trailing'].lstrip('/')
         if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
             return
-        target = self._get_product_target(product_path)
+        target = self._get_product_target(lookup['control__path'])
         if target is None:
-            target = self._get_package_target(product_path)
+            target = self._get_package_target(lookup['control__path'])
         if target is None:
             return
         default_branch = IBranchTarget(target).default_stacked_on_branch
@@ -846,12 +846,10 @@ class FakeCodehosting:
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
-        stripped_path = path.strip('/')
-        for lookup in self.pathLookups(unescape(stripped_path)):
+        for lookup in self.pathLookups(unescape(path.strip('/'))):
             if lookup['type'] == 'control_name':
-                product = self._serializeControlDirectory(
-                    requester_id, lookup['control_name'],
-                    lookup['trailing'].lstrip('/'))
+                product = self._serializeControlDirectory(requester_id,
+                                                          lookup)
                 if product:
                     return product
             elif lookup['type'] == 'id':
