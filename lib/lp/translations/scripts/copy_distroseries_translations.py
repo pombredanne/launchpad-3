@@ -87,17 +87,14 @@ def copy_distroseries_translations(distroseries, txn, logger):
     copy_failed = False
 
     try:
-        # XXX JeroenVermeulen 2008-02-12: In python2.5 and up we'll be
-        # able to combine these two try blocks.  In 2.4, we can't.
-        try:
-            # Do the actual work.
-            distroseries.copyTranslationsFromParent(txn, logger)
-        except:
-            copy_failed = True
-            # Give us a fresh transaction for proper cleanup.
-            txn.abort()
-            txn.begin()
-            raise
+        # Do the actual work.
+        distroseries.copyTranslationsFromParent(txn, logger)
+    except:
+        copy_failed = True
+        # Give us a fresh transaction for proper cleanup.
+        txn.abort()
+        txn.begin()
+        raise
     finally:
         try:
             statekeeper.restore()
@@ -114,4 +111,3 @@ def copy_distroseries_translations(distroseries, txn, logger):
             # well.
             if not copy_failed:
                 raise
-
