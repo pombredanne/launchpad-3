@@ -285,8 +285,12 @@ class BranchLookup:
         elif lookup['type'] == 'alias':
             return self.getBranchByAlias(lookup['lp_path']) + (False,)
         elif lookup['type'] == 'branch_name':
-            branch = self.getByUniqueName(lookup['unique_name'])
-            return (branch, escape(lookup['trailing']), False)
+            store = IStore(Branch)
+            result = store.find(Branch,
+                                Branch.unique_name==lookup['unique_name'])
+            return (result.one(), escape(lookup['trailing']), False)
+        else:
+            return None, '', False
 
     def getByHostingPath(self, path):
         result = None, '', False
