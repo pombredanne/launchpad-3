@@ -13,6 +13,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
+    BRANCH_ID_ALIAS_PREFIX,
+    )
 
 
 class ILinkedBranchTraversable(Interface):
@@ -109,6 +113,9 @@ class IBranchLookup(Interface):
         Return None if no match was found.
         """
 
+    def _lookup(lookup):
+        """Find a branch and trailing path according to params"""
+
     def getByUrls(urls):
         """Find branches by URL.
 
@@ -158,3 +165,35 @@ class IBranchLookup(Interface):
             make things like 'bzr cat lp:~foo/bar/baz/README' work. Trailing
             paths are not handled for shortcut paths.
         """
+
+def candidate_unique_names(path):
+    """"Given a path, return possible the unique name and suffixes.
+
+    :param path: A plausible codehosting filesystem path.
+    """
+    segments = path.split('/')
+    names = ('/'.join(segments[:length]) for length in [3, 5]
+             if len(segments) >= length)
+    return dict((name, path[len(name):]) for name in names)
+
+
+def path_lookups(path):
+    if path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+        try:
+            parts = path.split('/', 2)
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            return
+        trailing = '/'.join([''] + parts[2:])
+        yield {'type': 'id', 'branch_id': branch_id, 'trailing': trailing}
+        return
+    alias_prefix_trailing = BRANCH_ALIAS_PREFIX + '/'
+    if path.startswith(alias_prefix_trailing):
+        yield {'type': 'alias', 'lp_path': path[len(alias_prefix_trailing):]}
+        return
+    for unique_name, trailing in candidate_unique_names(path).iteritems():
+        yield {
+            'type': 'branch_name',
+            'unique_name': unique_name,
+            'trailing': trailing,
+        }

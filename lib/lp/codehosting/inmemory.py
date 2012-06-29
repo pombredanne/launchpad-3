@@ -33,6 +33,7 @@ from lp.code.bzr import (
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlookup import path_lookups
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
@@ -836,53 +837,48 @@ class FakeCodehosting:
             {'id': branch.id, 'writable': writable},
             trailing_path)
 
-    def _translateBranchIdAlias(self, requester, path):
-        # If the path isn't a branch id alias, nothing more to do.
-        stripped_path = unescape(path.strip('/'))
-        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
-            return None
-        try:
-            parts = stripped_path.split('/', 2)
-            branch_id = int(parts[1])
-        except (ValueError, IndexError):
-            return faults.PathTranslationError(path)
-        branch = self._branch_set.get(branch_id)
-        if branch is None:
-            return faults.PathTranslationError(path)
-        try:
-            trailing = parts[2]
-        except IndexError:
-            trailing = ''
-        return self._serializeBranch(requester, branch, trailing, True)
+    def _getBranchAndTrailing(self, branch_path):
+        for lookup in path_lookups(branch_path):
+            if lookup['type'] != 'branch_name':
+                continue
+            branch = self._branch_set._find(unique_name=lookup['unique_name'])
+            if branch is not None:
+                return branch, lookup['trailing']
+        return None, ''
 
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
-        branch = self._translateBranchIdAlias(requester_id, path)
-        if branch is not None:
-            return branch
         stripped_path = path.strip('/')
+        for lookup in path_lookups(unescape(stripped_path)):
+            if lookup['type'] == 'id':
+                branch = self._branch_set.get(lookup['branch_id'])
+                if branch is None:
+                    continue
+                trailing = lookup['trailing']
+            elif lookup['type'] == 'alias':
+                branch, trailing = self._getBranchAndTrailing(
+                    lookup['lp_path'])
+                if branch is None:
+                    product_name = lookup['lp_path'].split('/', 2)[0]
+                    product = self._product_set.getByName(product_name)
+                    if product:
+                        branch = product.development_focus.branch
+                        trailing = lookup['lp_path'][len(product_name):]
+            elif lookup['type'] == 'branch_name':
+                branch = self._branch_set._find(
+                    unique_name=lookup['unique_name'])
+                trailing = escape(lookup['trailing'])
+            else:
+                continue
+            if branch is not None:
+                serialized = self._serializeBranch(requester_id, branch,
+                    trailing.lstrip('/'), lookup['type']=='id')
+                if serialized is not None:
+                    return serialized
+
         for first, second in iter_split(stripped_path, '/'):
             first = unescape(first).encode('utf-8')
-            # Is it a branch?
-            if first.startswith('+branch/'):
-                component_name = first[len('+branch/'):]
-                product = self._product_set.getByName(component_name)
-                if product:
-                    branch = product.development_focus.branch
-                else:
-                    branch = self._branch_set._find(
-                        unique_name=component_name)
-            else:
-                branch = self._branch_set._find(unique_name=first)
-            if branch is not None:
-                branch = self._serializeBranch(requester_id, branch, second)
-                if isinstance(branch, Fault):
-                    return branch
-                elif branch is None:
-                    break
-                return branch
-
             # Is it a product?
             product = self._serializeControlDirectory(
                 requester_id, first, second)

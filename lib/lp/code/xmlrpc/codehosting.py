@@ -40,6 +40,7 @@ from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchlookup import (
     IBranchLookup,
     ILinkedBranchTraverser,
+    path_lookups,
     )
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace,
@@ -336,17 +337,18 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
+            looker = getUtility(IBranchLookup)
             stripped_path = unescape(path.strip('/'))
-            get_by_path = getUtility(IBranchLookup).getByHostingPath
-            branch, trailing, id_alias = get_by_path(stripped_path)
-            if branch is not None:
-                trailing = trailing.lstrip('/')
-                branch = self._serializeBranch(requester, branch, trailing,
-                                               id_alias)
-                if branch is None:
-                    raise faults.PathTranslationError(path)
-                else:
-                    return branch
+            for lookup in path_lookups(stripped_path):
+                branch, trailing, id_alias = looker._lookup(lookup)
+                if branch is not None:
+                    trailing = trailing.lstrip('/')
+                    branch = self._serializeBranch(requester, branch, trailing,
+                                                   id_alias)
+                    if branch is None:
+                        raise faults.PathTranslationError(path)
+                    else:
+                        return branch
             for first, second in iter_split(stripped_path, '/'):
                 # Is it a product control directory?
                 product = self._serializeControlDirectory(

@@ -42,6 +42,7 @@ from lp.code.interfaces.branchlookup import (
     IBranchLookup,
     ILinkedBranchTraversable,
     ILinkedBranchTraverser,
+    path_lookups,
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.codehosting import (
@@ -277,41 +278,31 @@ class BranchLookup:
 
         return Branch.selectOneBy(url=url)
 
+    def _lookup(self, lookup):
+        if lookup['type'] == 'id':
+            return (self.get(lookup['branch_id']), lookup['trailing'],
+                    True,)
+        elif lookup['type'] == 'alias':
+            return self.getBranchByAlias(lookup['lp_path']) + (False,)
+        elif lookup['type'] == 'branch_name':
+            branch = self.getByUniqueName(lookup['unique_name'])
+            return (branch, escape(lookup['trailing']), False)
+
     def getByHostingPath(self, path):
-        if path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
-            return self._getBranchByIdAlias(path) + (True,)
-        elif path.startswith(BRANCH_ALIAS_PREFIX + '/'):
-            return self.getBranchByAlias(path) + (False,)
-        else:
-            branch, trailing = self.getContainingBranch(path)
-            return branch, escape(trailing), False
+        result = None, '', False
+        for lookup in path_lookups(path):
+            result = self._lookup(lookup)
+            if result[0] is not None:
+                break
+        return result
 
-    def _getBranchByIdAlias(self, stripped_path):
-        try:
-            parts = stripped_path.split('/', 2)
-            branch_id = int(parts[1])
-        except (ValueError, IndexError):
-            return None, None
-        trailing = '/'.join([''] + parts[2:])
-        return self.get(branch_id), trailing
-
-    def getBranchByAlias(self, path):
-        lp_path = path[len(BRANCH_ALIAS_PREFIX + '/'):]
+    def getBranchByAlias(self, lp_path):
         try:
             return getUtility(IBranchLookup).getByLPPath(lp_path)
         except (InvalidProductName, NoLinkedBranch,
                 CannotHaveLinkedBranch, NameLookupFailed,
                 InvalidNamespace):
             return None, None
-
-    def getContainingBranch(self, path):
-        path_mapping = self.candidateUniqueNames(path)
-        clause = Branch.unique_name.is_in(path_mapping.keys())
-        branch = IStore(Branch).find(Branch, clause).one()
-        if branch is None:
-            return None, ''
-        else:
-            return branch, path_mapping[branch.unique_name]
 
     def getByUrls(self, urls):
         """See `IBranchLookup`."""
@@ -337,16 +328,6 @@ class BranchLookup:
         except InvalidNamespace:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
-
-    def candidateUniqueNames(self, path):
-        """"Given a path, return possible the unique name and suffixes.
-
-        :param path: A plausible codehosting filesystem path.
-        """
-        segments = path.split('/')
-        names = ('/'.join(segments[:length]) for length in [3, 5]
-                 if len(segments) >= length)
-        return dict((name, path[len(name):]) for name in names)
 
     def getIdAndTrailingPath(self, path, from_slave=False):
         """See `IBranchLookup`. """
