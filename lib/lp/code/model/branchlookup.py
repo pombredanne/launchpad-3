@@ -255,7 +255,7 @@ class BranchLookup:
 
         path = self.uriToHostingPath(uri)
         if path is not None:
-            branch, trailing, path = self.getByHostingPath(path)
+            branch, trailing = self.getByHostingPath(path)
             if branch is not None:
                 return branch
 
@@ -275,20 +275,19 @@ class BranchLookup:
 
     def performLookup(self, lookup):
         if lookup['type'] == 'id':
-            return (self.get(lookup['branch_id']), lookup['trailing'],
-                    True,)
+            return (self.get(lookup['branch_id']), lookup['trailing'])
         elif lookup['type'] == 'alias':
-            return self.getBranchByAlias(lookup['lp_path']) + (False,)
+            return self.getBranchByAlias(lookup['lp_path'])
         elif lookup['type'] == 'branch_name':
             store = IStore(Branch)
             result = store.find(Branch,
                                 Branch.unique_name == lookup['unique_name'])
-            return (result.one(), escape(lookup['trailing']), False)
+            return (result.one(), escape(lookup['trailing']))
         else:
-            return None, '', False
+            return None, ''
 
     def getByHostingPath(self, path):
-        result = None, '', False
+        result = None, ''
         for lookup in path_lookups(path):
             result = self.performLookup(lookup)
             if result[0] is not None:

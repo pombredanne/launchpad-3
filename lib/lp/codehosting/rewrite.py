@@ -57,8 +57,8 @@ class BranchRewriter:
                 if (self._now() < inserted_time +
                     config.codehosting.branch_rewrite_cache_lifetime):
                     return branch_id, second, "HIT"
-        branch, trailing, _ignored = getUtility(
-                IBranchLookup).getByHostingPath(location.lstrip('/'))
+        lookup = getUtility(IBranchLookup)
+        branch, trailing = lookup.getByHostingPath(location.lstrip('/'))
         if branch is not None:
             try:
                 branch_id = branch.id

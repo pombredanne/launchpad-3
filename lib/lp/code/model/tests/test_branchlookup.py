@@ -88,67 +88,67 @@ class TestGetByHostingPath(TestCaseWithFactory):
     def test_not_found(self):
         unused_name = self.factory.getUniqueString()
         result = self.lookup.getByHostingPath('' + unused_name)
-        self.assertEqual((None, '', False), result)
+        self.assertEqual((None, ''), result)
 
     def test_junk(self):
         branch = self.factory.makePersonalBranch()
         result = self.lookup.getByHostingPath(branch.unique_name)
-        self.assertEqual((branch, '', False), result)
+        self.assertEqual((branch, ''), result)
 
     def test_product(self):
         branch = self.factory.makeProductBranch()
         result = self.lookup.getByHostingPath(branch.unique_name)
-        self.assertEqual((branch, '', False), result)
+        self.assertEqual((branch, ''), result)
 
     def test_source_package(self):
         branch = self.factory.makePackageBranch()
         result = self.lookup.getByHostingPath(branch.unique_name)
-        self.assertEqual((branch, '', False), result)
+        self.assertEqual((branch, ''), result)
 
     def test_trailing_slash(self):
         branch = self.factory.makeAnyBranch()
         result = self.lookup.getByHostingPath(branch.unique_name + '/')
-        self.assertEqual((branch, '/', False), result)
+        self.assertEqual((branch, '/'), result)
 
     def test_trailing_path(self):
         branch = self.factory.makeAnyBranch()
         path = self.factory.getUniqueString()
         result = self.lookup.getByHostingPath(
             branch.unique_name + '/' + path)
-        self.assertEqual((branch, '/' + path, False), result)
+        self.assertEqual((branch, '/' + path), result)
 
     def test_branch_id_alias(self):
         # The prefix by itself returns no branch, and no path.
         path = BRANCH_ID_ALIAS_PREFIX
         result = self.lookup.getByHostingPath(path)
-        self.assertEqual((None, '', False), result)
+        self.assertEqual((None, ''), result)
 
     def test_branch_id_alias_not_int(self):
         # The prefix followed by a non-integer returns no branch and no path.
         path = BRANCH_ID_ALIAS_PREFIX + '/foo'
         result = self.lookup.getByHostingPath(path)
-        self.assertEqual((None, '', False), result)
+        self.assertEqual((None, ''), result)
 
     def test_branch_id_alias_public(self):
         # Public branches can be accessed.
         branch = self.factory.makeAnyBranch()
         path = branch_id_alias(branch)
         result = self.lookup.getByHostingPath(path.lstrip('/'))
-        self.assertEqual((branch, '', True), result)
+        self.assertEqual((branch, ''), result)
 
     def test_branch_id_alias_public_slash(self):
         # A trailing slash is returned as the extra path.
         branch = self.factory.makeAnyBranch()
         path = '%s/' % branch_id_alias(branch)
         result = self.lookup.getByHostingPath(path.lstrip('/'))
-        self.assertEqual((branch, '/', True), result)
+        self.assertEqual((branch, '/'), result)
 
     def test_branch_id_alias_public_with_path(self):
         # All the path after the number is returned as the trailing path.
         branch = self.factory.makeAnyBranch()
         path = '%s/foo' % branch_id_alias(branch)
         result = self.lookup.getByHostingPath(path.lstrip('/'))
-        self.assertEqual((branch, '/foo', True), result)
+        self.assertEqual((branch, '/foo'), result)
 
 
 class TestGetByPath(TestCaseWithFactory):

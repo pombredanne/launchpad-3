@@ -71,10 +71,9 @@ class IBranchLookup(Interface):
 
         If the path includes a branch, it is returned.  Otherwise, None.
         The portion of the path following the branch's portion is returned as
-        'trailing'.  A boolean indicates whether the branch was looked up via
-        the +branch-id alias.
+        'trailing'.
 
-        :return: A tuple of (branch, trailing, id_alias).
+        :return: A tuple of (branch, trailing).
         """
 
     def getByUniqueName(unique_name):

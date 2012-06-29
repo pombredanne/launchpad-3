@@ -804,9 +804,9 @@ class FakeCodehosting:
         trailing_path = lookup['trailing'].lstrip('/')
         if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
             return
-        target = self._get_product_target(lookup['control__path'])
+        target = self._get_product_target(lookup['control_name'])
         if target is None:
-            target = self._get_package_target(lookup['control__path'])
+            target = self._get_package_target(lookup['control_name'])
         if target is None:
             return
         default_branch = IBranchTarget(target).default_stacked_on_branch

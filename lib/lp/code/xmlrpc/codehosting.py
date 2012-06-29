@@ -345,11 +345,11 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                     if product is not None:
                         return product
                     continue
-                branch, trailing, id_alias = looker.performLookup(lookup)
+                branch, trailing = looker.performLookup(lookup)
                 if branch is not None:
                     trailing = trailing.lstrip('/')
                     branch = self._serializeBranch(requester, branch, trailing,
-                                                   id_alias)
+                                                   lookup['type']=='id')
                     if branch is None:
                         raise faults.PathTranslationError(path)
                     else:
