@@ -339,6 +339,10 @@ class BranchLookup:
         return self._getBranchInNamespace(namespace_data, branch_name)
 
     def candidateUniqueNames(self, path):
+        """"Given a path, return possible the unique name and suffixes.
+
+        :param path: A plausible codehosting filesystem path.
+        """
         segments = path.split('/')
         names = ('/'.join(segments[:length]) for length in [3, 5]
                  if len(segments) >= length)
