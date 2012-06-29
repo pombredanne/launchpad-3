@@ -114,7 +114,7 @@ class IBranchLookup(Interface):
         Return None if no match was found.
         """
 
-    def _lookup(lookup):
+    def performLookup(lookup):
         """Find a branch and trailing path according to params"""
 
     def getByUrls(urls):

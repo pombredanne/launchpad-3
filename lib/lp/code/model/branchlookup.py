@@ -45,10 +45,6 @@ from lp.code.interfaces.branchlookup import (
     path_lookups,
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.code.interfaces.codehosting import (
-    BRANCH_ALIAS_PREFIX,
-    BRANCH_ID_ALIAS_PREFIX,
-    )
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
 from lp.registry.enums import PUBLIC_INFORMATION_TYPES
@@ -278,7 +274,7 @@ class BranchLookup:
 
         return Branch.selectOneBy(url=url)
 
-    def _lookup(self, lookup):
+    def performLookup(self, lookup):
         if lookup['type'] == 'id':
             return (self.get(lookup['branch_id']), lookup['trailing'],
                     True,)
@@ -295,7 +291,7 @@ class BranchLookup:
     def getByHostingPath(self, path):
         result = None, '', False
         for lookup in path_lookups(path):
-            result = self._lookup(lookup)
+            result = self.performLookup(lookup)
             if result[0] is not None:
                 break
         return result
