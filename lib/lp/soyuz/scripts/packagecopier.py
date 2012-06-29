@@ -16,6 +16,7 @@ __all__ = [
     'update_files_privacy',
     ]
 
+from operator import attrgetter
 import os
 import tempfile
 
@@ -26,6 +27,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.services.database.bulk import load_related
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.adapters.notification import notify
@@ -204,39 +206,59 @@ class CheckedCopy:
             return {'status': BuildSetStatus.NEEDSBUILD}
 
 
-def check_copy_permissions(person, archive, series, pocket,
-                           sourcepackagenames):
+def check_copy_permissions(person, archive, series, pocket, sources):
     """Check that `person` has permission to copy a package.
 
     :param person: User attempting the upload.
     :param archive: Destination `Archive`.
     :param series: Destination `DistroSeries`.
     :param pocket: Destination `Pocket`.
-    :param sourcepackagenames: Sequence of `SourcePackageName`s for the
+    :param sources: Sequence of `SourcePackagePublishingHistory`s for the
         packages to be copied.
     :raises CannotCopy: If the copy is not allowed.
     """
+    # Circular import.
+    from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
     if person is None:
         raise CannotCopy("Cannot check copy permissions (no requester).")
+
+    if len(sources) > 1:
+        # Bulk-load the data we'll need from each source publication.
+        load_related(SourcePackageRelease, sources, ["sourcepackagereleaseID"])
 
     # If there is a requester, check that he has upload permission into
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.
-    for spn in set(sourcepackagenames):
-        package = series.getSourcePackage(spn)
-        destination_component = package.latest_published_component
+    if series is None:
+        # Use each source's series as the destination for that source.
+        for source in sources:
+            reason = archive.checkUpload(
+                person, source.distroseries,
+                source.sourcepackagerelease.sourcepackagename,
+                source.component, pocket, strict_component=True)
 
-        # If destination_component is not None, make sure the person
-        # has upload permission for this component.  Otherwise, any
-        # upload permission on this archive will do.
-        strict_component = destination_component is not None
-        reason = archive.checkUpload(
-            person, series, spn, destination_component, pocket,
-            strict_component=strict_component)
+            if reason is not None:
+                raise CannotCopy(reason)
+    else:
+        sourcepackagenames = [
+            source.sourcepackagerelease.sourcepackagename
+            for source in sources]
+        for spn in set(sourcepackagenames):
+            package = series.getSourcePackage(spn)
+            destination_component = package.latest_published_component
 
-        if reason is not None:
-            raise CannotCopy(reason)
+            # If destination_component is not None, make sure the person
+            # has upload permission for this component.  Otherwise, any
+            # upload permission on this archive will do.
+            strict_component = destination_component is not None
+            reason = archive.checkUpload(
+                person, series, spn, destination_component, pocket,
+                strict_component=strict_component)
+
+            if reason is not None:
+                raise CannotCopy(reason)
 
 
 class CopyChecker:
@@ -463,8 +485,7 @@ class CopyChecker:
         """
         if check_permissions:
             check_copy_permissions(
-                person, self.archive, series, pocket,
-                [source.sourcepackagerelease.sourcepackagename])
+                person, self.archive, series, pocket, [source])
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(

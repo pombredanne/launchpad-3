@@ -1,13 +1,17 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import _pythonpath
 
+from optparse import OptionParser
 import os
 import sys
 
+
+parser = OptionParser(description="Stop loggerhead.")
+parser.parse_args()
 
 home = os.path.realpath(os.path.dirname(__file__))
 pidfile = os.path.join(home, 'loggerhead.pid')
