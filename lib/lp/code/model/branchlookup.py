@@ -277,7 +277,12 @@ class BranchLookup:
         if lookup['type'] == 'id':
             return (self.get(lookup['branch_id']), lookup['trailing'])
         elif lookup['type'] == 'alias':
-            return self.getBranchByAlias(lookup['lp_path'])
+            try:
+                return self.getByLPPath(lookup['lp_path'])
+            except (InvalidProductName, NoLinkedBranch,
+                    CannotHaveLinkedBranch, NameLookupFailed,
+                    InvalidNamespace):
+                return None, None
         elif lookup['type'] == 'branch_name':
             store = IStore(Branch)
             result = store.find(Branch,
@@ -293,14 +298,6 @@ class BranchLookup:
             if result[0] is not None:
                 break
         return result
-
-    def getBranchByAlias(self, lp_path):
-        try:
-            return getUtility(IBranchLookup).getByLPPath(lp_path)
-        except (InvalidProductName, NoLinkedBranch,
-                CannotHaveLinkedBranch, NameLookupFailed,
-                InvalidNamespace):
-            return None, None
 
     def getByUrls(self, urls):
         """See `IBranchLookup`."""
