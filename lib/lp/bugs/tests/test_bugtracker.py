@@ -44,8 +44,8 @@ from lp.bugs.tests.externalbugtracker import UrlLib2TransportTestHandler
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login,
-    login_person,
     login_celebrity,
+    login_person,
     TestCase,
     TestCaseWithFactory,
     )

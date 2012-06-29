@@ -11,9 +11,9 @@ from datetime import (
     )
 
 import pytz
-import transaction
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+import transaction
 from zope.component import getUtility
 from zope.interface import (
     classProvides,

@@ -5,9 +5,8 @@
 
 __metaclass__ = type
 
-from zope.schema.vocabulary import SimpleTerm
-
 from testtools.matchers import MatchesStructure
+from zope.schema.vocabulary import SimpleTerm
 
 from lp.soyuz.vocabularies import PPAVocabulary
 from lp.testing import TestCaseWithFactory

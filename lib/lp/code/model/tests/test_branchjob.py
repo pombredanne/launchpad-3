@@ -29,9 +29,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.bzr import (
+    branch_revision_history,
     BranchFormat,
     RepositoryFormat,
-    branch_revision_history,
     )
 from lp.code.enums import (
     BranchMergeProposalStatus,
