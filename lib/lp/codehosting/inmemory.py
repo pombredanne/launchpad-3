@@ -58,7 +58,6 @@ from lp.registry.enums import (
 from lp.registry.errors import InvalidName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
-from lp.services.utils import iter_split
 from lp.services.xmlrpc import LaunchpadFault
 from lp.testing.factory import ObjectFactory
 from lp.xmlrpc import faults
@@ -849,7 +848,12 @@ class FakeCodehosting:
             return faults.InvalidPath(path)
         stripped_path = path.strip('/')
         for lookup in self.pathLookups(unescape(stripped_path)):
-            if lookup['type'] == 'id':
+            if lookup['type'] == 'control_name':
+                product = self._serializeControlDirectory(
+                    requester_id, lookup['control_name'], lookup['trailing'])
+                if product:
+                    return product
+            elif lookup['type'] == 'id':
                 branch = self._branch_set.get(lookup['branch_id'])
                 if branch is None:
                     continue
@@ -873,14 +877,6 @@ class FakeCodehosting:
                     trailing.lstrip('/'), lookup['type'] == 'id')
                 if serialized is not None:
                     return serialized
-
-        for first, second in iter_split(stripped_path, '/'):
-            first = unescape(first).encode('utf-8')
-            # Is it a product?
-            product = self._serializeControlDirectory(
-                requester_id, first, second)
-            if product:
-                return product
         return faults.PathTranslationError(path)
 
 

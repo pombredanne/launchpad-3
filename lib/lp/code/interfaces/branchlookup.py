@@ -17,6 +17,7 @@ from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
     BRANCH_ID_ALIAS_PREFIX,
     )
+from lp.services.utils import iter_split
 
 
 class ILinkedBranchTraversable(Interface):
@@ -166,6 +167,7 @@ class IBranchLookup(Interface):
             paths are not handled for shortcut paths.
         """
 
+
 def candidate_unique_names(path):
     """"Given a path, return possible the unique name and suffixes.
 
@@ -197,3 +199,9 @@ def path_lookups(path):
             'unique_name': unique_name,
             'trailing': trailing,
         }
+        for control_name, trailing in iter_split(path, '/'):
+            yield {
+                'type': 'control_name',
+                'control_name': control_name,
+                'trailing': trailing,
+            }

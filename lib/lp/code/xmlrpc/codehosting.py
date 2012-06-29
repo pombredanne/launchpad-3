@@ -70,7 +70,6 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
-from lp.services.utils import iter_split
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interaction import setupInteractionForPerson
@@ -340,6 +339,13 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             looker = getUtility(IBranchLookup)
             stripped_path = unescape(path.strip('/'))
             for lookup in path_lookups(stripped_path):
+                if lookup['type'] == 'control_name':
+                    product = self._serializeControlDirectory(
+                        requester, lookup['control_name'],
+                        escape(lookup['trailing']))
+                    if product is not None:
+                        return product
+                    continue
                 branch, trailing, id_alias = looker._lookup(lookup)
                 if branch is not None:
                     trailing = trailing.lstrip('/')
@@ -349,11 +355,5 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                         raise faults.PathTranslationError(path)
                     else:
                         return branch
-            for first, second in iter_split(stripped_path, '/'):
-                # Is it a product control directory?
-                product = self._serializeControlDirectory(
-                    requester, first, escape(second))
-                if product is not None:
-                    return product
             raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
