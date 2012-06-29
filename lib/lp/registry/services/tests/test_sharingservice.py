@@ -57,7 +57,7 @@ from lp.testing.pages import LaunchpadWebServiceCaller
 WRITE_FLAG = {
     'disclosure.enhanced_sharing.writable': 'true',
     'disclosure.enhanced_sharing_details.enabled': 'true',
-    'jobs.celery.enabled_classes': 'RemoveBugSubscriptionsJob'}
+    'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob'}
 DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 
 

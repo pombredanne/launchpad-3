@@ -3334,15 +3334,15 @@ def disable_trigger_fixture():
 
 
 class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
-    """Test that various bug transitions invoke RemoveBugSubscribers job."""
+    """Test that various bug transitions invoke RemoveArtifactSubscribers
+    job."""
 
     layer = CeleryJobLayer
 
     def setUp(self):
         self.useFixture(FeatureFixture({
             'disclosure.unsubscribe_jobs.enabled': 'true',
-            'jobs.celery.enabled_classes':
-                'RemoveBugSubscriptionsJob',
+            'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
         self.useFixture(disable_trigger_fixture())
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
