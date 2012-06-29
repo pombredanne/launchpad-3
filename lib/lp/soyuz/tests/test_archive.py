@@ -2563,7 +2563,7 @@ class TestSyncSource(TestCaseWithFactory):
         ComponentSelection(distroseries=to_series, component=universe)
         with person_logged_in(target_archive.owner):
             target_archive.newComponentUploader(uploader, universe)
-        previous_source = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=source.distroseries, archive=target_archive,
             pocket=to_pocket, status=PackagePublishingStatus.PUBLISHED,
             sourcepackagename=source_name, version="%s~1" % version,
