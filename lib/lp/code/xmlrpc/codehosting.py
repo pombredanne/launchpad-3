@@ -40,7 +40,6 @@ from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchlookup import (
     IBranchLookup,
     ILinkedBranchTraverser,
-    path_lookups,
     )
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace,
@@ -330,29 +329,31 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             {'default_stack_on': escape(path)},
             escape(trailing_path))
 
+    def performLookup(self, requester, path, lookup):
+        looker = getUtility(IBranchLookup)
+        if lookup['type'] == 'control_name':
+            return self._serializeControlDirectory(requester, lookup)
+        branch, trailing = looker.performLookup(lookup)
+        if branch is None:
+            return None
+        trailing = trailing.lstrip('/')
+        serialized = self._serializeBranch(requester, branch, trailing,
+                                           lookup['type'] == 'id')
+        if serialized is None:
+            raise faults.PathTranslationError(path)
+        return serialized
+
     def translatePath(self, requester_id, path):
         """See `ICodehostingAPI`."""
         @return_fault
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
-            looker = getUtility(IBranchLookup)
             stripped_path = unescape(path.strip('/'))
-            for lookup in path_lookups(stripped_path):
-                if lookup['type'] == 'control_name':
-                    product = self._serializeControlDirectory(
-                        requester, lookup)
-                    if product is not None:
-                        return product
-                    continue
-                branch, trailing = looker.performLookup(lookup)
-                if branch is not None:
-                    trailing = trailing.lstrip('/')
-                    branch = self._serializeBranch(requester, branch, trailing,
-                                                   lookup['type']=='id')
-                    if branch is None:
-                        raise faults.PathTranslationError(path)
-                    else:
-                        return branch
-            raise faults.PathTranslationError(path)
+            looker = getUtility(IBranchLookup)
+            lookup = lambda l: self.performLookup(requester_id, path, l)
+            result = looker.getFirstLookup(stripped_path, lookup, None)
+            if result is None:
+                raise faults.PathTranslationError(path)
+            return result
         return run_with_login(requester_id, translate_path)

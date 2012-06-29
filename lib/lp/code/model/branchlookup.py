@@ -9,6 +9,10 @@ __metaclass__ = type
 __all__ = []
 
 
+from itertools import (
+    ifilter,
+    imap
+    )
 import re
 
 from bzrlib.urlutils import escape
@@ -291,13 +295,15 @@ class BranchLookup:
         else:
             return None, ''
 
+    def getFirstLookup(self, path, perform_lookup, failure_result):
+        sparse_results = imap(perform_lookup, path_lookups(path))
+        results = ifilter(lambda x: x != failure_result, sparse_results)
+        for result in results:
+            return result
+        return failure_result
+
     def getByHostingPath(self, path):
-        result = None, ''
-        for lookup in path_lookups(path):
-            result = self.performLookup(lookup)
-            if result[0] is not None:
-                break
-        return result
+        return self.getFirstLookup(path, self.performLookup, (None, ''))
 
     def getByUrls(self, urls):
         """See `IBranchLookup`."""

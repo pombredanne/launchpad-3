@@ -66,6 +66,16 @@ class IBranchLookup(Interface):
         Return the default value if there is no such branch.
         """
 
+    def getFirstLookup(path, perform_lookup, failure_result):
+        """Find the first codehosting path lookup result
+
+        :param path: The codehosting path to use.
+        :param perform_lookup: The callable to use for looking up a value.
+        :param failure_result: The result that indicates lookup failure.
+        :return: The first successful lookup, or failure_result if there are
+            no successes.
+        """
+
     def getByHostingPath(path):
         """Get information about a given codehosting path.
 
