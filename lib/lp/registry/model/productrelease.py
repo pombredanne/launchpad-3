@@ -11,6 +11,7 @@ __all__ = [
     'productrelease_to_milestone',
     ]
 
+import os
 from StringIO import StringIO
 
 from sqlobject import (
@@ -51,9 +52,6 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-
-
-SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.
 
 
 class ProductRelease(SQLBase):
@@ -154,7 +152,7 @@ class ProductRelease(SQLBase):
                 "file_or_data is not an expected type")
             file_obj = file_or_data
             start = file_obj.tell()
-            file_obj.seek(0, SEEK_END)
+            file_obj.seek(0, os.SEEK_END)
             file_size = file_obj.tell()
             file_obj.seek(start)
         return file_obj, file_size
