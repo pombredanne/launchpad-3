@@ -16,6 +16,7 @@ __all__ = [
     'update_files_privacy',
     ]
 
+from itertools import repeat
 from operator import attrgetter
 import os
 import tempfile
@@ -231,34 +232,32 @@ def check_copy_permissions(person, archive, series, pocket, sources):
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.
+    sourcepackagenames = [
+        source.sourcepackagerelease.sourcepackagename for source in sources]
     if series is None:
         # Use each source's series as the destination for that source.
-        for source in sources:
-            reason = archive.checkUpload(
-                person, source.distroseries,
-                source.sourcepackagerelease.sourcepackagename,
-                source.component, pocket, strict_component=True)
-
-            if reason is not None:
-                raise CannotCopy(reason)
+        series_iter = map(attrgetter("distroseries"), sources)
     else:
-        sourcepackagenames = [
-            source.sourcepackagerelease.sourcepackagename
-            for source in sources]
-        for spn in set(sourcepackagenames):
-            package = series.getSourcePackage(spn)
-            destination_component = package.latest_published_component
+        series_iter = repeat(series)
+    for spn, dest_series in set(zip(sourcepackagenames, series_iter)):
+        ancestries = archive.getPublishedSources(
+            name=spn.name, exact_match=True, status=active_publishing_status,
+            distroseries=dest_series, pocket=pocket)
+        try:
+            destination_component = ancestries[0].component
+        except IndexError:
+            destination_component = None
 
-            # If destination_component is not None, make sure the person
-            # has upload permission for this component.  Otherwise, any
-            # upload permission on this archive will do.
-            strict_component = destination_component is not None
-            reason = archive.checkUpload(
-                person, series, spn, destination_component, pocket,
-                strict_component=strict_component)
+        # If destination_component is not None, make sure the person
+        # has upload permission for this component.  Otherwise, any
+        # upload permission on this archive will do.
+        strict_component = destination_component is not None
+        reason = archive.checkUpload(
+            person, dest_series, spn, destination_component, pocket,
+            strict_component=strict_component)
 
-            if reason is not None:
-                raise CannotCopy(reason)
+        if reason is not None:
+            raise CannotCopy(reason)
 
 
 class CopyChecker:
