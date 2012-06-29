@@ -76,106 +76,79 @@ class TestGetByUniqueName(TestCaseWithFactory):
         self.assertEqual(branch, found_branch)
 
 
-class TestGetIdAndTrailingPath(TestCaseWithFactory):
+class TestGetByHostingPath(TestCaseWithFactory):
     """Tests for `IBranchLookup.getIdAndTrailingPath`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.branch_set = getUtility(IBranchLookup)
+        self.lookup = getUtility(IBranchLookup)
 
     def test_not_found(self):
         unused_name = self.factory.getUniqueString()
-        result = self.branch_set.getIdAndTrailingPath('/' + unused_name)
-        self.assertEqual((None, None), result)
+        result = self.lookup.getByHostingPath('' + unused_name)
+        self.assertEqual((None, '', False), result)
 
     def test_junk(self):
         branch = self.factory.makePersonalBranch()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name)
-        self.assertEqual((branch.id, ''), result)
+        result = self.lookup.getByHostingPath(branch.unique_name)
+        self.assertEqual((branch, '', False), result)
 
     def test_product(self):
         branch = self.factory.makeProductBranch()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name)
-        self.assertEqual((branch.id, ''), result)
+        result = self.lookup.getByHostingPath(branch.unique_name)
+        self.assertEqual((branch, '', False), result)
 
     def test_source_package(self):
         branch = self.factory.makePackageBranch()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name)
-        self.assertEqual((branch.id, ''), result)
+        result = self.lookup.getByHostingPath(branch.unique_name)
+        self.assertEqual((branch, '', False), result)
 
     def test_trailing_slash(self):
         branch = self.factory.makeAnyBranch()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name + '/')
-        self.assertEqual((branch.id, '/'), result)
+        result = self.lookup.getByHostingPath(branch.unique_name + '/')
+        self.assertEqual((branch, '/', False), result)
 
     def test_trailing_path(self):
         branch = self.factory.makeAnyBranch()
         path = self.factory.getUniqueString()
-        result = self.branch_set.getIdAndTrailingPath(
-            '/' + branch.unique_name + '/' + path)
-        self.assertEqual((branch.id, '/' + path), result)
+        result = self.lookup.getByHostingPath(
+            branch.unique_name + '/' + path)
+        self.assertEqual((branch, '/' + path, False), result)
 
     def test_branch_id_alias(self):
         # The prefix by itself returns no branch, and no path.
         path = BRANCH_ID_ALIAS_PREFIX
-        result = self.branch_set.getIdAndTrailingPath('/' + path)
-        self.assertEqual((None, None), result)
+        result = self.lookup.getByHostingPath(path)
+        self.assertEqual((None, '', False), result)
 
     def test_branch_id_alias_not_int(self):
         # The prefix followed by a non-integer returns no branch and no path.
         path = BRANCH_ID_ALIAS_PREFIX + '/foo'
-        result = self.branch_set.getIdAndTrailingPath('/' + path)
-        self.assertEqual((None, None), result)
-
-    def test_branch_id_alias_private(self):
-        # Private branches are not found at all (this is for anonymous access)
-        owner = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(
-            owner=owner, information_type=InformationType.USERDATA)
-        with person_logged_in(owner):
-            path = branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((None, None), result)
-
-    def test_branch_id_alias_transitive_private(self):
-        # Transitively private branches are not found at all
-        # (this is for anonymous access)
-        owner = self.factory.makePerson()
-        private_branch = self.factory.makeAnyBranch(
-            owner=owner, information_type=InformationType.USERDATA)
-        branch = self.factory.makeAnyBranch(
-            stacked_on=private_branch, owner=owner)
-        with person_logged_in(owner):
-            path = branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((None, None), result)
+        result = self.lookup.getByHostingPath(path)
+        self.assertEqual((None, '', False), result)
 
     def test_branch_id_alias_public(self):
         # Public branches can be accessed.
         branch = self.factory.makeAnyBranch()
         path = branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((branch.id, ''), result)
+        result = self.lookup.getByHostingPath(path.lstrip('/'))
+        self.assertEqual((branch, '', True), result)
 
     def test_branch_id_alias_public_slash(self):
         # A trailing slash is returned as the extra path.
         branch = self.factory.makeAnyBranch()
         path = '%s/' % branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((branch.id, '/'), result)
+        result = self.lookup.getByHostingPath(path.lstrip('/'))
+        self.assertEqual((branch, '/', True), result)
 
     def test_branch_id_alias_public_with_path(self):
         # All the path after the number is returned as the trailing path.
         branch = self.factory.makeAnyBranch()
         path = '%s/foo' % branch_id_alias(branch)
-        result = self.branch_set.getIdAndTrailingPath(path)
-        self.assertEqual((branch.id, '/foo'), result)
+        result = self.lookup.getByHostingPath(path.lstrip('/'))
+        self.assertEqual((branch, '/foo', True), result)
 
 
 class TestGetByPath(TestCaseWithFactory):

@@ -47,7 +47,6 @@ from lp.code.interfaces.branchlookup import (
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -328,14 +327,6 @@ class BranchLookup:
         except InvalidNamespace:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
-
-    def getIdAndTrailingPath(self, path, from_slave=False):
-        """See `IBranchLookup`. """
-        branch, trailing, _ignored = self.getByHostingPath(path.lstrip('/'))
-        if (branch is None or
-                branch.information_type not in PUBLIC_INFORMATION_TYPES):
-            return None, None
-        return branch.id, trailing
 
     def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':
