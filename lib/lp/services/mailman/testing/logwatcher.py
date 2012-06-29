@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BounceWatcher'
+    'BounceWatcher',
     'LogWatcher',
     'MHonArcWatcher',
     'SMTPDWatcher',
