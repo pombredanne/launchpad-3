@@ -217,20 +217,15 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         packages to be copied.
     :raises CannotCopy: If the copy is not allowed.
     """
-    # Circular imports.
-    from lp.registry.model.distroseries import DistroSeries
-    from lp.registry.model.sourcepackagename import SourcePackageName
+    # Circular import.
     from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
     if person is None:
         raise CannotCopy("Cannot check copy permissions (no requester).")
 
-    # Bulk-load the data we'll need from each source publication.
-    load_related(SourcePackageRelease, sources, ["sourcepackagereleaseID"])
-    load_related(DistroSeries, sources, ["distroseriesID"])
-    load_related(
-        SourcePackageName, map(attrgetter("sourcepackagerelease"), sources),
-        ["sourcepackagenameID"])
+    if len(sources) > 1:
+        # Bulk-load the data we'll need from each source publication.
+        load_related(SourcePackageRelease, sources, ["sourcepackagereleaseID"])
 
     # If there is a requester, check that he has upload permission into
     # the destination (archive, component, pocket). This check is done
