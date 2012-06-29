@@ -38,7 +38,6 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
     branch_id_alias,
-    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
@@ -837,34 +836,32 @@ class FakeCodehosting:
             {'id': branch.id, 'writable': writable},
             trailing_path)
 
-    def _getBranchAndTrailing(self, branch_path):
-        for lookup in path_lookups(branch_path):
-            if lookup['type'] != 'branch_name':
-                continue
-            branch = self._branch_set._find(unique_name=lookup['unique_name'])
-            if branch is not None:
-                return branch, lookup['trailing']
-        return None, ''
+    def pathLookups(self, path):
+        for lookup in path_lookups(path):
+            if lookup['type'] == 'alias':
+                for branch_lookup in path_lookups(lookup['lp_path']):
+                    if branch_lookup['type'] == 'branch_name':
+                        yield branch_lookup
+            yield lookup
 
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
         stripped_path = path.strip('/')
-        for lookup in path_lookups(unescape(stripped_path)):
+        for lookup in self.pathLookups(unescape(stripped_path)):
             if lookup['type'] == 'id':
                 branch = self._branch_set.get(lookup['branch_id'])
                 if branch is None:
                     continue
                 trailing = lookup['trailing']
             elif lookup['type'] == 'alias':
-                branch, trailing = self._getBranchAndTrailing(
-                    lookup['lp_path'])
-                if branch is None:
-                    product_name = lookup['lp_path'].split('/', 2)[0]
-                    product = self._product_set.getByName(product_name)
-                    if product:
-                        branch = product.development_focus.branch
-                        trailing = lookup['lp_path'][len(product_name):]
+                product_name = lookup['lp_path'].split('/', 2)[0]
+                trailing = lookup['lp_path'][len(product_name):]
+                product = self._product_set.getByName(product_name)
+                if product:
+                    branch = product.development_focus.branch
+                else:
+                    branch = None
             elif lookup['type'] == 'branch_name':
                 branch = self._branch_set._find(
                     unique_name=lookup['unique_name'])
@@ -873,7 +870,7 @@ class FakeCodehosting:
                 continue
             if branch is not None:
                 serialized = self._serializeBranch(requester_id, branch,
-                    trailing.lstrip('/'), lookup['type']=='id')
+                    trailing.lstrip('/'), lookup['type'] == 'id')
                 if serialized is not None:
                     return serialized
 
