@@ -1091,7 +1091,7 @@ class PackageUploadSource(SQLBase):
         dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease')
 
-    def getSourceAncestry(self):
+    def getSourceAncestryForDiffs(self):
         """See `IPackageUploadSource`."""
         primary_archive = self.packageupload.distroseries.main_archive
         release_pocket = PackagePublishingPocket.RELEASE
