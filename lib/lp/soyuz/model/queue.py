@@ -1103,18 +1103,17 @@ class PackageUploadSource(SQLBase):
             (primary_archive, None, release_pocket),
             ]
 
-        ancestry = None
         for archive, distroseries, pocket in ancestry_locations:
             ancestries = archive.getPublishedSources(
                 name=self.sourcepackagerelease.name,
                 distroseries=distroseries, pocket=pocket,
                 exact_match=True)
             try:
-                ancestry = ancestries[0]
+                return ancestries[0]
             except IndexError:
-                continue
-            break
-        return ancestry
+                pass
+
+        return None
 
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
