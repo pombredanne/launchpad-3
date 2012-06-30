@@ -240,9 +240,18 @@ def check_copy_permissions(person, archive, series, pocket, sources):
     else:
         series_iter = repeat(series)
     for spn, dest_series in set(zip(sourcepackagenames, series_iter)):
+        # XXX cjwatson 20120630: We should do a proper ancestry check
+        # instead of simply querying for publications in any pocket.
+        # Unfortunately there are currently at least three different
+        # implementations of ancestry lookup:
+        # NascentUpload.getSourceAncestry,
+        # PackageUploadSource.getSourceAncestryForDiffs, and
+        # PublishingSet.getNearestAncestor, none of which is obviously
+        # correct here.  Instead of adding a fourth, we should consolidate
+        # these.
         ancestries = archive.getPublishedSources(
             name=spn.name, exact_match=True, status=active_publishing_status,
-            distroseries=dest_series, pocket=pocket)
+            distroseries=dest_series)
         try:
             destination_component = ancestries[0].component
         except IndexError:
