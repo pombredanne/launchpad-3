@@ -14,6 +14,7 @@ from bzrlib import (
     )
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import format_registry
+from bzrlib.errors import AppendRevisionsOnlyViolation
 from bzrlib.remote import RemoteBranch
 from bzrlib.tests import (
     multiply_tests,
@@ -170,6 +171,19 @@ class TestExceptionLoggingHooks(TestCase):
         exception = RuntimeError('foo')
         self.logException(exception)
         self.assertEqual([(RuntimeError, exception)], exceptions)
+
+    def test_doesnt_call_hook_for_non_exception(self):
+        # Some exceptions are exempt from logging.
+        exceptions = []
+
+        def hook():
+            exceptions.append(sys.exc_info()[:2])
+
+        add_exception_logging_hook(hook)
+        self.addCleanup(remove_exception_logging_hook, hook)
+        exception = AppendRevisionsOnlyViolation("foo")
+        self.logException(exception)
+        self.assertEqual([], exceptions)
 
     def test_doesnt_call_hook_when_removed(self):
         # remove_exception_logging_hook removes the hook function, ensuring
