@@ -710,29 +710,25 @@ Similarly for binaries:
     main/base/Important
 
     >>> from lp.soyuz.enums import PackagePublishingPriority
+    >>> binary_changes = [{
+    ...     "component": restricted,
+    ...     "section": web,
+    ...     "priority": PackagePublishingPriority.EXTRA,
+    ...     }]
     >>> print item.overrideBinaries(
-    ...     new_component=restricted,
-    ...     new_section=web,
-    ...     new_priority=PackagePublishingPriority.EXTRA,
-    ...     allowed_components=(universe,))
+    ...     binary_changes, allowed_components=(universe,))
     Traceback (most recent call last):
     ...
     QueueInconsistentStateError: No rights to override to restricted
 
     >>> print item.overrideBinaries(
-    ...     new_component=restricted,
-    ...     new_section=web,
-    ...     new_priority=PackagePublishingPriority.EXTRA,
-    ...     allowed_components=(restricted,))
+    ...     binary_changes, allowed_components=(restricted,))
     Traceback (most recent call last):
     ...
     QueueInconsistentStateError: No rights to override from main
 
     >>> print item.overrideBinaries(
-    ...     new_component=restricted,
-    ...     new_section=web,
-    ...     new_priority=PackagePublishingPriority.EXTRA,
-    ...     allowed_components=(main,restricted))
+    ...     binary_changes, allowed_components=(main,restricted))
     True
     >>> print "%s/%s/%s" % (
     ...     binary_package.component.name,
