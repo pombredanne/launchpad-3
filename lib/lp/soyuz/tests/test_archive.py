@@ -2243,18 +2243,20 @@ class TestSyncSource(TestCaseWithFactory):
             ubuntu.main_archive.getPublishedSources(
                 name=source.source_package_name).count())
 
-    def _setup_copy_data(self, target_purpose=None):
+    def _setup_copy_data(self, source_private=False, target_purpose=None,
+                         target_status=SeriesStatus.DEVELOPMENT):
         if target_purpose is None:
             target_purpose = ArchivePurpose.PPA
-        source_archive = self.factory.makeArchive()
+        source_archive = self.factory.makeArchive(private=source_private)
         target_archive = self.factory.makeArchive(purpose=target_purpose)
         source = self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive, status=PackagePublishingStatus.PUBLISHED)
-        source_name = source.source_package_name
-        version = source.source_package_version
+        with person_logged_in(source_archive.owner):
+            source_name = source.source_package_name
+            version = source.source_package_version
         to_pocket = PackagePublishingPocket.RELEASE
         to_series = self.factory.makeDistroSeries(
-            distribution=target_archive.distribution)
+            distribution=target_archive.distribution, status=target_status)
         return (source, source_archive, source_name, target_archive,
                 to_pocket, to_series, version)
 
@@ -2344,6 +2346,43 @@ class TestSyncSource(TestCaseWithFactory):
             target_archive.copyPackage, source_name, version, source_archive,
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=target_archive.owner)
+
+    def test_copyPackage_unembargo_creates_unembargo_job(self):
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            source_private=True, target_purpose=ArchivePurpose.PRIMARY,
+            target_status=SeriesStatus.CURRENT)
+        with person_logged_in(target_archive.distribution.owner):
+            target_archive.newComponentUploader(
+                source_archive.owner, "universe")
+        to_pocket = PackagePublishingPocket.SECURITY
+        with person_logged_in(source_archive.owner):
+            target_archive.copyPackage(
+                source_name, version, source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
+                person=source_archive.owner, unembargo=True)
+
+        # There should be one copy job, with the unembargo flag set.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)
+        self.assertTrue(copy_job.unembargo)
+
+    def test_copyPackage_with_default_distroseries(self):
+        # If to_series is None, copyPackage copies into the same series as
+        # the source in the target archive.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackage(
+                source_name, version, source_archive, to_pocket.name,
+                include_binaries=False, person=target_archive.owner)
+
+        # There should be one copy job with the correct target series.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_jobs = job_source.getActiveJobs(target_archive)
+        self.assertEqual(1, copy_jobs.count())
+        self.assertEqual(source.distroseries, copy_jobs[0].target_distroseries)
 
     def test_copyPackages_with_single_package(self):
         (source, source_archive, source_name, target_archive, to_pocket,
@@ -2481,6 +2520,33 @@ class TestSyncSource(TestCaseWithFactory):
         self.assertEqual(2, copy_jobs.count())
         self.assertEqual(copy_job, copy_jobs[0])
         self.assertEqual(new_version, copy_jobs[1].package_version)
+
+    def test_copyPackages_with_default_distroseries(self):
+        # If to_series is None, copyPackages copies into the same series as
+        # each source in the target archive.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        sources = [source]
+        other_series = self.factory.makeDistroSeries(
+            distribution=target_archive.distribution)
+        sources.append(self.factory.makeSourcePackagePublishingHistory(
+            distroseries=other_series, archive=source_archive,
+            status=PackagePublishingStatus.PUBLISHED))
+        names = [source.sourcepackagerelease.sourcepackagename.name
+                 for source in sources]
+
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                names, source_archive, to_pocket.name, include_binaries=False,
+                person=target_archive.owner)
+
+        # There should be two copy jobs with the correct target series.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_jobs = job_source.getActiveJobs(target_archive)
+        self.assertEqual(2, copy_jobs.count())
+        self.assertContentEqual(
+            [source.distroseries for source in sources],
+            [copy_job.target_distroseries for copy_job in copy_jobs])
 
 
 class TestgetAllPublishedBinaries(TestCaseWithFactory):

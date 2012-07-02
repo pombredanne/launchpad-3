@@ -842,13 +842,15 @@ class Bug(SQLBase):
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
-        # Grant the subscriber access if they can't see the bug.
-        service = getUtility(IService, 'sharing')
-        bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
-        if not bugs:
-            service.ensureAccessGrants(
-                person, subscribed_by, bugs=[self],
-                ignore_permissions=True)
+        # Grant the subscriber access if they can't see the bug but only if
+        # there is at least one bugtask for which access can be checked.
+        if self.default_bugtask:
+            service = getUtility(IService, 'sharing')
+            bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+            if not bugs:
+                service.ensureAccessGrants(
+                    [person], subscribed_by, bugs=[self],
+                    ignore_permissions=True)
 
         # In some cases, a subscription should be created without
         # email notifications.  suppress_notify determines if
@@ -1804,6 +1806,24 @@ class Bug(SQLBase):
 
         self.information_type = information_type
         self._reconcileAccess()
+
+        # If the transition makes the bug private, then we need to ensure all
+        # subscribers can see the bug. For any who can't, we create an access
+        # artifact grant. Note that the previous value of information_type may
+        # also have been private but we still need to perform the access check
+        # since any access policy grants will not confer access with the new
+        # information type value.
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            # Grant the subscriber access if they can't see the bug.
+            service = getUtility(IService, 'sharing')
+            subscribers = self.getDirectSubscribers()
+            blind_subscribers = service.getPeopleWithoutAccess(
+                self, subscribers)
+            if len(blind_subscribers):
+                service.ensureAccessGrants(
+                    blind_subscribers, who, bugs=[self],
+                    ignore_permissions=True)
+
         self.updateHeat()
 
         flag = 'disclosure.unsubscribe_jobs.enabled'
@@ -2671,7 +2691,20 @@ class BugSet:
             if params.information_type == InformationType.PUBLIC:
                 params.information_type = InformationType.USERDATA
 
-        bug, event = self.createBugWithoutTarget(params)
+        bug, event = self._makeBug(params)
+
+        # Create the task on a product if one was passed.
+        if params.product:
+            getUtility(IBugTaskSet).createTask(
+                bug, params.owner, params.product, status=params.status)
+
+        # Create the task on a source package name if one was passed.
+        if params.distribution:
+            target = params.distribution
+            if params.sourcepackagename:
+                target = target.getSourcePackage(params.sourcepackagename)
+            getUtility(IBugTaskSet).createTask(
+                bug, params.owner, target, status=params.status)
 
         if params.information_type in SECURITY_INFORMATION_TYPES:
             if params.product:
@@ -2695,18 +2728,11 @@ class BugSet:
             else:
                 bug.subscribe(params.product.owner, params.owner)
 
-        # Create the task on a product if one was passed.
-        if params.product:
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, params.product, status=params.status)
-
-        # Create the task on a source package name if one was passed.
-        if params.distribution:
-            target = params.distribution
-            if params.sourcepackagename:
-                target = target.getSourcePackage(params.sourcepackagename)
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, target, status=params.status)
+        if params.subscribe_owner:
+            bug.subscribe(params.owner, params.owner)
+        # Subscribe other users.
+        for subscriber in params.subscribers:
+            bug.subscribe(subscriber, params.owner)
 
         bug_task = bug.default_bugtask
         if params.assignee:
@@ -2729,8 +2755,9 @@ class BugSet:
             return bug, event
         return bug
 
-    def createBugWithoutTarget(self, bug_params):
-        """See `IBugSet`."""
+    def _makeBug(self, bug_params):
+        """Construct a bew bug object using the specified parameters."""
+
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
@@ -2779,14 +2806,8 @@ class BugSet:
             _private=private, _security_related=security_related,
             **extra_params)
 
-        if params.subscribe_owner:
-            bug.subscribe(params.owner, params.owner)
         if params.tags:
             bug.tags = params.tags
-
-        # Subscribe other users.
-        for subscriber in params.subscribers:
-            bug.subscribe(subscriber, params.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg, index=0)

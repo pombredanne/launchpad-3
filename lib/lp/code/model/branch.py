@@ -17,7 +17,6 @@ from bzrlib.revision import NULL_REVISION
 import pytz
 import simplejson
 from sqlobject import (
-    BoolCol,
     ForeignKey,
     IntCol,
     SQLMultipleJoin,
@@ -138,6 +137,10 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -157,7 +160,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -837,7 +839,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             person, branches=[self])
         if not branches:
             service.ensureAccessGrants(
-                subscribed_by, person, branches=[self],
+                [person], subscribed_by, branches=[self],
                 ignore_permissions=True)
         return subscription
 
@@ -880,6 +882,9 @@ class Branch(SQLBase, BzrIdentityMixin):
                     person.displayname))
         store = Store.of(subscription)
         store.remove(subscription)
+        artifact = getUtility(IAccessArtifactSource).find([self])
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            artifact, [person])
         store.flush()
 
     def getBranchRevision(self, sequence=None, revision=None,

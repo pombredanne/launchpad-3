@@ -42,9 +42,7 @@ from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
     )
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sharingjob import (
-    IRemoveBugSubscriptionsJobSource,
-    )
+from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.teammembership import (
     ACTIVE_STATES,
     CyclicalTeamMembershipError,

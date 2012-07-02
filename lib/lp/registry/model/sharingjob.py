@@ -44,9 +44,7 @@ from zope.interface import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat
-from lp.bugs.model.bugtasksearch import (
-    get_bug_privacy_filter_terms,
-    )
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
@@ -276,6 +274,8 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
 
     @property
     def bug_ids(self):
+        if not 'bug_ids' in self.metadata:
+            return []
         return self.metadata['bug_ids']
 
     @property
@@ -284,6 +284,8 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
 
     @property
     def information_types(self):
+        if not 'information_types' in self.metadata:
+            return []
         return [
             InformationType.items[value]
             for value in self.metadata['information_types']]

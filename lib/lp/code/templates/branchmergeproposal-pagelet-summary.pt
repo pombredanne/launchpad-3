@@ -143,5 +143,12 @@
       <th>To merge this branch:</th>
       <td>bzr merge <span class="branch-url" tal:content="context/source_branch/bzr_identity" /></td>
     </tr>
+    <tr id="related-bugs-and-blueprints" tal:condition="view/has_bug_or_spec" >
+      <th>Related bugs and blueprints:</th>
+      <td tal:define="branch context/source_branch">
+            <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+            <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+      </td>
+    </tr>
   </tbody>
 </table>

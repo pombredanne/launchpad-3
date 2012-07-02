@@ -67,11 +67,11 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -1227,6 +1227,37 @@ class Archive(SQLBase):
             strict_component=True)
         return reason is None
 
+    def canModifySuite(self, distroseries, pocket):
+        """See `IArchive`."""
+        # PPA and PARTNER allow everything.
+        if self.allowUpdatesToReleasePocket():
+            return True
+
+        # Allow everything for distroseries in FROZEN state.
+        if distroseries.status == SeriesStatus.FROZEN:
+            return True
+
+        # Define stable/released states.
+        stable_states = (SeriesStatus.SUPPORTED,
+                         SeriesStatus.CURRENT)
+
+        # Deny uploads for RELEASE pocket in stable states.
+        if (pocket == PackagePublishingPocket.RELEASE and
+            distroseries.status in stable_states):
+            return False
+
+        # Deny uploads for post-release-only pockets in unstable states.
+        pre_release_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if (pocket not in pre_release_pockets and
+            distroseries.status not in stable_states):
+            return False
+
+        # Allow anything else.
+        return True
+
     def checkUploadToPocket(self, distroseries, pocket):
         """See `IArchive`."""
         if self.is_partner:
@@ -1247,7 +1278,7 @@ class Archive(SQLBase):
             # state.
             # XXX julian 2005-05-29 bug=117557:
             # This is a greasy hack until bug #117557 is fixed.
-            if not distroseries.canUploadToPocket(pocket):
+            if not self.canModifySuite(distroseries, pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
     def _checkUpload(self, person, distroseries, sourcepackagename, component,
@@ -1600,7 +1631,7 @@ class Archive(SQLBase):
 
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None):
+                    sponsored=None, unembargo=False):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1609,11 +1640,12 @@ class Archive(SQLBase):
         series = self._text_to_series(to_series)
         # Upload permission checks, this will raise CannotCopy as
         # necessary.
-        sourcepackagename = getUtility(ISourcePackageNameSet)[source_name]
-        check_copy_permissions(
-            person, self, series, pocket, [sourcepackagename])
+        source = self._validateAndFindSource(
+            from_archive, source_name, version)
+        if series is None:
+            series = source.distroseries
+        check_copy_permissions(person, self, series, pocket, [source])
 
-        self._validateAndFindSource(from_archive, source_name, version)
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.create(
             package_name=source_name, source_archive=from_archive,
@@ -1621,11 +1653,11 @@ class Archive(SQLBase):
             target_pocket=pocket,
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE, requester=person,
-            sponsored=sponsored)
+            sponsored=sponsored, unembargo=unembargo)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, from_series=None,
-                     include_binaries=None, sponsored=None):
+                     include_binaries=None, sponsored=None, unembargo=False):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1635,20 +1667,10 @@ class Archive(SQLBase):
             raise CannotCopy(
                 "None of the supplied package names are published")
 
-        # Bulk-load the sourcepackagereleases so that the list
-        # comprehension doesn't generate additional queries. The
-        # sourcepackagenames themselves will already have been loaded when
-        # generating the list of source publications in "sources".
-        load_related(
-            SourcePackageRelease, sources, ["sourcepackagereleaseID"])
-        sourcepackagenames = [source.sourcepackagerelease.sourcepackagename
-                              for source in sources]
-
         # Now do a mass check of permissions.
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
-        check_copy_permissions(
-            person, self, series, pocket, sourcepackagenames)
+        check_copy_permissions(person, self, series, pocket, sources)
 
         # If we get this far then we can create the PackageCopyJob.
         copy_tasks = []
@@ -1658,15 +1680,16 @@ class Archive(SQLBase):
                 source.sourcepackagerelease.version,
                 from_archive,
                 self,
+                series if series is not None else source.distroseries,
                 PackagePublishingPocket.RELEASE
                 )
             copy_tasks.append(task)
 
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.createMultiple(
-            series, copy_tasks, person,
-            copy_policy=PackageCopyPolicy.MASS_SYNC,
-            include_binaries=include_binaries, sponsored=sponsored)
+            copy_tasks, person, copy_policy=PackageCopyPolicy.MASS_SYNC,
+            include_binaries=include_binaries, sponsored=sponsored,
+            unembargo=unembargo)
 
     def _collectLatestPublishedSources(self, from_archive, from_series,
                                        source_names):
@@ -1748,7 +1771,7 @@ class Archive(SQLBase):
         # copy packages they wouldn't otherwise be able to.
         do_copy(
             sources, self, series, pocket, include_binaries, person=person,
-            check_permissions=False)
+            check_permissions=False, allow_delayed_copies=True)
 
     def getAuthToken(self, person):
         """See `IArchive`."""

@@ -78,3 +78,4 @@ callgrind.out.*
 scripts/mlist-sync.py
 ./celerybeat-schedule
 !logs/README.txt
+./logs
