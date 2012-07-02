@@ -386,7 +386,7 @@ class SharingService:
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-            user, bugs=None, grantee=sharee, pillar=pillar,
+            user, artifacts=None, grantee=sharee, pillar=pillar,
             information_types=information_types)
 
     @available_with_permission('launchpad.Edit', 'pillar')
