@@ -29,3 +29,6 @@
     background-image: url(/@@/zoom-out.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.aging {
+    background-image: url(/@@/aging.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
