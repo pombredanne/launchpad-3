@@ -442,6 +442,10 @@ DROP FUNCTION unsummarise_bug(bug);
 DROP FUNCTION summarise_bug(bug);
 DROP FUNCTION bug_summary_temp_journal_ins(bugsummary);
 DROP FUNCTION bugsummary_journal_ins(bugsummary);
+DROP FUNCTION bugsummary_locations(bug);
+DROP FUNCTION bugsummary_tags(bug);
+DROP FUNCTION bugsummary_tasks(bug);
+DROP FUNCTION bugsummary_viewers(bug);
 
 -- Remove foreign key constraints. This table is generated from a set of
 -- constrained columns, so the constraints here serve only to make
