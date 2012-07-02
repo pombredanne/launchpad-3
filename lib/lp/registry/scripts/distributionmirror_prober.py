@@ -335,11 +335,11 @@ class RedirectAwareProberFactory(ProberFactory):
             # XXX Guilherme Salgado 2007-04-23 bug=109223:
             # We can't assume url to be absolute here.
             self.setURL(url)
-        except (UnknownURLScheme,) as e:
+        except UnknownURLScheme as e:
             # Since we've got the UnknownURLScheme after a redirect, we need
             # to raise it in a form that can be ignored in the layer above.
             self.failed(UnknownURLSchemeAfterRedirect(url))
-        except (InfiniteLoopDetected,) as e:
+        except InfiniteLoopDetected as e:
             self.failed(e)
 
         else:
