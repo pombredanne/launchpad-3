@@ -1068,8 +1068,8 @@ class PackageUpload(SQLBase):
                         # The old component is not in the list of allowed
                         # components to override.
                         raise QueueInconsistentStateError(
-                            "No rights to override from %s" % (
-                                binarypackage.component.name))
+                            "No rights to override from %s" %
+                            binarypackage.component.name)
                     binarypackage.override(**change)
                     made_changes = True
 
