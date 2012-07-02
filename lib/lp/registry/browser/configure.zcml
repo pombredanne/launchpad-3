@@ -1216,6 +1216,12 @@
             class="lp.registry.browser.team.TeamAddView"
             permission="launchpad.AnyPerson"
             template="../templates/people-newteam.pt"/>
+        <browser:page
+            name="+simplenewteam"
+            for="lp.registry.interfaces.person.IPersonSet"
+            class="lp.registry.browser.team.SimpleTeamAddView"
+            permission="launchpad.AnyPerson"
+            template="../../app/templates/generic-edit.pt"/>
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="zope.Public"
