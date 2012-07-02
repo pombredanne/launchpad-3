@@ -36,7 +36,7 @@ BEGIN
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.bugsummary_journal_bug(bug_row bug, _count integer)
+CREATE OR REPLACE FUNCTION public.bugsummary_journal_bugtaskflat(btf_row bugtaskflat, _count integer)
  RETURNS void
  LANGUAGE plpgsql
 AS $function$
@@ -52,154 +52,88 @@ BEGIN
         distroseries, sourcepackagename, viewed_by, tag,
         status, milestone, importance, has_patch, fixed_upstream,
         access_policy
-        FROM bugsummary_locations(BUG_ROW);
+        FROM bugsummary_locations(btf_row);
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.bugsubscription_maintain_bug_summary()
- RETURNS trigger
+CREATE OR REPLACE FUNCTION public.bugsummary_journal_bug(bug_row bug, _count integer)
+ RETURNS void
  LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO public
 AS $function$
+DECLARE
+    btf_row bugtaskflat%ROWTYPE;
 BEGIN
-    -- This trigger only works if we are inserting, updating or deleting
-    -- a single row per statement.
-    IF TG_OP = 'INSERT' THEN
-        IF (bug_row(NEW.bug)).information_type IN (1, 2) THEN
-            -- Public subscriptions are not aggregated.
-            RETURN NEW;
-        END IF;
-        IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(NEW.bug);
-        ELSE
-            PERFORM summarise_bug(NEW.bug);
-        END IF;
-        PERFORM bug_summary_flush_temp_journal();
-        RETURN NEW;
-    ELSIF TG_OP = 'DELETE' THEN
-        IF (bug_row(OLD.bug)).information_type IN (1, 2) THEN
-            -- Public subscriptions are not aggregated.
-            RETURN OLD;
-        END IF;
-        IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(OLD.bug);
-        ELSE
-            PERFORM summarise_bug(OLD.bug);
-        END IF;
-        PERFORM bug_summary_flush_temp_journal();
-        RETURN OLD;
-    ELSE
-        IF (OLD.person IS DISTINCT FROM NEW.person
-            OR OLD.bug IS DISTINCT FROM NEW.bug) THEN
-            IF TG_WHEN = 'BEFORE' THEN
-                IF (bug_row(OLD.bug)).information_type IN (3, 4, 5) THEN
-                    -- Public subscriptions are not aggregated.
-                    PERFORM unsummarise_bug(OLD.bug);
-                END IF;
-                IF OLD.bug <> NEW.bug AND (bug_row(NEW.bug)).information_type IN (3, 4, 5) THEN
-                    -- Public subscriptions are not aggregated.
-                    PERFORM unsummarise_bug(NEW.bug);
-                END IF;
-            ELSE
-                IF (bug_row(OLD.bug)).information_type IN (3, 4, 5) THEN
-                    -- Public subscriptions are not aggregated.
-                    PERFORM summarise_bug(OLD.bug);
-                END IF;
-                IF OLD.bug <> NEW.bug AND (bug_row(NEW.bug)).information_type IN (3, 4, 5) THEN
-                    -- Public subscriptions are not aggregated.
-                    PERFORM summarise_bug(NEW.bug);
-                END IF;
-            END IF;
-        END IF;
-        PERFORM bug_summary_flush_temp_journal();
-        RETURN NEW;
-    END IF;
+    FOR btf_row IN SELECT * FROM bugtaskflat WHERE bug = bug_row.id
+    LOOP
+        PERFORM bugsummary_journal_bugtaskflat(btf_row, _count);
+    END LOOP;
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.bugsummary_locations(bug_row bug)
+CREATE OR REPLACE FUNCTION public.bugsummary_locations(btf_row bugtaskflat)
  RETURNS SETOF bugsummary
  LANGUAGE plpgsql
 AS $function$
 BEGIN
-    IF BUG_ROW.duplicateof IS NOT NULL THEN
+    IF btf_row.duplicateof IS NOT NULL THEN
         RETURN;
     END IF;
     RETURN QUERY
         SELECT
             CAST(NULL AS integer) AS id,
             CAST(1 AS integer) AS count,
-            product, productseries, distribution, distroseries,
-            sourcepackagename, person AS viewed_by, tag, status, milestone,
-            importance,
-            BUG_ROW.latest_patch_uploaded IS NOT NULL AS has_patch,
+            bug_targets.product, bug_targets.productseries,
+            bug_targets.distribution, bug_targets.distroseries,
+            bug_targets.sourcepackagename,
+            bug_viewers.viewed_by, bug_tags.tag, btf_row.status,
+            btf_row.milestone, btf_row.importance,
+            btf_row.latest_patch_uploaded IS NOT NULL AS has_patch,
             false AS fixed_upstream, NULL::integer AS access_policy
-        FROM bugsummary_tasks(BUG_ROW) AS tasks
-        JOIN bugsummary_tags(BUG_ROW) AS bug_tags ON TRUE
-        LEFT OUTER JOIN bugsummary_viewers(BUG_ROW) AS bug_viewers ON TRUE;
+        FROM
+            bugsummary_targets(btf_row) as bug_targets,
+            bugsummary_tags(btf_row) AS bug_tags,
+            bugsummary_viewers(btf_row) AS bug_viewers;
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.bugsummary_tags(bug_row bug)
+CREATE OR REPLACE FUNCTION public.bugsummary_tags(btf_row bugtaskflat)
  RETURNS SETOF bugtag
  LANGUAGE sql
  STABLE
 AS $function$
-    SELECT * FROM BugTag WHERE BugTag.bug = $1.id
+    SELECT * FROM BugTag WHERE BugTag.bug = $1.bug
     UNION ALL
-    SELECT NULL::integer, $1.id, NULL::text;
+    SELECT NULL::integer, $1.bug, NULL::text;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.bugsummary_tasks(bug_row bug)
- RETURNS SETOF bugtask
- LANGUAGE plpgsql
- STABLE
-AS $function$
-DECLARE
-    bt bugtask%ROWTYPE;
-    r record;
-BEGIN
-    bt.bug = BUG_ROW.id;
-
-    -- One row only for each target permutation - need to ignore other fields
-    -- like date last modified to deal with conjoined masters and multiple
-    -- sourcepackage tasks in a distro.
-    FOR r IN
-        SELECT
-            product, productseries, distribution, distroseries,
-            sourcepackagename, status, milestone, importance, bugwatch
-        FROM BugTask WHERE bug=BUG_ROW.id
-        UNION -- Implicit DISTINCT
-        SELECT
-            product, productseries, distribution, distroseries,
-            NULL, status, milestone, importance, bugwatch
-        FROM BugTask WHERE bug=BUG_ROW.id AND sourcepackagename IS NOT NULL
-    LOOP
-        bt.product = r.product;
-        bt.productseries = r.productseries;
-        bt.distribution = r.distribution;
-        bt.distroseries = r.distroseries;
-        bt.sourcepackagename = r.sourcepackagename;
-        bt.status = r.status;
-        bt.milestone = r.milestone;
-        bt.importance = r.importance;
-        bt.bugwatch = r.bugwatch;
-        RETURN NEXT bt;
-    END LOOP;
-END;
-$function$;
-
-CREATE OR REPLACE FUNCTION public.bugsummary_viewers(bug_row bug)
- RETURNS SETOF bugsubscription
+CREATE OR REPLACE FUNCTION public.bugsummary_targets(btf_row bugtaskflat)
+ RETURNS TABLE(
+    product integer, productseries integer, distribution integer,
+    distroseries integer, sourcepackagename integer)
  LANGUAGE sql
- STABLE
+ IMMUTABLE
 AS $function$
-    SELECT *
-    FROM BugSubscription
-    WHERE
-        bugsubscription.bug=$1.id
-        AND $1.information_type IN (3, 4, 5);
+    -- Include a sourcepackagename-free task if this one has a
+    -- sourcepackagename, so package tasks are also counted in their
+    -- distro/series.
+    SELECT
+        $1.product, $1.productseries, $1.distribution,
+        $1.distroseries, $1.sourcepackagename
+    UNION -- Implicit DISTINCT
+    SELECT
+        $1.product, $1.productseries, $1.distribution,
+        $1.distroseries, NULL;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.bugsummary_viewers(btf_row bugtaskflat)
+ RETURNS TABLE(viewed_by integer)
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$
+    SELECT NULL WHERE $1.information_type IN (1, 2)
+    UNION ALL
+    SELECT unnest($1.access_grants)
+    WHERE $1.information_type IN (3, 4, 5);
 $function$;
 
 CREATE OR REPLACE FUNCTION public.bugtag_maintain_bug_summary()
@@ -243,90 +177,38 @@ BEGIN
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.bug_maintain_bug_summary()
+CREATE OR REPLACE FUNCTION public.bugtaskflat_maintain_bug_summary()
  RETURNS trigger
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO public
 AS $function$
 BEGIN
-    -- There is no INSERT logic, as a bug will not have any summary
-    -- information until BugTask rows have been attached.
-    IF TG_OP = 'UPDATE' THEN
-        IF OLD.duplicateof IS DISTINCT FROM NEW.duplicateof
-            OR OLD.information_type IS DISTINCT FROM NEW.information_type
-            OR (OLD.latest_patch_uploaded IS NULL)
-                <> (NEW.latest_patch_uploaded IS NULL) THEN
-            PERFORM bugsummary_journal_bug(OLD, -1);
-            PERFORM bugsummary_journal_bug(NEW, 1);
-        END IF;
-
-    ELSIF TG_OP = 'DELETE' THEN
-        PERFORM bugsummary_journal_bug(OLD, -1);
-    END IF;
-
-    PERFORM bug_summary_flush_temp_journal();
-    RETURN NULL; -- Ignored - this is an AFTER trigger
-END;
-$function$;
-
-CREATE OR REPLACE FUNCTION public.bugtask_maintain_bug_summary()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO public
-AS $function$
-BEGIN
-    -- This trigger only works if we are inserting, updating or deleting
-    -- a single row per statement.
-
-    -- Unlike bug_maintain_bug_summary, this trigger does not have access
-    -- to the old bug when invoked as an AFTER trigger. To work around this
-    -- we install this trigger as both a BEFORE and an AFTER trigger.
     IF TG_OP = 'INSERT' THEN
-        IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(NEW.bug);
-        ELSE
-            PERFORM summarise_bug(NEW.bug);
-        END IF;
+        PERFORM bugsummary_journal_bugtaskflat(NEW, 1);
         PERFORM bug_summary_flush_temp_journal();
-        RETURN NEW;
-
     ELSIF TG_OP = 'DELETE' THEN
-        IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(OLD.bug);
-        ELSE
-            PERFORM summarise_bug(OLD.bug);
-        END IF;
+        PERFORM bugsummary_journal_bugtaskflat(OLD, -1);
         PERFORM bug_summary_flush_temp_journal();
-        RETURN OLD;
-
-    ELSE
-        IF (OLD.product IS DISTINCT FROM NEW.product
-            OR OLD.productseries IS DISTINCT FROM NEW.productseries
-            OR OLD.distribution IS DISTINCT FROM NEW.distribution
-            OR OLD.distroseries IS DISTINCT FROM NEW.distroseries
-            OR OLD.sourcepackagename IS DISTINCT FROM NEW.sourcepackagename
-            OR OLD.status IS DISTINCT FROM NEW.status
-            OR OLD.importance IS DISTINCT FROM NEW.importance
-            OR OLD.bugwatch IS DISTINCT FROM NEW.bugwatch
-            OR OLD.milestone IS DISTINCT FROM NEW.milestone) THEN
-
-            IF TG_WHEN = 'BEFORE' THEN
-                PERFORM unsummarise_bug(OLD.bug);
-                IF OLD.bug <> NEW.bug THEN
-                    PERFORM unsummarise_bug(NEW.bug);
-                END IF;
-            ELSE
-                PERFORM summarise_bug(OLD.bug);
-                IF OLD.bug <> NEW.bug THEN
-                    PERFORM summarise_bug(NEW.bug);
-                END IF;
-            END IF;
-        END IF;
+    ELSIF
+        NEW.product IS DISTINCT FROM OLD.product
+        OR NEW.productseries IS DISTINCT FROM OLD.productseries
+        OR NEW.distribution IS DISTINCT FROM OLD.distribution
+        OR NEW.distroseries IS DISTINCT FROM OLD.distroseries
+        OR NEW.sourcepackagename IS DISTINCT FROM OLD.sourcepackagename
+        OR NEW.status IS DISTINCT FROM OLD.status
+        OR NEW.milestone IS DISTINCT FROM OLD.milestone
+        OR NEW.importance IS DISTINCT FROM OLD.importance
+        OR NEW.latest_patch_uploaded IS DISTINCT FROM OLD.latest_patch_uploaded
+        OR NEW.information_type IS DISTINCT FROM OLD.information_type
+        OR NEW.access_grants IS DISTINCT FROM OLD.access_grants
+        OR NEW.access_policies IS DISTINCT FROM OLD.access_policies
+    THEN
+        PERFORM bugsummary_journal_bugtaskflat(OLD, -1);
+        PERFORM bugsummary_journal_bugtaskflat(NEW, 1);
         PERFORM bug_summary_flush_temp_journal();
-        RETURN NEW;
     END IF;
+    RETURN NULL;
 END;
 $function$;
 
@@ -334,7 +216,6 @@ CREATE OR REPLACE FUNCTION public.ensure_bugsummary_temp_journal()
  RETURNS void
  LANGUAGE plpgsql
 AS $function$
-DECLARE
 BEGIN
     CREATE TEMPORARY TABLE bugsummary_temp_journal (
         LIKE bugsummary ) ON COMMIT DROP;
@@ -539,11 +420,32 @@ CREATE OR REPLACE VIEW combinedbugsummary AS
         bugsummaryjournal.access_policy
     FROM bugsummaryjournal;
 
+-- With BugSummary updates now triggered by BugTaskFlat we can do away
+-- with the triggers on the tables it aggregates. Only BugTaskFlat and
+-- BugTag remain.
+DROP TRIGGER bug_maintain_bug_summary_trigger ON bug;
+DROP TRIGGER bugtask_maintain_bug_summary_before_trigger ON bugtask;
+DROP TRIGGER bugtask_maintain_bug_summary_after_trigger ON bugtask;
+DROP TRIGGER bugsubscription_maintain_bug_summary_before_trigger ON bugsubscription;
+DROP TRIGGER bugsubscription_maintain_bug_summary_after_trigger ON bugsubscription;
+DROP FUNCTION bug_maintain_bug_summary();
+DROP FUNCTION bugtask_maintain_bug_summary();
+DROP FUNCTION bugsubscription_maintain_bug_summary();
+
+CREATE TRIGGER bugtaskflat_maintain_bug_summary
+    AFTER INSERT OR UPDATE OR DELETE ON bugtaskflat
+    FOR EACH ROW EXECUTE PROCEDURE bugtaskflat_maintain_bug_summary();
+
+
+-- Dispose of various other unused functions.
 DROP FUNCTION unsummarise_bug(bug);
 DROP FUNCTION summarise_bug(bug);
 DROP FUNCTION bug_summary_temp_journal_ins(bugsummary);
 DROP FUNCTION bugsummary_journal_ins(bugsummary);
 
+-- Remove foreign key constraints. This table is generated from a set of
+-- constrained columns, so the constraints here serve only to make
+-- things slower.
 ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_distribution_fkey;
 ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_distroseries_fkey;
 ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_milestone_fkey;
