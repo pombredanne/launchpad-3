@@ -13,14 +13,14 @@ from lp.xmlrpc.application import SelfTest, ISelfTest
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     anonymous_logged_in,
+    TestCaseWithFactory,
     person_logged_in,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.xmlrpc import XMLRPCTestTransport
-from lp.testing import TestCase
 
 
-class TestXMLRPCSelfTest(TestCase):
+class TestXMLRPCSelfTest(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -92,8 +92,9 @@ class TestXMLRPCSelfTest(TestCase):
         """Even if we log in as Foo Bar here, the XMLRPC method will see Sample
         Person as the logged in user.
         """
-        with person_logged_in('foo.bar@canonical.com'):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             selftest = self.make_logged_in_proxy()
             self.assertEqual('Hello Sample Person.', selftest.hello())
-            self.assertEqual('Foo Bar',
+            self.assertEqual(person.displayname,
                              getUtility(ILaunchBag).user.displayname)
