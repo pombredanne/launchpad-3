@@ -30,9 +30,6 @@ class AuditorServer(AuditorFixture):
 
     def setUp(self):
         super(AuditorServer, self).setUp()
-        setattr(
-            self, 'service_config',
-            dedent("""\
-                [auditor]
-                port: %d
-                """ % (self.config.port)))
+        self.service_config = dedent("""\
+            [auditor]
+            port: %d""" % (self.config.port))
