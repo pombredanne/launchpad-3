@@ -1166,8 +1166,8 @@ class PopulateBranchAccessArtifactGrant(TunableLoop):
     def __call__(self, chunk_size):
         branches = list(self.findBranches()[:chunk_size])
         artifacts = getUtility(IAccessArtifactSource).ensure(branches)
-        branch_to_artifact = dict([(artifact.branch_id, artifact)
-            for artifact in artifacts])
+        branch_to_artifact = dict(
+            (artifact.branch_id, artifact) for artifact in artifacts)
         grants = []
         for branch in branches:
             artifact = branch_to_artifact[branch.id]
