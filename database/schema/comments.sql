@@ -1151,7 +1151,7 @@ COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export langua
 COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
-COMMENT ON COLUMN DistroSeries.proposed_not_automatic_pre_release IS 'Whether the -proposed pocket is set NotAutomatic and ButAutomaticUpgrades when this distro release is pre-release (DEVELOPMENT or FROZEN) so that apt does not offer users upgrades into -proposed, but does offer upgrades within it.'
+COMMENT ON COLUMN DistroSeries.proposed_not_automatic IS 'Whether the -proposed pocket is set NotAutomatic and ButAutomaticUpgrades so that apt does not offer users upgrades into -proposed, but does offer upgrades within it.';
 
 
 -- PackageCopyJob

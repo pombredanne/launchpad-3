@@ -4,6 +4,6 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE distroseries
-    ADD COLUMN proposed_not_automatic_pre_release BOOLEAN NOT NULL DEFAULT FALSE;
+    ADD COLUMN proposed_not_automatic BOOLEAN NOT NULL DEFAULT FALSE;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 25, 1);
