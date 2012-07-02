@@ -34,11 +34,13 @@ Each record exposes a number of properties.
 getPackageUploads can filter on package names.
 
     >>> uploads = webservice.named_get(
-    ...     warty['self_link'], 'getPackageUploads', name='mozilla').jsonBody()
+    ...     warty['self_link'], 'getPackageUploads',
+    ...     name='mozilla').jsonBody()
     >>> len(uploads['entries'])
     1
     >>> uploads = webservice.named_get(
-    ...     warty['self_link'], 'getPackageUploads', name='missing').jsonBody()
+    ...     warty['self_link'], 'getPackageUploads',
+    ...     name='missing').jsonBody()
     >>> len(uploads['entries'])
     0
 
