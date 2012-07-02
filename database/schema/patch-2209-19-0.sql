@@ -18,8 +18,10 @@ AS $function$
 DECLARE
     d bugsummary%ROWTYPE;
 BEGIN
-    -- may get called even though no summaries were made (for simplicity in the
-    -- callers)
+    -- May get called even though no summaries were made (for simplicity in the
+    -- callers). We sum the rows here to minimise the number of inserts
+    -- into the persistent journal, as it's reasonably likely that we'll
+    -- have -1s and +1s cancelling each other out.
     PERFORM ensure_bugsummary_temp_journal();
     INSERT INTO BugSummaryJournal(
         count, product, productseries, distribution,
@@ -27,11 +29,17 @@ BEGIN
         status, milestone, importance, has_patch, fixed_upstream,
         access_policy)
     SELECT
-        count, product, productseries, distribution,
+        SUM(count), product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
         status, milestone, importance, has_patch, fixed_upstream,
         access_policy
-        FROM bugsummary_temp_journal;
+    FROM bugsummary_temp_journal
+    GROUP BY
+        product, productseries, distribution,
+        distroseries, sourcepackagename, viewed_by, tag,
+        status, milestone, importance, has_patch, fixed_upstream,
+        access_policy
+    HAVING SUM(count) != 0;
     TRUNCATE bugsummary_temp_journal;
 END;
 $function$;
