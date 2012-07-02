@@ -402,7 +402,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._assert_getPillarShareesUnauthorized(product)
 
-    def _assert_sharePillarInformation(self, pillar):
+    def _assert_sharePillarInformation(self, pillar, pillar_type=None):
         """sharePillarInformations works and returns the expected data."""
         sharee = self.factory.makePerson()
         grantor = self.factory.makePerson()
@@ -466,14 +466,23 @@ class TestSharingService(TestCaseWithFactory):
             [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])
         self.assertEqual(expected_sharee_data, sharee_data)
         # Check that getPillarSharees returns what we expect.
-        expected_sharee_grants = [
-            (sharee,
-             {ud_policy: SharingPermission.SOME,
-              es_policy: SharingPermission.ALL},
-             [InformationType.EMBARGOEDSECURITY,
-              InformationType.USERDATA]),
-             ]
-            
+        if pillar_type == 'product':
+            expected_sharee_grants = [
+                (sharee,
+                 {ud_policy: SharingPermission.SOME,
+                  es_policy: SharingPermission.ALL},
+                 [InformationType.EMBARGOEDSECURITY,
+                  InformationType.USERDATA]),
+                 ]
+        else: 
+            expected_sharee_grants = [
+                (sharee,
+                 {es_policy: SharingPermission.ALL,
+                  ud_policy: SharingPermission.SOME},
+                 [InformationType.USERDATA,
+                  InformationType.EMBARGOEDSECURITY]),
+                 ]
+
         sharee_grants = list(self.service.getPillarSharees(pillar))
         # Again, filter out the owner, if one exists.
         sharee_grants = [s for s in sharee_grants if s[0] != pillar.owner]
@@ -495,7 +504,7 @@ class TestSharingService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
-        self._assert_sharePillarInformation(product)
+        self._assert_sharePillarInformation(product, pillar_type='product')
 
     def test_updateDistroSharee(self):
         # Users with launchpad.Edit can add sharees.
