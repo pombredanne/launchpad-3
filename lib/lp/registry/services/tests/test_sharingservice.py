@@ -1241,7 +1241,7 @@ class ApiTestMixin:
 
     def setUp(self):
         super(ApiTestMixin, self).setUp()
-        self.owner = self.factory.makePerson()
+        self.owner = self.factory.makePerson(name='thundercat')
         self.pillar = self.factory.makeProduct(owner=self.owner)
         self.grantee = self.factory.makePerson(name='grantee')
         self.grantor = self.factory.makePerson()
@@ -1251,11 +1251,13 @@ class ApiTestMixin:
 
     def test_getPillarShareeData(self):
         # Test the getPillarShareeData method.
-        [json_data] = self._getPillarShareeData()
-        self.assertEqual('grantee', json_data['name'])
+        json_data = self._getPillarShareeData()
+        [grantee_data] = [d for d in json_data
+                        if d['name'] != 'thundercat']
+        self.assertEqual('grantee', grantee_data['name'])
         self.assertEqual(
             {InformationType.USERDATA.name: SharingPermission.ALL.name},
-            json_data['permissions'])
+            grantee_data['permissions'])
 
 
 class TestWebService(ApiTestMixin, WebServiceTestCase):
