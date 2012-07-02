@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common views for objects that implement `IPillar`."""
@@ -8,7 +8,8 @@ __metaclass__ = type
 __all__ = [
     'InvolvedMenu',
     'PillarBugsMenu',
-    'PillarView',
+    'PillarInvolvementView',
+    'PillarViewMixin',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
     'PillarSharingView',
@@ -26,11 +27,15 @@ from zope.interface import (
     implements,
     Interface,
     )
-from zope.schema.vocabulary import getVocabularyRegistry
+from zope.schema.vocabulary import (
+    getVocabularyRegistry,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.launchpad import iter_view_registrations
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.tales import MenuAPI
 from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import (
@@ -47,7 +52,10 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    IPersonSet,
+    )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
@@ -131,15 +139,15 @@ class InvolvedMenu(NavigationMenu):
             enabled=service_uses_launchpad(self.pillar.blueprints_usage))
 
 
-class PillarView(LaunchpadView):
-    """A view for any `IPillar`."""
+class PillarInvolvementView(LaunchpadView):
+    """A view for any `IPillar` implementing the IInvolved interface."""
     implements(IInvolved)
 
     configuration_links = []
     visible_disabled_link_names = []
 
     def __init__(self, context, request):
-        super(PillarView, self).__init__(context, request)
+        super(PillarInvolvementView, self).__init__(context, request)
         self.official_malone = False
         self.answers_usage = ServiceUsage.UNKNOWN
         self.blueprints_usage = ServiceUsage.UNKNOWN
@@ -250,6 +258,21 @@ class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
+
+
+class PillarViewMixin():
+    """A mixin for pillar views to populate the json request cache."""
+
+    def initialize(self):
+        # Insert close team subscription policy data into the json cache.
+        # This data is used for the maintainer and driver pickers.
+        cache = IJSONRequestCache(self.request)
+        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
+        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        cache.objects['team_subscriptionpolicy_data'] = (
+            team_subscriptionpolicy_data)
 
 
 class PillarSharingView(LaunchpadView):
