@@ -10,7 +10,10 @@ from zope.component import getUtility
 
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 
-from lp.testing import login, ANONYMOUS
+from lp.testing import (
+    anonymous_logged_in,
+    person_logged_in,
+    )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.xmlrpc import XMLRPCTestTransport
 from lp.testing import TestCase
@@ -62,12 +65,12 @@ class TestPrivateXMLRPC(TestCase):
         """The bugs API on the other hand is an external service so it is
         available on the external port.
         """
-        login(ANONYMOUS)
-        external_api = self.get_public_proxy('bugs/')
-        bug_dict = dict(
-            product='firefox', summary='the summary', comment='the comment')
-        result = external_api.filebug(bug_dict)
-        self.assertEqual('http://bugs.launchpad.dev/bugs/16', result)
+        with anonymous_logged_in():
+            external_api = self.get_public_proxy('bugs/')
+            bug_dict = dict(
+                product='firefox', summary='the summary', comment='the comment')
+            result = external_api.filebug(bug_dict)
+            self.assertEqual('http://bugs.launchpad.dev/bugs/16', result)
 
     def test_internal_bugs_api(self):
         """There is an interal bugs api, too, but that doesn't share the same
@@ -81,8 +84,8 @@ class TestPrivateXMLRPC(TestCase):
         self.assertEqual(404, e.errcode)
 
     def test_get_utility(self):
-        login(ANONYMOUS)
-        internal_api = self.get_private_proxy('bugs/')
-        token_string = internal_api.newBugTrackerToken()
-        token = getUtility(ILoginTokenSet)[token_string]
-        self.assertEqual('LoginToken', token.__class__.__name__)
+        with anonymous_logged_in():
+            internal_api = self.get_private_proxy('bugs/')
+            token_string = internal_api.newBugTrackerToken()
+            token = getUtility(ILoginTokenSet)[token_string]
+            self.assertEqual('LoginToken', token.__class__.__name__)

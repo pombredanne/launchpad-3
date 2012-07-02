@@ -11,7 +11,10 @@ from zope.component import getUtility
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc.application import SelfTest, ISelfTest
 from lp.services.webapp.testing import verifyObject
-from lp.testing import login, ANONYMOUS
+from lp.testing import (
+    anonymous_logged_in,
+    person_logged_in,
+    )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.xmlrpc import XMLRPCTestTransport
 from lp.testing import TestCase
@@ -68,7 +71,7 @@ class TestXMLRPCSelfTest(TestCase):
         self.assertStartsWith(str(e), "<Fault -1: 'OOPS-")
 
     def test_anonymous_authentication(self):
-        """hello() return Anonymous because we haven't logged in."""
+        """hello() returns Anonymous because we haven't logged in."""
         selftest = self.make_proxy()
         self.assertEqual('Hello Anonymous.', selftest.hello())
 
@@ -80,16 +83,17 @@ class TestXMLRPCSelfTest(TestCase):
         methods are different, so we still have an anonymous interaction in
         this test.
         """
-        login(ANONYMOUS)
-        self.assertIs(None, getUtility(ILaunchBag).user)
-        selftest = self.make_logged_in_proxy()
-        self.assertEqual('Hello Sample Person.', selftest.hello())
+        with anonymous_logged_in():
+            self.assertIs(None, getUtility(ILaunchBag).user)
+            selftest = self.make_logged_in_proxy()
+            self.assertEqual('Hello Sample Person.', selftest.hello())
 
     def test_login_differences(self):
         """Even if we log in as Foo Bar here, the XMLRPC method will see Sample
         Person as the logged in user.
         """
-        login('foo.bar@canonical.com')
-        selftest = self.make_logged_in_proxy()
-        self.assertEqual('Hello Sample Person.', selftest.hello())
-        self.assertEqual('Foo Bar', getUtility(ILaunchBag).user.displayname)
+        with person_logged_in('foo.bar@canonical.com'):
+            selftest = self.make_logged_in_proxy()
+            self.assertEqual('Hello Sample Person.', selftest.hello())
+            self.assertEqual('Foo Bar',
+                             getUtility(ILaunchBag).user.displayname)
