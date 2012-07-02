@@ -84,6 +84,7 @@ from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.validation import validate_new_team_email
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
@@ -1013,7 +1014,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         super(TeamAddView, self).setUpFields()
         self.setUpVisibilityField()
 
-    @action('Create Team', name='create')
+    @action('Create Team', name='create',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
@@ -1040,6 +1042,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % email)
 
+        if self.request.is_ajax:
+            return ''
         self.next_url = canonical_url(team)
 
     def _validateVisibilityConsistency(self, value):
@@ -1057,6 +1061,28 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     @property
     def _name(self):
         return None
+
+
+class SimpleTeamAddView(TeamAddView):
+    """View for adding a new team using a Javascript form.
+
+    This view is used to render a form used to create a new team. The form is
+    displayed in a popup overlay and submission is done using an XHR call.
+    """
+
+    for_input = True
+    schema = ITeam
+    next_url = None
+
+    field_names = [
+        "name", "displayname", "visibility", "subscriptionpolicy",
+        "teamowner"]
+
+    # Use a dropdown - Javascript will be used to change this to a choice
+    # popup widget.
+    custom_widget(
+        'subscriptionpolicy', LaunchpadDropdownWidget,
+        orientation='vertical')
 
 
 class ProposedTeamMembersEditView(LaunchpadFormView):
