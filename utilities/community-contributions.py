@@ -189,6 +189,7 @@ known_canonical_lp_devs = \
                               u'Raphaël Badin',
                               u'Richard Harding',
                               u'Rick Harding',
+                              u'Rick harding',
                               u'Robert Collins',
                               u'root <root {_AT_} ubuntu>',
                               u'rvb',
@@ -235,6 +236,7 @@ known_canonical_non_lp_devs = \
                               u'Michael Casadevall',
                               u'Michael Vogt',
                               u'Sidnei da Silva',
+                              u'Steve Langasek',
                               u'Dustin Kirkland',
                               u'John Arbash Meinel',
                               )]

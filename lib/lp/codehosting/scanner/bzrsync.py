@@ -24,6 +24,10 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
+from lp.code.bzr import (
+    branch_revision_history,
+    get_ancestry,
+    )
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
@@ -85,7 +89,7 @@ class BzrSync:
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
         self.logger.info("Retrieving history from bzrlib.")
-        bzr_history = bzr_branch.revision_history()
+        bzr_history = branch_revision_history(bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -154,8 +158,7 @@ class BzrSync:
         bzr_last = bzr_branch.last_revision()
         db_last = self.db_branch.last_scanned_id
         if db_last is None:
-            added_ancestry = set(bzr_branch.repository.get_ancestry(bzr_last))
-            added_ancestry.discard(None)
+            added_ancestry = get_ancestry(bzr_branch.repository, bzr_last)
             removed_ancestry = set()
         else:
             graph = self._getRevisionGraph(bzr_branch, db_last)

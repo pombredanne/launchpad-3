@@ -11,9 +11,7 @@ __all__ = [
 from itertools import product
 
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
-from lazr.restful.utils import (
-    get_current_web_service_request,
-    )
+from lazr.restful.utils import get_current_web_service_request
 from storm.expr import (
     And,
     In,
@@ -46,14 +44,12 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sharingjob import (
-    IRemoveBugSubscriptionsJobSource,
-    )
+from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.accesspolicy import (
     AccessArtifactGrant,
-    AccessPolicyGrant,
     AccessPolicyArtifact,
+    AccessPolicyGrant,
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
