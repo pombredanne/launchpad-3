@@ -137,6 +137,10 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -878,6 +882,9 @@ class Branch(SQLBase, BzrIdentityMixin):
                     person.displayname))
         store = Store.of(subscription)
         store.remove(subscription)
+        artifact = getUtility(IAccessArtifactSource).find([self])
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            artifact, [person])
         store.flush()
 
     def getBranchRevision(self, sequence=None, revision=None,
