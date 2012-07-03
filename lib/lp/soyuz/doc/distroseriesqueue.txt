@@ -97,7 +97,7 @@ XXX cprov 20051209: need to build a broken upload to test it properly
     ...     try:
     ...         item.setAccepted()
     ...         item.syncUpdate()
-    ...     except QueueInconsistentStateError, info:
+    ...     except QueueInconsistentStateError as info:
     ...         print info
 
     >>> accepted_queue = hoary.getPackageUploads(PackageUploadStatus.ACCEPTED)
@@ -308,7 +308,7 @@ Performing full acceptance:
     >>> for item in items:
     ...      try:
     ...          item.setAccepted()
-    ...      except QueueInconsistentStateError, e:
+    ...      except QueueInconsistentStateError as e:
     ...          print item.displayname, e
     ...      else:
     ...          print item.displayname, item.status.name
@@ -339,7 +339,7 @@ Check if the state machine methods raise when trying to set the same state:
     >>> for item in items:
     ...      try:
     ...          item.setNew()
-    ...      except QueueInconsistentStateError, e:
+    ...      except QueueInconsistentStateError as e:
     ...          print item.displayname, e
     ...      else:
     ...          print item.displayname, 'BOGUS'
@@ -380,7 +380,7 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
     >>> naked_bin.component = getUtility(IComponentSet).new('hell')
     >>> try:
     ...     item.setAccepted()
-    ... except QueueInconsistentStateError, e:
+    ... except QueueInconsistentStateError as e:
     ...     print item.displayname, e
     ... else:
     ...     print item.displayname, 'ACCEPTED'
@@ -839,7 +839,7 @@ with fake changes files first so that emails can be generated.)
     >>> insertFakeChangesFile(items[3].changesfile.id)
     >>> try:
     ...    items[1].acceptFromQueue()
-    ... except QueueInconsistentStateError, e:
+    ... except QueueInconsistentStateError as e:
     ...    print 'FAILED'
     ... else:
     ...    print 'DONE'
@@ -870,7 +870,7 @@ Let's reject something in the queue:
 
     >>> try:
     ...     items[3].rejectFromQueue()
-    ... except QueueInconsistentStateError, e:
+    ... except QueueInconsistentStateError as e:
     ...    print 'FAILED'
     ... else:
     ...    print 'REJECTED'

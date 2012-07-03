@@ -281,7 +281,7 @@ class RabbitQueue(RabbitMessageBase):
                 else:
                     self.channel.basic_ack(message.delivery_tag)
                     return json.loads(message.body)
-            except amqp.AMQPChannelException, error:
+            except amqp.AMQPChannelException as error:
                 if error.amqp_reply_code == 404:
                     raise QueueNotFound()
                 else:

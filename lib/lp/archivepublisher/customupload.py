@@ -206,7 +206,7 @@ class CustomUpload:
                     tar.extract(tarinfo, self.tmpdir)
             finally:
                 tar.close()
-        except tarfile.TarError, exc:
+        except tarfile.TarError as exc:
             raise CustomUploadTarballTarError(self.tarfile_path, exc)
 
     def shouldInstall(self, filename):

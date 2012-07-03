@@ -317,7 +317,7 @@ class SafeBranchOpener(object):
                 prober = prober_kls()
                 try:
                     return transport, prober.probe_transport(transport)
-                except errors.NotBranchError, e:
+                except errors.NotBranchError as e:
                     last_error = e
             else:
                 raise last_error

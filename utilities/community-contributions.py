@@ -647,7 +647,7 @@ def main():
         opts, args = getopt.getopt(sys.argv[1:], '?hq',
                                    ['help', 'usage', 'dry-run', 'draft-run',
                                     'devel=', 'db-devel='])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         sys.stderr.write("ERROR: " + str(e) + '\n\n')
         usage()
         sys.exit(1)

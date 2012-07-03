@@ -730,7 +730,7 @@ def main():
         regexp = script_config.get('categories', option)
         try:
             categories.append(Category(option, regexp))
-        except sre_constants.error, x:
+        except sre_constants.error as x:
             log.fatal("Unable to compile regexp %r (%s)" % (regexp, x))
             return 1
     categories.sort()
@@ -971,7 +971,7 @@ def parse(tracefiles, times, options):
                     times.add_request(request)
                 else:
                     raise MalformedLine('Unknown record type %s', record_type)
-            except MalformedLine, x:
+            except MalformedLine as x:
                 log.error(
                     "Malformed line %s (%s)" % (repr(line), x))
 

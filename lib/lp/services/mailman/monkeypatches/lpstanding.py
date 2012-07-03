@@ -30,7 +30,7 @@ def process(mlist, msg, msgdata):
     # processing at this handler.
     try:
         in_good_standing = proxy.inGoodStanding(sender)
-    except Exception, error:
+    except Exception as error:
         XMLRPCRunner.handle_proxy_error(error, msg, msgdata)
     # If the sender is a member in good standing, that's all we need to know
     # in order to let the message pass.

@@ -187,7 +187,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         try:
             if self.hasInput():
                 self.getInputValue()
-        except InputErrors, error:
+        except InputErrors as error:
             self._error = error
         return super(LaunchpadTargetWidget, self).error()
 

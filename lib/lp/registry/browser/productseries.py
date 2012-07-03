@@ -1091,7 +1091,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         url=url,
                         cvs_root=cvs_root,
                         cvs_module=cvs_module)
-                except BranchExists, e:
+                except BranchExists as e:
                     self._setBranchExists(e.existing_branch,
                                           'branch_name')
                     self.errors_in_action = True
@@ -1123,7 +1123,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.addError(
                 "You are not allowed to create branches in %s." %
                 self.context.displayname)
-        except BranchExists, e:
+        except BranchExists as e:
             self._setBranchExists(e.existing_branch, 'branch_name')
         if branch is None:
             self.errors_in_action = True

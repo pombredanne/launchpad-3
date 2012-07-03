@@ -1435,7 +1435,7 @@ class PackageCopyingMixin:
                     dest_display_name=dest_display_name, person=person,
                     check_permissions=check_permissions,
                     sponsored=sponsored_person)
-        except CannotCopy, error:
+        except CannotCopy as error:
             self.setFieldError(
                 sources_field_name, render_cannotcopy_as_html(error))
             return False
