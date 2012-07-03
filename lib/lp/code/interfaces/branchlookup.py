@@ -11,7 +11,6 @@ __all__ = [
     'IBranchLookup',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
-    'path_lookups',
     ]
 
 from itertools import (
