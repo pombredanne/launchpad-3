@@ -599,7 +599,7 @@ class PackageUpload(SQLBase):
     def acceptFromCopy(self):
         """See `IPackageUpload`."""
         assert self.is_delayed_copy, 'Can only process delayed-copies.'
-        assert self._sources.count() == 1, (
+        assert len(self.sources) == 1, (
             'Source is mandatory for delayed copies.')
         self.setAccepted()
 
@@ -636,7 +636,7 @@ class PackageUpload(SQLBase):
 
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
-        return ((self._sources.count() == 1) and
+        return ((len(self.sources) == 1) and
                 (not bool(self.builds)) and
                 (not bool(self.customfiles)))
 
