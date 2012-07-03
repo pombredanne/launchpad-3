@@ -306,6 +306,7 @@ class TestBugTaskView(TestCaseWithFactory):
             view = create_initialized_view(bugtask, name="+index")
             self.assertEqual('Private', view.information_type)
 
+
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -1875,7 +1876,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory, bugtask=None):
+def make_bug_task_listing_item(factory, bugtask=None, target_context=None):
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
@@ -1893,6 +1894,8 @@ def make_bug_task_listing_item(factory, bugtask=None):
     if tags != {}:
         tags = tags[bugtask.id]
     people = bug_task_set.getBugTaskPeople([bugtask])
+    if target_context is None:
+        target_context = bugtask.target
     return owner, BugTaskListingItem(
         bugtask,
         badge_property['has_branch'],
@@ -1900,7 +1903,7 @@ def make_bug_task_listing_item(factory, bugtask=None):
         badge_property['has_patch'],
         tags,
         people,
-        target_context=bugtask.target)
+        target_context=target_context)
 
 
 @contextmanager
@@ -2440,6 +2443,18 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 product=item.bugtask.target)
             milestone_name = item.milestone.displayname
             self.assertEqual(milestone_name, item.model['milestone_name'])
+
+    def test_tag_urls_use_view_context(self):
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project_group)
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=project_group)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(project_group, view_name="+bugs")))
 
     def test_model_assignee(self):
         """Model contains expected fields with expected values."""

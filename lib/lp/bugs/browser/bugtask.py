@@ -2215,7 +2215,7 @@ class BugTaskListingItem:
         reporter = self.people[self.bug.ownerID]
 
         base_tag_url = "%s/?field.tag=" % canonical_url(
-            self.bugtask.target,
+            self.target_context,
             view_name="+bugs")
 
         flattened = {
