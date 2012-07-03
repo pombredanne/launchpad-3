@@ -46,7 +46,7 @@ def fault_mapper(func):
     def decorator(*args, **kwargs):
         try:
             results = func(*args, **kwargs)
-        except Fault, fault:
+        except Fault as fault:
             exception = errorcode_map.get(fault.faultCode,
                                           SalesforceVoucherProxyException)
             raise exception(fault.faultString)

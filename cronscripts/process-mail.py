@@ -27,7 +27,7 @@ class ProcessMail(LaunchpadCronScript):
     def main(self):
         try:
             handleMail(self.txn)
-        except ComponentLookupError, lookup_error:
+        except ComponentLookupError as lookup_error:
             if lookup_error.args[0] != IMailBox:
                 raise
             raise LaunchpadScriptFailure(

@@ -340,7 +340,7 @@ class DateTimeWidget(TextWidget):
         for fmt in self.supported_input_formats:
             try:
                 datetime.strptime(input.strip(), fmt)
-            except (ValueError), e:
+            except (ValueError) as e:
                 if 'unconverted data remains' in str(e):
                     return
                 else:
@@ -397,7 +397,7 @@ class DateTimeWidget(TextWidget):
             micro = round(micro * 1000000)
             dt = datetime(year, month, day,
                           hour, minute, int(second), int(micro))
-        except (DateTimeError, ValueError, IndexError), v:
+        except (DateTimeError, ValueError, IndexError) as v:
             raise ConversionError('Invalid date value', v)
         return self.time_zone.localize(dt)
 

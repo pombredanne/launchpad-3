@@ -171,7 +171,7 @@ class DistroSeriesVersionField(UniqueField):
             # have stricter version rules than the schema. The version must
             # be a debversion.
             Version(version)
-        except VersionError, error:
+        except VersionError as error:
             raise LaunchpadValidationError(
                 "'%s': %s" % (version, error))
 
@@ -526,6 +526,13 @@ class IDistroSeriesPublic(
             title=_("Custom Type"),
             description=_("Return only items with custom files of this "
                           "type."),
+            required=False),
+        name=TextLine(title=_("Package or file name"), required=False),
+        version=TextLine(title=_("Package version"), required=False),
+        exact_match=Bool(
+            title=_("Exact match"),
+            description=_("Whether to filter name and version by exact "
+                          "matching."),
             required=False),
         )
     # Really IPackageUpload, patched in _schema_circular_imports.py

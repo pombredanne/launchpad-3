@@ -105,7 +105,7 @@ def unpack_dsc(package, version, component, distro_name, archive_root):
                                                  component, archive_root)
     try:
         extract_dpkg_source(dsc_path, ".", vendor=distro_name)
-    except DpkgSourceError, e:
+    except DpkgSourceError as e:
         raise ExecutionError("Error %d unpacking source" % e.result)
 
     version = re.sub("^\d+:", "", version)

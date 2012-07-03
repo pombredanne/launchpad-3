@@ -62,7 +62,7 @@ class NameBlacklistValidationMixin:
                     self.setFieldError(
                         'regexp',
                         'This regular expression already exists.')
-        except re.error, e:
+        except re.error as e:
             self.setFieldError(
                 'regexp',
                 'Invalid regular expression: %s' % e)

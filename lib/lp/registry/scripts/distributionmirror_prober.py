@@ -335,11 +335,11 @@ class RedirectAwareProberFactory(ProberFactory):
             # XXX Guilherme Salgado 2007-04-23 bug=109223:
             # We can't assume url to be absolute here.
             self.setURL(url)
-        except (UnknownURLScheme,), e:
+        except UnknownURLScheme as e:
             # Since we've got the UnknownURLScheme after a redirect, we need
             # to raise it in a form that can be ignored in the layer above.
             self.failed(UnknownURLSchemeAfterRedirect(url))
-        except (InfiniteLoopDetected,), e:
+        except InfiniteLoopDetected as e:
             self.failed(e)
 
         else:
@@ -619,7 +619,7 @@ def _get_cdimage_file_list():
     url = config.distributionmirrorprober.cdimage_file_list_url
     try:
         return urllib2.urlopen(_build_request_for_cdimage_file_list(url))
-    except urllib2.URLError, e:
+    except urllib2.URLError as e:
         raise UnableToFetchCDImageFileList(
             'Unable to fetch %s: %s' % (url, e))
 
@@ -715,7 +715,7 @@ def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger):
     mirror.deleteAllMirrorCDImageSeries()
     try:
         cdimage_paths = get_expected_cdimage_paths()
-    except UnableToFetchCDImageFileList, e:
+    except UnableToFetchCDImageFileList as e:
         logger.error(e)
         return
 

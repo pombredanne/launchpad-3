@@ -103,5 +103,8 @@ class XMLRPCTestTransport(xmlrpclib.Transport):
 
     def make_connection(self, host):
         """Return our custom HTTPCaller HTTPConnection."""
-        host, extra_headers, x509 = self.get_host_info(host)
+        # In Python2.7, make_connection caches the extra_headers, which is
+        # where authorization is stored. In 2.6 it is safe to cache them,
+        # because it just ignores the extra attribute.
+        host, self._extra_headers, x509 = self.get_host_info(host)
         return HTTPCallerHTTPConnection(host)

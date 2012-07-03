@@ -69,7 +69,7 @@ class HWDBSubmissionProcessor(LaunchpadCronScript):
         try:
             start_file = open(self.options.start_file, 'r+')
             start_id = start_file.read().strip()
-        except IOError, error:
+        except IOError as error:
             self.logger.error(
                 'Cannot access file %s: %s' % (
                     self.options.start_file, error))
