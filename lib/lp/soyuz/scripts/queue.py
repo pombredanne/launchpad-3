@@ -286,7 +286,7 @@ class QueueAction:
         Optionally pass a binarypackagename via 'only' argument to display
         only exact matches within the selected build queue items.
         """
-        if queue_item.package_copy_job or not queue_item.sources.is_empty():
+        if queue_item.package_copy_job or queue_item.sources:
             self.display(
                 "\t | * %s/%s Component: %s Section: %s" % (
                     queue_item.package_name,
