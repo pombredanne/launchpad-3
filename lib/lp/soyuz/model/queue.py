@@ -1014,15 +1014,15 @@ class PackageUpload(SQLBase):
 
         for change in changes:
             filtered_change = {}
-            if "component" in change:
+            if change.get("component") is not None:
                 filtered_change["component"] = self._nameToComponent(
-                    change["component"])
-            if "section" in change:
+                    change.get("component"))
+            if change.get("section") is not None:
                 filtered_change["section"] = self._nameToSection(
-                    change["section"])
-            if "priority" in change:
+                    change.get("section"))
+            if change.get("priority") is not None:
                 filtered_change["priority"] = self._nameToPriority(
-                    change["priority"])
+                    change.get("priority"))
 
             if "name" in change:
                 changes_by_name[change["name"]] = filtered_change
@@ -1050,6 +1050,7 @@ class PackageUpload(SQLBase):
                 new_components.add(change["component"])
         if changes_for_all is not None and "component" in changes_for_all:
             new_components.add(changes_for_all["component"])
+        new_components.discard(None)
         disallowed_components = sorted(
             component.name
             for component in new_components.difference(allowed_components))
@@ -1063,7 +1064,7 @@ class PackageUpload(SQLBase):
             for binarypackage in build.build.binarypackages:
                 change = changes_by_name.get(
                     binarypackage.name, changes_for_all)
-                if change is not None:
+                if change:
                     if binarypackage.component not in allowed_components:
                         # The old component is not in the list of allowed
                         # components to override.
