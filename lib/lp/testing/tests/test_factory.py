@@ -780,16 +780,21 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
     def test_makeBuildPackageUpload_passes_on_args(self):
         distroseries = self.factory.makeDistroSeries()
         bpn = self.factory.makeBinaryPackageName()
+        spr = self.factory.makeSourcePackageRelease()
+        component = self.factory.makeComponent()
         pu = self.factory.makeBuildPackageUpload(
             distroseries=distroseries, pocket=PackagePublishingPocket.PROPOSED,
-            binarypackagename=bpn)
+            binarypackagename=bpn, source_package_release=spr,
+            component=component)
         build = list(pu.builds)[0].build
         self.assertEqual(distroseries, pu.distroseries)
         self.assertEqual(distroseries.distribution, pu.archive.distribution)
         self.assertEqual(PackagePublishingPocket.PROPOSED, pu.pocket)
+        self.assertEqual(spr, build.source_package_release)
         release = IStore(distroseries).find(
             BinaryPackageRelease, BinaryPackageRelease.build == build).one()
         self.assertEqual(bpn, release.binarypackagename)
+        self.assertEqual(component, release.component)
 
     # makeCustomPackageUpload
     def test_makeCustomPackageUpload_makes_proxied_IPackageUpload(self):

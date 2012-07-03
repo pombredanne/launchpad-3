@@ -107,7 +107,7 @@ class TestDistroSeriesQueueDistUpgrader(TestNativePublishingBase):
         # Make sure that we can use the librarian files.
         transaction.commit()
         self.assertFalse(upload.queue_root.realiseUpload(self.logger))
-        self.assertEqual(1, upload.queue_root.customfiles.count())
+        self.assertEqual(1, len(upload.queue_root.customfiles))
         self.assertRaises(
             DistUpgraderBadVersion, upload.queue_root.customfiles[0].publish,
             self.logger)

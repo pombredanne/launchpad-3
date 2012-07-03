@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -97,6 +97,13 @@ class IBinaryPackageRelease(Interface):
         title=_("New Binary."),
         description=_("True if there binary version was never published for "
                       "the architeture it was built for. False otherwise."))
+
+    def properties():
+        """Returns the properties of this binary.
+
+        For fast retrieval over the webservice, this is returned as a
+        dictionary.
+        """
 
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build
