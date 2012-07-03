@@ -100,6 +100,6 @@ def configure(argv):
 
 try:
     globals().update(configure(getattr(sys, 'argv', [''])))
-except ConfigurationError, error:
+except ConfigurationError as error:
     print >>sys.stderr, error
     sys.exit(1)

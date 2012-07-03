@@ -119,7 +119,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
+from lp.registry.interfaces.sharingjob import (
+    IRemoveArtifactSubscriptionsJobSource,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
@@ -381,7 +383,7 @@ def validate_target(bug, target, retarget_existing=True):
             try:
                 target.distribution.guessPublishedSourcePackageName(
                     target.sourcepackagename.name)
-            except NotFoundError, e:
+            except NotFoundError as e:
                 raise IllegalTarget(e[0])
 
     if bug.information_type == InformationType.PROPRIETARY:
@@ -1192,7 +1194,7 @@ class BugTask(SQLBase):
             # As a result of the transition, some subscribers may no longer
             # have access to the parent bug. We need to run a job to remove any
             # such subscriptions.
-            getUtility(IRemoveBugSubscriptionsJobSource).create(
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
                 user, [self.bug], pillar=target_before_change)
 
     def updateTargetNameCache(self, newtarget=None):

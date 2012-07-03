@@ -27,6 +27,7 @@ setup(
     # used in zcml.
     install_requires=[
         'ampoule',
+        'auditorfixture',
         'BeautifulSoup',
         'bzr',
         'Chameleon',

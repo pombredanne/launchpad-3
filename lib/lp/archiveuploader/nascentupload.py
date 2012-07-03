@@ -165,21 +165,16 @@ class NascentUpload:
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
 
-        if (len(self.changes.files) == 1 and
-            isinstance(self.changes.files[0], CustomUploadFile)):
-            self.logger.debug("Single Custom Upload detected.")
-        else:
-            policy.validateUploadType(self)
+        policy.validateUploadType(self)
 
-            if self.sourceful and not self.changes.dsc:
-                self.reject(
-                    "Unable to find the DSC file in the source upload.")
+        if self.sourceful and not self.changes.dsc:
+            self.reject("Unable to find the DSC file in the source upload.")
 
-            # Apply the overrides from the database. This needs to be done
-            # before doing component verifications because the component
-            # actually comes from overrides for packages that are not NEW.
-            self.find_and_apply_overrides()
-            self._overrideDDEBSs()
+        # Apply the overrides from the database. This needs to be done
+        # before doing component verifications because the component
+        # actually comes from overrides for packages that are not NEW.
+        self.find_and_apply_overrides()
+        self._overrideDDEBSs()
 
         # Override archive location if necessary.
         self.overrideArchive()
@@ -393,9 +388,9 @@ class NascentUpload:
         """
         try:
             callable()
-        except UploadError, error:
+        except UploadError as error:
             self.reject("".join(error.args))
-        except UploadWarning, error:
+        except UploadWarning as error:
             self.warn("".join(error.args))
 
     def run_and_collect_errors(self, callable):
@@ -861,14 +856,14 @@ class NascentUpload:
 
         except (SystemExit, KeyboardInterrupt):
             raise
-        except QueueInconsistentStateError, e:
+        except QueueInconsistentStateError as e:
             # A QueueInconsistentStateError is expected if the rejection
             # is a routine rejection due to a bad package upload.
             # Log at info level so LaunchpadCronScript doesn't generate an
             # OOPS.
             func = self.logger.info
             return self._reject_with_logging(e, notify, func)
-        except Exception, e:
+        except Exception as e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
@@ -958,7 +953,7 @@ class NascentUpload:
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
-            ancestry = package_upload_source.getSourceAncestry()
+            ancestry = package_upload_source.getSourceAncestryForDiffs()
             if ancestry is not None:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
                 diff = to_sourcepackagerelease.requestDiffTo(

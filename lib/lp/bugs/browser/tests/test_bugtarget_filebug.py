@@ -357,8 +357,6 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
 
     def filebug_via_view(self, private_bugs=False, information_type=None):
-        feature_flag = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
         form = {
             'field.title': 'A bug',
             'field.comment': 'A comment',
@@ -369,13 +367,12 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         product = self.factory.makeProduct(official_malone=True)
         if private_bugs:
             removeSecurityProxy(product).private_bugs = True
-        with FeatureFixture(feature_flag):
-            with person_logged_in(product.owner):
-                view = create_initialized_view(
-                    product, '+filebug', form=form, principal=product.owner)
-                bug_url = view.request.response.getHeader('Location')
-                bug_number = bug_url.split('/')[-1]
-                return getUtility(IBugSet).getByNameOrID(bug_number)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', form=form, principal=product.owner)
+            bug_url = view.request.response.getHeader('Location')
+            bug_number = bug_url.split('/')[-1]
+            return getUtility(IBugSet).getByNameOrID(bug_number)
 
     def test_filebug_default_information_type(self):
         # If we don't specify the bug's information_type, it is PUBLIC for
@@ -399,7 +396,6 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         # The vocabulary for information_type when filing a bug is created
         # correctly when 'User Data' is to be replaced by 'Private'.
         feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on',
             'disclosure.proprietary_information_type.disabled': 'on',
             'disclosure.display_userdata_as_private.enabled': 'on'}
         product = self.factory.makeProduct(official_malone=True)
@@ -416,31 +412,25 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
     def test_filebug_information_type_vocabulary(self):
         # The vocabulary for information_type when filing a bug is created
         # correctly.
-        feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
         product = self.factory.makeProduct(official_malone=True)
-        with FeatureFixture(feature_flags):
-            with person_logged_in(product.owner):
-                view = create_initialized_view(
-                    product, '+filebug', principal=product.owner)
-                html = view.render()
-                soup = BeautifulSoup(html)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
         for info_type in InformationType:
             self.assertIsNotNone(soup.find('label', text=info_type.title))
 
     def test_filebug_information_type_vocabulary_private_projects(self):
         # The vocabulary for information_type when filing a bug only has
         # private info types for private bug projects.
-        feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
         product = self.factory.makeProduct(
             official_malone=True, private_bugs=True)
-        with FeatureFixture(feature_flags):
-            with person_logged_in(product.owner):
-                view = create_initialized_view(
-                    product, '+filebug', principal=product.owner)
-                html = view.render()
-                soup = BeautifulSoup(html)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
         for info_type in PRIVATE_INFORMATION_TYPES:
             self.assertIsNotNone(soup.find('label', text=info_type.title))
         for info_type in PUBLIC_INFORMATION_TYPES:

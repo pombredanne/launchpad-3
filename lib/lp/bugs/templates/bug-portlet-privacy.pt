@@ -9,7 +9,6 @@
   tal:define="link context/menu:context/visibility"
 >
   <div id="privacy-text">
-    <tal:information_type tal:condition="view/show_information_type_in_ui">
        <span id="information-type-summary"
          tal:attributes="class view/information_type_css;">This report
          contains
@@ -20,26 +19,5 @@
            >Edit</a>
       <div id="information-type-description" style="padding-top: 5px"
                 tal:content="view/information_type_description"></div>
-    </tal:information_type>
-    <tal:privacy tal:condition="not:view/show_information_type_in_ui">
-      <div tal:condition="not:context/private" id="privacy-text">
-        <a class="sprite edit" id="privacy-link"
-          tal:attributes="href link/path; title link/text"
-          tal:condition="link/enabled">This report is public</a>
-        <tal:unchangeable condition="not:link/enabled">
-          This report is public
-        </tal:unchangeable>
-      </div>
-      <div tal:condition="context/private" id="privacy-text">
-        <a class="sprite edit" id="privacy-link"
-          tal:attributes="href link/path; title link/text"
-          tal:condition="link/enabled">This report is <strong>private</strong></a>
-        <tal:unchangeable condition="not:link/enabled">
-          This report is private
-        </tal:unchangeable>
-      </div>
-      <div class="sprite security" id="security-message"
-        tal:condition="context/security_related">Security vulnerability</div>
-    </tal:privacy>
   </div>
 </div>

@@ -72,7 +72,7 @@ def stop_mailman(quiet=False, config=None):
     master_pid_path = os.path.join(mailman_path, 'data', 'master-qrunner.pid')
     try:
         master_pid_file = open(master_pid_path)
-    except IOError, error:
+    except IOError as error:
         if error.errno == errno.ENOENT:
             # It doesn't exist, so we're all done.
             return
@@ -84,7 +84,7 @@ def stop_mailman(quiet=False, config=None):
     try:
         # Kill the entire process group.
         os.kill(master_pid, -signal.SIGKILL)
-    except OSError, error:
+    except OSError as error:
         if error.errno == errno.ESRCH:
             # The process does not exist.  It could be a zombie that has yet
             # to be waited on, but let's not worry about that.
@@ -92,7 +92,7 @@ def stop_mailman(quiet=False, config=None):
         raise
     try:
         os.remove(master_pid_path)
-    except OSError, error:
+    except OSError as error:
         if error.errno != errno.ENOENT:
             raise
     lock_dir = os.path.join(mailman_path, 'locks')

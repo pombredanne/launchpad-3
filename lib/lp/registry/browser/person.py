@@ -1462,7 +1462,7 @@ class PersonVouchersView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
             self.removeRedeemableVoucher(voucher)
-        except SalesforceVoucherProxyException, error:
+        except SalesforceVoucherProxyException as error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))
             # Log an OOPS report without raising an error.
@@ -4326,7 +4326,7 @@ class EmailToPersonView(LaunchpadFormView):
         try:
             send_direct_contact_email(
                 sender_email, self.recipients, subject, message)
-        except QuotaReachedError, error:
+        except QuotaReachedError as error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
                 _('Your message was not sent because you have exceeded your '

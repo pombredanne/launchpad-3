@@ -11,9 +11,7 @@ __all__ = [
 from itertools import product
 
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
-from lazr.restful.utils import (
-    get_current_web_service_request,
-    )
+from lazr.restful.utils import get_current_web_service_request
 from storm.expr import (
     And,
     In,
@@ -47,13 +45,13 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sharingjob import (
-    IRemoveBugSubscriptionsJobSource,
+    IRemoveArtifactSubscriptionsJobSource,
     )
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.accesspolicy import (
     AccessArtifactGrant,
-    AccessPolicyGrant,
     AccessPolicyArtifact,
+    AccessPolicyGrant,
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
@@ -387,8 +385,8 @@ class SharingService:
 
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
-        getUtility(IRemoveBugSubscriptionsJobSource).create(
-            user, bugs=None, grantee=sharee, pillar=pillar,
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            user, artifacts=None, grantee=sharee, pillar=pillar,
             information_types=information_types)
 
     @available_with_permission('launchpad.Edit', 'pillar')
@@ -415,7 +413,7 @@ class SharingService:
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
         if bugs:
-            getUtility(IRemoveBugSubscriptionsJobSource).create(
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
                 user, bugs, grantee=sharee, pillar=pillar)
         # XXX 2012-06-13 wallyworld bug=1012448
         # Remove branch subscriptions when information type fully implemented.

@@ -17,11 +17,18 @@ from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 
 
+class FakeConfig:
+    """A fake publisher configuration."""
+    def __init__(self, archiveroot):
+        self.archiveroot = archiveroot
+
+
 class TestDdtpTarball(TestCase):
 
     def setUp(self):
         super(TestDdtpTarball, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
+        self.pubconf = FakeConfig(self.temp_dir)
         self.suite = "distroseries"
         # CustomUpload.installFiles requires a umask of 022.
         old_umask = os.umask(022)
@@ -36,7 +43,7 @@ class TestDdtpTarball(TestCase):
     def process(self):
         self.archive.close()
         self.buffer.close()
-        process_ddtp_tarball(self.temp_dir, self.path, self.suite)
+        process_ddtp_tarball(self.pubconf, self.path, self.suite)
 
     def getTranslationsPath(self, filename):
         return os.path.join(
