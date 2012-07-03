@@ -111,6 +111,18 @@ class TestDdtpTarball(TestCase):
         self.assertEqual(1, os.stat(bn).st_nlink)
         self.assertEqual(1, os.stat(ca).st_nlink)
 
+    def test_parsePath_handles_underscore_in_directory(self):
+        # parsePath is not misled by an underscore in the directory name.
+        self.assertEqual(
+            # XXX cjwatson 2012-07-03: .tar.gz is not stripped off the end
+            # of the version due to something of an ambiguity in the design;
+            # how should translations_main_1.0.1.tar.gz be parsed?  In
+            # practice this doesn't matter because DdtpTarballUpload never
+            # uses the version for anything.
+            ("translations", "main", "1.tar.gz"),
+            DdtpTarballUpload.parsePath(
+                "/dir_with_underscores/translations_main_1.tar.gz"))
+
     def test_getSeriesKey_extracts_component(self):
         # getSeriesKey extracts the component from an upload's filename.
         self.openArchive("20060728")
