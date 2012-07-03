@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.schema.vocabulary import SimpleVocabulary
 
+from lazr.restful.interfaces import IJSONRequestCache
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import ServiceUsage
+from lp.registry.interfaces.person import CLOSED_TEAM_POLICY
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
@@ -207,6 +211,18 @@ class TestProductView(TestCaseWithFactory):
         self.assertEqual(
             'fnord-dom-edit-license-approved',
             view.license_approved_widget.content_box_id)
+
+    def test_view_data_model(self):
+        # The view's json request cache contains the expected data.
+        view = create_initialized_view(self.product, '+index')
+        cache = IJSONRequestCache(view.request)
+        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
+        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        self.assertContentEqual(
+            team_subscriptionpolicy_data,
+            cache.objects['team_subscriptionpolicy_data'])
 
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):

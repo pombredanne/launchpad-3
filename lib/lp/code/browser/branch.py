@@ -1120,7 +1120,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                     self.addError(
                         "%s is not allowed to own branches in %s." % (
                         owner.displayname, self.context.target.displayname))
-                except BranchExists, e:
+                except BranchExists as e:
                     self._setBranchExists(e.existing_branch)
 
         # If the branch is a MIRRORED branch, then the url
@@ -1317,7 +1317,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 return None
             else:
                 self.next_url = canonical_url(proposal)
-        except InvalidBranchMergeProposal, error:
+        except InvalidBranchMergeProposal as error:
             self.addError(str(error))
 
     def validate(self, data):
@@ -1373,7 +1373,7 @@ class BranchRequestImportView(LaunchpadFormView):
         except CodeImportAlreadyRunning:
             self.request.response.addNotification(
                 "The import is already running.")
-        except CodeImportAlreadyRequested, e:
+        except CodeImportAlreadyRequested as e:
             user = e.requesting_user
             adapter = queryAdapter(user, IPathAdapter, 'fmt')
             self.request.response.addNotification(

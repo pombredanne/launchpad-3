@@ -62,7 +62,7 @@ class TestDatabaseErrorViews(TestCase):
     def getHTTPError(self, url):
         try:
             urllib2.urlopen(url)
-        except urllib2.HTTPError, error:
+        except urllib2.HTTPError as error:
             return error
         else:
             self.fail("We should have gotten an HTTP error")

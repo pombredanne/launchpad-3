@@ -372,7 +372,7 @@ def rescueBuilderIfLost(builder, logger=None):
         slave_build_id = status_sentence[ident_position[status]]
         try:
             builder.verifySlaveBuildCookie(slave_build_id)
-        except CorruptBuildCookie, reason:
+        except CorruptBuildCookie as reason:
             if status == 'BuilderStatus.WAITING':
                 d = builder.cleanSlave()
             else:

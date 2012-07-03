@@ -75,7 +75,7 @@ class Verifier:
                 self._verify(pofile)
             except (KeyboardInterrupt, SystemExit):
                 raise
-            except Exception, error:
+            except Exception as error:
                 # Verification failed for this POFile.  Don't bail out: if
                 # there's a pattern of failure, we'll want to report that and
                 # not just the first problem we encounter.

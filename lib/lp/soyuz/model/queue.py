@@ -301,7 +301,7 @@ class PackageUpload(SQLBase):
             # Mask the error with state-machine default exception
             try:
                 source.checkComponentAndSection()
-            except QueueSourceAcceptError, info:
+            except QueueSourceAcceptError as info:
                 raise QueueInconsistentStateError(info)
 
         self._checkForBinariesinDestinationArchive(
@@ -309,7 +309,7 @@ class PackageUpload(SQLBase):
         for queue_build in self.builds:
             try:
                 queue_build.checkComponentAndSection()
-            except QueueBuildAcceptError, info:
+            except QueueBuildAcceptError as info:
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
@@ -762,7 +762,7 @@ class PackageUpload(SQLBase):
         for customfile in self.customfiles:
             try:
                 customfile.publish(logger)
-            except CustomUploadError, e:
+            except CustomUploadError as e:
                 if logger is not None:
                     logger.error("Queue item ignored: %s" % e)
                     return []

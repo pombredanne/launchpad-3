@@ -355,7 +355,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                 self.context.transitionVisibility(visibility, self.user)
                 del data['visibility']
             self.updateContextFromData(data)
-        except ImmutableVisibilityError, error:
+        except ImmutableVisibilityError as error:
             self.request.response.addErrorNotification(str(error))
             # Abort must be called or changes to fields before the one causing
             # the error will be committed.  If we have a database validation
@@ -513,7 +513,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             if email is None or email.person != self.context:
                 try:
                     validate_new_team_email(data['contact_address'])
-                except LaunchpadValidationError, error:
+                except LaunchpadValidationError as error:
                     # We need to wrap this in structured, so that the
                     # markup is preserved.  Note that this puts the
                     # responsibility for security on the exception thrower.
@@ -1729,7 +1729,7 @@ class TeamIndexView(PersonIndexView, TeamJoinMixin):
             return (len(self.super_teams) > 0
                     or (self.context.open_membership_invitations
                         and check_permission('launchpad.Edit', self.context)))
-        except AttributeError, e:
+        except AttributeError as e:
             raise AssertionError(e)
 
     @property

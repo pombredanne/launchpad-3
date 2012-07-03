@@ -63,7 +63,7 @@ class BaseMailingListImportTest(unittest.TestCase):
     def tearDown(self):
         try:
             os.remove(self.filename)
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ENOENT:
                 raise
 

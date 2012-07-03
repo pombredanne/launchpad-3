@@ -215,7 +215,7 @@ class LaunchpadConfig:
         self._config = schema.load(config_file)
         try:
             self._config.validate()
-        except ConfigErrors, error:
+        except ConfigErrors as error:
             message = '\n'.join([str(e) for e in error.errors])
             raise ConfigErrors(message)
         self._setZConfig()

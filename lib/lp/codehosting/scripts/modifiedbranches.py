@@ -80,7 +80,7 @@ class ModifiedBranchesScript(LaunchpadScript):
             try:
                 parsed_time = strptime(self.options.since, '%Y-%m-%d')
                 last_modified = datetime(*(parsed_time[:3]))
-            except ValueError, e:
+            except ValueError as e:
                 raise LaunchpadScriptFailure(str(e))
         else:
             raise LaunchpadScriptFailure(

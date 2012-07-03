@@ -33,6 +33,7 @@ from bzrlib import (
     trace,
     )
 from bzrlib.errors import (
+    AppendRevisionsOnlyViolation,
     NotStacked,
     UnstackableBranchFormat,
     UnstackableRepositoryFormat,
@@ -55,6 +56,14 @@ from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
+
+# Exception classes which are not converted into OOPSes
+NOT_OOPS_EXCEPTIONS = (AppendRevisionsOnlyViolation,)
+
+def should_log_oops(exc):
+    """Return true if exc should trigger an OOPS.
+    """
+    return not issubclass(exc, NOT_OOPS_EXCEPTIONS)
 
 
 def is_branch_stackable(bzr_branch):
@@ -163,7 +172,8 @@ def make_oops_logging_exception_hook(error_utility, request):
     """Make a hook for logging OOPSes."""
 
     def log_oops():
-        error_utility.raising(sys.exc_info(), request)
+        if should_log_oops(sys.exc_info()[0]):
+            error_utility.raising(sys.exc_info(), request)
     return log_oops
 
 
@@ -199,6 +209,7 @@ def install_oops_handler(user_id):
     request = BazaarOopsRequest(user_id)
     hook = make_oops_logging_exception_hook(error_utility, request)
     add_exception_logging_hook(hook)
+    return hook
 
 
 class HttpAsLocalTransport(LocalTransport):

@@ -310,7 +310,7 @@ class AssertFailureMixin:
         """
         try:
             callable_obj(*args, **kwargs)
-        except AssertionError, exception:
+        except AssertionError as exception:
             self.assertEqual(str(exception), message)
         else:
             self.fail("AssertionError was not raised")
