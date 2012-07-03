@@ -149,8 +149,9 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
+    PillarInvolvementView,
     PillarNavigationMixin,
-    PillarView,
+    PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -339,7 +340,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class ProductInvolvementView(PillarView):
+class ProductInvolvementView(PillarInvolvementView):
     """Encourage configuration of involvement links for projects."""
 
     has_involvement = True
@@ -927,8 +928,8 @@ class ProductDownloadFileMixin:
         return None
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin):
+class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
+                  FeedsMixin, ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
 
