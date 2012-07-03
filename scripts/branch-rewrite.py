@@ -73,9 +73,6 @@ class BranchRewriteScript(LaunchpadScript):
                 # The exception might have been a DisconnectionError or
                 # similar. Cleanup such as database reconnection will
                 # not happen until the transaction is rolled back.
-                # XXX StuartBishop 2011-08-31 bug=819282: We are
-                # explicitly rolling back the store here as a workaround
-                # instead of using transaction.abort()
                 try:
                     transaction.abort()
                 except Exception:
