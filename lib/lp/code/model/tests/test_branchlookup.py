@@ -516,9 +516,8 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
 
 def make_product_with_branch(factory):
     branch = factory.makeProductBranch()
-    product = removeSecurityProxy(branch.product)
-    product.development_focus.branch = branch
-    return product
+    removeSecurityProxy(branch.product).development_focus.branch = branch
+    return branch.product
 
 
 class TestGetByLPPath(TestCaseWithFactory):
