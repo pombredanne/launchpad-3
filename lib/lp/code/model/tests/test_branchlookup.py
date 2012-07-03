@@ -21,8 +21,10 @@ from lp.code.interfaces.branchlookup import (
     )
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
     branch_id_alias,
     BRANCH_ID_ALIAS_PREFIX,
+    compose_public_url,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.enums import InformationType
@@ -352,6 +354,22 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
         self.assertEqual(branch, branch2)
 
+    def test_getByUrl_with_alias(self):
+        """getByUrl works with +branch aliases."""
+        product = make_product_with_branch(self.factory)
+        branch = product.development_focus.branch
+        path = BRANCH_ALIAS_PREFIX + '/' + product.name
+        url = compose_public_url('bzr+ssh', path)
+        branch_lookup = getUtility(IBranchLookup)
+        self.assertEqual(branch, branch_lookup.getByUrl(url))
+
+    def test_getByUrl_with_id_alias(self):
+        """getByUrl works with +branch-id aliases."""
+        branch = self.factory.makeAnyBranch()
+        url = compose_public_url('bzr+ssh', branch_id_alias(branch))
+        branch_lookup = getUtility(IBranchLookup)
+        self.assertEqual(branch, branch_lookup.getByUrl(url))
+
     def test_getByUrls(self):
         # getByUrls returns a dictionary mapping branches to URLs.
         branch1 = self.factory.makeAnyBranch()
@@ -494,6 +512,13 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         path = '%s/doesntexist' % distribution.name
         self.assertRaises(
             NoSuchSourcePackageName, self.traverser.traverse, path)
+
+
+def make_product_with_branch(factory):
+    branch = factory.makeProductBranch()
+    product = removeSecurityProxy(branch.product)
+    product.development_focus.branch = branch
+    return product
 
 
 class TestGetByLPPath(TestCaseWithFactory):
@@ -680,40 +705,34 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(
             InvalidNamespace, self.branch_lookup.getByLPPath, path)
 
-    def make_product_with_branch(self):
-        branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        product.development_focus.branch = branch
-        return product
-
     def test_too_long_product(self):
         # If the provided path points to an existing product with a linked
         # branch but there are also extra path segments, then raise a
         # NoSuchProductSeries error, since we can't tell the difference
         # between a trailing path and an attempt to load a non-existent series
         # branch.
-        product = self.make_product_with_branch()
+        product = make_product_with_branch(self.factory)
         self.assertRaises(
             NoSuchProductSeries,
             self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
 
     def test_product_with_bzr_suffix(self):
         # A '.bzr' suffix is returned correctly.
-        product = self.make_product_with_branch()
+        product = make_product_with_branch(self.factory)
         branch, suffix = self.branch_lookup.getByLPPath(
             '%s/.bzr' % product.name)
         self.assertEqual('.bzr', suffix)
 
     def test_product_with_bzr_slash_suffix(self):
         # A '.bzr/' suffix is returned correctly.
-        product = self.make_product_with_branch()
+        product = make_product_with_branch(self.factory)
         branch, suffix = self.branch_lookup.getByLPPath(
             '%s/.bzr/' % product.name)
         self.assertEqual('.bzr/', suffix)
 
     def test_product_with_bzr_extra_suffix(self):
         # A '.bzr/extra' suffix is returned correctly.
-        product = self.make_product_with_branch()
+        product = make_product_with_branch(self.factory)
         branch, suffix = self.branch_lookup.getByLPPath(
             '%s/.bzr/extra' % product.name)
         self.assertEqual('.bzr/extra', suffix)
