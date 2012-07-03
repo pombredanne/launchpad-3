@@ -103,7 +103,7 @@ class BugTagsWidgetBase:
     def getInputValue(self):
         try:
             return self._getInputValue()
-        except WidgetInputError, input_error:
+        except WidgetInputError as input_error:
             # The standard error message isn't useful at all. We look to
             # see if it's a ConstraintNotSatisfied error and change it
             # to a better one. For simplicity, we care only about the

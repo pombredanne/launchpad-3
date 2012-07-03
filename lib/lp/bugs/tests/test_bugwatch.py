@@ -112,7 +112,7 @@ class ExtractBugTrackerAndBugTestBase:
         try:
             bugtracker, bug = self.bugwatch_set.extractBugTrackerAndBug(
                 self.bug_url)
-        except NoBugTrackerFound, error:
+        except NoBugTrackerFound as error:
             # The raised exception should contain enough information so
             # that we can register a new bug tracker.
             self.assertEqual(error.base_url, self.base_url)

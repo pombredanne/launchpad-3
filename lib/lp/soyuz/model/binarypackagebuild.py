@@ -855,7 +855,7 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         try:
             return BinaryPackageBuild.get(id)
-        except SQLObjectNotFound, e:
+        except SQLObjectNotFound as e:
             raise NotFoundError(str(e))
 
     def getByBuildFarmJob(self, build_farm_job):
@@ -1179,7 +1179,7 @@ class BinaryPackageBuildSet:
             build = IMasterObject(build)
             try:
                 build.updateDependencies()
-            except UnparsableDependencies, e:
+            except UnparsableDependencies as e:
                 logger.error(e)
                 continue
 

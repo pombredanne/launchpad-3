@@ -72,11 +72,18 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.archive import (
+    ComponentNotFound,
+    MAIN_ARCHIVE_PURPOSES,
+    PriorityNotFound,
+    SectionNotFound,
+    )
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
+    name_priority_map,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
@@ -91,6 +98,7 @@ from lp.soyuz.interfaces.queue import (
     QueueSourceAcceptError,
     QueueStateWriteProtectedError,
     )
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
@@ -293,7 +301,7 @@ class PackageUpload(SQLBase):
             # Mask the error with state-machine default exception
             try:
                 source.checkComponentAndSection()
-            except QueueSourceAcceptError, info:
+            except QueueSourceAcceptError as info:
                 raise QueueInconsistentStateError(info)
 
         self._checkForBinariesinDestinationArchive(
@@ -301,7 +309,7 @@ class PackageUpload(SQLBase):
         for queue_build in self.builds:
             try:
                 queue_build.checkComponentAndSection()
-            except QueueBuildAcceptError, info:
+            except QueueBuildAcceptError as info:
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
@@ -754,7 +762,7 @@ class PackageUpload(SQLBase):
         for customfile in self.customfiles:
             try:
                 customfile.publish(logger)
-            except CustomUploadError, e:
+            except CustomUploadError as e:
                 if logger is not None:
                     logger.error("Queue item ignored: %s" % e)
                     return []
@@ -913,6 +921,33 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return getUtility(IPackageCopyJobSource).wrap(self.package_copy_job)
 
+    def _nameToComponent(self, component):
+        """Helper to convert a possible string component to IComponent."""
+        try:
+            if isinstance(component, basestring):
+                component = getUtility(IComponentSet)[component]
+            return component
+        except NotFoundError:
+            raise ComponentNotFound(component)
+
+    def _nameToSection(self, section):
+        """Helper to convert a possible string section to ISection."""
+        try:
+            if isinstance(section, basestring):
+                section = getUtility(ISectionSet)[section]
+            return section
+        except NotFoundError:
+            raise SectionNotFound(section)
+
+    def _nameToPriority(self, priority):
+        """Helper to convert a possible string priority to its enum."""
+        try:
+            if isinstance(priority, basestring):
+                priority = name_priority_map[priority]
+            return priority
+        except KeyError:
+            raise PriorityNotFound(priority)
+
     def _overrideSyncSource(self, new_component, new_section,
                             allowed_components):
         """Override source on the upload's `PackageCopyJob`, if any."""
@@ -959,6 +994,9 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
+        new_component = self._nameToComponent(new_component)
+        new_section = self._nameToSection(new_section)
+
         if new_component not in list(allowed_components) + [None]:
             raise QueueInconsistentStateError(
                 "No rights to override to %s" % new_component.name)
@@ -969,35 +1007,74 @@ class PackageUpload(SQLBase):
             self._overrideNonSyncSource(
                 new_component, new_section, allowed_components))
 
-    def overrideBinaries(self, new_component, new_section, new_priority,
-                         allowed_components):
+    def _filterBinaryChanges(self, changes):
+        """Process a binary changes mapping into a more convenient form."""
+        changes_by_name = {}
+        changes_for_all = None
+
+        for change in changes:
+            filtered_change = {}
+            if change.get("component") is not None:
+                filtered_change["component"] = self._nameToComponent(
+                    change.get("component"))
+            if change.get("section") is not None:
+                filtered_change["section"] = self._nameToSection(
+                    change.get("section"))
+            if change.get("priority") is not None:
+                filtered_change["priority"] = self._nameToPriority(
+                    change.get("priority"))
+
+            if "name" in change:
+                changes_by_name[change["name"]] = filtered_change
+            else:
+                # Changes with no "name" item provide a default for all
+                # binaries.
+                changes_for_all = filtered_change
+
+        return changes_by_name, changes_for_all
+
+    def overrideBinaries(self, changes, allowed_components):
         """See `IPackageUpload`."""
         if not self.contains_build:
             return False
 
-        if (new_component is None and new_section is None and
-            new_priority is None):
+        if not changes:
             # Nothing needs overriding, bail out.
             return False
 
-        if new_component not in allowed_components:
-            raise QueueInconsistentStateError(
-                "No rights to override to %s" % new_component.name)
+        changes_by_name, changes_for_all = self._filterBinaryChanges(changes)
 
+        new_components = set()
+        for change in changes_by_name.values():
+            if "component" in change:
+                new_components.add(change["component"])
+        if changes_for_all is not None and "component" in changes_for_all:
+            new_components.add(changes_for_all["component"])
+        new_components.discard(None)
+        disallowed_components = sorted(
+            component.name
+            for component in new_components.difference(allowed_components))
+        if disallowed_components:
+            raise QueueInconsistentStateError(
+                "No rights to override to %s" %
+                ", ".join(disallowed_components))
+
+        made_changes = False
         for build in self.builds:
             for binarypackage in build.build.binarypackages:
-                if binarypackage.component not in allowed_components:
-                    # The old or the new component is not in the list of
-                    # allowed components to override.
-                    raise QueueInconsistentStateError(
-                        "No rights to override from %s" % (
-                            binarypackage.component.name))
-                binarypackage.override(
-                    component=new_component,
-                    section=new_section,
-                    priority=new_priority)
+                change = changes_by_name.get(
+                    binarypackage.name, changes_for_all)
+                if change:
+                    if binarypackage.component not in allowed_components:
+                        # The old component is not in the list of allowed
+                        # components to override.
+                        raise QueueInconsistentStateError(
+                            "No rights to override from %s" %
+                            binarypackage.component.name)
+                    binarypackage.override(**change)
+                    made_changes = True
 
-        return bool(self.builds)
+        return made_changes
 
 
 class PackageUploadBuild(SQLBase):

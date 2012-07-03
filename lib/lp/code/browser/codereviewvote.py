@@ -53,5 +53,5 @@ class CodeReviewVoteReassign(LaunchpadFormView):
         if reviewer is not None:
             try:
                 self.context.validateReasignReview(reviewer)
-            except (ReviewNotPending, UserHasExistingReview), e:
+            except (ReviewNotPending, UserHasExistingReview) as e:
                 self.addError(str(e))

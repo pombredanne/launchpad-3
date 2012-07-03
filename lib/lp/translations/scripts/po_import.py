@@ -191,10 +191,10 @@ class TranslationsImport(LaunchpadCronScript):
                         self.txn.commit()
                 except KeyboardInterrupt:
                     raise
-                except (AssertionError, SystemError), e:
+                except (AssertionError, SystemError) as e:
                     self._registerFailure(entry, e, abort=True)
                     raise
-                except Exception, e:
+                except Exception as e:
                     if self.txn:
                         self.txn.abort()
                     self._registerFailure(entry, e, traceback=True)

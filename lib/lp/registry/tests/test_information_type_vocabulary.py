@@ -30,7 +30,8 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
 
     def test_vocabulary_items_project(self):
         # The vocab has all info types for a project without private_bugs set.
-        vocab = InformationTypeVocabulary()
+        product = self.factory.makeProduct()
+        vocab = InformationTypeVocabulary(product)
         for info_type in InformationType:
             self.assertIn(info_type.value, vocab)
 
@@ -86,3 +87,19 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
             "Visible only to users with whom the project has shared "
             "information containing user data.",
             term.description)
+
+    def test_multi_pillar_bugs(self):
+        # Multi-pillar bugs are forbidden from being PROPRIETARY, no matter
+        # the setting of proprietary_information_type.disabled.
+        bug = self.factory.makeBug()
+        self.factory.makeBugTask(bug=bug, target=self.factory.makeProduct())
+        vocab = InformationTypeVocabulary(bug)
+        self.assertRaises(LookupError, vocab.getTermByToken, 'PROPRIETARY')
+
+    def test_multi_task_bugs(self):
+        # Multi-task bugs are allowed to be PROPRIETARY.
+        bug = self.factory.makeBug()
+        self.factory.makeBugTask(bug=bug) # Uses the same pillar.
+        vocab = InformationTypeVocabulary(bug)
+        term = vocab.getTermByToken('PROPRIETARY')
+        self.assertEqual('Proprietary', term.title)

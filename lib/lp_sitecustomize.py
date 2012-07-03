@@ -165,7 +165,7 @@ def customize_get_converter(zope_publisher_browser=zope.publisher.browser):
         def wrapped_converter(v):
             try:
                 return converter(v)
-            except ValueError, e:
+            except ValueError as e:
                 # Mark the exception as not being OOPS-worthy.
                 alsoProvides(e, IUnloggedException)
                 raise

@@ -18,7 +18,7 @@ exceptions. It reports the OOPS.
     ...     """Raise an error to test log_exception."""
     ...     try:
     ...         raise AssertionError("There is an OOPS in progress.")
-    ...     except AssertionError, error:
+    ...     except AssertionError as error:
     ...         log_exception('Generated Error: %s', error)
 
     >>> from lp.testing.fixture import CaptureOops

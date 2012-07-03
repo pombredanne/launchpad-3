@@ -55,7 +55,7 @@ class SourceForgeRemoteProductFinder:
         # First, fetch the project page.
         try:
             soup = BeautifulSoup(self._getPage("projects/%s" % sf_project))
-        except HTTPError, error:
+        except HTTPError as error:
             self.logger.error(
                 "Error fetching project %s: %s" %
                 (sf_project, error))
@@ -75,7 +75,7 @@ class SourceForgeRemoteProductFinder:
         tracker_url = tracker_url.lstrip('/')
         try:
             soup = BeautifulSoup(self._getPage(tracker_url))
-        except HTTPError, error:
+        except HTTPError as error:
             self.logger.error(
                 "Error fetching project %s: %s" %
                 (sf_project, error))

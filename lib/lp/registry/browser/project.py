@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Project-related View Classes"""
+from lp.registry.browser.pillar import PillarViewMixin
 
 __metaclass__ = type
 
@@ -356,7 +357,7 @@ class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
         return Link('+filebug', text, icon='add')
 
 
-class ProjectView(HasAnnouncementsView, FeedsMixin):
+class ProjectView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
 
     implements(IProjectGroupActionMenu)
 
@@ -367,7 +368,7 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
             format_link(self.context.owner, empty_value="Not yet selected"),
             header='Change maintainer', edit_view='+reassign',
             step_title='Select a new maintainer',
-            null_display_value="Not yet selected")
+            null_display_value="Not yet selected", show_create_team=True)
 
     @property
     def driver_widget(self):
@@ -377,7 +378,7 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
             header='Change driver', edit_view='+driver',
             step_title='Select a new driver',
             null_display_value="Not yet selected",
-            help_link="/+help-registry/driver.html")
+            help_link="/+help-registry/driver.html", show_create_team=True)
 
     def initialize(self):
         super(ProjectView, self).initialize()
