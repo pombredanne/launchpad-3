@@ -92,6 +92,14 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
         # Multi-pillar bugs are forbidden from being PROPRIETARY, no matter
         # the setting of proprietary_information_type.disabled.
         bug = self.factory.makeBug()
-        self.factory.makeBugTask(bug=bug)
+        self.factory.makeBugTask(bug=bug, target=self.factory.makeProduct())
         vocab = InformationTypeVocabulary(bug)
         self.assertRaises(LookupError, vocab.getTermByToken, 'PROPRIETARY')
+
+    def test_multi_task_bugs(self):
+        # Multi-task bugs are allowed to be PROPRIETARY.
+        bug = self.factory.makeBug()
+        self.factory.makeBugTask(bug=bug) # Uses the same pillar.
+        vocab = InformationTypeVocabulary(bug)
+        term = vocab.getTermByToken('PROPRIETARY')
+        self.assertEqual('Proprietary', term.title)

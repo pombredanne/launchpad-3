@@ -2252,7 +2252,7 @@ class InformationTypeVocabulary(SimpleVocabulary):
         show_userdata_as_private = bool(getFeatureFlag(
             'disclosure.display_userdata_as_private.enabled'))
         if not proprietary_disabled and not (IBug.providedBy(context) and
-            len(context.bugtasks) > 1):
+            len(context.affected_pillars) > 1):
             types.append(InformationType.PROPRIETARY)
         if (context is None or
             not IProduct.providedBy(context) or
