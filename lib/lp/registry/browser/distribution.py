@@ -93,6 +93,7 @@ from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
     PillarNavigationMixin,
+    PillarViewMixin,
     )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
@@ -648,7 +649,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         return self.has_exact_matches
 
 
-class DistributionView(HasAnnouncementsView, FeedsMixin):
+class DistributionView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -666,7 +667,7 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
             self.context, IDistribution['owner'],
             format_link(self.context.owner),
             header='Change maintainer', edit_view='+reassign',
-            step_title='Select a new maintainer')
+            step_title='Select a new maintainer', show_create_team=True)
 
     @property
     def driver_widget(self):
@@ -679,7 +680,7 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
             format_link(self.context.driver, empty_value=empty_value),
             header='Change driver', edit_view='+driver',
             null_display_value=empty_value,
-            step_title='Select a new driver')
+            step_title='Select a new driver', show_create_team=True)
 
     @property
     def members_widget(self):
