@@ -61,8 +61,7 @@ class DdtpTarballUpload(CustomUpload):
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
-            _, component, _ = tarfile_path.split("_")
-            return component
+            return cls.parsePath(tarfile_path)[1]
         except ValueError:
             return None
 
