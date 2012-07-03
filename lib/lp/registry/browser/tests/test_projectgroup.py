@@ -37,7 +37,7 @@ class TestProjectGroupView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestProjectGroupView, self).setUp()
-        self.project_group = self.factory.makeProject(name='grupo')
+        self.project_group = self.factory.makeProject(name='group')
 
     def test_view_data_model(self):
         # The view's json request cache contains the expected data.
@@ -59,7 +59,7 @@ class TestProjectGroupEditView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestProjectGroupEditView, self).setUp()
-        self.project_group = self.factory.makeProject(name='grupo')
+        self.project_group = self.factory.makeProject(name='group')
         # Use a FakeLogger fixture to prevent Memcached warnings to be
         # printed to stdout while browsing pages.
         self.useFixture(FakeLogger())
