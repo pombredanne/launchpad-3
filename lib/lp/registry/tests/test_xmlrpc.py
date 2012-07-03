@@ -100,7 +100,7 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
         try:
             self.rpc_proxy.getOrCreateSoftwareCenterCustomer(
                 openid_identifier, 'a@b.com', 'Joe Blogs')
-        except xmlrpclib.Fault, e:
+        except xmlrpclib.Fault as e:
             fault_raised = True
             self.assertEqual(370, e.faultCode)
             self.assertIn(openid_identifier, e.faultString)
@@ -116,7 +116,7 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
         try:
             self.rpc_proxy.getOrCreateSoftwareCenterCustomer(
                 'foo', 'a@b.com', 'Joe Blogs')
-        except xmlrpclib.Fault, e:
+        except xmlrpclib.Fault as e:
             fault_raised = True
             self.assertEqual(400, e.faultCode)
             self.assertIn('a@b.com', e.faultString)

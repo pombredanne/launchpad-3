@@ -54,7 +54,7 @@ def main():
         log.debug("PID file is %s", pidfile_path(service))
         try:
             pid = get_pid(service)
-        except ValueError, error:
+        except ValueError as error:
             log.error(error)
             continue
         if pid is not None:
@@ -62,7 +62,7 @@ def main():
             try:
                 os.kill(pid, SIGTERM)
                 pids.append((service, pid))
-            except OSError, x:
+            except OSError as x:
                 log.error(
                     "Unable to SIGTERM %s (%d) - %s",
                     service, pid, x.strerror)
@@ -79,7 +79,7 @@ def main():
             "SIGTERM failed to kill %s (%d). Trying SIGKILL", service, pid)
         try:
             os.kill(pid, SIGKILL)
-        except OSError, x:
+        except OSError as x:
             log.error(
                 "Unable to SIGKILL %s (%d) - %s", service, pid, x.strerror)
 
@@ -106,7 +106,7 @@ def process_exists(pid):
     """True if the given process exists."""
     try:
         os.getpgid(pid)
-    except OSError, x:
+    except OSError as x:
         if x.errno == 3:
             return False
         logging.error("Unknown exception from getpgid - %s", str(x))

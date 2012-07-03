@@ -56,7 +56,7 @@ def main():
             "Opening source connection to '%s'" % source_connection_string)
         source_connection = psycopg2.connect(str(source_connection_string))
         source_connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-    except psycopg2.Error, exception:
+    except psycopg2.Error as exception:
         parser.error("Unable to connect as %s (%s)" % (
             source_connection_string, str(exception).strip()))
 
@@ -92,7 +92,7 @@ def main():
     # Keep the connection as we need it.
     try:
         target_con = psycopg2.connect(str(target_connection_string))
-    except psycopg2.Error, exception:
+    except psycopg2.Error as exception:
         parser.error("Failed to connect using '%s' (%s)" % (
             target_connection_string, str(exception).strip()))
 
@@ -250,7 +250,7 @@ def get_master_connection_string(con, parser, set_id):
     try:
         # Test connection only.  We're not going to use it.
         psycopg2.connect(str(connection_string))
-    except psycopg2.Error, exception:
+    except psycopg2.Error as exception:
         parser.error("Failed to connect to using '%s' (%s)" % (
             connection_string, str(exception).strip()))
 

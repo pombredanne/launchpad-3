@@ -219,7 +219,7 @@ class SubmissionParser(object):
         submission = self.fixFrequentErrors(submission)
         try:
             tree = etree.parse(StringIO(submission), parser=self.doc_parser)
-        except SyntaxError, error_value:
+        except SyntaxError as error_value:
             self._logError(error_value, submission_key)
             return None
 
@@ -988,7 +988,7 @@ class SubmissionParser(object):
                 if result is None:
                     return None
                 submission_data[node.tag] = result
-        except ValueError, value:
+        except ValueError as value:
             self._logError(value, self.submission_key)
             return None
         return submission_data
@@ -1480,7 +1480,7 @@ class SubmissionParser(object):
                 udi_device_map = self.getUDIDeviceMap(
                     parsed_data['hardware']['hal']['devices'])
                 udi_children = self.getUDIChildren(udi_device_map)
-            except ValueError, value:
+            except ValueError as value:
                 self._logError(value, self.submission_key)
                 return False
 

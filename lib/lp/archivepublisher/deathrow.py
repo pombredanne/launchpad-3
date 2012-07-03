@@ -277,11 +277,11 @@ class DeathRow:
             try:
                 bytes += self._removeFile(
                     component_name, source_name, file_name)
-            except NotInPool, info:
+            except NotInPool as info:
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
                 self.logger.debug(str(info))
-            except MissingSymlinkInPool, info:
+            except MissingSymlinkInPool as info:
                 # This one is a little more worrying, because an expected
                 # symlink has vanished from the pool/ (could be a code
                 # mistake) but there is nothing we can do about it at this

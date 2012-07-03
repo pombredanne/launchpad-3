@@ -88,7 +88,7 @@ class ExportedFolder:
         name = os.path.basename(filename)
         try:
             fileobj = File(filename, name)
-        except IOError, ioerror:
+        except IOError as ioerror:
             expected = (errno.ENOENT, errno.EISDIR, errno.ENOTDIR)
             if ioerror.errno in expected:
                 # No such file or is a directory.

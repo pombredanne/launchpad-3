@@ -47,7 +47,11 @@ from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
     )
-from lp.code.enums import CodeImportResultStatus
+from lp.code.enums import (
+    BranchSubscriptionNotificationLevel,
+    CodeImportResultStatus,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.model.branchjob import (
     BranchJob,
@@ -55,6 +59,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
@@ -1148,6 +1153,38 @@ class TestGarbo(TestCaseWithFactory):
                 u'default', 1, u'bugs.bugtaskflattener.generation', u'2'))
         self.runHourly()
         self.assertEqual((task.id,), get_flat())
+
+    def test_PopulateBranchAccessArtifactGrant(self):
+        # Branches without a access_policy have one set by the job.
+        with dbuser('testadmin'):
+            branch = self.factory.makeBranch()
+
+        def get_access_grants():
+            return IMasterStore(BugTask).execute(
+                'SELECT access_grants FROM branch WHERE id = ?',
+                (branch.id,)).get_one()[0]
+
+        # The branch is public, so running the garbo job will have no effect.
+        self.runHourly()
+        self.assertIs(None, get_access_grants())
+
+        with dbuser('testadmin'):
+            branch.transitionToInformationType(
+                InformationType.USERDATA, branch.owner, verify_policy=False)
+
+        # Now the branch is USERDATA, it will have no explicit grants.
+        self.assertEqual([], get_access_grants())
+
+        with dbuser('testadmin'):
+            subscriber = self.factory.makePerson()
+            branch.subscribe(
+                subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
+                None, CodeReviewNotificationLevel.NOEMAIL, branch.owner)
+
+        # The subscriber has been added.
+        self.runHourly()
+        self.assertContentEqual(
+            [branch.owner.id, subscriber.id], get_access_grants())
 
 
 class TestGarboTasks(TestCaseWithFactory):
