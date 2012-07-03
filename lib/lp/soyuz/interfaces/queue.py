@@ -445,7 +445,7 @@ class IPackageUploadBuild(Interface):
 
     packageupload = Int(
             title=_("PackageUpload"), required=True,
-            readonly=True,
+            readonly=False,
             )
 
     build = Int(
