@@ -351,7 +351,6 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
             stripped_path = unescape(path.strip('/'))
-            looker = getUtility(IBranchLookup)
             lookup = lambda l: self.performLookup(requester_id, path, l)
             result = get_first_path_result(stripped_path, lookup, None)
             if result is None:
