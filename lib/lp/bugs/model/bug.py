@@ -178,7 +178,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
+from lp.registry.interfaces.sharingjob import (
+    IRemoveArtifactSubscriptionsJobSource,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import (
@@ -1831,7 +1833,8 @@ class Bug(SQLBase):
             # As a result of the transition, some subscribers may no longer
             # have access to the bug. We need to run a job to remove any such
             # subscriptions.
-            getUtility(IRemoveBugSubscriptionsJobSource).create(who, [self])
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                who, [self])
 
         return True
 

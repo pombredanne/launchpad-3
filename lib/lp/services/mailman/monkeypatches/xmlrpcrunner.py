@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XMLRPC runner for querying Launchpad."""
@@ -457,7 +457,7 @@ class XMLRPCRunner(Runner):
         old_cwd = os.getcwd()
         try:
             os.chdir(lists_dir)
-            extractall(tgz_file)
+            tgz_file.extractall()
         finally:
             os.chdir(old_cwd)
         syslog('xmlrpc', '%s: %s', lists_dir, os.listdir(lists_dir))
@@ -701,36 +701,3 @@ class XMLRPCRunner(Runner):
                 # resynchronized.  Be sure to unlock it!
                 mlist.Unlock()
                 statuses[name] = ('resynchronize', 'success')
-
-
-def extractall(tgz_file):
-    """Extract all members of `tgz_file` to the current working directory."""
-    path = '.'
-    # XXX BarryWarsaw 2007-11-13: This is nearly a straight ripoff of
-    # Python 2.5's TarFile.extractall() method, though simplified for our
-    # particular purpose.  When we upgrade Launchpad to Python 2.5, this
-    # function can be removed.
-    directories = []
-    for tarinfo in tgz_file:
-        if tarinfo.isdir():
-            # Extract directory with a safe mode, so that
-            # all files below can be extracted as well.
-            try:
-                os.makedirs(os.path.join(path, tarinfo.name), 0777)
-            except EnvironmentError:
-                pass
-            directories.append(tarinfo)
-        else:
-            tgz_file.extract(tarinfo, path)
-    # Reverse sort directories.
-    directories.sort(lambda a, b: cmp(a.name, b.name))
-    directories.reverse()
-    # Set correct owner, mtime and filemode on directories.
-    for tarinfo in directories:
-        path = os.path.join(path, tarinfo.name)
-        try:
-            tgz_file.chown(tarinfo, path)
-            tgz_file.utime(tarinfo, path)
-            tgz_file.chmod(tarinfo, path)
-        except tarfile.ExtractError as e:
-            log_exception('xmlrpc', 'tarfile: %s', e)

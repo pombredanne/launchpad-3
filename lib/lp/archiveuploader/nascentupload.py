@@ -953,7 +953,7 @@ class NascentUpload:
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
-            ancestry = package_upload_source.getSourceAncestry()
+            ancestry = package_upload_source.getSourceAncestryForDiffs()
             if ancestry is not None:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
                 diff = to_sourcepackagerelease.requestDiffTo(

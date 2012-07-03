@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -187,14 +187,7 @@ class GPGHandler:
         try:
             signatures = ctx.verify(*args)
         except gpgme.GpgmeError as e:
-            # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
-            # for python2.5 compatibility. We should remove it when we no
-            # longer need to run on python2.5.
-            if hasattr(e, 'strerror'):
-                msg = e.strerror
-            else:
-                msg = e.message
-            error = GPGVerificationError(msg)
+            error = GPGVerificationError(e.strerror)
             for attr in ("args", "code", "signatures", "source"):
                 if hasattr(e, attr):
                     value = getattr(e, attr)

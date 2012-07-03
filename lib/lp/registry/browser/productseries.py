@@ -110,7 +110,7 @@ from lp.registry.browser import (
     )
 from lp.registry.browser.pillar import (
     InvolvedMenu,
-    PillarView,
+    PillarInvolvementView,
     )
 from lp.registry.interfaces.packaging import (
     IPackaging,
@@ -236,7 +236,7 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
         return self.view.context.product
 
 
-class ProductSeriesInvolvementView(PillarView):
+class ProductSeriesInvolvementView(PillarInvolvementView):
     """Encourage configuration of involvement links for project series."""
 
     implements(IProductSeriesInvolved)

@@ -527,6 +527,13 @@ class IDistroSeriesPublic(
             description=_("Return only items with custom files of this "
                           "type."),
             required=False),
+        name=TextLine(title=_("Package or file name"), required=False),
+        version=TextLine(title=_("Package version"), required=False),
+        exact_match=Bool(
+            title=_("Exact match"),
+            description=_("Whether to filter name and version by exact "
+                          "matching."),
+            required=False),
         )
     # Really IPackageUpload, patched in _schema_circular_imports.py
     @operation_returns_collection_of(Interface)

@@ -22,7 +22,9 @@
 
 # For real restores, this is being run on an 8 core system. Let pg_restore
 # run multiprocess.
-MULTIPROC=-j 4
+## No multiprocess for now - don't want to overflow replication
+## MULTIPROC=-j 4
+MULTIPROC=
 
 NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
 STAGING_CONFIG=staging-db # For swapping fresh db into place.
@@ -48,6 +50,7 @@ default:
 # Destroy the existing staging db and reload it from dump. We no longer
 # have enough disk space to build it in a holding area and swap it into
 # place.
+stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
 	-${PGMASSACRE} lpmain_staging
 	# Create the DB with the desired default tablespace.
@@ -55,8 +58,11 @@ stagingsetup:
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
-	pg_restore --dbname=lpmain_staging ${EXIT_ON_ERROR} \
-	    ${MULTIPROC} ${STAGING_DUMP}
+	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
+	pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
+	    --use-list=${DUMPLIST} ${MULTIPROC} ${STAGING_DUMP}
+	rm ${DUMPLIST}
 	# Apply database patches.
 	@echo Running upgrade.py `date`.
 	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/upgrade.py \
@@ -64,14 +70,20 @@ stagingsetup:
 	@echo Running security.py `date`
 	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/security.py \
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
+	@echo Setting feature flags
+	psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('profiling.enabled', 'team:launchpad', 0, 'on')"
 
-# Switch the _new staging databases into place.
+
 stagingswitch:
 	echo Nothing to do. Staging already built inplace.
 
+dogfood: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpdogf)
 dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
+	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
-	    ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	rm ${DUMPLIST}
 	../schema/upgrade.py --ignore-slony -d ${DOGFOOD_DBNAME}
 	../schema/security.py -d ${DOGFOOD_DBNAME}
