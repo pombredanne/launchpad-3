@@ -1556,12 +1556,6 @@ COMMENT ON COLUMN Specification.date_completed IS 'The date this specification w
 COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
 COMMENT ON COLUMN Specification.private IS 'Specification is private.';
 
--- SpecificationFeedback
-COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
-COMMENT ON COLUMN SpecificationFeedback.reviewer IS 'The person who has been asked to do the review.';
-COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the request.';
-COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
-
 -- SpecificationBranch
 COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
 COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
