@@ -103,6 +103,7 @@ from zope.security.proxy import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -2250,7 +2251,11 @@ class InformationTypeVocabulary(SimpleVocabulary):
             'disclosure.proprietary_information_type.disabled'))
         show_userdata_as_private = bool(getFeatureFlag(
             'disclosure.display_userdata_as_private.enabled'))
-        if not proprietary_disabled:
+        proprietary_allowed = True
+        if (context and IBug.providedBy(context) and
+            len(context.bugtasks) > 1):
+            proprietary_allowed = False
+        if not proprietary_disabled and proprietary_allowed:
             types.append(InformationType.PROPRIETARY)
         if (context is None or
             not IProduct.providedBy(context) or
