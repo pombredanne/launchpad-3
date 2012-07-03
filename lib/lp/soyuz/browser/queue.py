@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -385,9 +385,13 @@ class QueueItemsView(LaunchpadView):
             try:
                 source_overridden = queue_item.overrideSource(
                     new_component, new_section, allowed_components)
+                binary_changes = [{
+                    "component": new_component,
+                    "section": new_section,
+                    "priority": new_priority,
+                    }]
                 binary_overridden = queue_item.overrideBinaries(
-                    new_component, new_section, new_priority,
-                    allowed_components)
+                    binary_changes, allowed_components)
             except QueueInconsistentStateError as info:
                 failure.append("FAILED: %s (%s)" %
                                (queue_item.displayname, info))
