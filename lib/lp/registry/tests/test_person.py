@@ -706,7 +706,7 @@ class TestPersonStates(TestCaseWithFactory):
         self.otherteam.visibility = PersonVisibility.PRIVATE
         try:
             self.otherteam.visibility = PersonVisibility.PUBLIC
-        except ImmutableVisibilityError, exc:
+        except ImmutableVisibilityError as exc:
             self.assertEqual(
                 str(exc),
                 'A private team cannot change visibility.')

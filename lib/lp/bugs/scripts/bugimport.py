@@ -351,7 +351,7 @@ class BugImporter:
             try:
                 bugtracker, remotebug = bugwatchset.extractBugTrackerAndBug(
                     watchnode.get('href'))
-            except NoBugTrackerFound, exc:
+            except NoBugTrackerFound as exc:
                 self.logger.debug(
                     'Registering bug tracker for %s', exc.base_url)
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(

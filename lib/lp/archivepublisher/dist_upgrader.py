@@ -90,7 +90,7 @@ class DistUpgraderUpload(CustomUpload):
         directory_name = filename.split(os.path.sep)[0]
         try:
             version = make_version(directory_name)
-        except BadUpstreamError, exc:
+        except BadUpstreamError as exc:
             raise DistUpgraderBadVersion(self.tarfile_path, exc)
         return version and not filename.startswith('current')
 

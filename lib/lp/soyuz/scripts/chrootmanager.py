@@ -71,7 +71,7 @@ class ChrootManager:
         try:
             alias_id = getUtility(ILibrarianClient).addFile(
                 filename, flen, fd, contentType=ftype)
-        except UploadFailed, info:
+        except UploadFailed as info:
             raise ChrootManagerError("Librarian upload failed: %s" % info)
 
         lfa = getUtility(ILibraryFileAliasSet)[alias_id]
@@ -201,7 +201,7 @@ class ManageChrootScript(SoyuzScript):
 
         try:
             distroarchseries = series[self.options.architecture]
-        except NotFoundError, info:
+        except NotFoundError as info:
             raise SoyuzScriptError("Architecture not found: %s" % info)
 
         # We don't want to have to force the user to confirm transactions
@@ -222,7 +222,7 @@ class ManageChrootScript(SoyuzScript):
 
         try:
             chroot_action()
-        except ChrootManagerError, info:
+        except ChrootManagerError as info:
             raise SoyuzScriptError(info)
         else:
             # Collect extra debug messages from chroot_manager.

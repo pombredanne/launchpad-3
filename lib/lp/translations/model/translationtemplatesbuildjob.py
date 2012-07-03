@@ -209,7 +209,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
                     "Requesting templates build for branch %s.",
                     branch.unique_name)
                 cls.create(branch)
-        except Exception, e:
+        except Exception as e:
             logger.error(e)
             raise
 

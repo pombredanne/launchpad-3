@@ -567,7 +567,7 @@
     <browser:page
         name="+get-involved"
         for="*"
-        class="lp.registry.browser.pillar.PillarView"
+        class="lp.registry.browser.pillar.PillarInvolvementView"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
         <browser:url

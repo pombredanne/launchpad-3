@@ -1361,7 +1361,7 @@ def main(args):
                                         'no-record-responses',
                                         'no-record-errors',
                                        ])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         usageError(msg)
 
     fwd_params = []

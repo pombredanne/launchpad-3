@@ -68,7 +68,7 @@ class FileUploadProtocol(basic.LineReceiver):
     def lineReceived(self, line):
         try:
             getattr(self, 'line_' + self.state, self.badLine)(line)
-        except ProtocolViolation, e:
+        except ProtocolViolation as e:
             self.sendError(e.msg)
         except:
             self.unknownError()

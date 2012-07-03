@@ -388,7 +388,7 @@ class QueueItemsView(LaunchpadView):
                 binary_overridden = queue_item.overrideBinaries(
                     new_component, new_section, new_priority,
                     allowed_components)
-            except QueueInconsistentStateError, info:
+            except QueueInconsistentStateError as info:
                 failure.append("FAILED: %s (%s)" %
                                (queue_item.displayname, info))
                 continue
@@ -409,7 +409,7 @@ class QueueItemsView(LaunchpadView):
 
             try:
                 getattr(self, 'queue_action_' + action)(queue_item)
-            except QueueInconsistentStateError, info:
+            except QueueInconsistentStateError as info:
                 failure.append('FAILED: %s (%s)' %
                                (queue_item.displayname, info))
             else:

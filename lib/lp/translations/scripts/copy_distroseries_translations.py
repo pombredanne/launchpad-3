@@ -98,7 +98,7 @@ def copy_distroseries_translations(distroseries, txn, logger):
     finally:
         try:
             statekeeper.restore()
-        except Warning, message:
+        except Warning as message:
             logger.warning(message)
         except:
             logger.warning(
