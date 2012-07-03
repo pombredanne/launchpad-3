@@ -1030,19 +1030,20 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         spr.changelog = self.factory.makeLibraryFileAlias(content=changelog)
         spr.changelog_entry = "dummy"
         self.layer.txn.commit()  # Librarian.
-        bugtask280 = self.factory.makeBugTask(
-            target=spr.sourcepackage, bug=bug280)
-        bugtask281 = self.factory.makeBugTask(
-            target=spr.sourcepackage, bug=bug281)
-        bugtask282 = self.factory.makeBugTask(
-            target=spr.sourcepackage, bug=bug282)
 
         # Now put the same named package in the target archive at the
         # oldest version in the changelog.
-        self.publisher.getPubSource(
+        target_source_pub = self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="libc",
             version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
             archive=target_archive)
+
+        bugtask280 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug280, publish=False)
+        bugtask281 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug281, publish=False)
+        bugtask282 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug282, publish=False)
 
         # Run the copy job.
         requester = self.factory.makePerson()

@@ -426,7 +426,7 @@ class IPackageUploadSource(Interface):
             readonly=False,
             )
 
-    def getSourceAncestry():
+    def getSourceAncestryForDiffs():
         """Return a suitable ancestry publication for this context.
 
         The possible ancestries locations for a give source upload, assuming
