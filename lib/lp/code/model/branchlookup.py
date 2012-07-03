@@ -9,10 +9,6 @@ __metaclass__ = type
 __all__ = []
 
 
-from itertools import (
-    ifilter,
-    imap
-    )
 import re
 
 from bzrlib.urlutils import escape
@@ -43,10 +39,10 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import (
+    get_first_path_result,
     IBranchLookup,
     ILinkedBranchTraversable,
     ILinkedBranchTraverser,
-    path_lookups,
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
@@ -295,15 +291,8 @@ class BranchLookup:
         else:
             return None, ''
 
-    def getFirstLookup(self, path, perform_lookup, failure_result):
-        sparse_results = imap(perform_lookup, path_lookups(path))
-        results = ifilter(lambda x: x != failure_result, sparse_results)
-        for result in results:
-            return result
-        return failure_result
-
     def getByHostingPath(self, path):
-        return self.getFirstLookup(path, self.performLookup, (None, ''))
+        return get_first_path_result(path, self.performLookup, (None, ''))
 
     def getByUrls(self, urls):
         """See `IBranchLookup`."""

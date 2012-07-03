@@ -7,11 +7,17 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_first_path_result',
     'IBranchLookup',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
     'path_lookups',
     ]
+
+from itertools import (
+    ifilter,
+    imap
+    )
 
 from zope.interface import Interface
 from lp.code.interfaces.codehosting import (
@@ -64,16 +70,6 @@ class IBranchLookup(Interface):
         """Return the branch with the given id.
 
         Return the default value if there is no such branch.
-        """
-
-    def getFirstLookup(path, perform_lookup, failure_result):
-        """Find the first codehosting path lookup result
-
-        :param path: The codehosting path to use.
-        :param perform_lookup: The callable to use for looking up a value.
-        :param failure_result: The result that indicates lookup failure.
-        :return: The first successful lookup, or failure_result if there are
-            no successes.
         """
 
     def getByHostingPath(path):
@@ -204,3 +200,19 @@ def path_lookups(path):
             'control_name': control_name,
             'trailing': trailing,
         }
+
+
+def get_first_path_result(path, perform_lookup, failure_result):
+    """Find the first codehosting path lookup result.
+
+    :param path: The codehosting path to use.
+    :param perform_lookup: The callable to use for looking up a value.
+    :param failure_result: The result that indicates lookup failure.
+    :return: The first successful lookup, or failure_result if there are
+        no successes.
+    """
+    sparse_results = imap(perform_lookup, path_lookups(path))
+    results = ifilter(lambda x: x != failure_result, sparse_results)
+    for result in results:
+        return result
+    return failure_result

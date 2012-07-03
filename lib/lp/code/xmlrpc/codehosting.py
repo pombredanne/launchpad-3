@@ -38,6 +38,7 @@ from lp.code.errors import (
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchlookup import (
+    get_first_path_result,
     IBranchLookup,
     ILinkedBranchTraverser,
     )
@@ -352,7 +353,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             stripped_path = unescape(path.strip('/'))
             looker = getUtility(IBranchLookup)
             lookup = lambda l: self.performLookup(requester_id, path, l)
-            result = looker.getFirstLookup(stripped_path, lookup, None)
+            result = get_first_path_result(stripped_path, lookup, None)
             if result is None:
                 raise faults.PathTranslationError(path)
             return result
