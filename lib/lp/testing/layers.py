@@ -1,10 +1,10 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We like global!
 # pylint: disable-msg=W0603,W0702
 
-"""Layers used by Canonical tests.
+"""Layers used by Launchpad tests.
 
 Layers are the mechanism used by the Zope3 test runner to efficiently
 provide environments for tests and are documented in the lib/zope/testing.
@@ -24,6 +24,7 @@ of one, forcing us to attempt to make some sort of layer tree.
 __metaclass__ = type
 __all__ = [
     'AppServerLayer',
+    'AuditorLayer',
     'BaseLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
@@ -39,6 +40,7 @@ __all__ = [
     'LayerIsolationError',
     'LibrarianLayer',
     'PageTestLayer',
+    'RabbitMQLayer',
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
@@ -101,6 +103,7 @@ from zope.security.management import (
 from zope.server.logger.pythonlogger import PythonLogger
 
 from lp.services import pidfile
+from lp.services.auditor.server import AuditorServer
 from lp.services.config import (
     config,
     dbconfig,
@@ -688,6 +691,44 @@ class RabbitMQLayer(BaseLayer):
         if not cls._is_setup:
             return
         cls.rabbit.cleanUp()
+        cls._is_setup = False
+        # Can't pop the config above, so bail here and let the test runner
+        # start a sub-process.
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
+class AuditorLayer(BaseLayer):
+
+    auditor = AuditorServer()
+
+    _is_setup = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.auditor.setUp()
+        cls.config_fixture.add_section(
+            cls.auditor.config.service_config)
+        cls.appserver_config_fixture.add_section(
+            cls.auditor.config.service_config)
+        cls._is_setup = True
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls.auditor.cleanUp()
         cls._is_setup = False
         # Can't pop the config above, so bail here and let the test runner
         # start a sub-process.
