@@ -637,6 +637,12 @@ class PackageUpload(SQLBase):
         return (PackageUploadCustomFormat.DDTP_TARBALL
                 in self._customFormats)
 
+    @cachedproperty
+    def contains_uefi(self):
+        """See `IPackageUpload`."""
+        return (PackageUploadCustomFormat.UEFI
+                in self._customFormats)
+
     @property
     def package_name(self):
         """See `IPackageUpload`."""
@@ -1347,8 +1353,7 @@ class PackageUploadCustom(SQLBase):
         try:
             # See the XXX near the import for getPubConfig.
             archive_config = getPubConfig(self.packageupload.archive)
-            action_method(
-                archive_config.archiveroot, temp_filename, suite)
+            action_method(archive_config, temp_filename, suite)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
@@ -1453,6 +1458,14 @@ class PackageUploadCustom(SQLBase):
         self.libraryfilealias.open()
         copy_and_close(self.libraryfilealias, file_obj)
 
+    def publishUefi(self, logger=None):
+        """See `IPackageUploadCustom`."""
+        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
+        # to instantiate the object in question and avoid circular imports
+        from lp.archivepublisher.uefi import process_uefi
+
+        self._publishCustom(process_uefi)
+
     publisher_dispatch = {
         PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,
         PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
@@ -1462,6 +1475,7 @@ class PackageUploadCustom(SQLBase):
         PackageUploadCustomFormat.STATIC_TRANSLATIONS:
             publishStaticTranslations,
         PackageUploadCustomFormat.META_DATA: publishMetaData,
+        PackageUploadCustomFormat.UEFI: publishUefi,
         }
 
     # publisher_dispatch must have an entry for each value of

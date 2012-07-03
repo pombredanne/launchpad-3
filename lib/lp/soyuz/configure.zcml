@@ -173,6 +173,7 @@
                 contains_installer
                 contains_upgrader
                 contains_ddtp
+                contains_uefi
                 displayname
                 displayarchs
                 displayversion

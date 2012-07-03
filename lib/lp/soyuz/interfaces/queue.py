@@ -207,9 +207,11 @@ class IPackageUpload(Interface):
     contains_translation = Attribute(
         "whether or not this upload contains translations")
     contains_upgrader = Attribute(
-        "wheter or not this upload contains upgrader images")
+        "whether or not this upload contains upgrader images")
     contains_ddtp = Attribute(
-        "wheter or not this upload contains DDTP images")
+        "whether or not this upload contains DDTP images")
+    contains_uefi = Attribute(
+        "whether or not this upload contains a signed UEFI boot loader image")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
     is_delayed_copy = Attribute(
