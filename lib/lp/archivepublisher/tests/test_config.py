@@ -90,7 +90,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertIsNone(debug_config.miscroot)
         self.assertIsNone(debug_config.germinateroot)
         self.assertEqual(self.root + "/ubuntutest-temp", debug_config.temproot)
-        self.assertIsNone(debug_config.uefiroot)
+        self.assertEqual(archiveroot + "-uefi", debug_config.uefiroot)
 
     def test_copy_config(self):
         # In the case of copy archives (used for rebuild testing) the
