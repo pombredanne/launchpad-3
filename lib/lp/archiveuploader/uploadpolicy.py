@@ -319,7 +319,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
     def autoApprove(self, upload):
         """Check that all custom files in this upload can be auto-approved."""
-        if self.binaryful:
+        if upload.binaryful:
             for custom_file in upload.changes.custom_files:
                 if not custom_file.autoApprove():
                     return False
