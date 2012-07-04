@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for doing the sort of thing the os module does."""
@@ -15,6 +15,7 @@ __all__ = [
     'remove_tree',
     'two_stage_kill',
     'until_no_eintr',
+    'write_file',
     ]
 
 from contextlib import contextmanager
@@ -207,6 +208,5 @@ def remove_if_exists(path):
 
 
 def write_file(path, content):
-    f = open(path, 'w')
-    f.write(content)
-    f.close()
+    with open_for_writing(path, 'w') as f:
+        f.write(content)

@@ -31,6 +31,10 @@ from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
+from lp.archivepublisher.debian_installer import DebianInstallerUpload
+from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
+from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
+from lp.archivepublisher.uefi import UefiUpload
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     prefix_multi_line_string,
@@ -268,6 +272,14 @@ class CustomUploadFile(NascentUploadFile):
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
         'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
+        'raw-uefi': PackageUploadCustomFormat.UEFI,
+        }
+
+    custom_handlers = {
+        PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
+        PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
+        PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
+        PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
     @property
@@ -284,6 +296,16 @@ class CustomUploadFile(NascentUploadFile):
         if self.section_name not in self.custom_sections:
             yield UploadError(
                 "Unsupported custom section name %r" % self.section_name)
+        else:
+            handler = self.custom_handlers.get(
+                self.custom_sections[self.section_name])
+            if handler is not None:
+                try:
+                    handler.parsePath(self.filename)
+                except ValueError:
+                    yield UploadError(
+                        "Invalid filename %r for section name %r" % (
+                            self.filename, self.section_name))
 
     def storeInDatabase(self):
         """Create and return the corresponding LibraryFileAlias reference."""
@@ -293,6 +315,13 @@ class CustomUploadFile(NascentUploadFile):
             self.content_type,
             restricted=self.policy.archive.private)
         return libraryfile
+
+    def autoApprove(self):
+        """Return whether this custom upload can be automatically approved."""
+        # UEFI uploads are signed, and must therefore be approved by a human.
+        if self.custom_type == PackageUploadCustomFormat.UEFI:
+            return False
+        return True
 
 
 class PackageUploadFile(NascentUploadFile):

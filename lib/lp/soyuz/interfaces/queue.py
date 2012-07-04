@@ -207,9 +207,11 @@ class IPackageUpload(Interface):
     contains_translation = Attribute(
         "whether or not this upload contains translations")
     contains_upgrader = Attribute(
-        "wheter or not this upload contains upgrader images")
+        "whether or not this upload contains upgrader images")
     contains_ddtp = Attribute(
-        "wheter or not this upload contains DDTP images")
+        "whether or not this upload contains DDTP images")
+    contains_uefi = Attribute(
+        "whether or not this upload contains a signed UEFI boot loader image")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
     is_delayed_copy = Attribute(
@@ -349,16 +351,16 @@ class IPackageUpload(Interface):
         :return: True if the source was overridden.
         """
 
-    def overrideBinaries(new_component, new_section, new_priority,
-                         allowed_components):
-        """Override all the binaries in a binary queue item.
+    def overrideBinaries(changes, allowed_components):
+        """Override binary packages in a binary queue item.
 
-        :param new_component: An IComponent to replace the existing one
-            in the upload's source.
-        :param new_section: An ISection to replace the existing one
-            in the upload's source.
-        :param new_priority: A valid PackagePublishingPriority to replace
-            the existing one in the upload's binaries.
+        :param changes: A sequence of mappings of changes to apply. Each
+            change mapping may have a "name" item which specifies the binary
+            package name to override; otherwise, the change applies to all
+            binaries in the upload. It may also have "component", "section",
+            and "priority" items which replace the corresponding existing
+            one in the upload's overridden binaries. Any missing items are
+            left unchanged.
         :param allowed_components: A sequence of components that the
             callsite is allowed to override from and to.
 
@@ -366,10 +368,7 @@ class IPackageUpload(Interface):
             or the new_component are not in the allowed_components
             sequence.
 
-        The override values may be None, in which case they are not
-        changed.
-
-        :return: True if the binaries were overridden.
+        :return: True if any binaries were overridden.
         """
 
 
