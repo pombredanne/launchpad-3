@@ -1441,7 +1441,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 product=None, initial_comment=None,
                                 source_branch=None, preview_diff=None,
                                 date_created=None, description=None,
-                                reviewer=None):
+                                reviewer=None, merged_revno=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -1502,6 +1502,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             unsafe_proposal.resubmit(proposal.registrant)
         else:
             raise AssertionError('Unknown status: %s' % set_state)
+        if merged_revno is not None:
+            unsafe_proposal.merged_revno=merged_revno
 
         return proposal
 
@@ -1638,8 +1640,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id=None, sequence=None,
+    def makeBranchRevision(self, branch=None, revision_id=None, sequence=None,
                            parent_ids=None, revision_date=None):
+        if branch is None:
+            branch = self.makeBranch()
         revision = self.makeRevision(
             rev_id=revision_id, parent_ids=parent_ids,
             revision_date=revision_date)

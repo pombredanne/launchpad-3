@@ -1386,6 +1386,17 @@ class IBranchSet(Interface):
         branches.
         """
 
+    @operation_returns_collection_of(Interface)
+    @operation_parameters(merged_revision=TextLine())
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(merged_revision):
+        """Return the merge proposals that resulted in this revision.
+
+        :param merged_revision: The revision_id of the revision that resulted
+            from this merge proposal.
+        """
+
 
 class IBranchListingQueryOptimiser(Interface):
     """Interface for a helper utility to do efficient queries for branches.

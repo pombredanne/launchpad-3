@@ -86,6 +86,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
 from lp.code.model.branch import (
+    BranchSet,
     ClearDependentBranch,
     ClearOfficialPackageBranch,
     ClearSeriesBranch,
@@ -148,6 +149,7 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     ws_object,
+    WebServiceTestCase,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
@@ -2847,6 +2849,57 @@ class TestBranchSetTarget(TestCaseWithFactory):
             branch.setTarget(user=branch.owner, project=new_product)
         self.assertEqual(
             new_product, get_policies_for_artifact(branch)[0].pillar)
+
+
+def make_proposal_and_branch_revision(factory, revno, revision_id):
+    revision = factory.makeBranchRevision(revision_id=revision_id,
+                                          sequence=revno)
+    return factory.makeBranchMergeProposal(merged_revno=revno,
+                                           target_branch=revision.branch)
+
+
+class TestGetMergeProposalsWS(WebServiceTestCase):
+
+    def test_getMergeProposals(self):
+        bmp = make_proposal_and_branch_revision(self.factory, 5, 'rev-id')
+        transaction.commit()
+        branch_set = self.service.branches
+        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
+        self.assertEqual(result, [self.wsObject(bmp)])
+
+
+class TestGetMergeProposalsInProcess(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getMergeProposals_with_no_merged_revno(self):
+        bmp = make_proposal_and_branch_revision(self.factory, None, 'rev-id')
+        branch_set = BranchSet()
+        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
+        self.assertEqual([], result)
+
+    def test_getMergeProposals_with_any_merged_revno(self):
+        bmp = make_proposal_and_branch_revision(
+            self.factory, self.factory.getUniqueInteger(), 'rev-id')
+        branch_set = BranchSet()
+        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
+        self.assertEqual([bmp], result)
+
+    def test_getMergeProposals_correct_merged_revno(self):
+        bmp1 = make_proposal_and_branch_revision(self.factory, 4, 'rev-id')
+        bmp2 = make_proposal_and_branch_revision(self.factory, 5, 'other')
+        branch_set = BranchSet()
+        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
+        self.assertEqual([bmp1], result)
+        result = list(branch_set.getMergeProposals(merged_revision='other'))
+        self.assertEqual([bmp2], result)
+
+    def test_getMergeProposals_correct_branch(self):
+        bmp1 = make_proposal_and_branch_revision(self.factory, 5, 'rev-id')
+        bmp2 = make_proposal_and_branch_revision(self.factory, 5, 'other')
+        branch_set = BranchSet()
+        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
+        self.assertEqual([bmp1], result)
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):

@@ -155,7 +155,10 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -1498,6 +1501,16 @@ class BranchSet:
         return {
             'person_name': person.displayname,
             'visible_branches': visible_branches}
+
+    def getMergeProposals(self, merged_revision):
+        """See IBranchSet."""
+        store = IStore(BranchMergeProposal)
+        return store.find(BranchMergeProposal,
+            BranchMergeProposal.merged_revno == BranchRevision.sequence,
+            BranchRevision.revision_id == Revision.id,
+            BranchRevision.branch_id == BranchMergeProposal.target_branchID,
+            Revision.revision_id == merged_revision)
+
 
 
 def update_trigger_modified_fields(branch):
