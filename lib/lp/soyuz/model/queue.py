@@ -13,6 +13,7 @@ __all__ = [
     'PackageUploadSet',
     ]
 
+from itertools import chain
 import os
 import shutil
 import StringIO
@@ -50,8 +51,10 @@ from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
+from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
     IMasterStore,
@@ -61,11 +64,15 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarian.utils import copy_and_close
 from lp.services.mail.signedmessage import strip_pgp_signature
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
@@ -238,11 +245,44 @@ class PackageUpload(SQLBase):
 
     # Join this table to the PackageUploadBuild and the
     # PackageUploadSource objects which are related.
-    sources = SQLMultipleJoin('PackageUploadSource',
-                              joinColumn='packageupload')
+    _sources = SQLMultipleJoin('PackageUploadSource',
+                               joinColumn='packageupload')
     # Does not include source builds.
-    builds = SQLMultipleJoin('PackageUploadBuild',
-                             joinColumn='packageupload')
+    _builds = SQLMultipleJoin('PackageUploadBuild',
+                              joinColumn='packageupload')
+
+    @cachedproperty
+    def sources(self):
+        return list(self._sources)
+
+    def sourceFileUrls(self):
+        """See `IPackageUpload`."""
+        if self.contains_source:
+            return [
+                ProxiedLibraryFileAlias(
+                    file.libraryfile, self.archive).http_url
+                for file in self.sourcepackagerelease.files]
+        else:
+            return []
+
+    @cachedproperty
+    def builds(self):
+        return list(self._builds)
+
+    def binaryFileUrls(self):
+        """See `IPackageUpload`."""
+        return [
+            ProxiedLibraryFileAlias(file.libraryfile, self.archive).http_url
+            for build in self.builds
+            for bpr in build.build.binarypackages
+            for file in bpr.files]
+
+    @property
+    def changes_file_url(self):
+        if self.changesfile is not None:
+            return self.changesfile.getURL()
+        else:
+            return None
 
     def getSourceBuild(self):
         #avoid circular import
@@ -258,14 +298,30 @@ class PackageUpload(SQLBase):
             PackageUploadSource.packageupload == self.id).one()
 
     # Also the custom files associated with the build.
-    customfiles = SQLMultipleJoin('PackageUploadCustom',
-                                  joinColumn='packageupload')
+    _customfiles = SQLMultipleJoin('PackageUploadCustom',
+                                   joinColumn='packageupload')
+
+    @cachedproperty
+    def customfiles(self):
+        return list(self._customfiles)
 
     @property
     def custom_file_urls(self):
         """See `IPackageUpload`."""
         return tuple(
             file.libraryfilealias.getURL() for file in self.customfiles)
+
+    def customFileUrls(self):
+        """See `IPackageUpload`."""
+        return [
+            ProxiedLibraryFileAlias(
+                file.libraryfilealias, self.archive).http_url
+            for file in self.customfiles]
+
+    def getBinaryProperties(self):
+        """See `IPackageUpload`."""
+        return list(chain.from_iterable(
+            build.binaries for build in self.builds))
 
     def setNew(self):
         """See `IPackageUpload`."""
@@ -551,7 +607,7 @@ class PackageUpload(SQLBase):
     def acceptFromCopy(self):
         """See `IPackageUpload`."""
         assert self.is_delayed_copy, 'Can only process delayed-copies.'
-        assert self.sources.count() == 1, (
+        assert len(self.sources) == 1, (
             'Source is mandatory for delayed copies.')
         self.setAccepted()
 
@@ -588,7 +644,7 @@ class PackageUpload(SQLBase):
 
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
-        return ((self.sources.count() == 1) and
+        return ((len(self.sources) == 1) and
                 (not bool(self.builds)) and
                 (not bool(self.customfiles)))
 
@@ -597,12 +653,17 @@ class PackageUpload(SQLBase):
     @cachedproperty
     def contains_source(self):
         """See `IPackageUpload`."""
-        return self.sources
+        return bool(self.sources)
 
     @cachedproperty
     def contains_build(self):
         """See `IPackageUpload`."""
-        return self.builds
+        return bool(self.builds)
+
+    @cachedproperty
+    def contains_copy(self):
+        """See `IPackageUpload`."""
+        return self.package_copy_job_id is not None
 
     @cachedproperty
     def from_build(self):
@@ -816,18 +877,21 @@ class PackageUpload(SQLBase):
 
     def addSource(self, spr):
         """See `IPackageUpload`."""
+        del get_property_cache(self).sources
         return PackageUploadSource(
             packageupload=self,
             sourcepackagerelease=spr.id)
 
     def addBuild(self, build):
         """See `IPackageUpload`."""
+        del get_property_cache(self).builds
         return PackageUploadBuild(
             packageupload=self,
             build=build.id)
 
     def addCustom(self, library_file, custom_type):
         """See `IPackageUpload`."""
+        del get_property_cache(self).customfiles
         return PackageUploadCustom(
             packageupload=self,
             libraryfilealias=library_file.id,
@@ -1094,6 +1158,12 @@ class PackageUploadBuild(SQLBase):
         foreignKey='PackageUpload')
 
     build = ForeignKey(dbName='build', foreignKey='BinaryPackageBuild')
+
+    @property
+    def binaries(self):
+        """See `IPackageUploadBuild`."""
+        for binary in self.build.binarypackages:
+            yield binary.properties
 
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
@@ -1710,7 +1780,30 @@ class PackageUploadSet:
             PackageUpload.distroseries == distroseries,
             *conditions)
         query = query.order_by(Desc(PackageUpload.id))
-        return query.config(distinct=True)
+        query = query.config(distinct=True)
+
+        def preload_hook(rows):
+            puses = load_referencing(
+                PackageUploadSource, rows, ["packageuploadID"])
+            pubs = load_referencing(
+                PackageUploadBuild, rows, ["packageuploadID"])
+            pucs = load_referencing(
+                PackageUploadCustom, rows, ["packageuploadID"])
+
+            for pu in rows:
+                cache = get_property_cache(pu)
+                cache.sources = []
+                cache.builds = []
+                cache.customfiles = []
+
+            for pus in puses:
+                get_property_cache(pus.packageupload).sources.append(pus)
+            for pub in pubs:
+                get_property_cache(pub.packageupload).builds.append(pub)
+            for puc in pucs:
+                get_property_cache(puc.packageupload).customfiles.append(puc)
+
+        return DecoratedResultSet(query, pre_iter_hook=preload_hook)
 
     def getBuildByBuildIDs(self, build_ids):
         """See `IPackageUploadSet`."""

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -131,6 +131,19 @@ class BinaryPackageRelease(SQLBase):
             self.binarypackagename)
         return distroarchseries_binary_package.currentrelease is None
 
+    @property
+    def properties(self):
+        """See `IBinaryPackageRelease`."""
+        return {
+            "name": self.name,
+            "version": self.version,
+            "is_new": self.is_new,
+            "architecture": self.build.arch_tag,
+            "component": self.component.name,
+            "section": self.section.name,
+            "priority": self.priority.name,
+            }
+
     @cachedproperty
     def files(self):
         return list(
@@ -201,4 +214,3 @@ class BinaryPackageReleaseDownloadCount(Storm):
     def binary_package_version(self):
         """See `IBinaryPackageReleaseDownloadCount`."""
         return self.binary_package_release.version
-
