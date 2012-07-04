@@ -2214,6 +2214,8 @@ class BugTaskListingItem:
             assignee = self.people[self.assigneeID].displayname
         reporter = self.people[self.bug.ownerID]
 
+        # the case that there is no target context (e.g. viewing bug that
+        # are related to a user account) is intercepted
         if self.target_context is None:
             base_tag_url = "%s/?field.tag=" % canonical_url(
                 self.bugtask.target,

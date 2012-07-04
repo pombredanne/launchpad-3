@@ -1875,8 +1875,8 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             unbatched_view.activity_and_comments[4:],
             batched_view.activity_and_comments)
 
-
 no_target_specified = object()
+
 
 def make_bug_task_listing_item(
     factory, bugtask=None, target_context=no_target_specified):
@@ -2448,6 +2448,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual(milestone_name, item.model['milestone_name'])
 
     def test_tag_urls_use_view_context(self):
+        """urls contain the correct project group if target_context is None"""
         project_group = self.factory.makeProject()
         product = self.factory.makeProduct(project=project_group)
         bug = self.factory.makeBug(product=product)
@@ -2460,6 +2461,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             canonical_url(project_group, view_name="+bugs")))
 
     def test_urls_without_target_context(self):
+        """urls contain the project if target_context is not None"""
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         with person_logged_in(bug.owner):
