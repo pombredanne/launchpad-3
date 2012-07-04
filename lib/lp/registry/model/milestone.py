@@ -23,11 +23,11 @@ from sqlobject import (
     BoolCol,
     DateCol,
     ForeignKey,
-    SQLMultipleJoin,
     StringCol,
     )
 from storm.locals import (
     And,
+    Desc,
     Store,
     )
 from storm.zope import IResultSet
@@ -55,6 +55,7 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.model.productrelease import ProductRelease
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
@@ -186,10 +187,20 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     summary = StringCol(notNull=False, default=None)
     code_name = StringCol(dbName='codename', notNull=False, default=None)
 
-    specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
-        orderBy=['-priority', 'definition_status',
-                 'implementation_status', 'title'],
-        prejoins=['assignee'])
+    @property
+    def specifications(self):
+        from lp.registry.model.person import Person
+        store = Store.of(self)
+        results = store.find(
+            (Specification, Person),
+            Specification.milestoneID == self.id,
+            Person.id == Specification.assigneeID)
+        ordered_results = results.order_by(Desc(Specification.priority),
+                                           Specification.definition_status,
+                                           Specification.implementation_status,
+                                           Specification.title)
+        mapper = lambda row: row[0]
+        return DecoratedResultSet(ordered_results, mapper)
 
     @property
     def target(self):
