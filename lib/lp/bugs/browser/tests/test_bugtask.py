@@ -1876,7 +1876,10 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory, bugtask=None, target_context=None):
+no_target_specified = object()
+
+def make_bug_task_listing_item(
+    factory, bugtask=None, target_context=no_target_specified):
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
@@ -1894,7 +1897,7 @@ def make_bug_task_listing_item(factory, bugtask=None, target_context=None):
     if tags != {}:
         tags = tags[bugtask.id]
     people = bug_task_set.getBugTaskPeople([bugtask])
-    if target_context is None:
+    if target_context is no_target_specified:
         target_context = bugtask.target
     return owner, BugTaskListingItem(
         bugtask,
@@ -2455,6 +2458,17 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         url = item.model['tags'][0]['url']
         self.assertTrue(url.startswith(
             canonical_url(project_group, view_name="+bugs")))
+
+    def test_urls_without_target_context(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=None)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(product, view_name="+bugs")))
 
     def test_model_assignee(self):
         """Model contains expected fields with expected values."""
