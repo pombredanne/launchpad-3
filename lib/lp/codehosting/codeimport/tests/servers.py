@@ -127,7 +127,7 @@ class SubversionServer(Server):
             for i in range(10):
                 try:
                     self._get_ra(self.get_url())
-                except OSError, e:
+                except OSError as e:
                     if e.errno == errno.ECONNREFUSED:
                         time.sleep(delay)
                         delay *= 1.5

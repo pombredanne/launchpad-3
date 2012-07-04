@@ -64,7 +64,7 @@ class BuilddMassRetryScript(LaunchpadScript):
         try:
             distribution = getUtility(IDistributionSet)[
                 self.options.distribution]
-        except NotFoundError, info:
+        except NotFoundError as info:
             raise LaunchpadScriptFailure("Distribution not found: %s" % info)
 
         try:
@@ -74,7 +74,7 @@ class BuilddMassRetryScript(LaunchpadScript):
             else:
                 series = distribution.currentseries
                 pocket = PackagePublishingPocket.RELEASE
-        except NotFoundError, info:
+        except NotFoundError as info:
             raise LaunchpadScriptFailure("Suite not found: %s" % info)
 
         # store distroseries as the current IHasBuildRecord provider
@@ -83,7 +83,7 @@ class BuilddMassRetryScript(LaunchpadScript):
         if self.options.architecture:
             try:
                 dar = series[self.options.architecture]
-            except NotFoundError, info:
+            except NotFoundError as info:
                 raise LaunchpadScriptFailure(info)
 
             # store distroarchseries as the current IHasBuildRecord provider

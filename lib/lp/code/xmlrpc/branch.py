@@ -127,7 +127,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         try:
             unicode_branch_url = branch_url.decode('utf-8')
             IBranch['url'].validate(unicode_branch_url)
-        except LaunchpadValidationError, exc:
+        except LaunchpadValidationError as exc:
             return faults.InvalidBranchUrl(branch_url, exc)
 
         # We want it to be None in the database, not ''.
@@ -154,9 +154,9 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 branch.requestMirror()
         except BranchCreationForbidden:
             return faults.BranchCreationForbidden(product.displayname)
-        except BranchCreationException, err:
+        except BranchCreationException as err:
             return faults.BranchNameInUse(err)
-        except LaunchpadValidationError, err:
+        except LaunchpadValidationError as err:
             return faults.InvalidBranchName(err)
 
         return canonical_url(branch)
@@ -303,24 +303,24 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # and thus error prone. Alternatives are directly raising faults from
         # the model code(blech) or some automated way of reraising as faults
         # or using a narrower range of faults (e.g. only one "NoSuch" fault).
-        except InvalidProductName, e:
+        except InvalidProductName as e:
             raise faults.InvalidProductIdentifier(urlutils.escape(e.name))
-        except NoSuchProductSeries, e:
+        except NoSuchProductSeries as e:
             raise faults.NoSuchProductSeries(
                 urlutils.escape(e.name), e.product)
-        except NoSuchPerson, e:
+        except NoSuchPerson as e:
             raise faults.NoSuchPersonWithName(urlutils.escape(e.name))
-        except NoSuchProduct, e:
+        except NoSuchProduct as e:
             raise faults.NoSuchProduct(urlutils.escape(e.name))
-        except NoSuchDistroSeries, e:
+        except NoSuchDistroSeries as e:
             raise faults.NoSuchDistroSeries(urlutils.escape(e.name))
-        except NoSuchSourcePackageName, e:
+        except NoSuchSourcePackageName as e:
             raise faults.NoSuchSourcePackageName(urlutils.escape(e.name))
-        except NoLinkedBranch, e:
+        except NoLinkedBranch as e:
             raise faults.NoLinkedBranch(e.component)
-        except CannotHaveLinkedBranch, e:
+        except CannotHaveLinkedBranch as e:
             raise faults.CannotHaveLinkedBranch(e.component)
-        except InvalidNamespace, e:
+        except InvalidNamespace as e:
             raise faults.InvalidBranchUniqueName(urlutils.escape(e.name))
         # Reverse engineer the actual lp_path that is used, so we need to
         # remove any suffix that may be there from the strip_path.

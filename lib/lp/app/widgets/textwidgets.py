@@ -106,7 +106,7 @@ class LocalDateTimeWidget(TextWidget):
             micro = round(micro * 1000000)
             dt = datetime.datetime(year, month, day,
                                    hour, minute, int(second), int(micro))
-        except (DateTimeError, ValueError, IndexError), v:
+        except (DateTimeError, ValueError, IndexError) as v:
             raise ConversionError('Invalid date value', v)
         tz = pytz.timezone(self.timeZoneName)
         return tz.localize(dt)

@@ -173,6 +173,7 @@
                 contains_installer
                 contains_upgrader
                 contains_ddtp
+                contains_uefi
                 displayname
                 displayarchs
                 displayversion
@@ -992,40 +993,6 @@
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
         <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
    </class>
-
-    <!-- BinaryPackagePath -->
-
-    <class
-        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePath"/>
-    </class>
-
-    <!-- BinaryPackagePathSet -->
-
-    <securedutility
-        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath"
-        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet"/>
-    </securedutility>
-
-    <!-- BinaryPackageReleaseContents -->
-
-    <class
-        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContents"/>
-    </class>
-
-    <!-- BinaryPackageReleaseContentsSet -->
-
-    <securedutility
-        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents"
-        provides="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
-    </securedutility>
 
    <webservice:register module="lp.soyuz.interfaces.webservice" />
 

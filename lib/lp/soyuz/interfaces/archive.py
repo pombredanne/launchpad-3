@@ -43,6 +43,8 @@ __all__ = [
     'NoSuchPPA',
     'NoTokensForTeams',
     'PocketNotFound',
+    'PriorityNotFound',
+    'SectionNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
     'validate_external_dependencies',
@@ -156,13 +158,23 @@ class NoTokensForTeams(Exception):
 
 
 class ComponentNotFound(NameLookupFailed):
-    """Invalid source name."""
+    """Invalid component name."""
     _message_prefix = 'No such component'
 
 
 @error_status(httplib.BAD_REQUEST)
 class InvalidComponent(Exception):
     """Invalid component name."""
+
+
+class SectionNotFound(NameLookupFailed):
+    """Invalid section name."""
+    _message_prefix = "No such section"
+
+
+class PriorityNotFound(NameLookupFailed):
+    """Invalid priority name."""
+    _message_prefix = "No such priority"
 
 
 class NoSuchPPA(NameLookupFailed):
@@ -1277,13 +1289,14 @@ class IArchiveView(IHasBuildRecords):
         sponsored=Reference(
             schema=IPerson,
             title=_("Sponsored Person"),
-            description=_("The person who is being sponsored for this copy."))
+            description=_("The person who is being sponsored for this copy.")),
+        unembargo=Bool(title=_("Unembargo restricted files")),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None):
+                    sponsored=None, unembargo=False):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1304,6 +1317,9 @@ class IArchiveView(IHasBuildRecords):
             this will ensure that the person's email address is used as the
             "From:" on the announcement email and will also be recorded as
             the creator of the new source publication.
+        :param unembargo: if True, allow copying restricted files from a
+            private archive to a public archive, and re-upload them to the
+            public librarian when doing so.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -1335,13 +1351,14 @@ class IArchiveView(IHasBuildRecords):
         sponsored=Reference(
             schema=IPerson,
             title=_("Sponsored Person"),
-            description=_("The person who is being sponsored for this copy."))
+            description=_("The person who is being sponsored for this copy.")),
+        unembargo=Bool(title=_("Unembargo restricted files")),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
                      to_series=None, from_series=None, include_binaries=False,
-                     sponsored=None):
+                     sponsored=None, unembargo=False):
         """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
@@ -1365,6 +1382,9 @@ class IArchiveView(IHasBuildRecords):
             this will ensure that the person's email address is used as the
             "From:" on the announcement email and will also be recorded as
             the creator of the new source publication.
+        :param unembargo: if True, allow copying restricted files from a
+            private archive to a public archive, and re-upload them to the
+            public librarian when doing so.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid

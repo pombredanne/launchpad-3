@@ -38,7 +38,7 @@ class TestDateTimeWidget(TestCase):
         fmt = "%Y-%m-%d"
         try:
             datetime.strptime(test_str, fmt)
-        except (ValueError,), e:
+        except ValueError as e:
             self.assertTrue('unconverted data' in str(e))
 
     def test_whitespace_does_not_trick_validation(self):

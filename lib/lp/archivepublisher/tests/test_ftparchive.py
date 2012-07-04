@@ -16,7 +16,6 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.model.ftparchive import (
     AptFTPArchiveFailure,
-    f_touch,
     FTPArchiveHandler,
     )
 from lp.archivepublisher.publishing import Publisher
@@ -27,10 +26,7 @@ from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
     )
-from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
@@ -493,26 +489,3 @@ class TestFTPArchiveRunApt(TestCaseWithFactory):
         distro = distroarchseries.distroseries.distribution
         fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
         self.assertRaises(AptFTPArchiveFailure, fa.runApt, "bogus-config")
-
-
-class TestFTouch(TestCase):
-    """Tests for f_touch function."""
-
-    def setUp(self):
-        TestCase.setUp(self)
-        self.test_folder = self.useTempDir()
-
-    def test_f_touch_new_file(self):
-        # Test f_touch correctly creates a new file.
-        f_touch(self.test_folder, "file_to_touch")
-        self.assertTrue(os.path.exists("%s/file_to_touch" % self.test_folder))
-
-    def test_f_touch_existing_file(self):
-        # Test f_touch truncates existing files.
-        with open("%s/file_to_truncate" % self.test_folder, "w") as f:
-            f.write("I'm some test contents")
-
-        f_touch(self.test_folder, "file_to_leave_alone")
-
-        with open("%s/file_to_leave_alone" % self.test_folder, "r") as f:
-            self.assertEqual("", f.read())

@@ -41,7 +41,7 @@ def process_exists(pid):
     """Return True if the specified process already exists."""
     try:
         os.kill(pid, 0)
-    except os.error, err:
+    except os.error as err:
         if err.errno == errno.ESRCH:
             # All is well - the process doesn't exist.
             return False

@@ -625,7 +625,7 @@ class URIField(TextLine):
         input = input.strip()
         try:
             uri = URI(input)
-        except InvalidURIError, exc:
+        except InvalidURIError as exc:
             raise LaunchpadValidationError(str(exc))
         # If there is a policy for whether trailing slashes are
         # allowed at the end of the path segment, ensure that the

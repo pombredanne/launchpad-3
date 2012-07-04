@@ -25,6 +25,7 @@ from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
+from lp.services.osutils import write_file
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
@@ -91,6 +92,36 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         libraryfile = uploadfile.storeInDatabase()
         self.assertEquals("bla.txt", libraryfile.filename)
         self.assertEquals("application/octet-stream", libraryfile.mimetype)
+
+    def test_debian_installer_verify(self):
+        # debian-installer uploads are required to have sensible filenames.
+        uploadfile = self.createCustomUploadFile(
+            "debian-installer-images_20120627_i386.tar.gz", "data",
+            "main/raw-installer", "extra")
+        self.assertEqual([], list(uploadfile.verify()))
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        errors = list(uploadfile.verify())
+        self.assertEqual(1, len(errors))
+        self.assertIsInstance(errors[0], UploadError)
+
+    def test_no_handler_no_verify(self):
+        # Uploads without special handlers have no filename checks.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-meta-data", "extra")
+        self.assertEqual([], list(uploadfile.verify()))
+
+    def test_debian_installer_auto_approved(self):
+        # debian-installer uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        self.assertTrue(uploadfile.autoApprove())
+
+    def test_uefi_not_auto_approved(self):
+        # UEFI uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-uefi", "extra")
+        self.assertFalse(uploadfile.autoApprove())
 
 
 class PackageUploadFileTestCase(NascentUploadFileTestCase):
@@ -286,8 +317,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "data.tar.%s" % data_format,
             ]
         for member in members:
-            with open(os.path.join(tempdir, member), "w") as f:
-                pass
+            write_file(os.path.join(tempdir, member), "")
         retcode = subprocess.call(
             ["ar", "rc", filename] + members, cwd=tempdir)
         self.assertEqual(0, retcode)

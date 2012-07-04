@@ -104,7 +104,7 @@ class LibrarianClientTestCase(unittest.TestCase):
         client._getDatabaseName = lambda cur: 'wrong_database'
         try:
             client.addFile('sample.txt', 6, StringIO('sample'), 'text/plain')
-        except UploadFailed, e:
+        except UploadFailed as e:
             msg = e.args[0]
             self.failUnless(
                 msg.startswith('Server said: 400 Wrong database'),

@@ -31,6 +31,19 @@ Each record exposes a number of properties.
     self_link: u'http://.../ubuntu/warty/+upload/11'
     status: u'Done'
 
+getPackageUploads can filter on package names.
+
+    >>> uploads = webservice.named_get(
+    ...     warty['self_link'], 'getPackageUploads',
+    ...     name='mozilla').jsonBody()
+    >>> len(uploads['entries'])
+    1
+    >>> uploads = webservice.named_get(
+    ...     warty['self_link'], 'getPackageUploads',
+    ...     name='missing').jsonBody()
+    >>> len(uploads['entries'])
+    0
+
 
 Retrieving Static Translation Files
 ===================================

@@ -289,7 +289,7 @@ class DoctestReviewer:
             return
         try:
             tree = compiler.parse(code)
-        except (SyntaxError, IndentationError), exc:
+        except (SyntaxError, IndentationError) as exc:
             (lineno, offset_, line) = exc[1][1:]
             if line.endswith("\n"):
                 line = line[:-1]

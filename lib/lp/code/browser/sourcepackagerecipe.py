@@ -434,7 +434,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                 build = self.context.requestBuild(
                     data['archive'], self.user, distroseries, manual=True)
                 builds.append(build)
-            except BuildAlreadyPending, e:
+            except BuildAlreadyPending as e:
                 existing_message = informational.get("already_pending")
                 if existing_message:
                     new_message = existing_message[:-1] + (
@@ -636,7 +636,7 @@ class RecipeTextValidatorMixin:
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
-        except RecipeParseError, error:
+        except RecipeParseError as error:
             self.setFieldError('recipe_text', str(error))
 
     def error_handler(self, callable, *args, **kwargs):
@@ -646,15 +646,15 @@ class RecipeTextValidatorMixin:
             self.setFieldError(
                 'recipe_text',
                 'The recipe format version specified is not available.')
-        except ForbiddenInstructionError, e:
+        except ForbiddenInstructionError as e:
             self.setFieldError(
                 'recipe_text',
                 'The bzr-builder instruction "%s" is not permitted '
                 'here.' % e.instruction_name)
-        except NoSuchBranch, e:
+        except NoSuchBranch as e:
             self.setFieldError(
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
-        except PrivateBranchRecipe, e:
+        except PrivateBranchRecipe as e:
             self.setFieldError('recipe_text', str(e))
         raise ErrorHandled()
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Copy `DistroSeries` translations from its parent series."""
@@ -87,21 +87,18 @@ def copy_distroseries_translations(distroseries, txn, logger):
     copy_failed = False
 
     try:
-        # XXX JeroenVermeulen 2008-02-12: In python2.5 and up we'll be
-        # able to combine these two try blocks.  In 2.4, we can't.
-        try:
-            # Do the actual work.
-            distroseries.copyTranslationsFromParent(txn, logger)
-        except:
-            copy_failed = True
-            # Give us a fresh transaction for proper cleanup.
-            txn.abort()
-            txn.begin()
-            raise
+        # Do the actual work.
+        distroseries.copyTranslationsFromParent(txn, logger)
+    except:
+        copy_failed = True
+        # Give us a fresh transaction for proper cleanup.
+        txn.abort()
+        txn.begin()
+        raise
     finally:
         try:
             statekeeper.restore()
-        except Warning, message:
+        except Warning as message:
             logger.warning(message)
         except:
             logger.warning(
@@ -114,4 +111,3 @@ def copy_distroseries_translations(distroseries, txn, logger):
             # well.
             if not copy_failed:
                 raise
-

@@ -622,7 +622,7 @@ class LaunchpadRootNavigation(Navigation):
             target_url = canonical_url(branch)
             if trailing != '':
                 target_url = urlappend(target_url, trailing)
-        except (NoLinkedBranch), e:
+        except (NoLinkedBranch) as e:
             # A valid ICanHasLinkedBranch target exists but there's no
             # branch or it's not visible.
 
@@ -635,7 +635,7 @@ class LaunchpadRootNavigation(Navigation):
             self.request.response.addNotification(
                 "The target %s does not have a linked branch." % path)
         except (CannotHaveLinkedBranch, InvalidNamespace,
-                InvalidProductName, NotFoundError), e:
+                InvalidProductName, NotFoundError) as e:
             # If are aren't arriving at this invalid branch URL from another
             # page then we just raise a NotFoundError to generate a 404,
             # otherwise we end up in a bad recursion loop. The target url will

@@ -225,7 +225,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     logger.debug(
                         ' - build already pending for %s', series_name)
                     continue
-                except CannotUploadToArchive, e:
+                except CannotUploadToArchive as e:
                     # This will catch all PPA related issues -
                     # disabled, security, wrong pocket etc
                     logger.debug(

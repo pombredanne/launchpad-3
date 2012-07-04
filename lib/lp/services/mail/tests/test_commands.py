@@ -4,12 +4,11 @@
 from doctest import DocTestSuite
 import unittest
 
-from lp.testing import TestCase
-
-from lp.services.mail.commands import(
+from lp.services.mail.commands import (
     EmailCommand,
     EmailCommandCollection,
     )
+from lp.testing import TestCase
 
 
 class CommandOne(EmailCommand):
