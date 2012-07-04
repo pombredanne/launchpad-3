@@ -1147,6 +1147,22 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
             Unauthorized, ws_upload.overrideBinaries,
             changes=[{"component": "universe"}])
 
+    def test_overrideBinaries_disallows_new_archive(self):
+        # overrideBinaries refuses to override the component to something
+        # that requires a different archive.
+        partner = self.factory.makeComponent("partner")
+        self.factory.makeComponentSelection(
+            distroseries=self.distroseries, component=partner)
+        person = self.makeQueueAdmin([self.universe, partner])
+        upload, ws_upload = self.makeBinaryPackageUpload(
+            person, component=self.universe)
+
+        self.assertEqual(
+            "universe", ws_upload.getBinaryProperties()[0]["component"])
+        self.assertRaises(
+            BadRequest, ws_upload.overrideBinaries,
+            changes=[{"component": "partner"}])
+
     def test_overrideBinaries_without_name_changes_all_properties(self):
         # Running overrideBinaries with a change entry containing no "name"
         # field changes the corresponding properties of all binaries.

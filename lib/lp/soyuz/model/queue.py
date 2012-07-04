@@ -1156,6 +1156,17 @@ class PackageUpload(SQLBase):
 
         made_changes = False
         for build in self.builds:
+            # See if the new component requires a new archive on the build.
+            for component in new_components:
+                distroarchseries = build.build.distro_arch_series
+                distribution = distroarchseries.distroseries.distribution
+                new_archive = distribution.getArchiveByComponent(
+                    component.name)
+                if new_archive != build.build.archive:
+                    raise QueueInconsistentStateError(
+                        "Overriding component to '%s' failed because it "
+                        "would require a new archive." % component.name)
+
             for binarypackage in build.build.binarypackages:
                 change = changes_by_name.get(
                     binarypackage.name, changes_for_all)
