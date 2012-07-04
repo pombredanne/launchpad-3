@@ -175,3 +175,27 @@ class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
             product=self.product,
             )
         self.assertContentEqual(specifications, self.milestone.specifications)
+
+
+class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
+    """Milestones list specifications with some workitems targeted to it."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _test_milestones_on_target(self, **kwargs):
+        other_milestone = self.factory.makeMilestone(**kwargs)
+        target_milestone = self.factory.makeMilestone(**kwargs)
+        specification = self.factory.makeSpecification(
+            milestone=other_milestone, **kwargs)
+        workitem = self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=target_milestone)
+        self.assertEqual([specification],
+                         list(target_milestone.specifications))
+
+    def test_milestones_on_product(self):
+        self._test_milestones_on_target(
+            product=self.factory.makeProduct())
+
+    def test_milestones_on_distribution(self):
+        self._test_milestones_on_target(
+            distribution=self.factory.makeDistribution())
