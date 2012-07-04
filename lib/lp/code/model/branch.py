@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'get_branch_privacy_filter',
     ]
 
 from datetime import datetime
@@ -25,13 +26,16 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Coalesce,
     Count,
     Desc,
     Insert,
+    Join,
     NamedFunc,
     Not,
     Or,
     Select,
+    SQL,
     )
 from storm.locals import (
     AutoReload,
@@ -145,7 +149,11 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.model.accesspolicy import reconcile_access_for_artifact
+from lp.registry.model.accesspolicy import (
+    AccessPolicyGrant,
+    reconcile_access_for_artifact,
+    )
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
@@ -159,6 +167,10 @@ from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayIntersects,
     )
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
@@ -1267,13 +1279,12 @@ class Branch(SQLBase, BzrIdentityMixin):
             return True
         if user is None:
             return False
-        if user.inTeam(self.owner):
+        if user.inTeam(self.owner) or user_has_special_branch_access(user):
             return True
-        for subscriber in self.subscribers:
-            if user.inTeam(subscriber):
-                return True
-        return user_has_special_branch_access(user)
-
+        return not Store.of(self).find(
+            Branch, Branch.id == self.id,
+            get_branch_privacy_filter(user)).is_empty()
+        
     def visibleByUser(self, user, checked_branches=None):
         """See `IBranch`."""
         if checked_branches is None:
@@ -1518,3 +1529,32 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def get_branch_privacy_filter(user):
+    public_branch_filter = (
+        Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+
+    if user is None:
+        return [public_branch_filter]
+
+    artifact_grant_query = Coalesce(
+            ArrayIntersects(SQL('Branch.access_grants'),
+            Select(
+                ArrayAgg(TeamParticipation.teamID),
+                tables=TeamParticipation,
+                where=(TeamParticipation.person == user)
+            )), False)
+
+    policy_grant_query = SQL('Branch.access_policy').is_in(
+            Select(
+                AccessPolicyGrant.policy_id,
+                tables=(AccessPolicyGrant,
+                        Join(TeamParticipation,
+                            TeamParticipation.teamID ==
+                            AccessPolicyGrant.grantee_id)),
+                where=(TeamParticipation.person == user)
+            ))
+
+    return [
+        Or(public_branch_filter, artifact_grant_query, policy_grant_query)]
