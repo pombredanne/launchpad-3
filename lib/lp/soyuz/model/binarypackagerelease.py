@@ -133,6 +133,7 @@ class BinaryPackageRelease(SQLBase):
 
     @property
     def properties(self):
+        """See `IBinaryPackageRelease`."""
         return {
             "name": self.name,
             "version": self.version,

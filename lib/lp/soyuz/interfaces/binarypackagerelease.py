@@ -28,6 +28,7 @@ from zope.schema import (
     Bool,
     Date,
     Datetime,
+    Dict,
     Int,
     List,
     Object,
@@ -98,12 +99,8 @@ class IBinaryPackageRelease(Interface):
         description=_("True if there binary version was never published for "
                       "the architeture it was built for. False otherwise."))
 
-    def properties():
-        """Returns the properties of this binary.
-
-        For fast retrieval over the webservice, this is returned as a
-        dictionary.
-        """
+    # This is a dictionary for fast retrieval over the webservice.
+    properties = Dict(title=_("The properties of this binary."))
 
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build
