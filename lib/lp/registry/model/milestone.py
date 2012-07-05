@@ -61,10 +61,7 @@ from lp.registry.interfaces.milestone import (
 from lp.registry.model.productrelease import ProductRelease
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.webapp.sorting import expand_numbers
 
 
@@ -420,25 +417,33 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
 
     @property
     def specifications(self):
-        """See `IMilestone`."""
-        return Specification.select(
-            """milestone IN
-                (SELECT milestone.id
-                    FROM Milestone, Product
-                    WHERE Milestone.Product = Product.id
-                    AND Milestone.name = %s
-                    AND Product.project = %s)
-               OR Specification.id IN (
-                 SELECT specification
-                    FROM SpecificationWorkItem, Milestone, Product
-                    WHERE SpecificationWorkItem.milestone = Milestone.id
-                    AND Milestone.name = %s
-                    AND Milestone.product = Product.id
-                    AND Product.project = %s)
-            """ % sqlvalues(self.name, self.target, self.name, self.target),
-            orderBy=['-priority', 'definition_status',
-                     'implementation_status', 'title'],
-            prejoins=['assignee'])
+        """See `IMilestoneData`."""
+        from lp.registry.model.person import Person
+        from lp.registry.model.product import Product
+        store = Store.of(self.target)
+        origin = [
+            Specification,
+            LeftJoin(
+                SpecificationWorkItem,
+                SpecificationWorkItem.specification_id == Specification.id),
+            Join(Milestone,
+                 Or(Milestone.id == Specification.milestoneID,
+                    Milestone.id == SpecificationWorkItem.milestone_id)),
+            Join(Product, Product.id == Milestone.productID),
+            LeftJoin(Person, Specification.assigneeID == Person.id),
+            ]
+
+        results = store.using(*origin).find(
+            (Specification, Person),
+            Product.projectID == self.target.id,
+            Milestone.name == self.name)
+        results.config(distinct=True)
+        ordered_results = results.order_by(Desc(Specification.priority),
+                                           Specification.definition_status,
+                                           Specification.implementation_status,
+                                           Specification.title)
+        mapper = lambda row: row[0]
+        return DecoratedResultSet(ordered_results, mapper)
 
     @property
     def displayname(self):
