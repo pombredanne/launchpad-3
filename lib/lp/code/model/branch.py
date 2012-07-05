@@ -1288,7 +1288,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """
         return not getUtility(IAllBranches).withIds(self.id).visibleByUser(
             user).is_empty()
-        
+
     def visibleByUser(self, user, checked_branches=None):
         """See `IBranch`."""
         if checked_branches is None:
