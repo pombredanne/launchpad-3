@@ -16,6 +16,8 @@ __all__ = [
     'update_files_privacy',
     ]
 
+from itertools import repeat
+from operator import attrgetter
 import os
 import tempfile
 
@@ -26,6 +28,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.services.database.bulk import load_related
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.adapters.notification import notify
@@ -204,35 +207,62 @@ class CheckedCopy:
             return {'status': BuildSetStatus.NEEDSBUILD}
 
 
-def check_copy_permissions(person, archive, series, pocket,
-                           sourcepackagenames):
+def check_copy_permissions(person, archive, series, pocket, sources):
     """Check that `person` has permission to copy a package.
 
     :param person: User attempting the upload.
     :param archive: Destination `Archive`.
     :param series: Destination `DistroSeries`.
     :param pocket: Destination `Pocket`.
-    :param sourcepackagenames: Sequence of `SourcePackageName`s for the
+    :param sources: Sequence of `SourcePackagePublishingHistory`s for the
         packages to be copied.
     :raises CannotCopy: If the copy is not allowed.
     """
+    # Circular import.
+    from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
     if person is None:
         raise CannotCopy("Cannot check copy permissions (no requester).")
+
+    if len(sources) > 1:
+        # Bulk-load the data we'll need from each source publication.
+        load_related(SourcePackageRelease, sources, ["sourcepackagereleaseID"])
 
     # If there is a requester, check that he has upload permission into
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.
-    for spn in set(sourcepackagenames):
-        package = series.getSourcePackage(spn)
-        destination_component = package.latest_published_component
+    sourcepackagenames = [
+        source.sourcepackagerelease.sourcepackagename for source in sources]
+    if series is None:
+        # Use each source's series as the destination for that source.
+        series_iter = map(attrgetter("distroseries"), sources)
+    else:
+        series_iter = repeat(series)
+    for spn, dest_series in set(zip(sourcepackagenames, series_iter)):
+        # XXX cjwatson 20120630: We should do a proper ancestry check
+        # instead of simply querying for publications in any pocket.
+        # Unfortunately there are currently at least three different
+        # implementations of ancestry lookup:
+        # NascentUpload.getSourceAncestry,
+        # PackageUploadSource.getSourceAncestryForDiffs, and
+        # PublishingSet.getNearestAncestor, none of which is obviously
+        # correct here.  Instead of adding a fourth, we should consolidate
+        # these.
+        ancestries = archive.getPublishedSources(
+            name=spn.name, exact_match=True, status=active_publishing_status,
+            distroseries=dest_series)
+        try:
+            destination_component = ancestries[0].component
+        except IndexError:
+            destination_component = None
 
         # If destination_component is not None, make sure the person
         # has upload permission for this component.  Otherwise, any
         # upload permission on this archive will do.
         strict_component = destination_component is not None
         reason = archive.checkUpload(
-            person, series, spn, destination_component, pocket,
+            person, dest_series, spn, destination_component, pocket,
             strict_component=strict_component)
 
         if reason is not None:
@@ -463,8 +493,7 @@ class CopyChecker:
         """
         if check_permissions:
             check_copy_permissions(
-                person, self.archive, series, pocket,
-                [source.sourcepackagerelease.sourcepackagename])
+                person, self.archive, series, pocket, [source])
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(
@@ -618,7 +647,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         try:
             copy_checker.checkCopy(
                 source, destination_series, pocket, person, check_permissions)
-        except CannotCopy, reason:
+        except CannotCopy as reason:
             errors.append("%s (%s)" % (source.displayname, reason))
             continue
 
@@ -1036,7 +1065,7 @@ class PackageCopier(SoyuzScript):
                 self.options.include_binaries, allow_delayed_copies=False,
                 check_permissions=False, unembargo=self.options.unembargo,
                 logger=self.logger)
-        except CannotCopy, error:
+        except CannotCopy as error:
             self.logger.error(str(error))
             return []
 

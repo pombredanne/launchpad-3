@@ -58,7 +58,7 @@ class LpQueryDistro(LaunchpadScript):
             self.location = build_package_location(
                 distribution_name=self.options.distribution_name,
                 suite=self.options.suite)
-        except PackageLocationError, err:
+        except PackageLocationError as err:
             raise LaunchpadScriptFailure(err)
 
     def defaultPresenter(self, result):

@@ -569,7 +569,7 @@ class InitializeDistroSeries:
                                    list(self.distroseries.architectures))
                                 rebuilds.extend(builds)
                             self._rescore_rebuilds(rebuilds)
-                    except CannotCopy, error:
+                    except CannotCopy as error:
                         raise InitializationError(error)
 
     def _rescore_rebuilds(self, builds):

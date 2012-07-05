@@ -246,7 +246,7 @@ class ClaimTeamView(
         try:
             self.claimed_profile.convertToTeam(
                 team_owner=self.context.requester)
-        except AlreadyConvertedException, e:
+        except AlreadyConvertedException as e:
             self.request.response.addErrorNotification(e)
             self.context.consume()
             return
@@ -316,7 +316,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
         try:
             signature = getUtility(IGPGHandler).getVerifiedSignature(
                 signedcontent.encode('ASCII'))
-        except (GPGVerificationError, UnicodeEncodeError), e:
+        except (GPGVerificationError, UnicodeEncodeError) as e:
             self.addError(_(
                 'Launchpad could not verify your signature: ${err}',
                 mapping=dict(err=str(e))))
@@ -401,7 +401,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 'YOU</kdb>). Try later or <a href="${url}/+editpgpkeys"> '
                 'cancel your request</a>.',
                 mapping=dict(fingerprint=fingerprint, url=person_url))))
-        except GPGKeyRevoked, e:
+        except GPGKeyRevoked as e:
             # If key is globally revoked, skip the import and consume the
             # token.
             self.addError(
@@ -412,7 +412,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 'process to <a href="${url}/+editpgpkeys">find and '
                 'import</a> the new key.',
                 mapping=dict(key=e.key.keyid, url=person_url))))
-        except GPGKeyExpired, e:
+        except GPGKeyExpired as e:
             self.addError(
                         structured(_(
                 'The key ${key} cannot be validated because it has expired. '

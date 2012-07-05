@@ -454,7 +454,7 @@ class BaseTranslationView(LaunchpadView):
         """
         try:
             self._storeTranslations(potmsgset)
-        except GettextValidationError, e:
+        except GettextValidationError as e:
             return unicode(e)
         except TranslationConflict:
             # The translations are demoted to suggestions, but they may

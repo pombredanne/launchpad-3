@@ -131,7 +131,7 @@ class SoyuzScript(LaunchpadScript):
         try:
             desired_component = getUtility(IComponentSet)[
                 self.options.component]
-        except NotFoundError, err:
+        except NotFoundError as err:
             raise SoyuzScriptError(err)
 
         if currently_published.component != desired_component:
@@ -253,7 +253,7 @@ class SoyuzScript(LaunchpadScript):
         try:
             self.setupLocation()
             self.mainTask()
-        except SoyuzScriptError, err:
+        except SoyuzScriptError as err:
             raise LaunchpadScriptFailure(err)
 
         self.finishProcedure()

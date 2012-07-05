@@ -101,11 +101,11 @@ class CustomUpload:
 
         self.tmpdir = None
 
-    def process(self, archive_root, tarfile_path, distroseries):
+    def process(self, pubconf, tarfile_path, distroseries):
         """Process the upload and install it into the archive."""
         self.tarfile_path = tarfile_path
         try:
-            self.setTargetDirectory(archive_root, tarfile_path, distroseries)
+            self.setTargetDirectory(pubconf, tarfile_path, distroseries)
             self.checkForConflicts()
             self.extract()
             self.installFiles()
@@ -113,7 +113,15 @@ class CustomUpload:
         finally:
             self.cleanup()
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+    @staticmethod
+    def parsePath(tarfile_path):
+        """Parse tarfile_path, returning its useful components.
+
+        :raises ValueError: If tarfile_path is incorrectly formed.
+        """
+        raise NotImplementedError
+
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         """Set self.targetdir based on parameters.
 
         This should also set self.version and self.arch (if applicable) as a
@@ -206,7 +214,7 @@ class CustomUpload:
                     tar.extract(tarinfo, self.tmpdir)
             finally:
                 tar.close()
-        except tarfile.TarError, exc:
+        except tarfile.TarError as exc:
             raise CustomUploadTarballTarError(self.tarfile_path, exc)
 
     def shouldInstall(self, filename):

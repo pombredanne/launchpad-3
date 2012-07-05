@@ -22,11 +22,18 @@ from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 
 
+class FakeConfig:
+    """A fake publisher configuration."""
+    def __init__(self, archiveroot):
+        self.archiveroot = archiveroot
+
+
 class TestDistUpgrader(TestCase):
 
     def setUp(self):
         super(TestDistUpgrader, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
+        self.pubconf = FakeConfig(self.temp_dir)
         self.suite = "distroseries"
         # CustomUpload.installFiles requires a umask of 022.
         old_umask = os.umask(022)
@@ -41,7 +48,7 @@ class TestDistUpgrader(TestCase):
     def process(self):
         self.archive.close()
         self.buffer.close()
-        process_dist_upgrader(self.temp_dir, self.path, self.suite)
+        process_dist_upgrader(self.pubconf, self.path, self.suite)
 
     def getUpgraderPath(self):
         return os.path.join(

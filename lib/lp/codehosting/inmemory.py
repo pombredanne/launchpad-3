@@ -701,9 +701,9 @@ class FakeCodehosting:
         registrant = self._person_set.get(requester_id)
         try:
             return self._createBranch(registrant, escaped_path)
-        except LaunchpadFault, e:
+        except LaunchpadFault as e:
             return e
-        except LaunchpadValidationError, e:
+        except LaunchpadValidationError as e:
             msg = e.args[0]
             if isinstance(msg, unicode):
                 msg = msg.encode('utf-8')

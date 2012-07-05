@@ -157,22 +157,29 @@
                 distroseries
                 pocket
                 changesfile
+                changes_file_url
                 signing_key
                 archive
                 sources
+                sourceFileUrls
                 builds
+                binaryFileUrls
                 customfiles
                 custom_file_urls
+                customFileUrls
+                getBinaryProperties
                 date_created
                 sourcepackagerelease
                 component_name
                 concrete_package_copy_job
                 contains_source
                 contains_build
+                contains_copy
                 contains_translation
                 contains_installer
                 contains_upgrader
                 contains_ddtp
+                contains_uefi
                 displayname
                 displayarchs
                 displayversion

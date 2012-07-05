@@ -71,7 +71,7 @@ def get_size(path):
     """Return the size of a file, or -1 if it doesn't exist."""
     try:
         return os.stat(path).st_size
-    except OSError, error:
+    except OSError as error:
         if error.errno == errno.ENOENT:
             # Return -1 when the file does not exist, so it always
             # compares less than an existing but empty file.
@@ -214,7 +214,7 @@ def collect_archive_message_ids(team_name):
             archived_files = [file_name
                               for file_name in os.listdir(mhonarc_path)
                               if file_name.endswith('.html')]
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ENOENT:
                 raise
             # Sleep and try again.

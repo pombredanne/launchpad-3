@@ -388,9 +388,9 @@ class NascentUpload:
         """
         try:
             callable()
-        except UploadError, error:
+        except UploadError as error:
             self.reject("".join(error.args))
-        except UploadWarning, error:
+        except UploadWarning as error:
             self.warn("".join(error.args))
 
     def run_and_collect_errors(self, callable):
@@ -856,14 +856,14 @@ class NascentUpload:
 
         except (SystemExit, KeyboardInterrupt):
             raise
-        except QueueInconsistentStateError, e:
+        except QueueInconsistentStateError as e:
             # A QueueInconsistentStateError is expected if the rejection
             # is a routine rejection due to a bad package upload.
             # Log at info level so LaunchpadCronScript doesn't generate an
             # OOPS.
             func = self.logger.info
             return self._reject_with_logging(e, notify, func)
-        except Exception, e:
+        except Exception as e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
@@ -953,7 +953,7 @@ class NascentUpload:
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
-            ancestry = package_upload_source.getSourceAncestry()
+            ancestry = package_upload_source.getSourceAncestryForDiffs()
             if ancestry is not None:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
                 diff = to_sourcepackagerelease.requestDiffTo(

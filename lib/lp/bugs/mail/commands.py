@@ -433,7 +433,7 @@ class DuplicateEmailCommand(EmailCommand):
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
-        except ValidationError, error:
+        except ValidationError as error:
             raise EmailProcessingError(error.doc())
 
         context_snapshot = Snapshot(
@@ -592,7 +592,7 @@ class AffectsEmailCommand(EmailCommand):
                 stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
-        except BugTargetNotFound, error:
+        except BugTargetNotFound as error:
             raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
 

@@ -765,9 +765,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -9634,19 +9631,6 @@ INSERT INTO specificationdependency (id, specification, dependency, date_created
 
 
 ALTER TABLE specificationdependency ENABLE TRIGGER ALL;
-
-
-ALTER TABLE specificationfeedback DISABLE TRIGGER ALL;
-
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (1, 3, 13, 16, 'Please make sure this reflects your implementation plan.', '2006-10-16 18:31:52.861885');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (2, 4, 16, 1, 'Please confirm this meets your requirements.', '2006-10-16 18:31:52.864486');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (4, 6, 13, 1, 'sckj hsdkjhskdhdhsdkjf hsdf', '2006-10-16 18:31:52.865147');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (5, 6, 1, 12, 'sfdjgdlfjgdlfjgdf glkdjf gldkfj glkdfj glkdjf', '2006-10-16 18:31:52.865733');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (8, 3, 1, 1, 'foo bar baz xfhds fksd hfskdf slkd fksdhf sdkjhfksdf sdkfjh skdjfhsdkj fskjdhfj.d kjsdhfkjhds fs kjshdfkj.', '2006-10-16 18:31:52.866321');
-INSERT INTO specificationfeedback (id, specification, reviewer, requester, queuemsg, date_created) VALUES (9, 3, 1, 12, 'sdfjlksd jflsjdflskjd flksjd fksdjf lskjd flksdfslds lskjflkdss slkd slkfj sljdls kjds flslkdjfls.', '2006-10-16 18:31:52.866953');
-
-
-ALTER TABLE specificationfeedback ENABLE TRIGGER ALL;
 
 
 ALTER TABLE specificationmessage DISABLE TRIGGER ALL;

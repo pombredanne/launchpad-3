@@ -229,7 +229,7 @@ class PropertyFile:
             try:
                 string = line.encode('raw-unicode_escape')
                 line = string.decode('unicode_escape')
-            except UnicodeDecodeError, exception:
+            except UnicodeDecodeError as exception:
                 raise TranslationFormatInvalidInputError(
                     filename=self.filename, line_number=line_num,
                     message=str(exception))
