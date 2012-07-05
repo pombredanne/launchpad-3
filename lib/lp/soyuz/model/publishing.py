@@ -105,6 +105,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease,
@@ -502,7 +503,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getBuiltBinaries(self, want_files=False):
         """See `ISourcePackagePublishingHistory`."""
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import DistroArchSeries
         binary_publications = list(Store.of(self).find(
             BinaryPackagePublishingHistory,
@@ -1567,10 +1567,8 @@ class PublishingSet:
     def getBuildsForSourceIds(self, source_publication_ids, archive=None,
                               build_states=None, need_build_farm_job=False):
         """See `IPublishingSet`."""
-        # Import Build and DistroArchSeries locally to avoid circular
-        # imports, since that Build uses SourcePackagePublishingHistory
-        # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        # Import DistroArchSeries locally to avoid circular imports, since
+        # DistroArchSeries uses BinaryPackagePublishingHistory.
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1697,11 +1695,8 @@ class PublishingSet:
     def _getSourceBinaryJoinForSources(self, source_publication_ids,
         active_binaries_only=True):
         """Return the join linking sources with binaries."""
-        # Import Build and DistroArchSeries locally
-        # to avoid circular imports, since Build uses
-        # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
-        # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        # Import DistroArchSeries locally to avoid circular imports, since
+        # DistroArchSeries uses BinaryPackagePublishingHistory.
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1736,11 +1731,8 @@ class PublishingSet:
                                        one_or_more_source_publications,
                                        build_states=None):
         """See `IPublishingSet`."""
-        # Import Build, BinaryPackageRelease and DistroArchSeries locally
-        # to avoid circular imports, since Build uses
-        # SourcePackagePublishingHistory and DistroArchSeries uses
-        # BinaryPackagePublishingHistory.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        # Import DistroArchSeries locally to avoid circular imports, since
+        # DistroArchSeries uses BinaryPackagePublishingHistory.
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1776,10 +1768,6 @@ class PublishingSet:
 
     def getBinaryFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Import Build locally to avoid circular imports, since that
-        # Build already imports SourcePackagePublishingHistory.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
