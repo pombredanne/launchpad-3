@@ -2093,7 +2093,6 @@ def get_current_source_releases(distro_source_packagenames):
     # This may need tuning: its possible that grouping by the common
     # archives may yield better efficiency: the current code is
     # just a direct push-down of the previous in-python lookup to SQL.
-    from lp.registry.model.distribution import Distribution
     from lp.registry.model.distroseries import DistroSeries
     from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
@@ -2113,27 +2112,19 @@ def get_current_source_releases(distro_source_packagenames):
     combined_clause = Or(*series_clauses)
 
     releases = IStore(SourcePackageRelease).find(
-        (SourcePackageRelease, Distribution.id),
-        In(
-            Row(SourcePackageRelease.id, Distribution.id),
-            Select(
-                (SourcePackageRelease.id, DistroSeries.distributionID),
-                tables=[
-                    SourcePackageRelease, SourcePackagePublishingHistory,
-                    DistroSeries],
-                where=And(
-                    SourcePackagePublishingHistory.sourcepackagereleaseID
-                        == SourcePackageRelease.id,
-                    SourcePackagePublishingHistory.distroseriesID
-                        == DistroSeries.id,
-                    SourcePackagePublishingHistory.status.is_in(
-                        active_publishing_status),
-                    combined_clause),
-                distinct=(
-                    SourcePackageRelease.sourcepackagenameID,
-                    DistroSeries.distributionID),
-                order_by=(
-                    SourcePackageRelease.sourcepackagenameID,
-                    DistroSeries.distributionID,
-                    Desc(SourcePackagePublishingHistory.id)))))
+        (SourcePackageRelease, DistroSeries.distributionID),
+        SourcePackagePublishingHistory.sourcepackagereleaseID
+            == SourcePackageRelease.id,
+        SourcePackagePublishingHistory.distroseriesID
+            == DistroSeries.id,
+        SourcePackagePublishingHistory.status.is_in(
+            active_publishing_status),
+        combined_clause).config(
+            distinct=(
+                SourcePackageRelease.sourcepackagenameID,
+                DistroSeries.distributionID)
+        ).order_by(
+            SourcePackageRelease.sourcepackagenameID,
+            DistroSeries.distributionID,
+            Desc(SourcePackagePublishingHistory.id))
     return releases
