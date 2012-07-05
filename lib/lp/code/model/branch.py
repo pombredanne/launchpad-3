@@ -1280,20 +1280,12 @@ class Branch(SQLBase, BzrIdentityMixin):
         job.celeryRunOnCommit()
         return job
 
-    def _checkBranchVisibleByUser(self, user):
-        """Is *this* branch visible by the user.
-
-        This method doesn't check the stacked upon branch.  That is handled by
-        the `visibleByUser` method.
-        """
-        return not getUtility(IAllBranches).withIds(self.id).visibleByUser(
-            user).is_empty()
-
     def visibleByUser(self, user, checked_branches=None):
         """See `IBranch`."""
         if checked_branches is None:
             checked_branches = []
-        can_access = self._checkBranchVisibleByUser(user)
+        can_access = not getUtility(IAllBranches).withIds(
+            self.id).visibleByUser(user).is_empty()
         if can_access and self.stacked_on is not None:
             checked_branches.append(self)
             if self.stacked_on not in checked_branches:
