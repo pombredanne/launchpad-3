@@ -2101,7 +2101,7 @@ def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
     series_clauses = []
     for context, package_names in context_sourcepackagenames.items():
         clause = And(
-            SourcePackageRelease.sourcepackagenameID.is_in(
+            SourcePackagePublishingHistory.sourcepackagenameID.is_in(
                 map(operator.attrgetter('id'), package_names)),
             SourcePackagePublishingHistory.archiveID.is_in(
                 archive_ids_func(context)),
