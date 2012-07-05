@@ -109,7 +109,6 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
-from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -453,6 +452,8 @@ class PackageUpload(SQLBase):
 
         It does not close bugs for PPA sources.
         """
+        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
+
         if self.isPPA():
             debug(logger, "Not closing bugs for PPA source.")
             return
@@ -562,6 +563,8 @@ class PackageUpload(SQLBase):
         This is the normal case, for uploads that are not delayed and are not
         attached to package copy jobs.
         """
+        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
+
         assert self.package_copy_job is None, (
             "This method is not for copy-job uploads.")
         assert not self.is_delayed_copy, (
