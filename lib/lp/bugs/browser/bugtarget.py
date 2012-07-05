@@ -370,13 +370,7 @@ class FileBugReportingGuidelines(LaunchpadFormView):
 
     @cachedproperty
     def is_bug_supervisor(self):
-        """ Return True if the logged in user is a bug supervisor.
-
-        If the main context doesn't have a bug supervisor set, return True if
-        the user is a maintainer.
-        This check allows authorised users to set the specific information type
-        when filing a bug.
-        """
+        """ Return True if the logged in user is a bug supervisor."""
         context = self.getMainContext()
         return BugTask.userHasBugSupervisorPrivilegesContext(
             context, self.user)
