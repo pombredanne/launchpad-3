@@ -74,7 +74,6 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.soyuz.adapters.notification import notify
-from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
@@ -1024,6 +1023,8 @@ class PackageUpload(SQLBase):
     def _overrideSyncSource(self, new_component, new_section,
                             allowed_components):
         """Override source on the upload's `PackageCopyJob`, if any."""
+        from lp.soyuz.adapters.overrides import SourceOverride
+
         if self.package_copy_job is None:
             return False
 
