@@ -1034,6 +1034,18 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in upload.sourcepackagerelease.files]
         self.assertContentEqual(source_file_urls, ws_source_file_urls)
 
+    def assertBinaryPropertiesMatch(self, arch, bpr, ws_binary):
+        expected_binary = {
+            "is_new": True,
+            "name": bpr.name,
+            "version": bpr.version,
+            "architecture": arch,
+            "component": "universe",
+            "section": bpr.section.name,
+            "priority": bpr.priority.name,
+            }
+        self.assertEqual(expected_binary, ws_binary)
+
     def test_binary_info(self):
         # API clients can inspect properties of binary uploads.
         person = self.makeQueueAdmin([self.universe])
@@ -1047,19 +1059,8 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertTrue(ws_upload.contains_build)
         ws_binaries = ws_upload.getBinaryProperties()
         self.assertEqual(len(list(bprs)), len(ws_binaries))
-        for bpr, binary in zip(bprs, ws_binaries):
-            expected_binary = {
-                "is_new": True,
-                "name": bpr.name,
-                "version": bpr.version,
-                "architecture": arch,
-                "component": "universe",
-                "section": bpr.section.name,
-                "priority": bpr.priority.name,
-                }
-            self.assertContentEqual(expected_binary.keys(), binary.keys())
-            for key, value in expected_binary.items():
-                self.assertEqual(value, binary[key])
+        for bpr, ws_binary in zip(bprs, ws_binaries):
+            self.assertBinaryPropertiesMatch(arch, bpr, ws_binary)
 
     def test_binary_fetch(self):
         # API clients can fetch files attached to binary uploads.
@@ -1091,6 +1092,13 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
             "debian-installer-images_1.tar.gz", ws_upload.display_name)
         self.assertEqual("-", ws_upload.display_version)
         self.assertEqual("raw-installer", ws_upload.display_arches)
+        ws_binaries = ws_upload.getBinaryProperties()
+        self.assertEqual(1, len(ws_binaries))
+        expected_binary = {
+            "name": "debian-installer-images_1.tar.gz",
+            "customformat": "raw-installer",
+            }
+        self.assertEqual(expected_binary, ws_binaries[0])
 
     def test_custom_fetch(self):
         # API clients can fetch files attached to custom uploads.
@@ -1106,3 +1114,32 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                     file.libraryfilealias, upload.archive).http_url
                 for file in upload.customfiles]
         self.assertContentEqual(custom_file_urls, ws_custom_file_urls)
+
+    def test_binary_and_custom_info(self):
+        # API clients can inspect properties of uploads containing both
+        # ordinary binaries and custom upload files.
+        person = self.makeQueueAdmin([self.universe])
+        upload, _ = self.makeBinaryPackageUpload(
+            person, binarypackagename="foo", component=self.universe)
+        with person_logged_in(person):
+            arch = upload.builds[0].build.arch_tag
+            bprs = upload.builds[0].build.binarypackages
+            version = bprs[0].version
+            lfa = self.factory.makeLibraryFileAlias(
+                filename="foo_%s_%s_translations.tar.gz" % (version, arch))
+            upload.addCustom(
+                lfa, PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
+        transaction.commit()
+        ws_upload = self.load(upload, person)
+
+        self.assertFalse(ws_upload.contains_source)
+        self.assertTrue(ws_upload.contains_build)
+        ws_binaries = ws_upload.getBinaryProperties()
+        self.assertEqual(len(list(bprs)) + 1, len(ws_binaries))
+        for bpr, ws_binary in zip(bprs, ws_binaries):
+            self.assertBinaryPropertiesMatch(arch, bpr, ws_binary)
+        expected_custom = {
+            "name": "foo_%s_%s_translations.tar.gz" % (version, arch),
+            "customformat": "raw-translations",
+            }
+        self.assertEqual(expected_custom, ws_binaries[-1])
