@@ -1475,6 +1475,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
+        unsafe_proposal.merged_revno=merged_revno
         if preview_diff is not None:
             unsafe_proposal.preview_diff = preview_diff
         if (set_state is None or
@@ -1502,8 +1503,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             unsafe_proposal.resubmit(proposal.registrant)
         else:
             raise AssertionError('Unknown status: %s' % set_state)
-        if merged_revno is not None:
-            unsafe_proposal.merged_revno=merged_revno
 
         return proposal
 
