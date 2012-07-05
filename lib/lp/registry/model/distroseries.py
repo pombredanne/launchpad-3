@@ -15,7 +15,6 @@ __all__ = [
 import collections
 from cStringIO import StringIO
 import logging
-from operator import attrgetter
 
 import apt_pkg
 from sqlobject import (
@@ -39,7 +38,6 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
@@ -1776,11 +1774,9 @@ class DistroSeriesSet:
             [], SourcePackagePublishingHistory.distroseriesID)
         result = {}
         for spr, series_id in releases:
-            series = IStore(DistroSeries).get(DistroSeries, series_id)
-            sourcepackage = series.getSourcePackage(
-                spr.sourcepackagename)
-            result[sourcepackage] = DistroSeriesSourcePackageRelease(
-                series, spr)
+            series = getUtility(IDistroSeriesSet).get(series_id)
+            result[series.getSourcePackage(spr.sourcepackagename)] = (
+                DistroSeriesSourcePackageRelease(series, spr))
         return result
 
     def search(self, distribution=None, isreleased=None, orderBy=None):

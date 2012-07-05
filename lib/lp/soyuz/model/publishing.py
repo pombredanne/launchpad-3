@@ -32,11 +32,8 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
-    In,
     LeftJoin,
     Or,
-    Row,
-    Select,
     Sum,
     )
 from storm.store import Store
@@ -2088,8 +2085,14 @@ class PublishingSet:
             return None
 
 
-def get_current_source_releases(distro_source_packagenames, archive_ids_func,
+def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
                                 package_clause_func, extra_clauses, key_col):
+    """Get the current source package releases in a context.
+
+    You probably don't want to use this directly; try
+    DistroSeriesSet.getCurrentSourceReleases or
+    istribution.getCurrentSourceReleases instead.
+    """
     # Builds one query for all the distro_source_packagenames.
     # This may need tuning: its possible that grouping by the common
     # archives may yield better efficiency: the current code is
@@ -2097,14 +2100,14 @@ def get_current_source_releases(distro_source_packagenames, archive_ids_func,
     from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
     series_clauses = []
-    for distro, package_names in distro_source_packagenames.items():
+    for context, package_names in context_sourcepackagenames.items():
         source_package_ids = map(operator.attrgetter('id'), package_names)
         clause = And(
             SourcePackageRelease.sourcepackagenameID.is_in(
                 source_package_ids),
             SourcePackagePublishingHistory.archiveID.is_in(
-                archive_ids_func(distro)),
-            package_clause_func(distro),
+                archive_ids_func(context)),
+            package_clause_func(context),
             )
         series_clauses.append(clause)
     if not len(series_clauses):

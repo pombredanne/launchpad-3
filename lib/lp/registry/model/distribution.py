@@ -1767,12 +1767,10 @@ class DistributionSet:
                 == DistroSeries.id],
             DistroSeries.distributionID)
         result = {}
-        for sp_release, distro_id in releases:
-            distro = IStore(Distribution).get(Distribution, distro_id)
-            sourcepackage = distro.getSourcePackage(
-                sp_release.sourcepackagename)
-            result[sourcepackage] = DistributionSourcePackageRelease(
-                distro, sp_release)
+        for spr, distro_id in releases:
+            distro = getUtility(IDistributionSet).get(distro_id)
+            result[distro.getSourcePackage(spr.sourcepackagename)] = (
+                DistributionSourcePackageRelease(distro, spr))
         return result
 
     def getDerivedDistributions(self):
