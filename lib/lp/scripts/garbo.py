@@ -49,7 +49,6 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branch import Branch
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -57,11 +56,6 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
-from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactGrantSource,
-    IAccessArtifactSource,
-    )
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database import postgresql
@@ -1039,46 +1033,6 @@ class BugTaskFlattener(TunableLoop):
         transaction.commit()
 
 
-class PopulateBranchAccessArtifactGrant(TunableLoop):
-
-    maximum_chunk_size = 5000
-    
-    def __init__(self, log, abort_time=None):
-        super(PopulateBranchAccessArtifactGrant, self).__init__(
-            log, abort_time)
-        self.memcache_key = '%s:branch-populate-aag' % config.instance_name
-        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
-        self.start_at = watermark or 0
-
-    def findBranches(self):
-        return IMasterStore(Branch).find(
-            Branch,
-            Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES),
-            Branch.id >= self.start_at).order_by(Branch.id)
-
-    def isDone(self):
-        return self.findBranches().is_empty()
-
-    def __call__(self, chunk_size):
-        branches = list(self.findBranches()[:chunk_size])
-        artifacts = getUtility(IAccessArtifactSource).ensure(branches)
-        branch_to_artifact = dict(
-            (artifact.branch_id, artifact) for artifact in artifacts)
-        grants = []
-        for branch in branches:
-            artifact = branch_to_artifact[branch.id]
-            grants.extend(
-                [(artifact, branchsub.person, branchsub.subscribed_by)
-                for branchsub in branch.subscriptions])
-        getUtility(IAccessArtifactGrantSource).grant(grants)
-        self.start_at = branches[-1].id + 1
-        result = getUtility(IMemcacheClient).set(
-            self.memcache_key, self.start_at)
-        if not result:
-            self.log.warning('Failed to set start_at in memcache.')
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1333,7 +1287,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         BugHeatUpdater,
         BugTaskFlattener,
-        PopulateBranchAccessArtifactGrant,
         ]
     experimental_tunable_loops = []
 
