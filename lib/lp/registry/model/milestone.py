@@ -197,12 +197,15 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         store = Store.of(self)
         origin = [
             Specification,
+            Join(SpecificationWorkItem,
+                 SpecificationWorkItem.specification_id == Specification.id),
             LeftJoin(Person, Specification.assigneeID == Person.id),
             ]
 
         results = store.using(*origin).find(
             (Specification, Person),
-            Specification.milestoneID == self.id)
+            Or(Specification.milestoneID == self.id,
+               SpecificationWorkItem.milestone_id == self.id))
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
                                            Specification.implementation_status,
