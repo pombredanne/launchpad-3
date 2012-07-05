@@ -23,15 +23,18 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
-from storm.info import ClassAlias
-from storm.locals import (
+from storm.expr import (
     And,
     Desc,
+    In,
     Join,
     Max,
     Or,
+    Row,
+    Select,
     SQL,
     )
+from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
@@ -1771,40 +1774,43 @@ class DistributionSet:
         distro_lookup = {}
         for distro, package_names in distro_source_packagenames.items():
             source_package_ids = map(attrgetter('id'), package_names)
-            # all_distro_archive_ids is just a list of ints, but it gets
-            # wrapped anyway - and sqlvalues goes boom.
-            archives = removeSecurityProxy(
-                distro.all_distro_archive_ids)
-            clause = """(spr.sourcepackagename IN %s AND
-                spph.archive IN %s AND
-                ds.distribution = %s)
-                """ % sqlvalues(source_package_ids, archives, distro.id)
+            clause = And(
+                SourcePackageRelease.sourcepackagenameID.is_in(
+                    source_package_ids),
+                SourcePackagePublishingHistory.archiveID.is_in(
+                    distro.all_distro_archive_ids),
+                DistroSeries.distribution == distro,
+                )
             series_clauses.append(clause)
             distro_lookup[distro.id] = distro
         if not len(series_clauses):
             return {}
-        combined_clause = "(" + " OR ".join(series_clauses) + ")"
+        combined_clause = Or(*series_clauses)
 
         releases = IStore(SourcePackageRelease).find(
-            (SourcePackageRelease, Distribution.id), SQL("""
-                (SourcePackageRelease.id, Distribution.id) IN (
-                    SELECT DISTINCT ON (
-                        spr.sourcepackagename, ds.distribution)
-                        spr.id, ds.distribution
-                    FROM
-                        SourcePackageRelease AS spr,
-                        SourcePackagePublishingHistory AS spph,
-                        DistroSeries AS ds
-                    WHERE
-                        spph.sourcepackagerelease = spr.id
-                        AND spph.distroseries = ds.id
-                        AND spph.status IN %s
-                        AND %s
-                    ORDER BY
-                        spr.sourcepackagename, ds.distribution, spph.id DESC
-                    )
-                """
-                % (sqlvalues(active_publishing_status) + (combined_clause,))))
+            (SourcePackageRelease, Distribution.id),
+            In(
+                Row(SourcePackageRelease.id, Distribution.id),
+                Select(
+                    (SourcePackageRelease.id, DistroSeries.distributionID),
+                    tables=[
+                        SourcePackageRelease, SourcePackagePublishingHistory,
+                        DistroSeries],
+                    where=And(
+                        SourcePackagePublishingHistory.sourcepackagereleaseID
+                            == SourcePackageRelease.id,
+                        SourcePackagePublishingHistory.distroseriesID
+                            == DistroSeries.id,
+                        SourcePackagePublishingHistory.status.is_in(
+                            active_publishing_status),
+                        combined_clause),
+                    distinct=(
+                        SourcePackageRelease.sourcepackagenameID,
+                        DistroSeries.distributionID),
+                    order_by=(
+                        SourcePackageRelease.sourcepackagenameID,
+                        DistroSeries.distributionID,
+                        Desc(SourcePackagePublishingHistory.id)))))
         result = {}
         for sp_release, distro_id in releases:
             distro = distro_lookup[distro_id]
