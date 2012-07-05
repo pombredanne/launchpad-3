@@ -968,6 +968,19 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
+    def canBePrivate(user):
+        """Can this branch be private?
+
+        A branch can be made private if:
+        - the branch has a visibility policy which allows it
+        - the user is an admin or bzr expert
+        - the branch is owned by a private team
+          (The branch is already implicitly private)
+        - the project has privacy enabled and the user is in a project role
+        - the branch is linked to a embargoed security bug the user can access
+        - the branch is linked to a private bug the user can access
+        """
+
 
 class IBranchEditableAttributes(Interface):
     """IBranch attributes that can be edited.

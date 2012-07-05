@@ -110,7 +110,11 @@ from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
@@ -2502,6 +2506,86 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertEqual(
             InformationType.EMBARGOEDSECURITY,
             get_policies_for_artifact(branch)[0].type)
+
+
+class TestBranchCanBePrivate(TestCaseWithFactory):
+    """Test IBranch.canBePrivate."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user as we aren't checking edit permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+
+    def test_arbitary_branch(self):
+        # By default branches cannot be private.
+        branch = self.factory.makeBranch()
+        self.assertFalse(branch.canBePrivate(branch.owner))
+
+    def test_admin(self):
+        # Admins can make a branch private.
+        branch = self.factory.makeBranch()
+        admin = getUtility(ILaunchpadCelebrities).admin
+        self.assertTrue(branch.canBePrivate(admin))
+
+    def test_visibility_policy_private(self):
+        # Users with a suitable  visibility policy  can make a branch private.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        product = self.factory.makeProduct()
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        branch = self.factory.makeBranch(product=product, owner=team)
+        self.assertTrue(branch.canBePrivate(team))
+
+    def test_private_owner(self):
+        # Private team owners can make a branch private.
+        team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        branch = self.factory.makeBranch(owner=team)
+        self.assertTrue(branch.canBePrivate(team))
+
+    def test_project_owner(self):
+        # Pillar owners can make a branch private.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        branch = self.factory.makeBranch(product=product)
+        self.assertTrue(branch.canBePrivate(owner))
+
+    def test_project_driver(self):
+        # Pillar drivers can make a branch private.
+        driver = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=driver)
+        branch = self.factory.makeBranch(product=product)
+        self.assertTrue(branch.canBePrivate(driver))
+
+    def test_project_bug_supervisor(self):
+        # Pillar bug supervisors can make a branch private.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        branch = self.factory.makeBranch(product=product)
+        self.assertTrue(branch.canBePrivate(bug_supervisor))
+
+    def test_linked_private_bug(self):
+        # Users with access to linked private bugs can make a branch private.
+        for info_type in PRIVATE_INFORMATION_TYPES:
+            user = self.factory.makePerson()
+            bug = self.factory.makeBug(
+                owner=user, information_type=info_type)
+            branch = self.factory.makeBranch()
+            removeSecurityProxy(bug).linkBranch(branch, user)
+            self.assertTrue(branch.canBePrivate(user))
+
+    def test_linked_public_bug(self):
+        # Users with access to linked public bugs cannot make a branch private.
+        for info_type in PUBLIC_INFORMATION_TYPES:
+            user = self.factory.makePerson()
+            bug = self.factory.makeBug(
+                owner=user, information_type=info_type)
+            branch = self.factory.makeBranch()
+            removeSecurityProxy(bug).linkBranch(branch, user)
+            self.assertFalse(branch.canBePrivate(user))
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):

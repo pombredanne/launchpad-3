@@ -36,7 +36,10 @@ from lp.code.enums import (
     BranchVisibilityRule,
     )
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -946,7 +949,23 @@ class TestBranchEditView(TestCaseWithFactory):
             browser = self.getUserBrowser(
                 canonical_url(branch) + '/+edit', user=owner)
         self.assertRaises(
-            LookupError, browser.getControl, "Keep branch confidential")
+            LookupError, browser.getControl, "Information Type")
+
+    def test_authorised_user_can_change_privacy(self):
+        # An authorised user can change the information type.
+        team_owner = self.factory.makePerson()
+        user = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=team_owner,
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        with person_logged_in(team_owner):
+            team.addMember(user, team_owner)
+        with person_logged_in(user):
+            branch = self.factory.makeBranch(owner=team)
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=user)
+        self.assertIsNotNone(browser.getControl, "Information Type")
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):

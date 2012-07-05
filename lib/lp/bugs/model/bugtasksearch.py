@@ -734,6 +734,10 @@ def _build_query(params):
         extra_clauses.append(
             BugTaskFlat.datecreated < params.created_before)
 
+    if params.information_types:
+        extra_clauses.append(
+            BugTaskFlat.information_type.is_in(params.information_types))
+
     query = And(extra_clauses)
 
     if not decorators:

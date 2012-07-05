@@ -142,9 +142,11 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
+    PersonVisibility,
     validate_person,
     validate_public_person,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -1285,6 +1287,27 @@ class Branch(SQLBase, BzrIdentityMixin):
                 can_access = self.stacked_on.visibleByUser(
                     user, checked_branches)
         return can_access
+
+    def canBePrivate(self, user):
+        """See `IBranch`."""
+        policy = IBranchNamespacePolicy(self.namespace)
+        # Do the easy checks first.
+        if (policy.canBranchesBePrivate() or
+                user_has_special_branch_access(user) or
+                user.visibility == PersonVisibility.PRIVATE):
+            return True
+        pillar = self.product or self.distribution
+        roles = IPersonRoles(user)
+        if (roles.isOwner(pillar)
+            or roles.isOneOfDrivers(pillar)
+            or roles.isBugSupervisor(pillar)
+            or roles.isSecurityContact(pillar)):
+            return True
+        params = BugTaskSearchParams(
+            user=user, linked_branches=self.id,
+            information_types=PRIVATE_INFORMATION_TYPES)
+        bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
+        return bug_ids.count() > 0
 
     @property
     def recipes(self):

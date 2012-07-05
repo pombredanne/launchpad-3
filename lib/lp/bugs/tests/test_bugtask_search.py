@@ -1,5 +1,6 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from lp.registry.enums import InformationType
 
 __metaclass__ = type
 
@@ -407,6 +408,20 @@ class OnceTests:
         self.assertSearchFinds(params, self.bugtasks[:2])
         params = self.getBugTaskSearchParams(
             user=None, importance=BugTaskImportance.MEDIUM)
+        self.assertSearchFinds(params, [])
+
+    def test_filter_by_information_types(self):
+        # Search results can be filtered by information_type.
+        with person_logged_in(self.owner):
+            self.bugtasks[2].bug.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, self.owner)
+        params = self.getBugTaskSearchParams(
+            user=self.owner,
+            information_types=InformationType.EMBARGOEDSECURITY)
+        self.assertSearchFinds(params, [self.bugtasks[2]])
+        params = self.getBugTaskSearchParams(
+            user=self.owner,
+            information_types=InformationType.UNEMBARGOEDSECURITY)
         self.assertSearchFinds(params, [])
 
     def test_omit_duplicate_bugs(self):

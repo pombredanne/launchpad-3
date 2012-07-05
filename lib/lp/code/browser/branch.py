@@ -116,7 +116,6 @@ from lp.code.errors import (
 from lp.code.interfaces.branch import (
     IBranch,
     IBranchSet,
-    user_has_special_branch_access,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
@@ -1060,9 +1059,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # If the branch is public, and can be made private, show the
             # field.  Users with special access rights to branches can set
             # public branches as private.
-            show_private_field = (
-                policy.canBranchesBePrivate() or
-                user_has_special_branch_access(self.user))
+            show_private_field = branch.canBePrivate(self.user)
 
         if not show_private_field:
             self.form_fields = self.form_fields.omit('information_type')

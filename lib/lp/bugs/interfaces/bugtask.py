@@ -47,6 +47,7 @@ __all__ = [
     'valid_remote_bug_url',
     ]
 
+import collections
 import httplib
 
 from lazr.enum import (
@@ -1178,7 +1179,8 @@ class BugTaskSearchParams:
                  structural_subscriber=None, modified_since=None,
                  created_since=None, exclude_conjoined_tasks=False, cve=None,
                  upstream_target=None, milestone_dateexpected_before=None,
-                 milestone_dateexpected_after=None, created_before=None):
+                 milestone_dateexpected_after=None, created_before=None,
+                 information_types=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1232,6 +1234,10 @@ class BugTaskSearchParams:
         self.upstream_target = upstream_target
         self.milestone_dateexpected_before = milestone_dateexpected_before
         self.milestone_dateexpected_after = milestone_dateexpected_after
+        if isinstance(information_types, collections.Iterable):
+            self.information_types = information_types
+        else:
+            self.information_types = (information_types,)
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
