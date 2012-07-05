@@ -166,7 +166,7 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             product=product)
         with person_logged_in(owner):
             trunk.reviewer = team
-            bmp = self.factory.makeBranchMergeProposal(
+            self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=trunk)
             subscriptions = [bsub.person for bsub in branch.subscriptions]
             self.assertEqual([owner], subscriptions)
@@ -183,7 +183,7 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             product=product)
         with person_logged_in(owner):
             trunk.reviewer = team
-            bmp = self.factory.makeBranchMergeProposal(
+            self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=trunk)
             subscriptions = [bsub.person for bsub in branch.subscriptions]
             self.assertContentEqual([owner, team], subscriptions)
