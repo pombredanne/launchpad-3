@@ -121,7 +121,10 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
+from lp.registry.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import (
@@ -1032,37 +1035,27 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
-        policy = IBranchNamespacePolicy(branch.namespace)
         if branch.private:
-            # If the branch is private, and can be public, show the field.
-            show_private_field = policy.canBranchesBePublic()
-
-            # If this branch is stacked on a private branch, disable the
-            # field.
+            # If this branch is stacked on a private branch, render some text
+            # to inform the user the information type cannot be changed.
             if (branch.stacked_on and branch.stacked_on.information_type in
                 PRIVATE_INFORMATION_TYPES):
-                show_private_field = False
+                stacked_info_type= branch.stacked_on.information_type.title
                 private_info = Bool(
-                    __name__="private",
-                    title=_("Branch is confidential"),
+                    __name__="information_type",
+                    title=_("Branch is %s" % stacked_info_type),
                     description=_(
-                        "This branch is confidential because it is stacked "
-                        "on a private branch."))
+                        "This branch is %(info_type)s because it is "
+                        "stacked on a %(info_type)s branch." % {
+                            'info_type': stacked_info_type}))
                 private_info_field = form.Fields(
                     private_info, render_context=self.render_context)
-                self.form_fields = self.form_fields.omit('private')
+                self.form_fields = self.form_fields.omit('information_type')
                 self.form_fields = private_info_field + self.form_fields
-                self.form_fields['private'].custom_widget = (
+                self.form_fields = self.form_fields.select(*self.field_names)
+                self.form_fields['information_type'].custom_widget = (
                     CustomWidgetFactory(
                         CheckBoxWidget, extra='disabled="disabled"'))
-        else:
-            # If the branch is public, and can be made private, show the
-            # field.  Users with special access rights to branches can set
-            # public branches as private.
-            show_private_field = branch.canBePrivate(self.user)
-
-        if not show_private_field:
-            self.form_fields = self.form_fields.omit('information_type')
 
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
@@ -1099,6 +1092,28 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 # Replace the normal owner field with a more permissive vocab.
                 self.form_fields = self.form_fields.omit('owner')
                 self.form_fields = new_owner_field + self.form_fields
+
+    def setUpWidgets(self, context=None):
+        super(BranchEditView, self).setUpWidgets()
+        branch = self.context
+
+        if self.form_fields.get('information_type') is not None:
+            allowed_information_types = []
+            policy = IBranchNamespacePolicy(branch.namespace)
+            if branch.private:
+                if policy.canBranchesBePublic():
+                    allowed_information_types.extend(PUBLIC_INFORMATION_TYPES)
+                allowed_information_types.extend(PRIVATE_INFORMATION_TYPES)
+            else:
+                allowed_information_types.extend(PUBLIC_INFORMATION_TYPES)
+                if branch.canBePrivate(self.user):
+                    allowed_information_types.extend(PRIVATE_INFORMATION_TYPES)
+
+            self.widgets['information_type'].vocabulary = (
+                SimpleVocabulary([SimpleVocabulary.createTerm(
+                    info_type, info_type.name, info_type.title)
+                    for info_type in allowed_information_types])
+                )
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
