@@ -121,7 +121,6 @@ from lp.registry.browser.product import (
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
