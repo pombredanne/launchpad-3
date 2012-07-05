@@ -61,10 +61,7 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     )
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.enums import (
-    PackageDiffStatus,
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
@@ -72,10 +69,7 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
