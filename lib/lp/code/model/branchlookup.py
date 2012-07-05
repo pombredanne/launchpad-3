@@ -282,14 +282,14 @@ class BranchLookup:
             except (InvalidProductName, NoLinkedBranch,
                     CannotHaveLinkedBranch, NameLookupFailed,
                     InvalidNamespace):
-                return None, None
+                pass
         elif lookup['type'] == 'branch_name':
             store = IStore(Branch)
             result = store.find(Branch,
                                 Branch.unique_name == lookup['unique_name'])
-            return (result.one(), escape(lookup['trailing']))
-        else:
-            return None, ''
+            for branch in result:
+                return (branch, escape(lookup['trailing']))
+        return None, ''
 
     def getByHostingPath(self, path):
         return get_first_path_result(path, self.performLookup, (None, ''))
