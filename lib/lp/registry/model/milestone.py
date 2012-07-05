@@ -25,10 +25,13 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.locals import (
+from storm.locals import Store
+from storm.expr import (
     And,
     Desc,
-    Store,
+    Join,
+    LeftJoin,
+    Or,
     )
 from storm.zope import IResultSet
 from zope.component import getUtility
@@ -36,6 +39,7 @@ from zope.interface import implements
 
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import (
@@ -191,10 +195,14 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     def specifications(self):
         from lp.registry.model.person import Person
         store = Store.of(self)
-        results = store.find(
+        origin = [
+            Specification,
+            LeftJoin(Person, Specification.assigneeID == Person.id),
+            ]
+
+        results = store.using(*origin).find(
             (Specification, Person),
-            Specification.milestoneID == self.id,
-            Person.id == Specification.assigneeID)
+            Specification.milestoneID == self.id)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
                                            Specification.implementation_status,
