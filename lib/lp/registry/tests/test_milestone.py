@@ -183,13 +183,20 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def _create_milestones_on_target(self, **kwargs):
+        """Create a milestone on a target with work targeted to it.
+
+        Target should be specified using either product or distribution
+        argument which is directly passed into makeMilestone call.
+        """
         other_milestone = self.factory.makeMilestone(**kwargs)
         target_milestone = self.factory.makeMilestone(**kwargs)
         specification = self.factory.makeSpecification(
             milestone=other_milestone, **kwargs)
-        workitem1 = self.factory.makeSpecificationWorkItem(
+        # Create two workitems to ensure this doesn't cause
+        # two specifications to be returned.
+        self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=target_milestone)
-        workitem2 = self.factory.makeSpecificationWorkItem(
+        self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=target_milestone)
         return specification, target_milestone
 
@@ -207,7 +214,8 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
 
     def test_milestones_on_project(self):
         # A Project (Project Group) milestone contains all specifications
-        # targetted to contained Products (Projects).
+        # targetted to contained Products (Projects) for milestones of
+        # a certain name.
         projectgroup = self.factory.makeProject()
         product = self.factory.makeProduct(project=projectgroup)
         specification, target_milestone = self._create_milestones_on_target(
@@ -223,6 +231,6 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
             product=self.factory.makeProduct())
         specification = self.factory.makeSpecification(
             milestone=milestone, product=milestone.product)
-        workitem = self.factory.makeSpecificationWorkItem(
+        self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone, deleted=True)
         self.assertEqual([], list(milestone.specifications))
