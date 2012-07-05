@@ -313,7 +313,6 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
@@ -2936,6 +2935,8 @@ class Person(
 
     def getArchiveSubscriptionURLs(self, requester):
         """See `IPerson`."""
+        from lp.soyuz.interfaces.archivesubscriber import (
+            IArchiveSubscriberSet)
         agent = getUtility(ILaunchpadCelebrities).software_center_agent
         # If the requester isn't asking about themselves, and they aren't the
         # software center agent, deny them

@@ -175,7 +175,6 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivedependency import ArchiveDependency
-from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -1813,6 +1812,7 @@ class Archive(SQLBase):
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""
+        from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 
         # We do not currently allow subscriptions for non-private archives:
         if self.private is False:
