@@ -6,10 +6,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'makePoolPath',
     'BinaryPackageFilePublishing',
     'BinaryPackagePublishingHistory',
+    'get_current_source_releases',
     'IndexStanzaFields',
+    'makePoolPath',
     'PublishingSet',
     'SourcePackageFilePublishing',
     'SourcePackagePublishingHistory',
@@ -31,8 +32,11 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
+    In,
     LeftJoin,
     Or,
+    Row,
+    Select,
     Sum,
     )
 from storm.store import Store
@@ -53,7 +57,10 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import SQLBase
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
@@ -2079,3 +2086,54 @@ class PublishingSet:
             return ancestries[0]
         except IndexError:
             return None
+
+
+def get_current_source_releases(distro_source_packagenames):
+    # Builds one query for all the distro_source_packagenames.
+    # This may need tuning: its possible that grouping by the common
+    # archives may yield better efficiency: the current code is
+    # just a direct push-down of the previous in-python lookup to SQL.
+    from lp.registry.model.distribution import Distribution
+    from lp.registry.model.distroseries import DistroSeries
+    from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+    series_clauses = []
+    for distro, package_names in distro_source_packagenames.items():
+        source_package_ids = map(operator.attrgetter('id'), package_names)
+        clause = And(
+            SourcePackageRelease.sourcepackagenameID.is_in(
+                source_package_ids),
+            SourcePackagePublishingHistory.archiveID.is_in(
+                distro.all_distro_archive_ids),
+            DistroSeries.distribution == distro,
+            )
+        series_clauses.append(clause)
+    if not len(series_clauses):
+        return {}
+    combined_clause = Or(*series_clauses)
+
+    releases = IStore(SourcePackageRelease).find(
+        (SourcePackageRelease, Distribution.id),
+        In(
+            Row(SourcePackageRelease.id, Distribution.id),
+            Select(
+                (SourcePackageRelease.id, DistroSeries.distributionID),
+                tables=[
+                    SourcePackageRelease, SourcePackagePublishingHistory,
+                    DistroSeries],
+                where=And(
+                    SourcePackagePublishingHistory.sourcepackagereleaseID
+                        == SourcePackageRelease.id,
+                    SourcePackagePublishingHistory.distroseriesID
+                        == DistroSeries.id,
+                    SourcePackagePublishingHistory.status.is_in(
+                        active_publishing_status),
+                    combined_clause),
+                distinct=(
+                    SourcePackageRelease.sourcepackagenameID,
+                    DistroSeries.distributionID),
+                order_by=(
+                    SourcePackageRelease.sourcepackagenameID,
+                    DistroSeries.distributionID,
+                    Desc(SourcePackagePublishingHistory.id)))))
+    return releases

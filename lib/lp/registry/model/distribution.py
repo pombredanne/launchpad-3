@@ -11,10 +11,7 @@ __all__ = [
     ]
 
 import itertools
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import itemgetter
 
 from sqlobject import (
     BoolCol,
@@ -26,12 +23,9 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Desc,
-    In,
     Join,
     Max,
     Or,
-    Row,
-    Select,
     SQL,
     )
 from storm.info import ClassAlias
@@ -41,7 +35,6 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -181,7 +174,6 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -194,6 +186,7 @@ from lp.soyuz.model.distroarchseries import (
     )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
+    get_current_source_releases,
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -1766,54 +1759,10 @@ class DistributionSet:
 
     def getCurrentSourceReleases(self, distro_source_packagenames):
         """See `IDistributionSet`."""
-        # Builds one query for all the distro_source_packagenames.
-        # This may need tuning: its possible that grouping by the common
-        # archives may yield better efficiency: the current code is
-        # just a direct push-down of the previous in-python lookup to SQL.
-        series_clauses = []
-        distro_lookup = {}
-        for distro, package_names in distro_source_packagenames.items():
-            source_package_ids = map(attrgetter('id'), package_names)
-            clause = And(
-                SourcePackageRelease.sourcepackagenameID.is_in(
-                    source_package_ids),
-                SourcePackagePublishingHistory.archiveID.is_in(
-                    distro.all_distro_archive_ids),
-                DistroSeries.distribution == distro,
-                )
-            series_clauses.append(clause)
-            distro_lookup[distro.id] = distro
-        if not len(series_clauses):
-            return {}
-        combined_clause = Or(*series_clauses)
-
-        releases = IStore(SourcePackageRelease).find(
-            (SourcePackageRelease, Distribution.id),
-            In(
-                Row(SourcePackageRelease.id, Distribution.id),
-                Select(
-                    (SourcePackageRelease.id, DistroSeries.distributionID),
-                    tables=[
-                        SourcePackageRelease, SourcePackagePublishingHistory,
-                        DistroSeries],
-                    where=And(
-                        SourcePackagePublishingHistory.sourcepackagereleaseID
-                            == SourcePackageRelease.id,
-                        SourcePackagePublishingHistory.distroseriesID
-                            == DistroSeries.id,
-                        SourcePackagePublishingHistory.status.is_in(
-                            active_publishing_status),
-                        combined_clause),
-                    distinct=(
-                        SourcePackageRelease.sourcepackagenameID,
-                        DistroSeries.distributionID),
-                    order_by=(
-                        SourcePackageRelease.sourcepackagenameID,
-                        DistroSeries.distributionID,
-                        Desc(SourcePackagePublishingHistory.id)))))
+        releases = get_current_source_releases(distro_source_packagenames)
         result = {}
         for sp_release, distro_id in releases:
-            distro = distro_lookup[distro_id]
+            distro = IStore(Distribution).get(Distribution, distro_id)
             sourcepackage = distro.getSourcePackage(
                 sp_release.sourcepackagename)
             result[sourcepackage] = DistributionSourcePackageRelease(
