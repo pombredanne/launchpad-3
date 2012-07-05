@@ -182,7 +182,7 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _test_milestones_on_target(self, **kwargs):
+    def _create_milestones_on_target(self, **kwargs):
         other_milestone = self.factory.makeMilestone(**kwargs)
         target_milestone = self.factory.makeMilestone(**kwargs)
         specification = self.factory.makeSpecification(
@@ -191,13 +191,28 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
             specification=specification, milestone=target_milestone)
         workitem2 = self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=target_milestone)
+        return specification, target_milestone
+
+    def test_milestones_on_product(self):
+        specification, target_milestone = self._create_milestones_on_target(
+            product=self.factory.makeProduct())
         self.assertEqual([specification],
                          list(target_milestone.specifications))
 
-    def test_milestones_on_product(self):
-        self._test_milestones_on_target(
-            product=self.factory.makeProduct())
-
     def test_milestones_on_distribution(self):
-        self._test_milestones_on_target(
+        specification, target_milestone = self._create_milestones_on_target(
             distribution=self.factory.makeDistribution())
+        self.assertEqual([specification],
+                         list(target_milestone.specifications))
+
+    def test_milestones_on_project(self):
+        # A Project (Project Group) milestone contains all specifications
+        # targetted to contained Products (Projects).
+        projectgroup = self.factory.makeProject()
+        product = self.factory.makeProduct(project=projectgroup)
+        specification, target_milestone = self._create_milestones_on_target(
+            product=product)
+        milestone = projectgroup.getMilestone(name=target_milestone.name)
+        self.assertEqual([specification],
+                         list(milestone.specifications))
+
