@@ -216,3 +216,13 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         self.assertEqual([specification],
                          list(milestone.specifications))
 
+    def test_milestones_with_deleted_workitems(self):
+        # Deleted work items do not cause the specification to show up
+        # in the milestone page.
+        milestone = self.factory.makeMilestone(
+            product=self.factory.makeProduct())
+        specification = self.factory.makeSpecification(
+            milestone=milestone, product=milestone.product)
+        workitem = self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=milestone, deleted=True)
+        self.assertEqual([], list(milestone.specifications))

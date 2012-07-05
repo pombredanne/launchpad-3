@@ -194,15 +194,18 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         store = Store.of(self)
         origin = [
             Specification,
-            Join(SpecificationWorkItem,
-                 SpecificationWorkItem.specification_id == Specification.id),
+            LeftJoin(
+                SpecificationWorkItem,
+                SpecificationWorkItem.specification_id == Specification.id),
             LeftJoin(Person, Specification.assigneeID == Person.id),
             ]
 
         results = store.using(*origin).find(
             (Specification, Person),
             Or(Specification.milestoneID == self.id,
-               SpecificationWorkItem.milestone_id == self.id))
+               SpecificationWorkItem.milestone_id == self.id),
+            Or(SpecificationWorkItem.deleted is None,
+               SpecificationWorkItem.deleted == False))
         results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
@@ -436,7 +439,9 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
         results = store.using(*origin).find(
             (Specification, Person),
             Product.projectID == self.target.id,
-            Milestone.name == self.name)
+            Milestone.name == self.name,
+            Or(SpecificationWorkItem.deleted is None,
+               SpecificationWorkItem.deleted == False))
         results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
