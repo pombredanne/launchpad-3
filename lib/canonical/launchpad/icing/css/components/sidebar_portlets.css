@@ -1,17 +1,15 @@
-/* =========================
-   Universal
+/******************************************************************************
    Side portlets
 */
 .side {
     padding: 0.5em;
     }
 .side .portlet {
-    width: 90%;
-    margin: 0 auto 1em;
-    border: 1px solid #dedede;
-    border-radius: 5px;
+    margin: 0 0 1em 0;
     padding: 0.5em;
     background: #fbfbfb;
+    border: 1px solid #dedede;
+    border-radius: 5px;
     }
 .side h2 {
     font-size: 16px;
@@ -21,9 +19,15 @@
     font-size: 14px;
     line-height: 18px;
     }
-.side ul {
-    background: #fbfbfb;
+.side div.breaker,
+.side li.breaker {
+    margin: 8px 0;
+    border-top: 1px solid #e3e3e3;
     }
+
+/******************************************************************************
+ Downloads portlet
+*/
 .downloads li {
     margin: 0;
     padding: 2px 0 0;
@@ -39,27 +43,33 @@
     padding-right: 40px;
     color: #fff;
     }
-.downloads .version {
-    border-radius: 5px 5px 0 0;
+.downloads .version,
+.downloads .released {
     background: #d3e3c7;
     padding: 0.2em 1em;
+    }
+.downloads .version {
+    border-radius: 5px 5px 0 0;
     }
 .downloads .released {
     margin: .3em 0 .5em 0;
     border-radius: 0 0 5px 5px;
-    background: #d3e3c7;
-    padding: 0.2em 1em;
     }
 .downloads .alternate {
     padding: 0 0 0 1em;
     }
+
+/******************************************************************************
+ Involvement portlet
+*/
 .involvement li {
     border-top: 1px solid #d0d0d0;
     padding: 0;
     font-weight: bold;
     }
+.involvement li.first,
 .involvement li.single {
-    border-top: 0;
+    border-top: none;
     }
 .involvement a {
     display: block;
@@ -68,9 +78,7 @@
 .involvement li.disabled {
     color: #cccccc;
     }
-.involvement-service-links li.disabled img {
-    margin-bottom: 0;
-    }
+.involvement-service-links li.disabled img,
 .involvement-service-links li.disabled span {
     margin-bottom: 0;
     }
@@ -86,6 +94,10 @@
     text-decoration: none;
     background-color: #eee;
     }
+
+/******************************************************************************
+ Announcements portlet
+*/
 .announcements li {
     margin-bottom: 0.5em;
     /* Some announcements have long strings of characters as section headers
@@ -106,3 +118,17 @@
 .announcement .registered {
     margin-top: -2px;
     }
+
+/******************************************************************************
+ Data list portlet
+*/
+.side ul.data-list li {
+    padding-bottom: 0;
+    }
+.side ul.data-list span.count {
+    display: inline-block;
+    min-width: 3em;
+    text-align: right;
+    padding-right: 0.25em;
+    }
+
