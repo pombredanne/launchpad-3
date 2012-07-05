@@ -2100,10 +2100,9 @@ def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
 
     series_clauses = []
     for context, package_names in context_sourcepackagenames.items():
-        source_package_ids = map(operator.attrgetter('id'), package_names)
         clause = And(
             SourcePackageRelease.sourcepackagenameID.is_in(
-                source_package_ids),
+                map(operator.attrgetter('id'), package_names)),
             SourcePackagePublishingHistory.archiveID.is_in(
                 archive_ids_func(context)),
             package_clause_func(context),
@@ -2111,7 +2110,6 @@ def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
         series_clauses.append(clause)
     if not len(series_clauses):
         return {}
-    combined_clause = Or(*series_clauses)
 
     releases = IStore(SourcePackageRelease).find(
         (SourcePackageRelease, key_col),
@@ -2119,7 +2117,7 @@ def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
             == SourcePackageRelease.id,
         SourcePackagePublishingHistory.status.is_in(
             active_publishing_status),
-        combined_clause,
+        Or(*series_clauses),
         *extra_clauses).config(
             distinct=(
                 SourcePackageRelease.sourcepackagenameID,
