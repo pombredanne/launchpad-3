@@ -1286,15 +1286,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if self.information_type in PUBLIC_INFORMATION_TYPES:
-            return True
-        if user is None:
-            return False
-        if user.inTeam(self.owner) or user_has_special_branch_access(user):
-            return True
-        return not Store.of(self).find(
-            Branch, Branch.id == self.id,
-            get_branch_privacy_filter(user)).is_empty()
+        return not getUtility(IAllBranches).withIds(self.id).visibleByUser(
+            user).is_empty()
         
     def visibleByUser(self, user, checked_branches=None):
         """See `IBranch`."""
