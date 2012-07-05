@@ -2090,8 +2090,7 @@ def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
     """Get the current source package releases in a context.
 
     You probably don't want to use this directly; try
-    DistroSeriesSet.getCurrentSourceReleases or
-    istribution.getCurrentSourceReleases instead.
+    (Distribution|DistroSeries)(Set)?.getCurrentSourceReleases instead.
     """
     # Builds one query for all the distro_source_packagenames.
     # This may need tuning: its possible that grouping by the common
