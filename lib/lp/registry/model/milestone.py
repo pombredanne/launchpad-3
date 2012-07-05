@@ -428,7 +428,14 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
                     WHERE Milestone.Product = Product.id
                     AND Milestone.name = %s
                     AND Product.project = %s)
-            """ % sqlvalues(self.name, self.target),
+               OR Specification.id IN (
+                 SELECT specification
+                    FROM SpecificationWorkItem, Milestone, Product
+                    WHERE SpecificationWorkItem.milestone = Milestone.id
+                    AND Milestone.name = %s
+                    AND Milestone.product = Product.id
+                    AND Product.project = %s)
+            """ % sqlvalues(self.name, self.target, self.name, self.target),
             orderBy=['-priority', 'definition_status',
                      'implementation_status', 'title'],
             prejoins=['assignee'])
