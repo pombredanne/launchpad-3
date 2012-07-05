@@ -35,11 +35,11 @@ from storm.expr import (
     Not,
     Or,
     Select,
-    SQL,
     )
 from storm.locals import (
     AutoReload,
     Int,
+    List,
     Reference,
     )
 from storm.store import Store
@@ -200,6 +200,8 @@ class Branch(SQLBase, BzrIdentityMixin):
     mirror_status_message = StringCol(default=None)
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
+    access_policy = IntCol()
+    access_grants = List(type=Int())
 
     # These can die after the UI is dropped.
     @property
@@ -255,6 +257,15 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePublic()
         self.information_type = information_type
         self._reconcileAccess()
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            # Grant the subscriber access if they can't see the branch.
+            service = getUtility(IService, 'sharing')
+            blind_subscribers = service.getPeopleWithoutAccess(
+                self, self.subscribers)
+            if len(blind_subscribers):
+                service.ensureAccessGrants(
+                    blind_subscribers, who, branches=[self],
+                    ignore_permissions=True)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -1531,22 +1542,22 @@ def branch_modified_subscriber(branch, event):
     send_branch_modified_notifications(branch, event)
 
 
-def get_branch_privacy_filter(user):
+def get_branch_privacy_filter(user, branch_class=Branch):
     public_branch_filter = (
-        Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+        branch_class.information_type.is_in(PUBLIC_INFORMATION_TYPES))
 
     if user is None:
         return [public_branch_filter]
 
     artifact_grant_query = Coalesce(
-            ArrayIntersects(SQL('Branch.access_grants'),
+            ArrayIntersects(branch_class.access_grants,
             Select(
                 ArrayAgg(TeamParticipation.teamID),
                 tables=TeamParticipation,
                 where=(TeamParticipation.person == user)
             )), False)
 
-    policy_grant_query = SQL('Branch.access_policy').is_in(
+    policy_grant_query = branch_class.access_policy.is_in(
             Select(
                 AccessPolicyGrant.policy_id,
                 tables=(AccessPolicyGrant,

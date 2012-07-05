@@ -967,13 +967,13 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
         for branch in (bmp.source_branch, bmp.target_branch):
-            removeSecurityProxy(branch).information_type = (
-                InformationType.USERDATA)
+            branch.transitionToInformationType(
+                InformationType.USERDATA, branch.owner, verify_policy=False)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        self.assertFalse(bob in recipients)
-        self.assertFalse(eric in recipients)
-        self.assertTrue(charlie in recipients)
+        self.assertNotIn(bob, recipients)
+        self.assertNotIn(eric, recipients)
+        self.assertIn(charlie, recipients)
 
 
 class TestGetAddress(TestCaseWithFactory):

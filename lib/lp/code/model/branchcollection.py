@@ -837,7 +837,8 @@ class VisibleBranchCollection(GenericBranchCollection):
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        return get_branch_privacy_filter(self._user)
+        return get_branch_privacy_filter(
+            self._user, branch_class=branch_class)
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
