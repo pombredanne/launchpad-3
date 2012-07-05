@@ -54,9 +54,6 @@ from lp.soyuz.interfaces.distroarchseries import (
 from lp.soyuz.interfaces.publishing import ICanPublishPackages
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distroarchseriesbinarypackage import (
-    DistroArchSeriesBinaryPackage,
-    )
 from lp.soyuz.model.processor import Processor
 
 
@@ -245,6 +242,9 @@ class DistroArchSeries(SQLBase):
 
     def getBinaryPackage(self, name):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.distroarchseriesbinarypackage import (
+            DistroArchSeriesBinaryPackage,
+            )
         if not IBinaryPackageName.providedBy(name):
             try:
                 name = BinaryPackageName.byName(name)
