@@ -8,10 +8,10 @@ CREATE INDEX bugsummary__distribution__idx2 ON bugsummary USING btree
 CREATE INDEX bugsummary__distroseries__idx2 ON bugsummary USING btree
     (distroseries, sourcepackagename) WHERE distroseries IS NOT NULL;
 CREATE INDEX bugsummary__distribution_count__idx2 ON bugsummary USING btree
-    (distribution, sourcepackagename)
+    (distribution, sourcepackagename, status)
     WHERE distribution IS NOT NULL AND tag IS NULL;
 CREATE INDEX bugsummary__distroseries_count__idx2 ON bugsummary USING btree
-    (distroseries, sourcepackagename)
+    (distroseries, sourcepackagename, status)
     WHERE distroseries IS NOT NULL AND tag IS NULL;
 CREATE INDEX bugsummary__distribution_tag_count__idx2 ON bugsummary USING btree
     (distribution, sourcepackagename, status)
