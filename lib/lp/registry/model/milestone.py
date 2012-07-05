@@ -206,6 +206,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
             (Specification, Person),
             Or(Specification.milestoneID == self.id,
                SpecificationWorkItem.milestone_id == self.id))
+        results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
                                            Specification.definition_status,
                                            Specification.implementation_status,

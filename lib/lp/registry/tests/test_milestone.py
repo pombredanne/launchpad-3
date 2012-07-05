@@ -187,7 +187,9 @@ class MilestonesContainsPartialSpecifications(TestCaseWithFactory):
         target_milestone = self.factory.makeMilestone(**kwargs)
         specification = self.factory.makeSpecification(
             milestone=other_milestone, **kwargs)
-        workitem = self.factory.makeSpecificationWorkItem(
+        workitem1 = self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=target_milestone)
+        workitem2 = self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=target_milestone)
         self.assertEqual([specification],
                          list(target_milestone.specifications))
