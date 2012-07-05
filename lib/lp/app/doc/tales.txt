@@ -212,20 +212,16 @@ But the 'failed to build' build is 16x14:
 All objects can be represented as a boolean icon.
 
     >>> print test_tales("context/image:boolean", context=None)
-    <span class="sprite no">&nbsp;<span
-      class="invisible-link">no</span></span>
+    <span class="sprite no action-icon">no</span>
 
     >>> print test_tales("context/image:boolean", context=False)
-    <span class="sprite no">&nbsp;<span
-      class="invisible-link">no</span></span>
+    <span class="sprite no action-icon">no</span>
 
     >>> print test_tales("context/image:boolean", context=object())
-    <span class="sprite yes">&nbsp;<span
-      class="invisible-link">yes</span></span>
+    <span class="sprite yes action-icon">yes</span>
 
     >>> print test_tales("context/image:boolean", context=True)
-    <span class="sprite yes">&nbsp;<span
-      class="invisible-link">yes</span></span>
+    <span class="sprite yes action-icon">yes</span>
 
 
 The fmt: namespace to get strings
@@ -1459,8 +1455,8 @@ The link can be rendered as an anchored icon.
 
     >>> print test_tales('menu_link/fmt:icon', menu_link=menu_link)
     <a href="http://launchpad.dev/+place"
-       class="menu-link-test_link sprite icon" title="summary"><span
-       class="invisible-link">text</span></a>
+       class="menu-link-test_link sprite icon action-icon"
+       title="summary">text</a>
 
 The default rendering can be explicitly called too, text with an icon to
 the left.
@@ -1533,7 +1529,7 @@ Any object can be converted to the 'public' CSS class. The object does
 not need to implement IPrivacy.
 
     >>> thing = object()
-    >>> print test_tales('context/fmt:public-private-css', context=thing)
+    >>> print test_tales('context/fmt:global-css', context=thing)
     public
 
 The CSS class honors the state of the object's privacy if the object
@@ -1544,7 +1540,7 @@ is 'public'.
     >>> print bug.private
     False
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
+    >>> print test_tales('context/fmt:global-css', context=bug)
     public
 
 If the private attribute is True, the class is 'private'.
@@ -1554,8 +1550,8 @@ If the private attribute is True, the class is 'private'.
     >>> bug.setPrivate(True, owner)
     True
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
-    private
+    >>> print test_tales('context/fmt:global-css', context=bug)
+    global-notification-visible private
 
     >>> login(ANONYMOUS)
 

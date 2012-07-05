@@ -7,14 +7,13 @@
 
   <metal:block fill-slot="head_epilogue">
     <script type="text/javascript">
-      LPJS.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
+      LPJS.use('lp.bugs.filebug',
       function(Y) {
           Y.on('domready', function() {
-              Y.lp.bugs.filebug_dupefinder.setup_dupes();
+              Y.lp.bugs.filebug.setup_filebug();
           });
       });
     </script>
-    <metal:privacy use-macro="view/@@+filebug-macros/bug-reporting-privacy"/>
   </metal:block>
 
   <div metal:fill-slot="heading">

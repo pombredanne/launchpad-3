@@ -1,5 +1,5 @@
 # copyright 2009-2010 canonical ltd.  this software is licensed under the
-# gnu affero general public license version 3 (see the file license).
+# gnu affero general public license version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,W0401
 
@@ -220,7 +220,7 @@ class IBaseImageUpload(IBytes):
         title=_('The default image'),
         description=_(
             'The URL of the zope3 resource of the default image that should '
-            'be used. Something of the form /@@/nyet-mugshot'))
+            'be used. Something of the form /@@/team-mugshot'))
 
     def getCurrentImage():
         """Return the value of the field for the object bound to it.
@@ -625,7 +625,7 @@ class URIField(TextLine):
         input = input.strip()
         try:
             uri = URI(input)
-        except InvalidURIError, exc:
+        except InvalidURIError as exc:
             raise LaunchpadValidationError(str(exc))
         # If there is a policy for whether trailing slashes are
         # allowed at the end of the path segment, ensure that the

@@ -13,8 +13,5 @@
         provides="lp.services.memcache.interfaces.IMemcacheClient"
         factory="lp.services.memcache.client.memcache_client_factory"
         />
-
-    <!-- TALES expression letting us cache chunks of rendered templates -->
-    <tales:expressiontype name="cache" handler=".tales.MemcacheExpr" />
 </configure>
 

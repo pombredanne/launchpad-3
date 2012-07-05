@@ -266,17 +266,24 @@ proxy redirects to the public http url. We'll copy the test sources and
 binaries across to no-priv's public ppa.
 
     >>> ignored = login_person(no_priv)
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     ISourcePackagePublishingHistory,
+    ...     PackagePublishingPocket,
+    ...     )
     >>> from lp.soyuz.scripts.packagecopier import do_copy
     >>> copies = do_copy(
     ...     no_priv_private_ppa.getPublishedSources(name='test-pkg'),
     ...     no_priv.archive, series=ubuntu['warty'],
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     include_binaries=True, allow_delayed_copies=False,
-    ...     person=no_priv)
+    ...     person=no_priv, unembargo=True)
+    >>> source_copy = [copy for copy in copies
+    ...                if ISourcePackagePublishingHistory.providedBy(copy)
+    ...                   and copy.source_package_version == "1.0"][0]
+    >>> dsc_file = source_copy.sourcepackagerelease.files[0].libraryfile
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(dsc_file).restricted = False
+    >>> dsc_file.restricted
+    False
     >>> file_librarian_url = dsc_file.http_url
     >>> file_lp_url = str(
     ...     'http://launchpad.dev/~no-priv/+archive/ppa/+files/%s' %

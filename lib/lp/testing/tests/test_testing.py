@@ -9,7 +9,10 @@ import os
 import tempfile
 
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
+from lp.services.features import (
+    getFeatureFlag,
+    uninstall_feature_controller,
+    )
 from lp.testing import (
     feature_flags,
     NestedTempfile,
@@ -25,7 +28,13 @@ class TestFeatureFlags(TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_set_feature_flags_raises_if_not_available(self):
-        """set_feature_flags prevents mistakes mistakes by raising."""
+        """set_feature_flags raises an error if there is no feature
+        controller available for the current thread.
+        """
+        # Remove any existing feature controller for the sake of this
+        # test (other tests will re-add it). This prevents weird
+        # interactions in a parallel test environment.
+        uninstall_feature_controller()
         self.assertRaises(AssertionError, set_feature_flag, u'name', u'value')
 
     def test_flags_set_within_feature_flags_context(self):

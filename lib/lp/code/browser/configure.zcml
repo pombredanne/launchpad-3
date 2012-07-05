@@ -390,9 +390,11 @@
             name="+index"
             template="../templates/branch-index.pt"/>
         <browser:page
+            name="+portlet-privacy"
+            template="../templates/branch-portlet-privacy.pt"/>
+        <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
-
         <browser:page
             name="++branch-information"
             template="../templates/branch-information.pt" />
@@ -417,15 +419,11 @@
         <browser:page
             name="++branch-related-bugs-specs"
             template="../templates/branch-related-bugs-specs.pt" />
-
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branch.IBranch"
         layer="lp.code.publisher.CodeLayer"
         permission="zope.Public">
-        <browser:page
-            name="+portlet-privacy"
-            template="../templates/branch-portlet-privacy.pt"/>
         <browser:page
             name="+heading"
             template="../templates/branch-heading.pt"/>

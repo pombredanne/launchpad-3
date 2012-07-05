@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -38,7 +38,7 @@
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryPublic"/>
             <require
                 permission="launchpad.Edit"
-                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
+                interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryEdit"/>
             <require
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
@@ -108,7 +108,7 @@
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryPublic"/>
             <require
                 permission="launchpad.Edit"
-                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
+                interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryEdit"/>
             <require
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
@@ -157,22 +157,29 @@
                 distroseries
                 pocket
                 changesfile
+                changes_file_url
                 signing_key
                 archive
                 sources
+                sourceFileUrls
                 builds
+                binaryFileUrls
                 customfiles
                 custom_file_urls
+                customFileUrls
+                getBinaryProperties
                 date_created
                 sourcepackagerelease
                 component_name
                 concrete_package_copy_job
                 contains_source
                 contains_build
+                contains_copy
                 contains_translation
                 contains_installer
                 contains_upgrader
                 contains_ddtp
+                contains_uefi
                 displayname
                 displayarchs
                 displayversion
@@ -391,6 +398,8 @@
         class="lp.soyuz.model.archive.Archive">
         <allow
             interface="lp.soyuz.interfaces.archive.IArchivePublic"/>
+        <allow
+            interface="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.archive.IArchiveView"/>
@@ -400,12 +409,13 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname publish status"/>
+            set_attributes="description displayname publish status
+                            suppress_subscription_notifications"/>
         <!--
            NOTE: The 'private' permission controls who can turn a public
            archive into a private one, and vice versa. The logic that says this
            requires launchpad.Commercial permissions is duplicated in
-           IArchive.validatePPA.
+           validate_ppa.
           -->
         <require
             permission="launchpad.Commercial"
@@ -413,8 +423,10 @@
             set_attributes="authorized_size build_debug_symbols buildd_secret
                             enabled_restricted_families
                             external_dependencies private
-                            require_virtualized relative_build_score
-                            suppress_subscription_notifications"/>
+                            require_virtualized"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.Admin"
             set_attributes="distribution name signing_key"/>
@@ -784,9 +796,14 @@
         class="lp.soyuz.model.packageset.Packageset">
         <allow
             interface="lp.soyuz.interfaces.packageset.IPackagesetViewOnly"/>
+        <allow
+            interface="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
     </class>
     <class
         class="lp.soyuz.model.packageset.PackagesetSet">
@@ -982,40 +999,6 @@
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
         <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
    </class>
-
-    <!-- BinaryPackagePath -->
-
-    <class
-        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePath"/>
-    </class>
-
-    <!-- BinaryPackagePathSet -->
-
-    <securedutility
-        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath"
-        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet"/>
-    </securedutility>
-
-    <!-- BinaryPackageReleaseContents -->
-
-    <class
-        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContents"/>
-    </class>
-
-    <!-- BinaryPackageReleaseContentsSet -->
-
-    <securedutility
-        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents"
-        provides="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
-    </securedutility>
 
    <webservice:register module="lp.soyuz.interfaces.webservice" />
 

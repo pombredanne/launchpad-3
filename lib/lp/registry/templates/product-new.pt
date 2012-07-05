@@ -180,7 +180,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
              * event handler so that the height style left by lazr.effects is
              * removed when the animation is done.  We're never going to slide
              * the form widgets back in, and the height style causes the
-             * license widget to dive under the Complete Registration button.
+             * licence widget to dive under the Complete Registration button.
              * See bug 391138 for details.
              */
             var anim = Y.lazr.effects.slide_out(form_widgets);
@@ -324,7 +324,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
               style="margin-top: 3em;"
               tal:condition="view/search_results_count"
               >Registration details</h3>
-          Select the licenses for project
+          Select the licences for project
           <strong><tal:displayname tal:replace="view/request/field.displayname" />
           (<tal:name  tal:replace="view/request/field.name" />)</strong>
           and complete the registration.  You may also update the project's

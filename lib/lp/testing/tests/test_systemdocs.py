@@ -55,8 +55,8 @@ class LayeredDocFileSuiteTests(unittest.TestCase):
         self.makeTestFile('bar.txt')
         base = os.path.basename(self.tempdir)
         suite = LayeredDocFileSuite(
-            os.path.join(base, 'foo.txt'),
-            os.path.join(base, 'bar.txt'))
+            [os.path.join(base, 'foo.txt'),
+             os.path.join(base, 'bar.txt')])
         self.assertTrue(isinstance(suite, unittest.TestSuite))
 
         [foo_test, bar_test] = list(suite)

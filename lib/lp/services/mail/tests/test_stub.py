@@ -103,8 +103,8 @@ def test_simple_sendmail():
     'X-Generated-By' not only indicates that the source is Launchpad, but
     shows the bzr revision and instance name.
 
-    >>> message['X-Generated-By']
-    'Launchpad (canonical.com); Revision="1999";\n\tInstance="launchpad-lazr.conf"'
+    >>> message['X-Generated-By'].replace('\n\t', '\n ')
+    'Launchpad (canonical.com); Revision="1999";\n Instance="launchpad-lazr.conf"'
 
     """
 

@@ -567,7 +567,7 @@
     <browser:page
         name="+get-involved"
         for="*"
-        class="lp.registry.browser.pillar.PillarView"
+        class="lp.registry.browser.pillar.PillarInvolvementView"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
         <browser:url
@@ -981,13 +981,6 @@
             template="../../blueprints/templates/person-table-specworkload.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            name="+specfeedback"
-            facet="specifications"
-            class="lp.registry.browser.person.PersonSpecFeedbackView"
-            permission="zope.Public"
-            template="../../blueprints/templates/person-specfeedback.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
             name="+specworkload"
             facet="specifications"
             class="lp.registry.browser.person.PersonSpecWorkloadView"
@@ -1223,6 +1216,12 @@
             class="lp.registry.browser.team.TeamAddView"
             permission="launchpad.AnyPerson"
             template="../templates/people-newteam.pt"/>
+        <browser:page
+            name="+simplenewteam"
+            for="lp.registry.interfaces.person.IPersonSet"
+            class="lp.registry.browser.team.SimpleTeamAddView"
+            permission="launchpad.AnyPerson"
+            template="../../app/templates/generic-edit.pt"/>
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="zope.Public"

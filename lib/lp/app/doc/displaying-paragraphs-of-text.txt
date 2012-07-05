@@ -431,21 +431,21 @@ After login, a link:
     True
 
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-38C23">OOPS-38C23</a></p>
+    <p><a href="https://oops.canonical.com/oops/?oopsid=OOPS-38C23">OOPS-38C23</a></p>
 
 OOPS references can take a number of forms:
 
     >>> text = 'OOPS-38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-38C23">OOPS-38C23</a></p>
+    <p><a href="https://oops.canonical.com/oops/?oopsid=OOPS-38C23">OOPS-38C23</a></p>
 
     >>> text = 'OOPS-123abcdef'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-123abcdef">OOPS-123abcdef</a></p>
+    <p><a href="https://oops.canonical.com/oops/?oopsid=OOPS-123abcdef">OOPS-123abcdef</a></p>
 
     >>> text = 'OOPS-abcdef123'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-abcdef123">OOPS-abcdef123</a></p>
+    <p><a href="https://oops.canonical.com/oops/?oopsid=OOPS-abcdef123">OOPS-abcdef123</a></p>
 
 If the configuration value doesn't end with a slash, we won't add one. This
 lets us configure the URL to use query parameters.

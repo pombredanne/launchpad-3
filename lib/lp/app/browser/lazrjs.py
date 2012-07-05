@@ -137,7 +137,11 @@ class DefinedTagMixin:
 
     @property
     def open_tag(self):
-        return '<%s id="%s">' % (self.tag, self.content_box_id)
+        if self.css_class:
+            return '<%s id="%s" class="%s">' % (
+                self.tag, self.content_box_id, self.css_class)
+        else:
+            return '<%s id="%s">' % (self.tag, self.content_box_id)
 
     @property
     def close_tag(self):
@@ -149,7 +153,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
 
     __call__ = ViewPageTemplateFile('../templates/text-line-editor.pt')
 
-    def __init__(self, context, exported_field, title, tag,
+    def __init__(self, context, exported_field, title, tag, css_class=None,
                  content_box_id=None, edit_view="+edit", edit_url=None,
                  edit_title='',
                  default_text=None, initial_value_override=None, width=None):
@@ -160,6 +164,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             a field from an interface of the form ISomeInterface['fieldname']
         :param title: The string to use as the link title.
         :param tag: The HTML tag to use.
+        :param css_class: The css class value to use.
         :param content_box_id: The HTML id to use for this widget.
             Defaults to edit-<attribute name>.
         :param edit_view: The view name to use to generate the edit_url if
@@ -177,6 +182,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             context, exported_field, title, content_box_id,
             edit_view, edit_url, edit_title)
         self.tag = tag
+        self.css_class = css_class
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
         self.width = simplejson.dumps(width)
@@ -340,7 +346,8 @@ class InlineEditPickerWidget(WidgetBase):
 class InlinePersonEditPickerWidget(InlineEditPickerWidget):
     def __init__(self, context, exported_field, default_html,
                  content_box_id=None, header='Select an item',
-                 step_title='Search', assign_me_text='Pick me',
+                 step_title='Search', show_create_team=False,
+                 assign_me_text='Pick me',
                  remove_person_text='Remove person',
                  remove_team_text='Remove team',
                  null_display_value='None',
@@ -366,13 +373,13 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
         :param help_link: Used to set a link for help for the widget.
-        :param target_context: The target the person is being set for.
         """
         super(InlinePersonEditPickerWidget, self).__init__(
             context, exported_field, default_html, content_box_id, header,
             step_title, null_display_value,
             edit_view, edit_url, edit_title, help_link)
 
+        self._show_create_team = show_create_team
         self.assign_me_text = assign_me_text
         self.remove_person_text = remove_person_text
         self.remove_team_text = remove_team_text
@@ -393,11 +400,18 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
 
+    @property
+    def show_create_team(self):
+        return (self._show_create_team
+                and getFeatureFlag(
+                    "disclosure.add-team-person-picker.enabled"))
+
     def getConfig(self):
         config = super(InlinePersonEditPickerWidget, self).getConfig()
         config.update(dict(
             show_remove_button=self.optional_field,
             show_assign_me_button=self.show_assign_me_button,
+            show_create_team=self.show_create_team,
             assign_me_text=self.assign_me_text,
             remove_person_text=self.remove_person_text,
             remove_team_text=self.remove_team_text))
@@ -513,8 +527,8 @@ class InlineMultiCheckboxWidget(WidgetBase):
 
 def vocabulary_to_choice_edit_items(
     vocab, include_description=False, css_class_prefix=None,
-    disabled_items=None, as_json=False, name_fn=None, value_fn=None,
-    description_fn=None):
+    disabled_items=None, excluded_items=None,
+    as_json=False, name_fn=None, value_fn=None, description_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
 
     :vocab: The enumeration to iterate over.
@@ -532,6 +546,8 @@ def vocabulary_to_choice_edit_items(
         # SimpleTerm objects have the object itself at item.value.
         if safe_hasattr(item, 'value'):
             item = item.value
+        if excluded_items and item in excluded_items:
+            continue
         if name_fn is not None:
             name = name_fn(item)
         else:
@@ -584,7 +600,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
     __call__ = ViewPageTemplateFile('../templates/boolean-choice-widget.pt')
 
     def __init__(self, context, exported_field,
-                 tag, false_text, true_text, prefix=None,
+                 tag, false_text, true_text, css_class=None, prefix=None,
                  edit_view="+edit", edit_url=None, edit_title='',
                  content_box_id=None, header='Select an item'):
         """Create a widget wrapper.
@@ -595,6 +611,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
         :param tag: The HTML tag to use.
         :param false_text: The string to show for a false value.
         :param true_text: The string to show for a true value.
+        :param css_class: The css class value to use.
         :param prefix: Optional text to show before the value.
         :param edit_view: The view name to use to generate the edit_url if
             one is not specified.
@@ -610,6 +627,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
             edit_view, edit_url, edit_title)
         self.header = header
         self.tag = tag
+        self.css_class = css_class
         self.prefix = prefix
         self.true_text = true_text
         self.false_text = false_text

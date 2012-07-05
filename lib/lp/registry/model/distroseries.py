@@ -709,33 +709,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `HasMilestonesMixin`."""
         return (Milestone.distroseries == self)
 
-    def canUploadToPocket(self, pocket):
-        """See `IDistroSeries`."""
-        # Allow everything for distroseries in FROZEN state.
-        if self.status == SeriesStatus.FROZEN:
-            return True
-
-        # Define stable/released states.
-        stable_states = (SeriesStatus.SUPPORTED,
-                         SeriesStatus.CURRENT)
-
-        # Deny uploads for RELEASE pocket in stable states.
-        if (pocket == PackagePublishingPocket.RELEASE and
-            self.status in stable_states):
-            return False
-
-        # Deny uploads for post-release-only pockets in unstable states.
-        pre_release_pockets = (
-            PackagePublishingPocket.RELEASE,
-            PackagePublishingPocket.PROPOSED,
-            )
-        if (pocket not in pre_release_pockets and
-            self.status not in stable_states):
-            return False
-
-        # Allow anything else.
-        return True
-
     def updatePackageCount(self):
         """See `IDistroSeries`."""
         self.sourcecount = IStore(SourcePackagePublishingHistory).find(
@@ -1610,34 +1583,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if is_careful:
             return True
 
-        # PPA and PARTNER allow everything.
-        if publication.archive.allowUpdatesToReleasePocket():
-            return True
-
-        # FROZEN state also allow all pockets to be published.
-        if self.status == SeriesStatus.FROZEN:
-            return True
-
-        # If we're not republishing, we want to make sure that
-        # we're not publishing packages into the wrong pocket.
-        # Unfortunately for careful mode that can't hold true
-        # because we indeed need to republish everything.
-        pre_release_pockets = (
-            PackagePublishingPocket.RELEASE,
-            PackagePublishingPocket.PROPOSED,
-            )
-        if self.isUnstable() and publication.pocket not in pre_release_pockets:
-            log.error("Tried to publish %s (%s) into a non-release "
-                      "pocket on unstable series %s, skipping"
-                      % (publication.displayname, publication.id,
-                         self.displayname))
-            return False
-        if (not self.isUnstable() and
-            publication.pocket == PackagePublishingPocket.RELEASE):
-            log.error("Tried to publish %s (%s) into release pocket "
-                      "on stable series %s, skipping"
-                      % (publication.displayname, publication.id,
-                         self.displayname))
+        if not publication.archive.canModifySuite(self, publication.pocket):
+            log.error(
+                "Tried to publish %s (%s) into the %s pocket on series %s "
+                "(%s), skipping" % (
+                    publication.displayname, publication.id,
+                    publication.pocket, self.displayname, self.status.name))
             return False
 
         return True
@@ -1681,7 +1632,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             rebuild, overlays, overlay_pockets, overlay_components)
         try:
             initialize_series.check()
-        except InitializationError, e:
+        except InitializationError as e:
             raise DerivationError(e)
         getUtility(IInitializeDistroSeriesJobSource).create(
             self, parents, architectures, archindep_archtag, packagesets,

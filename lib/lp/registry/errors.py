@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesDifferenceError',
     'NotADerivedSeriesError',
+    'CannotDeleteCommercialSubscription',
     'CannotTransitionToCountryMirror',
     'CommercialSubscribersOnly',
     'CountryMirrorAlreadySet',
@@ -185,3 +186,7 @@ class JoinNotAllowed(Exception):
 @error_status(httplib.BAD_REQUEST)
 class PPACreationError(Exception):
     """Raised when there is an issue creating a new PPA."""
+
+
+class CannotDeleteCommercialSubscription(Exception):
+    """Raised when a commercial subscription cannot be deleted."""

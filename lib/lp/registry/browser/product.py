@@ -149,8 +149,9 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
+    PillarInvolvementView,
     PillarNavigationMixin,
-    PillarView,
+    PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -258,7 +259,7 @@ class ProductSetNavigation(Navigation):
 
 
 class ProductLicenseMixin:
-    """Adds license validation and requests reviews of licenses.
+    """Adds licence validation and requests reviews of licences.
 
     Subclasses must inherit from Launchpad[Edit]FormView as well.
 
@@ -270,7 +271,7 @@ class ProductLicenseMixin:
         """Validate 'licenses' and 'license_info'.
 
         'licenses' must not be empty unless the product already
-        exists and never has had a license set.
+        exists and never has had a licence set.
 
         'license_info' must not be empty if "Other/Proprietary"
         or "Other/Open Source" is checked.
@@ -280,24 +281,24 @@ class ProductLicenseMixin:
         if (len(licenses) == 0 and
             license_widget is not None and
             not license_widget.allow_pending_license):
-            # License is optional on +edit page if not already set.
+            # Licence is optional on +edit page if not already set.
             self.setFieldError(
                 'licenses',
-                'You must select at least one license.  If you select '
+                'You must select at least one licence.  If you select '
                 'Other/Proprietary or Other/OpenSource you must include a '
-                'description of the license.')
+                'description of the licence.')
         elif License.OTHER_PROPRIETARY in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
                     'license_info',
                     'A description of the "Other/Proprietary" '
-                    'license you checked is required.')
+                    'licence you checked is required.')
         elif License.OTHER_OPEN_SOURCE in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
                     'license_info',
                     'A description of the "Other/Open Source" '
-                    'license you checked is required.')
+                    'licence you checked is required.')
         else:
             # Launchpad is ok with all licenses used in this project.
             pass
@@ -339,7 +340,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class ProductInvolvementView(PillarView):
+class ProductInvolvementView(PillarInvolvementView):
     """Encourage configuration of involvement links for projects."""
 
     has_involvement = True
@@ -927,8 +928,8 @@ class ProductDownloadFileMixin:
         return None
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin):
+class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
+                  FeedsMixin, ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
 
@@ -938,7 +939,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, IProduct['owner'],
             format_link(self.context.owner),
             header='Change maintainer', edit_view='+edit-people',
-            step_title='Select a new maintainer')
+            step_title='Select a new maintainer', show_create_team=True)
 
     @property
     def driver_widget(self):
@@ -946,7 +947,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, IProduct['driver'],
             format_link(self.context.driver, empty_value="Not yet selected"),
             header='Change driver', edit_view='+edit-people',
-            step_title='Select a new driver',
+            step_title='Select a new driver', show_create_team=True,
             null_display_value="Not yet selected",
             help_link="/+help-registry/driver.html")
 
@@ -964,7 +965,9 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             product, title_field, title, 'h1')
         programming_lang = IProduct['programminglang']
         title = 'Edit programming languages'
-        additional_arguments = {'width': '9em'}
+        additional_arguments = {
+            'width': '9em',
+            'css_class': 'nowrap'}
         if self.context.programminglang is None:
             additional_arguments.update(dict(
                 default_text='Not yet specified',
@@ -1093,7 +1096,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     @cachedproperty
     def show_license_info(self):
-        """Should the view show the extra license information."""
+        """Should the view show the extra licence information."""
         return (
             License.OTHER_OPEN_SOURCE in self.context.licenses
             or License.OTHER_PROPRIETARY in self.context.licenses)
@@ -1133,7 +1136,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         if License.OTHER_PROPRIETARY in licenses:
             return 'Commercial subscription required'
         elif [License.DONT_KNOW] == licenses or [] == licenses:
-            return 'License required'
+            return 'Licence required'
         return BooleanChoiceWidget(
             self.context, IProduct['license_approved'],
             content_box_id='%s-edit-license-approved' % FormattersAPI(
@@ -1142,7 +1145,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             tag='span',
             false_text='Unapproved',
             true_text='Approved',
-            header='Does the license qualifiy the project for free hosting?')
+            header='Does the licence qualifiy the project for free hosting?')
 
 
 class ProductPurchaseSubscriptionView(ProductView):
@@ -1689,7 +1692,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin, ProductPrivateBugsMixin,
                     'must use the commercial subscription voucher system '
                     'to be allowed to use Launchpad.')
             else:
-                # An Other/Open Source license was specified so it may be
+                # An Other/Open Source licence was specified so it may be
                 # approved.
                 pass
 
@@ -2151,7 +2154,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         return pillar_set.count_search_matches(self._search_string)
 
     # StepView requires that its validate() method not be overridden, so make
-    # sure this calls the right method.  validateStep() will call the license
+    # sure this calls the right method.  validateStep() will call the licence
     # validation code.
     def validate(self, data):
         """See `MultiStepView`."""
@@ -2267,11 +2270,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     initial_values = {'transfer_to_registry': False}
 
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
-                  include_create_team_link=True)
+                  show_create_team_link=True)
     custom_widget('transfer_to_registry', CheckBoxWidget,
                   widget_class='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
-                  include_create_team_link=True)
+                  show_create_team_link=True)
 
     @property
     def page_title(self):

@@ -5,4 +5,6 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE Packageset ADD COLUMN score INTEGER DEFAULT 0 NOT NULL;
 
+COMMENT ON COLUMN Packageset.score IS 'Build score bonus for packages in this package set.';
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 18, 0);

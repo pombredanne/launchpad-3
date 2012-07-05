@@ -56,6 +56,7 @@ from lp.code.errors import (
     AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
+    BranchCannotChangeInformationType,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
@@ -110,9 +111,18 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessPolicyArtifactSource,
+    IAccessPolicySource,
+    )
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
@@ -125,6 +135,7 @@ from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     celebrity_logged_in,
     launchpadlib_for,
@@ -1124,7 +1135,8 @@ class TestBzrIdentity(TestCaseWithFactory):
 
     def test_private_linked_to_product(self):
         # Private branches also have a short lp:url.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         with celebrity_logged_in('admin'):
             product = branch.product
             ICanHasLinkedBranch(product).setBranch(branch)
@@ -1880,7 +1892,8 @@ class TestLandingCandidates(TestCaseWithFactory):
 
     def test_private_branch(self):
         """landing_candidates works for private branches."""
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         with person_logged_in(removeSecurityProxy(branch).owner):
             mp = self.factory.makeBranchMergeProposal(target_branch=branch)
             self.assertContentEqual([mp], branch.landing_candidates)
@@ -2161,7 +2174,8 @@ class TestCodebrowse(TestCaseWithFactory):
     def test_private(self):
         # The codebrowse URL for a private branch is a 'https' url.
         owner = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(private=True, owner=owner)
+        branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
         login_person(owner)
         self.assertEqual(
             'https://bazaar.launchpad.dev/' + branch.unique_name,
@@ -2333,25 +2347,43 @@ class TestBranchPrivacy(TestCaseWithFactory):
 
     def test_public_stacked_on_private_is_private(self):
         # A public branch stacked on a private branch is private.
-        stacked_on = self.factory.makeBranch(private=True)
-        branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
+        stacked_on = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(stacked_on=stacked_on)
         self.assertTrue(branch.private)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertFalse(branch.explicitly_private)
-
-    def test_private_stacked_on_public_is_private(self):
-        # A public branch stacked on a private branch is private.
-        stacked_on = self.factory.makeBranch(private=False)
-        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
-        self.assertTrue(branch.private)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
+        self.assertEqual(
+            stacked_on.information_type, branch.information_type)
+        self.assertEqual(
+            InformationType.USERDATA,
+            removeSecurityProxy(branch).information_type)
 
     def test_personal_branches_for_private_teams_are_private(self):
-        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)
         self.assertEqual(InformationType.USERDATA, branch.information_type)
+
+    def test__reconcileAccess_for_product_branch(self):
+        # _reconcileAccess uses a product policy for a product branch.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact([artifact])
+        removeSecurityProxy(branch)._reconcileAccess()
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).find(
+                [(branch.product, InformationType.USERDATA)]),
+            get_policies_for_artifact(branch))
+
+    def test__reconcileAccess_for_distro_branch(self):
+        # Branch privacy isn't yet supported for distributions, so no
+        # AccessPolicyArtifact is created for a distro branch.
+        branch = self.factory.makePackageBranch(
+            information_type=InformationType.USERDATA)
+        removeSecurityProxy(branch)._reconcileAccess()
+        self.assertEqual([], get_policies_for_artifact(branch))
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):
@@ -2369,8 +2401,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertFalse(branch.private)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
-        self.assertFalse(removeSecurityProxy(branch).transitively_private)
-        self.assertFalse(branch.explicitly_private)
+        self.assertEqual(InformationType.PUBLIC, branch.information_type)
 
     def test_public_to_private_allowed(self):
         # If there is a privacy policy allowing the branch owner to have
@@ -2380,8 +2411,6 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             branch.owner, BranchVisibilityRule.PRIVATE)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
         self.assertEqual(InformationType.USERDATA, branch.information_type)
 
     def test_public_to_private_not_allowed(self):
@@ -2401,32 +2430,35 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         admins = getUtility(ILaunchpadCelebrities).admin
         branch.setPrivate(True, admins.teamowner)
         self.assertTrue(branch.private)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
+        self.assertEqual(
+            InformationType.USERDATA,
+            removeSecurityProxy(branch).information_type)
 
     def test_private_to_private(self):
         # Setting a private branch to be private is a no-op.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         self.assertTrue(branch.private)
         branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
-        self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertTrue(branch.explicitly_private)
+        self.assertEqual(
+            InformationType.USERDATA,
+            removeSecurityProxy(branch).information_type)
 
     def test_private_to_public_allowed(self):
         # If the namespace policy allows public branches, then changing from
         # private to public is allowed.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
-        self.assertFalse(removeSecurityProxy(branch).transitively_private)
-        self.assertFalse(branch.explicitly_private)
         self.assertEqual(InformationType.PUBLIC, branch.information_type)
 
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
         # to change the branch to be public raises BranchCannotBePublic.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
@@ -2435,6 +2467,41 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             BranchCannotBePublic,
             branch.setPrivate,
             False, branch.owner)
+
+    def test_cannot_transition_with_private_stacked_on(self):
+        # If a public branch is stacked on a private branch, it can not
+        # change its information_type to public.
+        stacked_on = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(stacked_on=stacked_on)
+        self.assertRaises(
+            BranchCannotChangeInformationType,
+            branch.transitionToInformationType, InformationType.PUBLIC,
+            branch.owner)
+
+    def test_can_transition_with_public_stacked_on(self):
+        # If a private branch is stacked on a public branch, it can change
+        # its information_type.
+        stacked_on = self.factory.makeBranch()
+        branch = self.factory.makeBranch(
+            stacked_on=stacked_on, information_type=InformationType.USERDATA)
+        branch.transitionToInformationType(
+            InformationType.UNEMBARGOEDSECURITY, branch.owner)
+        self.assertEqual(
+            InformationType.UNEMBARGOEDSECURITY, branch.information_type)
+
+    def test_transition_reconciles_access(self):
+        # transitionToStatus calls _reconcileAccess to make the sharing
+        # schema match the new value.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            branch.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, branch.owner,
+                verify_policy=False)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY,
+            get_policies_for_artifact(branch)[0].type)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
@@ -2769,6 +2836,17 @@ class TestBranchSetTarget(TestCaseWithFactory):
         login_person(branch.owner)
         branch.setTarget(user=branch.owner)
         self.assertEqual(branch.owner, branch.target.context)
+
+    def test_reconciles_access(self):
+        # setTarget calls _reconcileAccess to make the sharing schema
+        # match the new target.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        new_product = self.factory.makeProduct()
+        with admin_logged_in():
+            branch.setTarget(user=branch.owner, project=new_product)
+        self.assertEqual(
+            new_product, get_policies_for_artifact(branch)[0].pillar)
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):

@@ -15,6 +15,7 @@ from sqlobject import (
     )
 from zope.interface import implements
 
+from lp.registry.errors import CannotDeleteCommercialSubscription
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
@@ -44,5 +45,13 @@ class CommercialSubscription(SQLBase):
 
     @property
     def is_active(self):
+        """See `ICommercialSubscription`"""
         now = datetime.datetime.now(pytz.timezone('UTC'))
         return self.date_starts < now < self.date_expires
+
+    def delete(self):
+        """See `ICommercialSubscription`"""
+        if self.is_active:
+            raise CannotDeleteCommercialSubscription(
+                "This CommercialSubscription is still active.")
+        self.destroySelf()

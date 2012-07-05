@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FTPMaster base classes.
@@ -30,6 +30,7 @@ class SoyuzScriptError(Exception):
 
     The textual content should explain the error.
     """
+
 
 class SoyuzScript(LaunchpadScript):
     """`LaunchpadScript` extended for Soyuz related use.
@@ -130,7 +131,7 @@ class SoyuzScript(LaunchpadScript):
         try:
             desired_component = getUtility(IComponentSet)[
                 self.options.component]
-        except NotFoundError, err:
+        except NotFoundError as err:
             raise SoyuzScriptError(err)
 
         if currently_published.component != desired_component:
@@ -161,53 +162,6 @@ class SoyuzScript(LaunchpadScript):
                 name, self.options.version, self.location))
         self._validatePublishing(latest_source)
         return latest_source
-
-    def findLatestPublishedBinaries(self, name):
-        """Build a list of suitable `BinaryPackagePublishingHistory`.
-
-        Try to find a group of binary package release matching the current
-        context. 'architecture' or 'version', if passed via command-line,
-        will restrict the lookup accordingly.
-        """
-        assert self.location is not None, 'Undefined location.'
-
-        # Avoiding circular imports.
-        from lp.soyuz.interfaces.publishing import active_publishing_status
-
-        target_binaries = []
-
-        if self.options.architecture is None:
-            architectures = self.location.distroseries.architectures
-        else:
-            try:
-                architectures = [
-                    self.location.distroseries[self.options.architecture]]
-            except NotFoundError, err:
-                raise SoyuzScriptError(err)
-
-        for architecture in architectures:
-            binaries = self.location.archive.getAllPublishedBinaries(
-                    name=name, version=self.options.version,
-                    status=active_publishing_status,
-                    distroarchseries=architecture,
-                    pocket=self.location.pocket,
-                    exact_match=True)
-            if not binaries:
-                continue
-            binary = binaries[0]
-            try:
-                self._validatePublishing(binary)
-            except SoyuzScriptError, err:
-                self.logger.warn(err)
-            else:
-                target_binaries.append(binary)
-
-        if not target_binaries:
-            raise SoyuzScriptError(
-                "Could not find binaries for '%s/%s' in %s" % (
-                name, self.options.version, self.location))
-
-        return target_binaries
 
     def _getUserConfirmation(self, full_question=None, valid_answers=None):
         """Use raw_input to collect user feedback.
@@ -299,7 +253,7 @@ class SoyuzScript(LaunchpadScript):
         try:
             self.setupLocation()
             self.mainTask()
-        except SoyuzScriptError, err:
+        except SoyuzScriptError as err:
             raise LaunchpadScriptFailure(err)
 
         self.finishProcedure()
@@ -307,6 +261,3 @@ class SoyuzScript(LaunchpadScript):
     def mainTask(self):
         """Main task to be performed by the script"""
         raise NotImplementedError
-
-
-

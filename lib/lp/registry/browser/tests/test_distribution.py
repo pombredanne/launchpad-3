@@ -1,15 +1,21 @@
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution page."""
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
 import soupmatchers
 from testtools.matchers import (
     MatchesAny,
     Not,
     )
 
+from zope.schema.vocabulary import SimpleVocabulary
+from lazr.restful.interfaces import IJSONRequestCache
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.registry.interfaces.person import CLOSED_TEAM_POLICY
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -31,6 +37,9 @@ class TestDistributionPage(TestCaseWithFactory):
         self.distro = self.factory.makeDistribution(
             name="distro", displayname=u'distro')
         self.simple_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_distributionpage_addseries_link(self):
         # An admin sees the +addseries link.
@@ -71,7 +80,7 @@ class TestDistributionPage(TestCaseWithFactory):
 
     def test_distributionpage_series_list_noadmin(self):
         # A non-admin does see the series list when there is a series.
-        series = self.factory.makeDistroSeries(distribution=self.distro,
+        self.factory.makeDistroSeries(distribution=self.distro,
             status=SeriesStatus.CURRENT)
         login_person(self.simple_user)
         view = create_initialized_view(
@@ -88,3 +97,26 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Active series and milestones'))
         self.assertThat(view.render(), series_header_match)
         self.assertThat(view.render(), Not(add_series_match))
+
+
+class TestDistributionView(TestCaseWithFactory):
+    """Tests the DistributionView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionView, self).setUp()
+        self.distro = self.factory.makeDistribution(
+            name="distro", displayname=u'distro')
+
+    def test_view_data_model(self):
+        # The view's json request cache contains the expected data.
+        view = create_initialized_view(self.distro, '+index')
+        cache = IJSONRequestCache(view.request)
+        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
+        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        self.assertContentEqual(
+            team_subscriptionpolicy_data,
+            cache.objects['team_subscriptionpolicy_data'])

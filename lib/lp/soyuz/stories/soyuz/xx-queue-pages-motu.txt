@@ -38,7 +38,7 @@ component:
 
     >>> motu_browser.open(
     ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
-    >>> motu_browser.getLink("Show uploads").click()
+    >>> motu_browser.getLink("All uploads").click()
     >>> print_queue(motu_browser.contents)
     Package             Version     Component Section Priority Sets Pocket  When
     netapplet...ddtp... -                                           Release 2006...

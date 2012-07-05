@@ -49,6 +49,7 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
+from zope.security.checker import canWrite
 from zope.security.interfaces import Unauthorized
 
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
@@ -61,6 +62,8 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
+from lp.app.browser.tales import format_link
 from lp.app.errors import NotFoundError
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -90,6 +93,7 @@ from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
     PillarNavigationMixin,
+    PillarViewMixin,
     )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
@@ -582,7 +586,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
     @property
     def has_exact_matches(self):
-        return self.exact_matches.count() > 0
+        return not self.exact_matches.is_empty()
 
     @property
     def has_matches(self):
@@ -645,7 +649,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         return self.has_exact_matches
 
 
-class DistributionView(HasAnnouncementsView, FeedsMixin):
+class DistributionView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -656,6 +660,53 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
     @property
     def page_title(self):
         return '%s in Launchpad' % self.context.displayname
+
+    @property
+    def maintainer_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IDistribution['owner'],
+            format_link(self.context.owner),
+            header='Change maintainer', edit_view='+reassign',
+            step_title='Select a new maintainer', show_create_team=True)
+
+    @property
+    def driver_widget(self):
+        if canWrite(self.context, 'driver'):
+            empty_value = 'Specify a driver'
+        else:
+            empty_value = 'None'
+        return InlinePersonEditPickerWidget(
+            self.context, IDistribution['driver'],
+            format_link(self.context.driver, empty_value=empty_value),
+            header='Change driver', edit_view='+driver',
+            null_display_value=empty_value,
+            step_title='Select a new driver', show_create_team=True)
+
+    @property
+    def members_widget(self):
+        if canWrite(self.context, 'members'):
+            empty_value = ' Specify the members team'
+        else:
+            empty_value = 'None'
+        return InlinePersonEditPickerWidget(
+            self.context, IDistribution['members'],
+            format_link(self.context.members, empty_value=empty_value),
+            header='Change the members team', edit_view='+selectmemberteam',
+            null_display_value=empty_value,
+            step_title='Select a new members team')
+
+    @property
+    def mirror_admin_widget(self):
+        if canWrite(self.context, 'mirror_admin'):
+            empty_value = ' Specify a mirror administrator'
+        else:
+            empty_value = 'None'
+        return InlinePersonEditPickerWidget(
+            self.context, IDistribution['mirror_admin'],
+            format_link(self.context.mirror_admin, empty_value=empty_value),
+            header='Change the mirror administrator',
+            edit_view='+selectmirroradmins', null_display_value=empty_value,
+            step_title='Select a new mirror administrator')
 
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""

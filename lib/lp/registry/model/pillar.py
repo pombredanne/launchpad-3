@@ -205,8 +205,8 @@ class PillarNameSet:
         if limit is None:
             limit = config.launchpad.default_batch_size
 
-        # Pull out the licenses as a subselect which is converted
-        # into a PostgreSQL array so that multiple licenses per product
+        # Pull out the licences as a subselect which is converted
+        # into a PostgreSQL array so that multiple licences per product
         # can be retrieved in a single row for each product.
         extra_column = ProductWithLicenses.composeLicensesColumn()
         result = self.build_search_query(text, [extra_column])

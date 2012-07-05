@@ -287,7 +287,7 @@ class TestBugCreation(TestCaseWithFactory):
                 UserCannotEditBugTaskMilestone,
                 getUtility(IBugSet).createBug, params)
 
-    def test_createBugWithoutTarget_cve(self):
+    def test_createBug_cve(self):
         cve = self.factory.makeCVE('1999-1717')
         target = self.factory.makeProduct()
         person = self.factory.makePerson()

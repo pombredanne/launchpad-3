@@ -42,20 +42,6 @@ span.see-all {
     text-decoration: underline;
     }
 
-.unseen,
-.hidden {
-    display: none;
-    }
-
-.invisible-link {
-    display: none;
-    }
-
-.invisible {
-    left: -9999em;
-    display: block;
-    }
-
 .transparent {
     opacity: 0;
     filter: alpha(opacity=0);
@@ -200,66 +186,40 @@ table.diff,
     line-height: 18px;
     }
 
-.sprite-after {
-    padding: 2px 18px 0 0;
+.action-icon {
+    /* Textual browsers read the text, graphical browsers see the sprite. */
+    display: inline-block;
+    margin-left: 6px;
+    width: 1px;
+    height: 16px;
+    vertical-align: text-top;
+    text-indent: 3px;
+    overflow: hidden;
+    }
+
+.action-icon + .action-icon {
+    margin-left: 0px;
     }
 
 h1 a.sprite,
 h2 a.sprite,
 h3 a.sprite {
+    position: relative;
+    top: 8px;
     font-size: 12px;
     }
 
-.icon-only {
-    border: 0;
-    padding: 0;
-    width: 14px;
+h3 a.sprite {
+    top: 4px;
     }
 
-div.icon-only {
-    height: 14px;
-    }
-
-input[type="submit"].icon-only {
-    height: 14px;
-    background-color: inherit;
-    cursor: pointer;
-    }
-
-span.icon-only {
-    padding-right: 14px;
-    line-height: 14px;
-    }
-
-/* XXX: EdwinGrubbs 2009-10-29 bug=463032
-   The reduced padding is only necessary to prevent parts of the
-   adjacent sprites in the consolidated image from appearing
-   when the line wraps and the default font size is 16.
-*/
-.vertical .sprite {
-    padding-bottom: 0px;
-    display: inline-block;
-    min-height: 16px;
-    width: 90%;
-    }
-
-.vertical .sprite:first-line {
-    line-height: 12px;
-    }
-
-/* XXX: mars 2009-11-22 bug=484848
-  Override the styling in the Bug Subscribers portlet.  Trying to display
-  as inline-block is of little use, as the maximum name width is 20
-  characters, and we are unlikely to wrap the text. Not to mention that
-  setting the display in this way breaks the icons.
-*/
-body.tab-bugs #portlet-subscribers .sprite {
+/* Hidden must be the last rule because it overides all other rules. */
+.inline {
     display: inline;
+    margin: 0;
     }
 
-/* Override sprite style for edit icon on "Mark as duplicate"
-   to make the text not appear on a second line.
-*/
-body.tab-bugs #duplicate-actions .sprite {
-    display: inline;
+.unseen,
+.hidden {
+    display: none;
     }

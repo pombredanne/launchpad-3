@@ -75,6 +75,7 @@ from zope.schema.vocabulary import (
 from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -121,9 +122,13 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.registry.vocabularies import (
+    InformationTypeVocabulary,
+    UserTeamsParticipationPlusSelfVocabulary,
+    )
 from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -425,7 +430,8 @@ class BranchMirrorMixin:
         return branch.url
 
 
-class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
+class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin,
+                 InformationTypePortletMixin):
 
     feed_types = (
         BranchFeedLink,
@@ -438,6 +444,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     label = page_title
 
     def initialize(self):
+        super(BranchView, self).initialize()
         self.branch = self.context
         self.notices = []
         # Cache permission so private team owner can be rendered.
@@ -706,32 +713,35 @@ class BranchNameValidationMixin:
         self.setFieldError(field_name, structured(message))
 
 
-class BranchEditSchema(Interface):
-    """Defines the fields for the edit form.
-
-    This is necessary so as to make an editable field for the branch privacy.
-    Normally the field is not editable through the interface in order to stop
-    direct setting of the private attribute, but in this case we actually want
-    the user to be able to edit it.
-    """
-    use_template(IBranch, include=[
-        'name',
-        'url',
-        'description',
-        'lifecycle_status',
-        'whiteboard',
-        ])
-    explicitly_private = copy_field(
-        IBranch['explicitly_private'], readonly=False)
-    reviewer = copy_field(IBranch['reviewer'], required=True)
-    owner = copy_field(IBranch['owner'], readonly=False)
-
-
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
 
-    schema = BranchEditSchema
     field_names = None
+
+    @cachedproperty
+    def schema(self):
+        class BranchEditSchema(Interface):
+            """Defines the fields for the edit form.
+
+            This is necessary so as to make an editable field for the
+            branch privacy.  Normally the field is not editable through
+            the interface in order to stop direct setting of the private
+            attribute, but in this case we actually want the user to be
+            able to edit it.
+            """
+            use_template(IBranch, include=[
+                'name',
+                'url',
+                'description',
+                'lifecycle_status',
+                'whiteboard',
+                ])
+            information_type = copy_field(
+                IBranch['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary())
+            reviewer = copy_field(IBranch['reviewer'], required=True)
+            owner = copy_field(IBranch['owner'], readonly=False)
+        return BranchEditSchema
 
     @property
     def page_title(self):
@@ -744,7 +754,7 @@ class BranchEditFormView(LaunchpadEditFormView):
     @property
     def adapters(self):
         """See `LaunchpadFormView`"""
-        return {BranchEditSchema: self.context}
+        return {self.schema: self.context}
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
@@ -767,20 +777,10 @@ class BranchEditFormView(LaunchpadEditFormView):
         if 'private' in data:
             # Read only for display.
             data.pop('private')
-        if 'explicitly_private' in data:
-            private = data.pop('explicitly_private')
-            if (private != self.context.private
-                and self.context.private == self.context.explicitly_private):
-                # We only want to show notifications if it actually changed.
-                self.context.setPrivate(private, self.user)
-                changed = True
-                if private:
-                    self.request.response.addNotification(
-                        "The branch is now private, and only visible to the "
-                        "owner and to subscribers.")
-                else:
-                    self.request.response.addNotification(
-                        "The branch is now publicly accessible.")
+        if 'information_type' in data:
+            information_type = data.pop('information_type')
+            self.context.transitionToInformationType(
+                information_type, self.user)
         if 'reviewer' in data:
             reviewer = data.pop('reviewer')
             if reviewer != self.context.code_reviewer:
@@ -1014,16 +1014,19 @@ class BranchUpgradeView(LaunchpadFormView):
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
-    """The main branch view for editing the branch attributes."""
+    """The main branch for editing the branch attributes."""
 
-    field_names = [
-        'owner', 'name', 'explicitly_private', 'url', 'description',
-        'lifecycle_status']
+    @property
+    def field_names(self):
+        return [
+            'owner', 'name', 'information_type', 'url', 'description',
+            'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
+        super(BranchEditView, self).setUpFields()
         # This is to prevent users from converting push/import
         # branches to pull branches.
         branch = self.context
@@ -1035,9 +1038,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # If the branch is private, and can be public, show the field.
             show_private_field = policy.canBranchesBePublic()
 
-            # If this branch is public but is deemed private because it is
-            # stacked on a private branch, disable the field.
-            if not branch.explicitly_private:
+            # If this branch is stacked on a private branch, disable the
+            # field.
+            if (branch.stacked_on and branch.stacked_on.information_type in
+                PRIVATE_INFORMATION_TYPES):
                 show_private_field = False
                 private_info = Bool(
                     __name__="private",
@@ -1061,7 +1065,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 user_has_special_branch_access(self.user))
 
         if not show_private_field:
-            self.form_fields = self.form_fields.omit('explicitly_private')
+            self.form_fields = self.form_fields.omit('information_type')
 
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
@@ -1116,7 +1120,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                     self.addError(
                         "%s is not allowed to own branches in %s." % (
                         owner.displayname, self.context.target.displayname))
-                except BranchExists, e:
+                except BranchExists as e:
                     self._setBranchExists(e.existing_branch)
 
         # If the branch is a MIRRORED branch, then the url
@@ -1313,7 +1317,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 return None
             else:
                 self.next_url = canonical_url(proposal)
-        except InvalidBranchMergeProposal, error:
+        except InvalidBranchMergeProposal as error:
             self.addError(str(error))
 
     def validate(self, data):
@@ -1369,7 +1373,7 @@ class BranchRequestImportView(LaunchpadFormView):
         except CodeImportAlreadyRunning:
             self.request.response.addNotification(
                 "The import is already running.")
-        except CodeImportAlreadyRequested, e:
+        except CodeImportAlreadyRequested as e:
             user = e.requesting_user
             adapter = queryAdapter(user, IPathAdapter, 'fmt')
             self.request.response.addNotification(

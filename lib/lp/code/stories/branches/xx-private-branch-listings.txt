@@ -25,6 +25,7 @@ Adding a private branch that is only visible by No Privileges Person
     >>> from zope.component import getUtility
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.code.enums import BranchType
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> login('no-priv@canonical.com')
@@ -32,7 +33,7 @@ Adding a private branch that is only visible by No Privileges Person
     >>> landscape = getUtility(IProductSet).getByName('landscape')
     >>> branch = factory.makePersonalBranch(
     ...     branch_type=BranchType.HOSTED, name='testing-branch',
-    ...     owner=no_priv, title='A Private Branch', private=True)
+    ...     owner=no_priv, information_type=InformationType.USERDATA)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(branch).product = landscape
     >>> flush_database_updates()
@@ -254,14 +255,14 @@ are shown.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
-    lp://dev/landscape - Landscape Developers ...
+    lp://dev/... - Landscape Developers ...
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     landscape_dev_browser.contents, 'branch-details'))
-    lp://dev/landscape - Landscape Developers ...
+    lp://dev/... - Landscape Developers ...
 
 But normal people can't.
 

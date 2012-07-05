@@ -43,6 +43,8 @@ __all__ = [
     'NoSuchPPA',
     'NoTokensForTeams',
     'PocketNotFound',
+    'PriorityNotFound',
+    'SectionNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
     'validate_external_dependencies',
@@ -156,13 +158,23 @@ class NoTokensForTeams(Exception):
 
 
 class ComponentNotFound(NameLookupFailed):
-    """Invalid source name."""
+    """Invalid component name."""
     _message_prefix = 'No such component'
 
 
 @error_status(httplib.BAD_REQUEST)
 class InvalidComponent(Exception):
     """Invalid component name."""
+
+
+class SectionNotFound(NameLookupFailed):
+    """Invalid section name."""
+    _message_prefix = "No such section"
+
+
+class PriorityNotFound(NameLookupFailed):
+    """Invalid priority name."""
+    _message_prefix = "No such priority"
 
 
 class NoSuchPPA(NameLookupFailed):
@@ -319,21 +331,13 @@ class IArchivePublic(IPrivacy, IHasOwner):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
-    commercial = Bool(
-        title=_("Commercial"),
-        required=True,
-        description=_(
-            "True if the archive is for commercial applications in the "
-            "Ubuntu Software Centre.  Governs whether subscribers or "
-            "uploaders get mail from Launchpad about archive events."))
-
     suppress_subscription_notifications = exported(
         Bool(
             title=_("Suppress subscription notifications"),
             required=True,
             description=_(
                 "Whether subscribers to private PPAs get emails about their "
-                "subscriptions.")))
+                "subscriptions. Has no effect on a public PPA.")))
 
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
@@ -464,12 +468,6 @@ class IArchiveView(IHasBuildRecords):
         title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
 
-    relative_build_score = Int(
-        title=_("Relative build score"), required=True, readonly=False,
-        description=_(
-            "A delta to apply to all build scores for the archive. Builds "
-            "with a higher score will build sooner."))
-
     external_dependencies = exported(
         Text(title=_("External dependencies"), required=False,
         readonly=False, description=_(
@@ -590,6 +588,28 @@ class IArchiveView(IHasBuildRecords):
         :return: True if they can, False if they cannot.
         """
 
+    def canModifySuite(distroseries, pocket):
+        """Decides whether or not to allow uploads for a given DS/pocket.
+
+        Some archive types (e.g. PPAs) allow uploads to the RELEASE pocket
+        regardless of the distroseries state.  For others (principally
+        primary archives), only allow uploads for RELEASE pocket in
+        unreleased distroseries, and conversely only allow uploads for
+        non-RELEASE pockets in released distroseries.
+        For instance, in edgy time :
+
+                warty         -> DENY
+                edgy          -> ALLOW
+                warty-updates -> ALLOW
+                edgy-security -> DENY
+
+        Note that FROZEN is not considered either 'stable' or 'unstable'
+        state.  Uploads to a FROZEN distroseries will end up in the
+        UNAPPROVED queue.
+
+        Return True if the upload is allowed and False if denied.
+        """
+
     def checkUploadToPocket(distroseries, pocket):
         """Check if an upload to a particular archive and pocket is possible.
 
@@ -640,7 +660,7 @@ class IArchiveView(IHasBuildRecords):
         """
 
     def verifyUpload(person, sourcepackagename, component,
-                      distroseries, strict_component=True):
+                      distroseries, strict_component=True, pocket=None):
         """Can 'person' upload 'sourcepackagename' to this archive ?
 
         :param person: The `IPerson` trying to upload to the package. Referred
@@ -653,6 +673,8 @@ class IArchiveView(IHasBuildRecords):
         :param strict_component: True if access to the specific component for
             the package is needed to upload to it. If False, then access to
             any component will do.
+        :param pocket: The `PackagePublishingPocket` being uploaded to. If
+            None, then pocket permissions are not checked.
         :return: CannotUploadToArchive if 'person' cannot upload to the
             archive,
             None otherwise.
@@ -776,6 +798,21 @@ class IArchiveView(IHasBuildRecords):
         """
 
     @operation_parameters(
+        person=Reference(schema=IPerson))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getPocketsForUploader(person):
+        """Return the pockets that 'person' can upload to this archive.
+
+        :param person: An `IPerson` wishing to upload to an archive.
+        :return: A `set` of `PackagePublishingPocket` items that 'person'
+            can upload to.
+        """
+
+    @operation_parameters(
         sourcepackagename=TextLine(
             title=_("Source package name"), required=True),
         person=Reference(schema=IPerson))
@@ -896,19 +933,11 @@ class IArchiveView(IHasBuildRecords):
     def getPackageDownloadTotal(bpr):
         """Get the total download count for a given package."""
 
-    def validatePPA(person, proposed_name):
-        """Check if a proposed name for a PPA is valid.
-
-        :param person: A Person identifying the requestor.
-        :param proposed_name: A String identifying the proposed PPA name.
-        """
-
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 
     def getOverridePolicy():
         """Returns an instantiated `IOverridePolicy` for the archive."""
-
 
     buildd_secret = TextLine(
         title=_("Build farm secret"), required=False,
@@ -1188,6 +1217,24 @@ class IArchiveView(IHasBuildRecords):
         :return: A list of `IArchivePermission` records.
         """
 
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        )
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getUploadersForPocket(pocket):
+        """Return `IArchivePermission` records for the pocket's uploaders.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :return: A list of `IArchivePermission` records.
+        """
+
     def hasAnyPermission(person):
         """Whether or not this person has any permission at all on this
         archive.
@@ -1242,13 +1289,14 @@ class IArchiveView(IHasBuildRecords):
         sponsored=Reference(
             schema=IPerson,
             title=_("Sponsored Person"),
-            description=_("The person who is being sponsored for this copy."))
+            description=_("The person who is being sponsored for this copy.")),
+        unembargo=Bool(title=_("Unembargo restricted files")),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None):
+                    sponsored=None, unembargo=False):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1269,6 +1317,9 @@ class IArchiveView(IHasBuildRecords):
             this will ensure that the person's email address is used as the
             "From:" on the announcement email and will also be recorded as
             the creator of the new source publication.
+        :param unembargo: if True, allow copying restricted files from a
+            private archive to a public archive, and re-upload them to the
+            public librarian when doing so.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -1300,13 +1351,14 @@ class IArchiveView(IHasBuildRecords):
         sponsored=Reference(
             schema=IPerson,
             title=_("Sponsored Person"),
-            description=_("The person who is being sponsored for this copy."))
+            description=_("The person who is being sponsored for this copy.")),
+        unembargo=Bool(title=_("Unembargo restricted files")),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
                      to_series=None, from_series=None, include_binaries=False,
-                     sponsored=None):
+                     sponsored=None, unembargo=False):
         """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
@@ -1330,6 +1382,9 @@ class IArchiveView(IHasBuildRecords):
             this will ensure that the person's email address is used as the
             "From:" on the announcement email and will also be recorded as
             the creator of the new source publication.
+        :param unembargo: if True, allow copying restricted files from a
+            private archive to a public archive, and re-upload them to the
+            public librarian when doing so.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -1522,6 +1577,30 @@ class IArchiveEdit(Interface):
 
     @operation_parameters(
         person=Reference(schema=IPerson),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        )
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    @operation_for_version("devel")
+    def newPocketUploader(person, pocket):
+        """Add permission for a person to upload to a pocket.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param component: A `PackagePublishingPocket`.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        :raises InvalidPocketForPartnerArchive: if this archive is a partner
+            archive and the pocket is not RELEASE or PROPOSED.
+        :raises InvalidPocketForPPA: if this archive is a PPA and the pocket
+            is not RELEASE.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
         component_name=TextLine(
             title=_("Component Name"), required=True))
     # Really IArchivePermission, set below to avoid circular import.
@@ -1584,6 +1663,23 @@ class IArchiveEdit(Interface):
 
         :param person: An `IPerson` whose permission should be revoked.
         :param component: An `IComponent` or textual component name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        )
+    @export_write_operation()
+    @operation_for_version("devel")
+    def deletePocketUploader(person, pocket):
+        """Revoke permission for the person to upload to the pocket.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param pocket: A `PackagePublishingPocket`.
         """
 
     @operation_parameters(
@@ -1710,8 +1806,18 @@ class IArchiveCommercial(Interface):
         """
 
 
+class IArchiveRestricted(Interface):
+    """A writeable interface for restricted attributes of archives."""
+
+    relative_build_score = exported(Int(
+        title=_("Relative build score"), required=True, readonly=False,
+        description=_(
+            "A delta to apply to all build scores for the archive. Builds "
+            "with a higher score will build sooner.")))
+
+
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView,
-               IArchiveCommercial):
+               IArchiveCommercial, IArchiveRestricted):
     """Main Archive interface."""
     export_as_webservice_entry()
 

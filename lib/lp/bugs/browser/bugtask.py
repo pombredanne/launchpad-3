@@ -702,6 +702,15 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def recommended_canonical_url(self):
         return canonical_url(self.context.bug, rootsite='bugs')
 
+    @property
+    def information_type(self):
+        use_private_flag = getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled')
+        value = self.context.bug.information_type.title
+        if (use_private_flag and value == InformationType.USERDATA.title):
+            value = "Private"
+        return value
+
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
@@ -1609,7 +1618,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         # from the form.
         if new_target is not missing and bugtask.target != new_target:
             changed = True
-            bugtask.transitionToTarget(new_target)
+            bugtask.transitionToTarget(new_target, self.user)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.
@@ -1977,8 +1986,8 @@ class BugsStatsMixin(BugsInfoMixin):
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
         bug_task_set = getUtility(IBugTaskSet)
-        groups = (BugSummary.status, BugSummary.importance,
-            BugSummary.has_patch, BugSummary.fixed_upstream)
+        groups = (
+            BugSummary.status, BugSummary.importance, BugSummary.has_patch)
         counts = bug_task_set.countBugs(self.user, [self.context], groups)
         # Sum the split out aggregates.
         new = 0
@@ -1987,12 +1996,10 @@ class BugsStatsMixin(BugsInfoMixin):
         critical = 0
         high = 0
         with_patch = 0
-        resolved_upstream = 0
         for metadata, count in counts.items():
             status = metadata[0]
             importance = metadata[1]
             has_patch = metadata[2]
-            was_resolved_upstream = metadata[3]
             if status == BugTaskStatus.NEW:
                 new += count
             elif status == BugTaskStatus.INPROGRESS:
@@ -2003,18 +2010,11 @@ class BugsStatsMixin(BugsInfoMixin):
                 high += count
             if has_patch and DISPLAY_BUG_STATUS_FOR_PATCHES[status]:
                 with_patch += count
-            if was_resolved_upstream:
-                resolved_upstream += count
             open += count
-        result = dict(new=new, open=open, inprogress=inprogress, high=high,
-            critical=critical, with_patch=with_patch,
-            resolved_upstream=resolved_upstream)
+        result = dict(
+            new=new, open=open, inprogress=inprogress, high=high,
+            critical=critical, with_patch=with_patch)
         return result
-
-    @property
-    def bugs_fixed_elsewhere_count(self):
-        """A count of bugs fixed elsewhere."""
-        return self._bug_stats['resolved_upstream']
 
     @property
     def open_cve_bugs_count(self):
@@ -2214,9 +2214,16 @@ class BugTaskListingItem:
             assignee = self.people[self.assigneeID].displayname
         reporter = self.people[self.bug.ownerID]
 
-        base_tag_url = "%s/?field.tag=" % canonical_url(
-            self.bugtask.target,
-            view_name="+bugs")
+        # the case that there is no target context (e.g. viewing bug that
+        # are related to a user account) is intercepted
+        if self.target_context is None:
+            base_tag_url = "%s/?field.tag=" % canonical_url(
+                self.bugtask.target,
+                view_name="+bugs")
+        else:
+            base_tag_url = "%s/?field.tag=" % canonical_url(
+                self.target_context,
+                view_name="+bugs")
 
         flattened = {
             'age': age,

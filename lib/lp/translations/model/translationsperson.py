@@ -239,7 +239,7 @@ class TranslationsPerson:
     def suggestTranslatableFiles(self, no_older_than=None):
         """See `ITranslationsPerson`."""
         # XXX JeroenVermeulen 2009-08-28: Ideally this would also check
-        # for a free license.  That's hard to do in SQL though.
+        # for a free licence.  That's hard to do in SQL though.
         languages = set([
             language.id for language in self.translatable_languages])
         results = self._queryTranslatableFiles(

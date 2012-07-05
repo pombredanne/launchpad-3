@@ -50,6 +50,7 @@ from lp.code.model.sourcepackagerecipebuild import (
     )
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.tests.helpers import recipe_parser_newest_version
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
@@ -140,7 +141,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """An exception should be raised if the base branch is private."""
         owner = self.factory.makePerson()
         with person_logged_in(owner):
-            branch = self.factory.makeAnyBranch(private=True, owner=owner)
+            branch = self.factory.makeAnyBranch(
+                owner=owner, information_type=InformationType.USERDATA)
             components = self.makeRecipeComponents(branches=[branch])
             recipe_source = getUtility(ISourcePackageRecipeSource)
             e = self.assertRaises(
@@ -155,7 +157,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         with person_logged_in(owner):
             base_branch = self.factory.makeAnyBranch(owner=owner)
             referenced_branch = self.factory.makeAnyBranch(
-                private=True, owner=owner)
+                owner=owner, information_type=InformationType.USERDATA)
             branches = [base_branch, referenced_branch]
             components = self.makeRecipeComponents(branches=branches)
             recipe_source = getUtility(ISourcePackageRecipeSource)
@@ -529,7 +531,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             self.assertTrue(check_permission('launchpad.View', recipe))
-        removeSecurityProxy(branch).explicitly_private = True
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', recipe))
         self.assertFalse(check_permission('launchpad.View', recipe))
@@ -696,7 +699,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         source_package_recipe = self.factory.makeSourcePackageRecipe()
         with person_logged_in(source_package_recipe.owner):
             branch = self.factory.makeAnyBranch(
-                private=True, owner=source_package_recipe.owner)
+                owner=source_package_recipe.owner,
+                information_type=InformationType.USERDATA)
             recipe_text = self.factory.makeRecipeText(branch)
             e = self.assertRaises(
                 PrivateBranchRecipe, source_package_recipe.setRecipeText,
@@ -711,7 +715,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             base_branch = self.factory.makeAnyBranch(
                 owner=source_package_recipe.owner)
             referenced_branch = self.factory.makeAnyBranch(
-                private=True, owner=source_package_recipe.owner)
+                owner=source_package_recipe.owner,
+                information_type=InformationType.USERDATA)
             recipe_text = self.factory.makeRecipeText(
                 base_branch, referenced_branch)
             e = self.assertRaises(

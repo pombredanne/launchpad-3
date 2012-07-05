@@ -76,6 +76,7 @@ from lp.code.model.diff import (
     IncrementalDiff,
     PreviewDiff,
     )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -194,10 +195,13 @@ class BranchMergeProposal(SQLBase):
     @property
     def private(self):
         return (
-            self.source_branch.transitively_private or
-            self.target_branch.transitively_private or
+            (self.source_branch.information_type
+             in PRIVATE_INFORMATION_TYPES) or
+            (self.target_branch.information_type
+             in PRIVATE_INFORMATION_TYPES) or
             (self.prerequisite_branch is not None and
-             self.prerequisite_branch.transitively_private))
+             (self.prerequisite_branch.information_type in
+              PRIVATE_INFORMATION_TYPES)))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -634,17 +638,29 @@ class BranchMergeProposal(SQLBase):
                 self._subscribeUserToStackedBranch(
                     branch.stacked_on, user, checked_branches)
 
+    def _acceptable_to_give_visibility(self, branch, reviewer):
+        # If the branch is private, only closed teams can be subscribed to
+        # prevent leaks.
+        if (branch.information_type in PRIVATE_INFORMATION_TYPES and
+            reviewer.is_team and reviewer.anyone_can_join()):
+            return False
+        return True
+
     def _ensureAssociatedBranchesVisibleToReviewer(self, reviewer):
         """ A reviewer must be able to see the source and target branches.
 
         Currently, we ensure the required visibility by subscribing the user
-        to the branch and those on which it is stacked.
+        to the branch and those on which it is stacked. We do not subscribe
+        the reviewer if the branch is private and the reviewer is an open
+        team.
         """
         source = self.source_branch
-        if not source.visibleByUser(reviewer):
+        if (not source.visibleByUser(reviewer) and
+            self._acceptable_to_give_visibility(source, reviewer)):
             self._subscribeUserToStackedBranch(source, reviewer)
         target = self.target_branch
-        if not target.visibleByUser(reviewer):
+        if (not target.visibleByUser(reviewer) and
+            self._acceptable_to_give_visibility(source, reviewer)):
             self._subscribeUserToStackedBranch(target, reviewer)
 
     def nominateReviewer(self, reviewer, registrant, review_type=None,

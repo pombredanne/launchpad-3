@@ -72,7 +72,6 @@ class IBugSummary(Interface):
     viewed_by = Object(IPerson, readonly=True)
 
     has_patch = Bool(readonly=True)
-    fixed_upstream = Bool(readonly=True)
 
 
 class IBugSummaryDimension(Interface):

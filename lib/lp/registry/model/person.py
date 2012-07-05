@@ -271,6 +271,7 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     InvalidEmailAddress,
+    VALID_EMAIL_STATUSES,
     )
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import (
@@ -304,6 +305,7 @@ from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -312,7 +314,10 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import (
+    Archive,
+    validate_ppa,
+    )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
@@ -582,7 +587,7 @@ class Person(
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         enum=TeamSubscriptionPolicy,
-        default=TeamSubscriptionPolicy.MODERATED,
+        default=TeamSubscriptionPolicy.RESTRICTED,
         storm_validator=validate_subscription_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
@@ -840,7 +845,6 @@ class Person(
             SpecificationFilter.ASSIGNEE,
             SpecificationFilter.DRAFTER,
             SpecificationFilter.APPROVER,
-            SpecificationFilter.FEEDBACK,
             SpecificationFilter.SUBSCRIBER])
         for role in roles:
             if role in filter:
@@ -880,10 +884,6 @@ class Person(
             base += """ OR Specification.id in
                 (SELECT specification FROM SpecificationSubscription
                  WHERE person = %(my_id)d)"""
-        if SpecificationFilter.FEEDBACK in filter:
-            base += """ OR Specification.id in
-                (SELECT specification FROM SpecificationFeedback
-                 WHERE reviewer = %(my_id)d)"""
         base += ') '
 
         # filter out specs on inactive products
@@ -2974,15 +2974,12 @@ class Person(
     def createPPA(self, name=None, displayname=None, description=None,
                   private=False, suppress_subscription_notifications=False):
         """See `IPerson`."""
-        # XXX: We pass through the Person on whom the PPA is being created,
-        # but validatePPA assumes that that Person is also the one creating
-        # the PPA.  This is not true in general, and particularly not for
-        # teams.  Instead, both the acting user and the target of the PPA
-        # creation ought to be passed through.
-        errors = Archive.validatePPA(
-            self, name, private, suppress_subscription_notifications)
+        errors = validate_ppa(self, name, private)
         if errors:
             raise PPACreationError(errors)
+        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
+        # for Ubuntu distribution. PPA creation should be revisited when we
+        # start supporting other distribution (debian, mainly).
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
@@ -3166,6 +3163,30 @@ class PersonSet:
             key=lambda obj: (obj.karma, obj.displayname, obj.id),
             reverse=True)
 
+    def getByOpenIDIdentifier(self, identifier):
+        """See `IPersonSet`."""
+        # We accept a full OpenID identifier URL from either the
+        # Launchpad- or Ubuntu-branded OpenID services. But we only
+        # store the unique suffix of the identifier, so we need to strip
+        # the rest of the URL.
+        # + is reserved, so is not allowed to be reencoded in transit, so
+        # should never appear as its percent-encoded equivalent.
+        identifier_suffix = None
+        for vhost in ('openid', 'ubuntu_openid'):
+            root = '%s+id/' % allvhosts.configs[vhost].rooturl
+            if identifier.startswith(root):
+                identifier_suffix = identifier.replace(root, '', 1)
+                break
+        if identifier_suffix is None:
+            return None
+
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                identifier_suffix)
+        except LookupError:
+            return None
+        return IPerson(account)
+
     def getOrCreateByOpenIDIdentifier(
         self, openid_identifier, email_address, full_name,
         creation_rationale, comment):
@@ -3183,7 +3204,9 @@ class PersonSet:
         # unnecessary.
         with MasterDatabasePolicy():
             email, person = (
-                getUtility(IPersonSet).getByEmails([email_address]).one()
+                getUtility(IPersonSet).getByEmails(
+                    [email_address],
+                    filter_status=False).one()
                 or (None, None))
             identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
@@ -3355,13 +3378,14 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        person = getUtility(IPersonSet).getByEmail(email)
-
+        person = getUtility(IPersonSet).getByEmail(
+                    email,
+                    filter_status=False)
+        
         if person is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
                 registrant=registrant, hide_email_addresses=True)
-
         return person
 
     def getByName(self, name, ignore_merged=True):
@@ -3577,28 +3601,32 @@ class PersonSet:
         except SQLObjectNotFound:
             return None
 
-    def getByEmail(self, email):
+    def getByEmail(self, email, filter_status=True):
         """See `IPersonSet`."""
-        address = self.getByEmails([email]).one()
+        address = self.getByEmails([email], filter_status=filter_status).one()
         if address:
             return address[1]
 
-    def getByEmails(self, emails, include_hidden=True):
+    def getByEmails(self, emails, include_hidden=True, filter_status=True):
         """See `IPersonSet`."""
         if not emails:
             return EmptyResultSet()
         addresses = [
             ensure_unicode(address.lower().strip())
             for address in emails]
-        extra_query = True
+        hidden_query = True
+        filter_query = True
         if not include_hidden:
-            extra_query = Person.hide_email_addresses == False
+            hidden_query = Person.hide_email_addresses == False
+        if filter_status:
+            filter_query = EmailAddress.status.is_in(VALID_EMAIL_STATUSES)
         return IStore(Person).using(
             Person,
             Join(EmailAddress, EmailAddress.personID == Person.id)
         ).find(
             (EmailAddress, Person),
-            EmailAddress.email.lower().is_in(addresses), extra_query)
+            EmailAddress.email.lower().is_in(addresses),
+            filter_query, hidden_query)
 
     def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):
@@ -3880,40 +3908,6 @@ class PersonSet:
             ''' % vars())
         cur.execute('''
             DELETE FROM StructuralSubscription WHERE subscriber=%(from_id)d
-            ''' % vars())
-
-    def _mergeSpecificationFeedback(self, cur, from_id, to_id):
-        # Update the SpecificationFeedback entries that will not conflict
-        # and trash the rest.
-
-        # First we handle the reviewer.
-        cur.execute('''
-            UPDATE SpecificationFeedback
-            SET reviewer=%(to_id)d
-            WHERE reviewer=%(from_id)d AND specification NOT IN
-                (
-                SELECT specification
-                FROM SpecificationFeedback
-                WHERE reviewer = %(to_id)d
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM SpecificationFeedback WHERE reviewer=%(from_id)d
-            ''' % vars())
-
-        # And now we handle the requester.
-        cur.execute('''
-            UPDATE SpecificationFeedback
-            SET requester=%(to_id)d
-            WHERE requester=%(from_id)d AND specification NOT IN
-                (
-                SELECT specification
-                FROM SpecificationFeedback
-                WHERE requester = %(to_id)d
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM SpecificationFeedback WHERE requester=%(from_id)d
             ''' % vars())
 
     def _mergeSpecificationSubscription(self, cur, from_id, to_id):
@@ -4311,10 +4305,6 @@ class PersonSet:
 
         self._mergeStructuralSubscriptions(cur, from_id, to_id)
         skip.append(('structuralsubscription', 'subscriber'))
-
-        self._mergeSpecificationFeedback(cur, from_id, to_id)
-        skip.append(('specificationfeedback', 'reviewer'))
-        skip.append(('specificationfeedback', 'requester'))
 
         self._mergeSpecificationSubscription(cur, from_id, to_id)
         skip.append(('specificationsubscription', 'person'))

@@ -32,7 +32,10 @@ from lp.registry.errors import (
     CommercialSubscribersOnly,
     OpenTeamLinkageError,
     )
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicySource,
+    IAccessPolicyGrantSource,
+    )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -358,6 +361,19 @@ class TestProduct(TestCaseWithFactory):
             InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
         self.assertContentEqual(expected, [policy.type for policy in ap])
 
+    def test_product_creation_grants_maintainer_access(self):
+        # Creating a new product creates an access grant for the maintainer
+        # for all default policies.
+        owner = self.factory.makePerson()
+        product = getUtility(IProductSet).createProduct(
+            owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+            licenses=[License.MIT])
+        policies = getUtility(IAccessPolicySource).findByPillar((product,))
+        grants = getUtility(IAccessPolicyGrantSource).findByPolicy(policies)
+        expected_grantess = set([product.owner])
+        grantees = set([grant.grantee for grant in grants])
+        self.assertEqual(expected_grantess, grantees)
+
 
 class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
@@ -460,7 +476,7 @@ class ProductAttributeCacheTestCase(TestCaseWithFactory):
 
 
 class ProductLicensingTestCase(TestCaseWithFactory):
-    """Test the rules of licenses and commercial subscriptions."""
+    """Test the rules of licences and commercial subscriptions."""
 
     layer = DatabaseFunctionalLayer
     event_listener = None
@@ -484,8 +500,8 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         self.assertEqual((License.GNU_GPL_V2, License.MIT), product.licenses)
 
     def test_setLicense_handles_no_change(self):
-        # The project_reviewed property is not reset, if the new licenses
-        # are identical to the current licenses.
+        # The project_reviewed property is not reset, if the new licences
+        # are identical to the current licences.
         product = self.factory.makeProduct(licenses=[License.MIT])
         with celebrity_logged_in('registry_experts'):
             product.project_reviewed = True
@@ -497,8 +513,8 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         self.assertEqual([], self.events)
 
     def test_setLicense(self):
-        # The project_reviewed property is not reset, if the new licenses
-        # are identical to the current licenses.
+        # The project_reviewed property is not reset, if the new licences
+        # are identical to the current licences.
         product = self.factory.makeProduct()
         self.setup_event_listener()
         with person_logged_in(product.owner):
@@ -506,7 +522,6 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         self.assertEqual((License.MIT, ), product.licenses)
         self.assertEqual(1, len(self.events))
         self.assertEqual(product, self.events[0].object)
-        self.assertEqual(['licenses'], self.events[0].edited_fields)
 
     def test_setLicense_also_sets_reviewed(self):
         # The project_reviewed attribute it set to False if the licenses
@@ -532,14 +547,14 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertIs(False, product.project_reviewed)
 
     def test_setLicense_without_empty_licenses_error(self):
-        # A project must have at least one license.
+        # A project must have at least one licence.
         product = self.factory.makeProduct(licenses=[License.MIT])
         with person_logged_in(product.owner):
             self.assertRaises(
                 ValueError, setattr, product, 'licenses', [])
 
     def test_setLicense_without_non_licenses_error(self):
-        # A project must have at least one license.
+        # A project must have at least one licence.
         product = self.factory.makeProduct(licenses=[License.MIT])
         with person_logged_in(product.owner):
             self.assertRaises(

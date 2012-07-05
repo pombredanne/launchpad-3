@@ -17,6 +17,7 @@ __all__ = [
     'IObjectReassignment',
     'IPerson',
     'IPersonClaim',
+    'IPersonEditRestricted',
     'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
@@ -1482,33 +1483,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: True if the user was subscribed, false if they weren't.
         """
 
-    @operation_parameters(
-        name=TextLine(required=True, constraint=name_validator),
-        displayname=TextLine(required=False),
-        description=TextLine(required=False),
-        private=Bool(required=False),
-        suppress_subscription_notifications=Bool(required=False),
-        )
-    @export_factory_operation(Interface, [])  # Really IArchive.
-    @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None,
-                  private=False, suppress_subscription_notifications=False):
-        """Create a PPA.
-
-        :param name: A string with the name of the new PPA to create. If
-            not specified, defaults to 'ppa'.
-        :param displayname: The displayname for the new PPA.
-        :param description: The description for the new PPA.
-        :param private: Whether or not to create a private PPA. Defaults to
-            False, which means the PPA will be public.
-        :param suppress_subscription_notifications: Whether or not to suppress
-            emails to new subscribers about their subscriptions.  Only
-            meaningful for private PPAs.
-        :raises: `PPACreationError` if an error is encountered
-
-        :return: a PPA `IArchive` record.
-        """
-
     def checkRename():
         """Check if a person or team can be renamed.
 
@@ -1826,6 +1800,33 @@ class IPersonEditRestricted(Interface):
             about the change.
         """
 
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False),
+        private=Bool(required=False),
+        suppress_subscription_notifications=Bool(required=False),
+        )
+    @export_factory_operation(Interface, [])  # Really IArchive.
+    @operation_for_version("beta")
+    def createPPA(name=None, displayname=None, description=None,
+                  private=False, suppress_subscription_notifications=False):
+        """Create a PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+            not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :param private: Whether or not to create a private PPA. Defaults to
+            False, which means the PPA will be public.
+        :param suppress_subscription_notifications: Whether or not to suppress
+            emails to new subscribers about their subscriptions.  Only
+            meaningful for private PPAs.
+        :raises: `PPACreationError` if an error is encountered
+
+        :return: a PPA `IArchive` record.
+        """
+
 
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
@@ -1941,7 +1942,7 @@ class ITeamPublic(Interface):
     subscriptionpolicy = exported(
         TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
                vocabulary=TeamSubscriptionPolicy,
-               default=TeamSubscriptionPolicy.MODERATED, required=True,
+               default=TeamSubscriptionPolicy.RESTRICTED, required=True,
                description=_(
                 TeamSubscriptionPolicy.__doc__.split('\n\n')[1])),
         exported_as='subscription_policy')
@@ -2152,6 +2153,18 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
+    @operation_parameters(identifier=TextLine(required=True))
+    @operation_returns_entry(IPerson)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getByOpenIDIdentifier(identifier):
+        """Get the person for a given OpenID identifier.
+
+        :param openid_identifier: full OpenID identifier URL for the user.
+        :return: the corresponding `IPerson` or None if the identifier is
+            unknown
+        """
+
     def getOrCreateByOpenIDIdentifier(openid_identifier, email,
                                       full_name, creation_rationale, comment):
         """Get or create a person for a given OpenID identifier.
@@ -2166,7 +2179,8 @@ class IPersonSet(Interface):
         If there is no existing Launchpad person for the account, we
         create it.
 
-        :param openid_identifier: representing the authenticated user.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
         :param email_address: the email address of the user.
         :param full_name: the full name of the user.
         :param creation_rationale: When an account or person needs to

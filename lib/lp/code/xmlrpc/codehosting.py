@@ -219,10 +219,10 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             except InvalidNamespace:
                 return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
-            except NoSuchPerson, e:
+            except NoSuchPerson as e:
                 return faults.NotFound(
                     "User/team '%s' does not exist." % e.name)
-            except NoSuchProduct, e:
+            except NoSuchProduct as e:
                 return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
             except NoSuchSourcePackageName as e:
@@ -231,17 +231,17 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 except InvalidName:
                     return faults.InvalidSourcePackageName(e.name)
                 return self.createBranch(login_id, branch_path)
-            except NameLookupFailed, e:
+            except NameLookupFailed as e:
                 return faults.NotFound(str(e))
             try:
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
-            except LaunchpadValidationError, e:
+            except LaunchpadValidationError as e:
                 msg = e.args[0]
                 if isinstance(msg, unicode):
                     msg = msg.encode('utf-8')
                 return faults.PermissionDenied(msg)
-            except BranchCreationException, e:
+            except BranchCreationException as e:
                 return faults.PermissionDenied(str(e))
 
             if link_func:

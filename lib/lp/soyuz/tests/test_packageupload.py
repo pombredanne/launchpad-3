@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -8,8 +8,15 @@ from email import message_from_string
 import os
 import shutil
 
+from lazr.restfulclient.errors import (
+    BadRequest,
+    Unauthorized,
+    )
+from testtools.matchers import Equals
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+from zope.schema import getFields
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.tests import datadir
@@ -20,6 +27,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.soyuz.adapters.overrides import SourceOverride
@@ -29,17 +37,33 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
+    IPackageUpload,
     IPackageUploadSet,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    admin_logged_in,
+    api_url,
+    launchpadlib_for,
+    person_logged_in,
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import switch_dbuser
-from lp.testing.layers import LaunchpadZopelessLayer
-from lp.testing.matchers import Provides
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.matchers import (
+    HasQueryCount,
+    Provides,
+    )
 
 
 class PackageUploadTestCase(TestCaseWithFactory):
@@ -99,9 +123,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         ppa = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        ppa.buildd_secret = 'x'
-        ppa.private = True
+            purpose=ArchivePurpose.PPA, private=True)
 
         changesfile_path = (
             'lib/lp/archiveuploader/tests/data/suite/'
@@ -247,11 +269,9 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEquals(
             str(to_addrs), "['breezy-autotest-changes@lists.ubuntu.com']")
 
-        expected_subject = (
-            '[ubuntutest/breezy-autotest-security]\n\t'
-            'dist-upgrader_20060302.0120_all.tar.gz, '
-            'foocomm 1.0-2 (Accepted)')
-        self.assertEquals(msg['Subject'], expected_subject)
+        self.assertEquals('[ubuntutest/breezy-autotest-security]\n '
+            'dist-upgrader_20060302.0120_all.tar.gz, foocomm 1.0-2 (Accepted)',
+            msg['Subject'].replace('\n\t', '\n '))
 
         self.assertEquals(body,
             'foocomm (1.0-2) breezy; urgency=low\n\n'
@@ -363,6 +383,16 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEqual(spr.sourcepackagename.name, upload.package_name)
         self.assertEqual(spr.version, upload.package_version)
 
+    def test_publish_sets_packageupload(self):
+        # Publishing a PackageUploadSource will pass itself to the source
+        # publication that was created.
+        upload = self.factory.makeSourcePackageUpload()
+        self.factory.makeComponentSelection(
+            upload.distroseries, upload.sourcepackagerelease.component)
+        upload.setAccepted()
+        [spph] = upload.realiseUpload()
+        self.assertEqual(spph.packageupload, upload)
+
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
@@ -371,7 +401,6 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
     def makeUploadWithPackageCopyJob(self, sourcepackagename=None):
         """Create a `PackageUpload` plus attached `PlainPackageCopyJob`."""
-        from lp.soyuz.model.packagecopyjob import IPackageCopyJobSource
         upload = self.factory.makeCopyJobPackageUpload(
             sourcepackagename=sourcepackagename)
         return upload, getUtility(IPackageCopyJobSource).wrap(
@@ -839,9 +868,241 @@ class TestPackageUploadSet(TestCaseWithFactory):
             list(reversed(ordered_uploads)),
             list(getUtility(IPackageUploadSet).getAll(series)))
 
+    def test_getAll_can_preload_exported_properties(self):
+        # getAll preloads everything exported on the webservice.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeSourcePackageUpload(distroseries=distroseries)
+        self.factory.makeBuildPackageUpload(distroseries=distroseries)
+        self.factory.makeCustomPackageUpload(distroseries=distroseries)
+        uploads = list(getUtility(IPackageUploadSet).getAll(distroseries))
+        with StormStatementRecorder() as recorder:
+            for name, field in getFields(IPackageUpload).items():
+                if field.queryTaggedValue("lazr.restful.exported") is not None:
+                    for upload in uploads:
+                        getattr(upload, name)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+
     def test_rejectFromQueue_no_changes_file(self):
         # If the PackageUpload has no changesfile, we can still reject it.
         pu = self.factory.makePackageUpload()
         pu.changesfile = None
         pu.rejectFromQueue()
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
+
+
+class TestPackageUploadWebservice(TestCaseWithFactory):
+    """Test the exposure of queue methods to the web service."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPackageUploadWebservice, self).setUp()
+        self.webservice = None
+        self.distroseries = self.factory.makeDistroSeries()
+        self.main = self.factory.makeComponent("main")
+        self.factory.makeComponentSelection(
+            distroseries=self.distroseries, component=self.main)
+        self.universe = self.factory.makeComponent("universe")
+        self.factory.makeComponentSelection(
+            distroseries=self.distroseries, component=self.universe)
+
+    def makeQueueAdmin(self, components):
+        person = self.factory.makePerson()
+        for component in components:
+            getUtility(IArchivePermissionSet).newQueueAdmin(
+                self.distroseries.main_archive, person, component)
+        return person
+
+    def load(self, obj, person=None):
+        if person is None:
+            with admin_logged_in():
+                person = self.factory.makePerson()
+        if self.webservice is None:
+            self.webservice = launchpadlib_for("testing", person)
+        return self.webservice.load(api_url(obj))
+
+    def makeSourcePackageUpload(self, person, **kwargs):
+        with person_logged_in(person):
+            upload = self.factory.makeSourcePackageUpload(
+                distroseries=self.distroseries, **kwargs)
+            transaction.commit()
+            spr = upload.sourcepackagerelease
+            for extension in ("dsc", "tar.gz"):
+                filename = "%s_%s.%s" % (spr.name, spr.version, extension)
+                lfa = self.factory.makeLibraryFileAlias(filename=filename)
+                spr.addFile(lfa)
+        transaction.commit()
+        return upload, self.load(upload, person)
+
+    def makeBinaryPackageUpload(self, person, binarypackagename=None,
+                                component=None):
+        with person_logged_in(person):
+            upload = self.factory.makeBuildPackageUpload(
+                distroseries=self.distroseries,
+                binarypackagename=binarypackagename, component=component)
+            self.factory.makeBinaryPackageRelease(
+                build=upload.builds[0].build, component=component)
+            transaction.commit()
+            for build in upload.builds:
+                for bpr in build.build.binarypackages:
+                    filename = "%s_%s_%s.deb" % (
+                        bpr.name, bpr.version, bpr.build.arch_tag)
+                    lfa = self.factory.makeLibraryFileAlias(filename=filename)
+                    bpr.addFile(lfa)
+        transaction.commit()
+        return upload, self.load(upload, person)
+
+    def makeCustomPackageUpload(self, person, **kwargs):
+        with person_logged_in(person):
+            upload = self.factory.makeCustomPackageUpload(
+                distroseries=self.distroseries, **kwargs)
+        transaction.commit()
+        return upload, self.load(upload, person)
+
+    def assertRequiresEdit(self, method_name, **kwargs):
+        """Test that a web service queue method requires launchpad.Edit."""
+        with admin_logged_in():
+            upload = self.factory.makeSourcePackageUpload()
+        transaction.commit()
+        ws_upload = self.load(upload)
+        self.assertRaises(
+            Unauthorized, getattr(ws_upload, method_name), **kwargs)
+
+    def test_edit_permissions(self):
+        self.assertRequiresEdit("acceptFromQueue")
+        self.assertRequiresEdit("rejectFromQueue")
+
+    def test_acceptFromQueue_archive_admin(self):
+        # acceptFromQueue as an archive admin accepts the upload.
+        person = self.makeQueueAdmin([self.main])
+        upload, ws_upload = self.makeSourcePackageUpload(
+            person, component=self.main)
+
+        self.assertEqual("New", ws_upload.status)
+        ws_upload.acceptFromQueue()
+        self.assertEqual("Done", ws_upload.status)
+
+    def test_double_accept_raises_BadRequest(self):
+        # Trying to accept an upload twice returns 400 instead of OOPSing.
+        person = self.makeQueueAdmin([self.main])
+        upload, _ = self.makeSourcePackageUpload(person, component=self.main)
+
+        with person_logged_in(person):
+            upload.setAccepted()
+        ws_upload = self.load(upload, person)
+        self.assertEqual("Accepted", ws_upload.status)
+        self.assertRaises(BadRequest, ws_upload.acceptFromQueue)
+
+    def test_rejectFromQueue_archive_admin(self):
+        # rejectFromQueue as an archive admin rejects the upload.
+        person = self.makeQueueAdmin([self.main])
+        upload, ws_upload = self.makeSourcePackageUpload(
+            person, component=self.main)
+
+        self.assertEqual("New", ws_upload.status)
+        ws_upload.rejectFromQueue()
+        self.assertEqual("Rejected", ws_upload.status)
+
+    def test_source_info(self):
+        # API clients can inspect properties of source uploads.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeSourcePackageUpload(
+            person, sourcepackagename="hello", component=self.universe)
+
+        self.assertTrue(ws_upload.contains_source)
+        self.assertFalse(ws_upload.contains_build)
+        self.assertFalse(ws_upload.contains_copy)
+        self.assertEqual("hello", ws_upload.display_name)
+        self.assertEqual(upload.package_version, ws_upload.display_version)
+        self.assertEqual("source", ws_upload.display_arches)
+        self.assertEqual("hello", ws_upload.package_name)
+        self.assertEqual(upload.package_version, ws_upload.package_version)
+        self.assertEqual("universe", ws_upload.component_name)
+        self.assertEqual(upload.section_name, ws_upload.section_name)
+
+    def test_source_fetch(self):
+        # API clients can fetch files attached to source uploads.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeSourcePackageUpload(
+            person, component=self.universe)
+        ws_source_file_urls = ws_upload.sourceFileUrls()
+        self.assertNotEqual(0, len(ws_source_file_urls))
+        with person_logged_in(person):
+            source_file_urls = [
+                ProxiedLibraryFileAlias(
+                    file.libraryfile, upload.archive).http_url
+                for file in upload.sourcepackagerelease.files]
+        self.assertContentEqual(source_file_urls, ws_source_file_urls)
+
+    def test_binary_info(self):
+        # API clients can inspect properties of binary uploads.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeBinaryPackageUpload(
+            person, component=self.universe)
+        with person_logged_in(person):
+            arch = upload.builds[0].build.arch_tag
+            bprs = upload.builds[0].build.binarypackages
+
+        self.assertFalse(ws_upload.contains_source)
+        self.assertTrue(ws_upload.contains_build)
+        ws_binaries = ws_upload.getBinaryProperties()
+        self.assertEqual(len(list(bprs)), len(ws_binaries))
+        for bpr, binary in zip(bprs, ws_binaries):
+            expected_binary = {
+                "is_new": True,
+                "name": bpr.name,
+                "version": bpr.version,
+                "architecture": arch,
+                "component": "universe",
+                "section": bpr.section.name,
+                "priority": bpr.priority.name,
+                }
+            self.assertContentEqual(expected_binary.keys(), binary.keys())
+            for key, value in expected_binary.items():
+                self.assertEqual(value, binary[key])
+
+    def test_binary_fetch(self):
+        # API clients can fetch files attached to binary uploads.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeBinaryPackageUpload(
+            person, component=self.universe)
+
+        ws_binary_file_urls = ws_upload.binaryFileUrls()
+        self.assertNotEqual(0, len(ws_binary_file_urls))
+        with person_logged_in(person):
+            binary_file_urls = [
+                ProxiedLibraryFileAlias(
+                    file.libraryfile, upload.archive).http_url
+                for bpr in upload.builds[0].build.binarypackages
+                for file in bpr.files]
+        self.assertContentEqual(binary_file_urls, ws_binary_file_urls)
+
+    def test_custom_info(self):
+        # API clients can inspect properties of custom uploads.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeCustomPackageUpload(
+            person, custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
+            filename="debian-installer-images_1.tar.gz")
+
+        self.assertFalse(ws_upload.contains_source)
+        self.assertFalse(ws_upload.contains_build)
+        self.assertFalse(ws_upload.contains_copy)
+        self.assertEqual(
+            "debian-installer-images_1.tar.gz", ws_upload.display_name)
+        self.assertEqual("-", ws_upload.display_version)
+        self.assertEqual("raw-installer", ws_upload.display_arches)
+
+    def test_custom_fetch(self):
+        # API clients can fetch files attached to custom uploads.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeCustomPackageUpload(
+            person, custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
+            filename="debian-installer-images_1.tar.gz")
+        ws_custom_file_urls = ws_upload.customFileUrls()
+        self.assertNotEqual(0, len(ws_custom_file_urls))
+        with person_logged_in(person):
+            custom_file_urls = [
+                ProxiedLibraryFileAlias(
+                    file.libraryfilealias, upload.archive).http_url
+                for file in upload.customfiles]
+        self.assertContentEqual(custom_file_urls, ws_custom_file_urls)

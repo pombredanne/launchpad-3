@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductJobs."""
@@ -11,6 +11,9 @@ from datetime import (
     )
 
 import pytz
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+import transaction
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -19,41 +22,141 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import ProductJobType
-from lp.registry.interfaces.product import (
-    License,
+from lp.registry.enums import (
+    InformationType,
+    ProductJobType,
     )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.product import License
 from lp.registry.interfaces.productjob import (
+    ICommercialExpiredJob,
+    ICommercialExpiredJobSource,
     IProductJob,
     IProductJobSource,
     IProductNotificationJobSource,
-    ICommercialExpiredJob,
-    ICommercialExpiredJobSource,
     ISevenDayCommercialExpirationJob,
     ISevenDayCommercialExpirationJobSource,
     IThirtyDayCommercialExpirationJob,
     IThirtyDayCommercialExpirationJobSource,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.productjob import (
+    CommercialExpiredJob,
     ProductJob,
     ProductJobDerived,
+    ProductJobManager,
     ProductNotificationJob,
-    CommercialExpiredJob,
     SevenDayCommercialExpirationJob,
     ThirtyDayCommercialExpirationJob,
     )
+from lp.services.database.lpstorm import IStore
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
+from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
+    run_script,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.webapp.publisher import canonical_url
+
+
+class CommercialHelpers:
+
+    @staticmethod
+    def expire_commercial_subscription(product):
+        expired_date = (
+            product.commercial_subscription.date_expires - timedelta(days=365))
+        removeSecurityProxy(
+            product.commercial_subscription).date_expires = expired_date
+
+    def make_expiring_product(self, date_expires, job_class=None):
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        removeSecurityProxy(
+            product.commercial_subscription).date_expires = date_expires
+        if job_class:
+            reviewer = getUtility(ILaunchpadCelebrities).janitor
+            job_class.create(product, reviewer)
+        return product
+
+    def make_test_products(self):
+        products = {}
+        now = datetime.now(pytz.utc)
+        products['approved'] = self.factory.makeProduct(licenses=[License.MIT])
+        products['expired'] = self.make_expiring_product(now - timedelta(1))
+        products['expired_with_job'] = self.make_expiring_product(
+            now - timedelta(1), job_class=CommercialExpiredJob)
+        products['seven'] = self.make_expiring_product(now + timedelta(6))
+        products['seven_with_job'] = self.make_expiring_product(
+            now + timedelta(6), job_class=SevenDayCommercialExpirationJob)
+        products['thirty'] = self.make_expiring_product(now + timedelta(29))
+        products['thirty_with_job'] = self.make_expiring_product(
+            now + timedelta(29), job_class=ThirtyDayCommercialExpirationJob)
+        products['sixty'] = self.make_expiring_product(now + timedelta(60))
+        return products
+
+
+class ProductJobManagerTestCase(TestCaseWithFactory, CommercialHelpers):
+    """Test case for the ProductJobManager class."""
+    layer = DatabaseFunctionalLayer
+
+    @staticmethod
+    def make_manager():
+        logger = BufferLogger()
+        return ProductJobManager(logger)
+
+    def test_init(self):
+        # The logger was set.
+        manager = self.make_manager()
+        self.assertIsInstance(manager.logger, BufferLogger)
+
+    def test_createAllDailyJobs(self):
+        # 3 kinds of commercial expiration jobs are created.
+        self.make_test_products()
+        manager = self.make_manager()
+        self.assertEqual(3, manager.createAllDailyJobs())
+        log = manager.logger.getLogBuffer()
+        self.assertIn(CommercialExpiredJob.__class__.__name__, log)
+        self.assertIn(SevenDayCommercialExpirationJob.__class__.__name__, log)
+        self.assertIn(ThirtyDayCommercialExpirationJob.__class__.__name__, log)
+
+    def test_createDailyJobs(self):
+        # Commercial expiration jobs are created.
+        test_products = self.make_test_products()
+        manager = self.make_manager()
+        reviewer = self.factory.makePerson()
+        total = manager.createDailyJobs(CommercialExpiredJob, reviewer)
+        self.assertEqual(1, total)
+        self.assertIn(
+            'DEBUG Creating a %s for %s' %
+            (CommercialExpiredJob.__class__.__name__,
+             test_products['expired'].name),
+            manager.logger.getLogBuffer())
+
+
+class DailyProductJobsTestCase(TestCaseWithFactory, CommercialHelpers):
+    """Test case for the ProductJobManager class."""
+    layer = ZopelessAppServerLayer
+
+    def test_run(self):
+        # The script called ProductJobManager.createAllDailyJobs().
+        # This test uses the same setup as
+        # ProductJobManagerTestCase.test_createAllDailyJobs
+        self.make_test_products()
+        transaction.commit()
+        stdout, stderr, retcode = run_script(
+            'cronscripts/daily_product_jobs.py')
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: stdout))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: stderr))
+        self.assertEqual(0, retcode)
+        self.assertIn('Requested 3 total product jobs.', stderr)
 
 
 class ProductJobTestCase(TestCaseWithFactory):
@@ -388,11 +491,12 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             'Launchpad <noreply@launchpad.net>', notifications[0]['From'])
 
 
-class CommericialExpirationMixin:
+class CommericialExpirationMixin(CommercialHelpers):
 
     layer = DatabaseFunctionalLayer
 
     EXPIRE_SUBSCRIPTION = False
+    EXPECTED_PRODUCT = None
 
     def make_notification_data(self, licenses=[License.MIT]):
         product = self.factory.makeProduct(licenses=licenses)
@@ -401,6 +505,14 @@ class CommericialExpirationMixin:
             self.factory.makeCommercialSubscription(product)
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         return product, reviewer
+
+    def test_getExpiringProducts(self):
+        # Get the products with an expiring commercial subscription in
+        # the job type's date range that do not already have a recent job.
+        test_products = self.make_test_products()
+        products = list(self.JOB_CLASS.getExpiringProducts())
+        self.assertEqual(1, len(products))
+        self.assertEqual(test_products[self.EXPECTED_PRODUCT], products[0])
 
     def test_create(self):
         # Create an instance of an commercial expiration job that stores
@@ -442,10 +554,7 @@ class CommericialExpirationMixin:
             licenses=[License.OTHER_PROPRIETARY])
         commercial_subscription = product.commercial_subscription
         if self.EXPIRE_SUBSCRIPTION:
-            expired_date = (
-                commercial_subscription.date_expires - timedelta(days=365))
-            removeSecurityProxy(
-                commercial_subscription).date_expires = expired_date
+            self.expire_commercial_subscription(product)
         iso_date = commercial_subscription.date_expires.date().isoformat()
         job = self.JOB_CLASS.create(product, reviewer)
         pop_notifications()
@@ -454,25 +563,84 @@ class CommericialExpirationMixin:
         self.assertEqual(1, len(notifications))
         self.assertIn(iso_date, notifications[0].get_payload())
 
+    def test_run_cronscript(self):
+        # Everything is configured: ZCML, schema-lazr.conf, and security.cfg.
+        product, reviewer = self.make_notification_data()
+        private_branch = self.factory.makeBranch(
+            owner=product.owner, product=product,
+            information_type=InformationType.USERDATA)
+        with person_logged_in(product.owner):
+            product.setPrivateBugs(True, product.owner)
+            product.development_focus.branch = private_branch
+        self.expire_commercial_subscription(product)
+        job = self.JOB_CLASS.create(product, reviewer)
+        # Create a proprietary project owned by a team which will have
+        # different DB relations.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        proprietary_product = self.factory.makeProduct(
+            owner=team, licenses=[License.OTHER_PROPRIETARY])
+        self.expire_commercial_subscription(proprietary_product)
+        proprietary_job = self.JOB_CLASS.create(proprietary_product, reviewer)
+        transaction.commit()
+
+        out, err, exit_code = run_script(
+            "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" %
+             self.JOB_SOURCE_INTERFACE.getName())
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
+        self.assertEqual(0, exit_code)
+        self.assertTrue(
+            'Traceback (most recent call last)' not in err)
+        message = (
+            '%s has sent email to the maintainer of %s.' % (
+                self.JOB_CLASS.__name__, product.name))
+        self.assertTrue(
+            message in err,
+            'Cound not find "%s" in err log:\n%s.' % (message, err))
+        message = (
+            '%s has sent email to the maintainer of %s.' % (
+                self.JOB_CLASS.__name__, proprietary_product.name))
+        self.assertTrue(
+            message in err,
+            'Cound not find "%s" in err log:\n%s.' % (message, err))
+        IStore(job.job).invalidate()
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
+        self.assertEqual(JobStatus.COMPLETED, proprietary_job.job.status)
+
 
 class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
                                               TestCaseWithFactory):
     """Test case for the SevenDayCommercialExpirationJob class."""
 
+    EXPECTED_PRODUCT = 'seven'
     JOB_INTERFACE = ISevenDayCommercialExpirationJob
     JOB_SOURCE_INTERFACE = ISevenDayCommercialExpirationJobSource
     JOB_CLASS = SevenDayCommercialExpirationJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
+
+    def test_get_expiration_dates(self):
+        dates = SevenDayCommercialExpirationJob._get_expiration_dates()
+        earliest_date, latest_date, past_date = dates
+        self.assertEqual(timedelta(days=7), latest_date - earliest_date)
+        self.assertEqual(timedelta(days=14), latest_date - past_date)
 
 
 class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
                                                TestCaseWithFactory):
     """Test case for the SevenDayCommercialExpirationJob class."""
 
+    EXPECTED_PRODUCT = 'thirty'
     JOB_INTERFACE = IThirtyDayCommercialExpirationJob
     JOB_SOURCE_INTERFACE = IThirtyDayCommercialExpirationJobSource
     JOB_CLASS = ThirtyDayCommercialExpirationJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+    def test_get_expiration_dates(self):
+        dates = ThirtyDayCommercialExpirationJob._get_expiration_dates()
+        earliest_date, latest_date, past_date = dates
+        self.assertEqual(timedelta(days=23), latest_date - earliest_date)
+        self.assertEqual(timedelta(days=60), latest_date - past_date)
 
 
 class CommercialExpiredJobTestCase(CommericialExpirationMixin,
@@ -480,10 +648,17 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
     """Test case for the CommercialExpiredJob class."""
 
     EXPIRE_SUBSCRIPTION = True
+    EXPECTED_PRODUCT = 'expired'
     JOB_INTERFACE = ICommercialExpiredJob
     JOB_SOURCE_INTERFACE = ICommercialExpiredJobSource
     JOB_CLASS = CommercialExpiredJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
+
+    def test_get_expiration_dates(self):
+        dates = CommercialExpiredJob._get_expiration_dates()
+        earliest_date, latest_date, past_date = dates
+        self.assertEqual(timedelta(days=3650), latest_date - earliest_date)
+        self.assertEqual(timedelta(days=30), latest_date - past_date)
 
     def test_is_proprietary_open_source(self):
         product, reviewer = self.make_notification_data(licenses=[License.MIT])
@@ -497,8 +672,8 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         self.assertIs(True, job._is_proprietary)
 
     def test_email_template_name(self):
-        # Redefine the inherited test to verify the open source license case.
-        # The state of the product's license defines the email_template_name.
+        # Redefine the inherited test to verify the open source licence case.
+        # The state of the product's licence defines the email_template_name.
         product, reviewer = self.make_notification_data(licenses=[License.MIT])
         job = CommercialExpiredJob.create(product, reviewer)
         self.assertEqual(
@@ -506,7 +681,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             job.email_template_name)
 
     def test_email_template_name_proprietary(self):
-        # The state of the product's license defines the email_template_name.
+        # The state of the product's licence defines the email_template_name.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
         job = CommercialExpiredJob.create(product, reviewer)
@@ -518,39 +693,45 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         # When the project is proprietary, the product is deactivated.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
+        self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()
+        clear_property_cache(product)
         self.assertIs(False, product.active)
+        self.assertIsNot(None, product.commercial_subscription)
 
     def test_deactivateCommercialFeatures_open_source(self):
         # When the project is open source, the product's commercial features
-        # are deactivated.
+        # are deactivated and the commercial subscription is deleted.
         product, reviewer = self.make_notification_data(licenses=[License.MIT])
         public_branch = self.factory.makeBranch(
             owner=product.owner, product=product)
         private_branch = self.factory.makeBranch(
-            owner=product.owner, product=product, private=True)
+            owner=product.owner, product=product,
+            information_type=InformationType.USERDATA)
         with person_logged_in(product.owner):
             product.setPrivateBugs(True, product.owner)
             public_series = product.development_focus
             public_series.branch = public_branch
             private_series = product.newSeries(
                 product.owner, 'special', 'testing', branch=private_branch)
+            # Verify that branchless series do not raise an error.
+            product.newSeries(product.owner, 'unused', 'no branch')
+        self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()
+        clear_property_cache(product)
         self.assertIs(True, product.active)
         self.assertIs(False, product.private_bugs)
         self.assertEqual(public_branch, public_series.branch)
         self.assertIs(None, private_series.branch)
+        self.assertIs(None, product.commercial_subscription)
 
     def test_run_deactivation_performed(self):
         # An email is sent and the deactivation steps are performed.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
-        expired_date = (
-            product.commercial_subscription.date_expires - timedelta(days=365))
-        removeSecurityProxy(
-            product.commercial_subscription).date_expires = expired_date
+        self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job.run()
         self.assertIs(False, product.active)

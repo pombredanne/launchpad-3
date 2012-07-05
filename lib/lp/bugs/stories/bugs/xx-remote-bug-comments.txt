@@ -85,8 +85,6 @@ the 'awaiting synchronization' mark goes away.
     >>> flush_database_updates()
     >>> logout()
 
-    >>> from lp.testing.layers import MemcachedLayer
-    >>> MemcachedLayer.purge()
     >>> user_browser.open('http://bugs.launchpad.dev/redfish/+bug/15')
     >>> last_bug_comment = find_tags_by_class(
     ...     user_browser.contents, 'remoteBugComment')[-1]

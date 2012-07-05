@@ -63,7 +63,18 @@ class TestBugView(TestCaseWithFactory):
             InformationType.USERDATA, self.bug.owner)
         self.assertEqual(
             self.bug.information_type.title, self.view.information_type)
-        
+        self.assertEqual(
+            self.bug.information_type.description,
+            self.view.information_type_description)
+
+    def test_information_type_css_class(self):
+        self.bug.transitionToInformationType(
+            InformationType.USERDATA, self.bug.owner)
+        self.assertEqual('sprite private', self.view.information_type_css)
+        self.bug.transitionToInformationType(
+            InformationType.UNEMBARGOEDSECURITY, self.bug.owner)
+        self.assertEqual('sprite public', self.view.information_type_css)
+
     def test_userdata_shown_as_private(self):
         # When the display_userdata_as_private feature flag is enabled, the
         # information_type is shown as 'Private'.
@@ -74,6 +85,10 @@ class TestBugView(TestCaseWithFactory):
         with FeatureFixture(feature_flag):
             view = BugView(self.bug, LaunchpadTestRequest())
             self.assertEqual('Private', view.information_type)
+            self.assertTextMatchesExpressionIgnoreWhitespace(
+                'Visible only to users with whom the project has shared '
+                'private information.',
+                view.information_type_description)
 
     def test_proprietary_hidden(self):
         # When the proprietary_information_type.disabled feature flag is

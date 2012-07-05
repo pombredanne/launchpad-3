@@ -13,7 +13,9 @@ from unittest import (
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 from zope.component import getUtility
+from zope.interface import implements
 
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.services.features.flags import flag_info
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import publisher
@@ -295,6 +297,53 @@ class TestLaunchpadView(TestCaseWithFactory):
         # Or when no request at all is passed.
         LaunchpadView(object(), None)
 
+    def test_view_privacy(self):
+        # View privacy is based on the context.
+        class PrivateObject(object):
+            implements(IPrivacy)
+
+            def __init__(self, private):
+                self.private = private
+
+        view = LaunchpadView(PrivateObject(True), FakeRequest())
+        self.assertTrue(view.private)
+
+        view = LaunchpadView(PrivateObject(False), FakeRequest())
+        self.assertFalse(view.private)
+    
+    def test_view_beta_features_simple(self):
+        class TestView(LaunchpadView):
+            related_features = ['test_feature']
+
+        self.useFixture(FeatureFixture(
+            {}, self.makeFeatureFlagDictionaries(u'', u'on'),
+            override_scope_lookup=lambda scope_name: True))
+        request = LaunchpadTestRequest()
+        view = TestView(object(), request)
+        expected_beta_features = [{
+            'url': 'http://wiki.lp.dev/LEP/sample', 'is_beta': True,
+            'value': u'on', 'title': 'title'}]         
+        self.assertEqual(expected_beta_features, view.beta_features)
+
+    def test_view_beta_features_mixed(self):
+        # With multiple related features, only those in a beta condition are
+        # reported as beta features.
+        class TestView(LaunchpadView):
+            related_features = ['test_feature', 'test_feature2']
+
+        # Select one flag on 'default', one flag not on 'default. 'default'
+        # setting determines whether flags correspond to 'beta' features.
+        raw_flag_dicts = self.makeFeatureFlagDictionaries(u'', u'on')
+        flag_dicts = [raw_flag_dicts[1], raw_flag_dicts[2]]
+
+        self.useFixture(FeatureFixture(
+            {}, flag_dicts, override_scope_lookup=lambda scope_name: True))
+        request = LaunchpadTestRequest()
+        view = TestView(object(), request)
+        expected_beta_features = [{
+            'url': 'http://wiki.lp.dev/LEP/sample', 'is_beta': True,
+            'value': u'on', 'title': 'title'}]         
+        self.assertEqual(expected_beta_features, view.beta_features)
 
 def test_suite():
     suite = TestSuite()

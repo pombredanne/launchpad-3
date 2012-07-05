@@ -27,7 +27,7 @@ entry and its target that may be helpful in queue review.
     >>> details_text = extract_text(details)
     >>> print details_text
     Upload attached to ... trunk series.
-    This project...s license is open source.
+    This project...s licence is open source.
     Release series has no templates.
     Project has no translatable series.
     File po/foo.pot uploaded by ...

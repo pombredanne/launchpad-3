@@ -15,13 +15,18 @@ We need to insert some dependent fake data before continuing.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.model.gpgkey import GPGKey
+    >>> from lp.services.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
-    >>> ppa = getUtility(IPersonSet).getByName('cprov').archive
-    >>> for pub in ppa.getPublishedSources():
+    >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_ppa = cprov_db.archive
+    >>> for pub in cprov_ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
     ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
     >>> logout()
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov_db, permission=OAuthPermission.WRITE_PUBLIC)
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
     >>> cprov_srcs_response = pubs = webservice.named_get(
@@ -90,15 +95,11 @@ Each source publication exposes a number of properties.  We'll create a new
 publication to play with first.
 
     >>> login("foo.bar@canonical.com")
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.enums import PackagePublishingStatus
-    >>> cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
     >>> source = stp.getPubSource(
     ...     archive=cprov_ppa, sourcename="testwebservice")
     >>> binaries = stp.getPubBinaries(
@@ -129,6 +130,7 @@ publication to play with first.
     package_creator_link: u'http://.../beta/~name16'
     package_maintainer_link: u'http://.../beta/~name16'
     package_signer_link: u'http://.../beta/~name16'
+    packageupload_link: None
     pocket: u'Release'
     removal_comment: None
     removed_by_link: None
@@ -155,7 +157,7 @@ be unsigned.  In this case, the package_signer_link will be None.
 Make cprov's PPA packages unsigned:
 
     >>> login("foo.bar@canonical.com")
-    >>> for pub in ppa.getPublishedSources():
+    >>> for pub in cprov_ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
     ...     pub.sourcepackagerelease.dscsigningkey = None
     >>> logout()
@@ -175,8 +177,6 @@ Package deletion
 
 A user can request a package to be deleted:
 
-    >>> cprov = webservice.get("/~cprov").jsonBody()
-    >>> cprov_link = cprov['self_link']
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
     ...     source_name="testwebservice", version="666",
@@ -196,13 +196,6 @@ Anonymous users can't remove packages.
 
 The owner of a PPA can delete packages.
 
-    >>> login("foo.bar@canonical.com")
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> logout()
-    >>> from lp.testing.pages import webservice_for_person
-    >>> from lp.services.webapp.interfaces import OAuthPermission
-    >>> cprov_webservice = webservice_for_person(cprov,
-    ...     permission=OAuthPermission.WRITE_PUBLIC)
     >>> response = cprov_webservice.named_post(
     ...     package, 'requestDeletion',
     ...     removal_comment="No longer needed")
@@ -237,11 +230,6 @@ Privacy
 
 Create a private PPA for Celso with some binaries.
 
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
     >>> cprov_private_ppa_db = factory.makeArchive(
     ...     private=True, owner=cprov_db, name="p3a",
@@ -426,9 +414,9 @@ We need to create a fake package diff to show this:
 
     >>> login("admin@canonical.com")
     >>> to_pub = test_publisher.getPubSource(
-    ...     sourcename='difftest', version='1.0', archive=cprov.archive)
+    ...     sourcename='difftest', version='1.0', archive=cprov_db.archive)
     >>> from_pub = test_publisher.getPubSource(
-    ...     sourcename='difftest', version='1.1', archive=cprov.archive)
+    ...     sourcename='difftest', version='1.1', archive=cprov_db.archive)
     >>> new_diff = factory.makePackageDiff(
     ...     from_source=from_pub.sourcepackagerelease,
     ...     to_source=to_pub.sourcepackagerelease,
@@ -459,10 +447,53 @@ The URL is a standard proxied URL in case the file is private:
 It will match the fake content we added earlier:
 
     >>> login("admin@canonical.com")
-    >>> from lp.services.librarian.browser import (
-    ...     ProxiedLibraryFileAlias)
+    >>> from lp.services.librarian.browser import ProxiedLibraryFileAlias
     >>> diff_url == ProxiedLibraryFileAlias(
-    ...     new_diff.diff_content, cprov.archive).http_url
+    ...     new_diff.diff_content, cprov_db.archive).http_url
     True
 
     >>> logout()
+
+
+Overrides
+=========
+
+    >>> login("foo.bar@canonical.com")
+    >>> override_source = stp.getPubSource(
+    ...     archive=cprov_ppa, sourcename="testoverrides")
+    >>> logout()
+
+    >>> cprov_archive_devel = webservice.get(
+    ...     "/~cprov/+archive/ppa", api_version="devel").jsonBody()
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive_devel["self_link"], "getPublishedSources",
+    ...     api_version="devel", source_name="testoverrides").jsonBody()
+    >>> print pubs["entries"][0]["section_name"]
+    base
+    >>> package = pubs["entries"][0]["self_link"]
+
+Anonymous users can't change overrides.
+
+    >>> response = webservice.named_post(
+    ...     package, "changeOverride", api_version="devel",
+    ...     new_section="admin")
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The owner of a PPA can change overrides.
+
+    >>> response = cprov_webservice.named_post(
+    ...     package, "changeOverride", api_version="devel",
+    ...     new_section="admin")
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+The override change takes effect:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive["self_link"], "getPublishedSources",
+    ...     source_name="testoverrides").jsonBody()
+    >>> print pubs["entries"][0]["section_name"]
+    admin
