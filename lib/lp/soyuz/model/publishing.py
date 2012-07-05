@@ -115,6 +115,7 @@ from lp.soyuz.model.files import (
     SourcePackageReleaseFile,
     )
 from lp.soyuz.model.packagediff import PackageDiff
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.pas import determineArchitecturesToBuild
 
 
@@ -1878,8 +1879,6 @@ class PublishingSet:
         # Import PackageUpload and PackageUploadSource locally
         # to avoid circular imports, since PackageUpload uses
         # SourcePackagePublishingHistory.
-        from lp.soyuz.model.sourcepackagerelease import (
-            SourcePackageRelease)
         from lp.soyuz.model.queue import (
             PackageUpload, PackageUploadSource)
 
@@ -2096,8 +2095,6 @@ def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
     # This may need tuning: its possible that grouping by the common
     # archives may yield better efficiency: the current code is
     # just a direct push-down of the previous in-python lookup to SQL.
-    from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
     series_clauses = []
     for context, package_names in context_sourcepackagenames.items():
         clause = And(
