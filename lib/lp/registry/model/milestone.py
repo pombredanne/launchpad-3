@@ -204,7 +204,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
             (Specification, Person),
             Or(Specification.milestoneID == self.id,
                SpecificationWorkItem.milestone_id == self.id),
-            Or(SpecificationWorkItem.deleted is None,
+            Or(SpecificationWorkItem.deleted == None,
                SpecificationWorkItem.deleted == False))
         results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
@@ -440,7 +440,7 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
             (Specification, Person),
             Product.projectID == self.target.id,
             Milestone.name == self.name,
-            Or(SpecificationWorkItem.deleted is None,
+            Or(SpecificationWorkItem.deleted == None,
                SpecificationWorkItem.deleted == False))
         results.config(distinct=True)
         ordered_results = results.order_by(Desc(Specification.priority),
