@@ -2546,27 +2546,6 @@ class TestBranchCanBePrivate(TestCaseWithFactory):
         branch = self.factory.makeBranch(owner=team)
         self.assertTrue(branch.canBePrivate(team))
 
-    def test_project_owner(self):
-        # Pillar owners can make a branch private.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
-        branch = self.factory.makeBranch(product=product)
-        self.assertTrue(branch.canBePrivate(owner))
-
-    def test_project_driver(self):
-        # Pillar drivers can make a branch private.
-        driver = self.factory.makePerson()
-        product = self.factory.makeProduct(driver=driver)
-        branch = self.factory.makeBranch(product=product)
-        self.assertTrue(branch.canBePrivate(driver))
-
-    def test_project_bug_supervisor(self):
-        # Pillar bug supervisors can make a branch private.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        branch = self.factory.makeBranch(product=product)
-        self.assertTrue(branch.canBePrivate(bug_supervisor))
-
     def test_linked_private_bug(self):
         # Users with access to linked private bugs can make a branch private.
         for info_type in PRIVATE_INFORMATION_TYPES:

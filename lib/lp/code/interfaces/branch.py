@@ -976,8 +976,6 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         - the user is an admin or bzr expert
         - the branch is owned by a private team
           (The branch is already implicitly private)
-        - the project has privacy enabled and the user is in a project role
-        - the branch is linked to a embargoed security bug the user can access
         - the branch is linked to a private bug the user can access
         """
 

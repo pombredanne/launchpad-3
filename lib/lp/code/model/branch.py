@@ -1296,13 +1296,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                 user_has_special_branch_access(user) or
                 user.visibility == PersonVisibility.PRIVATE):
             return True
-        pillar = self.product or self.distribution
-        roles = IPersonRoles(user)
-        if (roles.isOwner(pillar)
-            or roles.isOneOfDrivers(pillar)
-            or roles.isBugSupervisor(pillar)
-            or roles.isSecurityContact(pillar)):
-            return True
         params = BugTaskSearchParams(
             user=user, linked_branches=self.id,
             information_types=PRIVATE_INFORMATION_TYPES)
