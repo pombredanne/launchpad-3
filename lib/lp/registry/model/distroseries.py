@@ -169,10 +169,6 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.initialize_distroseries import (
-    InitializationError,
-    InitializeDistroSeries,
-    )
 from lp.translations.enums import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
@@ -1623,6 +1619,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                 overlay_pockets=(),
                                 overlay_components=()):
         """See `IDistroSeries`."""
+        from lp.soyuz.scripts.initialize_distroseries import (
+            InitializationError,
+            InitializeDistroSeries,
+            )
         if self.isDerivedSeries():
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)

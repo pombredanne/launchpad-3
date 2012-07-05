@@ -20,7 +20,10 @@ from storm.store import Store
 from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.model.person import get_recipients
+from lp.registry.model.person import (
+    get_recipients,
+    Person,
+    )
 from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import (
@@ -29,6 +32,8 @@ from lp.services.scripts.base import (
     )
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 
 class PPAReportScript(LaunchpadScript):
@@ -74,11 +79,6 @@ class PPAReportScript(LaunchpadScript):
         if `self.options.archive_owner_name` is defined only return PPAs
         with matching owner names.
         """
-        # Avoiding circular imports.
-        from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-        from lp.registry.model.person import Person
-
         distribution = getUtility(IDistributionSet).getByName('ubuntu')
         store = Store.of(distribution)
         origin = [

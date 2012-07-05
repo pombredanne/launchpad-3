@@ -69,7 +69,6 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
@@ -379,6 +378,7 @@ class SourcePackageRelease(SQLBase):
         # Avoid circular imports.
         from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
         from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
         BuildDAS = ClassAlias(DistroArchSeries, 'BuildDAS')
         PublishDAS = ClassAlias(DistroArchSeries, 'PublishDAS')
@@ -644,6 +644,7 @@ class SourcePackageRelease(SQLBase):
         from lp.soyuz.interfaces.publishing import active_publishing_status
         from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
         from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
         return Store.of(self).find(
             BinaryPackagePublishingHistory,
