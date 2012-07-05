@@ -1759,7 +1759,13 @@ class DistributionSet:
 
     def getCurrentSourceReleases(self, distro_source_packagenames):
         """See `IDistributionSet`."""
-        releases = get_current_source_releases(distro_source_packagenames)
+        releases = get_current_source_releases(
+            distro_source_packagenames,
+            lambda distro: distro.all_distro_archive_ids,
+            lambda distro: DistroSeries.distribution == distro,
+            [SourcePackagePublishingHistory.distroseriesID
+                == DistroSeries.id],
+            DistroSeries.distributionID)
         result = {}
         for sp_release, distro_id in releases:
             distro = IStore(Distribution).get(Distribution, distro_id)

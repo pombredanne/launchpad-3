@@ -162,6 +162,7 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
     )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
+    get_current_source_releases,
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.queue import (
@@ -1767,57 +1768,19 @@ class DistroSeriesSet:
 
     def getCurrentSourceReleases(self, distro_series_source_packagenames):
         """See `IDistroSeriesSet`."""
-        # Builds one query for all the distro_series_source_packagenames.
-        # This may need tuning: its possible that grouping by the common
-        # archives may yield better efficiency: the current code is
-        # just a direct push-down of the previous in-python lookup to SQL.
-        series_clauses = []
-        distroseries_lookup = {}
-        for distroseries, package_names in \
-            distro_series_source_packagenames.items():
-            source_package_ids = map(attrgetter('id'), package_names)
-            # all_distro_archive_ids is just a list of ints, but it gets
-            # wrapped anyway - and sqlvalues goes boom.
-            archives = removeSecurityProxy(
-                distroseries.distribution.all_distro_archive_ids)
-            clause = """(spph.sourcepackagename IN %s AND
-                spph.archive IN %s AND
-                spph.distroseries = %s)
-                """ % sqlvalues(source_package_ids, archives, distroseries.id)
-            series_clauses.append(clause)
-            distroseries_lookup[distroseries.id] = distroseries
-        if not len(series_clauses):
-            return {}
-        combined_clause = "(" + " OR ".join(series_clauses) + ")"
-
-        releases = IStore(SourcePackageRelease).find(
-            (SourcePackageRelease, DistroSeries.id), SQL("""
-                (SourcePackageRelease.id, DistroSeries.id) IN (
-                    SELECT
-                        DISTINCT ON (
-                            spph.sourcepackagename, spph.distroseries)
-                        spr.id, spph.distroseries
-                    FROM
-                        SourcePackageRelease AS spr,
-                        SourcePackagePublishingHistory AS spph
-                    WHERE
-                        spph.sourcepackagerelease = spr.id
-                        AND spph.status IN %s
-                        AND %s
-                    ORDER BY
-                        spph.sourcepackagename,
-                        spph.distroseries,
-                        spph.id DESC
-                    )
-                """
-                % (sqlvalues(active_publishing_status) + (combined_clause,))))
+        releases = get_current_source_releases(
+            distro_series_source_packagenames,
+            lambda series: series.distribution.all_distro_archive_ids,
+            (lambda series:
+                SourcePackagePublishingHistory.distroseries == series),
+            [], SourcePackagePublishingHistory.distroseriesID)
         result = {}
-        for sp_release, distroseries_id in releases:
-            distroseries = distroseries_lookup[distroseries_id]
-            sourcepackage = distroseries.getSourcePackage(
-                sp_release.sourcepackagename)
+        for spr, series_id in releases:
+            series = IStore(DistroSeries).get(DistroSeries, series_id)
+            sourcepackage = series.getSourcePackage(
+                spr.sourcepackagename)
             result[sourcepackage] = DistroSeriesSourcePackageRelease(
-                distroseries, sp_release)
+                series, spr)
         return result
 
     def search(self, distribution=None, isreleased=None, orderBy=None):

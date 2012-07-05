@@ -2088,12 +2088,12 @@ class PublishingSet:
             return None
 
 
-def get_current_source_releases(distro_source_packagenames):
+def get_current_source_releases(distro_source_packagenames, archive_ids_func,
+                                package_clause_func, extra_clauses, key_col):
     # Builds one query for all the distro_source_packagenames.
     # This may need tuning: its possible that grouping by the common
     # archives may yield better efficiency: the current code is
     # just a direct push-down of the previous in-python lookup to SQL.
-    from lp.registry.model.distroseries import DistroSeries
     from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
     series_clauses = []
@@ -2103,8 +2103,8 @@ def get_current_source_releases(distro_source_packagenames):
             SourcePackageRelease.sourcepackagenameID.is_in(
                 source_package_ids),
             SourcePackagePublishingHistory.archiveID.is_in(
-                distro.all_distro_archive_ids),
-            DistroSeries.distribution == distro,
+                archive_ids_func(distro)),
+            package_clause_func(distro),
             )
         series_clauses.append(clause)
     if not len(series_clauses):
@@ -2112,19 +2112,18 @@ def get_current_source_releases(distro_source_packagenames):
     combined_clause = Or(*series_clauses)
 
     releases = IStore(SourcePackageRelease).find(
-        (SourcePackageRelease, DistroSeries.distributionID),
+        (SourcePackageRelease, key_col),
         SourcePackagePublishingHistory.sourcepackagereleaseID
             == SourcePackageRelease.id,
-        SourcePackagePublishingHistory.distroseriesID
-            == DistroSeries.id,
         SourcePackagePublishingHistory.status.is_in(
             active_publishing_status),
-        combined_clause).config(
+        combined_clause,
+        *extra_clauses).config(
             distinct=(
                 SourcePackageRelease.sourcepackagenameID,
-                DistroSeries.distributionID)
+                key_col)
         ).order_by(
             SourcePackageRelease.sourcepackagenameID,
-            DistroSeries.distributionID,
+            key_col,
             Desc(SourcePackagePublishingHistory.id))
     return releases
