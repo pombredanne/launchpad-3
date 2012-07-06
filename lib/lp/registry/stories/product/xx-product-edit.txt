@@ -39,39 +39,6 @@ Now we test if we edited it successfully.
     Part of: GNOME
 
 
-Setting Development Focus
-=========================
-
-The Firefox product's trunk series is set as the development focus:
-
-    >>> browser.open('http://launchpad.dev/firefox/+series')
-    >>> print browser.contents
-    <!...
-    ...
-    ...trunk...Focus of Development...
-    ...
-    ...1.0...
-    ...
-
-We can change this to the 1.0 series through the edit form:
-
-    >>> browser.open('http://launchpad.dev/firefox/+edit')
-    >>> development_control = browser.getControl('Development focus')
-    >>> development_control.getControl('firefox 1.0').click()
-    >>> browser.getControl(name='field.actions.change').click()
-    >>> print browser.url
-    http://launchpad.dev/firefox
-
-    >>> browser.getLink('View full history').click()
-    >>> print browser.contents
-    <!...
-    ...
-    ...1.0...Focus of Development...
-    ...
-    ...trunk...
-    ...
-
-
 Administering Products
 ======================
 
