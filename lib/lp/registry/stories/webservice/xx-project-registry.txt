@@ -549,34 +549,6 @@ The entire collection has 24 entries.
     >>> project_collection['total_size']
     24
 
-But the batch has only 5.  (The batch size is 5 for testing but larger
-in production.)
-
-    >>> project_entries = project_collection['entries']
-    >>> len(project_entries)
-    5
-
-The batch size can be changed through the ws.size argument.
-
-    >>> project_collection = webservice.get("/projects?ws.size=75").jsonBody()
-
-    >>> project_entries = sorted(
-    ...     project_collection['entries'],
-    ...     key=itemgetter('display_name', 'name'))
-    >>> len(project_entries)
-    24
-
-    >>> project_entries[0]['self_link']
-    u'http://.../aptoncd'
-
-    >>> for project in project_entries[:5]:
-    ...   print "%s (%s)" % (project['display_name'], project['name'])
-    APTonCD (aptoncd)
-    Arch mirrors (arch-mirrors)
-    Bazaar (bazaar)
-    Bazaar (bzr)
-    Derby (derby)
-
 It's possible to search the list and get a subset of the project groups.
 
     >>> project_collection = webservice.named_get(
@@ -647,19 +619,6 @@ Or those that are reviewed.
     alsa-utils
     python gnome2 dev
     unassigned syncs
-
-We can also find all projects with no licensing information.
-
-    >>> no_licenses = webservice.named_get(
-    ...     "/projects", "licensing_search",
-    ...     has_zero_license=True).jsonBody()
-
-    >>> entries = sorted(
-    ...    no_licenses['entries'], key=itemgetter('display_name'))
-    >>> for project in entries:
-    ...     print project['display_name']
-    Arch mirrors
-    ...
 
 We can find projects based on creation date.
 

@@ -33,7 +33,7 @@ class TestProductWithLicenses(TestCaseWithFactory):
 
     def test_baseline(self):
         product = self.factory.makeProduct()
-        product_with_licenses = ProductWithLicenses(product, [])
+        product_with_licenses = ProductWithLicenses(product, [License.MIT])
         # Log in--a full verification takes Edit privileges.
         login('foo.bar@canonical.com')
         self.assertTrue(verifyObject(IProduct, product_with_licenses))
@@ -61,16 +61,6 @@ class TestProductWithLicenses(TestCaseWithFactory):
 
         expected = sorted(licenses, key=attrgetter('value'))
         self.assertEqual(tuple(expected), product_with_licenses.licenses)
-
-    def test_compose_column_without_licenses_produces_empty(self):
-        # The licenses column that ProductWithLicenses produces for a
-        # product without licenses contains an empty list.
-        product = self.factory.makeProduct(licenses=[])
-        column = ProductWithLicenses.composeLicensesColumn()
-        store = Store.of(product)
-        result = list(store.find((Product, column), Product.id == product.id))
-
-        self.assertEqual([(product, [])], result)
 
     def test_licenses_column_contains_licensing_info(self):
         # Feeding the licenses column into the ProductWithLicenses
