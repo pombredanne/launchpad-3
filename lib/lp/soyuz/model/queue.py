@@ -271,7 +271,7 @@ class PackageUpload(SQLBase):
     def binaryFileUrls(self):
         """See `IPackageUpload`."""
         return [
-            ProxiedLibraryFileAlias(file.libraryfile, self.archive).http_url
+            ProxiedLibraryFileAlias(file.libraryfile, build.build).http_url
             for build in self.builds
             for bpr in build.build.binarypackages
             for file in bpr.files]

@@ -7,7 +7,10 @@ from datetime import timedelta
 from email import message_from_string
 import os
 import shutil
-from urllib2 import urlopen
+from urllib2 import (
+    HTTPError,
+    urlopen,
+    )
 
 from lazr.restfulclient.errors import (
     BadRequest,
@@ -18,6 +21,8 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.schema import getFields
+from zope.testbrowser.browser import Browser
+from zope.testbrowser.testing import PublisherMechanizeBrowser
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.tests import datadir
@@ -890,6 +895,14 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
+class NonRedirectingMechanizeBrowser(PublisherMechanizeBrowser):
+    """A `mechanize.Browser` that does not handle redirects."""
+
+    default_features = [
+        feature for feature in PublisherMechanizeBrowser.default_features
+        if feature != "_redirect"]
+
+
 class TestPackageUploadWebservice(TestCaseWithFactory):
     """Test the exposure of queue methods to the web service."""
 
@@ -1116,11 +1129,25 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertNotEqual(0, len(ws_binary_file_urls))
         with person_logged_in(person):
             binary_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfile, upload.archive).http_url
-                for bpr in upload.builds[0].build.binarypackages
+                ProxiedLibraryFileAlias(file.libraryfile, build.build).http_url
+                for build in upload.builds
+                for bpr in build.build.binarypackages
                 for file in bpr.files]
+            email = str(person.preferredemail.email)
         self.assertContentEqual(binary_file_urls, ws_binary_file_urls)
+
+        # The test browser can only work with the appserver, not the
+        # librarian, so follow one layer of redirection through the
+        # appserver and then ask the librarian for the real file.
+        browser = Browser(mech_browser=NonRedirectingMechanizeBrowser())
+        browser.handleErrors = False
+        browser.addHeader("Authorization", "Basic %s:test" % email)
+        for ws_binary_file_url in ws_binary_file_urls:
+            redirection = self.assertRaises(
+                HTTPError, browser.open, ws_binary_file_url)
+            self.assertEqual(303, redirection.code)
+            urlopen(redirection.hdrs["Location"]).close()
+        urlopen(ws_upload.changes_file_url).close()
 
     def test_overrideBinaries_limited_component_permissions(self):
         # Overriding between two components requires queue admin of both.
