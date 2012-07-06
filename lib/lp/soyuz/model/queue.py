@@ -318,8 +318,14 @@ class PackageUpload(SQLBase):
 
     def getBinaryProperties(self):
         """See `IPackageUpload`."""
-        return list(chain.from_iterable(
+        properties = list(chain.from_iterable(
             build.binaries for build in self.builds))
+        for file in self.customfiles:
+            properties.append({
+                "name": file.libraryfilealias.filename,
+                "customformat": file.customformat.title,
+                })
+        return properties
 
     def setNew(self):
         """See `IPackageUpload`."""
