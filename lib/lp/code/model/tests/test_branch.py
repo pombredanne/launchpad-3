@@ -2868,7 +2868,7 @@ class TestGetMergeProposalsWS(WebServiceTestCase):
         self.assertEqual(result, [self.wsObject(bmp)])
 
 
-class TestGetMergeProposalsInProcess(TestCaseWithFactory):
+class TestGetMergeProposals(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -2900,6 +2900,15 @@ class TestGetMergeProposalsInProcess(TestCaseWithFactory):
         branch_set = BranchSet()
         result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
         self.assertEqual([bmp1], result)
+
+    def test_getMergeProposals_skips_hidden(self):
+        bmp1 = make_proposal_and_branch_revision(self.factory, 5, 'rev-id')
+        naked_target = removeSecurityProxy(bmp1.target)
+        naked_target.information_type = InformationType.USERDATA
+        branch_set = BranchSet()
+        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
+        self.assertEqual([], result)
+
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):
