@@ -146,10 +146,9 @@ If the development focus branch is private, then for unauthorized viewers, it
 appears as if there is no series branch set.
 
     >>> login('admin@canonical.com')
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.enums import InformationType
-    >>> removeSecurityProxy(branch).information_type = (
-    ...     InformationType.USERDATA)
+    >>> branch.transitionToInformationType(
+    ...     InformationType.USERDATA, branch.owner, verify_policy=False)
     >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/fooix')

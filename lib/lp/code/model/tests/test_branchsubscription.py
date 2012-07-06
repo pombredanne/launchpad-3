@@ -95,7 +95,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
                 None, CodeReviewNotificationLevel.NOEMAIL, owner)
             self.assertTrue(branch.visibleByUser(subscribee))
 
-    def test_unsubscribe_gives_access(self):
+    def test_unsubscribe_removes_access(self):
         """Unsubscibing a user to a branch removes their access."""
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
