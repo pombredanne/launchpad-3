@@ -8,7 +8,6 @@
      tal:condition="context/obsolete_translatable_series">
   <h3>All product series with obsolete templates</h3>
 
-  <div class="portletBody portletContent">
     <ul>
       <li class="translations"
         tal:repeat="series context/obsolete_translatable_series">
@@ -16,6 +15,5 @@
            tal:attributes="href series/fmt:url">series title</a>
       </li>
     </ul>
-  </div>
 </div>
 </tal:root>

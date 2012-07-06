@@ -10,8 +10,7 @@
   <span tal:replace="context/distribution/name">ubuntu</span>
   <span tal:replace="context/distroseries/name">hoary</span></h2>
 
-  <div class="portletBody portletContent"
-       tal:define="cr context/currentrelease">
+  <div tal:define="cr context/currentrelease">
 
     <tal:has_currentrelease condition="cr">
       <b>Current release:</b>
