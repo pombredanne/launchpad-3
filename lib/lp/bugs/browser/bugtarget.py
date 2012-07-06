@@ -121,7 +121,6 @@ from lp.registry.browser.product import (
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
@@ -260,7 +259,10 @@ class FileBugReportingGuidelines(LaunchpadFormView):
     @property
     def field_names(self):
         """Return the list of field names to display."""
-        return ['information_type']
+        if self.is_bug_supervisor:
+            return ['information_type']
+        else:
+            return ['security_related']
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
@@ -298,11 +300,17 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugReportingGuidelines, self).setUpFields()
 
-        information_type_field = copy_field(
-            IBug['information_type'], readonly=False,
-            vocabulary=InformationTypeVocabulary(self.context))
-        self.form_fields = self.form_fields.omit('information_type')
-        self.form_fields += Fields(information_type_field)
+        if self.is_bug_supervisor:
+            information_type_field = copy_field(
+                IBug['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(self.context))
+            self.form_fields = self.form_fields.omit('information_type')
+            self.form_fields += Fields(information_type_field)
+        else:
+            security_related_field = copy_field(
+                IBug['security_related'], readonly=False)
+            self.form_fields = self.form_fields.omit('security_related')
+            self.form_fields += Fields(security_related_field)
 
     @property
     def initial_values(self):
@@ -359,6 +367,13 @@ class FileBugReportingGuidelines(LaunchpadFormView):
             return self.context.distribution
         else:
             return self.context
+
+    @cachedproperty
+    def is_bug_supervisor(self):
+        """ Return True if the logged in user is a bug supervisor."""
+        context = self.getMainContext()
+        return BugTask.userHasBugSupervisorPrivilegesContext(
+            context, self.user)
 
 
 class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
@@ -435,9 +450,14 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags', 'information_type',
+        field_names = ['title', 'comment', 'tags']
+        if self.is_bug_supervisor:
+            field_names.append('information_type')
+        else:
+            field_names.append('security_related')
+        field_names.extend([
             'bug_already_reported_as', 'filecontent', 'patch',
-            'attachment_description', 'subscribe_to_existing_bug']
+            'attachment_description', 'subscribe_to_existing_bug'])
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -453,9 +473,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # selected project supports them.
         include_extra_fields = IProjectGroup.providedBy(context)
         if not include_extra_fields:
-            include_extra_fields = (
-                BugTask.userHasBugSupervisorPrivilegesContext(
-                    context, self.user))
+            include_extra_fields = self.is_bug_supervisor
 
         if include_extra_fields:
             field_names.extend(
@@ -612,6 +630,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         packagename = data.get("packagename")
         information_type = data.get(
             "information_type", InformationType.PUBLIC)
+        security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
 
@@ -629,6 +648,14 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # enters a package name but then selects "I don't know".
         if self.request.form.get("packagename_option") == "none":
             packagename = None
+
+        if not self.is_bug_supervisor:
+            # If the old UI is enabled, security bugs are always embargoed
+            # when filed, but can be disclosed after they've been reported.
+            if security_related:
+                information_type = InformationType.EMBARGOEDSECURITY
+            else:
+                information_type = InformationType.PUBLIC
 
         linkified_ack = structured(FormattersAPI(
             self.getAcknowledgementMessage(self.context)).text_to_html(
@@ -665,12 +692,12 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             notifications.append(
                 'Additional information was added to the bug description.')
 
-        if extra_data.private:
-            if params.information_type in PUBLIC_INFORMATION_TYPES:
+        if not self.is_bug_supervisor and extra_data.private:
+            if params.information_type == InformationType.PUBLIC:
                 params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
-        if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):
+        if self.is_bug_supervisor:
             if 'assignee' in data:
                 params.assignee = data['assignee']
             if 'status' in data:
