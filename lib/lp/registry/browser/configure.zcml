@@ -1422,9 +1422,6 @@
         <browser:page
             name="+portlet-requires-subscription"
             template="../templates/product-portlet-requires-subscription.pt"/>
-        <browser:page
-            name="+portlet-license-missing"
-            template="../templates/product-portlet-license-missing.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
