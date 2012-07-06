@@ -1475,7 +1475,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
-        unsafe_proposal.merged_revno=merged_revno
+        unsafe_proposal.merged_revno = merged_revno
         if preview_diff is not None:
             unsafe_proposal.preview_diff = preview_diff
         if (set_state is None or

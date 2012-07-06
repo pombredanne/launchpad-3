@@ -2866,13 +2866,13 @@ def make_proposal_and_branch_revision(factory, revno, revision_id,
 class TestGetMergeProposalsWS(WebServiceTestCase):
 
     def test_getMergeProposals(self):
+        """getMergeProposals works as expected over the API."""
         bmp = make_proposal_and_branch_revision(self.factory, 5, 'rev-id',
                                                 userdata_target=True)
         transaction.commit()
         user = removeSecurityProxy(bmp).target_branch.owner
         service = self.factory.makeLaunchpadService(
             user, version=self.ws_version)
-        branch_set = service.branches
         result = service.branches.getMergeProposals(merged_revision='rev-id')
         self.assertEqual([self.wsObject(bmp, user)], list(result))
 
@@ -2881,50 +2881,54 @@ class TestGetMergeProposals(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestGetMergeProposals, self).setUp()
+        self.branch_set = BranchSet()
+
     def test_getMergeProposals_with_no_merged_revno(self):
-        bmp = make_proposal_and_branch_revision(self.factory, None, 'rev-id')
-        branch_set = BranchSet()
-        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
-        self.assertEqual([], result)
+        """Merge proposals with no merged revno are not found."""
+        make_proposal_and_branch_revision(self.factory, None, 'rev-id')
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([], list(result))
 
     def test_getMergeProposals_with_any_merged_revno(self):
+        """Any arbitrary revno will connect a revid to a proposal."""
         bmp = make_proposal_and_branch_revision(
             self.factory, self.factory.getUniqueInteger(), 'rev-id')
-        branch_set = BranchSet()
-        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
-        self.assertEqual([bmp], result)
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([bmp], list(result))
 
     def test_getMergeProposals_correct_merged_revno(self):
+        """Only proposals with the correct merged_revno match."""
         bmp1 = make_proposal_and_branch_revision(self.factory, 4, 'rev-id')
         bmp2 = make_proposal_and_branch_revision(self.factory, 5, 'other')
-        branch_set = BranchSet()
-        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
-        self.assertEqual([bmp1], result)
-        result = list(branch_set.getMergeProposals(merged_revision='other'))
-        self.assertEqual([bmp2], result)
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([bmp1], list(result))
+        result = self.branch_set.getMergeProposals(merged_revision='other')
+        self.assertEqual([bmp2], list(result))
 
     def test_getMergeProposals_correct_branch(self):
+        """Only proposals with the correct branch match."""
         bmp1 = make_proposal_and_branch_revision(self.factory, 5, 'rev-id')
-        bmp2 = make_proposal_and_branch_revision(self.factory, 5, 'other')
-        branch_set = BranchSet()
-        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
-        self.assertEqual([bmp1], result)
+        make_proposal_and_branch_revision(self.factory, 5, 'other')
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([bmp1], list(result))
 
     def test_getMergeProposals_skips_hidden(self):
-        bmp = make_proposal_and_branch_revision(
+        """Proposals not visible to the user are skipped."""
+        make_proposal_and_branch_revision(
             self.factory, 5, 'rev-id', userdata_target=True)
-        branch_set = BranchSet()
-        result = list(branch_set.getMergeProposals(merged_revision='rev-id',
-            visible_by_user=self.factory.makePerson()))
-        self.assertEqual([], result)
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id',
+            visible_by_user=self.factory.makePerson())
+        self.assertEqual([], list(result))
 
     def test_getMergeProposals_shows_visible_userdata(self):
+        """Proposals visible to the user are listed."""
         bmp = make_proposal_and_branch_revision(
             self.factory, 5, 'rev-id', userdata_target=True)
-        branch_set = BranchSet()
-        result = list(branch_set.getMergeProposals(merged_revision='rev-id',
-            visible_by_user=bmp.target_branch.owner))
-        self.assertEqual([bmp], result)
+        result = self.branch_set.getMergeProposals(merged_revision='rev-id',
+            visible_by_user=bmp.target_branch.owner)
+        self.assertEqual([bmp], list(result))
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):

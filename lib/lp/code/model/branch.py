@@ -155,10 +155,7 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
+from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
