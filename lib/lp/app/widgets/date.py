@@ -127,7 +127,6 @@ class DateTimeWidget(TextWidget):
     __call__ = ViewPageTemplateFile('templates/datetime.pt')
 
     def __init__(self, context, request):
-        request.needs_datetimepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
         launchbag = getUtility(ILaunchBag)
         self.system_time_zone = launchbag.time_zone
@@ -509,11 +508,6 @@ class DateWidget(DateTimeWidget):
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/date.pt')
-
-    def __init__(self, context, request):
-        super(DateWidget, self).__init__(context, request)
-        request.needs_datepicker_iframe = True
-        request.needs_datetimepicker_iframe = False
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date.

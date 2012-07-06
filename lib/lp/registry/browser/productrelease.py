@@ -194,12 +194,6 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
         'changelog',
         ]
 
-    def initialize(self):
-        # The dynamically loaded milestone form needs this javascript
-        # enabled in the base-layout.
-        self.request.needs_datepicker_iframe = True
-        super(ProductReleaseFromSeriesAddView, self).initialize()
-
     def setUpFields(self):
         super(ProductReleaseFromSeriesAddView, self).setUpFields()
         self._prependKeepMilestoneActiveField()
