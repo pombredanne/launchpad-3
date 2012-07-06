@@ -20,7 +20,6 @@ class IFoo(Interface):
 
 The binding of name -> class is done in the configure.zcml
 """
-from lp.code.interfaces.branch import IBranch
 
 __metaclass__ = type
 
@@ -106,6 +105,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
