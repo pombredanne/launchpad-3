@@ -31,6 +31,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.interfaces.person import validate_person
+from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -93,9 +94,6 @@ class ArchiveSubscriber(Storm):
 
     def getNonActiveSubscribers(self):
         """See `IArchiveSubscriber`."""
-        # Imported here because of circular imports.
-        from lp.registry.model.person import Person
-
         store = Store.of(self)
         if self.subscriber.is_team:
 
@@ -210,10 +208,6 @@ class ArchiveSubscriberSet:
 
     def getByArchive(self, archive, current_only=True):
         """See `IArchiveSubscriberSet`."""
-        # Grab the extra Storm expressions, for this query,
-        # depending on the params:
-        # avoid circular imports.
-        from lp.registry.model.person import Person
         extra_exprs = self._getExprsForSubscriptionQueries(
             archive, current_only)
 

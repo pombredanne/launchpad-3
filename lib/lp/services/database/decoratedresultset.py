@@ -167,12 +167,17 @@ class DecoratedResultSet(object):
         else:
             return self.decorate_or_none(value)
 
+    def iterhook_one_elem(self, value):
+        if value is not None and self.pre_iter_hook is not None:
+            self.pre_iter_hook([value])
+
     def any(self, *args, **kwargs):
         """See `IResultSet`.
 
         :return: The decorated version of the returned value.
         """
         value = self.result_set.any(*args, **kwargs)
+        self.iterhook_one_elem(value)
         return self.decorate_or_none(value)
 
     def first(self, *args, **kwargs):
@@ -181,6 +186,7 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned value.
         """
         value = self.result_set.first(*args, **kwargs)
+        self.iterhook_one_elem(value)
         return self.decorate_or_none(value)
 
     def last(self, *args, **kwargs):
@@ -189,6 +195,7 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned value.
         """
         value = self.result_set.last(*args, **kwargs)
+        self.iterhook_one_elem(value)
         return self.decorate_or_none(value)
 
     def one(self, *args, **kwargs):
@@ -197,6 +204,7 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned value.
         """
         value = self.result_set.one(*args, **kwargs)
+        self.iterhook_one_elem(value)
         return self.decorate_or_none(value)
 
     def order_by(self, *args, **kwargs):

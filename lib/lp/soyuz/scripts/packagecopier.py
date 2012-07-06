@@ -56,7 +56,6 @@ from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
     )
-from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
 
 def re_upload_file(libraryfile, restricted=False):
@@ -772,6 +771,9 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
     """
+    from lp.soyuz.scripts.processaccepted import (
+        close_bugs_for_sourcepublication)
+
     copies = []
     custom_files = []
 

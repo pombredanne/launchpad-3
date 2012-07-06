@@ -2214,9 +2214,16 @@ class BugTaskListingItem:
             assignee = self.people[self.assigneeID].displayname
         reporter = self.people[self.bug.ownerID]
 
-        base_tag_url = "%s/?field.tag=" % canonical_url(
-            self.bugtask.target,
-            view_name="+bugs")
+        # the case that there is no target context (e.g. viewing bug that
+        # are related to a user account) is intercepted
+        if self.target_context is None:
+            base_tag_url = "%s/?field.tag=" % canonical_url(
+                self.bugtask.target,
+                view_name="+bugs")
+        else:
+            base_tag_url = "%s/?field.tag=" % canonical_url(
+                self.target_context,
+                view_name="+bugs")
 
         flattened = {
             'age': age,

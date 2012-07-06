@@ -131,8 +131,8 @@ LPJS.use('node', 'lazr.effects', function(Y) {
 
         // When Other/Proprietary or Other/Open Source is chosen, the
         // license_info widget is displayed.
-        var other_com = Y.one('input[value=OTHER_PROPRIETARY]');
-        var other_os = Y.one('input[value=OTHER_OPEN_SOURCE]');
+        var other_com = Y.one('input[value="OTHER_PROPRIETARY"]');
+        var other_os = Y.one('input[value="OTHER_OPEN_SOURCE"]');
         var details = Y.one('#license-details');
         var proprietary = Y.one('#proprietary');
 

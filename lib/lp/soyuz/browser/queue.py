@@ -20,6 +20,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.registry.model.person import Person
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
@@ -48,6 +49,10 @@ from lp.soyuz.interfaces.queue import (
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.packagecopyjob import PackageCopyJob
+from lp.soyuz.model.queue import PackageUploadSource
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 QUEUE_SIZE = 30
@@ -194,11 +199,6 @@ class QueueItemsView(LaunchpadView):
 
     def loadPackageCopyJobs(self, uploads):
         """Batch-load `PackageCopyJob`s and related information."""
-        # Avoid circular imports.
-        from lp.registry.model.person import Person
-        from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.packagecopyjob import PackageCopyJob
-
         package_copy_jobs = load_related(
             PackageCopyJob, uploads, ['package_copy_job_id'])
         load_related(Archive, package_copy_jobs, ['source_archive_id'])
@@ -212,10 +212,6 @@ class QueueItemsView(LaunchpadView):
         CompletePackageUpload.  This avoids many additional SQL queries
         in the +queue template.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.queue import PackageUploadSource
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
         uploads = list(self.batchnav.currentBatch())
 
         if len(uploads) == 0:

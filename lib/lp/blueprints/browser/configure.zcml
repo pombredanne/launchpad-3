@@ -609,6 +609,13 @@
         template="../../app/templates/generic-edit.pt"/>
     </facet>
 
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        class="lp.blueprints.browser.person_upcomingwork.PersonUpcomingWorkView"
+        permission="zope.Public"
+        name="+upcomingwork"
+        template="../templates/person-upcomingwork.pt"/>
+
   <adapter
       factory="lp.blueprints.browser.specification.starter_xhtml_representation"
       name="starter"/>
