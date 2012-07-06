@@ -1502,15 +1502,10 @@ class BranchSet:
             'person_name': person.displayname,
             'visible_branches': visible_branches}
 
-    def getMergeProposals(self, merged_revision):
+    def getMergeProposals(self, merged_revision, visible_by_user=None):
         """See IBranchSet."""
-        store = IStore(BranchMergeProposal)
-        return store.find(BranchMergeProposal,
-            BranchMergeProposal.merged_revno == BranchRevision.sequence,
-            BranchRevision.revision_id == Revision.id,
-            BranchRevision.branch_id == BranchMergeProposal.target_branchID,
-            Revision.revision_id == merged_revision)
-
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        return collection.getMergeProposals(merged_revision=merged_revision)
 
 
 def update_trigger_modified_fields(branch):

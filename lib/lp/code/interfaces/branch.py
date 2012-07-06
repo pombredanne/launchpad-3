@@ -1387,10 +1387,11 @@ class IBranchSet(Interface):
         """
 
     @operation_returns_collection_of(Interface)
+    @call_with(visible_by_user=REQUEST_USER)
     @operation_parameters(merged_revision=TextLine())
     @export_read_operation()
     @operation_for_version("devel")
-    def getMergeProposals(merged_revision):
+    def getMergeProposals(merged_revision, visible_by_user):
         """Return the merge proposals that resulted in this revision.
 
         :param merged_revision: The revision_id of the revision that resulted

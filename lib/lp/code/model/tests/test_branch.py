@@ -2851,21 +2851,30 @@ class TestBranchSetTarget(TestCaseWithFactory):
             new_product, get_policies_for_artifact(branch)[0].pillar)
 
 
-def make_proposal_and_branch_revision(factory, revno, revision_id):
+def make_proposal_and_branch_revision(factory, revno, revision_id,
+                                      userdata_target=False):
     revision = factory.makeBranchRevision(revision_id=revision_id,
                                           sequence=revno)
-    return factory.makeBranchMergeProposal(merged_revno=revno,
-                                           target_branch=revision.branch)
+    bmp = factory.makeBranchMergeProposal(merged_revno=revno,
+                                          target_branch=revision.branch)
+    if userdata_target:
+        naked_target = removeSecurityProxy(bmp.target_branch)
+        naked_target.information_type = InformationType.USERDATA
+    return bmp
 
 
 class TestGetMergeProposalsWS(WebServiceTestCase):
 
     def test_getMergeProposals(self):
-        bmp = make_proposal_and_branch_revision(self.factory, 5, 'rev-id')
+        bmp = make_proposal_and_branch_revision(self.factory, 5, 'rev-id',
+                                                userdata_target=True)
         transaction.commit()
-        branch_set = self.service.branches
-        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
-        self.assertEqual(result, [self.wsObject(bmp)])
+        user = removeSecurityProxy(bmp).target_branch.owner
+        service = self.factory.makeLaunchpadService(
+            user, version=self.ws_version)
+        branch_set = service.branches
+        result = service.branches.getMergeProposals(merged_revision='rev-id')
+        self.assertEqual([self.wsObject(bmp, user)], list(result))
 
 
 class TestGetMergeProposals(TestCaseWithFactory):
@@ -2902,13 +2911,20 @@ class TestGetMergeProposals(TestCaseWithFactory):
         self.assertEqual([bmp1], result)
 
     def test_getMergeProposals_skips_hidden(self):
-        bmp1 = make_proposal_and_branch_revision(self.factory, 5, 'rev-id')
-        naked_target = removeSecurityProxy(bmp1.target)
-        naked_target.information_type = InformationType.USERDATA
+        bmp = make_proposal_and_branch_revision(
+            self.factory, 5, 'rev-id', userdata_target=True)
         branch_set = BranchSet()
-        result = list(branch_set.getMergeProposals(merged_revision='rev-id'))
+        result = list(branch_set.getMergeProposals(merged_revision='rev-id',
+            visible_by_user=self.factory.makePerson()))
         self.assertEqual([], result)
 
+    def test_getMergeProposals_shows_visible_userdata(self):
+        bmp = make_proposal_and_branch_revision(
+            self.factory, 5, 'rev-id', userdata_target=True)
+        branch_set = BranchSet()
+        result = list(branch_set.getMergeProposals(merged_revision='rev-id',
+            visible_by_user=bmp.target_branch.owner))
+        self.assertEqual([bmp], result)
 
 
 class TestScheduleDiffUpdates(TestCaseWithFactory):
