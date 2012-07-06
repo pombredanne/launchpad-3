@@ -925,7 +925,9 @@ class TestBranchEditView(TestCaseWithFactory):
         # The vocabulary that Branch:+edit uses for the information_type
         # has been correctly created.
         person = self.factory.makePerson()
-        branch = self.factory.makeProductBranch(owner=person)
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        branch = self.factory.makeProductBranch(product=product, owner=person)
         feature_flag = {
             'disclosure.proprietary_information_type.disabled': 'on'}
         admins = getUtility(ILaunchpadCelebrities).admin
@@ -951,8 +953,8 @@ class TestBranchEditView(TestCaseWithFactory):
         self.assertRaises(
             LookupError, browser.getControl, "Information Type")
 
-    def test_authorised_user_can_change_privacy(self):
-        # An authorised user can change the information type.
+    def test_authorised_user_can_change_branch_to_private(self):
+        # An authorised user can make the information type private.
         team_owner = self.factory.makePerson()
         user = self.factory.makePerson()
         team = self.factory.makeTeam(
@@ -965,7 +967,17 @@ class TestBranchEditView(TestCaseWithFactory):
             branch = self.factory.makeBranch(owner=team)
             browser = self.getUserBrowser(
                 canonical_url(branch) + '/+edit', user=user)
-        self.assertIsNotNone(browser.getControl, "Information Type")
+        self.assertIsNotNone(browser.getControl, "Embargoed Security")
+
+    def test_authorised_user_cannot_change_branch_to_private(self):
+        # An authorised user can make the information type private.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            branch = self.factory.makeBranch(owner=user)
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=user)
+        self.assertRaises(
+            LookupError, browser.getControl, "Embargoed Security")
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):

@@ -740,7 +740,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                 ])
             information_type = copy_field(
                 IBranch['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary())
+                vocabulary=InformationTypeVocabulary(self.context))
             reviewer = copy_field(IBranch['reviewer'], required=True)
             owner = copy_field(IBranch['owner'], readonly=False)
         return BranchEditSchema
@@ -1040,7 +1040,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # to inform the user the information type cannot be changed.
             if (branch.stacked_on and branch.stacked_on.information_type in
                 PRIVATE_INFORMATION_TYPES):
-                stacked_info_type= branch.stacked_on.information_type.title
+                stacked_info_type = branch.stacked_on.information_type.title
                 private_info = Bool(
                     __name__="information_type",
                     title=_("Branch is %s" % stacked_info_type),
@@ -1098,22 +1098,32 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         branch = self.context
 
         if self.form_fields.get('information_type') is not None:
+            # The vocab uses feature flags to control what is displayed so we
+            # need to pull info_types from the vocab to use to make the subset
+            # of what we show the user.
+            info_type_vocab = self.widgets['information_type'].vocabulary
+            public_types = [
+                    info_type
+                    for info_type in info_type_vocab
+                    if info_type.value in PUBLIC_INFORMATION_TYPES]
+            private_types = [
+                    info_type
+                    for info_type in info_type_vocab
+                    if info_type.value in PRIVATE_INFORMATION_TYPES]
+
             allowed_information_types = []
             policy = IBranchNamespacePolicy(branch.namespace)
             if branch.private:
                 if policy.canBranchesBePublic():
-                    allowed_information_types.extend(PUBLIC_INFORMATION_TYPES)
-                allowed_information_types.extend(PRIVATE_INFORMATION_TYPES)
+                    allowed_information_types.extend(public_types)
+                allowed_information_types.extend(private_types)
             else:
-                allowed_information_types.extend(PUBLIC_INFORMATION_TYPES)
+                allowed_information_types.extend(public_types)
                 if branch.canBePrivate(self.user):
-                    allowed_information_types.extend(PRIVATE_INFORMATION_TYPES)
+                    allowed_information_types.extend(private_types)
 
             self.widgets['information_type'].vocabulary = (
-                SimpleVocabulary([SimpleVocabulary.createTerm(
-                    info_type, info_type.name, info_type.title)
-                    for info_type in allowed_information_types])
-                )
+                SimpleVocabulary(allowed_information_types))
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk

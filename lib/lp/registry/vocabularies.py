@@ -20,6 +20,7 @@ class IFoo(Interface):
 
 The binding of name -> class is done in the configure.zcml
 """
+from lp.code.interfaces.branch import IBranch
 
 __metaclass__ = type
 
@@ -2251,9 +2252,22 @@ class InformationTypeVocabulary(SimpleVocabulary):
             'disclosure.proprietary_information_type.disabled'))
         show_userdata_as_private = bool(getFeatureFlag(
             'disclosure.display_userdata_as_private.enabled'))
-        if not proprietary_disabled and not (IBug.providedBy(context) and
-            len(context.affected_pillars) > 1):
+        # Proprietary is allowed for:
+        # - single pillar bugs where the target has a current commercial
+        #   subscription
+        # - branches for a project with a current commercial subscription
+        # - projects with current commercial subscriptions
+        subscription_context = context
+        if IBug.providedBy(context) and len(context.affected_pillars) == 1:
+            subscription_context = context.affected_pillars[0]
+        if IBranch.providedBy(context):
+            subscription_context = context.target.context
+        has_commercial_subscription = (
+            IProduct.providedBy(subscription_context) and
+            subscription_context.has_current_commercial_subscription)
+        if not proprietary_disabled and has_commercial_subscription:
             types.append(InformationType.PROPRIETARY)
+        # Disallow public items for projects with private bugs.
         if (context is None or
             not IProduct.providedBy(context) or
             not context.private_bugs):

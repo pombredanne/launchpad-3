@@ -24,13 +24,16 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_vocabulary_items(self):
-        vocab = InformationTypeVocabulary()
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        vocab = InformationTypeVocabulary(product)
         for info_type in InformationType:
             self.assertIn(info_type.value, vocab)
 
     def test_vocabulary_items_project(self):
         # The vocab has all info types for a project without private_bugs set.
         product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
         vocab = InformationTypeVocabulary(product)
         for info_type in InformationType:
             self.assertIn(info_type.value, vocab)
@@ -38,6 +41,7 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
     def test_vocabulary_items_private_bugs_project(self):
         # The vocab has private info types for a project with private_bugs set.
         product = self.factory.makeProduct(private_bugs=True)
+        self.factory.makeCommercialSubscription(product)
         vocab = InformationTypeVocabulary(product)
         for info_type in PRIVATE_INFORMATION_TYPES:
             self.assertIn(info_type, vocab)
@@ -57,13 +61,25 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
     def test_proprietary_disabled(self):
         feature_flag = {
             'disclosure.proprietary_information_type.disabled': 'on'}
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
         with FeatureFixture(feature_flag):
-            vocab = InformationTypeVocabulary()
+            vocab = InformationTypeVocabulary(product)
             self.assertRaises(
                 LookupError, vocab.getTermByToken, 'PROPRIETARY')
 
+    def test_proprietary_disabled_for_non_commercial_projects(self):
+        # Only projects with commercial subscriptions have PROPRIETARY.
+        product = self.factory.makeProduct()
+        vocab = InformationTypeVocabulary(product)
+        self.assertRaises(
+            LookupError, vocab.getTermByToken, 'PROPRIETARY')
+
     def test_proprietary_enabled(self):
-        vocab = InformationTypeVocabulary()
+        # Only projects with commercial subscriptions have PROPRIETARY.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        vocab = InformationTypeVocabulary(product)
         term = vocab.getTermByToken('PROPRIETARY')
         self.assertEqual('Proprietary', term.title)
 
@@ -98,7 +114,9 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
 
     def test_multi_task_bugs(self):
         # Multi-task bugs are allowed to be PROPRIETARY.
-        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        bug = self.factory.makeBug(product=product)
         self.factory.makeBugTask(bug=bug) # Uses the same pillar.
         vocab = InformationTypeVocabulary(bug)
         term = vocab.getTermByToken('PROPRIETARY')

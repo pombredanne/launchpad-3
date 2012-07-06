@@ -146,7 +146,6 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.services.config import config
 from lp.services.database.bulk import load_related
