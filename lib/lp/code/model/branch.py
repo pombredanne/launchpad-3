@@ -1284,8 +1284,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         if checked_branches is None:
             checked_branches = []
-        can_access = not getUtility(IAllBranches).withIds(
-            self.id).visibleByUser(user).is_empty()
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            can_access = True
+        else:
+            can_access = not getUtility(IAllBranches).withIds(
+                self.id).visibleByUser(user).is_empty()
         if can_access and self.stacked_on is not None:
             checked_branches.append(self)
             if self.stacked_on not in checked_branches:

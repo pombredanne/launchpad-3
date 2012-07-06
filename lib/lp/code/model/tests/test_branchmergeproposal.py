@@ -967,7 +967,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
         for branch in (bmp.source_branch, bmp.target_branch):
-            branch.transitionToInformationType(
+            removeSecurityProxy(branch).transitionToInformationType(
                 InformationType.USERDATA, branch.owner, verify_policy=False)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
