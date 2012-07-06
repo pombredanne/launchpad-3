@@ -119,7 +119,6 @@ from lp.code.interfaces.branch import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
@@ -1032,9 +1031,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         # This is to prevent users from converting push/import
         # branches to pull branches.
         branch = self.context
-        if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
-            self.form_fields = self.form_fields.omit('url')
-
         if branch.private:
             # If this branch is stacked on a private branch, render some text
             # to inform the user the information type cannot be changed.
@@ -1042,7 +1038,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 PRIVATE_INFORMATION_TYPES):
                 stacked_info_type = branch.stacked_on.information_type.title
                 private_info = Bool(
-                    __name__="information_type",
+                    __name__="private",
                     title=_("Branch is %s" % stacked_info_type),
                     description=_(
                         "This branch is %(info_type)s because it is "
@@ -1050,10 +1046,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                             'info_type': stacked_info_type}))
                 private_info_field = form.Fields(
                     private_info, render_context=self.render_context)
-                self.form_fields = self.form_fields.omit('information_type')
-                self.form_fields = private_info_field + self.form_fields
-                self.form_fields = self.form_fields.select(*self.field_names)
-                self.form_fields['information_type'].custom_widget = (
+                self.form_fields = (private_info_field
+                    + self.form_fields.omit('information_type'))
+                new_field_names = self.field_names
+                index = new_field_names.index('information_type')
+                new_field_names[index] = 'private'
+                self.form_fields = self.form_fields.select(*new_field_names)
+                self.form_fields['private'].custom_widget = (
                     CustomWidgetFactory(
                         CheckBoxWidget, extra='disabled="disabled"'))
 
@@ -1093,6 +1092,9 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 self.form_fields = self.form_fields.omit('owner')
                 self.form_fields = new_owner_field + self.form_fields
 
+        if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
+            self.form_fields = self.form_fields.omit('url')
+
     def setUpWidgets(self, context=None):
         super(BranchEditView, self).setUpWidgets()
         branch = self.context
@@ -1112,9 +1114,8 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                     if info_type.value in PRIVATE_INFORMATION_TYPES]
 
             allowed_information_types = []
-            policy = IBranchNamespacePolicy(branch.namespace)
             if branch.private:
-                if policy.canBranchesBePublic():
+                if branch.canBePublic():
                     allowed_information_types.extend(public_types)
                 allowed_information_types.extend(private_types)
             else:

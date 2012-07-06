@@ -969,7 +969,7 @@ class TestBranchEditView(TestCaseWithFactory):
                 canonical_url(branch) + '/+edit', user=user)
         self.assertIsNotNone(browser.getControl, "Embargoed Security")
 
-    def test_authorised_user_cannot_change_branch_to_private(self):
+    def test_unauthorised_user_cannot_change_branch_to_private(self):
         # An authorised user can make the information type private.
         user = self.factory.makePerson()
         with person_logged_in(user):

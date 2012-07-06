@@ -1,6 +1,5 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from lp.registry.enums import InformationType
 
 __metaclass__ = type
 
@@ -25,6 +24,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtasksearch import _process_order_by
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,

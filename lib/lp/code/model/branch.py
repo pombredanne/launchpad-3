@@ -1287,6 +1287,12 @@ class Branch(SQLBase, BzrIdentityMixin):
                     user, checked_branches)
         return can_access
 
+    def canBePublic(self, user):
+        """See `IBranch`."""
+        policy = IBranchNamespacePolicy(self.namespace)
+        return (policy.canBranchesBePublic() or
+                user_has_special_branch_access(user))
+
     def canBePrivate(self, user):
         """See `IBranch`."""
         policy = IBranchNamespacePolicy(self.namespace)

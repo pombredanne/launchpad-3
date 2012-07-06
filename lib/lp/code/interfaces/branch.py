@@ -968,6 +968,14 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
+    def canBePublic(user):
+        """Can this branch be public?
+
+        A branch can be made public if:
+        - the branch has a visibility policy which allows it
+        - the user is an admin or bzr expert
+        """
+
     def canBePrivate(user):
         """Can this branch be private?
 
