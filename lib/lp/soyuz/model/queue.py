@@ -259,8 +259,7 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         if self.contains_source:
             return [
-                ProxiedLibraryFileAlias(
-                    file.libraryfile, self.archive).http_url
+                file.libraryfile.getURL()
                 for file in self.sourcepackagerelease.files]
         else:
             return []
@@ -313,10 +312,7 @@ class PackageUpload(SQLBase):
 
     def customFileUrls(self):
         """See `IPackageUpload`."""
-        return [
-            ProxiedLibraryFileAlias(
-                file.libraryfilealias, self.archive).http_url
-            for file in self.customfiles]
+        return self.custom_file_urls
 
     def getBinaryProperties(self):
         """See `IPackageUpload`."""

@@ -7,6 +7,7 @@ from datetime import timedelta
 from email import message_from_string
 import os
 import shutil
+from urllib2 import urlopen
 
 from lazr.restfulclient.errors import (
     BadRequest,
@@ -1031,10 +1032,12 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertNotEqual(0, len(ws_source_file_urls))
         with person_logged_in(person):
             source_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfile, upload.archive).http_url
+                file.libraryfile.getURL()
                 for file in upload.sourcepackagerelease.files]
         self.assertContentEqual(source_file_urls, ws_source_file_urls)
+        for ws_source_file_url in ws_source_file_urls:
+            urlopen(ws_source_file_url).close()
+        urlopen(ws_upload.changes_file_url).close()
 
     def test_overrideSource_limited_component_permissions(self):
         # Overriding between two components requires queue admin of both.
@@ -1257,10 +1260,11 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertNotEqual(0, len(ws_custom_file_urls))
         with person_logged_in(person):
             custom_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfilealias, upload.archive).http_url
-                for file in upload.customfiles]
+                file.libraryfilealias.getURL() for file in upload.customfiles]
         self.assertContentEqual(custom_file_urls, ws_custom_file_urls)
+        for ws_custom_file_url in ws_custom_file_urls:
+            urlopen(ws_custom_file_url).close()
+        urlopen(ws_upload.changes_file_url).close()
 
     def test_binary_and_custom_info(self):
         # API clients can inspect properties of uploads containing both
