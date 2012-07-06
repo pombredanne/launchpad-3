@@ -44,6 +44,7 @@ from lp.soyuz.interfaces.publishing import name_priority_map
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
     IPackageUploadSet,
+    QueueAdminUnauthorizedError,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
@@ -392,7 +393,8 @@ class QueueItemsView(LaunchpadView):
                     }]
                 binary_overridden = queue_item.overrideBinaries(
                     binary_changes, allowed_components)
-            except QueueInconsistentStateError as info:
+            except (QueueAdminUnauthorizedError,
+                    QueueInconsistentStateError) as info:
                 failure.append("FAILED: %s (%s)" %
                                (queue_item.displayname, info))
                 continue
@@ -413,7 +415,8 @@ class QueueItemsView(LaunchpadView):
 
             try:
                 getattr(self, 'queue_action_' + action)(queue_item)
-            except QueueInconsistentStateError as info:
+            except (QueueAdminUnauthorizedError,
+                    QueueInconsistentStateError) as info:
                 failure.append('FAILED: %s (%s)' %
                                (queue_item.displayname, info))
             else:
