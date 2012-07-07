@@ -25,7 +25,7 @@ branches in the listings.
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> print links.renderContents()
     <BLANKLINE>
-    ...1...&rarr;...6...of 9 results...
+    ...1...&rarr;...6...of 10 results...
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.fetch('tr'):
@@ -52,7 +52,7 @@ and are really just branch metadata without the revisions behind them.
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> print links.renderContents()
     <BLANKLINE>
-    ...7...&rarr;...9...of 9 results...
+    ...7...&rarr;...10...of 10 results...
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
@@ -112,7 +112,7 @@ Now all types of branches should be shown.
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> print links.renderContents()
     <BLANKLINE>
-    ...1...&rarr;...6...of 11 results...
+    ...1...&rarr;...6...of 12 results...
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
@@ -128,7 +128,7 @@ Now all types of branches should be shown.
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> print links.renderContents()
     <BLANKLINE>
-    ...7...&rarr;...11...of 11 results...
+    ...7...&rarr;...12...of 12 results...
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
