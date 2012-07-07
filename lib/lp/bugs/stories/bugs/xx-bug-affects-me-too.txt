@@ -111,14 +111,14 @@ dynamic (Javascript enabled) scenarios.
    >>> dynamic_content is not None
    True
 
-The dynamic content is hidden by the presence of the "unseen" CSS
+The dynamic content is hidden by the presence of the "hidden" CSS
 class.
 
    >>> print static_content.get('class')
    static
 
    >>> print dynamic_content.get('class')
-   dynamic unseen
+   dynamic hidden
 
 It is the responsibilty of Javascript running in the page to unhide
 the dynamic content and hide the static content.

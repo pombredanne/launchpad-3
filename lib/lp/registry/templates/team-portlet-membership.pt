@@ -115,7 +115,7 @@
           });
         "></script>
         <span id="add-member-spinner"
-              class="unseen update-in-progress-message">
+              class="hidden update-in-progress-message">
           Saving...
         </span>
         <tal:add-member replace="structure link/fmt:link-icon" />
