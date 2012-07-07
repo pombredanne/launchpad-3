@@ -33,7 +33,7 @@ class TestProductWithLicenses(TestCaseWithFactory):
 
     def test_baseline(self):
         product = self.factory.makeProduct()
-        product_with_licenses = ProductWithLicenses(product, [License.MIT])
+        product_with_licenses = ProductWithLicenses(product, [])
         # Log in--a full verification takes Edit privileges.
         login('foo.bar@canonical.com')
         self.assertTrue(verifyObject(IProduct, product_with_licenses))
