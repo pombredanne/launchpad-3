@@ -2215,7 +2215,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
-        if self.context.is_merge_pending:
+        if self.context.isMergePending():
             if self.context.is_team:
                 merge_action = 'merged or deleted'
             else:

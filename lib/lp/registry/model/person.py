@@ -2273,8 +2273,7 @@ class Person(
         else:
             return True
 
-    @property
-    def is_merge_pending(self):
+    def isMergePending(self):
         """See `IPublicPerson`."""
         return not getUtility(
             IPersonMergeJobSource).find(from_person=self).is_empty()
@@ -3381,7 +3380,6 @@ class PersonSet:
         person = getUtility(IPersonSet).getByEmail(
                     email,
                     filter_status=False)
-        
         if person is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
