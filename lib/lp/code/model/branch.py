@@ -35,11 +35,11 @@ from storm.expr import (
     Not,
     Or,
     Select,
+    SQL,
     )
 from storm.locals import (
     AutoReload,
     Int,
-    List,
     Reference,
     )
 from storm.store import Store
@@ -201,7 +201,6 @@ class Branch(SQLBase, BzrIdentityMixin):
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
     access_policy = IntCol()
-    access_grants = List(type=Int())
 
     # These can die after the UI is dropped.
     @property
@@ -1538,7 +1537,8 @@ def get_branch_privacy_filter(user, branch_class=Branch):
         return [public_branch_filter]
 
     artifact_grant_query = Coalesce(
-            ArrayIntersects(branch_class.access_grants,
+        ArrayIntersects(
+            SQL('%s.access_grants' % branch_class.__storm_table__),
             Select(
                 ArrayAgg(TeamParticipation.teamID),
                 tables=TeamParticipation,
