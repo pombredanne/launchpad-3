@@ -12,7 +12,7 @@ Get the current counts of stuff in the database:
     >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,
     ...     SourcePackagePublishingHistory)
-    >>> from lp.registry.model.person import Person, WikiName
+    >>> from lp.registry.model.person import Person
     >>> from lp.registry.model.teammembership import TeamParticipation
     >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
@@ -27,7 +27,6 @@ Get the current counts of stuff in the database:
     >>> orig_person_count = Person.select().count()
     >>> orig_tp_count = TeamParticipation.select().count()
     >>> orig_email_count = EmailAddress.select().count()
-    >>> orig_wiki_count = WikiName.select().count()
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
     >>> orig_build_count = BinaryPackageBuild.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
