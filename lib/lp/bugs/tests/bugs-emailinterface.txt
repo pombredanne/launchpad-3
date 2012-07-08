@@ -1533,7 +1533,7 @@ Invalid importance:
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance critical
+        importance undecided
     ...
 
 XXX mpt 20060516: "importance undecided" is a silly example, but customizing
