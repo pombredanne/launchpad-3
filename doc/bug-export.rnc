@@ -23,10 +23,8 @@ status = (
   "TRIAGED"      |
   "INPROGRESS"   |
   "FIXCOMMITTED" |
-  "FIXRELEASED"  |
-  "UNKNOWN")
+  "FIXRELEASED")
 importance = (
-  "UNKNOWN"   |
   "CRITICAL"  |
   "HIGH"      |
   "MEDIUM"    |

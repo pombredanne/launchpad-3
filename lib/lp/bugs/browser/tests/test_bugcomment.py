@@ -11,7 +11,6 @@ from datetime import (
     )
 from itertools import count
 
-from fixtures import FakeLogger
 from pytz import utc
 from soupmatchers import (
     HTMLContains,
@@ -210,12 +209,6 @@ class TestBugCommentVisibility(
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestBugCommentVisibility, self).setUp()
-        # Use a FakeLogger fixture to prevent Memcached warnings to be
-        # printed to stdout while browsing pages.
-        self.useFixture(FakeLogger())
-
     def makeHiddenMessage(self):
         """Required by the mixin."""
         with celebrity_logged_in('admin'):
@@ -240,12 +233,6 @@ class TestBugHideCommentControls(
     layer = DatabaseFunctionalLayer
 
     feature_flag = {'disclosure.users_hide_own_bug_comments.enabled': 'on'}
-
-    def setUp(self):
-        super(TestBugHideCommentControls, self).setUp()
-        # Use a FakeLogger fixture to prevent Memcached warnings to be
-        # printed to stdout while browsing pages.
-        self.useFixture(FakeLogger())
 
     def getContext(self, comment_owner=None):
         """Required by the mixin."""
@@ -311,12 +298,6 @@ class TestBugHideCommentControls(
 class TestBugCommentMicroformats(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestBugCommentMicroformats, self).setUp()
-        # Use a FakeLogger fixture to prevent Memcached warnings to be
-        # printed to stdout while browsing pages.
-        self.useFixture(FakeLogger())
 
     def test_bug_comment_metadata(self):
         owner = self.factory.makePerson()

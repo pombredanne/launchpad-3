@@ -8,7 +8,6 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
-from fixtures import FakeLogger
 from lazr.lifecycle.interfaces import IDoNotSnapshot
 from lazr.restfulclient.errors import (
     BadRequest,
@@ -139,9 +138,6 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        # Use a FakeLogger fixture to prevent Memcached warnings to be
-        # printed to stdout while browsing pages.
-        self.useFixture(FakeLogger())
         login('guilherme.salgado@canonical.com ')
         self.bug = self.factory.makeBug()
         commenter = self.factory.makePerson()
