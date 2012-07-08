@@ -78,9 +78,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
         return grantee
 
-    def makeArtifactGrantee(
-            self, grantee=None, with_bug=True,
-            with_branch=False, security=False):
+    def makeArtifactGrantee(self, grantee=None, with_bug=True,
+                            with_branch=False, security=False):
         if grantee is None:
             grantee = self.factory.makePerson()
 
@@ -242,7 +241,7 @@ class PillarSharingDetailsMixin:
             IStore(self.pillar).invalidate()
             with StormStatementRecorder() as recorder:
                 create_initialized_view(pillarperson, '+index')
-            self.assertThat(recorder, HasQueryCount(LessThan(12)))
+            self.assertThat(recorder, HasQueryCount(LessThan(26)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
