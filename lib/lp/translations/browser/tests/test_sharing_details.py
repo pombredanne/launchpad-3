@@ -726,16 +726,16 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             sourcepackage, no_login=no_login, rootsite="translations",
             view_name="+sharing-details", user=user)
 
-    def assertUnseen(self, browser, html_id):
-        unseen_matcher = Tag(html_id, 'li', attrs={
+    def asserthidden(self, browser, html_id):
+        hidden_matcher = Tag(html_id, 'li', attrs={
             'id': html_id,
-            'class': lambda v: v and 'unseen' in v.split(' ')})
-        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+            'class': lambda v: v and 'hidden' in v.split(' ')})
+        self.assertThat(browser.contents, HTMLContains(hidden_matcher))
 
     def assertSeen(self, browser, html_id, dimmed=False):
         seen_matcher = Tag(html_id, 'li', attrs={
             'id': html_id,
-            'class': lambda v: v and 'unseen' not in v.split(' ')})
+            'class': lambda v: v and 'hidden' not in v.split(' ')})
         self.assertThat(browser.contents, HTMLContains(seen_matcher))
         if dimmed:
             dimmed_matcher = Tag(html_id, 'li', attrs={
@@ -755,13 +755,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'class': '',
                 })
         self.assertThat(browser.contents, HTMLContains(seen_matcher))
-        unseen_matcher = Tag(
+        hidden_matcher = Tag(
             'configuration-complete', 'span',
             attrs={
                 'id': 'configuration-complete',
-                'class': 'unseen',
+                'class': 'hidden',
                 })
-        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+        self.assertThat(browser.contents, HTMLContains(hidden_matcher))
 
     def assertStatusDisplayShowsCompleted(self, browser):
         seen_matcher = Tag(
@@ -771,13 +771,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'class': '',
                 })
         self.assertThat(browser.contents, HTMLContains(seen_matcher))
-        unseen_matcher = Tag(
+        hidden_matcher = Tag(
             'configuration-incomplete', 'span',
             attrs={
                 'id': 'configuration-incomplete',
-                'class': 'unseen',
+                'class': 'hidden',
                 })
-        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+        self.assertThat(browser.contents, HTMLContains(hidden_matcher))
 
     def assertElementText(self, browser, id, expected):
         node = find_tag_by_id(browser.contents, id)
@@ -834,13 +834,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-complete')
+        self.asserthidden(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete', dimmed=True)
-        self.assertUnseen(browser, 'branch-complete')
+        self.asserthidden(browser, 'branch-complete')
         self.assertSeen(browser, 'translation-incomplete', dimmed=True)
-        self.assertUnseen(browser, 'translation-complete')
+        self.asserthidden(browser, 'translation-complete')
         self.assertSeen(browser, 'upstream-sync-incomplete', dimmed=True)
-        self.assertUnseen(browser, 'upstream-sync-complete')
+        self.asserthidden(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_configured(self):
         # Linking a source package takes care of one item.
@@ -849,14 +849,14 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
-        self.assertUnseen(browser, 'branch-complete')
+        self.asserthidden(browser, 'branch-complete')
         self.assertSeen(browser, 'translation-incomplete')
-        self.assertUnseen(browser, 'translation-complete')
+        self.asserthidden(browser, 'translation-complete')
         self.assertSeen(browser, 'upstream-sync-incomplete')
-        self.assertUnseen(browser, 'upstream-sync-complete')
+        self.asserthidden(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_and_branch_configured(self):
         # Linking a source package and and setting an upstream branch
@@ -867,14 +867,14 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
-        self.assertUnseen(browser, 'branch-incomplete')
+        self.asserthidden(browser, 'branch-incomplete')
         self.assertSeen(browser, 'branch-complete')
         self.assertSeen(browser, 'translation-incomplete')
-        self.assertUnseen(browser, 'translation-complete')
+        self.asserthidden(browser, 'translation-complete')
         self.assertSeen(browser, 'upstream-sync-incomplete')
-        self.assertUnseen(browser, 'upstream-sync-complete')
+        self.asserthidden(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_and_translations_enabled(self):
         # Linking a source package and and setting an upstream branch
@@ -886,14 +886,14 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
-        self.assertUnseen(browser, 'branch-complete')
-        self.assertUnseen(browser, 'translation-incomplete')
+        self.asserthidden(browser, 'branch-complete')
+        self.asserthidden(browser, 'translation-incomplete')
         self.assertSeen(browser, 'translation-complete')
         self.assertSeen(browser, 'upstream-sync-incomplete')
-        self.assertUnseen(browser, 'upstream-sync-complete')
+        self.asserthidden(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_and_upstream_sync_enabled(self):
         # Linking a source package and enabling upstream translation
@@ -907,13 +907,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsIncomplete(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
-        self.assertUnseen(browser, 'branch-complete')
+        self.asserthidden(browser, 'branch-complete')
         self.assertSeen(browser, 'translation-incomplete')
-        self.assertUnseen(browser, 'translation-complete')
-        self.assertUnseen(browser, 'upstream-sync-incomplete')
+        self.asserthidden(browser, 'translation-complete')
+        self.asserthidden(browser, 'upstream-sync-incomplete')
         self.assertSeen(browser, 'upstream-sync-complete')
 
     def test_checklist_fully_configured(self):
@@ -922,13 +922,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertContentComplete(browser)
         self.assertStatusDisplayShowsCompleted(browser)
-        self.assertUnseen(browser, 'packaging-incomplete')
+        self.asserthidden(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
-        self.assertUnseen(browser, 'branch-incomplete')
+        self.asserthidden(browser, 'branch-incomplete')
         self.assertSeen(browser, 'branch-complete')
-        self.assertUnseen(browser, 'translation-incomplete')
+        self.asserthidden(browser, 'translation-incomplete')
         self.assertSeen(browser, 'translation-complete')
-        self.assertUnseen(browser, 'upstream-sync-incomplete')
+        self.asserthidden(browser, 'upstream-sync-incomplete')
         self.assertSeen(browser, 'upstream-sync-complete')
 
     def test_cache_javascript(self):

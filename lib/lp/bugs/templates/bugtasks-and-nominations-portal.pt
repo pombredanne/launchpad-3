@@ -29,7 +29,7 @@
           This .dynamic section is used by setup_me_too to display
           controls and information in the correct places.
         </tal:comment>
-        <span class="dynamic unseen">
+        <span class="dynamic hidden">
           <a href="+affectsmetoo" class="js-action"
              ><span class="value" tal:content="view/affected_statement" /></a>
           <a href="+affectsmetoo">
