@@ -44,9 +44,9 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin
-from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -143,7 +143,8 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
-            binarypackagename='binary-package', dateremoved=UTC_NOW)
+            binarypackagename='binary-package',
+            status=PackagePublishingStatus.SUPERSEDED)
         with ExpectedException(NotFoundError, ".*Binary package.*"):
             distroseries.distribution.guessPublishedSourcePackageName(
                 'binary-package')

@@ -61,6 +61,10 @@ CUSTOM_SITE_DIR = ${scripts:parts-directory|path-repr}
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
+# Httplib2 0.7 started validating SSL certificates, and the test suite uses a
+# self-signed certificate. So disable it with an env variable
+os.environ['LP_DISABLE_SSL_CERTIFICATE_VALIDATION'] = '1'
+
 # Storm's C extensions should already be enabled from lp_sitecustomize.py,
 # which our custom sitecustomize.py ran.
 assert os.environ['STORM_CEXTENSIONS'] == '1'
