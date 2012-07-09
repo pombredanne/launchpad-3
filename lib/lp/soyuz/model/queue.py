@@ -74,7 +74,6 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.soyuz.adapters.notification import notify
-from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
@@ -85,6 +84,7 @@ from lp.soyuz.interfaces.archive import (
     PriorityNotFound,
     SectionNotFound,
     )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.publishing import (
@@ -100,6 +100,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     IPackageUploadSource,
     NonBuildableSourceUploadError,
+    QueueAdminUnauthorizedError,
     QueueBuildAcceptError,
     QueueInconsistentStateError,
     QueueSourceAcceptError,
@@ -109,7 +110,6 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
-from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -320,8 +320,14 @@ class PackageUpload(SQLBase):
 
     def getBinaryProperties(self):
         """See `IPackageUpload`."""
-        return list(chain.from_iterable(
+        properties = list(chain.from_iterable(
             build.binaries for build in self.builds))
+        for file in self.customfiles:
+            properties.append({
+                "name": file.libraryfilealias.filename,
+                "customformat": file.customformat.title,
+                })
+        return properties
 
     def setNew(self):
         """See `IPackageUpload`."""
@@ -453,6 +459,8 @@ class PackageUpload(SQLBase):
 
         It does not close bugs for PPA sources.
         """
+        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
+
         if self.isPPA():
             debug(logger, "Not closing bugs for PPA source.")
             return
@@ -562,6 +570,8 @@ class PackageUpload(SQLBase):
         This is the normal case, for uploads that are not delayed and are not
         attached to package copy jobs.
         """
+        from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
+
         assert self.package_copy_job is None, (
             "This method is not for copy-job uploads.")
         assert not self.is_delayed_copy, (
@@ -1021,6 +1031,8 @@ class PackageUpload(SQLBase):
     def _overrideSyncSource(self, new_component, new_section,
                             allowed_components):
         """Override source on the upload's `PackageCopyJob`, if any."""
+        from lp.soyuz.adapters.overrides import SourceOverride
+
         if self.package_copy_job is None:
             return False
 
@@ -1028,7 +1040,7 @@ class PackageUpload(SQLBase):
         allowed_component_names = [
             component.name for component in allowed_components]
         if copy_job.component_name not in allowed_component_names:
-            raise QueueInconsistentStateError(
+            raise QueueAdminUnauthorizedError(
                 "No rights to override from %s" % copy_job.component_name)
         copy_job.addSourceOverride(SourceOverride(
             copy_job.package_name, new_component, new_section))
@@ -1045,7 +1057,7 @@ class PackageUpload(SQLBase):
             if old_component not in allowed_components:
                 # The old component is not in the list of allowed components
                 # to override.
-                raise QueueInconsistentStateError(
+                raise QueueAdminUnauthorizedError(
                     "No rights to override from %s" % old_component.name)
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
@@ -1058,7 +1070,8 @@ class PackageUpload(SQLBase):
 
         return made_changes
 
-    def overrideSource(self, new_component, new_section, allowed_components):
+    def overrideSource(self, new_component=None, new_section=None,
+                       allowed_components=None, user=None):
         """See `IPackageUpload`."""
         if new_component is None and new_section is None:
             # Nothing needs overriding, bail out.
@@ -1067,8 +1080,19 @@ class PackageUpload(SQLBase):
         new_component = self._nameToComponent(new_component)
         new_section = self._nameToSection(new_section)
 
+        if allowed_components is None and user is not None:
+            # Get a list of components for which the user has rights to
+            # override to or from.
+            permission_set = getUtility(IArchivePermissionSet)
+            permissions = permission_set.componentsForQueueAdmin(
+                self.distroseries.main_archive, user)
+            allowed_components = set(
+                permission.component for permission in permissions)
+        assert allowed_components is not None, (
+            "Must provide allowed_components for non-webservice calls.")
+
         if new_component not in list(allowed_components) + [None]:
-            raise QueueInconsistentStateError(
+            raise QueueAdminUnauthorizedError(
                 "No rights to override to %s" % new_component.name)
 
         return (
@@ -1103,7 +1127,7 @@ class PackageUpload(SQLBase):
 
         return changes_by_name, changes_for_all
 
-    def overrideBinaries(self, changes, allowed_components):
+    def overrideBinaries(self, changes, allowed_components=None, user=None):
         """See `IPackageUpload`."""
         if not self.contains_build:
             return False
@@ -1111,6 +1135,17 @@ class PackageUpload(SQLBase):
         if not changes:
             # Nothing needs overriding, bail out.
             return False
+
+        if allowed_components is None and user is not None:
+            # Get a list of components for which the user has rights to
+            # override to or from.
+            permission_set = getUtility(IArchivePermissionSet)
+            permissions = permission_set.componentsForQueueAdmin(
+                self.distroseries.main_archive, user)
+            allowed_components = set(
+                permission.component for permission in permissions)
+        assert allowed_components is not None, (
+            "Must provide allowed_components for non-webservice calls.")
 
         changes_by_name, changes_for_all = self._filterBinaryChanges(changes)
 
@@ -1125,12 +1160,23 @@ class PackageUpload(SQLBase):
             component.name
             for component in new_components.difference(allowed_components))
         if disallowed_components:
-            raise QueueInconsistentStateError(
+            raise QueueAdminUnauthorizedError(
                 "No rights to override to %s" %
                 ", ".join(disallowed_components))
 
         made_changes = False
         for build in self.builds:
+            # See if the new component requires a new archive on the build.
+            for component in new_components:
+                distroarchseries = build.build.distro_arch_series
+                distribution = distroarchseries.distroseries.distribution
+                new_archive = distribution.getArchiveByComponent(
+                    component.name)
+                if new_archive != build.build.archive:
+                    raise QueueInconsistentStateError(
+                        "Overriding component to '%s' failed because it "
+                        "would require a new archive." % component.name)
+
             for binarypackage in build.build.binarypackages:
                 change = changes_by_name.get(
                     binarypackage.name, changes_for_all)
@@ -1138,7 +1184,7 @@ class PackageUpload(SQLBase):
                     if binarypackage.component not in allowed_components:
                         # The old component is not in the list of allowed
                         # components to override.
-                        raise QueueInconsistentStateError(
+                        raise QueueAdminUnauthorizedError(
                             "No rights to override from %s" %
                             binarypackage.component.name)
                     binarypackage.override(**change)

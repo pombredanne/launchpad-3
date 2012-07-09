@@ -2022,8 +2022,8 @@ class AccessBranch(AuthorizationBase):
     """Controls visibility of branches.
 
     A person can see the branch if the branch is public, they are the owner
-    of the branch, they are in the team that owns the branch, subscribed to
-    the branch, or a launchpad administrator.
+    of the branch, they are in the team that owns the branch, they have an
+    access grant to the branch, or a launchpad administrator.
     """
     permission = 'launchpad.View'
     usedfor = IBranch

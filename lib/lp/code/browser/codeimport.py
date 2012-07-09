@@ -12,7 +12,6 @@ __all__ = [
     'CodeImportSetBreadcrumb',
     'CodeImportSetNavigation',
     'CodeImportSetView',
-    'CodeImportView',
     ]
 
 
@@ -142,19 +141,6 @@ class CodeImportSetView(LaunchpadView):
             review_status=review_status, rcs_type=rcs_type)
 
         self.batchnav = BatchNavigator(imports, self.request)
-
-
-class CodeImportView(LaunchpadView):
-    """The default view for `ICodeImport`.
-
-    We present the CodeImport as a simple page listing all the details of the
-    import such as target and branch, who requested the import,
-    and so on.
-    """
-
-    def initialize(self):
-        """See `LaunchpadView.initialize`."""
-        self.title = "Code Import for %s" % (self.context.branch.target.name,)
 
 
 class CodeImportBaseView(LaunchpadFormView):

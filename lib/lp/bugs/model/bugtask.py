@@ -96,6 +96,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
@@ -1329,8 +1330,11 @@ class BugTask(SQLBase):
             return True
 
         # If you're the owner or a driver, you can change bug details.
+        owner_context = context
+        if IBugTarget.providedBy(context):
+            owner_context = context.pillar
         return (
-            role.isOwner(context.pillar) or role.isOneOfDrivers(context))
+            role.isOwner(owner_context) or role.isOneOfDrivers(context))
 
     @classmethod
     def userHasBugSupervisorPrivilegesContext(cls, context, user):
@@ -1344,9 +1348,12 @@ class BugTask(SQLBase):
         role = IPersonRoles(user)
         # If you have driver privileges, or are the bug supervisor, you can
         # change bug details.
+        supervisor_context = context
+        if IBugTarget.providedBy(context):
+            supervisor_context = context.pillar
         return (
             cls.userHasDriverPrivilegesContext(context, user) or
-            role.isBugSupervisor(context.pillar))
+            role.isBugSupervisor(supervisor_context))
 
     def userHasDriverPrivileges(self, user):
         """See `IBugTask`."""

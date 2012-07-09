@@ -42,6 +42,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
     IPackageUploadSet,
+    QueueAdminUnauthorizedError,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
@@ -444,8 +445,7 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         only_allowed_component = self.factory.makeComponent()
         section = self.factory.makeSection()
         self.assertRaises(
-            QueueInconsistentStateError,
-            pu.overrideSource,
+            QueueAdminUnauthorizedError, pu.overrideSource,
             only_allowed_component, section, [only_allowed_component])
 
     def test_overrideSource_checks_permission_for_new_component(self):
@@ -454,8 +454,7 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         disallowed_component = self.factory.makeComponent()
         section = self.factory.makeSection()
         self.assertRaises(
-            QueueInconsistentStateError,
-            pu.overrideSource,
+            QueueAdminUnauthorizedError, pu.overrideSource,
             disallowed_component, section, [current_component])
 
     def test_overrideSource_ignores_None_component_change(self):
@@ -971,6 +970,9 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
     def test_edit_permissions(self):
         self.assertRequiresEdit("acceptFromQueue")
         self.assertRequiresEdit("rejectFromQueue")
+        self.assertRequiresEdit("overrideSource", new_component="main")
+        self.assertRequiresEdit(
+            "overrideBinaries", changes=[{"component": "main"}])
 
     def test_acceptFromQueue_archive_admin(self):
         # acceptFromQueue as an archive admin accepts the upload.
@@ -1034,6 +1036,57 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in upload.sourcepackagerelease.files]
         self.assertContentEqual(source_file_urls, ws_source_file_urls)
 
+    def test_overrideSource_limited_component_permissions(self):
+        # Overriding between two components requires queue admin of both.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeSourcePackageUpload(
+            person, component=self.universe)
+
+        self.assertEqual("New", ws_upload.status)
+        self.assertEqual("universe", ws_upload.component_name)
+        self.assertRaises(Unauthorized, ws_upload.overrideSource,
+                          new_component="main")
+
+        with admin_logged_in():
+            upload.overrideSource(
+                new_component=self.main,
+                allowed_components=[self.main, self.universe])
+        transaction.commit()
+        self.assertEqual("main", upload.component_name)
+        self.assertRaises(Unauthorized, ws_upload.overrideSource,
+                          new_component="universe")
+
+    def test_overrideSource_changes_properties(self):
+        # Running overrideSource changes the corresponding properties.
+        person = self.makeQueueAdmin([self.main, self.universe])
+        upload, ws_upload = self.makeSourcePackageUpload(
+            person, component=self.universe)
+        with person_logged_in(person):
+            new_section = self.factory.makeSection()
+        transaction.commit()
+
+        self.assertEqual("New", ws_upload.status)
+        self.assertEqual("universe", ws_upload.component_name)
+        self.assertNotEqual(new_section.name, ws_upload.section_name)
+        ws_upload.overrideSource(
+            new_component="main", new_section=new_section.name)
+        self.assertEqual("main", ws_upload.component_name)
+        self.assertEqual(new_section.name, ws_upload.section_name)
+        ws_upload.overrideSource(new_component="universe")
+        self.assertEqual("universe", ws_upload.component_name)
+
+    def assertBinaryPropertiesMatch(self, arch, bpr, ws_binary):
+        expected_binary = {
+            "is_new": True,
+            "name": bpr.name,
+            "version": bpr.version,
+            "architecture": arch,
+            "component": "universe",
+            "section": bpr.section.name,
+            "priority": bpr.priority.name,
+            }
+        self.assertEqual(expected_binary, ws_binary)
+
     def test_binary_info(self):
         # API clients can inspect properties of binary uploads.
         person = self.makeQueueAdmin([self.universe])
@@ -1047,19 +1100,8 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertTrue(ws_upload.contains_build)
         ws_binaries = ws_upload.getBinaryProperties()
         self.assertEqual(len(list(bprs)), len(ws_binaries))
-        for bpr, binary in zip(bprs, ws_binaries):
-            expected_binary = {
-                "is_new": True,
-                "name": bpr.name,
-                "version": bpr.version,
-                "architecture": arch,
-                "component": "universe",
-                "section": bpr.section.name,
-                "priority": bpr.priority.name,
-                }
-            self.assertContentEqual(expected_binary.keys(), binary.keys())
-            for key, value in expected_binary.items():
-                self.assertEqual(value, binary[key])
+        for bpr, ws_binary in zip(bprs, ws_binaries):
+            self.assertBinaryPropertiesMatch(arch, bpr, ws_binary)
 
     def test_binary_fetch(self):
         # API clients can fetch files attached to binary uploads.
@@ -1077,6 +1119,112 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for file in bpr.files]
         self.assertContentEqual(binary_file_urls, ws_binary_file_urls)
 
+    def test_overrideBinaries_limited_component_permissions(self):
+        # Overriding between two components requires queue admin of both.
+        person = self.makeQueueAdmin([self.universe])
+        upload, ws_upload = self.makeBinaryPackageUpload(
+            person, binarypackagename="hello", component=self.universe)
+
+        self.assertEqual("New", ws_upload.status)
+        self.assertEqual(
+            set(["universe"]),
+            set(binary["component"]
+                for binary in ws_upload.getBinaryProperties()))
+        self.assertRaises(
+            Unauthorized, ws_upload.overrideBinaries,
+            changes=[{"component": "main"}])
+
+        with admin_logged_in():
+            upload.overrideBinaries(
+                [{"component": self.main}],
+                allowed_components=[self.main, self.universe])
+        transaction.commit()
+
+        self.assertEqual(
+            set(["main"]),
+            set(binary["component"]
+                for binary in ws_upload.getBinaryProperties()))
+        self.assertRaises(
+            Unauthorized, ws_upload.overrideBinaries,
+            changes=[{"component": "universe"}])
+
+    def test_overrideBinaries_disallows_new_archive(self):
+        # overrideBinaries refuses to override the component to something
+        # that requires a different archive.
+        partner = self.factory.makeComponent("partner")
+        self.factory.makeComponentSelection(
+            distroseries=self.distroseries, component=partner)
+        person = self.makeQueueAdmin([self.universe, partner])
+        upload, ws_upload = self.makeBinaryPackageUpload(
+            person, component=self.universe)
+
+        self.assertEqual(
+            "universe", ws_upload.getBinaryProperties()[0]["component"])
+        self.assertRaises(
+            BadRequest, ws_upload.overrideBinaries,
+            changes=[{"component": "partner"}])
+
+    def test_overrideBinaries_without_name_changes_all_properties(self):
+        # Running overrideBinaries with a change entry containing no "name"
+        # field changes the corresponding properties of all binaries.
+        person = self.makeQueueAdmin([self.main, self.universe])
+        upload, ws_upload = self.makeBinaryPackageUpload(
+            person, component=self.universe)
+        with person_logged_in(person):
+            new_section = self.factory.makeSection()
+        transaction.commit()
+
+        self.assertEqual("New", ws_upload.status)
+        for binary in ws_upload.getBinaryProperties():
+            self.assertEqual("universe", binary["component"])
+            self.assertNotEqual(new_section.name, binary["section"])
+            self.assertEqual("OPTIONAL", binary["priority"])
+        changes = [{
+            "component": "main",
+            "section": new_section.name,
+            "priority": "extra",
+            }]
+        ws_upload.overrideBinaries(changes=changes)
+        for binary in ws_upload.getBinaryProperties():
+            self.assertEqual("main", binary["component"])
+            self.assertEqual(new_section.name, binary["section"])
+            self.assertEqual("EXTRA", binary["priority"])
+
+    def test_overrideBinaries_with_name_changes_selected_properties(self):
+        # Running overrideBinaries with change entries containing "name"
+        # fields changes the corresponding properties of only the selected
+        # binaries.
+        person = self.makeQueueAdmin([self.main, self.universe])
+        upload, ws_upload = self.makeBinaryPackageUpload(
+            person, component=self.universe)
+        with person_logged_in(person):
+            new_section = self.factory.makeSection()
+        transaction.commit()
+
+        self.assertEqual("New", ws_upload.status)
+        ws_binaries = ws_upload.getBinaryProperties()
+        for binary in ws_binaries:
+            self.assertEqual("universe", binary["component"])
+            self.assertNotEqual(new_section.name, binary["section"])
+            self.assertEqual("OPTIONAL", binary["priority"])
+        change_one = {
+            "name": ws_binaries[0]["name"],
+            "component": "main",
+            "priority": "standard",
+            }
+        change_two = {
+            "name": ws_binaries[1]["name"],
+            "section": new_section.name,
+            }
+        ws_upload.overrideBinaries(changes=[change_one, change_two])
+        ws_binaries = ws_upload.getBinaryProperties()
+        self.assertEqual("main", ws_binaries[0]["component"])
+        self.assertNotEqual(new_section.name, ws_binaries[0]["section"])
+        self.assertEqual("STANDARD", ws_binaries[0]["priority"])
+        self.assertEqual("universe", ws_binaries[1]["component"])
+        self.assertEqual(new_section.name, ws_binaries[1]["section"])
+        self.assertEqual("OPTIONAL", ws_binaries[1]["priority"])
+
     def test_custom_info(self):
         # API clients can inspect properties of custom uploads.
         person = self.makeQueueAdmin([self.universe])
@@ -1091,6 +1239,13 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
             "debian-installer-images_1.tar.gz", ws_upload.display_name)
         self.assertEqual("-", ws_upload.display_version)
         self.assertEqual("raw-installer", ws_upload.display_arches)
+        ws_binaries = ws_upload.getBinaryProperties()
+        self.assertEqual(1, len(ws_binaries))
+        expected_binary = {
+            "name": "debian-installer-images_1.tar.gz",
+            "customformat": "raw-installer",
+            }
+        self.assertEqual(expected_binary, ws_binaries[0])
 
     def test_custom_fetch(self):
         # API clients can fetch files attached to custom uploads.
@@ -1106,3 +1261,32 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                     file.libraryfilealias, upload.archive).http_url
                 for file in upload.customfiles]
         self.assertContentEqual(custom_file_urls, ws_custom_file_urls)
+
+    def test_binary_and_custom_info(self):
+        # API clients can inspect properties of uploads containing both
+        # ordinary binaries and custom upload files.
+        person = self.makeQueueAdmin([self.universe])
+        upload, _ = self.makeBinaryPackageUpload(
+            person, binarypackagename="foo", component=self.universe)
+        with person_logged_in(person):
+            arch = upload.builds[0].build.arch_tag
+            bprs = upload.builds[0].build.binarypackages
+            version = bprs[0].version
+            lfa = self.factory.makeLibraryFileAlias(
+                filename="foo_%s_%s_translations.tar.gz" % (version, arch))
+            upload.addCustom(
+                lfa, PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
+        transaction.commit()
+        ws_upload = self.load(upload, person)
+
+        self.assertFalse(ws_upload.contains_source)
+        self.assertTrue(ws_upload.contains_build)
+        ws_binaries = ws_upload.getBinaryProperties()
+        self.assertEqual(len(list(bprs)) + 1, len(ws_binaries))
+        for bpr, ws_binary in zip(bprs, ws_binaries):
+            self.assertBinaryPropertiesMatch(arch, bpr, ws_binary)
+        expected_custom = {
+            "name": "foo_%s_%s_translations.tar.gz" % (version, arch),
+            "customformat": "raw-translations",
+            }
+        self.assertEqual(expected_custom, ws_binaries[-1])

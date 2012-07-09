@@ -347,7 +347,6 @@ class FormattersAPI:
             'irc',
             'jabber',
             'apt',
-            'data',
             ]
 
         for base in protocol_bases:

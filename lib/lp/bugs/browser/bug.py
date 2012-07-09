@@ -35,8 +35,13 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
+from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
@@ -60,6 +65,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.project import ProjectScopeWidget
+from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
@@ -74,6 +80,7 @@ from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
+    IBugTask,
     IFrontPageBugTaskSearch,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -825,7 +832,9 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     @property
     def next_url(self):
         """Return the next URL to call when this call completes."""
-        return canonical_url(self.context)
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
 
     cancel_url = next_url
 
@@ -834,7 +843,8 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         """See `LaunchpadFormView.`"""
         return {'information_type': self.context.bug.information_type}
 
-    @action('Change', name='change')
+    @action('Change', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def change_action(self, action, data):
         """Update the bug."""
         data = dict(data)
@@ -853,6 +863,33 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
                 ObjectModifiedEvent(
                     bug, bug_before_modification, changed_fields,
                     user=self.user))
+        if self.request.is_ajax:
+            if changed:
+                return self._getSubscriptionDetails()
+            else:
+                return ''
+
+    def _getSubscriptionDetails(self):
+        cache = dict()
+        # The subscription details for the current user.
+        self.extractBugSubscriptionDetails(self.user, self.context.bug, cache)
+
+        # The subscription details for other users to populate the subscribers
+        # list in the portlet.
+        if IBugTask.providedBy(self.context):
+            bug = self.context.bug
+        else:
+            bug = self.context
+        subscribers_portlet = BugPortletSubscribersWithDetails(
+            bug, self.request)
+        subscription_data = subscribers_portlet.subscriber_data
+        result_data = dict(
+            cache_data=cache,
+            subscription_data=subscription_data)
+        self.request.response.setHeader('content-type', 'application/json')
+        return dumps(
+            result_data, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.

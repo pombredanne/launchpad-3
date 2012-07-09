@@ -213,9 +213,6 @@ def get_license_status(license_approved, project_reviewed, licenses):
     # enough for us for the project to freely use Launchpad.
     if license_approved:
         return LicenseStatus.OPEN_SOURCE
-    if len(licenses) == 0:
-        # This can only happen in bad sample data.
-        return LicenseStatus.UNSPECIFIED
     elif License.OTHER_PROPRIETARY in licenses:
         return LicenseStatus.PROPRIETARY
     elif License.OTHER_OPEN_SOURCE in licenses:

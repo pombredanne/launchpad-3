@@ -98,7 +98,7 @@
                       id="field.actions.build" value="Build now" />
               </form>
               <a id="request-daily-build"
-                 class="sprite source-package-recipe js-action unseen"
+                 class="sprite source-package-recipe js-action hidden"
                  tal:attributes="href link/url"
                  tal:content="link/text"/>
             </dd>

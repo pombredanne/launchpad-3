@@ -15,7 +15,7 @@ from lp.blueprints.enums import (
     SpecificationPriority,
     SpecificationWorkItemStatus,
     )
-from lp.registry.browser.person import (
+from lp.blueprints.browser.person_upcomingwork import (
     GenericWorkItem,
     getWorkItemsDueBefore,
     WorkItemContainer,

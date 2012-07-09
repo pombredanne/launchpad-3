@@ -278,10 +278,7 @@ class ProductLicenseMixin:
         """
         licenses = data.get('licenses', [])
         license_widget = self.widgets.get('licenses')
-        if (len(licenses) == 0 and
-            license_widget is not None and
-            not license_widget.allow_pending_license):
-            # Licence is optional on +edit page if not already set.
+        if (len(licenses) == 0 and license_widget is not None):
             self.setFieldError(
                 'licenses',
                 'You must select at least one licence.  If you select '
@@ -1060,12 +1057,6 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         return get_buglisting_search_filter_url(url, status=status)
 
     @property
-    def requires_commercial_subscription(self):
-        """Whether to display notice to purchase a commercial subscription."""
-        return (len(self.context.licenses) > 0
-                and self.context.commercial_subscription_is_due)
-
-    @property
     def can_purchase_subscription(self):
         return (check_permission('launchpad.Edit', self.context)
                 and not self.context.qualifies_for_free_hosting)
@@ -1527,16 +1518,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     def page_title(self):
         """The HTML page title."""
         return "Change %s's details" % self.context.title
-
-    def setUpWidgets(self):
-        """See `LaunchpadFormView`."""
-        super(ProductEditView, self).setUpWidgets()
-        # Licenses are optional on +edit page if they have not already
-        # been set. Subclasses may not have 'licenses' widget.
-        # ('licenses' in self.widgets) is broken.
-        if (len(self.context.licenses) == 0 and
-            self.widgets.get('licenses') is not None):
-            self.widgets['licenses'].allow_pending_license = True
 
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
