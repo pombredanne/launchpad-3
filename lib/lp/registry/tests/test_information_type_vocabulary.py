@@ -60,6 +60,17 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
                 title='Public',
                 description=InformationType.PUBLIC.description))
 
+    def test_proprietary_disabled(self):
+        # The feature flag disables proprietary even if it would otherwise be
+        # included.
+        feature_flag = {
+            'disclosure.proprietary_information_type.disabled': 'on'}
+        with FeatureFixture(feature_flag):
+            product = self.factory.makeProduct()
+            vocab = InformationTypeVocabulary(product)
+            self.assertRaises(
+                LookupError, vocab.getTermByToken, 'PROPRIETARY')
+
     def test_proprietary_disabled_for_non_commercial_projects(self):
         # Only projects with commercial subscriptions have PROPRIETARY.
         product = self.factory.makeProduct()
