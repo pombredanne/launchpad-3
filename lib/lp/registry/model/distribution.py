@@ -177,9 +177,9 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
@@ -1248,10 +1248,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 SourcePackagePublishingHistory.sourcepackagename ==
                     sourcepackagename,
                 SourcePackagePublishingHistory.status.is_in(
-                    (PackagePublishingStatus.PUBLISHED,
-                     PackagePublishingStatus.PENDING)
-                    )).order_by(
-                        Desc(SourcePackagePublishingHistory.id)).first()
+                    active_publishing_status),
+                ).order_by(
+                    Desc(SourcePackagePublishingHistory.id)).first()
             if publishing is not None:
                 return sourcepackagename
 
@@ -1279,10 +1278,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 # otherwise.)
                 BinaryPackagePublishingHistory.archiveID.is_in(
                     self.all_distro_archive_ids),
-                BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                    BinaryPackageRelease.id,
-                BinaryPackageRelease.binarypackagename == binarypackagename,
-                BinaryPackagePublishingHistory.dateremoved == None,
+                BinaryPackagePublishingHistory.binarypackagename ==
+                    binarypackagename,
+                BinaryPackagePublishingHistory.status.is_in(
+                    active_publishing_status),
                 ).order_by(
                     Desc(BinaryPackagePublishingHistory.id)).first()
             if bpph is not None:
@@ -1323,13 +1322,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         orderBy = ['Archive.displayname']
 
         if not show_inactive:
-            active_statuses = (PackagePublishingStatus.PUBLISHED,
-                               PackagePublishingStatus.PENDING)
             clauses.append("""
             Archive.id IN (
                 SELECT archive FROM SourcepackagePublishingHistory
                 WHERE status IN %s)
-            """ % sqlvalues(active_statuses))
+            """ % sqlvalues(active_publishing_status))
 
         if text:
             orderBy.insert(
