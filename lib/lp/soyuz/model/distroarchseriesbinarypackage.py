@@ -155,18 +155,12 @@ class DistroArchSeriesBinaryPackage:
     @property
     def currentrelease(self):
         """See IDistroArchSeriesBinaryPackage."""
-        release = IStore(BinaryPackageRelease).find(
-            BinaryPackageRelease,
-            BinaryPackagePublishingHistory.status
-                == PackagePublishingStatus.PUBLISHED,
-            *self._getPublicationJoins()
-            ).order_by(Desc(BinaryPackageRelease.datecreated)).first()
-
-        if release is None:
+        bpph = self.current_published
+        if bpph is None:
             return None
         return DistroArchSeriesBinaryPackageRelease(
             distroarchseries=self.distroarchseries,
-            binarypackagerelease=release)
+            binarypackagerelease=bpph.binarypackagerelease)
 
     @property
     def publishing_history(self):
