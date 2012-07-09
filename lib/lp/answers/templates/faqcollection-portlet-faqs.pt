@@ -19,7 +19,7 @@
 
   <ul tal:condition="faqs">
     <li tal:repeat="faq faqs">
-      <a class="sprite question"
+      <a class="sprite faq"
         tal:attributes="href faq/fmt:url"
         tal:content="faq/title">How do I do this?</a>
     </li>

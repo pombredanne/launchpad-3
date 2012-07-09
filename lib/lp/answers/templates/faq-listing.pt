@@ -53,7 +53,7 @@
           ><a href="#"
               tal:attributes="href faq/fmt:url"
               tal:content="faq/title"
-              class="sprite question">How do I do this?</a></li>
+              class="sprite faq">How do I do this?</a></li>
     </ul>
     <tal:navigation replace="structure faqs/@@+navigation-links-lower" />
   </tal:results>
