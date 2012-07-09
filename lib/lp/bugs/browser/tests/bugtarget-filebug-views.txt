@@ -688,7 +688,7 @@ The base class allows security bugs to be filed.
     >>> from lp.registry.enums import InformationType
     >>> bug_data = dict(
     ...     title=u'Security bug', comment=u'Test description.',
-    ...     information_type=InformationType.EMBARGOEDSECURITY)
+    ...     security_related=u'on')
 
     >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
@@ -720,8 +720,10 @@ Privileged users are offered several extra options when filing bugs.
     >>> product.setBugSupervisor(owner, owner)
     >>> supervisor_fields = set(filebug_view.field_names)
 
-Privileged users get all the same fields as normal users, plus a few extra.
+Privileged users get most of the same fields as normal users, plus a few extra.
+The security_related checkbox is replaced by an information_type radio group.
 
+    >>> normal_fields.remove('security_related')
     >>> owner_fields == supervisor_fields
     True
     >>> supervisor_fields.issuperset(normal_fields)
@@ -731,6 +733,7 @@ Privileged users get all the same fields as normal users, plus a few extra.
     ...     print field
     assignee
     importance
+    information_type
     milestone
     status
 

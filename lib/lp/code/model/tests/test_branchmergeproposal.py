@@ -166,7 +166,7 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             product=product)
         with person_logged_in(owner):
             trunk.reviewer = team
-            bmp = self.factory.makeBranchMergeProposal(
+            self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=trunk)
             subscriptions = [bsub.person for bsub in branch.subscriptions]
             self.assertEqual([owner], subscriptions)
@@ -183,7 +183,7 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             product=product)
         with person_logged_in(owner):
             trunk.reviewer = team
-            bmp = self.factory.makeBranchMergeProposal(
+            self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=trunk)
             subscriptions = [bsub.person for bsub in branch.subscriptions]
             self.assertContentEqual([owner, team], subscriptions)
@@ -967,13 +967,13 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
         for branch in (bmp.source_branch, bmp.target_branch):
-            removeSecurityProxy(branch).information_type = (
-                InformationType.USERDATA)
+            removeSecurityProxy(branch).transitionToInformationType(
+                InformationType.USERDATA, branch.owner, verify_policy=False)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        self.assertFalse(bob in recipients)
-        self.assertFalse(eric in recipients)
-        self.assertTrue(charlie in recipients)
+        self.assertNotIn(bob, recipients)
+        self.assertNotIn(eric, recipients)
+        self.assertIn(charlie, recipients)
 
 
 class TestGetAddress(TestCaseWithFactory):

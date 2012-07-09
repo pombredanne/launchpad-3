@@ -16,6 +16,7 @@ __all__ = [
     'IPackageUploadCustom',
     'IPackageUploadSet',
     'NonBuildableSourceUploadError',
+    'QueueAdminUnauthorizedError',
     'QueueBuildAcceptError',
     'QueueInconsistentStateError',
     'QueueSourceAcceptError',
@@ -26,12 +27,15 @@ import httplib
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
+    call_with,
     error_status,
     export_as_webservice_entry,
     export_read_operation,
     export_write_operation,
     exported,
     operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -42,10 +46,12 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Dict,
     Int,
     List,
     TextLine,
     )
+from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.soyuz.enums import PackageUploadStatus
@@ -67,6 +73,10 @@ class QueueInconsistentStateError(Exception):
     It's generated when the solicited state makes the record
     inconsistent against the current system constraints.
     """
+
+
+class QueueAdminUnauthorizedError(Unauthorized):
+    """User not permitted to perform a queue administration operation."""
 
 
 class NonBuildableSourceUploadError(QueueInconsistentStateError):
@@ -394,7 +404,14 @@ class IPackageUpload(Interface):
         :param logger: Specify a logger object if required.  Mainly for tests.
         """
 
-    def overrideSource(new_component, new_section, allowed_components):
+    @operation_parameters(
+        new_component=TextLine(title=u"The new component name."),
+        new_section=TextLine(title=u"The new section name."))
+    @call_with(allowed_components=None, user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def overrideSource(new_component=None, new_section=None,
+                       allowed_components=None, user=None):
         """Override the source package contained in this queue item.
 
         :param new_component: An IComponent to replace the existing one
@@ -403,6 +420,8 @@ class IPackageUpload(Interface):
             in the upload's source.
         :param allowed_components: A sequence of components that the
             callsite is allowed to override from and to.
+        :param user: The user requesting the override change, used if
+            allowed_components is None.
 
         :raises QueueInconsistentStateError: if either the existing
             or the new_component are not in the allowed_components
@@ -414,7 +433,21 @@ class IPackageUpload(Interface):
         :return: True if the source was overridden.
         """
 
-    def overrideBinaries(changes, allowed_components):
+    @operation_parameters(
+        changes=List(
+            title=u"A sequence of changes to apply.",
+            description=(
+                u"Each item may have a 'name' item which specifies the binary "
+                "package name to override; otherwise, the change applies to "
+                "all binaries in the upload. It may also have 'component', "
+                "'section', and 'priority' items which replace the "
+                "corresponding existing one in the upload's overridden "
+                "binaries."),
+            value_type=Dict(key_type=TextLine())))
+    @call_with(allowed_components=None, user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def overrideBinaries(changes, allowed_components=None, user=None):
         """Override binary packages in a binary queue item.
 
         :param changes: A sequence of mappings of changes to apply. Each
@@ -426,6 +459,8 @@ class IPackageUpload(Interface):
             left unchanged.
         :param allowed_components: A sequence of components that the
             callsite is allowed to override from and to.
+        :param user: The user requesting the override change, used if
+            allowed_components is None.
 
         :raises QueueInconsistentStateError: if either the existing
             or the new_component are not in the allowed_components
