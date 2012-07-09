@@ -25,10 +25,13 @@ ResultSet:
     >>> def result_decorator(distribution):
     ...     return "Dist name is: %s" % distribution.name
 
+    >>> def pre_iter_hook(values):
+    ...     print len(values), "elements in result set"
+
     >>> from lp.services.database.decoratedresultset import (
     ...     DecoratedResultSet)
     >>> decorated_result_set = DecoratedResultSet(
-    ...     proxied_result_set, result_decorator)
+    ...     proxied_result_set, result_decorator, pre_iter_hook)
 
 == copy() ==
 
@@ -49,6 +52,7 @@ But it still contains the expected results:
 
     >>> for distro in result_copy:
     ...     distro
+    7 elements in result set
     u'Dist name is: debian'
     ...
     u'Dist name is: ubuntutest'
@@ -86,6 +90,7 @@ and decorates the result:
 
     >>> orig_result = decorated_result_set.result_set.any()
     >>> decorated_result_set.any() == result_decorator(orig_result)
+    1 elements in result set
     True
 
 == first() ==
@@ -94,7 +99,16 @@ The decorated first() method calls the original result set's first()
 method and decorates the result:
 
     >>> decorated_result_set.first()
+    1 elements in result set
     u'Dist name is: debian'
+
+pre_iter_hook is not called from methods like first() or one() which return
+at most one row:
+
+    >>> empty_result_set = decorated_result_set.copy()
+    >>> print empty_result_set.config(
+    ...     offset=empty_result_set.count()).first()
+    None
 
 == last() ==
 
@@ -102,6 +116,7 @@ The decorated last() method calls the original result set's last()
 method and decorates the result:
 
     >>> decorated_result_set.last()
+    1 elements in result set
     u'Dist name is: ubuntutest'
 
 == order_by() ==
@@ -114,6 +129,7 @@ method and decorates the result:
     ...     Desc(Distribution.name))
     >>> for dist in ordered_results:
     ...     dist
+    7 elements in result set
     u'Dist name is: ubuntutest'
     ...
     u'Dist name is: debian'
@@ -124,6 +140,7 @@ The decorated one() method calls the original result set's one()
 method and decorates the result:
 
     >>> decorated_result_set.config(offset=2, limit=1).one()
+    1 elements in result set
     u'Dist name is: redhat'
 
     >>> result_decorator(decorated_result_set.result_set.one())

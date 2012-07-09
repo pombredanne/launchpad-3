@@ -280,6 +280,12 @@ class TestWorkItemsText(TestCase):
                       'milestone': None,
                       'sequence': 0}])
 
+    def test_parse_none(self):
+        # When empty text box is submitted, None is being passed in instead.
+        work_items_text = None
+        parsed = self.field.parse(work_items_text)
+        self.assertEqual([], parsed)
+
     def test_multi_line_parsing(self):
         title_1 = 'Work item 1'
         title_2 = 'Work item 2'

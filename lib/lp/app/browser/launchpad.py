@@ -6,13 +6,11 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
-    'DoesNotExistView',
     'ExceptionHierarchy',
     'Hierarchy',
     'IcingFolder',
     'iter_view_registrations',
     'LaunchpadImageFolder',
-    'LaunchpadGraphics',
     'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
@@ -935,10 +933,6 @@ class AppFrontPageSearchView(LaunchpadFormView):
         return self.getFieldError('scope')
 
 
-class LaunchpadGraphics(LaunchpadView):
-    label = page_title = 'Overview of Launchpad graphics and icons'
-
-
 def get_launchpad_views(cookies):
     """The state of optional page elements the user may choose to view.
 
@@ -975,26 +969,3 @@ def iter_view_registrations(cls):
     for registration in getGlobalSiteManager().registeredAdapters():
         if registration.factory == cls:
             yield registration
-
-
-class DoesNotExistView:
-    """A view that simply raises NotFound when rendered.
-
-    Useful to register as a view that shouldn't appear on a particular
-    virtual host.
-    """
-    implements(IBrowserPublisher)
-
-    def __init__(self, context, request):
-        self.context = context
-
-    def publishTraverse(self, request, name):
-        """See `IBrowserPublisher`."""
-        return self
-
-    def browserDefault(self, request):
-        """See `IBrowserPublisher`."""
-        return self, ()
-
-    def __call__(self):
-        raise NotFound(self.context, self.__name__)

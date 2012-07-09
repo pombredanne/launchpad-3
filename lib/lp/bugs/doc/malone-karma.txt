@@ -139,6 +139,8 @@ Change a bug task's importance:
     ...     notify(ObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
     UNKNOWN
     Karma added: action=bugtaskimportancechanged, distribution=debian
+    UNDECIDED
+    Karma added: action=bugtaskimportancechanged, distribution=debian
     CRITICAL
     Karma added: action=bugtaskimportancechanged, distribution=debian
     HIGH
@@ -148,8 +150,6 @@ Change a bug task's importance:
     LOW
     Karma added: action=bugtaskimportancechanged, distribution=debian
     WISHLIST
-    Karma added: action=bugtaskimportancechanged, distribution=debian
-    UNDECIDED
     Karma added: action=bugtaskimportancechanged, distribution=debian
 
 Create a new bug task on a product:
@@ -186,7 +186,8 @@ Accept a distro series task.
     ...     debian_woody_task, providing=IBugTask)
     >>> debian_woody_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> notify(ObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
+    >>> notify(ObjectModifiedEvent(
+    ...     debian_woody_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
 
 Accept a productseries task.

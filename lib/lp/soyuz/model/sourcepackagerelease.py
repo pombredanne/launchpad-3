@@ -61,10 +61,7 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     )
 from lp.services.propertycache import cachedproperty
-from lp.soyuz.enums import (
-    PackageDiffStatus,
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
@@ -72,10 +69,6 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
@@ -295,54 +288,6 @@ class SourcePackageRelease(SQLBase):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
     @property
-    def productrelease(self):
-        """See ISourcePackageRelease."""
-        series = None
-
-        # Use any published source package to find the product series.
-        # We can do this because if we ever find out that a source package
-        # release in two product series, we've almost certainly got a data
-        # problem there.
-        publishings = SourcePackagePublishingHistory.select(
-            """
-            sourcepackagerelease = %s AND
-            status = %s
-            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED))
-
-        for publishing in publishings:
-            # imports us, so avoid circular import
-            from lp.registry.model.sourcepackage import \
-                 SourcePackage
-            # Only process main archives and skip PPA/copy archives.
-            if publishing.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
-                continue
-            sp = SourcePackage(self.sourcepackagename,
-                               publishing.distroseries)
-            sp_series = sp.productseries
-            if sp_series is not None:
-                if series is None:
-                    series = sp_series
-                elif series != sp_series:
-                    # XXX: keybuk 2005-06-22: We could warn about this.
-                    pass
-
-        # No series -- no release
-        if series is None:
-            return None
-
-        # XXX: keybuk 2005-06-22:
-        # Find any release with the exact same version, or which
-        # we begin with and after a dash.  We could be more intelligent
-        # about this, but for now this will work for most.
-        for release in series.releases:
-            if release.version == self.version:
-                return release
-            elif self.version.startswith("%s-" % release.version):
-                return release
-        else:
-            return None
-
-    @property
     def current_publishings(self):
         """See ISourcePackageRelease."""
         from lp.soyuz.model.distroseriessourcepackagerelease \
@@ -433,6 +378,7 @@ class SourcePackageRelease(SQLBase):
         # Avoid circular imports.
         from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
         from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
         BuildDAS = ClassAlias(DistroArchSeries, 'BuildDAS')
         PublishDAS = ClassAlias(DistroArchSeries, 'PublishDAS')
@@ -698,6 +644,7 @@ class SourcePackageRelease(SQLBase):
         from lp.soyuz.interfaces.publishing import active_publishing_status
         from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
         from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
         return Store.of(self).find(
             BinaryPackagePublishingHistory,

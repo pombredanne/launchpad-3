@@ -21,6 +21,10 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
       <script type="text/javascript"
               src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/helpers.js"></script>
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/mockio.js"></script>
 
       <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
 
@@ -47,8 +51,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <!-- <li>lp.large_indicator.test</li> -->
-            <li>lp.distroseriesdifferences_details.test</li>
+            <li>lp.registry.distroseriesdifferences_details.test</li>
         </ul>
 
         <h1>Testing the DistroSeriesDifferenceDetails javascript</h1>
@@ -56,8 +59,8 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         <h2>Errors</h2>
         <div id="errors"></div>
 
-        <div id="placeholder" style="display:none;">
-        </div>
+        <table id="placeholder" style="display:none;">
+        </table>
 
         <script type="text/x-template" id="derivedtd-template">
           <td id="derived_row">
@@ -90,5 +93,94 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             <td class="latest-comment-fragment"></td>
           </tr>
         </script>
-    </body>
+
+        <script type="text/x-template" id="blacklist_html">
+            <div class="blacklist-options" style="float:left">
+              <dl>
+                <dt>Ignored:</dt>
+                <dd>
+                  <form>
+                    <div>
+                      <div class="value">
+                        <label for="field.blacklist_options.0">
+                          <input type="radio" value="NONE"
+                            name="field.blacklist_options"
+                            id="field.blacklist_options.0" checked="checked"
+                            class="radioType">&nbsp;No</input>
+                        </label><br>
+                        <label for="field.blacklist_options.1">
+                          <input type="radio" value="BLACKLISTED_ALWAYS"
+                           name="field.blacklist_options"
+                            id="field.blacklist_options.1" class="radioType">
+                            &nbsp;All versions</input>
+                        </label><br>
+                        <label for="field.blacklist_options.2">
+                          <input type="radio" value="BLACKLISTED_CURRENT"
+                            name="field.blacklist_options"
+                            id="field.blacklist_options.2"
+                            class="radioType">&nbsp;These versions</input>
+                        </label>
+                      </div>
+                      <input type="hidden" value="1"
+                        name="field.blacklist_options-empty-marker" />
+                    </div>
+                  </form>
+                </dd>
+              </dl>
+            </div>
+       </script>
+
+       <script type="text/x-template" id="blacklist_extra_row">
+          <tr id="extra_row">
+            <td>
+              <div class="diff-extra-container">
+                <div>
+                <dl>
+                <dt class="package-diff-placeholder">
+                 <span class="package-diff-compute-request">
+                  <a class="js-action sprite add" href="">
+                    Compute differences from last common version:
+                  </a>
+                </span></dt>
+                <dd>
+                  <ul class="package-diff-status">
+                    <li>
+                      <span id="derived" class="PENDING">
+                       1.2.1 to Derilucid version: 1.2.4
+                      </span>
+                    </li>
+                    <li>
+                      <span id="parent" class="request-derived-diff">
+                        1.2.1 to Lucid version: 1.2.3
+                      </span>
+                    </li>
+                  </ul>
+                </dd>
+                </dl>
+                </div>
+                {blacklist_html}
+                <div class="boardComment ">
+                  <div class="boardCommentDetails">
+                    <a class="sprite person" href="/~mark">Mark S.</a>
+                    wrote on 2010-06-26
+                  </div>
+                  <div class="boardCommentBody">Body</div>
+                </div>
+                <div class="add-comment-placeholder evolution">
+                  <a href="" class="widget-hd js-action sprite add">
+                  Add comment</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+      </script>
+      <script type="text/x-template" id="blacklist_whole_table">
+          <table class="listing">
+              <tbody>
+                   {row}
+                   {extra_row}
+               </tbody>
+          </table>
+      </script>
+  </body>
 </html>

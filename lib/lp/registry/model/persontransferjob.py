@@ -358,8 +358,8 @@ class PersonMergeJob(PersonTransferJobDerived):
     @classmethod
     def create(cls, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonMergeJobSource`."""
-        if (from_person.is_merge_pending or
-            (not delete and to_person.is_merge_pending)):
+        if (from_person.isMergePending() or
+            (not delete and to_person.isMergePending())):
             return None
         if from_person.is_team:
             metadata = {'reviewer': reviewer.id}

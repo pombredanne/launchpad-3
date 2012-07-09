@@ -16,6 +16,7 @@ __all__ = [
     'IPackageUploadCustom',
     'IPackageUploadSet',
     'NonBuildableSourceUploadError',
+    'QueueAdminUnauthorizedError',
     'QueueBuildAcceptError',
     'QueueInconsistentStateError',
     'QueueSourceAcceptError',
@@ -26,11 +27,15 @@ import httplib
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
+    call_with,
     error_status,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -38,12 +43,15 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
+    Dict,
     Int,
     List,
     TextLine,
     )
+from zope.security.interfaces import Unauthorized
 
 from lp import _
 from lp.soyuz.enums import PackageUploadStatus
@@ -65,6 +73,10 @@ class QueueInconsistentStateError(Exception):
     It's generated when the solicited state makes the record
     inconsistent against the current system constraints.
     """
+
+
+class QueueAdminUnauthorizedError(Unauthorized):
+    """User not permitted to perform a queue administration operation."""
 
 
 class NonBuildableSourceUploadError(QueueInconsistentStateError):
@@ -141,6 +153,14 @@ class IPackageUpload(Interface):
 
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
+    changes_file_url = exported(
+        TextLine(
+            title=_("Changes file URL"),
+            description=_("Librarian URL for the changes file associated with "
+                          "this upload. Will be None if the upload was copied "
+                          "from another series."),
+            required=False, readonly=True),
+        as_of="devel")
 
     signing_key = Attribute("Changesfile Signing Key.")
 
@@ -162,17 +182,18 @@ class IPackageUpload(Interface):
             title=_("Archive"), required=True, readonly=True))
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
+
     customfiles = Attribute("Custom upload files associated with this "
                             "queue item")
-
     custom_file_urls = exported(
         List(
-            title=_("Custom File URLs"),
+            title=_("Custom file URLs"),
             description=_("Librarian URLs for all the custom files attached "
                           "to this upload."),
             value_type=TextLine(),
             required=False,
-            readonly=True))
+            readonly=True),
+        ("devel", dict(exported=False)), exported=True)
 
     displayname = exported(
         TextLine(
@@ -191,17 +212,39 @@ class IPackageUpload(Interface):
     sourcepackagerelease = Attribute(
         "The source package release for this item")
 
-    package_name = TextLine(
-        title=_("Name of the uploaded source package"), readonly=True)
+    package_name = exported(
+        TextLine(
+            title=_("Name of the uploaded source package"), readonly=True),
+        as_of="devel")
 
-    package_version = TextLine(
-        title=_("Source package version"), readonly=True)
+    package_version = exported(
+        TextLine(title=_("Source package version"), readonly=True),
+        as_of="devel")
 
-    component_name = TextLine(
-        title=_("Source package component name"), readonly=True)
+    component_name = exported(
+        TextLine(title=_("Source package component name"), readonly=True),
+        as_of="devel")
 
-    contains_source = Attribute("whether or not this upload contains sources")
-    contains_build = Attribute("whether or not this upload contains binaries")
+    section_name = exported(
+        TextLine(title=_("Source package section name"), readonly=True),
+        as_of="devel")
+
+    contains_source = exported(
+        Bool(
+            title=_("Whether or not this upload contains sources"),
+            readonly=True),
+        as_of="devel")
+    contains_build = exported(
+        Bool(
+            title=_("Whether or not this upload contains binaries"),
+            readonly=True),
+        as_of="devel")
+    contains_copy = exported(
+        Bool(
+            title=_("Whether or not this upload contains a copy from another "
+                    "series."),
+            readonly=True),
+        as_of="devel")
     contains_installer = Attribute(
         "whether or not this upload contains installers images")
     contains_translation = Attribute(
@@ -225,8 +268,38 @@ class IPackageUpload(Interface):
         on all the binarypackagerelease records arising from the build.
         """)
 
-    section_name = TextLine(
-        title=_("Source package sectio name"), readonly=True)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def sourceFileUrls():
+        """URLs for all the source files attached to this upload.
+
+        :return: A collection of URLs for this upload.
+        """
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def binaryFileUrls():
+        """URLs for all the binary files attached to this upload.
+
+        :return: A collection of URLs for this upload.
+        """
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def customFileUrls():
+        """URLs for all the custom files attached to this upload.
+
+        :return: A collection of URLs for this upload.
+        """
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBinaryProperties():
+        """The properties of the binaries associated with this queue item.
+
+        :return: A list of dictionaries, each containing the properties of a
+            single binary.
+        """
 
     def setNew():
         """Set queue state to NEW."""
@@ -331,7 +404,14 @@ class IPackageUpload(Interface):
         :param logger: Specify a logger object if required.  Mainly for tests.
         """
 
-    def overrideSource(new_component, new_section, allowed_components):
+    @operation_parameters(
+        new_component=TextLine(title=u"The new component name."),
+        new_section=TextLine(title=u"The new section name."))
+    @call_with(allowed_components=None, user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def overrideSource(new_component=None, new_section=None,
+                       allowed_components=None, user=None):
         """Override the source package contained in this queue item.
 
         :param new_component: An IComponent to replace the existing one
@@ -340,6 +420,8 @@ class IPackageUpload(Interface):
             in the upload's source.
         :param allowed_components: A sequence of components that the
             callsite is allowed to override from and to.
+        :param user: The user requesting the override change, used if
+            allowed_components is None.
 
         :raises QueueInconsistentStateError: if either the existing
             or the new_component are not in the allowed_components
@@ -351,7 +433,21 @@ class IPackageUpload(Interface):
         :return: True if the source was overridden.
         """
 
-    def overrideBinaries(changes, allowed_components):
+    @operation_parameters(
+        changes=List(
+            title=u"A sequence of changes to apply.",
+            description=(
+                u"Each item may have a 'name' item which specifies the binary "
+                "package name to override; otherwise, the change applies to "
+                "all binaries in the upload. It may also have 'component', "
+                "'section', and 'priority' items which replace the "
+                "corresponding existing one in the upload's overridden "
+                "binaries."),
+            value_type=Dict(key_type=TextLine())))
+    @call_with(allowed_components=None, user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def overrideBinaries(changes, allowed_components=None, user=None):
         """Override binary packages in a binary queue item.
 
         :param changes: A sequence of mappings of changes to apply. Each
@@ -363,6 +459,8 @@ class IPackageUpload(Interface):
             left unchanged.
         :param allowed_components: A sequence of components that the
             callsite is allowed to override from and to.
+        :param user: The user requesting the override change, used if
+            allowed_components is None.
 
         :raises QueueInconsistentStateError: if either the existing
             or the new_component are not in the allowed_components
@@ -387,6 +485,13 @@ class IPackageUploadBuild(Interface):
     build = Int(
             title=_("The related build"), required=True, readonly=False,
             )
+
+    def binaries():
+        """Returns the properties of the binaries in this build.
+
+        For fast retrieval over the webservice, these are returned as a list
+        of dictionaries, one per binary.
+        """
 
     def publish(logger=None):
         """Publish this queued source in the distroseries referred to by
