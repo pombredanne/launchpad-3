@@ -156,8 +156,9 @@ class DistroArchSeriesBinaryPackage:
     @property
     def currentrelease(self):
         """See IDistroArchSeriesBinaryPackage."""
-        bpph = self.current_published
-        if bpph is None:
+        try:
+            bpph = self.current_published
+        except NotFoundError:
             return None
         return DistroArchSeriesBinaryPackageRelease(
             distroarchseries=self.distroarchseries,
