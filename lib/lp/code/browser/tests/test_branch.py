@@ -907,8 +907,8 @@ class TestBranchEditView(TestCaseWithFactory):
             self.assertEquals(team, branch.owner)
 
     def test_information_type_in_ui(self):
-        # The information_type of a branch can be changed via the UI when
-        # the feature flag is enabled.
+        # The information_type of a branch can be changed via the UI by an
+        # authorised user.
         person = self.factory.makePerson()
         branch = self.factory.makeProductBranch(owner=person)
         admins = getUtility(ILaunchpadCelebrities).admin
@@ -921,20 +921,25 @@ class TestBranchEditView(TestCaseWithFactory):
             self.assertEqual(
                 InformationType.EMBARGOEDSECURITY, branch.information_type)
 
-    def test_information_type_in_ui_vocabulary(self):
-        # The vocabulary that Branch:+edit uses for the information_type
-        # has been correctly created.
-        person = self.factory.makePerson()
+    def test_proprietary_in_ui_vocabulary_commercial_projects(self):
+        # Commercial projects can have information type Proprietary.
+        owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
-        branch = self.factory.makeProductBranch(product=product, owner=person)
-        feature_flag = {
-            'disclosure.proprietary_information_type.disabled': 'on'}
-        admins = getUtility(ILaunchpadCelebrities).admin
-        admin = admins.teamowner
-        with FeatureFixture(feature_flag):
+        branch = self.factory.makeProductBranch(product=product, owner=owner)
+        with person_logged_in(owner):
             browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=admin)
+                canonical_url(branch) + '/+edit', user=owner)
+            self.assertIsNotNone(browser.getControl("Proprietary"))
+
+    def test_proprietary_not_in_ui_vocabulary_normal_projects(self):
+        # Non-commercial projects can not have information type Proprietary.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=owner)
+        with person_logged_in(owner):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=owner)
             self.assertRaises(LookupError, browser.getControl, "Proprietary")
 
     def test_can_not_change_privacy_of_stacked_on_private(self):

@@ -2244,33 +2244,36 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self, context=None):
-        types = [
-            InformationType.EMBARGOEDSECURITY,
-            InformationType.USERDATA]
-        proprietary_disabled = bool(getFeatureFlag(
-            'disclosure.proprietary_information_type.disabled'))
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
-        # Proprietary is allowed for:
-        # - single pillar bugs where the target has a current commercial
-        #   subscription
-        # - branches for a project with a current commercial subscription
-        # - projects with current commercial subscriptions
-        subscription_context = context
-        if IBug.providedBy(context) and len(context.affected_pillars) == 1:
-            subscription_context = context.affected_pillars[0]
-        if IBranch.providedBy(context):
-            subscription_context = context.target.context
-        has_commercial_subscription = (
-            IProduct.providedBy(subscription_context) and
-            subscription_context.has_current_commercial_subscription)
-        if not proprietary_disabled and has_commercial_subscription:
-            types.append(InformationType.PROPRIETARY)
+    def __init__(self, context=None, public_only=False, private_only=False):
+        types = []
+        if not public_only:
+            types = [
+                InformationType.EMBARGOEDSECURITY,
+                InformationType.USERDATA]
+            show_userdata_as_private = bool(getFeatureFlag(
+                'disclosure.display_userdata_as_private.enabled'))
+            # Proprietary is allowed for:
+            # - single pillar bugs where the target has a current commercial
+            #   subscription
+            # - branches for a project with a current commercial subscription
+            # - projects with current commercial subscriptions
+            subscription_context = context
+            if IBug.providedBy(context) and len(context.affected_pillars) == 1:
+                subscription_context = context.affected_pillars[0]
+            elif (IBugTask.providedBy(context)
+                and len(context.bug.affected_pillars) == 1):
+                subscription_context = context.pillar
+            elif IBranch.providedBy(context):
+                subscription_context = context.target.context
+            has_commercial_subscription = (
+                IProduct.providedBy(subscription_context) and
+                subscription_context.has_current_commercial_subscription)
+            if has_commercial_subscription:
+                types.append(InformationType.PROPRIETARY)
         # Disallow public items for projects with private bugs.
-        if (context is None or
+        if (not private_only and (context is None or
             not IProduct.providedBy(context) or
-            not context.private_bugs):
+            not context.private_bugs)):
             types = [InformationType.PUBLIC,
                      InformationType.UNEMBARGOEDSECURITY] + types
 

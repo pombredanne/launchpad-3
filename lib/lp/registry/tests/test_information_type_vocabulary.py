@@ -58,16 +58,6 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
                 title='Public',
                 description=InformationType.PUBLIC.description))
 
-    def test_proprietary_disabled(self):
-        feature_flag = {
-            'disclosure.proprietary_information_type.disabled': 'on'}
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        with FeatureFixture(feature_flag):
-            vocab = InformationTypeVocabulary(product)
-            self.assertRaises(
-                LookupError, vocab.getTermByToken, 'PROPRIETARY')
-
     def test_proprietary_disabled_for_non_commercial_projects(self):
         # Only projects with commercial subscriptions have PROPRIETARY.
         product = self.factory.makeProduct()
@@ -75,7 +65,7 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
         self.assertRaises(
             LookupError, vocab.getTermByToken, 'PROPRIETARY')
 
-    def test_proprietary_enabled(self):
+    def test_proprietary_enabled_for_commercial_projects(self):
         # Only projects with commercial subscriptions have PROPRIETARY.
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
