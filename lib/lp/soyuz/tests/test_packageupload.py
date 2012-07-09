@@ -1152,7 +1152,6 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 for build in upload.builds
                 for bpr in build.build.binarypackages
                 for file in bpr.files]
-            email = str(person.preferredemail.email)
         self.assertContentEqual(binary_file_urls, ws_binary_file_urls)
 
         browser = self.makeNonRedirectingBrowser(person)
