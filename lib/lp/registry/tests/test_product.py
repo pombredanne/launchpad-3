@@ -374,6 +374,33 @@ class TestProduct(TestCaseWithFactory):
         grantees = set([grant.grantee for grant in grants])
         self.assertEqual(expected_grantess, grantees)
 
+    def test_redeemSubscription_creates_proprietary_policy(self):
+        # Creating a commercial subscription for a product also creates a
+        # Proprietary policy.
+        product = self.factory.makeProduct()
+        product.redeemSubscriptionVoucher(
+            'hello', product.owner, product.owner, 1)
+
+        ap = getUtility(IAccessPolicySource).findByPillar((product,))
+        expected = [
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY,
+            InformationType.PROPRIETARY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
+
+    def test_redeemSubscription_grants_maintainer_access(self):
+        # Creating a commercial subscription for a product creates an access
+        # grant on the Proprietary policy for the maintainer.
+        product = self.factory.makeProduct()
+        product.redeemSubscriptionVoucher(
+            'hello', product.owner, product.owner, 1)
+
+        policies = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.PROPRIETARY)])
+        grants = getUtility(IAccessPolicyGrantSource).findByPolicy(policies)
+        expected_grantess = set([product.owner])
+        grantees = set([grant.grantee for grant in grants])
+        self.assertEqual(expected_grantess, grantees)
+
 
 class TestProductFiles(TestCase):
     """Tests for downloadable product files."""

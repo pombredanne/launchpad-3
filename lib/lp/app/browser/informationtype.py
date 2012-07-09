@@ -24,7 +24,7 @@ class InformationTypePortletMixin:
             {'value': term.value, 'description': term.description,
             'name': term.title,
             'description_css_class': 'choice-description'}
-            for term in InformationTypeVocabulary()]
+            for term in InformationTypeVocabulary(self.context)]
         cache.objects['private_types'] = [
             type.title for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['show_userdata_as_private'] = (
