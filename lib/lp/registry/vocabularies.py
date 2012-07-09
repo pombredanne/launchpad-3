@@ -2257,6 +2257,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
             #   subscription
             # - branches for a project with a current commercial subscription
             # - projects with current commercial subscriptions
+            # - contexts which already have an information type set to
+            #   proprietary
             subscription_context = context
             if IBug.providedBy(context) and len(context.affected_pillars) == 1:
                 subscription_context = context.affected_pillars[0]
@@ -2268,7 +2270,10 @@ class InformationTypeVocabulary(SimpleVocabulary):
             has_commercial_subscription = (
                 IProduct.providedBy(subscription_context) and
                 subscription_context.has_current_commercial_subscription)
-            if has_commercial_subscription:
+            already_proprietary = (
+                safe_hasattr(context, 'information_type')
+                and context.information_type == InformationType.PROPRIETARY)
+            if has_commercial_subscription or already_proprietary:
                 types.append(InformationType.PROPRIETARY)
         # Disallow public items for projects with private bugs.
         if (not private_only and (context is None or

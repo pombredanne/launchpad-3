@@ -2,6 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the Distribution Source Package vocabulary."""
+from zope.security.proxy import removeSecurityProxy
+from lp.testing._login import person_logged_in
 
 __metaclass__ = type
 
@@ -70,6 +72,17 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
         vocab = InformationTypeVocabulary(product)
+        term = vocab.getTermByToken('PROPRIETARY')
+        self.assertEqual('Proprietary', term.title)
+
+    def test_proprietary_enabled_for_contexts_already_proprietary(self):
+        # The vocabulary has PROPRIETARY for contexts which are already
+        # proprietary.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            vocab = InformationTypeVocabulary(bug)
         term = vocab.getTermByToken('PROPRIETARY')
         self.assertEqual('Proprietary', term.title)
 
