@@ -135,11 +135,11 @@ class TestIterateSplit(TestCase):
         self.assertEqual([('one', '')], list(iter_split('one', '/')))
         self.assertEqual([], list(iter_split('', '/')))
         self.assertEqual(
-            [('one/two', ''), ('one', 'two')],
+            [('one/two', ''), ('one', '/two')],
             list(iter_split('one/two', '/')))
         self.assertEqual(
-            [('one/two/three', ''), ('one/two', 'three'),
-             ('one', 'two/three')],
+            [('one/two/three', ''), ('one/two', '/three'),
+             ('one', '/two/three')],
             list(iter_split('one/two/three', '/')))
 
 
