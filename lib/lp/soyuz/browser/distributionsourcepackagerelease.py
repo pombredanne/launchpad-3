@@ -13,6 +13,7 @@ __all__ = [
 import operator
 
 from lazr.restful.utils import smartquote
+from zope.security.interfaces import Unauthorized
 
 from lp.archivepublisher.debversion import Version
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -95,7 +96,12 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
         upload = self.context.package_upload
         if upload is None:
             return None
-        signing_key = upload.signing_key
+        try:
+            signing_key = upload.signing_key
+        except Unauthorized:
+            # Copied from a private archive, so the sponsor is none of our
+            # business.
+            return None
         if signing_key is None:
             return None
         if signing_key.owner.id == self.context.creator.id:
