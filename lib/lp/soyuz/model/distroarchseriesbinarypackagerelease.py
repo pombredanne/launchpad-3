@@ -98,7 +98,7 @@ class DistroArchSeriesBinaryPackageRelease:
                         self.distribution.all_distro_archive_ids)
 
         if status is not None:
-            if not isinstance(status, list):
+            if not isinstance(status, (tuple, list)):
                 status = [status]
             query += " AND status IN %s" % sqlvalues(status)
 
