@@ -161,12 +161,11 @@
           (<tal:component content="row/component"/>)
         </td>
         <td>
-          <tal:last_published condition="row/published_since">
-            <span tal:replace="row/published_since/fmt:approximateduration"/>
-            ago
-          </tal:last_published>
+          <tal:date_published condition="row/date_published">
+            <span tal:replace="row/date_published/fmt:approximatedate"/>
+          </tal:date_published>
           <tal:not_published
-               condition="not: row/published_since"
+               condition="not: row/date_published"
                content="string:(not published)"/>
         </td>
       </tr>

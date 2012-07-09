@@ -140,12 +140,12 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        # If this test is run in isolation, the query count is 88.
+        # If this test is run in isolation, the query count is 89.
         # Other tests in this TestCase could cache the
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(89)))
+        self.assertThat(recorder, HasQueryCount(LessThan(90)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -161,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                91, self.factory.makePerson())
+                92, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -206,7 +206,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(110)))
+        self.assertThat(recorder, HasQueryCount(LessThan(111)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -299,14 +299,13 @@ class TestBugTaskView(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         login_person(owner)
         bugtask = self.factory.makeBugTask(bug=bug)
-        features = {'disclosure.show_information_type_in_ui.enabled': True}
-        with FeatureFixture(features):
-            view = create_initialized_view(bugtask, name="+index")
-            self.assertEqual('User Data', view.information_type)
-        features['disclosure.display_userdata_as_private.enabled'] = True
+        view = create_initialized_view(bugtask, name="+index")
+        self.assertEqual('User Data', view.information_type)
+        features = {'disclosure.display_userdata_as_private.enabled': True}
         with FeatureFixture(features):
             view = create_initialized_view(bugtask, name="+index")
             self.assertEqual('Private', view.information_type)
+
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
@@ -1876,8 +1875,11 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             unbatched_view.activity_and_comments[4:],
             batched_view.activity_and_comments)
 
+no_target_specified = object()
 
-def make_bug_task_listing_item(factory, bugtask=None):
+
+def make_bug_task_listing_item(
+    factory, bugtask=None, target_context=no_target_specified):
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
@@ -1895,6 +1897,8 @@ def make_bug_task_listing_item(factory, bugtask=None):
     if tags != {}:
         tags = tags[bugtask.id]
     people = bug_task_set.getBugTaskPeople([bugtask])
+    if target_context is no_target_specified:
+        target_context = bugtask.target
     return owner, BugTaskListingItem(
         bugtask,
         badge_property['has_branch'],
@@ -1902,7 +1906,7 @@ def make_bug_task_listing_item(factory, bugtask=None):
         badge_property['has_patch'],
         tags,
         people,
-        target_context=bugtask.target)
+        target_context=target_context)
 
 
 @contextmanager
@@ -1973,11 +1977,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         # count with single task
         url = canonical_url(product, view_name='+bugs')
         self.getUserBrowser(url)
-        self.assertThat(recorder, HasQueryCount(LessThan(24)))
+        self.assertThat(recorder, HasQueryCount(LessThan(25)))
         # count with many tasks
         buggy_url = canonical_url(buggy_product, view_name='+bugs')
         self.getUserBrowser(buggy_url)
-        self.assertThat(recorder, HasQueryCount(LessThan(24)))
+        self.assertThat(recorder, HasQueryCount(LessThan(25)))
 
     def test_mustache_model_missing_if_no_flag(self):
         """The IJSONRequestCache should contain mustache_model."""
@@ -2442,6 +2446,31 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 product=item.bugtask.target)
             milestone_name = item.milestone.displayname
             self.assertEqual(milestone_name, item.model['milestone_name'])
+
+    def test_tag_urls_use_view_context(self):
+        """urls contain the correct project group if target_context is None"""
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project_group)
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=project_group)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(project_group, view_name="+bugs")))
+
+    def test_urls_without_target_context(self):
+        """urls contain the project if target_context is not None"""
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=None)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(product, view_name="+bugs")))
 
     def test_model_assignee(self):
         """Model contains expected fields with expected values."""

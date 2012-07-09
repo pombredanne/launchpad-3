@@ -501,8 +501,7 @@ class TestTeamAddView(TestCaseWithFactory):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         with person_logged_in(team.teamowner):
             view = create_initialized_view(
                 personset, name=self.view_name, principal=team.teamowner)
@@ -514,8 +513,7 @@ class TestTeamAddView(TestCaseWithFactory):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         team_name = self.factory.getUniqueString()
         form = {
             'field.name': team_name,
@@ -559,6 +557,32 @@ class TestTeamAddView(TestCaseWithFactory):
         self.assertEqual(
             ['PRIVATE'],
             browser.getControl(name="field.visibility").value)
+
+
+class TestSimpleTeamAddView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+simplenewteam'
+
+    def test_create_team(self):
+        personset = getUtility(IPersonSet)
+        team_name = self.factory.getUniqueString()
+        form = {
+            'field.name': team_name,
+            'field.displayname': 'New Team',
+            'field.visibility': 'PRIVATE',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.actions.create': 'Create',
+            }
+        login_celebrity('admin')
+        create_initialized_view(
+            personset, name=self.view_name, form=form)
+        team = personset.getByName(team_name)
+        self.assertIsNotNone(team)
+        self.assertEqual('New Team', team.displayname)
+        self.assertEqual(PersonVisibility.PRIVATE, team.visibility)
+        self.assertEqual(
+            TeamSubscriptionPolicy.RESTRICTED, team.subscriptionpolicy)
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -790,7 +814,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, '+index')
         self.assertEqual('Search', view.add_member_step_title)
 
-    def test_is_merge_pending(self):
+    def test_isMergePending(self):
         target_team = self.factory.makeTeam()
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(

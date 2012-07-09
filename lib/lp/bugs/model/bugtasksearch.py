@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_bug_privacy_filter',
+    'get_bug_privacy_filter_terms',
     'orderby_expression',
     'search_bugs',
     ]
@@ -14,6 +15,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
+    Coalesce,
     Count,
     Desc,
     Exists,
@@ -67,17 +69,22 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.model.accesspolicy import AccessPolicyGrant
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.milestonetag import MilestoneTag
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormexpr import (
     Array,
+    ArrayAgg,
+    ArrayIntersects,
     get_where_for_reference,
     NullCount,
     )
@@ -686,7 +693,7 @@ def _build_query(params):
 
     clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
-        extra_clauses.append(SQL(clause))
+        extra_clauses.append(clause)
         decorators.append(decorator)
 
     hw_clause = _build_hardware_related_clause(params)
@@ -722,6 +729,10 @@ def _build_query(params):
     if params.created_since:
         extra_clauses.append(
             BugTaskFlat.datecreated > params.created_since)
+
+    if params.created_before:
+        extra_clauses.append(
+            BugTaskFlat.datecreated < params.created_before)
 
     query = And(extra_clauses)
 
@@ -1373,30 +1384,57 @@ def _get_bug_privacy_filter_with_decorator(user):
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
+    # Admins can see all bugs, so we can short-circuit the filter.
+    if user is not None and IPersonRoles(user).in_admin:
+        return True, _nocache_bug_decorator
+
+    # We want an actual Storm Person.
+    if IPersonRoles.providedBy(user):
+        user = user.person
+
+    bug_filter_terms = get_bug_privacy_filter_terms(user, check_admin=False)
+    if len(bug_filter_terms) == 1:
+        return bug_filter_terms[0], _nocache_bug_decorator
+
+    expr = Or(*bug_filter_terms)
+    return expr, _make_cache_user_can_view_bug(user)
+
+
+def get_bug_privacy_filter_terms(user, check_admin=True):
     public_bug_filter = (
-        'BugTaskFlat.information_type IN %s'
-        % sqlvalues(PUBLIC_INFORMATION_TYPES))
+        BugTaskFlat.information_type.is_in(PUBLIC_INFORMATION_TYPES))
 
     if user is None:
-        return public_bug_filter, _nocache_bug_decorator
+        return [public_bug_filter]
 
-    admin_team = getUtility(ILaunchpadCelebrities).admin
-    if user.inTeam(admin_team):
-        return "", _nocache_bug_decorator
+    artifact_grant_query = Coalesce(
+            ArrayIntersects(SQL('BugTaskFlat.access_grants'),
+            Select(
+                ArrayAgg(TeamParticipation.teamID),
+                tables=TeamParticipation,
+                where=(TeamParticipation.person == user)
+            )), False)
 
-    artifact_grant_query = ("""
-        BugTaskFlat.access_grants &&
-        (SELECT array_agg(team) FROM teamparticipation WHERE person = %d)
-        """ % user.id)
-    policy_grant_query = ("""
-        BugTaskFlat.access_policies &&
-        (SELECT array_agg(policy) FROM
-            accesspolicygrant
-            JOIN teamparticipation
-                ON teamparticipation.team = accesspolicygrant.grantee
-            WHERE person = %d)
-        """ % user.id)
-    query = "%s OR %s" % (artifact_grant_query, policy_grant_query)
-    return (
-        '(%s OR %s)' % (public_bug_filter, query),
-        _make_cache_user_can_view_bug(user))
+    policy_grant_query = Coalesce(
+            ArrayIntersects(SQL('BugTaskFlat.access_policies'),
+            Select(
+                ArrayAgg(AccessPolicyGrant.policy_id),
+                tables=(AccessPolicyGrant,
+                        Join(TeamParticipation,
+                            TeamParticipation.teamID ==
+                            AccessPolicyGrant.grantee_id)),
+                where=(TeamParticipation.person == user)
+            )), False)
+
+    filters = [public_bug_filter, artifact_grant_query, policy_grant_query]
+
+    if check_admin:
+        filters.append(
+            Exists(Select(
+                1, tables=[TeamParticipation],
+                where=And(
+                    TeamParticipation.person == user,
+                    TeamParticipation.team ==
+                        getUtility(ILaunchpadCelebrities).admin))))
+
+    return filters

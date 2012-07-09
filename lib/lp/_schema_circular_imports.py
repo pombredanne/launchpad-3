@@ -200,7 +200,9 @@ from lp.soyuz.interfaces.packageset import (
 from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
+    IBinaryPackagePublishingHistoryEdit,
     ISourcePackagePublishingHistory,
+    ISourcePackagePublishingHistoryEdit,
     ISourcePackagePublishingHistoryPublic,
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
@@ -373,6 +375,12 @@ patch_reference_property(
     ISourcePackagePublishingHistory)
 patch_reference_property(
     ISourcePackagePublishingHistory, 'packageupload', IPackageUpload)
+patch_entry_return_type(
+    ISourcePackagePublishingHistoryEdit, 'changeOverride',
+    ISourcePackagePublishingHistory)
+patch_entry_return_type(
+    IBinaryPackagePublishingHistoryEdit, 'changeOverride',
+    IBinaryPackagePublishingHistory)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)

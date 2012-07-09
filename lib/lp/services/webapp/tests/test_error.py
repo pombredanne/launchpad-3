@@ -5,13 +5,14 @@
 
 
 import httplib
+import time
+import urllib2
+
 from storm.exceptions import (
     DisconnectionError,
     OperationalError,
     )
-import time
 import transaction
-import urllib2
 
 from lp.services.webapp.error import (
     DisconnectionErrorView,
@@ -61,7 +62,7 @@ class TestDatabaseErrorViews(TestCase):
     def getHTTPError(self, url):
         try:
             urllib2.urlopen(url)
-        except urllib2.HTTPError, error:
+        except urllib2.HTTPError as error:
             return error
         else:
             self.fail("We should have gotten an HTTP error")
@@ -88,7 +89,17 @@ class TestDatabaseErrorViews(TestCase):
         # Test setup.
         self.useFixture(Urllib2Fixture())
         bouncer = PGBouncerFixture()
+        # XXX gary bug=974617, bug=1011847, bug=504291 2011-07-03:
+        # In parallel tests, we are rarely encountering instances of
+        # bug 504291 while running this test.  These cause the tests
+        # to fail entirely (the store.rollback() described in comment
+        # 11 does not fix the insane state) despite nultiple retries.
+        # As mentioned in that bug, we are trying aborts to see if they
+        # eliminate the problem.  If this works, we can find which of
+        # these two aborts are actually needed.
+        transaction.abort()
         self.useFixture(bouncer)
+        transaction.abort()
         # Verify things are working initially.
         url = 'http://launchpad.dev/'
         self.retryConnection(url)
@@ -123,6 +134,14 @@ class TestDatabaseErrorViews(TestCase):
         # Test setup.
         self.useFixture(Urllib2Fixture())
         bouncer = PGBouncerFixture()
+        # XXX gary bug=974617, bug=1011847, bug=504291 2011-07-03:
+        # In parallel tests, we are rarely encountering instances of
+        # bug 504291 while running this test.  These cause the tests
+        # to fail entirely (the store.rollback() described in comment
+        # 11 does not fix the insane state) despite nultiple retries.
+        # As mentioned in that bug, we are trying aborts to see if they
+        # eliminate the problem.
+        transaction.abort()
         self.useFixture(bouncer)
         # This is necessary to avoid confusing PG after the stopped bouncer.
         transaction.abort()

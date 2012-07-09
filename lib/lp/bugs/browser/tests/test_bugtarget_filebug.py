@@ -5,6 +5,7 @@ __metaclass__ = type
 
 
 from BeautifulSoup import BeautifulSoup
+from lazr.restful.interfaces import IJSONRequestCache
 import transaction
 from zope.component import getUtility
 from zope.schema.interfaces import (
@@ -13,10 +14,7 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.restful.interfaces import IJSONRequestCache
-from lp.bugs.browser.bugtarget import (
-    FileBugViewBase,
-    )
+from lp.bugs.browser.bugtarget import FileBugViewBase
 from lp.bugs.interfaces.bug import (
     IBugAddForm,
     IBugSet,
@@ -359,8 +357,6 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
 
     def filebug_via_view(self, private_bugs=False, information_type=None):
-        feature_flag = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
         form = {
             'field.title': 'A bug',
             'field.comment': 'A comment',
@@ -371,13 +367,12 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         product = self.factory.makeProduct(official_malone=True)
         if private_bugs:
             removeSecurityProxy(product).private_bugs = True
-        with FeatureFixture(feature_flag):
-            with person_logged_in(product.owner):
-                view = create_initialized_view(
-                    product, '+filebug', form=form, principal=product.owner)
-                bug_url = view.request.response.getHeader('Location')
-                bug_number = bug_url.split('/')[-1]
-                return getUtility(IBugSet).getByNameOrID(bug_number)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', form=form, principal=product.owner)
+            bug_url = view.request.response.getHeader('Location')
+            bug_number = bug_url.split('/')[-1]
+            return getUtility(IBugSet).getByNameOrID(bug_number)
 
     def test_filebug_default_information_type(self):
         # If we don't specify the bug's information_type, it is PUBLIC for
@@ -401,7 +396,6 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         # The vocabulary for information_type when filing a bug is created
         # correctly when 'User Data' is to be replaced by 'Private'.
         feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on',
             'disclosure.proprietary_information_type.disabled': 'on',
             'disclosure.display_userdata_as_private.enabled': 'on'}
         product = self.factory.makeProduct(official_malone=True)
@@ -418,35 +412,105 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
     def test_filebug_information_type_vocabulary(self):
         # The vocabulary for information_type when filing a bug is created
         # correctly.
-        feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
         product = self.factory.makeProduct(official_malone=True)
-        with FeatureFixture(feature_flags):
-            with person_logged_in(product.owner):
-                view = create_initialized_view(
-                    product, '+filebug', principal=product.owner)
-                html = view.render()
-                soup = BeautifulSoup(html)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
         for info_type in InformationType:
             self.assertIsNotNone(soup.find('label', text=info_type.title))
+
+    def test_filebug_view_renders_info_type_widget(self):
+        # The info type widget is rendered for bug supervisor roles.
+        product = self.factory.makeProduct(official_malone=True)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
+        self.assertIsNone(
+            soup.find('input', attrs={'name': 'field.security_related'}))
+        self.assertIsNotNone(
+            soup.find('input', attrs={'name': 'field.information_type'}))
 
     def test_filebug_information_type_vocabulary_private_projects(self):
         # The vocabulary for information_type when filing a bug only has
         # private info types for private bug projects.
-        feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
         product = self.factory.makeProduct(
             official_malone=True, private_bugs=True)
-        with FeatureFixture(feature_flags):
-            with person_logged_in(product.owner):
-                view = create_initialized_view(
-                    product, '+filebug', principal=product.owner)
-                html = view.render()
-                soup = BeautifulSoup(html)
+        with person_logged_in(product.owner):
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
         for info_type in PRIVATE_INFORMATION_TYPES:
             self.assertIsNotNone(soup.find('label', text=info_type.title))
         for info_type in PUBLIC_INFORMATION_TYPES:
             self.assertIsNone(soup.find('label', text=info_type.title))
+
+
+class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def filebug_via_view(self, private_bugs=False, security_related=False):
+        form = {
+            'field.title': 'A bug',
+            'field.comment': 'A comment',
+            'field.security_related': 'on' if security_related else '',
+            'field.actions.submit_bug': 'Submit Bug Request',
+        }
+        product = self.factory.makeProduct(official_malone=True)
+        if private_bugs:
+            removeSecurityProxy(product).private_bugs = True
+        anyone = self.factory.makePerson()
+        with person_logged_in(anyone):
+            view = create_initialized_view(
+                product, '+filebug', form=form, principal=anyone)
+            bug_url = view.request.response.getHeader('Location')
+            bug_number = bug_url.split('/')[-1]
+            return getUtility(IBugSet).getByNameOrID(bug_number)
+
+    def test_filebug_non_security_related(self):
+        # Non security related bugs are PUBLIC for products with
+        # private_bugs=False.
+        bug = self.filebug_via_view()
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_filebug_security_related(self):
+        # Security related bugs are EMBARGOEDSECURITY for products with
+        # private_bugs=False.
+        bug = self.filebug_via_view(security_related=True)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY, bug.information_type)
+
+    def test_filebug_security_related_with_private_bugs(self):
+        # Security related bugs are EMBARGOEDSECURITY for products with
+        # private_bugs=True.
+        bug = self.filebug_via_view(private_bugs=True, security_related=True)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY, bug.information_type)
+
+    def test_filebug_with_private_bugs(self):
+        # Non security related bugs are USERDATA for products with
+        # private_bugs=True.
+        bug = self.filebug_via_view(private_bugs=True)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_filebug_view_renders_security_related(self):
+        # The security_related checkbox is rendered for non bug supervisors.
+        product = self.factory.makeProduct(official_malone=True)
+        anyone = self.factory.makePerson()
+        with person_logged_in(anyone):
+            view = create_initialized_view(
+                product, '+filebug', principal=anyone)
+            html = view.render()
+            soup = BeautifulSoup(html)
+        self.assertIsNotNone(
+            soup.find('input', attrs={'name': 'field.security_related'}))
+        self.assertIsNone(
+            soup.find('input', attrs={'name': 'field.information_type'}))
 
 
 class TestFileBugSourcePackage(TestCaseWithFactory):

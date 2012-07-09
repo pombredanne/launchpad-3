@@ -73,10 +73,10 @@ class ValidatingMergeView(LaunchpadFormView):
                     "can be merged. It may take ten minutes to remove the "
                     "deleted PPA's files.",
                     mapping=dict(name=dupe_person.name)))
-            if dupe_person.is_merge_pending:
+            if dupe_person.isMergePending():
                 self.addError(_("${name} is already queued for merging.",
                       mapping=dict(name=dupe_person.name)))
-        if target_person is not None and target_person.is_merge_pending:
+        if target_person is not None and target_person.isMergePending():
             self.addError(_("${name} is already queued for merging.",
                   mapping=dict(name=target_person.name)))
 

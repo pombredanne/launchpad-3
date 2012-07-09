@@ -16,8 +16,9 @@ from datetime import (
     datetime,
     timedelta,
     )
-from pytz import utc
+
 from lazr.delegates import delegates
+from pytz import utc
 import simplejson
 from storm.expr import (
     And,
@@ -44,12 +45,12 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.registry.interfaces.productjob import (
+    ICommercialExpiredJob,
+    ICommercialExpiredJobSource,
     IProductJob,
     IProductJobSource,
     IProductNotificationJob,
     IProductNotificationJobSource,
-    ICommercialExpiredJob,
-    ICommercialExpiredJobSource,
     ISevenDayCommercialExpirationJob,
     ISevenDayCommercialExpirationJobSource,
     IThirtyDayCommercialExpirationJob,
@@ -65,19 +66,18 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.propertycache import cachedproperty
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.mail.helpers import (
-    get_email_template,
-    )
-from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
     simple_sendmail,
     )
+from lp.services.propertycache import cachedproperty
+from lp.services.scripts import log
 from lp.services.webapp.publisher import canonical_url
 
 
@@ -333,6 +333,8 @@ class ProductNotificationJob(ProductJobDerived):
             body, headers = self.getBodyAndHeaders(
                 email_template, address, self.reply_to)
             simple_sendmail(from_address, address, subject, body, headers)
+        log.debug("%s has sent email to the maintainer of %s.",
+            self.log_name, self.product.name)
 
     def run(self):
         """See `BaseRunnableJob`.
@@ -468,7 +470,7 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
         else:
             removeSecurityProxy(self.product).private_bugs = False
             for series in self.product.series:
-                if series.branch.private:
+                if series.branch is not None and series.branch.private:
                     removeSecurityProxy(series).branch = None
             self.product.commercial_subscription.delete()
 

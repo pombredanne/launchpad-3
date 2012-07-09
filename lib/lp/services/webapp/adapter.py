@@ -481,7 +481,7 @@ class ReadOnlyModeConnection(PostgresConnection):
         try:
             return super(ReadOnlyModeConnection, self).execute(
                 statement, params, noresult)
-        except psycopg2.InternalError, exception:
+        except psycopg2.InternalError as exception:
             # Error 25006 is 'ERROR:  transaction is read-only'. This
             # is raised when an attempt is made to make changes when
             # the connection has been put in read-only mode.

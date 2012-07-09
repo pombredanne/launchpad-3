@@ -333,14 +333,14 @@ class BugTaskBugWatchWidget(RadioWidget):
                 bugtask = self.context.context
                 return bugtask.bug.addWatch(
                     bugtracker, remote_bug, getUtility(ILaunchBag).user)
-            except WidgetInputError, error:
+            except WidgetInputError as error:
                 # Prefix the error with the widget name, since the error
                 # will be display at the top of the page, and not right
                 # next to the widget.
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Remote Bug: %s' % error.doc())
-            except (NoBugTrackerFound, UnrecognizedBugTrackerURL), error:
+            except (NoBugTrackerFound, UnrecognizedBugTrackerURL) as error:
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Invalid bug tracker URL.')

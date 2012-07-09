@@ -67,7 +67,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         </ul>
         <div class='login-logout'></div>
         <div id="fixture"></div>
-        <script type="text/x-template" id="privacy-banner-template">
+        <script type="text/x-template" id="bugsupervisor-filebug-template">
         <div id="filebug-form">
         <table class="radio-button-widget">
             <tbody>
@@ -110,7 +110,29 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             </select>
         </div>
         <div class="value">
-            <select size="1" name="field.status" id="field.importance">
+            <select size="1" name="field.importance" id="field.importance">
+            <option value="Undecided" selected="selected">Undecided</option>
+            <option value="High">High</option>
+            </select>
+        </div>
+        </div>
+        </script>
+        <script type="text/x-template" id="filebug-template">
+        <div id="filebug-form">
+        <div>
+          <input type="checkbox" value="on" name="field.security_related" id="field.security_related" class="checkboxType">
+          <label for="field.security_related">
+            This bug is a security vulnerability
+          </label>
+        </div>
+        <div class="value">
+            <select size="1" name="field.status" id="field.status">
+            <option value="New" selected="selected">New</option>
+            <option value="Incomplete">Incomplete</option>
+            </select>
+        </div>
+        <div class="value">
+            <select size="1" name="field.importance" id="field.importance">
             <option value="Undecided" selected="selected">Undecided</option>
             <option value="High">High</option>
             </select>

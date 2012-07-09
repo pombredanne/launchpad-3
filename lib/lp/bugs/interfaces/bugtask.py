@@ -141,6 +141,12 @@ class BugTaskImportance(DBEnumeratedType):
         The importance of this bug is not known.
         """)
 
+    UNDECIDED = DBItem(5, """
+        Undecided
+
+        Not decided yet. Maybe needs more discussion.
+        """)
+
     CRITICAL = DBItem(50, """
         Critical
 
@@ -169,12 +175,6 @@ class BugTaskImportance(DBEnumeratedType):
         Wishlist
 
         Not a bug. It's an enhancement/new feature.
-        """)
-
-    UNDECIDED = DBItem(5, """
-        Undecided
-
-        Not decided yet. Maybe needs more discussion.
         """)
 
 
@@ -1178,7 +1178,7 @@ class BugTaskSearchParams:
                  structural_subscriber=None, modified_since=None,
                  created_since=None, exclude_conjoined_tasks=False, cve=None,
                  upstream_target=None, milestone_dateexpected_before=None,
-                 milestone_dateexpected_after=None):
+                 milestone_dateexpected_after=None, created_before=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1226,6 +1226,7 @@ class BugTaskSearchParams:
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
         self.created_since = created_since
+        self.created_before = created_before
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
         self.cve = cve
         self.upstream_target = upstream_target
@@ -1375,7 +1376,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
                        linked_blueprints=None, structural_subscriber=None,
-                       modified_since=None, created_since=None):
+                       modified_since=None, created_since=None,
+                       created_before=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1446,6 +1448,7 @@ class BugTaskSearchParams:
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
         search_params.created_since = created_since
+        search_params.created_before = created_before
 
         return search_params
 

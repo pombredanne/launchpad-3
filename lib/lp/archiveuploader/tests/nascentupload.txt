@@ -534,7 +534,7 @@ Upload new source 'multibar', step 1:
     >>> multibar_src_queue.status.name
     'NEW'
 
-    >>> multibar_src_queue.sources.count()
+    >>> len(multibar_src_queue.sources)
     1
     >>> multibar_spr = multibar_src_queue.sources[0].sourcepackagerelease
     >>> multibar_spr.title
@@ -596,7 +596,7 @@ We have a NEW queue entry, containing the Build results:
     >>> multibar_bin_queue = multibar_bin_upload.queue_root
     >>> multibar_bin_queue.status.name
     'NEW'
-    >>> multibar_bin_queue.builds.count()
+    >>> len(multibar_bin_queue.builds)
     1
 
 The build considered as 'producer' of the upload binaries is the same

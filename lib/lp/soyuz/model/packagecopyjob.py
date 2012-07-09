@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -49,9 +49,7 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import (
-    JobStatus,
-    )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
@@ -248,7 +246,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
-                      include_binaries, sponsored=None):
+                      include_binaries, sponsored=None, unembargo=False):
         """Produce a metadata dict for this job."""
         if sponsored:
             sponsored_name = sponsored.name
@@ -259,6 +257,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             'package_version': package_version,
             'include_binaries': bool(include_binaries),
             'sponsored': sponsored_name,
+            'unembargo': unembargo,
         }
 
     @classmethod
@@ -266,12 +265,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
-               sponsored=None):
+               sponsored=None, unembargo=False):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
-            target_pocket, package_version, include_binaries, sponsored)
+            target_pocket, package_version, include_binaries, sponsored,
+            unembargo)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -287,9 +287,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return derived
 
     @classmethod
-    def _composeJobInsertionTuple(cls, target_distroseries, copy_policy,
-                                  include_binaries, job_id, copy_task,
-                                  sponsored):
+    def _composeJobInsertionTuple(cls, copy_policy, include_binaries, job_id,
+                                  copy_task, sponsored, unembargo):
         """Create an SQL fragment for inserting a job into the database.
 
         :return: A string representing an SQL tuple containing initializers
@@ -301,10 +300,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             package_version,
             source_archive,
             target_archive,
+            target_distroseries,
             target_pocket,
         ) = copy_task
         metadata = cls._makeMetadata(
-            target_pocket, package_version, include_binaries, sponsored)
+            target_pocket, package_version, include_binaries, sponsored,
+            unembargo)
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
@@ -312,16 +313,17 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return data
 
     @classmethod
-    def createMultiple(cls, target_distroseries, copy_tasks, requester,
+    def createMultiple(cls, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
-                       include_binaries=False, sponsored=None):
+                       include_binaries=False, sponsored=None,
+                       unembargo=False):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
         job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
-                target_distroseries, copy_policy, include_binaries, job_id,
-                task, sponsored)
+                copy_policy, include_binaries, job_id, task, sponsored,
+                unembargo)
             for job_id, task in zip(job_ids, copy_tasks)]
         return bulk.create(
                 (PackageCopyJob.job_type, PackageCopyJob.target_distroseries,
@@ -398,6 +400,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if name is None:
             return None
         return getUtility(IPersonSet).getByName(name)
+
+    @property
+    def unembargo(self):
+        return self.metadata.get('unembargo', False)
 
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
@@ -487,7 +493,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         """See `IRunnableJob`."""
         try:
             self.attemptCopy()
-        except CannotCopy, e:
+        except CannotCopy as e:
             logger = logging.getLogger()
             logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
             self.abort()  # Abort the txn.
@@ -552,7 +558,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
             send_email=send_email, announce_from_person=self.requester,
-            sponsored=self.sponsored, packageupload=pu)
+            sponsored=self.sponsored, packageupload=pu,
+            unembargo=self.unembargo)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if ancestry is not None:

@@ -6,10 +6,10 @@
 __metaclass__ = type
 
 from lp.services.database.multitablecopy import MultiTableCopy
+from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
 from lp.testing.layers import ZopelessDatabaseLayer
-from lp.services.log.logger import DevNullLogger
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
     )

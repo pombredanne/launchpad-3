@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -94,7 +94,7 @@ class FileUploadClient:
             self.state.s = socket.socket(AF_INET, SOCK_STREAM)
             self.state.s.connect((self.upload_host, self.upload_port))
             self.state.f = self.state.s.makefile('w+', 0)
-        except socket.error, x:
+        except socket.error as x:
             raise UploadFailed(
                 '[%s:%s]: %s' % (self.upload_host, self.upload_port, x))
 
@@ -189,7 +189,7 @@ class FileUploadClient:
 
             # Read in and upload the file 64kb at a time, by using the two-arg
             # form of iter (see
-            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
+            # /usr/share/doc/python/html/library/functions.html#iter).
             for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
@@ -258,7 +258,7 @@ class FileUploadClient:
 
             # Read in and upload the file 64kb at a time, by using the two-arg
             # form of iter (see
-            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
+            # /usr/share/doc/python/html/library/functions.html#iter).
             for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
@@ -482,7 +482,7 @@ class FileDownloadClient:
         while 1:
             try:
                 return _File(urllib2.urlopen(url), url)
-            except urllib2.URLError, error:
+            except urllib2.URLError as error:
                 # 404 errors indicate a data inconsistency: more than one
                 # attempt to open the file is pointless.
                 #

@@ -165,7 +165,7 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
         else:
             classes = ['sprite', 'no']
         if disable:
-            classes.append('unseen')
+            classes.append('hidden')
         if lowlight:
             classes.append("lowlight")
         return ' '.join(classes)
@@ -174,13 +174,13 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     def configuration_complete_class(self):
         if self.is_configuration_complete:
             return ""
-        return "unseen"
+        return "hidden"
 
     @property
     def configuration_incomplete_class(self):
         if not self.is_configuration_complete:
             return ""
-        return "unseen"
+        return "hidden"
 
     @property
     def packaging_incomplete_class(self):
@@ -339,12 +339,11 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     def icon_link(self, id, icon, url, text, hidden):
         """The HTML link to a configuration page."""
         if hidden:
-            css_class = 'sprite %s unseen' % icon
+            css_class = 'sprite %s action-icon hidden' % icon
         else:
-            css_class = 'sprite %s' % icon
+            css_class = 'sprite %s action-icon' % icon
         return structured(
-            '<a id="%s" class="%s" href="%s">'
-            '<span class="invisible-link">%s</span></a>',
+            '<a id="%s" class="%s" href="%s">%s</a>',
             id, css_class, url, text)
 
     @property

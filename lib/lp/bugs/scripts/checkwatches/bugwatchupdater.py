@@ -89,7 +89,7 @@ class BugWatchUpdater(WorkingBase):
                 if self.can_back_link:
                     error_status = BugWatchActivityStatus.BACKLINK_FAILED
                     self.linkLaunchpadBug()
-            except Exception, ex:
+            except Exception as ex:
                 error_message = str(ex)
                 log_message = (
                     "Failure updating bug %r on %s (local bug: %s)" %

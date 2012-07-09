@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-import email
 import doctest
+import email
 from textwrap import dedent
 
 import soupmatchers
@@ -119,7 +119,7 @@ class TestPersonIndexView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_is_merge_pending(self):
+    def test_isMergePending(self):
         dupe_person = self.factory.makePerson(name='finch')
         target_person = self.factory.makePerson()
         job_source = getUtility(IPersonMergeJobSource)

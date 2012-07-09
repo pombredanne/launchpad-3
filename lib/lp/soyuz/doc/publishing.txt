@@ -475,7 +475,9 @@ including its binaries.
 
 'distroseries' and 'archive' will be constant.
 
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> distroseries = source.distroseries
+    >>> distroseries.status = SeriesStatus.CURRENT
     >>> archive = source.archive
 
 'pocket' will be UPDATES.

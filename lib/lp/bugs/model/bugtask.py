@@ -96,6 +96,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
@@ -119,7 +120,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
+from lp.registry.interfaces.sharingjob import (
+    IRemoveArtifactSubscriptionsJobSource,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
@@ -381,7 +384,7 @@ def validate_target(bug, target, retarget_existing=True):
             try:
                 target.distribution.guessPublishedSourcePackageName(
                     target.sourcepackagename.name)
-            except NotFoundError, e:
+            except NotFoundError as e:
                 raise IllegalTarget(e[0])
 
     if bug.information_type == InformationType.PROPRIETARY:
@@ -1187,13 +1190,13 @@ class BugTask(SQLBase):
             self.maybeConfirm()
         # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-        flag = 'disclosure.enhanced_sharing.writable'
+        flag = 'disclosure.unsubscribe_jobs.enabled'
         if bool(getFeatureFlag(flag)):
             # As a result of the transition, some subscribers may no longer
             # have access to the parent bug. We need to run a job to remove any
             # such subscriptions.
-            getUtility(IRemoveBugSubscriptionsJobSource).create(
-                [self.bug], user)
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                user, [self.bug], pillar=target_before_change)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1327,8 +1330,11 @@ class BugTask(SQLBase):
             return True
 
         # If you're the owner or a driver, you can change bug details.
+        owner_context = context
+        if IBugTarget.providedBy(context):
+            owner_context = context.pillar
         return (
-            role.isOwner(context.pillar) or role.isOneOfDrivers(context))
+            role.isOwner(owner_context) or role.isOneOfDrivers(context))
 
     @classmethod
     def userHasBugSupervisorPrivilegesContext(cls, context, user):
@@ -1342,9 +1348,12 @@ class BugTask(SQLBase):
         role = IPersonRoles(user)
         # If you have driver privileges, or are the bug supervisor, you can
         # change bug details.
+        supervisor_context = context
+        if IBugTarget.providedBy(context):
+            supervisor_context = context.pillar
         return (
             cls.userHasDriverPrivilegesContext(context, user) or
-            role.isBugSupervisor(context.pillar))
+            role.isBugSupervisor(supervisor_context))
 
     def userHasDriverPrivileges(self, user):
         """See `IBugTask`."""
@@ -1794,8 +1803,7 @@ class BugTaskSet:
         # The janitor needs access to all bugs.
         if user != getUtility(ILaunchpadCelebrities).janitor:
             bug_privacy_filter = get_bug_privacy_filter(user)
-            if bug_privacy_filter != '':
-                conds.append(bug_privacy_filter)
+            conds.append(bug_privacy_filter)
 
         ids = origin.find(BugTaskFlat.bugtask_id, conds)
         ids = ids.order_by(BugTaskFlat.date_last_updated)
@@ -1893,7 +1901,7 @@ class BugTaskSet:
             BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
             BugTaskFlat.duplicateof == None,
             BugTaskFlat.product_id.is_in(product.id for product in products),
-            SQL(get_bug_privacy_filter(user) or True)
+            get_bug_privacy_filter(user),
             ).group_by(BugTaskFlat.product_id)
         # The result will return a list of product ids and counts,
         # which will be converted into key-value pairs in the dictionary.
@@ -1944,7 +1952,7 @@ class BugTaskSet:
             BugTaskFlat.sourcepackagename_id.is_in(package_name_ids),
             BugTaskFlat.distribution == distribution,
             BugTaskFlat.duplicateof == None,
-            SQL(get_bug_privacy_filter(user) or True)
+            get_bug_privacy_filter(user),
             ).group_by(
                 BugTaskFlat.distribution_id, BugTaskFlat.sourcepackagename_id)
 

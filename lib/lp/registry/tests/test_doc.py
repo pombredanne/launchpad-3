@@ -85,6 +85,7 @@ special = {
         ),
     'mailinglist-xmlrpc.txt-external': LayeredDocFileSuite(
         '../doc/mailinglist-xmlrpc.txt',
+        id_extensions=['mailinglist-xmlrpc.txt-external'],
         setUp=mailingListXMLRPCExternalSetUp,
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
@@ -97,6 +98,7 @@ special = {
         ),
     'mailinglist-subscriptions-xmlrpc.txt-external': LayeredDocFileSuite(
         '../doc/mailinglist-subscriptions-xmlrpc.txt',
+        id_extensions=['mailinglist-subscriptions-xmlrpc.txt-external'],
         setUp=mailingListXMLRPCExternalSetUp,
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
@@ -115,6 +117,7 @@ special = {
         ),
     'message-holds-xmlrpc.txt-external': LayeredDocFileSuite(
         '../doc/message-holds-xmlrpc.txt',
+        id_extensions=['message-holds-xmlrpc.txt-external'],
         setUp=mailingListXMLRPCExternalSetUp,
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,

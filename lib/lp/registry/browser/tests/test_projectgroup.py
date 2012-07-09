@@ -8,9 +8,15 @@ __metaclass__ = type
 from fixtures import FakeLogger
 from testtools.matchers import Not
 from zope.component import getUtility
+from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
 
-from lp.registry.interfaces.person import IPersonSet
+from lazr.restful.interfaces import IJSONRequestCache
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    IPersonSet,
+    )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
@@ -24,6 +30,28 @@ from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
+class TestProjectGroupView(TestCaseWithFactory):
+    """Tests the +index view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupView, self).setUp()
+        self.project_group = self.factory.makeProject(name='group')
+
+    def test_view_data_model(self):
+        # The view's json request cache contains the expected data.
+        view = create_initialized_view(self.project_group, '+index')
+        cache = IJSONRequestCache(view.request)
+        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
+        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        self.assertContentEqual(
+            team_subscriptionpolicy_data,
+            cache.objects['team_subscriptionpolicy_data'])
+
+
 class TestProjectGroupEditView(TestCaseWithFactory):
     """Tests the edit view."""
 
@@ -31,7 +59,7 @@ class TestProjectGroupEditView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestProjectGroupEditView, self).setUp()
-        self.project_group = self.factory.makeProject(name='grupo')
+        self.project_group = self.factory.makeProject(name='group')
         # Use a FakeLogger fixture to prevent Memcached warnings to be
         # printed to stdout while browsing pages.
         self.useFixture(FakeLogger())

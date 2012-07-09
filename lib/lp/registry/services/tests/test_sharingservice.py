@@ -26,10 +26,12 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.services.sharingservice import SharingService
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
@@ -55,7 +57,7 @@ from lp.testing.pages import LaunchpadWebServiceCaller
 WRITE_FLAG = {
     'disclosure.enhanced_sharing.writable': 'true',
     'disclosure.enhanced_sharing_details.enabled': 'true',
-    'jobs.celery.enabled_classes': 'RemoveGranteeSubscriptionsJob'}
+    'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob'}
 DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 
 
@@ -222,7 +224,7 @@ class TestSharingService(TestCaseWithFactory):
             [(policy1.type, SharingPermission.ALL)], [])
         self.assertContentEqual([expected_data], sharees)
 
-    def _assert_getPillarShareeData(self, pillar):
+    def _assert_getPillarShareeData(self, pillar, pillar_type=None):
         # getPillarShareeData returns the expected data.
         access_policy = self.factory.makeAccessPolicy(
             pillar=pillar,
@@ -245,6 +247,13 @@ class TestSharingService(TestCaseWithFactory):
                 artifact_grant.grantee,
                 [(InformationType.PROPRIETARY, SharingPermission.SOME)],
                 [InformationType.PROPRIETARY])]
+        if pillar_type == 'product':
+            owner_data = self._makeShareeData(
+                pillar.owner,
+                [(InformationType.USERDATA, SharingPermission.ALL),
+                 (InformationType.EMBARGOEDSECURITY, SharingPermission.ALL)],
+                [])
+            expected_sharees.append(owner_data)
         self.assertContentEqual(expected_sharees, sharees)
 
     def test_getProductShareeData(self):
@@ -252,7 +261,7 @@ class TestSharingService(TestCaseWithFactory):
         driver = self.factory.makePerson()
         product = self.factory.makeProduct(driver=driver)
         login_person(driver)
-        self._assert_getPillarShareeData(product)
+        self._assert_getPillarShareeData(product, pillar_type='product')
 
     def test_getDistroShareeData(self):
         # Users with launchpad.Driver can view sharees.
@@ -292,14 +301,14 @@ class TestSharingService(TestCaseWithFactory):
             makeGrants()
         with StormStatementRecorder() as recorder:
             sharees = list(func(product))
-        self.assertEqual(10, len(sharees))
+        self.assertEqual(11, len(sharees))
         self.assertThat(recorder, HasQueryCount(Equals(count)))
         # Make some more grants and check again.
         for x in range(5):
             makeGrants()
         with StormStatementRecorder() as recorder:
             sharees = list(func(product))
-        self.assertEqual(20, len(sharees))
+        self.assertEqual(21, len(sharees))
         self.assertThat(recorder, HasQueryCount(Equals(count)))
 
     def test_getPillarShareesQueryCount(self):
@@ -329,7 +338,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._assert_getPillarShareeDataUnauthorized(product)
 
-    def _assert_getPillarSharees(self, pillar):
+    def _assert_getPillarSharees(self, pillar, pillar_type=None):
         # getPillarSharees returns the expected data.
         access_policy = self.factory.makeAccessPolicy(
             pillar=pillar,
@@ -347,6 +356,15 @@ class TestSharingService(TestCaseWithFactory):
             (grantee, {access_policy: SharingPermission.ALL}, []),
             (artifact_grant.grantee, {access_policy: SharingPermission.SOME},
              [access_policy.type])]
+        if pillar_type == 'product':
+            policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+            policies = [policy for policy in policies
+                            if policy.type != InformationType.PROPRIETARY]
+            owner_data = (
+                pillar.owner,
+                dict.fromkeys(policies, SharingPermission.ALL),
+                [])
+            expected_sharees.append(owner_data)
         self.assertContentEqual(expected_sharees, sharees)
 
     def test_getProductSharees(self):
@@ -354,7 +372,7 @@ class TestSharingService(TestCaseWithFactory):
         driver = self.factory.makePerson()
         product = self.factory.makeProduct(driver=driver)
         login_person(driver)
-        self._assert_getPillarSharees(product)
+        self._assert_getPillarSharees(product, pillar_type='product')
 
     def test_getDistroSharees(self):
         # Users with launchpad.Driver can view sharees.
@@ -384,7 +402,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._assert_getPillarShareesUnauthorized(product)
 
-    def _assert_sharePillarInformation(self, pillar):
+    def _assert_sharePillarInformation(self, pillar, pillar_type=None):
         """sharePillarInformations works and returns the expected data."""
         sharee = self.factory.makePerson()
         grantor = self.factory.makePerson()
@@ -430,10 +448,14 @@ class TestSharingService(TestCaseWithFactory):
             InformationType.PROPRIETARY: SharingPermission.NOTHING}
         with FeatureFixture(WRITE_FLAG):
             sharee_data = self.service.sharePillarInformation(
-                pillar, sharee, permissions, grantor)
+                pillar, sharee, grantor, permissions)
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        [grant] = policy_grant_source.findByPolicy(policies)
+        grants = policy_grant_source.findByPolicy(policies)
+
+        # Filter out the owner's grants if they exist. They're automatic and
+        # already tested.
+        [grant] = [g for g in grants if g.grantee != pillar.owner]
         self.assertEqual(grantor, grant.grantor)
         self.assertEqual(sharee, grant.grantee)
         expected_permissions = [
@@ -444,12 +466,26 @@ class TestSharingService(TestCaseWithFactory):
             [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])
         self.assertEqual(expected_sharee_data, sharee_data)
         # Check that getPillarSharees returns what we expect.
-        expected_sharee_grants = [
-            (sharee, {
-                es_policy: SharingPermission.ALL,
-                ud_policy: SharingPermission.SOME},
-             [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])]
+        if pillar_type == 'product':
+            expected_sharee_grants = [
+                (sharee,
+                 {ud_policy: SharingPermission.SOME,
+                  es_policy: SharingPermission.ALL},
+                 [InformationType.EMBARGOEDSECURITY,
+                  InformationType.USERDATA]),
+                 ]
+        else: 
+            expected_sharee_grants = [
+                (sharee,
+                 {es_policy: SharingPermission.ALL,
+                  ud_policy: SharingPermission.SOME},
+                 [InformationType.USERDATA,
+                  InformationType.EMBARGOEDSECURITY]),
+                 ]
+
         sharee_grants = list(self.service.getPillarSharees(pillar))
+        # Again, filter out the owner, if one exists.
+        sharee_grants = [s for s in sharee_grants if s[0] != pillar.owner]
         self.assertContentEqual(expected_sharee_grants, sharee_grants)
 
     def test_updateProjectGroupSharee_not_allowed(self):
@@ -460,15 +496,15 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         self.assertRaises(
             AssertionError, self.service.sharePillarInformation,
-            project_group, sharee,
-            {InformationType.USERDATA: SharingPermission.ALL}, owner)
+            project_group, sharee, owner,
+            {InformationType.USERDATA: SharingPermission.ALL})
 
     def test_updateProductSharee(self):
         # Users with launchpad.Edit can add sharees.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
-        self._assert_sharePillarInformation(product)
+        self._assert_sharePillarInformation(product, pillar_type='product')
 
     def test_updateDistroSharee(self):
         # Users with launchpad.Edit can add sharees.
@@ -490,7 +526,7 @@ class TestSharingService(TestCaseWithFactory):
             grant.policy.type: SharingPermission.SOME}
         with FeatureFixture(WRITE_FLAG):
             sharee_data = self.service.sharePillarInformation(
-                pillar, sharee, permissions, self.factory.makePerson())
+                pillar, sharee, self.factory.makePerson(), permissions)
         self.assertIsNone(sharee_data)
 
     def _assert_sharePillarInformationUnauthorized(self, pillar):
@@ -501,8 +537,8 @@ class TestSharingService(TestCaseWithFactory):
             user = self.factory.makePerson()
             self.assertRaises(
                 Unauthorized, self.service.sharePillarInformation,
-                pillar, sharee,
-                {InformationType.USERDATA: SharingPermission.ALL}, user)
+                pillar, sharee, user,
+                {InformationType.USERDATA: SharingPermission.ALL})
 
     def test_sharePillarInformationAnonymous(self):
         # Anonymous users are not allowed.
@@ -527,10 +563,11 @@ class TestSharingService(TestCaseWithFactory):
         user = self.factory.makePerson()
         self.assertRaises(
             Unauthorized, self.service.sharePillarInformation,
-            product, sharee,
-            {InformationType.USERDATA: SharingPermission.ALL}, user)
+            product, sharee, user,
+            {InformationType.USERDATA: SharingPermission.ALL})
 
-    def _assert_deletePillarSharee(self, pillar, types_to_delete=None):
+    def _assert_deletePillarSharee(
+            self, pillar, types_to_delete=None, pillar_type=None):
         access_policies = getUtility(IAccessPolicySource).findByPillar(
             (pillar,))
         information_types = [ap.type for ap in access_policies]
@@ -541,16 +578,19 @@ class TestSharingService(TestCaseWithFactory):
         # Make some artifact grants for our sharee.
         artifact = self.factory.makeAccessArtifact()
         self.factory.makeAccessArtifactGrant(artifact, grantee)
-        for access_policy in access_policies:
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact, policy=access_policy)
         # Make some access policy grants for another sharee.
         another = self.factory.makePerson()
         self.factory.makeAccessPolicyGrant(access_policies[0], another)
+        # Make some artifact grants for our yet another sharee.
+        yet_another = self.factory.makePerson()
+        self.factory.makeAccessArtifactGrant(artifact, yet_another)
+        for access_policy in access_policies:
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact, policy=access_policy)
         # Delete data for a specific information type.
         with FeatureFixture(WRITE_FLAG):
             self.service.deletePillarSharee(
-                pillar, pillar.owner, grantee, types_to_delete)
+                pillar, grantee, pillar.owner, types_to_delete)
         # Assemble the expected data for the remaining access grants for
         # grantee.
         expected_data = []
@@ -563,10 +603,22 @@ class TestSharingService(TestCaseWithFactory):
             expected_data = [
                 (grantee, {policy: SharingPermission.ALL}, [])
                 for policy in expected_policies]
-        # Add the expected data for the other sharee.
+        # Add the expected data for the other sharees.
         another_person_data = (
             another, {access_policies[0]: SharingPermission.ALL}, [])
         expected_data.append(another_person_data)
+        policy_permissions = dict([(
+            policy, SharingPermission.SOME) for policy in access_policies])
+        yet_another_person_data = (
+            yet_another, policy_permissions,
+            [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])
+        expected_data.append(yet_another_person_data)
+        if pillar_type == 'product':
+            policy_permissions = dict([(
+                policy, SharingPermission.ALL) for policy in access_policies])
+            owner_data = (pillar.owner, policy_permissions, [])
+            expected_data.append(owner_data)
+            
         self.assertContentEqual(
             expected_data, self.service.getPillarSharees(pillar))
 
@@ -575,7 +627,7 @@ class TestSharingService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
-        self._assert_deletePillarSharee(product)
+        self._assert_deletePillarSharee(product, pillar_type='product')
 
     def test_deleteProductShareeSelectedPolicies(self):
         # Users with launchpad.Edit can delete selected policy access for an
@@ -583,7 +635,8 @@ class TestSharingService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
-        self._assert_deletePillarSharee(product, [InformationType.USERDATA])
+        self._assert_deletePillarSharee(
+            product, [InformationType.USERDATA], pillar_type='product')
 
     def test_deleteDistroShareeAll(self):
         # Users with launchpad.Edit can delete all access for a sharee.
@@ -606,7 +659,7 @@ class TestSharingService(TestCaseWithFactory):
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
                 Unauthorized, self.service.deletePillarSharee,
-                pillar, pillar.owner, [InformationType.USERDATA])
+                pillar, pillar.owner, pillar.owner, [InformationType.USERDATA])
 
     def test_deletePillarShareeAnonymous(self):
         # Anonymous users are not allowed.
@@ -629,7 +682,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         self.assertRaises(
             Unauthorized, self.service.deletePillarSharee,
-            product, product.owner, [InformationType.USERDATA])
+            product, product.owner, product.owner, [InformationType.USERDATA])
 
     def _assert_deleteShareeRemoveSubscriptions(self,
                                                 types_to_delete=None):
@@ -666,7 +719,7 @@ class TestSharingService(TestCaseWithFactory):
         # Delete data for specified information types or all.
         with FeatureFixture(WRITE_FLAG):
             self.service.deletePillarSharee(
-                product, product.owner, grantee, types_to_delete)
+                product, grantee, product.owner, types_to_delete)
         with block_on_job(self):
             transaction.commit()
 
@@ -734,7 +787,7 @@ class TestSharingService(TestCaseWithFactory):
 
         with FeatureFixture(WRITE_FLAG):
             self.service.revokeAccessGrants(
-                pillar, pillar.owner, grantee, bugs=bugs, branches=branches)
+                pillar, grantee, pillar.owner, bugs=bugs, branches=branches)
         with block_on_job(self):
             transaction.commit()
 
@@ -768,15 +821,78 @@ class TestSharingService(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         self._assert_revokeAccessGrants(distro, [bug], None)
 
-    def test_revokeAccessGrantsBranches(self):
+    def _assert_revokeTeamAccessGrants(self, pillar, bugs, branches):
+        artifacts = []
+        if bugs:
+            artifacts.extend(bugs)
+        if branches:
+            artifacts.extend(branches)
+        policy = self.factory.makeAccessPolicy(pillar=pillar)
+
+        person_grantee = self.factory.makePerson()
+        team_owner = self.factory.makePerson()
+        team_grantee = self.factory.makeTeam(
+            owner=team_owner,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            members=[person_grantee])
+
+        # Subscribe the team and person grantees to the artifacts.
+        for person in [team_grantee, person_grantee]:
+            for bug in bugs or []:
+                bug.subscribe(person, pillar.owner)
+                # XXX 2012-06-12 wallyworld bug=1002596
+                # No need to revoke AAG with triggers removed.
+                if person == person_grantee:
+                    accessartifact_source = getUtility(IAccessArtifactSource)
+                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                        accessartifact_source.find([bug]), [person_grantee])
+            for branch in branches or []:
+                branch.subscribe(person,
+                    BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                    CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
+
+        # Check that grantees have expected access grants and subscriptions.
+        for person in [team_grantee, person_grantee]:
+            visible_bugs, visible_branches = self.service.getVisibleArtifacts(
+                person, branches, bugs)
+            self.assertContentEqual(bugs or [], visible_bugs)
+            self.assertContentEqual(branches or [], visible_branches)
+        for person in [team_grantee, person_grantee]:
+            for bug in bugs or []:
+                self.assertIn(person, bug.getDirectSubscribers())
+
+        with FeatureFixture(WRITE_FLAG):
+            self.service.revokeAccessGrants(
+                pillar, team_grantee, pillar.owner,
+                bugs=bugs, branches=branches)
+        with block_on_job(self):
+            transaction.commit()
+
+        # The grantees now have no access to anything.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        permission_info = apgfs.findGranteePermissionsByPolicy(
+            [policy], [team_grantee, person_grantee])
+        self.assertEqual(0, permission_info.count())
+
+        # Check that the grantee's subscriptions have been removed.
+        # Branches will be done once they have the information_type attribute.
+        for person in [team_grantee, person_grantee]:
+            for bug in bugs or []:
+                self.assertNotIn(person, bug.getDirectSubscribers())
+            visible_bugs, visible_branches = self.service.getVisibleArtifacts(
+                person, branches, bugs)
+            self.assertContentEqual([], visible_bugs)
+            self.assertContentEqual([], visible_branches)
+
+    def test_revokeTeamAccessGrantsBugs(self):
         # Users with launchpad.Edit can delete all access for a sharee.
         owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
+        distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
-        branch = self.factory.makeBranch(
-            product=product, owner=owner,
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_revokeAccessGrants(product, None, [branch])
+        self._assert_revokeTeamAccessGrants(distro, [bug], None)
 
     def _assert_revokeAccessGrantsUnauthorized(self):
         # revokeAccessGrants raises an Unauthorized exception if the user
@@ -788,7 +904,7 @@ class TestSharingService(TestCaseWithFactory):
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
                 Unauthorized, self.service.revokeAccessGrants,
-                product, product.owner, sharee, bugs=[bug])
+                product, sharee, product.owner, bugs=[bug])
 
     def test_revokeAccessGrantsAnonymous(self):
         # Anonymous users are not allowed.
@@ -812,7 +928,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         self.assertRaises(
             Unauthorized, self.service.revokeAccessGrants,
-            product, product.owner, sharee, bugs=[bug])
+            product, sharee, product.owner, bugs=[bug])
 
     def _assert_ensureAccessGrants(self, user, bugs, branches,
                                    grantee=None):
@@ -821,7 +937,7 @@ class TestSharingService(TestCaseWithFactory):
             grantee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
             self.service.ensureAccessGrants(
-                user, grantee, bugs=bugs, branches=branches)
+                [grantee], user, bugs=bugs, branches=branches)
 
         # Check that grantee has expected access grants.
         shared_bugs = []
@@ -877,7 +993,7 @@ class TestSharingService(TestCaseWithFactory):
         # Create an existing access grant.
         grantee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
-            self.service.ensureAccessGrants(owner, grantee, bugs=[bug])
+            self.service.ensureAccessGrants([grantee], owner, bugs=[bug])
         # Test with a new bug as well as the one for which access is already
         # granted.
         self._assert_ensureAccessGrants(owner, [bug, bug2], None, grantee)
@@ -892,7 +1008,7 @@ class TestSharingService(TestCaseWithFactory):
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
                 Unauthorized, self.service.ensureAccessGrants,
-                user, sharee, bugs=[bug])
+                [sharee], user, bugs=[bug])
 
     def test_ensureAccessGrantsAnonymous(self):
         # Anonymous users are not allowed.
@@ -917,7 +1033,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         self.assertRaises(
             Unauthorized, self.service.ensureAccessGrants,
-            product.owner, sharee, bugs=[bug])
+            [sharee], product.owner, bugs=[bug])
 
     def test_getSharedArtifacts(self):
         # Test the getSharedArtifacts method.
@@ -976,6 +1092,49 @@ class TestSharingService(TestCaseWithFactory):
             product, grantee, user)
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
         self.assertContentEqual(branches[:9], shared_branches)
+
+    def test_getPeopleWithoutAccess_bugs(self):
+        # Test the getPeopleWithoutAccess method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+
+        # Make some people to check. people[:5] will not have access.
+        people = []
+        # Make a team with access.
+        member_with_access = self.factory.makePerson()
+        team_with_access = self.factory.makeTeam(members=[member_with_access])
+        # Make a team without access.
+        team_without_access = (
+            self.factory.makeTeam(members=[member_with_access]))
+        people.append(team_without_access)
+        for x in range(0, 10):
+            person = self.factory.makePerson()
+            people.append(person)
+        people.append(team_with_access)
+        people.append(member_with_access)
+
+        # Make the bug to use.
+        bug = self.factory.makeBug(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        access_artifact = self.factory.makeAccessArtifact(concrete=bug)
+
+        # Grant access to some of the people.
+        # Some access policy grants.
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        for person in people[5:7]:
+            self.factory.makeAccessPolicyGrant(
+                policy=policy, grantee=person, grantor=owner)
+        # Some access artifact grants.
+        for person in people[7:]:
+            self.factory.makeAccessArtifactGrant(
+                artifact=access_artifact, grantee=person, grantor=owner)
+
+        # Check the results.
+        without_access = self.service.getPeopleWithoutAccess(bug, people)
+        self.assertContentEqual(people[:5], without_access)
 
     def test_getVisibleArtifacts(self):
         # Test the getVisibleArtifacts method.
@@ -1082,7 +1241,7 @@ class ApiTestMixin:
 
     def setUp(self):
         super(ApiTestMixin, self).setUp()
-        self.owner = self.factory.makePerson()
+        self.owner = self.factory.makePerson(name='thundercat')
         self.pillar = self.factory.makeProduct(owner=self.owner)
         self.grantee = self.factory.makePerson(name='grantee')
         self.grantor = self.factory.makePerson()
@@ -1092,11 +1251,13 @@ class ApiTestMixin:
 
     def test_getPillarShareeData(self):
         # Test the getPillarShareeData method.
-        [json_data] = self._getPillarShareeData()
-        self.assertEqual('grantee', json_data['name'])
+        json_data = self._getPillarShareeData()
+        [grantee_data] = [d for d in json_data
+                        if d['name'] != 'thundercat']
+        self.assertEqual('grantee', grantee_data['name'])
         self.assertEqual(
             {InformationType.USERDATA.name: SharingPermission.ALL.name},
-            json_data['permissions'])
+            grantee_data['permissions'])
 
 
 class TestWebService(ApiTestMixin, WebServiceTestCase):
@@ -1137,10 +1298,10 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
             return self._named_post(
                 'sharePillarInformation', pillar=pillar_uri,
                 sharee=self.grantee_uri,
+                user=self.grantor_uri,
                 permissions={
                     InformationType.USERDATA.title:
-                    SharingPermission.ALL.title},
-                user=self.grantor_uri)
+                    SharingPermission.ALL.title})
 
 
 class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):

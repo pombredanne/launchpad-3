@@ -118,7 +118,10 @@ from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import InformationType
 from lp.registry.errors import CommercialSubscribersOnly
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicySource,
+    IAccessPolicyGrantSource,
+    )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -210,9 +213,6 @@ def get_license_status(license_approved, project_reviewed, licenses):
     # enough for us for the project to freely use Launchpad.
     if license_approved:
         return LicenseStatus.OPEN_SOURCE
-    if len(licenses) == 0:
-        # This can only happen in bad sample data.
-        return LicenseStatus.UNSPECIFIED
     elif License.OTHER_PROPRIETARY in licenses:
         return LicenseStatus.PROPRIETARY
     elif License.OTHER_OPEN_SOURCE in licenses:
@@ -1518,7 +1518,13 @@ class ProductSet:
         policies = itertools.product(
             (product,), (InformationType.USERDATA,
                 InformationType.EMBARGOEDSECURITY))
-        getUtility(IAccessPolicySource).create(policies)
+        policies = getUtility(IAccessPolicySource).create(policies)
+
+        # Add the maintainer to the default policies.
+        grants = []
+        for p in policies:
+            grants.append((p, owner, owner))
+        getUtility(IAccessPolicyGrantSource).grant(grants)
 
         return product
 

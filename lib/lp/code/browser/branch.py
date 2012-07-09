@@ -132,7 +132,6 @@ from lp.registry.vocabularies import (
 from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
@@ -444,11 +443,6 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin,
 
     label = page_title
 
-    @property
-    def show_information_type_in_ui(self):
-        return bool(getFeatureFlag(
-            'disclosure.show_information_type_in_branch_ui.enabled'))
-
     def initialize(self):
         super(BranchView, self).initialize()
         self.branch = self.context
@@ -745,8 +739,6 @@ class BranchEditFormView(LaunchpadEditFormView):
             information_type = copy_field(
                 IBranch['information_type'], readonly=False,
                 vocabulary=InformationTypeVocabulary())
-            explicitly_private = copy_field(
-                IBranch['explicitly_private'], readonly=False)
             reviewer = copy_field(IBranch['reviewer'], required=True)
             owner = copy_field(IBranch['owner'], readonly=False)
         return BranchEditSchema
@@ -789,20 +781,6 @@ class BranchEditFormView(LaunchpadEditFormView):
             information_type = data.pop('information_type')
             self.context.transitionToInformationType(
                 information_type, self.user)
-        if 'explicitly_private' in data:
-            private = data.pop('explicitly_private')
-            if (private != self.context.private
-                and self.context.private == self.context.explicitly_private):
-                # We only want to show notifications if it actually changed.
-                self.context.setPrivate(private, self.user)
-                changed = True
-                if private:
-                    self.request.response.addNotification(
-                        "The branch is now private, and only visible to the "
-                        "owner and to subscribers.")
-                else:
-                    self.request.response.addNotification(
-                        "The branch is now publicly accessible.")
         if 'reviewer' in data:
             reviewer = data.pop('reviewer')
             if reviewer != self.context.code_reviewer:
@@ -1039,18 +1017,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch for editing the branch attributes."""
 
     @property
-    def show_information_type_in_ui(self):
-        return bool(getFeatureFlag(
-            'disclosure.show_information_type_in_branch_ui.enabled'))
-
-    @property
     def field_names(self):
-        fields = [
-            'owner', 'name', 'explicitly_private', 'url', 'description',
+        return [
+            'owner', 'name', 'information_type', 'url', 'description',
             'lifecycle_status']
-        if self.show_information_type_in_ui:
-            fields[2] = 'information_type'
-        return fields
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
@@ -1095,8 +1065,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 user_has_special_branch_access(self.user))
 
         if not show_private_field:
-            self.form_fields = self.form_fields.omit(
-                'explicitly_private', 'information_type')
+            self.form_fields = self.form_fields.omit('information_type')
 
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
@@ -1151,7 +1120,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                     self.addError(
                         "%s is not allowed to own branches in %s." % (
                         owner.displayname, self.context.target.displayname))
-                except BranchExists, e:
+                except BranchExists as e:
                     self._setBranchExists(e.existing_branch)
 
         # If the branch is a MIRRORED branch, then the url
@@ -1348,7 +1317,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 return None
             else:
                 self.next_url = canonical_url(proposal)
-        except InvalidBranchMergeProposal, error:
+        except InvalidBranchMergeProposal as error:
             self.addError(str(error))
 
     def validate(self, data):
@@ -1404,7 +1373,7 @@ class BranchRequestImportView(LaunchpadFormView):
         except CodeImportAlreadyRunning:
             self.request.response.addNotification(
                 "The import is already running.")
-        except CodeImportAlreadyRequested, e:
+        except CodeImportAlreadyRequested as e:
             user = e.requesting_user
             adapter = queryAdapter(user, IPathAdapter, 'fmt')
             self.request.response.addNotification(

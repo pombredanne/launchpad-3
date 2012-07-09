@@ -30,8 +30,8 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 

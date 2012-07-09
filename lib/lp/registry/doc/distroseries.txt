@@ -166,10 +166,11 @@ Not found as empty list:
 
 See distroseries-publishing-lookups.txt for more information.
 
-canUploadToPocket method helps us to decide if an upload is allowed or
-not, according to the distroseries status and the upload target pocket.
+canModifySuite method helps us to decide if an upload is allowed or not,
+according to the distroseries status and the upload target pocket.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> archive = ubuntu.main_archive
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> hoary = ubuntu['hoary']
 
@@ -178,16 +179,18 @@ not, according to the distroseries status and the upload target pocket.
 
     >>> warty.status.name
     'CURRENT'
-    >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    >>> archive.canModifySuite(warty, PackagePublishingPocket.RELEASE)
     False
-    >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    >>> archive.canModifySuite(warty, PackagePublishingPocket.SECURITY)
     True
 
     >>> breezy_autotest.status.name
     'EXPERIMENTAL'
-    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    >>> archive.canModifySuite(
+    ...     breezy_autotest, PackagePublishingPocket.RELEASE)
     True
-    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    >>> archive.canModifySuite(
+    ...     breezy_autotest, PackagePublishingPocket.SECURITY)
     False
 
 The FROZEN status is special.  Uploads are allowed for all pockets as
@@ -198,20 +201,21 @@ the upload will have to wait for manual approval anyway:
 
     >>> hoary.status.name
     'FROZEN'
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    >>> archive.canModifySuite(hoary, PackagePublishingPocket.RELEASE)
     True
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    >>> archive.canModifySuite(hoary, PackagePublishingPocket.SECURITY)
     True
 
 The PROPOSED pocket is also special.  Pre-release, it may be used for
 staging uploads on their way into the RELEASE pocket; post-release, it may
 be used for staging uploads on their way into the UPDATES pocket.
 
-    >>> warty.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    >>> archive.canModifySuite(warty, PackagePublishingPocket.PROPOSED)
     True
-    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    >>> archive.canModifySuite(
+    ...     breezy_autotest, PackagePublishingPocket.PROPOSED)
     True
-    >>> hoary.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    >>> archive.canModifySuite(hoary, PackagePublishingPocket.PROPOSED)
     True
 
 Package searching
@@ -517,8 +521,12 @@ DistroSeries can build meta objects for packages
 ------------------------------------------------
 
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
-    >>> from lp.soyuz.interfaces.distroseriesbinarypackage import IDistroSeriesBinaryPackage
-    >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease
+    >>> from lp.soyuz.interfaces.distroseriesbinarypackage import (
+    ...     IDistroSeriesBinaryPackage,
+    ...     )
+    >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+    ...     IDistroSeriesSourcePackageRelease,
+    ...     )
 
     >>> pmount_src_name = SourcePackageName.byName('pmount')
     >>> pmount_source = hoary.getSourcePackage(pmount_src_name)
@@ -722,7 +730,9 @@ publication in question:
     4
     >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
-    >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     IBinaryPackagePublishingHistory,
+    ...     )
     >>> verifyObject(IBinaryPackagePublishingHistory, warty_mozilla_pub_bin)
     True
 

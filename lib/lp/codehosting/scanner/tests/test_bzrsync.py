@@ -23,6 +23,7 @@ from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.code.bzr import branch_revision_history
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
@@ -469,7 +470,7 @@ class TestBzrSync(BzrSyncTestCase):
         # yield each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
-        bzr_history = self.bzr_branch.revision_history()
+        bzr_history = branch_revision_history(self.bzr_branch)
         added_ancestry = bzrsync.getAncestryDelta(self.bzr_branch)[0]
         result = bzrsync.revisionsToInsert(
             bzr_history, self.bzr_branch.revno(), added_ancestry)
@@ -481,7 +482,7 @@ class TestBzrSync(BzrSyncTestCase):
         (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
-        bzr_history = bzr_tree.branch.revision_history()
+        bzr_history = branch_revision_history(bzr_tree.branch)
         added_ancestry = bzrsync.getAncestryDelta(bzr_tree.branch)[0]
         expected = {'base': 1, 'trunk': 2, 'merge': 3, 'branch': None}
         self.assertEqual(

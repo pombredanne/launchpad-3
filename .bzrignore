@@ -1,6 +1,5 @@
 .tags
 bzr-version-info.py
-logs
 logs/*
 +*
 sourcecode/*
@@ -78,3 +77,5 @@ lib/canonical/launchpad/icing/yui
 callgrind.out.*
 scripts/mlist-sync.py
 ./celerybeat-schedule
+!logs/README.txt
+./logs

@@ -77,7 +77,7 @@ class XpiHeader:
                     name, email = parseaddr(elem.text)
                     if name != '' and '@' in email:
                         last_name, last_email = name, email
-        except SyntaxError, exception:
+        except SyntaxError as exception:
             raise TranslationFormatSyntaxError(
                 filename='install.rdf', line_number=exception.lineno,
                 message=exception.msg)

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
@@ -49,7 +49,10 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
-from lp.code.model.branch import Branch
+from lp.code.model.branch import (
+    Branch,
+    get_branch_privacy_filter,
+    )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codeimport import CodeImport
@@ -787,7 +790,6 @@ class VisibleBranchCollection(GenericBranchCollection):
             asymmetric_filter_expressions=asymmetric_filter_expressions,
             asymmetric_tables=asymmetric_tables)
         self._user = user
-        self._private_branch_ids = self._getPrivateBranchSubQuery()
 
     def _filterBy(self, expressions, table=None, join=None,
                   exclude_from_search=None, symmetric=True):
@@ -829,57 +831,14 @@ class VisibleBranchCollection(GenericBranchCollection):
             asymmetric_expr,
             asymmetric_tables)
 
-    def _getPrivateBranchSubQuery(self):
-        """Return a subquery to get the private branches the user can see.
-
-        If the user is None (which is used for anonymous access), then there
-        is no subquery.  Otherwise return the branch ids for the private
-        branches that the user owns or is subscribed to.
-        """
-        # Everyone can see public branches.
-        person = self._user
-        if person is None:
-            # Anonymous users can only see the public branches.
-            return None
-
-        # A union is used here rather than the more simplistic simple joins
-        # due to the query plans generated.  If we just have a simple query
-        # then we are joining across TeamParticipation and BranchSubscription.
-        # This creates a bad plan, hence the use of a union.
-        private_branches = Union(
-            # Private branches the person owns (or a team the person is in).
-            Select(Branch.id,
-                   And(Branch.owner == TeamParticipation.teamID,
-                       TeamParticipation.person == person,
-                       Branch.information_type.is_in(
-                           PRIVATE_INFORMATION_TYPES))),
-            # Private branches the person is subscribed to, either directly or
-            # indirectly.
-            Select(Branch.id,
-                   And(BranchSubscription.branch == Branch.id,
-                       BranchSubscription.person ==
-                       TeamParticipation.teamID,
-                       TeamParticipation.person == person,
-                       Branch.information_type.is_in(
-                           PRIVATE_INFORMATION_TYPES))))
-        return private_branches
-
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility.
 
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        public_branches = branch_class.information_type.is_in(
-            PUBLIC_INFORMATION_TYPES)
-        if self._private_branch_ids is None:
-            # Public only.
-            return [public_branches]
-        else:
-            public_or_private = Or(
-                public_branches,
-                branch_class.id.is_in(self._private_branch_ids))
-            return [public_or_private]
+        return get_branch_privacy_filter(
+            self._user, branch_class=branch_class)
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.

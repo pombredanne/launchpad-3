@@ -59,9 +59,9 @@ from lp.bugs.model.bugtasksearch import (
     _build_status_clause,
     _build_tag_search_clause,
     )
-from lp.bugs.model.tests.test_bug import LEGACY_ACCESS_TRIGGERS
 from lp.bugs.scripts.bugtasktargetnamecaches import (
-    BugTaskTargetNameCacheUpdater)
+    BugTaskTargetNameCacheUpdater,
+    )
 from lp.bugs.tests.bug import create_old_bug
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
@@ -69,16 +69,15 @@ from lp.hardwaredb.interfaces.hwdb import (
     )
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicyGrantSource,
-    IAccessPolicySource,
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage
-)
-
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPerson,
@@ -92,8 +91,8 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
-    flush_database_updates,
     flush_database_caches,
+    flush_database_updates,
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
@@ -123,7 +122,6 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
-from lp.testing.dbtriggers import triggers_disabled
 from lp.testing.dbuser import (
     dbuser,
     switch_dbuser,
@@ -242,7 +240,7 @@ class TestBugTaskCreation(TestCaseWithFactory):
 
         # There are also transitional triggers that do this. Disable
         # them temporarily so we can be sure the application side works.
-        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+        with disable_trigger_fixture():
             with admin_logged_in():
                 old_product = bug.default_bugtask.product
                 getUtility(IBugTaskSet).createManyTasks(
@@ -2209,7 +2207,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
 
         # There are also transitional triggers that do this. Disable
         # them temporarily so we can be sure the application side works.
-        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+        with disable_trigger_fixture():
             with admin_logged_in():
                 task.delete()
 
@@ -3290,7 +3288,7 @@ class TestTransitionToTarget(TestCaseWithFactory):
 
         # There are also transitional triggers that do this. Disable
         # them temporarily so we can be sure the application side works.
-        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+        with disable_trigger_fixture():
             with admin_logged_in():
                 bug.default_bugtask.transitionToTarget(
                     new_product, new_product.owner)
@@ -3336,21 +3334,21 @@ def disable_trigger_fixture():
 
 
 class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
-    """Test that various bug transitions invoke RemoveBugSubscribers job."""
+    """Test that various bug transitions invoke RemoveArtifactSubscribers
+    job."""
 
     layer = CeleryJobLayer
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'disclosure.enhanced_sharing.writable': 'true',
-            'jobs.celery.enabled_classes':
-                'RemoveBugSubscriptionsJob',
-            'disclosure.access_mirror_triggers.removed': 'true',
+            'disclosure.unsubscribe_jobs.enabled': 'true',
+            'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
         self.useFixture(disable_trigger_fixture())
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
 
-    def _assert_bug_change_unsubscribes(self, change_callback):
+    def _assert_bug_change_unsubscribes(self, change_callback,
+                                        ignore_policy_grantee_check=False):
         # Subscribers are unsubscribed if the bug becomes invisible due to a
         # task being retargetted.
         product = self.factory.makeProduct()
@@ -3390,7 +3388,12 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
 
         # Check the result. Policy grantees will be unsubscribed.
         subscribers = removeSecurityProxy(bug).getDirectSubscribers()
-        self.assertNotIn(policy_grantee, subscribers)
+        # XXX wallyworld 2912-06-19 bug=1014922
+        # All direct subscribers are granted access to the bug when it changes
+        # and this includes people with policy grants who could see the bug
+        # before a change in information type.
+        if not ignore_policy_grantee_check:
+            self.assertNotIn(policy_grantee, subscribers)
         self.assertIn(artifact_grantee, subscribers)
 
     def test_change_information_type(self):
@@ -3400,7 +3403,7 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
             bug.transitionToInformationType(
                 InformationType.EMBARGOEDSECURITY, owner)
 
-        self._assert_bug_change_unsubscribes(change_information_type)
+        self._assert_bug_change_unsubscribes(change_information_type, True)
 
     def test_change_target(self):
         # Changing the target of a bug unsubscribes users who can no
@@ -4002,8 +4005,9 @@ class TestTargetNameCache(TestCase):
         # accepted and have targetnamecache updated.
         ubuntu = getUtility(IDistributionSet).get(1)
 
-        new_bug, new_bug_event = getUtility(IBugSet).createBugWithoutTarget(
-            CreateBugParams(mark, 'New Bug', comment='New Bug'))
+        new_bug, new_bug_event = getUtility(IBugSet).createBug(
+            CreateBugParams(mark, 'New Bug', comment='New Bug'),
+            notify_event=False)
 
         # The first message of a new bug has index 0.
         self.assertEqual(new_bug.bug_messages[0].index, 0)

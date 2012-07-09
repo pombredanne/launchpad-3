@@ -112,15 +112,16 @@ class TestProductCodeIndexView(ProductTestBase):
 
     def test_initial_branches_contains_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
-        view = create_initialized_view(product, '+code-index',
-                                       rootsite='code')
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code')
         self.assertIn(branch, view.initial_branches)
 
     def test_initial_branches_does_not_contain_private_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             information_type=InformationType.USERDATA)
-        view = create_initialized_view(product, '+code-index',
-                                       rootsite='code')
+        login(ANONYMOUS)
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code')
         self.assertNotIn(branch, view.initial_branches)
 
     def test_committer_count_with_revision_authors(self):
