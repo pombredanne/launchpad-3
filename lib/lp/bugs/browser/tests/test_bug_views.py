@@ -414,7 +414,8 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.assertIs(None, soup.find('label', text="User Data"))
 
     def test_information_type_vocabulary_commercial_project(self):
-        # Test that the view creates the vocabulary correctly.
+        # Test that the view creates the vocabulary correctly for commercial
+        # projects.
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
         bug = self.factory.makeBug(product=product)
