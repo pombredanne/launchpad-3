@@ -1678,6 +1678,14 @@ class EditPlainPackageCopyJob(AuthorizationBase):
         return not permissions.is_empty()
 
 
+class ViewPackageUpload(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = IPackageUpload
+
+    def __init__(self, obj):
+        super(ViewPackageUpload, self).__init__(obj, obj.archive)
+
+
 class EditPackageUpload(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload

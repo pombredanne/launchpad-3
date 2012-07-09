@@ -15,6 +15,7 @@ from lazr.restfulclient.errors import (
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized as ZopeUnauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.schema import getFields
 
@@ -393,6 +394,25 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.setAccepted()
         [spph] = upload.realiseUpload()
         self.assertEqual(spph.packageupload, upload)
+
+
+class TestPackageUploadPrivacy(TestCaseWithFactory):
+    """Test PackageUpload security."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_private_archives_have_private_uploads(self):
+        # Only users with access to a private archive can see uploads to it.
+        owner = self.factory.makePerson()
+        archive = self.factory.makeArchive(owner=owner, private=True)
+        upload = self.factory.makePackageUpload(archive=archive)
+        # The private archive owner can see this upload.
+        with person_logged_in(owner):
+            self.assertFalse(upload.contains_source)
+        # But other users cannot.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(
+                ZopeUnauthorized, getattr, upload, "contains_source")
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):

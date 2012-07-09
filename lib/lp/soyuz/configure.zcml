@@ -151,7 +151,7 @@
             attributes="
                 status"/>
         <require
-            permission="zope.Public"
+            permission="launchpad.View"
             attributes="
                 id
                 distroseries
