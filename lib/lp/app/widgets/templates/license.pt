@@ -93,7 +93,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
                 // We have to pass in the height by hand if the tables
                 // are not visible when the page loads.
                 var visible_on_load = !Y.one(
-                    '#launchpad-form-widgets').hasClass('unseen');
+                    '#launchpad-form-widgets').hasClass('hidden');
                 if (visible_on_load) {
                     target.slide.set('reverse', !target.slide.get('reverse'));
                 } else {
@@ -131,8 +131,8 @@ LPJS.use('node', 'lazr.effects', function(Y) {
 
         // When Other/Proprietary or Other/Open Source is chosen, the
         // license_info widget is displayed.
-        var other_com = Y.one('input[value=OTHER_PROPRIETARY]');
-        var other_os = Y.one('input[value=OTHER_OPEN_SOURCE]');
+        var other_com = Y.one('input[value="OTHER_PROPRIETARY"]');
+        var other_os = Y.one('input[value="OTHER_OPEN_SOURCE"]');
         var details = Y.one('#license-details');
         var proprietary = Y.one('#proprietary');
 
@@ -158,7 +158,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
         }
         other_com.on('click', reveal_details);
         other_os.on('click', reveal_details);
-        proprietary.removeClass('unseen');
+        proprietary.removeClass('hidden');
 
         // Pre-reveal license_info widget.
         reveal_details(true);
@@ -256,7 +256,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
       licensing policies.
     </a>
     <br/>
-    <div id="proprietary" class="unseen">
+    <div id="proprietary" class="hidden">
       Commercial and proprietary projects do not qualify for free hosting;
       therefore a subscription needs to be purchased in order to host this
       project on Launchpad.

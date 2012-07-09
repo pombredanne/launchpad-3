@@ -11,10 +11,7 @@ __all__ = [
     ]
 
 import itertools
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import itemgetter
 
 from sqlobject import (
     BoolCol,
@@ -23,8 +20,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
-from storm.info import ClassAlias
-from storm.locals import (
+from storm.expr import (
     And,
     Desc,
     Join,
@@ -32,13 +28,13 @@ from storm.locals import (
     Or,
     SQL,
     )
+from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -178,7 +174,6 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -191,6 +186,7 @@ from lp.soyuz.model.distroarchseries import (
     )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
+    get_current_source_releases,
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -1763,55 +1759,18 @@ class DistributionSet:
 
     def getCurrentSourceReleases(self, distro_source_packagenames):
         """See `IDistributionSet`."""
-        # Builds one query for all the distro_source_packagenames.
-        # This may need tuning: its possible that grouping by the common
-        # archives may yield better efficiency: the current code is
-        # just a direct push-down of the previous in-python lookup to SQL.
-        series_clauses = []
-        distro_lookup = {}
-        for distro, package_names in distro_source_packagenames.items():
-            source_package_ids = map(attrgetter('id'), package_names)
-            # all_distro_archive_ids is just a list of ints, but it gets
-            # wrapped anyway - and sqlvalues goes boom.
-            archives = removeSecurityProxy(
-                distro.all_distro_archive_ids)
-            clause = """(spr.sourcepackagename IN %s AND
-                spph.archive IN %s AND
-                ds.distribution = %s)
-                """ % sqlvalues(source_package_ids, archives, distro.id)
-            series_clauses.append(clause)
-            distro_lookup[distro.id] = distro
-        if not len(series_clauses):
-            return {}
-        combined_clause = "(" + " OR ".join(series_clauses) + ")"
-
-        releases = IStore(SourcePackageRelease).find(
-            (SourcePackageRelease, Distribution.id), SQL("""
-                (SourcePackageRelease.id, Distribution.id) IN (
-                    SELECT DISTINCT ON (
-                        spr.sourcepackagename, ds.distribution)
-                        spr.id, ds.distribution
-                    FROM
-                        SourcePackageRelease AS spr,
-                        SourcePackagePublishingHistory AS spph,
-                        DistroSeries AS ds
-                    WHERE
-                        spph.sourcepackagerelease = spr.id
-                        AND spph.distroseries = ds.id
-                        AND spph.status IN %s
-                        AND %s
-                    ORDER BY
-                        spr.sourcepackagename, ds.distribution, spph.id DESC
-                    )
-                """
-                % (sqlvalues(active_publishing_status) + (combined_clause,))))
+        releases = get_current_source_releases(
+            distro_source_packagenames,
+            lambda distro: distro.all_distro_archive_ids,
+            lambda distro: DistroSeries.distribution == distro,
+            [SourcePackagePublishingHistory.distroseriesID
+                == DistroSeries.id],
+            DistroSeries.distributionID)
         result = {}
-        for sp_release, distro_id in releases:
-            distro = distro_lookup[distro_id]
-            sourcepackage = distro.getSourcePackage(
-                sp_release.sourcepackagename)
-            result[sourcepackage] = DistributionSourcePackageRelease(
-                distro, sp_release)
+        for spr, distro_id in releases:
+            distro = getUtility(IDistributionSet).get(distro_id)
+            result[distro.getSourcePackage(spr.sourcepackagename)] = (
+                DistributionSourcePackageRelease(distro, spr))
         return result
 
     def getDerivedDistributions(self):

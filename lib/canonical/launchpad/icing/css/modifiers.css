@@ -42,16 +42,6 @@ span.see-all {
     text-decoration: underline;
     }
 
-.unseen,
-.hidden {
-    display: none;
-    }
-
-.invisible {
-    left: -9999em;
-    display: block;
-    }
-
 .transparent {
     opacity: 0;
     filter: alpha(opacity=0);
@@ -207,6 +197,10 @@ table.diff,
     overflow: hidden;
     }
 
+.action-icon + .action-icon {
+    margin-left: 0px;
+    }
+
 h1 a.sprite,
 h2 a.sprite,
 h3 a.sprite {
@@ -217,4 +211,14 @@ h3 a.sprite {
 
 h3 a.sprite {
     top: 4px;
+    }
+
+/* Hidden must be the last rule because it overides all other rules. */
+.inline {
+    display: inline;
+    margin: 0;
+    }
+
+.hidden {
+    display: none;
     }

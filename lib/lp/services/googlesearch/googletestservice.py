@@ -132,7 +132,7 @@ def wait_for_service(timeout=15.0):
         while True:
             try:
                 sock.connect((host, port))
-            except socket.error, err:
+            except socket.error as err:
                 if err.args[0] in [errno.ECONNREFUSED, errno.ECONNABORTED]:
                     elapsed = (time.time() - start)
                     if elapsed > timeout:
@@ -166,7 +166,7 @@ def wait_for_service_shutdown(seconds_to_wait=10.0):
             try:
                 sock.connect((host, port))
                 sock.close()
-            except socket.error, err:
+            except socket.error as err:
                 if err.args[0] == errno.ECONNREFUSED:
                     # Success!  The socket is closed.
                     return
@@ -231,7 +231,7 @@ def kill_running_process():
                 # between freeing the socket in the killed process, and
                 # opening it in the current one.
                 wait_for_service_shutdown()
-            except os.error, err:
+            except os.error as err:
                 if err.errno == errno.ESRCH:
                     # Whoops, we got a 'No such process' error. The PID file
                     # is probably stale, so we'll remove it to prevent trash
@@ -246,7 +246,7 @@ def safe_unlink(filepath):
     """Unlink a file, but don't raise an error if the file is missing."""
     try:
         os.unlink(filepath)
-    except os.error, err:
+    except os.error as err:
         if err.errno != errno.ENOENT:
             raise
 

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AccessArtifact',
+    'AccessArtifactGrant',
     'AccessPolicy',
     'AccessPolicyArtifact',
     'AccessPolicyGrant',
@@ -15,11 +16,9 @@ __all__ = [
 from collections import defaultdict
 
 import pytz
-from storm import Undef
 from storm.expr import (
     And,
     In,
-    Join,
     Or,
     Select,
     SQL,

@@ -3493,28 +3493,33 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             sourcepackagename=sourcepackagename, component=component))
         return upload
 
-    def makeBuildPackageUpload(self, distroseries=None,
-                               binarypackagename=None):
+    def makeBuildPackageUpload(self, distroseries=None, pocket=None,
+                               binarypackagename=None,
+                               source_package_release=None, component=None):
         """Make a `PackageUpload` with a `PackageUploadBuild` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         upload = self.makePackageUpload(
-            distroseries=distroseries, archive=distroseries.main_archive)
-        build = self.makeBinaryPackageBuild()
+            distroseries=distroseries, archive=distroseries.main_archive,
+            pocket=pocket)
+        build = self.makeBinaryPackageBuild(
+            source_package_release=source_package_release, pocket=pocket)
         upload.addBuild(build)
         self.makeBinaryPackageRelease(
-            binarypackagename=binarypackagename, build=build)
+            binarypackagename=binarypackagename, build=build,
+            component=component)
         return upload
 
-    def makeCustomPackageUpload(self, distroseries=None, custom_type=None,
-                                filename=None):
+    def makeCustomPackageUpload(self, distroseries=None, pocket=None,
+                                custom_type=None, filename=None):
         """Make a `PackageUpload` with a `PackageUploadCustom` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         if custom_type is None:
             custom_type = PackageUploadCustomFormat.DEBIAN_INSTALLER
         upload = self.makePackageUpload(
-            distroseries=distroseries, archive=distroseries.main_archive)
+            distroseries=distroseries, archive=distroseries.main_archive,
+            pocket=pocket)
         file_alias = self.makeLibraryFileAlias(filename=filename)
         upload.addCustom(file_alias, custom_type)
         return upload

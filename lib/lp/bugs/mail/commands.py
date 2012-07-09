@@ -371,6 +371,7 @@ class SummaryEmailCommand(EditEmailCommand):
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
     RANK = 1
+    case_insensitive_args = False
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -432,7 +433,7 @@ class DuplicateEmailCommand(EmailCommand):
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
-        except ValidationError, error:
+        except ValidationError as error:
             raise EmailProcessingError(error.doc())
 
         context_snapshot = Snapshot(
@@ -451,6 +452,7 @@ class CVEEmailCommand(EmailCommand):
 
     _numberOfArguments = 1
     RANK = 5
+    case_insensitive_args = False
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -590,7 +592,7 @@ class AffectsEmailCommand(EmailCommand):
                 stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
-        except BugTargetNotFound, error:
+        except BugTargetNotFound as error:
             raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
 

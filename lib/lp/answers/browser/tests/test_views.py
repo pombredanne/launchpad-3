@@ -14,7 +14,6 @@ import unittest
 from lp.testing import BrowserTestCase
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
     )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -62,5 +61,5 @@ def test_suite():
                   layer=DatabaseFunctionalLayer))
     suite.addTest(LayeredDocFileSuite('faq-views.txt',
                   setUp=setUp, tearDown=tearDown,
-                  layer=LaunchpadFunctionalLayer))
+                  layer=DatabaseFunctionalLayer))
     return suite

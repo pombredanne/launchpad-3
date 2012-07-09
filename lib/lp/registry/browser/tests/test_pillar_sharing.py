@@ -31,6 +31,7 @@ from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
+    logout,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -77,9 +78,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
         return grantee
 
-    def makeArtifactGrantee(
-            self, grantee=None, with_bug=True,
-            with_branch=False, security=False):
+    def makeArtifactGrantee(self, grantee=None, with_bug=True,
+                            with_branch=False, security=False):
         if grantee is None:
             grantee = self.factory.makePerson()
 
@@ -142,10 +142,12 @@ class PillarSharingDetailsMixin:
         # able to see.
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             pillarperson = self.getPillarPerson(security=True)
+            logout()
+            login_person(self.driver)
             view = create_initialized_view(pillarperson, '+index')
             # The page loads
             self.assertEqual(pillarperson.person.displayname, view.page_title)
-            # The bug, which is not shared with the owner, is not included.
+            # The bug, which is not shared with the driver, is not included.
             self.assertEqual(0, view.shared_bugs_count)
 
     def test_view_traverses_plus_sharingdetails(self):
@@ -239,7 +241,7 @@ class PillarSharingDetailsMixin:
             IStore(self.pillar).invalidate()
             with StormStatementRecorder() as recorder:
                 create_initialized_view(pillarperson, '+index')
-            self.assertThat(recorder, HasQueryCount(LessThan(12)))
+            self.assertThat(recorder, HasQueryCount(LessThan(26)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.

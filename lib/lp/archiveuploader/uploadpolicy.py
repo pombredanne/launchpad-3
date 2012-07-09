@@ -263,10 +263,10 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         PPA uploads are always auto-approved.
         RELEASE and PROPOSED pocket uploads (to main archives) are only
         auto-approved if the distroseries is in a non-FROZEN state
-        pre-release.  (We already performed the
-        IDistroSeries.canUploadToPocket check in the checkUpload base
-        method, which will deny RELEASE uploads post-release, but it doesn't
-        hurt to repeat this for that case.)
+        pre-release.  (We already performed the IArchive.canModifySuite
+        check in the checkUpload base method, which will deny RELEASE
+        uploads post-release, but it doesn't hurt to repeat this for that
+        case.)
         """
         if upload.is_ppa:
             return True
@@ -316,6 +316,14 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         elif not upload.sourceful and not upload.binaryful:
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
+
+    def autoApprove(self, upload):
+        """Check that all custom files in this upload can be auto-approved."""
+        if upload.binaryful:
+            for custom_file in upload.changes.custom_files:
+                if not custom_file.autoApprove():
+                    return False
+        return True
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):

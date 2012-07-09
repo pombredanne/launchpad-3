@@ -127,7 +127,6 @@ class DateTimeWidget(TextWidget):
     __call__ = ViewPageTemplateFile('templates/datetime.pt')
 
     def __init__(self, context, request):
-        request.needs_datetimepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
         launchbag = getUtility(ILaunchBag)
         self.system_time_zone = launchbag.time_zone
@@ -340,7 +339,7 @@ class DateTimeWidget(TextWidget):
         for fmt in self.supported_input_formats:
             try:
                 datetime.strptime(input.strip(), fmt)
-            except (ValueError), e:
+            except (ValueError) as e:
                 if 'unconverted data remains' in str(e):
                     return
                 else:
@@ -397,7 +396,7 @@ class DateTimeWidget(TextWidget):
             micro = round(micro * 1000000)
             dt = datetime(year, month, day,
                           hour, minute, int(second), int(micro))
-        except (DateTimeError, ValueError, IndexError), v:
+        except (DateTimeError, ValueError, IndexError) as v:
             raise ConversionError('Invalid date value', v)
         return self.time_zone.localize(dt)
 
@@ -509,11 +508,6 @@ class DateWidget(DateTimeWidget):
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/date.pt')
-
-    def __init__(self, context, request):
-        super(DateWidget, self).__init__(context, request)
-        request.needs_datepicker_iframe = True
-        request.needs_datetimepicker_iframe = False
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date.

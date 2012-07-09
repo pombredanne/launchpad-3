@@ -129,7 +129,7 @@ class SFTPFile:
         try:
             chunk_file = os.open(
                 self.filename, os.O_CREAT | os.O_WRONLY, 0644)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EISDIR:
                 raise
             raise FileIsADirectory(self.filename)
