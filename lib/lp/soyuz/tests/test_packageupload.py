@@ -938,7 +938,9 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 person = self.factory.makePerson()
         if self.webservice is None:
             self.webservice = launchpadlib_for("testing", person)
-        return self.webservice.load(api_url(obj))
+        with person_logged_in(person):
+            url = api_url(obj)
+        return self.webservice.load(url)
 
     def makeSourcePackageUpload(self, person, **kwargs):
         with person_logged_in(person):
@@ -1035,12 +1037,13 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertFalse(ws_upload.contains_build)
         self.assertFalse(ws_upload.contains_copy)
         self.assertEqual("hello", ws_upload.display_name)
-        self.assertEqual(upload.package_version, ws_upload.display_version)
         self.assertEqual("source", ws_upload.display_arches)
         self.assertEqual("hello", ws_upload.package_name)
-        self.assertEqual(upload.package_version, ws_upload.package_version)
         self.assertEqual("universe", ws_upload.component_name)
-        self.assertEqual(upload.section_name, ws_upload.section_name)
+        with person_logged_in(person):
+            self.assertEqual(upload.package_version, ws_upload.display_version)
+            self.assertEqual(upload.package_version, ws_upload.package_version)
+            self.assertEqual(upload.section_name, ws_upload.section_name)
 
     def test_source_fetch(self):
         # API clients can fetch files attached to source uploads.
@@ -1072,7 +1075,8 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 new_component=self.main,
                 allowed_components=[self.main, self.universe])
         transaction.commit()
-        self.assertEqual("main", upload.component_name)
+        with person_logged_in(person):
+            self.assertEqual("main", upload.component_name)
         self.assertRaises(Unauthorized, ws_upload.overrideSource,
                           new_component="universe")
 
