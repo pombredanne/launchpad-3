@@ -180,20 +180,13 @@ class DistroArchSeriesBinaryPackage:
     @property
     def current_published(self):
         """See IDistroArchSeriesBinaryPackage."""
-        current = BinaryPackagePublishingHistory.selectFirst("""
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = %s AND
-            BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(
-                    self.distroarchseries,
-                    self.distribution.all_distro_archive_ids,
-                    self.binarypackagename,
-                    PackagePublishingStatus.PUBLISHED),
-            clauseTables=['BinaryPackageRelease'],
-            orderBy='-datecreated')
+        current = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.status
+                == PackagePublishingStatus.PUBLISHED,
+            *self._getPublicationJoins()
+            ).order_by(Desc(BinaryPackagePublishingHistory.datecreated)
+            ).first()
 
         if current is None:
             raise NotFoundError("Binary package %s not published in %s/%s"
