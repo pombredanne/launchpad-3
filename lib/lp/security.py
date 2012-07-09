@@ -11,6 +11,8 @@ __all__ = [
     'ModerateByRegistryExpertsOrAdmins',
     ]
 
+from operator import methodcaller
+
 from storm.expr import (
     And,
     Exists,
@@ -1678,12 +1680,37 @@ class EditPlainPackageCopyJob(AuthorizationBase):
         return not permissions.is_empty()
 
 
-class ViewPackageUpload(DelegatedAuthorization):
+class ViewPackageUpload(AuthorizationBase):
+    """Restrict viewing of package uploads.
+
+    Anyone who can see the archive or the sourcepackagerelease can see the
+    upload.  The SPR may be visible without the archive being visible if the
+    source package has been copied from a private archive.
+    """
     permission = 'launchpad.View'
     usedfor = IPackageUpload
 
-    def __init__(self, obj):
-        super(ViewPackageUpload, self).__init__(obj, obj.archive)
+    def iter_adapters(self):
+        yield ViewArchive(self.obj.archive)
+        # We cannot use self.obj.sourcepackagerelease, as that causes
+        # interference with the property cache if we are called in the
+        # process of adding a source or a build.
+        if not self.obj._sources.is_empty():
+            spr = self.obj._sources[0].sourcepackagerelease
+        elif not self.obj._builds.is_empty():
+            spr = self.obj._builds[0].build.source_package_release
+        else:
+            spr = None
+        if spr is not None:
+            yield ViewSourcePackageRelease(spr)
+
+    def checkAuthenticated(self, user):
+        return any(map(
+            methodcaller("checkAuthenticated", user), self.iter_adapters()))
+
+    def checkUnauthenticated(self):
+        return any(map(
+            methodcaller("checkUnauthenticated"), self.iter_adapters()))
 
 
 class EditPackageUpload(AdminByAdminsTeam):
