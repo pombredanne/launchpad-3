@@ -2546,6 +2546,14 @@ class TestBranchCanBePrivate(TestCaseWithFactory):
         branch = self.factory.makeBranch(owner=team)
         self.assertTrue(branch.canBePrivate(team))
 
+    def test_commercial_project(self):
+        # Branches linked to commercial projects can be private.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        branch = self.factory.makeProductBranch(product=product)
+        user = self.factory.makePerson()
+        self.assertTrue(branch.canBePrivate(user))
+
     def test_linked_private_bug(self):
         # Users with access to linked private bugs can make a branch private.
         for info_type in PRIVATE_INFORMATION_TYPES:
@@ -2576,24 +2584,11 @@ class TestBranchCanBePublic(TestCaseWithFactory):
         # Use an admin user as we aren't checking edit permissions here.
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
 
-    def test_arbitary_branch(self):
-        # By default branches can be private.
+    def test_arbitrary_branch(self):
+        # By default branches can be public.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         self.assertTrue(branch.canBePublic(branch.owner))
-
-    def test_admin(self):
-        # Admins can make a branch public.
-        team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        product = self.factory.makeProduct()
-        product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE_ONLY)
-        branch = self.factory.makeBranch(
-            product=product, owner=team,
-            information_type=InformationType.USERDATA)
-        admin = getUtility(ILaunchpadCelebrities).admin
-        self.assertTrue(branch.canBePublic(admin))
 
     def test_visibility_policy_public_not_allowed(self):
         # Branches cannot be public if the visibility policy forbids it.

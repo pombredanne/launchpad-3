@@ -970,7 +970,7 @@ class TestBranchEditView(TestCaseWithFactory):
         self.assertIsNotNone(browser.getControl, "Embargoed Security")
 
     def test_unauthorised_user_cannot_change_branch_to_private(self):
-        # An authorised user can make the information type private.
+        # An unauthorised user cannot make the information type private.
         user = self.factory.makePerson()
         with person_logged_in(user):
             branch = self.factory.makeBranch(owner=user)
@@ -978,6 +978,16 @@ class TestBranchEditView(TestCaseWithFactory):
                 canonical_url(branch) + '/+edit', user=user)
         self.assertRaises(
             LookupError, browser.getControl, "Embargoed Security")
+
+    def test_branch_for_commercial_project(self):
+        # A branch for a commercial project can be private.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        branch = self.factory.makeProductBranch(product=product)
+        with person_logged_in(branch.owner):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=branch.owner)
+        self.assertIsNotNone(browser.getControl, "Embargoed Security")
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):
