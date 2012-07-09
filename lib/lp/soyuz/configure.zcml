@@ -168,6 +168,7 @@
                 custom_file_urls
                 customFileUrls
                 getBinaryProperties
+                getFileByName
                 date_created
                 sourcepackagerelease
                 component_name
