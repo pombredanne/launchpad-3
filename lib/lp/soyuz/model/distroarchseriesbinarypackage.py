@@ -113,9 +113,10 @@ class DistroArchSeriesBinaryPackage:
                 == self.distroarchseries,
             BinaryPackagePublishingHistory.archiveID.is_in(
                 self.distribution.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.binarypackagename
+                == self.binarypackagename,
             BinaryPackagePublishingHistory.binarypackagereleaseID
                 == BinaryPackageRelease.id,
-            BinaryPackageRelease.binarypackagename == self.binarypackagename,
             ]
 
     def __getitem__(self, version):
