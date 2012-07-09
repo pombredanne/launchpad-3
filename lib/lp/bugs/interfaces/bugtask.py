@@ -1236,8 +1236,10 @@ class BugTaskSearchParams:
         self.milestone_dateexpected_after = milestone_dateexpected_after
         if isinstance(information_types, collections.Iterable):
             self.information_types = information_types
-        else:
+        elif information_types:
             self.information_types = (information_types,)
+        else:
+            self.information_types = None
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
