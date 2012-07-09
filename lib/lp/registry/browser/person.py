@@ -1706,7 +1706,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         but hidden in case it adds a member to the list.
         """
         if IResultSet(self.recently_approved_members).is_empty():
-            return 'unseen'
+            return 'hidden'
         else:
             return ''
 
@@ -1718,7 +1718,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         but hidden in case it adds a member to the list.
         """
         if IResultSet(self.recently_proposed_members).is_empty():
-            return 'unseen'
+            return 'hidden'
         else:
             return ''
 
@@ -1730,7 +1730,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         but hidden in case it adds a member to the list.
         """
         if IResultSet(self.recently_invited_members).is_empty():
-            return 'unseen'
+            return 'hidden'
         else:
             return ''
 
