@@ -49,8 +49,11 @@ class DdtpTarballUpload(CustomUpload):
 
     @staticmethod
     def parsePath(tarfile_path):
-        name, component, version = os.path.basename(tarfile_path).split("_")
-        return name, component, version
+        tarfile_base = os.path.basename(tarfile_path)
+        bits = tarfile_base.split("_")
+        if len(bits) != 3:
+            raise ValueError("%s is not NAME_COMPONENT_VERSION" % tarfile_base)
+        return tuple(bits)
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         _, component, self.version = self.parsePath(tarfile_path)
