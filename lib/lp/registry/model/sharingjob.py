@@ -293,9 +293,7 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
 
     @property
     def bug_ids(self):
-        if not 'bug_ids' in self.metadata:
-            return []
-        return self.metadata['bug_ids']
+        return self.metadata.get('bug_ids', [])
 
     @property
     def bugs(self):
@@ -303,9 +301,7 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
 
     @property
     def branch_ids(self):
-        if not 'branch_ids' in self.metadata:
-            return []
-        return self.metadata['branch_ids']
+        return self.metadata.get('branch_ids', [])
 
     @property
     def branches(self):
