@@ -897,13 +897,11 @@ class Bug(SQLBase):
                 self.updateHeat()
                 del get_property_cache(self)._known_viewers
 
-                # Revoke access to bug if feature flag is on.
-                flag = 'disclosure.legacy_subscription_visibility.enabled'
-                if bool(getFeatureFlag(flag)):
-                    artifacts_to_delete = getUtility(
-                        IAccessArtifactSource).find([self])
-                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-                        artifacts_to_delete, [person])
+                # Revoke access to bug
+                artifacts_to_delete = getUtility(
+                    IAccessArtifactSource).find([self])
+                getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                    artifacts_to_delete, [person])
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):

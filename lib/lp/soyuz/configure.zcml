@@ -149,11 +149,11 @@
             interface="lp.soyuz.interfaces.queue.IPackageUpload"/>
         <allow
             attributes="
-                status"/>
+                id"/>
         <require
-            permission="zope.Public"
+            permission="launchpad.View"
             attributes="
-                id
+                status
                 distroseries
                 pocket
                 changesfile

@@ -16,6 +16,7 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
+from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
 from lp.archivepublisher.uefi import UefiUpload
@@ -41,6 +42,7 @@ class CustomUploadsCopier:
     copyable_types = {
         PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
         PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
+        PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
         PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
@@ -70,9 +72,6 @@ class CustomUploadsCopier:
 
     def getKey(self, upload):
         """Get an indexing key for `upload`."""
-        # XXX JeroenVermeulen 2011-08-17, bug=827941: For ddtp
-        # translations tarballs, we'll have to include the component
-        # name as well.
         custom_format = upload.customformat
         series_key = self.extractSeriesKey(
             self.copyable_types[custom_format],

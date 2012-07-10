@@ -63,14 +63,6 @@ flag_info = sorted([
      '',
      '',
      'https://bugs.launchpad.net/launchpad/+bug/678090'),
-    ('bugs.bugtaskflattener.generation',
-     'string',
-     ("Sets the key used to store progress in a BugTaskFlat update pass. "
-      "Normally disabled unless recent schema changes require a full "
-      "update."),
-     'BugTaskFlattener disabled',
-     '',
-     ''),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
@@ -277,13 +269,6 @@ flag_info = sorted([
      'boolean',
      ('If true, enables the details page for viewing the `Some` things that'
       'shared with a user or team.'),
-     '',
-     '',
-     ''),
-    ('disclosure.legacy_subscription_visibility.enabled',
-     'boolean',
-     ('If true, the legacy behaviour of unsubscribing from a bug or branch'
-      'revokes access.'),
      '',
      '',
      ''),
