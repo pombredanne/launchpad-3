@@ -924,6 +924,9 @@ UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
     ])
 
 
+# Avoid circular imports
+from lp.registry.enums import InformationType
+
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or search text."), required=False)
@@ -942,6 +945,14 @@ class IBugTaskSearchBase(Interface):
         description=_('Show only bugs with the given importance '
                       'or list of importances.'),
         value_type=IBugTask['importance'],
+        required=False)
+    information_type = List(
+        title=_('Information Type'),
+        description=_('Show only bugs with the given information type '
+                      'or list of information types.'),
+        value_type=Choice(
+            title=_('Information Type'),
+            vocabulary=InformationType),
         required=False)
     assignee = Choice(
         title=_('Assignee'),
@@ -1180,7 +1191,7 @@ class BugTaskSearchParams:
                  created_since=None, exclude_conjoined_tasks=False, cve=None,
                  upstream_target=None, milestone_dateexpected_before=None,
                  milestone_dateexpected_after=None, created_before=None,
-                 information_types=None):
+                 information_type=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1234,12 +1245,12 @@ class BugTaskSearchParams:
         self.upstream_target = upstream_target
         self.milestone_dateexpected_before = milestone_dateexpected_before
         self.milestone_dateexpected_after = milestone_dateexpected_after
-        if isinstance(information_types, collections.Iterable):
-            self.information_types = information_types
-        elif information_types:
-            self.information_types = (information_types,)
+        if isinstance(information_type, collections.Iterable):
+            self.information_type = set(information_type)
+        elif information_type:
+            self.information_type = set((information_type,))
         else:
-            self.information_types = None
+            self.information_type = None
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1385,7 +1396,7 @@ class BugTaskSearchParams:
                        hardware_is_linked_to_bug=False, linked_branches=None,
                        linked_blueprints=None, structural_subscriber=None,
                        modified_since=None, created_since=None,
-                       created_before=None):
+                       created_before=None, information_type=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1457,6 +1468,7 @@ class BugTaskSearchParams:
         search_params.modified_since = modified_since
         search_params.created_since = created_since
         search_params.created_before = created_before
+        search_params.information_type = information_type
 
         return search_params
 

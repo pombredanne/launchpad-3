@@ -1318,7 +1318,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # Branches linked to private bugs can be private.
         params = BugTaskSearchParams(
             user=user, linked_branches=self.id,
-            information_types=PRIVATE_INFORMATION_TYPES)
+            information_type=PRIVATE_INFORMATION_TYPES)
         bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
         return bug_ids.count() > 0
 

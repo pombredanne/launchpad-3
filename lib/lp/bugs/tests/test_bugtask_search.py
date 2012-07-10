@@ -417,11 +417,11 @@ class OnceTests:
                 InformationType.EMBARGOEDSECURITY, self.owner)
         params = self.getBugTaskSearchParams(
             user=self.owner,
-            information_types=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.EMBARGOEDSECURITY)
         self.assertSearchFinds(params, [self.bugtasks[2]])
         params = self.getBugTaskSearchParams(
             user=self.owner,
-            information_types=InformationType.UNEMBARGOEDSECURITY)
+            information_type=InformationType.UNEMBARGOEDSECURITY)
         self.assertSearchFinds(params, [])
 
     def test_omit_duplicate_bugs(self):

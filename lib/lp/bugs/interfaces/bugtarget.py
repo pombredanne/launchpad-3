@@ -70,6 +70,7 @@ search_tasks_params_common = {
     "search_text": copy_field(IBugTaskSearch['searchtext']),
     "status": copy_field(IBugTaskSearch['status']),
     "importance": copy_field(IBugTaskSearch['importance']),
+    "information_type": copy_field(IBugTaskSearch['information_type']),
     "assignee": Reference(schema=Interface),
     "bug_reporter": Reference(schema=Interface),
     "bug_supervisor": Reference(schema=Interface),
@@ -258,7 +259,7 @@ class IHasBugs(Interface):
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, structural_subscriber=None,
                     modified_since=None, created_since=None,
-                    created_before=None):
+                    created_before=None, information_type=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object

@@ -2276,8 +2276,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
                     IProduct.providedBy(subscription_context) and
                     subscription_context.has_current_commercial_subscription)
                 already_proprietary = (
-                    safe_hasattr(context, 'information_type')
-                    and context.information_type == InformationType.PROPRIETARY)
+                    safe_hasattr(context, 'information_type') and
+                    context.information_type == InformationType.PROPRIETARY)
                 if has_commercial_subscription or already_proprietary:
                     types.append(InformationType.PROPRIETARY)
         # Disallow public items for projects with private bugs.
@@ -2300,4 +2300,5 @@ class InformationTypeVocabulary(SimpleVocabulary):
             term.name = type.name
             term.description = description
             terms.append(term)
+        self.items = terms
         super(InformationTypeVocabulary, self).__init__(terms)
