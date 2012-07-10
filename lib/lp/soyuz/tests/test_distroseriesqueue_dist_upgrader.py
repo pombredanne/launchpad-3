@@ -23,10 +23,6 @@ from lp.archiveuploader.tests import (
     )
 from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
-from lp.soyuz.scripts.queue import (
-    CommandRunner,
-    name_queue_map,
-    )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing.gpgkeys import import_public_test_keys
 
@@ -69,37 +65,18 @@ class TestDistroSeriesQueueDistUpgrader(TestNativePublishingBase):
     def test_accepts_correct_upload(self):
         self.uploadTestData("20060302.0120")
 
-    def runQueueCommand(self, queue_name, args):
-        def null_display(text):
-            pass
-
-        queue = name_queue_map[queue_name]
-        runner = CommandRunner(
-            queue, "ubuntutest", "breezy-autotest", True, None, None, None,
-            display=null_display)
-        runner.execute(args)
-
-    def test_queue_tool_behaviour(self):
-        # The queue tool can accept, reject, and fetch dist-upgrader
-        # uploads.  See bug #54649.
+    def test_accept_reject(self):
+        # We can accept and reject dist-upgrader uploads.
         upload = self.uploadTestData("20060302.0120")
         # Make sure that we can use the librarian files.
         transaction.commit()
         # Reject from accepted queue (unlikely, would normally be from
         # unapproved or new).
-        self.runQueueCommand("accepted", ["reject", "dist"])
+        upload.queue_root.rejectFromQueue(logger=self.logger)
         self.assertEqual("REJECTED", upload.queue_root.status.name)
         # Accept from rejected queue (also unlikely, but only for testing).
-        self.runQueueCommand("rejected", ["accept", "dist"])
+        upload.queue_root.acceptFromQueue(logger=self.logger)
         self.assertEqual("ACCEPTED", upload.queue_root.status.name)
-        # Fetch upload into a temporary directory.
-        self.useTempDir()
-        self.runQueueCommand("accepted", ["fetch", "dist"])
-        expected_entries = [
-            "dist-upgrader_20060302.0120_all.changes",
-            "dist-upgrader_20060302.0120_all.tar.gz",
-            ]
-        self.assertContentEqual(expected_entries, os.listdir("."))
 
     def test_bad_upload_remains_in_accepted(self):
         # Bad dist-upgrader uploads remain in ACCEPTED.
@@ -107,7 +84,7 @@ class TestDistroSeriesQueueDistUpgrader(TestNativePublishingBase):
         # Make sure that we can use the librarian files.
         transaction.commit()
         self.assertFalse(upload.queue_root.realiseUpload(self.logger))
-        self.assertEqual(1, upload.queue_root.customfiles.count())
+        self.assertEqual(1, len(upload.queue_root.customfiles))
         self.assertRaises(
             DistUpgraderBadVersion, upload.queue_root.customfiles[0].publish,
             self.logger)

@@ -100,8 +100,10 @@ class TestBugView(TestCaseWithFactory):
             view.initialize()
             cache = IJSONRequestCache(view.request)
             expected = [
-                InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY,
-                InformationType.EMBARGOEDSECURITY, InformationType.USERDATA]
+                InformationType.PUBLIC.name,
+                InformationType.UNEMBARGOEDSECURITY.name,
+                InformationType.EMBARGOEDSECURITY.name,
+                InformationType.USERDATA.name]
             self.assertContentEqual(expected, [
                 type['value']
-                for type in cache.objects['information_types']])
+                for type in cache.objects['information_type_data']])

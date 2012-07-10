@@ -681,9 +681,6 @@ class IPersonPublic(IPrivacy):
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_merge_pending = exported(Bool(
-        title=_("Is this person due to be merged with another?"),
-        required=False, default=False))
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
     account_status = Choice(
@@ -725,6 +722,9 @@ class IPersonPublic(IPrivacy):
             be changed.
         :return: None.
         """
+
+    def isMergePending():
+        """Is this person due to be merged with another?"""
 
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
@@ -1792,7 +1792,7 @@ class IPersonEditRestricted(Interface):
     def security_field_changed(subject, change_description,
         recipient_emails=None):
         """Trigger email when a secured field like preferredemail changes.
-        
+
         :param recipient_emails: If supplied custom email addresses to notify.
             This is used when a new preferred email address is set.
         :param subject: The subject to use.

@@ -141,6 +141,12 @@ class BugTaskImportance(DBEnumeratedType):
         The importance of this bug is not known.
         """)
 
+    UNDECIDED = DBItem(5, """
+        Undecided
+
+        Not decided yet. Maybe needs more discussion.
+        """)
+
     CRITICAL = DBItem(50, """
         Critical
 
@@ -169,12 +175,6 @@ class BugTaskImportance(DBEnumeratedType):
         Wishlist
 
         Not a bug. It's an enhancement/new feature.
-        """)
-
-    UNDECIDED = DBItem(5, """
-        Undecided
-
-        Not decided yet. Maybe needs more discussion.
         """)
 
 

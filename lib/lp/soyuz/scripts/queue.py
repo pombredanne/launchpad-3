@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -260,8 +260,8 @@ class QueueAction:
             False: '-',
         }
         return (
-            source_tag[bool(queue_item.contains_source)] +
-            binary_tag[bool(queue_item.contains_build)])
+            source_tag[queue_item.contains_source] +
+            binary_tag[queue_item.contains_build])
 
     def displayItem(self, queue_item):
         """Display one line summary of the queue item provided."""
@@ -286,7 +286,7 @@ class QueueAction:
         Optionally pass a binarypackagename via 'only' argument to display
         only exact matches within the selected build queue items.
         """
-        if queue_item.package_copy_job or not queue_item.sources.is_empty():
+        if queue_item.package_copy_job or queue_item.sources:
             self.display(
                 "\t | * %s/%s Component: %s Section: %s" % (
                     queue_item.package_name,

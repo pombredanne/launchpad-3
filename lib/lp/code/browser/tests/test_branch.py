@@ -627,7 +627,7 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         with person_logged_in(branch.owner):
             self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=target_branch,
-                reviewer=private_reviewer)
+                reviewer=removeSecurityProxy(private_reviewer))
         return branch
 
     def test_view_branch_with_private_reviewer(self):

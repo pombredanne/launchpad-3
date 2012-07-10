@@ -129,10 +129,10 @@ LPJS.use('node', 'lazr.effects', function(Y) {
                 return;
             }
             if (flag) {
-                separator.removeClass('unseen');
+                separator.removeClass('hidden');
             }
             else {
-                separator.addClass('unseen');
+                separator.addClass('hidden');
             }
         }
 
@@ -144,7 +144,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
             var expander = Y.one('#search-results-expander');
 
             /* Slide in the search results and hide them under a link. */
-            expander.removeClass('unseen');
+            expander.removeClass('hidden');
             expander.on('click', function(e) {
                 e.preventDefault();
 
@@ -174,7 +174,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
             /* Hide the 'No' button, but slide out the search results, so the
              * user has a clue that Something Is Happening.
              */
-            details_buttons.addClass('unseen');
+            details_buttons.addClass('hidden');
 
             /* Slide out the registration details widgets, but add an 'end'
              * event handler so that the height style left by lazr.effects is
@@ -190,8 +190,8 @@ LPJS.use('node', 'lazr.effects', function(Y) {
             anim.run();
 
             /* Toggle the visibility of the various other widgets. */
-            form_actions.removeClass('unseen');
-            title.removeClass('unseen');
+            form_actions.removeClass('hidden');
+            title.removeClass('hidden');
 
             /* Set the H2 title to something more appropriate for the
              * selected task.
@@ -218,15 +218,15 @@ LPJS.use('node', 'lazr.effects', function(Y) {
         show_separator(false);
 
         if (details_buttons) {
-            details_buttons.removeClass('unseen');
+            details_buttons.removeClass('hidden');
             details_buttons.on('click', complete_registration);
         }
 
         /* If there are search results, hide the registration details. */
         if (search_results) {
-            form_widgets.addClass('unseen');
-            form_actions.addClass('unseen');
-            title.addClass('unseen');
+            form_widgets.addClass('hidden');
+            form_actions.addClass('hidden');
+            title.addClass('hidden');
         }
 
         /* Finally, if we've been here before (e.g. there was an error in
@@ -286,7 +286,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
       </metal:step>
 
       <metal:extra metal:fill-slot="extra_top">
-        <a href="" id="search-results-expander" class="js-action unseen">
+        <a href="" id="search-results-expander" class="js-action hidden">
           <img id="search-results-arrow" src="/@@/treeCollapsed"
                title="Show search results" alt="Show search results"/>
           Possible duplicate projects
@@ -310,7 +310,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
               </tr>
             </tbody>
           </table>
-          <div id="registration-details-buttons" class="unseen">
+          <div id="registration-details-buttons" class="hidden">
             <input type="button"
                    value="No, this is a new project"/>
             or <a tal:attributes="href view/cancel_url">Cancel</a>

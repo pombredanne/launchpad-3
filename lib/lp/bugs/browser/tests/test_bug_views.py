@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
+import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -296,7 +297,8 @@ class TestBugSecrecyViews(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def createInitializedSecrecyView(self, person=None, bug=None):
+    def createInitializedSecrecyView(self, person=None, bug=None,
+                                     request=None):
         """Create and return an initialized BugSecrecyView."""
         if person is None:
             person = self.factory.makePerson()
@@ -307,7 +309,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
                 bug.default_bugtask, name='+secrecy', form={
                     'field.information_type': 'USERDATA',
                     'field.actions.change': 'Change',
-                    })
+                    }, request=request)
             return view
 
     def test_notification_shown_if_marking_private_and_not_subscribed(self):
@@ -345,6 +347,44 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             bug.subscribe(team, person)
         view = self.createInitializedSecrecyView(person, bug)
         self.assertContentEqual([], view.request.response.notifications)
+
+    def test_secrecy_view_ajax_render(self):
+        # When the bug secrecy view is called from an ajax request, it should
+        # provide a json encoded dict when rendered. The dict contains bug
+        # subscription information resulting from the update to the bug
+        # privacy as well as information used to populate the updated
+        # subscribers list.
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=person)
+        with person_logged_in(person):
+            bug.subscribe(person, person)
+
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', form={
+                'field.actions.change': 'Change',
+                'field.information_type': 'USERDATA'},
+            **extra)
+        view = self.createInitializedSecrecyView(person, bug, request)
+        result_data = simplejson.loads(view.render())
+
+        cache_data = result_data['cache_data']
+        self.assertFalse(cache_data['other_subscription_notifications'])
+        subscription_data = cache_data['subscription']
+        self.assertEqual(
+            'http://launchpad.dev/api/devel/bugs/%s' % bug.id,
+            subscription_data['bug_link'])
+        self.assertEqual(
+            'http://launchpad.dev/api/devel/~%s' % person.name,
+            subscription_data['person_link'])
+        self.assertEqual(
+            'Discussion', subscription_data['bug_notification_level'])
+
+        [subscriber_data] = result_data['subscription_data']
+        subscriber = removeSecurityProxy(bug).default_bugtask.pillar.owner
+        self.assertEqual(
+            subscriber.name, subscriber_data['subscriber']['name'])
+        self.assertEqual('Discussion', subscriber_data['subscription_level'])
 
     def test_set_information_type(self):
         # Test that the bug's information_type can be updated using the

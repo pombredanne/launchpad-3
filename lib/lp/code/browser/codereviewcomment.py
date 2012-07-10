@@ -7,7 +7,6 @@ __all__ = [
     'CodeReviewCommentAddView',
     'CodeReviewCommentContextMenu',
     'CodeReviewCommentPrimaryContext',
-    'CodeReviewCommentSummary',
     'CodeReviewCommentView',
     'CodeReviewDisplayComment',
     ]
@@ -201,38 +200,6 @@ class CodeReviewCommentIndexView(CodeReviewCommentView):
         if self.comment.too_long_to_render:
             return self.request.response.redirect(self.comment.download_url)
         return super(CodeReviewCommentIndexView, self).__call__()
-
-
-class CodeReviewCommentSummary(CodeReviewCommentView):
-    """Summary view of a CodeReviewComment"""
-
-    # How many lines do we show in the main view?
-    SHORT_MESSAGE_LENGTH = 3
-
-    # Show comment expanders?
-    show_expanders = True
-
-    # Should the comment be shown in full?
-    @property
-    def full_comment(self):
-        """Show the full comment if it is short."""
-        return not self.is_long_message
-
-    @cachedproperty
-    def _comment_lines(self):
-        return self.context.message.text_contents.splitlines()
-
-    @property
-    def is_long_message(self):
-        return len(self._comment_lines) > self.SHORT_MESSAGE_LENGTH
-
-    @property
-    def message_summary(self):
-        """Return an elided message with the first X lines of the comment."""
-        short_message = (
-            '\n'.join(self._comment_lines[:self.SHORT_MESSAGE_LENGTH]))
-        short_message += "..."
-        return short_message
 
 
 class IEditCodeReviewComment(Interface):

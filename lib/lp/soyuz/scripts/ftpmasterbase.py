@@ -23,6 +23,7 @@ from lp.services.scripts.base import (
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import active_publishing_status
 
 
 class SoyuzScriptError(Exception):
@@ -143,9 +144,6 @@ class SoyuzScript(LaunchpadScript):
     def findLatestPublishedSource(self, name):
         """Return a suitable `SourcePackagePublishingHistory`."""
         assert self.location is not None, 'Undefined location.'
-
-        # Avoiding circular imports.
-        from lp.soyuz.interfaces.publishing import active_publishing_status
 
         published_sources = self.location.archive.getPublishedSources(
             name=name, version=self.options.version,
