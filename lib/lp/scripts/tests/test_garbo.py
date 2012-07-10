@@ -39,7 +39,6 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -104,10 +103,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import (
-    dbuser,
-    switch_dbuser,
-    )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -1020,47 +1016,6 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(old_update, naked_bug.heat_last_updated)
         self.runHourly()
         self.assertNotEqual(old_update, naked_bug.heat_last_updated)
-
-    def test_BugTaskFlattener(self):
-        # Bugs without a record in BugTaskFlat get mirrored.
-        # Remove the existing mirrored data.
-        with dbuser('testadmin'):
-            task = self.factory.makeBugTask()
-            IMasterStore(BugTask).execute(
-                'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
-
-        def get_flat():
-            return IMasterStore(BugTask).execute(
-                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
-                (task.id,)).get_one()
-
-        # Nothing is done until the feature flag is set.
-        self.runHourly()
-        self.assertIs(None, get_flat())
-
-        # If we set the generation flag, the bug will be mirrored.
-        with dbuser('testadmin'):
-            IMasterStore(FeatureFlag).add(FeatureFlag(
-                u'default', 0, u'bugs.bugtaskflattener.generation', u'1'))
-        self.runHourly()
-        self.assertEqual((task.id,), get_flat())
-
-        # A watermark is kept in memcache, so a second run doesn't
-        # consider the same task.
-        with dbuser('testadmin'):
-            IMasterStore(BugTask).execute(
-                'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
-        self.runHourly()
-        self.assertIs(None, get_flat())
-
-        # Incrementing the generation feature flag causes a fresh pass.
-        with dbuser('testadmin'):
-            IMasterStore(FeatureFlag).find(
-                FeatureFlag, flag=u'bugs.bugtaskflattener.generation').remove()
-            IMasterStore(FeatureFlag).add(FeatureFlag(
-                u'default', 1, u'bugs.bugtaskflattener.generation', u'2'))
-        self.runHourly()
-        self.assertEqual((task.id,), get_flat())
 
 
 class TestGarboTasks(TestCaseWithFactory):
