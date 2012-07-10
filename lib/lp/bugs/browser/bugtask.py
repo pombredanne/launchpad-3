@@ -945,9 +945,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                     continue
                 if prev_comment.index + 1 != comment.index:
                     # There is a gap here, record it.
+                    
+                    # The number of items between two items is one less than
+                    # their difference. There is one number between 1 and 3,
+                    # not 2 (their difference).
+                    num_hidden = abs(comment.index - prev_comment.index) - 1
                     separator = {
                         'date': prev_comment.datecreated,
-                        'num_hidden': comment.index - prev_comment.index,
+                        'num_hidden': num_hidden,
                         }
                     events.insert(index, separator)
                     index += 1
