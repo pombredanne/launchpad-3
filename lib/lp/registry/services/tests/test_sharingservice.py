@@ -463,7 +463,7 @@ class TestSharingService(TestCaseWithFactory):
             (InformationType.USERDATA, SharingPermission.SOME)]
         expected_sharee_data = self._makeShareeData(
             sharee, expected_permissions,
-            [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])
+            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA])
         self.assertEqual(expected_sharee_data, sharee_data)
         # Check that getPillarSharees returns what we expect.
         if pillar_type == 'product':
@@ -471,8 +471,8 @@ class TestSharingService(TestCaseWithFactory):
                 (sharee,
                  {ud_policy: SharingPermission.SOME,
                   es_policy: SharingPermission.ALL},
-                 [InformationType.EMBARGOEDSECURITY,
-                  InformationType.USERDATA]),
+                 [InformationType.USERDATA,
+                  InformationType.EMBARGOEDSECURITY]),
                  ]
         else: 
             expected_sharee_grants = [
@@ -611,7 +611,7 @@ class TestSharingService(TestCaseWithFactory):
             policy, SharingPermission.SOME) for policy in access_policies])
         yet_another_person_data = (
             yet_another, policy_permissions,
-            [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])
+            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA])
         expected_data.append(yet_another_person_data)
         if pillar_type == 'product':
             policy_permissions = dict([(
