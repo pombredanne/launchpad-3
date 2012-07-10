@@ -54,6 +54,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.bugs.publisher import BugsLayer
 from lp.layers import (
     FeedsLayer,
     setFirstLayer,
@@ -97,8 +98,7 @@ from lp.testing.sampledata import (
     NO_PRIVILEGE_EMAIL,
     USER_EMAIL,
     )
-from lp.testing.views import create_initialized_view
-
+from lp.testing.views import create_initialized_view 
 
 def getFeedViewCache(target, feed_cls):
     """Return JSON cache for a feed's delegate view."""
@@ -1757,10 +1757,7 @@ class TestBugActivityItem(TestCaseWithFactory):
             BugActivityItem(bug.activity[-1]).change_details)
 
 
-class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
-    """Tests for the BugTaskBatchedCommentsAndActivityView class."""
-
-    layer = LaunchpadFunctionalLayer
+class CommentAndActivityMixin:
 
     def _makeNoisyBug(self, comments_only=False, number_of_comments=10,
                       number_of_changes=10):
@@ -1779,6 +1776,30 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
                     owner=bug.owner, content="Message %i." % i)
                 bug.linkMessage(msg, user=bug.owner)
         return bug
+
+class TestCommentAndActivityVisibility(
+        TestCaseWithFactory, CommentAndActivityMixin):
+    """Test for the conditions around display of hidden comments.
+
+    (e.g. the `NNN comments hidden` message)
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_comments_hidden_message(self):
+        bug = self._makeNoisyBug(number_of_comments=20, comments_only=True)
+        url = canonical_url(bug.default_bugtask)
+        browser = self.getUserBrowser(url=url)
+        self.assertTrue("comments hidden" in browser.contents)
+
+
+
+class TestBugTaskBatchedCommentsAndActivityView(
+        TestCaseWithFactory, CommentAndActivityMixin):
+    """Tests for the BugTaskBatchedCommentsAndActivityView class."""
+
+    layer = LaunchpadFunctionalLayer
+
 
     def _assertThatUnbatchedAndBatchedActivityMatch(self, unbatched_activity,
                                                     batched_activity):
@@ -1874,6 +1895,9 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         self._assertThatUnbatchedAndBatchedActivityMatch(
             unbatched_view.activity_and_comments[4:],
             batched_view.activity_and_comments)
+
+    def test_hidden_bug_count_is_not_negative(self):
+        bug = self._makeNoisyBug(comments_only=True, number_of_comments=20)
 
 no_target_specified = object()
 
