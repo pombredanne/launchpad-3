@@ -927,6 +927,7 @@ UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
 # Avoid circular imports
 from lp.registry.enums import InformationType
 
+
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or search text."), required=False)
