@@ -18,8 +18,6 @@ from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing import (
-    ANONYMOUS,
-    login,
     login_person,
     login_team,
     logout,
@@ -49,7 +47,7 @@ class TestMilestoneViews(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(distroseries=distro_series)
         specification = self.factory.makeSpecification(
             distribution=distribution)
-        workitem = self.factory.makeSpecificationWorkItem(
+        self.factory.makeSpecificationWorkItem(
             specification=specification, milestone=milestone)
         view = create_initialized_view(milestone, '+index')
         self.assertIn('some work for this milestone', view.render())
