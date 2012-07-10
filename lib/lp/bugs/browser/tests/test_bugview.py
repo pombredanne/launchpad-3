@@ -106,7 +106,7 @@ class TestBugView(TestCaseWithFactory):
             InformationType.USERDATA.name]
         self.assertContentEqual(expected, [
             type['value']
-            for type in cache.objects['information_types']])
+            for type in cache.objects['information_type_data']])
 
     def test_proprietary_included_for_commercial_projects(self):
         # The Proprietary information type is in the JSON request cache for
@@ -125,4 +125,4 @@ class TestBugView(TestCaseWithFactory):
             InformationType.PROPRIETARY.name]
         self.assertContentEqual(expected, [
             type['value']
-            for type in cache.objects['information_types']])
+            for type in cache.objects['information_type_data']])
