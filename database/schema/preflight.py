@@ -232,30 +232,30 @@ class DatabasePreflight:
 
     def check_replication_lag(self):
         """Return False if the replication cluster is badly lagged."""
-        if not self.is_slony:
-            self.log.debug("Not replicated - no replication lag.")
-            return True
+        if self.is_slony:
+            # Check replication lag on every node just in case there are
+            # disagreements.
+            max_lag = timedelta(seconds=-1)
+            for node in self.nodes:
+                cur = node.con.cursor()
+                cur.execute("""
+                    SELECT current_database(),
+                    max(st_lag_time) AS lag FROM _sl.sl_status
+                """)
+                dbname, lag = cur.fetchone()
+                if lag > max_lag:
+                    max_lag = lag
+                self.log.debug(
+                    "%s reports database lag of %s.", dbname, lag)
+            if max_lag <= MAX_LAG:
+                self.log.info("Database cluster lag is ok (%s)", max_lag)
+                return True
+            else:
+                self.log.fatal("Database cluster lag is high (%s)", max_lag)
+                return False
 
-        # Check replication lag on every node just in case there are
-        # disagreements.
-        max_lag = timedelta(seconds=-1)
-        for node in self.nodes:
-            cur = node.con.cursor()
-            cur.execute("""
-                SELECT current_database(),
-                max(st_lag_time) AS lag FROM _sl.sl_status
-            """)
-            dbname, lag = cur.fetchone()
-            if lag > max_lag:
-                max_lag = lag
-            self.log.debug(
-                "%s reports database lag of %s.", dbname, lag)
-        if max_lag <= MAX_LAG:
-            self.log.info("Database cluster lag is ok (%s)", max_lag)
-            return True
-        else:
-            self.log.fatal("Database cluster lag is high (%s)", max_lag)
-            return False
+        self.log.debug("Not replicated - no replication lag.")
+        return True
 
     def check_can_sync(self):
         """Return True if a sync event is acknowledged by all nodes.
@@ -276,8 +276,26 @@ class DatabasePreflight:
                 self.log.fatal(
                     "Bounce the replication daemons and check the logs.")
             return success
-        else:
-            return True
+
+        # PG 9.1 streaming replication, or no replication.
+        #
+        master = self.nodes[0]
+        cur = master.con.cursor()
+        # Force a WAL switch, returning the current position.
+        cur.execute('SELECT pg_switch_xlog()')
+        wal_point = cur.fetchone()[0]
+        self.log.debug('WAL at %s', wal_point)
+        now = time.time()
+        while time.time() < now + 30:
+            time.sleep(0.1)
+            cur.execute("""
+                SELECT FALSE FROM pg_stat_replication
+                WHERE pg_replay_location < %s LIMIT 1
+                """, (wal_point,))
+            if cur.fetchone() is None:
+                # All slaves, possibly 0, are in sync.
+                return True
+        return False
 
     def report_patches(self):
         """Report what patches are due to be applied from this tree."""
