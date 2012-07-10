@@ -40,6 +40,25 @@ class TestMilestoneViews(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_distroseries_milestone(self):
+        # Distribution milestone with an untargeted blueprint containing
+        # work items targeted to the milestone lists this blueprint
+        # with a special note.
+        distro_series = self.factory.makeDistroSeries()
+        distribution = distro_series.distribution
+        milestone = self.factory.makeMilestone(distroseries=distro_series)
+        specification = self.factory.makeSpecification(
+            distribution=distribution)
+        workitem = self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=milestone)
+        view = create_initialized_view(milestone, '+index')
+        self.assertIn('some work for this milestone', view.render())
+
+
+class TestAddMilestoneViews(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.product = self.factory.makeProduct()
