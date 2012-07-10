@@ -111,10 +111,6 @@ class DatabasePreflight:
             self.lpmain_nodes = self.nodes
             self.lpmain_master_node = node
 
-    @property
-    def master_node(self):
-        return [node for node in self.nodes if node.is_master][0]
-
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
         success = True
@@ -284,7 +280,7 @@ class DatabasePreflight:
         streaming_success = False
         # PG 9.1 streaming replication, or no replication.
         #
-        cur = self.master_node.con.cursor()
+        cur = self.lpmain_master_node.con.cursor()
         # Force a WAL switch, returning the current position.
         cur.execute('SELECT pg_switch_xlog()')
         wal_point = cur.fetchone()[0]
@@ -426,7 +422,7 @@ def main():
 
     # Add streaming replication standbys, which unfortunately cannot be
     # detected.
-    con = preflight_check.master_node.con
+    con = preflight_check.lpmain_master_node.con
     cur = con.cursor()
     cur.execute("SELECT COUNT(*) FROM pg_stat_replication")
     required_standbys = cur.fetchone()[0]
