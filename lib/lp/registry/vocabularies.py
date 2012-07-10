@@ -2300,5 +2300,4 @@ class InformationTypeVocabulary(SimpleVocabulary):
             term.name = type.name
             term.description = description
             terms.append(term)
-        self.items = terms
         super(InformationTypeVocabulary, self).__init__(terms)
