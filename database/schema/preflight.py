@@ -73,8 +73,8 @@ class DatabasePreflight:
         master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
-        self.is_replicated = replication.helpers.slony_installed(master_con)
-        if self.is_replicated:
+        self.is_slony = replication.helpers.slony_installed(master_con)
+        if self.is_slony:
             self.nodes = set(
                 replication.helpers.get_all_cluster_nodes(master_con))
             for node in self.nodes:
@@ -232,7 +232,7 @@ class DatabasePreflight:
 
     def check_replication_lag(self):
         """Return False if the replication cluster is badly lagged."""
-        if not self.is_replicated:
+        if not self.is_slony:
             self.log.debug("Not replicated - no replication lag.")
             return True
 
@@ -263,7 +263,7 @@ class DatabasePreflight:
         We only wait 30 seconds for the sync, because we require the
         cluster to be quiescent.
         """
-        if self.is_replicated:
+        if self.is_slony:
             success = replication.helpers.sync(30, exit_on_fail=False)
             if success:
                 self.log.info(
