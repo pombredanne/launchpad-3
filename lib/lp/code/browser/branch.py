@@ -1115,7 +1115,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
             allowed_information_types = []
             if branch.private:
-                if branch.canBePublic():
+                if branch.canBePublic(self.user):
                     allowed_information_types.extend(public_types)
                 allowed_information_types.extend(private_types)
             else:
