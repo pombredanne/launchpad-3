@@ -1812,8 +1812,6 @@ class TestCommentCollapseVisibility(TestCaseWithFactory):
 
         browser = self.getUserBrowser(url=url)
         contents = browser.contents
-        with file('/home/jc/wtf.html', 'w') as log:
-            log.write(contents)
         self.assertTrue("10 comments hidden" in browser.contents)
         self.assertTrue("1 comments hidden" in browser.contents)
         self.assertEqual(2, contents.count('comments hidden'))
