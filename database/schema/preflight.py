@@ -30,6 +30,7 @@ from lp.services.scripts import (
     logger_options,
     )
 import replication.helpers
+from replication.helpers import Node
 import upgrade
 
 # Ignore connections by these users.
@@ -78,8 +79,7 @@ class DatabasePreflight:
             self.nodes = set(
                 replication.helpers.get_all_cluster_nodes(master_con))
             for node in self.nodes:
-                node.con = psycopg2.connect(node.connection_string)
-                node.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+                node.con = node.connect(ISOLATION_LEVEL_AUTOCOMMIT)
 
             # Create a list of nodes subscribed to the replicated sets we
             # are modifying.
@@ -105,11 +105,15 @@ class DatabasePreflight:
                 node for node in self.lpmain_nodes
                     if node.node_id == lpmain_master_node_id][0]
         else:
-            node = replication.helpers.Node(None, None, None, True)
+            node = Node(None, None, None, True)
             node.con = master_con
             self.nodes = set([node])
             self.lpmain_nodes = self.nodes
             self.lpmain_master_node = node
+
+    @property
+    def master_node(self):
+        return [node for node in self.nodes if node.is_master][0]
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
@@ -263,9 +267,10 @@ class DatabasePreflight:
         We only wait 30 seconds for the sync, because we require the
         cluster to be quiescent.
         """
+        slony_success = True
         if self.is_slony:
-            success = replication.helpers.sync(30, exit_on_fail=False)
-            if success:
+            slony_success = replication.helpers.sync(30, exit_on_fail=False)
+            if slony_success:
                 self.log.info(
                     "Replication events are being propagated.")
             else:
@@ -275,12 +280,11 @@ class DatabasePreflight:
                     "One or more replication daemons may be down.")
                 self.log.fatal(
                     "Bounce the replication daemons and check the logs.")
-            return success
 
+        streaming_success = False
         # PG 9.1 streaming replication, or no replication.
         #
-        master = self.nodes[0]
-        cur = master.con.cursor()
+        cur = self.master_node.con.cursor()
         # Force a WAL switch, returning the current position.
         cur.execute('SELECT pg_switch_xlog()')
         wal_point = cur.fetchone()[0]
@@ -290,12 +294,13 @@ class DatabasePreflight:
             time.sleep(0.1)
             cur.execute("""
                 SELECT FALSE FROM pg_stat_replication
-                WHERE pg_replay_location < %s LIMIT 1
+                WHERE replay_location < %s LIMIT 1
                 """, (wal_point,))
             if cur.fetchone() is None:
                 # All slaves, possibly 0, are in sync.
-                return True
-        return False
+                streaming_success = True
+                break
+        return slony_success and streaming_success
 
     def report_patches(self):
         """Report what patches are due to be applied from this tree."""
@@ -398,6 +403,10 @@ def main():
         "--kill-connections", dest='kill_connections',
         default=False, action="store_true",
         help="Kill non-system connections instead of reporting an error.")
+    parser.add_option(
+        '--standby', dest='standbys', default=[], action="append",
+        metavar='CONN_STR',
+        help="libpq connection string to a hot standby database")
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many arguments")
@@ -414,6 +423,21 @@ def main():
         preflight_check = NoConnectionCheckPreflight(log)
     else:
         preflight_check = DatabasePreflight(log)
+
+    # Add streaming replication standbys, which unfortunately cannot be
+    # detected.
+    con = preflight_check.master_node.con
+    cur = con.cursor()
+    cur.execute("SELECT COUNT(*) FROM pg_stat_replication")
+    required_standbys = cur.fetchone()[0]
+    if required_standbys <> len(options.standbys):
+        parser.error(
+            "%d hot standbys connected, but %d connection strings provided"
+            % (required_standbys, len(options.standbys)))
+    for standby in options.standbys:
+        standby_node = Node(None, None, standby, False)
+        standby_node.con = standby_node.connect(ISOLATION_LEVEL_AUTOCOMMIT)
+        preflight_check.nodes.add(standby_node)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')
