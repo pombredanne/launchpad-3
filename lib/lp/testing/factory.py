@@ -3495,7 +3495,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBuildPackageUpload(self, distroseries=None, pocket=None,
                                binarypackagename=None,
-                               source_package_release=None):
+                               source_package_release=None, component=None):
         """Make a `PackageUpload` with a `PackageUploadBuild` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
@@ -3506,7 +3506,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_package_release=source_package_release, pocket=pocket)
         upload.addBuild(build)
         self.makeBinaryPackageRelease(
-            binarypackagename=binarypackagename, build=build)
+            binarypackagename=binarypackagename, build=build,
+            component=component)
         return upload
 
     def makeCustomPackageUpload(self, distroseries=None, pocket=None,

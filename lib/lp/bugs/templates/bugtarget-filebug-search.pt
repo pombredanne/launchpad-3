@@ -107,7 +107,7 @@
                           tal:condition="widget">
                                     <input tal:replace="structure view/actions/field.actions.projectgroupsearch/render" />
                       </tal:project_group>
-                      <span id="spinner" style="text-align: center" class="unseen">
+                      <span id="spinner" style="text-align: center" class="hidden">
                         <img src="/@@/spinner" />
                       </span>
                     </td>

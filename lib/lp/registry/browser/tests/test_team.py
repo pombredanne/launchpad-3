@@ -814,7 +814,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, '+index')
         self.assertEqual('Search', view.add_member_step_title)
 
-    def test_is_merge_pending(self):
+    def test_isMergePending(self):
         target_team = self.factory.makeTeam()
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(

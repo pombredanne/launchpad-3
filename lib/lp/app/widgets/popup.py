@@ -212,7 +212,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     def chooseLink(self):
         if self.nonajax_uri is None:
-            css = 'unseen'
+            css = 'hidden'
         else:
             css = ''
         return ('<span class="%s">(<a id="%s" href="%s">'

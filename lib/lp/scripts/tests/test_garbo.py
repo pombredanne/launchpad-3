@@ -12,7 +12,6 @@ from datetime import (
     )
 import logging
 from StringIO import StringIO
-from textwrap import dedent
 import time
 
 from pytz import UTC
@@ -30,14 +29,12 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
-    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
-from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -47,11 +44,7 @@ from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
     )
-from lp.code.enums import (
-    BranchSubscriptionNotificationLevel,
-    CodeImportResultStatus,
-    CodeReviewNotificationLevel,
-    )
+from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.model.branchjob import (
     BranchJob,
@@ -60,7 +53,6 @@ from lp.code.model.branchjob import (
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -82,7 +74,6 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.lpstorm import IMasterStore
-from lp.services.features import getFeatureFlag
 from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -1030,89 +1021,6 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertNotEqual(old_update, naked_bug.heat_last_updated)
 
-    def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):
-        self.assertFalse(getFeatureFlag('garbo.workitem_migrator.enabled'))
-        switch_dbuser('testadmin')
-        whiteboard = dedent("""
-            Work items:
-            A single work item: TODO
-            """)
-        spec = self.factory.makeSpecification(whiteboard=whiteboard)
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
-    def test_SpecificationWorkitemMigrator(self):
-        # When the migration is successful we remove all work-items from the
-        # whiteboard.
-        switch_dbuser('testadmin')
-        product = self.factory.makeProduct(name='linaro')
-        milestone = self.factory.makeMilestone(product=product)
-        person = self.factory.makePerson()
-        whiteboard = dedent("""
-            Work items for %s:
-            [%s] A single work item: TODO
-
-            Work items:
-            Another work item: DONE
-            """ % (milestone.name, person.name))
-        spec = self.factory.makeSpecification(
-            product=product, whiteboard=whiteboard)
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual('', spec.whiteboard.strip())
-        self.assertEqual(2, spec.work_items.count())
-        self.assertThat(spec.work_items[0], MatchesStructure.byEquality(
-            assignee=person, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            milestone=milestone, specification=spec))
-        self.assertThat(spec.work_items[1], MatchesStructure.byEquality(
-            assignee=None, title="Another work item",
-            status=SpecificationWorkItemStatus.DONE,
-            milestone=None, specification=spec))
-
-    def test_SpecificationWorkitemMigrator_skips_ubuntu_blueprints(self):
-        switch_dbuser('testadmin')
-        whiteboard = "Work items:\nA work item: TODO"
-        spec = self.factory.makeSpecification(
-            whiteboard=whiteboard,
-            distribution=getUtility(IDistributionSet)['ubuntu'])
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
-    def test_SpecificationWorkitemMigrator_parse_error(self):
-        # When we fail to parse any work items in the whiteboard we leave it
-        # untouched and don't create any SpecificationWorkItem entries.
-        switch_dbuser('testadmin')
-        whiteboard = dedent("""
-            Work items:
-            A work item: TODO
-            Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
-            """)
-        product = self.factory.makeProduct(name='linaro')
-        spec = self.factory.makeSpecification(
-            product=product, whiteboard=whiteboard)
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
     def test_BugTaskFlattener(self):
         # Bugs without a record in BugTaskFlat get mirrored.
         # Remove the existing mirrored data.
@@ -1153,38 +1061,6 @@ class TestGarbo(TestCaseWithFactory):
                 u'default', 1, u'bugs.bugtaskflattener.generation', u'2'))
         self.runHourly()
         self.assertEqual((task.id,), get_flat())
-
-    def test_PopulateBranchAccessArtifactGrant(self):
-        # Branches without a access_policy have one set by the job.
-        with dbuser('testadmin'):
-            branch = self.factory.makeBranch()
-
-        def get_access_grants():
-            return IMasterStore(BugTask).execute(
-                'SELECT access_grants FROM branch WHERE id = ?',
-                (branch.id,)).get_one()[0]
-
-        # The branch is public, so running the garbo job will have no effect.
-        self.runHourly()
-        self.assertIs(None, get_access_grants())
-
-        with dbuser('testadmin'):
-            branch.transitionToInformationType(
-                InformationType.USERDATA, branch.owner, verify_policy=False)
-
-        # Now the branch is USERDATA, it will have no explicit grants.
-        self.assertEqual([], get_access_grants())
-
-        with dbuser('testadmin'):
-            subscriber = self.factory.makePerson()
-            branch.subscribe(
-                subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
-                None, CodeReviewNotificationLevel.NOEMAIL, branch.owner)
-
-        # The subscriber has been added.
-        self.runHourly()
-        self.assertContentEqual(
-            [branch.owner.id, subscriber.id], get_access_grants())
 
 
 class TestGarboTasks(TestCaseWithFactory):

@@ -34,6 +34,8 @@ STAGING_LOGDIR=/srv/staging.launchpad.net/staging-logs
 DOGFOOD_DBNAME=launchpad_dogfood
 DOGFOOD_DUMP=launchpad.dump
 
+STAGING_PGBOUNCER=psql -p 6432 -U pgbouncer -d pgbouncer
+
 PGMASSACRE=../../utilities/pgmassacre.py
 
 CREATEDB=createdb --encoding=UTF8 --locale=C --template=template0
@@ -52,6 +54,8 @@ default:
 # place.
 stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
+	${STAGING_PGBOUNCER} -c 'kill launchpad_staging'
+	${STAGING_PGBOUNCER} -c 'kill launchpad_staging_slave'
 	-${PGMASSACRE} lpmain_staging
 	# Create the DB with the desired default tablespace.
 	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging
@@ -72,7 +76,8 @@ stagingsetup:
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	@echo Setting feature flags
 	psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('profiling.enabled', 'team:launchpad', 0, 'on')"
-
+	${STAGING_PGBOUNCER} -c 'resume launchpad_staging'
+	${STAGING_PGBOUNCER} -c 'resume launchpad_staging_slave'
 
 stagingswitch:
 	echo Nothing to do. Staging already built inplace.
