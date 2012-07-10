@@ -232,6 +232,7 @@ class DatabasePreflight:
 
     def check_replication_lag(self):
         """Return False if the replication cluster is badly lagged."""
+        slony_lagged = False
         if self.is_slony:
             # Check replication lag on every node just in case there are
             # disagreements.
@@ -248,14 +249,39 @@ class DatabasePreflight:
                 self.log.debug(
                     "%s reports database lag of %s.", dbname, lag)
             if max_lag <= MAX_LAG:
-                self.log.info("Database cluster lag is ok (%s)", max_lag)
-                return True
+                self.log.info("Slony cluster lag is ok (%s)", max_lag)
+                slony_lagged = False
             else:
-                self.log.fatal("Database cluster lag is high (%s)", max_lag)
-                return False
+                self.log.fatal("Slony cluster lag is high (%s)", max_lag)
+                slony_lagged = True
 
-        self.log.debug("Not replicated - no replication lag.")
-        return True
+        streaming_lagged = False
+        # Do something harmless to force changes to be streamed in case
+        # system is idle.
+        self.lpmain_master_node.con.cursor().execute(
+            'ANALYZE LaunchpadDatabaseRevision')
+        start_time = time.time()
+        while time.time() < start_time + 30:
+            max_lag = timedelta(seconds=-1)
+            for node in self.nodes:
+                cur = node.con.cursor()
+                cur.execute("""
+                    SELECT current_setting('hot_standby') = 'on',
+                    now() - pg_last_xact_replay_timestamp()
+                    """)
+                is_standby, lag = cur.fetchone()
+                if is_standby:
+                    self.log.debug2('streaming lag %s', lag)
+                    max_lag = max(max_lag, lag)
+            if max_lag <= MAX_LAG:
+                streaming_lagged = False
+                break
+            time.sleep(0.2)
+        if max_lag > MAX_LAG:
+            streaming_lagged = True
+            self.log.fatal("Streaming replication lag is high (%s)", max_lag)
+
+        return not (slony_lagged or streaming_lagged)
 
     def check_can_sync(self):
         """Return True if a sync event is acknowledged by all nodes.
@@ -285,9 +311,8 @@ class DatabasePreflight:
         cur.execute('SELECT pg_switch_xlog()')
         wal_point = cur.fetchone()[0]
         self.log.debug('WAL at %s', wal_point)
-        now = time.time()
-        while time.time() < now + 30:
-            time.sleep(0.1)
+        start_time = time.time()
+        while time.time() < start_time + 30:
             cur.execute("""
                 SELECT FALSE FROM pg_stat_replication
                 WHERE replay_location < %s LIMIT 1
@@ -296,6 +321,7 @@ class DatabasePreflight:
                 # All slaves, possibly 0, are in sync.
                 streaming_success = True
                 break
+            time.sleep(0.2)
         return slony_success and streaming_success
 
     def report_patches(self):
@@ -434,6 +460,7 @@ def main():
         standby_node = Node(None, None, standby, False)
         standby_node.con = standby_node.connect(ISOLATION_LEVEL_AUTOCOMMIT)
         preflight_check.nodes.add(standby_node)
+        preflight_check.lpmain_nodes.add(standby_node)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')
