@@ -253,14 +253,14 @@
                   <img src="/@@/info" alt="Informational"
                        tal:condition="spec/informational" />
                   <tal:comment condition="nothing">
-                    Compare milestone names (important for project group
-                    milestones, since they are not DB-backed Milestone objects
-                    and actually consist of a number of them with the same
-                    names) to see if a blueprint is only partially targeted to
-                    this milestone.
+                    Compare milestone names to see if a blueprint is only
+                    partially targeted to this milestone.
+
+                    If a blueprint is untargeted, then it's partial as well.
                   </tal:comment>
                   <span tal:condition="
-                      python:spec.milestone.name != context.name">
+                      python:(not spec.milestone or
+                              spec.milestone.name != context.name)">
                     (some work for this milestone)</span>
                 </td>
                 <td tal:condition="view/is_project_milestone">
