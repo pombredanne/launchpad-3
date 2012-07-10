@@ -41,10 +41,20 @@ from zope.interface import (
     implements,
     )
 
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IBugSet,
+    )
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.model.branch import (
+    Branch,
+    get_branch_privacy_filter,
+    )
+from lp.code.model.branchsubscription import BranchSubscription
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
@@ -253,12 +263,20 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                information_types=None):
         """See `IRemoveArtifactSubscriptionsJob`."""
 
-        bug_ids = [bug.id for bug in artifacts or []]
+        bug_ids = []
+        branch_ids = []
+        if artifacts:
+            for artifact in artifacts:
+                if IBug.providedBy(artifact):
+                    bug_ids.append(artifact.id)
+                elif IBranch.providedBy(artifact):
+                    branch_ids.append(artifact.id)
         information_types = [
             info_type.value for info_type in information_types or []
         ]
         metadata = {
             'bug_ids': bug_ids,
+            'branch_ids': branch_ids,
             'information_types': information_types,
             'requestor.id': requestor.id
         }
@@ -284,6 +302,16 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
         return getUtility(IBugSet).getByNumbers(self.bug_ids)
 
     @property
+    def branch_ids(self):
+        if not 'branch_ids' in self.metadata:
+            return []
+        return self.metadata['branch_ids']
+
+    @property
+    def branches(self):
+        return [getUtility(IBranchLookup).get(id) for id in self.branch_ids]
+
+    @property
     def information_types(self):
         if not 'information_types' in self.metadata:
             return []
@@ -307,6 +335,7 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
             'information_types': [t.name for t in self.information_types],
             'requestor': self.requestor.name,
             'bug_ids': self.bug_ids,
+            'branch_ids': self.branch_ids,
             'pillar': getattr(self.pillar, 'name', None),
             'grantee': getattr(self.grantee, 'name', None)
             }
@@ -321,33 +350,54 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
 
         # Find all bug subscriptions for which the subscriber cannot see the
         # bug.
-        invisible_filter = (
-            Not(Or(*get_bug_privacy_filter_terms(BugSubscription.person_id))))
-        filters = [invisible_filter]
+        bug_invisible_filter = Not(
+            Or(*get_bug_privacy_filter_terms(BugSubscription.person_id)))
+        bug_filters = [bug_invisible_filter]
+        branch_invisible_filter = Not(
+            Or(*get_branch_privacy_filter(BranchSubscription.personID)))
+        branch_filters = [branch_invisible_filter]
 
         if self.bug_ids:
-            filters.append(BugTaskFlat.bug_id.is_in(self.bug_ids))
+            bug_filters.append(BugTaskFlat.bug_id.is_in(self.bug_ids))
+        elif self.branch_ids:
+            branch_filters.append(Branch.id.is_in(self.branch_ids))
         else:
             if self.information_types:
-                filters.append(
-                    BugTaskFlat.information_type.is_in(self.information_types))
+                bug_filters.append(
+                    BugTaskFlat.information_type.is_in(
+                        self.information_types))
+                branch_filters.append(
+                    Branch.information_type.is_in(self.information_types))
             if self.product:
-                filters.append(
+                bug_filters.append(
                     BugTaskFlat.product == self.product)
+                branch_filters.append(Branch.product == self.product)
             if self.distro:
-                filters.append(
+                bug_filters.append(
                     BugTaskFlat.distribution == self.distro)
+                branch_filters.append(Branch.distribution == self.distro)
 
         if self.grantee:
-            filters.append(
+            bug_filters.append(
                 In(BugSubscription.person_id,
                     Select(
                         TeamParticipation.personID,
                         where=TeamParticipation.team == self.grantee)))
-        subscriptions = IStore(BugSubscription).using(
+            branch_filters.append(
+                In(BranchSubscription.person_id,
+                    Select(
+                        TeamParticipation.personID,
+                        where=TeamParticipation.team == self.grantee)))
+
+        bug_subscriptions = IStore(BugSubscription).using(
             BugSubscription,
             Join(BugTaskFlat, BugTaskFlat.bug_id == BugSubscription.bug_id)
-            ).find(BugSubscription, *filters).config(distinct=True)
-        for sub in subscriptions:
+            ).find(BugSubscription, *bug_filters).config(distinct=True)
+        branch_subscriptions = IStore(BranchSubscription).find(
+            BranchSubscription, *branch_filters).config(distinct=True)
+        for sub in bug_subscriptions:
             sub.bug.unsubscribe(
+                sub.person, self.requestor, ignore_permissions=True)
+        for sub in branch_subscriptions:
+            sub.branch.unsubscribe(
                 sub.person, self.requestor, ignore_permissions=True)
