@@ -46,7 +46,6 @@ from lp.bugs.feed.bug import (
     PersonBugsFeed,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -55,7 +54,6 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugtasksearch import orderby_expression
-from lp.bugs.publisher import BugsLayer
 from lp.layers import (
     FeedsLayer,
     setFirstLayer,
@@ -99,7 +97,8 @@ from lp.testing.sampledata import (
     NO_PRIVILEGE_EMAIL,
     USER_EMAIL,
     )
-from lp.testing.views import create_initialized_view 
+from lp.testing.views import create_initialized_view
+
 
 def getFeedViewCache(target, feed_cls):
     """Return JSON cache for a feed's delegate view."""
@@ -1938,8 +1937,6 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             unbatched_view.activity_and_comments[4:],
             batched_view.activity_and_comments)
 
-    def test_hidden_bug_count_is_not_negative(self):
-        bug = self._makeNoisyBug(comments_only=True, number_of_comments=20)
 
 no_target_specified = object()
 

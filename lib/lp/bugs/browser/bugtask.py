@@ -945,7 +945,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                     continue
                 if prev_comment.index + 1 != comment.index:
                     # There is a gap here, record it.
-                    
+
                     # The number of items between two items is one less than
                     # their difference. There is one number between 1 and 3,
                     # not 2 (their difference).
