@@ -1,4 +1,5 @@
-= Authorizing a request token =
+Authorizing a request token
+===========================
 
 Once the consumer gets a request token, it must send the user to
 Launchpad's +authorize-token page in order for the user to authenticate
@@ -46,6 +47,7 @@ it involves OpenID, which would complicate this test quite a bit.)
 
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
+    Authorize application to access Launchpad on your behalf
     Integrating foobar123451432 into your Launchpad account
     The application identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access do you want to grant?
@@ -139,6 +141,7 @@ by the user is restricted to things related to that context.
     ...     % urlencode(params_with_context))
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
+    Authorize application to access Launchpad on your behalf
     Integrating foobar123451432 into your Launchpad account
     The application...wants to access things related to Mozilla Firefox...
 
@@ -216,6 +219,7 @@ If no oauth_callback is specified, we don't redirect the user.
     >>> browser.url
     'http://launchpad.dev/+authorize-token'
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     Almost finished ...
     To finish authorizing the application identified as foobar123451432 to
     access Launchpad on your behalf you should go back to the application
@@ -230,6 +234,7 @@ exchanged for an access token), we will explain that to the user.
     >>> browser.open(
     ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     Unable to identify application
     The information provided by the remote application was incorrect or
     incomplete. Because of that we were unable to identify the application
@@ -242,6 +247,7 @@ exchanged for an access token), we will explain that to the user.
     >>> browser.open(
     ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     Unable to identify application
     The information provided by the remote application was incorrect or
     incomplete. Because of that we were unable to identify the application
@@ -263,6 +269,7 @@ the success message is printed.
     >>> browser.open(
     ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     Almost finished ...
     To finish authorizing the application identified as foobar123451432
     ...
@@ -295,6 +302,7 @@ desktop.
     >>> print extract_text(
     ...     authorize_token_main_content(
     ...         'allow_permission=DESKTOP_INTEGRATION'))
+    Authorize application to access Launchpad on your behalf
     Confirm Computer Access
     The Ubuntu computer called mycomputer wants access to your
     Launchpad account. If you allow this, every application running on
@@ -325,7 +333,8 @@ up anyway.)
     Do Not Allow "mycomputer" to Access my Launchpad Account.
 
     >>> print_access_levels_for(
-    ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
+    ...     'allow_permission=DESKTOP_INTEGRATION&'
+    ...     'allow_permission=UNAUTHORIZED')
     Until I Disable It
     For One Hour
     For One Day
@@ -396,6 +405,7 @@ token is approved and has no expiration date.
 
     >>> token = integrate_desktop("Until I Disable It")
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     Almost finished ...
     The Ubuntu computer called mycomputer now has access to your
     Launchpad account. Within a few seconds, you should be able to
@@ -419,6 +429,7 @@ one hour.
     >>> token = integrate_desktop("For One Hour")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     Almost finished ...
     The Ubuntu computer called mycomputer now has access to your
     Launchpad account. Within a few seconds, you should be able to
@@ -447,6 +458,7 @@ Here we authorize a token for one day.
     >>> token = integrate_desktop("For One Day")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     Almost finished ...
     The integration you just authorized will expire in 23 hours.
     ...
@@ -462,6 +474,7 @@ a date.
     >>> token = integrate_desktop("For One Week")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     Almost finished ...
     The integration you just authorized will expire 2...
     ...
@@ -483,6 +496,7 @@ cannot be exchanged for an access token.
     ...     """Do Not Allow "mycomputer" to Access my Launchpad Account.""")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Authorize application to access Launchpad on your behalf
     You decided against desktop integration
     You decided not to give mycomputer access to your Launchpad
     account. You can always change your mind later.

@@ -46,9 +46,11 @@
         value="Search projects"
         />
     </form>
-    <script type="text/javascript"><!--
-        setFocusByName('text');
-        // --></script>
+    <script type="text/javascript">
+        LPJS.use('lp', function (Y) {
+            setFocusByName('text');
+        });
+    </script>
 
   <tal:searching condition="view/search_requested">
 
@@ -83,10 +85,11 @@
       <form id="project-search-lower" method="get" accept-charset="UTF-8"
         tal:attributes="action request/URL"
         tal:condition="view/search_results">
-        <div id="too-many-matches" class="sprite info"
+        <div id="too-many-matches"
           tal:condition="view/tooManyResultsFound">
+          <span class="sprite info">
           More than <span tal:replace="view/max_results_to_display" />
-          projects were found. You can do another search with more
+          projects were found.</span> You can do another search with more
           relevant search terms.
         </div>
         <input size="30" name="text" tal:attributes="value view/search_string" />
@@ -94,9 +97,8 @@
       </form>
 
       <div id="no-matches">
-        <p class="sprite info"
-           tal:condition="not: view/search_results">
-          No projects matching
+        <p tal:condition="not: view/search_results">
+          <span class="sprite info">No projects matching</span>
           &#8220;<span tal:replace="view/search_string">moz</span>&#8221;
           were found.
         </p>
@@ -127,31 +129,6 @@
       href="/rosetta/+addquestion">ask the Translations staff</a>.
     </p>
 
-    <div class="left">
-
-      <div class="portlet">
-
-        <h2>Latest teams registered</h2>
-
-        <table>
-          <tbody>
-            <tr tal:repeat="team context/people/latest_teams">
-              <td><a tal:replace="structure team/fmt:link">A-Team</a>
-                  registered
-                  <span tal:attributes="title team/datecreated/fmt:datetime"
-                        tal:content="team/datecreated/fmt:displaydate">
-                    2007-09-17
-                  </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-
-    <div class="right">
-
       <div class="portlet">
         <h2>Latest projects registered</h2>
         <table>
@@ -165,7 +142,6 @@
         </table>
         <p><a href="/projects/+all">&raquo; Show all projects</a></p>
       </div>
-    </div>
   </tal:no_search>
 </div>
 </body>

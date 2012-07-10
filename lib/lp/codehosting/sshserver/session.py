@@ -121,7 +121,7 @@ class ForkedProcessTransport(process.BaseProcess):
             client_sock.sendall(message)
             # We define the requests to be no bigger than 1kB. (For now)
             response = client_sock.recv(1024)
-        except socket.error, e:
+        except socket.error as e:
             # TODO: What exceptions should be raised?
             #       Raising the raw exception seems to kill the twisted reactor
             #       Note that if the connection is refused, we *could* just
@@ -143,7 +143,6 @@ class ForkedProcessTransport(process.BaseProcess):
         """
         assert executable == 'bzr', executable # Maybe .endswith()
         assert args[0] == 'bzr', args[0]
-        command_str = ' '.join(args[1:])
         message = ['fork-env %s\n' % (' '.join(args[1:]),)]
         for key, value in environment.iteritems():
             # XXX: Currently we only pass BZR_EMAIL, should we be passing
@@ -347,7 +346,7 @@ class ExecOnlySession(DoNothingSession):
         """
         try:
             executable, arguments = self.getCommandToRun(command)
-        except ForbiddenCommand, e:
+        except ForbiddenCommand as e:
             self.errorWithMessage(protocol, str(e) + '\r\n')
             return
         log.msg('Running: %r, %r' % (executable, arguments))

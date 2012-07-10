@@ -1,9 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from BeautifulSoup import BeautifulSoup
-
-from lp.registry.interfaces.person import PersonVisibility
-
 
 __metaclass__ = type
 
@@ -13,13 +9,14 @@ from datetime import (
     timedelta,
     )
 import re
-import simplejson
 import urllib
 
+from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.restful.interfaces import IJSONRequestCache
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interfaces import IJSONRequestCache
 from pytz import UTC
+import simplejson
 import soupmatchers
 from storm.store import Store
 from testtools.matchers import (
@@ -35,25 +32,6 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from lp.services.database.constants import UTC_NOW
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    login_person,
-    )
-from lp.testing.pages import find_tag_by_id
-from lp.services.webapp import canonical_url
-from lp.services.webapp.authorization import clear_cache
-from lp.services.webapp.interfaces import (
-    ILaunchBag,
-    ILaunchpadRoot,
-    )
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
@@ -63,35 +41,75 @@ from lp.bugs.browser.bugtask import (
     BugTaskListingItem,
     BugTasksAndNominationsView,
     )
+from lp.bugs.feed.bug import (
+    BugTargetBugsFeed,
+    PersonBugsFeed,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     )
+from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.layers import (
+    FeedsLayer,
+    setFirstLayer,
+    )
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.person import PersonVisibility
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    ILaunchpadRoot,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    ANONYMOUS,
     BrowserTestCase,
     celebrity_logged_in,
     feature_flags,
+    login,
+    login_person,
     person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     HasQueryCount,
     )
+from lp.testing.pages import find_tag_by_id
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
     USER_EMAIL,
     )
 from lp.testing.views import create_initialized_view
+
+
+def getFeedViewCache(target, feed_cls):
+    """Return JSON cache for a feed's delegate view."""
+    with dynamic_listings():
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://feeds.example.com/latest-bugs.atom')
+        setFirstLayer(request, FeedsLayer)
+        feed = feed_cls(target, request)
+        delegate_view = feed._createView()
+        delegate_view.initialize()
+        return IJSONRequestCache(delegate_view.request)
 
 
 class TestBugTaskView(TestCaseWithFactory):
@@ -109,8 +127,8 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
         task = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson(password='test')
-        person_with_teams = self.factory.makePerson(password='test')
+        person_no_teams = self.factory.makePerson()
+        person_with_teams = self.factory.makePerson()
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
@@ -122,7 +140,12 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(85)))
+        # If this test is run in isolation, the query count is 89.
+        # Other tests in this TestCase could cache the
+        # "SELECT id, product, project, distribution FROM PillarName ..."
+        # query by previously browsing the task url, in which case the
+        # query count is decreased by one.
+        self.assertThat(recorder, HasQueryCount(LessThan(90)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -138,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                88, self.factory.makePerson())
+                92, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -167,27 +190,27 @@ class TestBugTaskView(TestCaseWithFactory):
                 source_branch=source_branch)
 
     def test_rendered_query_counts_reduced_with_branches(self):
-        f = self.factory
-        owner = f.makePerson()
-        ds = f.makeDistroSeries()
-        bug = f.makeBug()
+        owner = self.factory.makePerson()
+        ds = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug()
         sourcepackages = [
-            f.makeSourcePackage(distroseries=ds, publish=True)
+            self.factory.makeSourcePackage(distroseries=ds, publish=True)
             for i in range(5)]
         for sp in sourcepackages:
-            f.makeBugTask(bug=bug, owner=owner, target=sp)
-        url = canonical_url(bug.default_bugtask)
+            self.factory.makeBugTask(bug=bug, owner=owner, target=sp)
+        task = bug.default_bugtask
+        url = canonical_url(task)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
-        self.invalidate_caches(bug.default_bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(106)))
+        self.assertThat(recorder, HasQueryCount(LessThan(111)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
-        self.invalidate_caches(bug.default_bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, owner)  # This triggers the query recorder.
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
@@ -254,6 +277,34 @@ class TestBugTaskView(TestCaseWithFactory):
             # happend. The error will be listed in the view.
             self.assertEqual(1, len(view.errors))
             self.assertEqual(product, bug.default_bugtask.target)
+
+    def test_bugtag_urls_are_encoded(self):
+        # The link to bug tags are encoded to protect against special chars.
+        product = self.factory.makeProduct(name='foobar')
+        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        getUtility(ILaunchBag).add(bug.default_bugtask)
+        view = create_initialized_view(bug.default_bugtask, name=u'+index')
+        expected = [(u'depends-on+987',
+            u'/foobar/+bugs?field.tag=depends-on%2B987')]
+        self.assertEqual(expected, view.unofficial_tags)
+        browser = self.getUserBrowser(canonical_url(bug), bug.owner)
+        self.assertIn(
+            'href="/foobar/+bugs?field.tag=depends-on%2B987"',
+            browser.contents)
+
+    def test_information_type_with_flags(self):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner,
+            information_type=InformationType.USERDATA)
+        login_person(owner)
+        bugtask = self.factory.makeBugTask(bug=bug)
+        view = create_initialized_view(bugtask, name="+index")
+        self.assertEqual('User Data', view.information_type)
+        features = {'disclosure.display_userdata_as_private.enabled': True}
+        with FeatureFixture(features):
+            view = create_initialized_view(bugtask, name="+index")
+            self.assertEqual('Private', view.information_type)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
@@ -714,7 +765,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug = self.factory.makeBug(series=series)
         self.assertEqual(2, len(bug.bugtasks))
         new_prod = self.factory.makeProduct()
-        bug.getBugTask(series.product).transitionToTarget(new_prod)
+        bug.getBugTask(series.product).transitionToTarget(new_prod, bug.owner)
 
         view = create_initialized_view(bug, "+bugtasks-and-nominations-table")
         subviews = view.getBugTaskAndNominationViews()
@@ -939,7 +990,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_REFERER': bugtask_url,
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bugtask, name='+delete', server_url=server_url, form=form,
@@ -970,7 +1021,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bug.default_bugtask, name='+delete', server_url=server_url,
@@ -1006,7 +1057,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_REFERER': default_bugtask_url,
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bugtask, name='+delete', server_url=server_url, form=form,
@@ -1028,33 +1079,28 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
 
 
 class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
-    """ Tests the boolean methods on the view used to indicate whether the
-        Also Affects... links should be allowed or not. Currently these
-        restrictions are only used for private bugs. ie where body.private
-        is true.
-
-        A feature flag is used to turn off the new restrictions. Each test
-        is performed with and without the feature flag.
-    """
+    """Tests the boolean methods on the view used to indicate whether the
+       Also Affects... links should be allowed or not. These restrictions
+       are only used for proprietary bugs. """
 
     layer = DatabaseFunctionalLayer
 
-    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-
     def _createView(self, bug):
         request = LaunchpadTestRequest()
-        bugtasks_and_nominations_view = getMultiAdapter(
+        return getMultiAdapter(
             (bug, request), name="+bugtasks-and-nominations-portal")
-        return bugtasks_and_nominations_view
 
     def test_project_bug_cannot_affect_something_else(self):
         # A bug affecting a project cannot also affect another project or
         # package.
-        bug = self.factory.makeBug()
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertFalse(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertFalse(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1062,11 +1108,15 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         # A bug affecting a distro cannot also affect another project but it
         # could affect another package.
         distro = self.factory.makeDistribution()
-        bug = self.factory.makeBug(distribution=distro)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1078,12 +1128,15 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         sp_name = self.factory.getOrMakeSourcePackageName()
         self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
+        owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, sourcepackagename=sp_name)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+            distribution=distro, sourcepackagename=sp_name, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1393,41 +1446,6 @@ class TestBugTaskEditView(TestCaseWithFactory):
         notifications = view.request.response.notifications
         self.assertEqual(0, len(notifications))
 
-    def test_retarget_private_bug(self):
-        # If a private bug is re-targetted such that the bug is no longer
-        # visible to the user, they are redirected to the pillar's bug index
-        # page with a suitable message. This corner case can occur when the
-        # disclosure.private_bug_visibility_rules.enabled feature flag is on
-        # and a bugtask is re-targetted to a pillar for which the user is not
-        # authorised to see any private bugs.
-        first_product = self.factory.makeProduct(name='bunny')
-        with person_logged_in(first_product.owner):
-            bug = self.factory.makeBug(product=first_product, private=True)
-            bug_task = bug.bugtasks[0]
-        second_product = self.factory.makeProduct(name='duck')
-
-        # The first product owner can see the private bug. We will re-target
-        # it to second_product where it will not be visible to that user.
-        with person_logged_in(first_product.owner):
-            form = {
-                'bunny.target': 'product',
-                'bunny.target.product': 'duck',
-                'bunny.actions.save': 'Save Changes',
-                }
-            with FeatureFixture({
-                'disclosure.private_bug_visibility_rules.enabled': 'on'}):
-                view = create_initialized_view(
-                    bug_task, name='+editstatus', form=form)
-            self.assertEqual(
-                canonical_url(bug_task.pillar, rootsite='bugs'),
-                view.next_url)
-        self.assertEqual([], view.errors)
-        self.assertEqual(second_product, bug_task.target)
-        notifications = view.request.response.notifications
-        self.assertEqual(1, len(notifications))
-        expected = ('The bug you have just updated is now a private bug for')
-        self.assertTrue(notifications.pop().message.startswith(expected))
-
 
 class TestPersonBugs(TestCaseWithFactory):
     """Test the bugs overview page for distributions."""
@@ -1450,6 +1468,11 @@ class TestPersonBugs(TestCaseWithFactory):
             'Project, distribution, package, or series subscriber',
             view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, PersonBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestDistributionBugs(TestCaseWithFactory):
     """Test the bugs overview page for distributions."""
@@ -1470,6 +1493,11 @@ class TestDistributionBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertEqual(
             'Package or series subscriber', view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestDistroSeriesBugs(TestCaseWithFactory):
@@ -1492,6 +1520,11 @@ class TestDistroSeriesBugs(TestCaseWithFactory):
         self.assertEqual(
             'Package subscriber', view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestDistributionSourcePackageBugs(TestCaseWithFactory):
     """Test the bugs overview page for distribution source packages."""
@@ -1507,6 +1540,11 @@ class TestDistributionSourcePackageBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
     """Test the bugs overview page for distro series source packages."""
@@ -1521,6 +1559,11 @@ class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestProductBugs(TestCaseWithFactory):
@@ -1543,6 +1586,11 @@ class TestProductBugs(TestCaseWithFactory):
         self.assertEqual(
             'Series subscriber', view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestProductSeriesBugs(TestCaseWithFactory):
     """Test the bugs overview page for project series."""
@@ -1558,6 +1606,11 @@ class TestProductSeriesBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestProjectGroupBugs(TestCaseWithFactory):
     """Test the bugs overview page for project groups."""
@@ -1567,38 +1620,38 @@ class TestProjectGroupBugs(TestCaseWithFactory):
     def setUp(self):
         super(TestProjectGroupBugs, self).setUp()
         self.owner = self.factory.makePerson(name='bob')
-        self.projectgroup = self.factory.makeProject(name='container',
+        self.target = self.factory.makeProject(name='container',
                                                      owner=self.owner)
 
     def makeSubordinateProduct(self, tracks_bugs_in_lp):
         """Create a new product and add it to the project group."""
         product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
         with person_logged_in(product.owner):
-            product.project = self.projectgroup
+            product.project = self.target
 
     def test_empty_project_group(self):
         # An empty project group does not use Launchpad for bugs.
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(self.projectgroup.hasProducts())
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(self.target.hasProducts())
         self.assertFalse(view.should_show_bug_information)
 
     def test_project_group_with_subordinate_not_using_launchpad(self):
         # A project group with all subordinates not using Launchpad
         # will itself be marked as not using Launchpad for bugs.
         self.makeSubordinateProduct(False)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.should_show_bug_information)
 
     def test_project_group_with_subordinate_using_launchpad(self):
         # A project group with one subordinate using Launchpad
         # will itself be marked as using Launchpad for bugs.
         self.makeSubordinateProduct(True)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.should_show_bug_information)
 
     def test_project_group_with_mixed_subordinates(self):
@@ -1606,9 +1659,9 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # will itself be marked as using Launchpad for bugs.
         self.makeSubordinateProduct(False)
         self.makeSubordinateProduct(True)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.should_show_bug_information)
 
     def test_project_group_has_no_portlets_if_not_using_LP(self):
@@ -1616,7 +1669,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # bug portlets.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         self.assertFalse(view.should_show_bug_information)
         contents = view.render()
@@ -1628,7 +1681,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # portlets.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         self.assertTrue(view.should_show_bug_information)
         contents = view.render()
@@ -1640,7 +1693,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # a 'Getting started' help link.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
@@ -1651,7 +1704,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # a 'Getting started' help link.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
@@ -1659,14 +1712,19 @@ class TestProjectGroupBugs(TestCaseWithFactory):
 
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
     def test_structural_subscriber_label(self):
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertEqual(
             'Project or series subscriber', view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestBugActivityItem(TestCaseWithFactory):
@@ -1817,22 +1875,38 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             unbatched_view.activity_and_comments[4:],
             batched_view.activity_and_comments)
 
+no_target_specified = object()
 
-def make_bug_task_listing_item(factory):
-    owner = factory.makePerson()
-    bug = factory.makeBug(
-        owner=owner, private=True, security_related=True)
-    bugtask = bug.default_bugtask
+
+def make_bug_task_listing_item(
+    factory, bugtask=None, target_context=no_target_specified):
+    if bugtask is None:
+        owner = factory.makePerson()
+        bug = factory.makeBug(
+            owner=owner, information_type=InformationType.EMBARGOEDSECURITY)
+        with person_logged_in(owner):
+            bugtask = bug.default_bugtask
+    else:
+        owner = bugtask.bug.owner
+    bugtask = removeSecurityProxy(bugtask)
     bug_task_set = getUtility(IBugTaskSet)
     bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
         [bugtask])
     badge_property = bug_badge_properties[bugtask]
+    tags = bug_task_set.getBugTaskTags([bugtask])
+    if tags != {}:
+        tags = tags[bugtask.id]
+    people = bug_task_set.getBugTaskPeople([bugtask])
+    if target_context is no_target_specified:
+        target_context = bugtask.target
     return owner, BugTaskListingItem(
         bugtask,
         badge_property['has_branch'],
         badge_property['has_specification'],
         badge_property['has_patch'],
-        target_context=bugtask.target)
+        tags,
+        people,
+        target_context=target_context)
 
 
 @contextmanager
@@ -1882,6 +1956,33 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         view.initialize()
         return view
 
+    def invalidate_caches(self, obj):
+        store = Store.of(obj)
+        # Make sure everything is in the database.
+        store.flush()
+        # And invalidate the cache (not a reset, because that stops us using
+        # the domain objects)
+        store.invalidate()
+
+    def test_rendered_query_counts_constant_with_many_bugtasks(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        buggy_product = self.factory.makeProduct()
+        for _ in range(10):
+            self.factory.makeBug(product=buggy_product)
+        recorder = QueryCollector()
+        recorder.register()
+        self.addCleanup(recorder.unregister)
+        self.invalidate_caches(bug)
+        # count with single task
+        url = canonical_url(product, view_name='+bugs')
+        self.getUserBrowser(url)
+        self.assertThat(recorder, HasQueryCount(LessThan(25)))
+        # count with many tasks
+        buggy_url = canonical_url(buggy_product, view_name='+bugs')
+        self.getUserBrowser(buggy_url)
+        self.assertThat(recorder, HasQueryCount(LessThan(25)))
+
     def test_mustache_model_missing_if_no_flag(self):
         """The IJSONRequestCache should contain mustache_model."""
         view = self.makeView()
@@ -1898,11 +1999,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.useContext(person_logged_in(owner))
         with dynamic_listings():
             view = self.makeView(item.bugtask)
-        cache = IJSONRequestCache(view.request)
-        items = cache.objects['mustache_model']['items']
-        self.assertEqual(1, len(items))
-        combined = dict(item.model)
-        combined.update(view.search().field_visibility)
+            cache = IJSONRequestCache(view.request)
+            items = cache.objects['mustache_model']['items']
+            self.assertEqual(1, len(items))
+            combined = dict(item.model)
+            combined.update(view.search().field_visibility)
         self.assertEqual(combined, items[0])
 
     def test_no_next_prev_for_single_batch(self):
@@ -2249,7 +2350,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         json_sort_keys = set(key[0] for key in json_sort_keys)
-        valid_keys = set(getUtility(IBugTaskSet).orderby_expression.keys())
+        valid_keys = set(orderby_expression.keys())
         self.assertEqual(
             valid_keys, json_sort_keys,
             "Existing sort order values not available in JSON cache: %r; "
@@ -2271,6 +2372,20 @@ class TestBugTaskSearchListingView(BrowserTestCase):
                 key[2] in ('asc', 'desc'),
                 'Invalid order value: %r' % (key, ))
 
+    def test_tags_encoded_in_model(self):
+        # The tag name is encoded properly in the JSON.
+        product = self.factory.makeProduct(name='foobar')
+        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        with dynamic_listings():
+            view = self.makeView(bugtask=bug.default_bugtask)
+        cache = IJSONRequestCache(view.request)
+        tags = cache.objects['mustache_model']['items'][0]['tags']
+        expected_url = (
+            canonical_url(product, view_name='+bugs') +
+            '/?field.tag=depends-on%2B987')
+        self.assertEqual(
+            [{'url': expected_url, 'tag': u'depends-on+987'}], tags)
+
 
 class TestBugTaskExpirableListingView(BrowserTestCase):
     """Test BugTaskExpirableListingView."""
@@ -2283,7 +2398,8 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
         with person_logged_in(product.owner):
             product.enable_bug_expiration = True
         bug = self.factory.makeBug(
-            product=product, status=BugTaskStatus.INCOMPLETE)
+            product=product,
+            status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
         with dynamic_listings():
             content = self.getMainContent(
@@ -2324,34 +2440,66 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual(item.bug_heat_html, model['bug_heat_html'])
             self.assertEqual(
                 '<span alt="private" title="Private" class="sprite private">'
-                '&nbsp;</span>', model['badges'])
+                '</span>', model['badges'])
             self.assertEqual(None, model['milestone_name'])
             item.bugtask.milestone = self.factory.makeMilestone(
                 product=item.bugtask.target)
             milestone_name = item.milestone.displayname
             self.assertEqual(milestone_name, item.model['milestone_name'])
 
+    def test_tag_urls_use_view_context(self):
+        """urls contain the correct project group if target_context is None"""
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project_group)
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=project_group)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(project_group, view_name="+bugs")))
+
+    def test_urls_without_target_context(self):
+        """urls contain the project if target_context is not None"""
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=None)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(product, view_name="+bugs")))
+
     def test_model_assignee(self):
         """Model contains expected fields with expected values."""
-        owner, item = make_bug_task_listing_item(self.factory)
+        assignee = self.factory.makePerson(displayname='Example Person')
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            removeSecurityProxy(bug).default_bugtask.transitionToAssignee(
+                assignee)
+        owner, item = make_bug_task_listing_item(
+            self.factory, bugtask=bug.default_bugtask)
         with person_logged_in(owner):
-            self.assertIs(None, item.model['assignee'])
-            assignee = self.factory.makePerson(displayname='Example Person')
-            item.bugtask.transitionToAssignee(assignee)
             self.assertEqual('Example Person', item.model['assignee'])
 
     def test_model_age(self):
         """Model contains bug age."""
         owner, item = make_bug_task_listing_item(self.factory)
+        bug = removeSecurityProxy(item.bug)
+        bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
         with person_logged_in(owner):
-            item.bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
             self.assertEqual('3 days old', item.model['age'])
 
     def test_model_tags(self):
         """Model contains bug tags."""
-        owner, item = make_bug_task_listing_item(self.factory)
+        bug = self.factory.makeBug()
+        tags = ['tag1', 'tag2']
+        removeSecurityProxy(bug).tags = tags
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask)
         with person_logged_in(owner):
-            item.bug.tags = ['tag1', 'tag2']
             self.assertEqual(2, len(item.model['tags']))
             self.assertTrue('tag' in item.model['tags'][0].keys())
             self.assertTrue('url' in item.model['tags'][0].keys())
@@ -2367,9 +2515,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         """last_updated uses date_last_updated if newer."""
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
-            item.bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
-            removeSecurityProxy(item.bug).date_last_message = datetime(
-                2000, 1, 1, tzinfo=UTC)
+            bug = removeSecurityProxy(item.bug)
+            bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
+            bug.date_last_message = datetime(2000, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
 
@@ -2377,8 +2525,8 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         """last_updated uses date_last_message if newer."""
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
-            item.bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
-            removeSecurityProxy(item.bug).date_last_message = datetime(
-                2001, 1, 1, tzinfo=UTC)
+            bug = removeSecurityProxy(item.bug)
+            bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
+            bug.date_last_message = datetime(2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])

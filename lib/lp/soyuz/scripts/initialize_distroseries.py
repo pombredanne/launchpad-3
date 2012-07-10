@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize a distroseries from its parent distroseries."""
@@ -19,6 +19,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database import bulk
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import sqlvalues
@@ -103,9 +104,6 @@ class InitializeDistroSeries:
         self, distroseries, parents=(), arches=(), archindep_archtag=None,
         packagesets=(), rebuild=False, overlays=(), overlay_pockets=(),
         overlay_components=()):
-        # Avoid circular imports
-        from lp.registry.model.distroseries import DistroSeries
-
         self.distroseries = distroseries
         self.parent_ids = [int(id) for id in parents]
         # Load parent objects in bulk...
@@ -569,7 +567,7 @@ class InitializeDistroSeries:
                                    list(self.distroseries.architectures))
                                 rebuilds.extend(builds)
                             self._rescore_rebuilds(rebuilds)
-                    except CannotCopy, error:
+                    except CannotCopy as error:
                         raise InitializationError(error)
 
     def _rescore_rebuilds(self, builds):
@@ -655,11 +653,9 @@ class InitializeDistroSeries:
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-
         packagesets = self._store.find(
-            Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
+            Packageset,
+            Packageset.distroseries_id.is_in(self.derivation_parent_ids))
         parent_to_child = {}
         # Create the packagesets and any archivepermissions if we're not
         # copying cross-distribution.

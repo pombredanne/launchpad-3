@@ -54,7 +54,7 @@ from lp.services.fields import (
 def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
-    except CvsRootError, e:
+    except CvsRootError as e:
         raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
@@ -121,7 +121,7 @@ class ICodeImport(Interface):
     url = exported(
         URIField(title=_("URL"), required=False, readonly=True,
             description=_("The URL of the VCS branch."),
-            allowed_schemes=["http", "https", "svn", "git"],
+            allowed_schemes=["http", "https", "svn", "git", "bzr", "ftp"],
             allow_userinfo=True,
             allow_port=True,
             allow_query=False,      # Query makes no sense in Subversion.

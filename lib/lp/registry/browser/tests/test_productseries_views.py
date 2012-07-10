@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+
+import soupmatchers
+
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -29,9 +32,9 @@ class TestProductSeriesHelp(TestCaseWithFactory):
         product = self.factory.makeProduct()
         series = self.factory.makeProductSeries(product=product)
         person = product.owner
-        self.factory.makeSSHKey(person=person)
         branch_url = "lp:~%s/%s/%s" % (person.name, product.name, series.name)
         with person_logged_in(person):
+            self.factory.makeSSHKey(person=person)
             view = create_initialized_view(series, '+code-summary')
             self.assertThat(view(), Contains(branch_url))
 
@@ -44,6 +47,16 @@ class TestWithBrowser(BrowserTestCase):
         """Test that rendering the graph does not raise an exception."""
         productseries = self.factory.makeProductSeries()
         self.getViewBrowser(productseries, view_name='+timeline-graph')
+
+    def test_meaningful_branch_name(self):
+        """The displayed branch name should include the unique name."""
+        branch = self.factory.makeProductBranch()
+        series = self.factory.makeProductSeries(branch=branch)
+        tag = soupmatchers.Tag('series-branch', 'a',
+                               attrs={'id': 'series-branch'},
+                               text='lp://dev/' + branch.unique_name)
+        browser = self.getViewBrowser(series)
+        self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
 
 
 class TestProductSeriesStatus(TestCaseWithFactory):

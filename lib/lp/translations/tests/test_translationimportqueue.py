@@ -22,6 +22,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
@@ -62,8 +63,7 @@ class TestCanSetStatusBase:
 
     def _switch_dbuser(self):
         if self.dbuser != None:
-            transaction.commit()
-            self.layer.switchDbUser(self.dbuser)
+            switch_dbuser(self.dbuser)
 
     def _assertCanSetStatus(self, user, entry, expected_list):
         # Helper to check for all statuses.

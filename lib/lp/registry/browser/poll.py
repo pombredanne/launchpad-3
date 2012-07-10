@@ -444,7 +444,7 @@ class PollOptionEditView(LaunchpadEditFormView):
     label = "Edit option details"
     page_title = 'Edit option'
     field_names = ["name", "title"]
-    custom_widget("title", TextWidget, width=30)
+    custom_widget("title", TextWidget, displayWidth=30)
 
     @property
     def cancel_url(self):
@@ -464,7 +464,7 @@ class PollOptionAddView(LaunchpadFormView):
     label = "Create new poll option"
     page_title = "New option"
     field_names = ["name", "title"]
-    custom_widget("title", TextWidget, width=30)
+    custom_widget("title", TextWidget, displayWidth=30)
 
     @property
     def cancel_url(self):

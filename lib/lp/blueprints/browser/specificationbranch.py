@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BranchLinkToSpecificationView',
-    'SpecificationBranchBranchInlineEditView',
     'SpecificationBranchStatusView',
     'SpecificationBranchURL',
     ]
@@ -64,32 +63,6 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     @action(_('Delete'), name='delete')
     def delete_action(self, action, data):
         self.context.destroySelf()
-
-
-class SpecificationBranchBranchInlineEditView(SpecificationBranchStatusView):
-    """Inline edit view for specification branch details.
-
-    This view is used to control the in page editing from the branch page.
-    """
-
-    initial_focus_widget = None
-    label = None
-
-    def initialize(self):
-        self.branch = self.context.branch
-        super(SpecificationBranchBranchInlineEditView, self).initialize()
-
-    @property
-    def prefix(self):
-        return "field%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/+branch-edit" % canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.branch)
 
 
 class BranchLinkToSpecificationView(LaunchpadFormView):

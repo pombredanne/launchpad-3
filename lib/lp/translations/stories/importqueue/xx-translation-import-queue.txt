@@ -312,7 +312,7 @@ Somebody else has uploaded a translation template for an Ubuntu package.
 
     >>> package = factory.makeSourcePackageName()
     >>> group_owner = factory.makePerson(
-    ...     email='go@example.com', name='groupowner', password='test')
+    ...     email='go@example.com', name='groupowner')
     >>> uploader = factory.makePerson()
     >>> ubuntu.translationgroup = factory.makeTranslationGroup(group_owner)
     >>> ubuntu_upload = queue.addOrUpdateEntry(

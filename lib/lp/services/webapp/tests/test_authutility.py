@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 import base64
-import unittest
 
+import testtools
 from zope.app.security.basicauthadapter import BasicAuthAdapter
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
@@ -17,13 +17,13 @@ from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
 from lp.registry.interfaces.person import IPerson
+from lp.services.config import config
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.webapp.authentication import (
     LaunchpadPrincipal,
     PlacelessAuthUtility,
     )
 from lp.services.webapp.interfaces import (
-    IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
@@ -31,22 +31,22 @@ from lp.services.webapp.interfaces import (
 
 class DummyPerson(object):
     implements(IPerson)
-    is_valid = True
+    is_valid_person = True
 
 
 class DummyAccount(object):
     implements(IAccount)
-    is_valid = True
     person = DummyPerson()
 
 
-Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyAccount(), 'bruce!')
+Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyAccount())
+Bruce.person = Bruce.account.person
 
 
 class DummyPlacelessLoginSource(object):
     implements(IPlacelessLoginSource)
 
-    def getPrincipalByLogin(self, id, want_password=True):
+    def getPrincipalByLogin(self, id):
         return Bruce
 
     getPrincipal = getPrincipalByLogin
@@ -55,18 +55,11 @@ class DummyPlacelessLoginSource(object):
         return [Bruce]
 
 
-class DummyPasswordEncryptor(object):
-    implements(IPasswordEncryptor)
-
-    def validate(self, plaintext, encrypted):
-        return plaintext == encrypted
-
-
-class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
+class TestPlacelessAuth(PlacelessSetup, testtools.TestCase):
 
     def setUp(self):
+        testtools.TestCase.setUp(self)
         PlacelessSetup.setUp(self)
-        ztapi.provideUtility(IPasswordEncryptor, DummyPasswordEncryptor())
         ztapi.provideUtility(IPlacelessLoginSource,
                              DummyPlacelessLoginSource())
         ztapi.provideUtility(IPlacelessAuthUtility, PlacelessAuthUtility())
@@ -74,10 +67,10 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
             IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
 
     def tearDown(self):
-        ztapi.unprovideUtility(IPasswordEncryptor)
         ztapi.unprovideUtility(IPlacelessLoginSource)
         ztapi.unprovideUtility(IPlacelessAuthUtility)
         PlacelessSetup.tearDown(self)
+        testtools.TestCase.tearDown(self)
 
     def _make(self, login, pwd):
         dict = {
@@ -87,11 +80,11 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
         return getUtility(IPlacelessAuthUtility), request
 
     def test_authenticate_ok(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.authenticate(request), Bruce)
 
     def test_authenticate_notok(self):
-        authsvc, request = self._make('bruce', 'notbruce!')
+        authsvc, request = self._make('bruce', 'nottest')
         self.assertEqual(authsvc.authenticate(request), None)
 
     def test_unauthenticatedPrincipal(self):
@@ -100,18 +93,52 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
                                 UnauthenticatedPrincipal))
 
     def test_unauthorized(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.unauthorized('bruce', request), None)
         self.assertEqual(request._response._status, 401)
 
+    def test_basic_auth_disabled(self):
+        # Basic auth uses a single password for every user, so it must
+        # never be used on production. authenticate() will skip basic
+        # auth unless it's enabled.
+        authsvc, request = self._make('bruce', 'test')
+        self.assertEqual(authsvc.authenticate(request), Bruce)
+        try:
+            config.push(
+                "no-basic", "[launchpad]\nbasic_auth_password: none")
+            self.assertEqual(authsvc.authenticate(request), None)
+        finally:
+            config.pop("no-basic")
+
+    def test_direct_basic_call_fails_when_disabled(self):
+        # Basic auth uses a single password for every user, so it must
+        # never be used on production. authenticate() won't call the
+        # underlying method unless it's enabled, but even if it somehow
+        # does it will fail.
+        authsvc, request = self._make('bruce', 'test')
+        credentials = ILoginPassword(request, None)
+        self.assertEqual(
+            authsvc._authenticateUsingBasicAuth(credentials, request), Bruce)
+        try:
+            config.push(
+                "no-basic", "[launchpad]\nbasic_auth_password: none")
+            exception = self.assertRaises(
+                AssertionError, authsvc._authenticateUsingBasicAuth,
+                credentials, request)
+            self.assertEquals(
+                "Attempted to use basic auth when it is disabled",
+                str(exception))
+        finally:
+            config.pop("no-basic")
+
     def test_getPrincipal(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.getPrincipal('bruce'), Bruce)
 
     def test_getPrincipals(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.getPrincipals('bruce'), [Bruce])
 
     def test_getPrincipalByLogin(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.getPrincipalByLogin('bruce'), Bruce)

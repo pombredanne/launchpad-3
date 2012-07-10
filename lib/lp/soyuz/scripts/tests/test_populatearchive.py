@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,16 +18,14 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
+from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.scripts.ftpmaster import (
-    PackageLocationError,
-    SoyuzScriptError,
-    )
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory

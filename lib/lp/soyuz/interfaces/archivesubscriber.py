@@ -32,6 +32,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PersonChoice
 from lp.soyuz.enums import ArchiveSubscriberStatus
@@ -178,3 +179,8 @@ class IPersonalArchiveSubscription(Interface):
 
     title = TextLine(title=_("Subscription title"),
         required=False)
+
+
+def pas_to_privacy(pas):
+    """Converts a PersonalArchiveSubscription to privacy"""
+    return IPrivacy(pas.archive)

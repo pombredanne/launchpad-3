@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for items that can be displayed as images."""
@@ -9,13 +9,13 @@ __all__ = [
     'BrandingChangeView',
     ]
 
-from lp.app.widgets.image import ImageChangeWidget
-from lp.services.webapp import (
+from lp.app.browser.launchpadform import (
     action,
-    canonical_url,
     custom_widget,
     LaunchpadEditFormView,
     )
+from lp.app.widgets.image import ImageChangeWidget
+from lp.services.webapp import canonical_url
 
 
 class BrandingChangeView(LaunchpadEditFormView):

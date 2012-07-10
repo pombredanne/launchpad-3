@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0322,F0401
@@ -573,8 +573,16 @@ class CodeReviewNewRevisions:
         self.extra_css_class = None
         self.comment_author = None
         self.body_text = None
+        self.text_for_display = None
+        self.download_url = None
+        self.too_long = False
+        self.too_long_to_render = False
         self.comment_date = None
         self.display_attachments = False
+        self.index = None
+
+    def download(self, request):
+        pass
 
 
 class CodeReviewNewRevisionsView(LaunchpadView):
@@ -648,7 +656,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
-                CodeReviewDisplayComment(comment, from_superseded)
+                CodeReviewDisplayComment(
+                    comment, from_superseded, limit_length=True)
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
@@ -712,7 +721,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def edit_description_link_class(self):
         if self.context.description:
-            return "unseen"
+            return "hidden"
         else:
             return ""
 
@@ -728,7 +737,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def edit_commit_message_link_class(self):
         if self.context.commit_message:
-            return "unseen"
+            return "hidden"
         else:
             return ""
 
@@ -1426,7 +1435,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     schema = IAddVote
     field_names = ['vote', 'review_type', 'comment']
 
-    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
 
     @cachedproperty
     def initial_values(self):

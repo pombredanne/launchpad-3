@@ -9,17 +9,8 @@ __metaclass__ = type
 import unittest
 
 from contrib.oauth import OAuthRequest
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
-from lp.services.config import config
-from lp.services.webapp.authentication import LaunchpadPrincipal
-from lp.services.webapp.login import logInPrincipal
-from lp.services.webapp.publication import LaunchpadBrowserPublication
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing import (
-    login,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -29,32 +20,6 @@ from lp.testing.systemdocs import (
     setUp,
     tearDown,
     )
-
-
-class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.email = 'baz@example.com'
-        self.request = LaunchpadTestRequest()
-        self.account = self.factory.makeAccount(
-            'Personless account', email=self.email)
-        self.principal = LaunchpadPrincipal(
-            self.account.id, self.account.displayname,
-            self.account.displayname, self.account)
-        login(self.email)
-
-    def test_navigate_anonymously_on_launchpad_dot_net(self):
-        # A user with the credentials of a personless account will browse
-        # launchpad.net anonymously.
-        logInPrincipal(self.request, self.principal, self.email)
-        self.request.response.setCookie(
-            config.launchpad_session.cookie, 'xxx')
-
-        publication = LaunchpadBrowserPublication(None)
-        principal = publication.getPrincipal(self.request)
-        self.failUnless(isinstance(principal, UnauthenticatedPrincipal))
 
 
 class TestOAuthParsing(TestCaseWithFactory):

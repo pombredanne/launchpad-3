@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Quick hack makefile to (re)create the Launchpad database.
@@ -10,10 +10,6 @@ PYTHON=../../bin/py
 # The database dump to restore on database creation
 SAMPLEDATA=../sampledata/current.sql
 SAMPLEDATA_DEV=../sampledata/current-dev.sql
-
-# The database dump to create
-NEWSAMPLEDATA=../sampledata/newsampledata.sql
-NEWSAMPLEDATA_DEV=../sampledata/newsampledata-dev.sql
 
 # The database dump to create for lint reports
 LINTDATA=../sampledata/lintdata.sql
@@ -55,7 +51,7 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
     pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
     | grep -v "\( TOC \|INSERT INTO launchpaddatabase\|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
     | $(PYTHON) sort_sql.py >> $(2) && \
-    $(PYTHON) fti.py --force -d ${1} -q
+    $(PYTHON) fti.py --live-rebuild -d ${1} -q
 
 
 # The latest schema dump from production. Database patches are relative
@@ -77,7 +73,7 @@ test: create
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Rebuilding full text indexes"
-	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
+	@ ${PYTHON} fti.py --live-rebuild -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Disabling autovacuum"
@@ -94,7 +90,7 @@ dev: test
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -f $(SAMPLEDATA_DEV) > /dev/null
 	@ echo "* Rebuilding full text indexes"
-	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
+	@ ${PYTHON} fti.py --live-rebuild -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Disabling autovacuum"
@@ -110,6 +106,9 @@ dev: test
 # database schema, full text indexes and grants into it.
 # It will also create session DBs for the test and dev environments.
 # No sample data is added at this point.
+# NB. PG 9.1 has plpgsql installed in the template databases.
+# We can remove the stanzas that install plpgsql when we no longer support
+# PG 8.4.
 create:
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
@@ -127,15 +126,21 @@ create:
 	@ echo "* Vacuuming"
 	@ vacuumdb -fz ${EMPTY_DBNAME}
 
-	@ echo "* Creating session databases '${SESSION_DBNAME}' (if necessary)"
+	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template0 ${SESSION_DBNAME} ; \
-	    createlang plpgsql ${SESSION_DBNAME}; \
+	    if [ "$$((`createlang -l ${SESSION_DBNAME} \
+		| grep plpgsql | wc -l`))" = '0' ]; \
+		then createlang plpgsql ${SESSION_DBNAME}; \
+	    fi; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
 	@ ${CREATEDB} template0 ${TEST_SESSION_DBNAME}
-	@ createlang plpgsql ${TEST_SESSION_DBNAME}
+	@if [ "$$((`createlang -l ${TEST_SESSION_DBNAME} \
+	    | grep plpgsql | wc -l`))" = '0' ]; \
+	    then createlang plpgsql ${TEST_SESSION_DBNAME}; \
+	fi
 	@ psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
@@ -169,10 +174,10 @@ diagram:
 	${PYTHON} diagram.py
 
 newsampledata_test:
-	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${NEWSAMPLEDATA})
+	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${SAMPLEDATA})
 
 newsampledata_dev:
-	$(call build_new_sampledata,${DBNAME_DEV},${NEWSAMPLEDATA_DEV})
+	$(call build_new_sampledata,${DBNAME_DEV},${SAMPLEDATA_DEV})
 
 newsampledata: newsampledata_dev newsampledata_test
 

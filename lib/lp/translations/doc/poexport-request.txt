@@ -263,6 +263,7 @@ The script is run.
     DEBUG   Exporting objects for Happy Downloader, related to template
     alsa-utils in alsa-utils trunk
     INFO    Stored file at http://.../launchpad-export.tar.gz
+    DEBUG   rosetta-export-queue ran in ...s (excl. load & lock)
     DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
     <BLANKLINE>
 

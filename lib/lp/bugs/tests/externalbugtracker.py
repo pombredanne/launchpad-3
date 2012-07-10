@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 
+from copy import deepcopy
 from datetime import (
     datetime,
     timedelta,
@@ -60,11 +61,9 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.scripts import debbugs
 from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.testing import celebrity_logged_in
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.dbuser import lp_dbuser
 from lp.testing.systemdocs import ordered_dict_as_string
 
 
@@ -76,23 +75,21 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     closed. After returning from this function, a new connection using
     the checkwatches db user is created.
     """
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
-    owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    bugtracker_set = getUtility(IBugTrackerSet)
-    index = 1
-    name = '%s-checkwatches' % (bugtracker_type.name.lower())
-    while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
-        index += 1
-    name += '-%d' % index
-    BugTracker(
-        name=name,
-        title='%s *TESTING*' % (bugtracker_type.title),
-        bugtrackertype=bugtracker_type,
-        baseurl=base_url,
-        summary='-', contactdetails='-',
-        owner=owner)
-    commit()
-    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    with lp_dbuser():
+        owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+        bugtracker_set = getUtility(IBugTrackerSet)
+        index = 1
+        name = '%s-checkwatches' % (bugtracker_type.name.lower())
+        while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
+            index += 1
+        name += '-%d' % index
+        BugTracker(
+            name=name,
+            title='%s *TESTING*' % (bugtracker_type.title),
+            bugtrackertype=bugtracker_type,
+            baseurl=base_url,
+            summary='-', contactdetails='-',
+            owner=owner)
     return getUtility(IBugTrackerSet).getByName(name)
 
 
@@ -394,7 +391,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     utc_offset = 0
     print_method_calls = False
 
-    bugs = {
+    _bugs = {
         1: {'alias': '',
             'assigned_to': 'test@canonical.com',
             'component': 'GPPSystems',
@@ -430,14 +427,14 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         }
 
     # Map aliases onto bugs.
-    bug_aliases = {
+    _bug_aliases = {
         'bug-two': 2,
         }
 
     # Comments are mapped to bug IDs.
     comment_id_index = 4
     new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
-    bug_comments = {
+    _bug_comments = {
         1: {
             1: {'author': 'trillian',
                 'id': 1,
@@ -471,25 +468,34 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     # Map namespaces onto method names.
     methods = {
-        'Launchpad': [
+        'Launchpad': (
             'add_comment',
             'comments',
             'get_bugs',
             'login',
             'time',
             'set_link',
-            ],
+            ),
         'Test': ['login_required'],
         }
 
     # Methods that require authentication.
-    auth_required_methods = [
+    auth_required_methods = (
         'add_comment',
         'login_required',
         'set_link',
-        ]
+        )
 
     expired_cookie = None
+
+    def __init__(self, *args, **kwargs):
+        """Ensure mutable class data is copied to the instance."""
+        # UrlLib2Transport is not a new style class so 'super' cannot be
+        # used.
+        UrlLib2Transport.__init__(self, *args, **kwargs)
+        self.bugs = deepcopy(TestBugzillaXMLRPCTransport._bugs)
+        self.bug_aliases = deepcopy(self._bug_aliases)
+        self.bug_comments = deepcopy(self._bug_comments)
 
     def expireCookie(self, cookie):
         """Mark the cookie as expired."""
@@ -804,7 +810,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         ]
 
     # A list of comments on bugs.
-    bug_comments = {
+    _bug_comments = {
         1: {
             1: {'author': 'trillian',
                 'bug_id': 1,
@@ -839,6 +845,10 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 },
             },
         }
+
+    def __init__(self, *args, **kwargs):
+        """Ensure mutable class data is copied to the instance."""
+        TestBugzillaXMLRPCTransport.__init__(self, *args, **kwargs)
 
     def version(self):
         """Return the version of Bugzilla being used."""
@@ -1195,11 +1205,8 @@ class TestInternalXMLRPCTransport:
     def request(self, host, handler, request, verbose=None):
         args, method_name = xmlrpclib.loads(request)
         method = getattr(self, method_name)
-        LaunchpadZopelessLayer.switchDbUser('launchpad')
-        result = method(*args)
-        LaunchpadZopelessLayer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
-        return result
+        with lp_dbuser():
+            return method(*args)
 
     def newBugTrackerToken(self):
         token_api = ExternalBugTrackerTokenAPI(None, None)

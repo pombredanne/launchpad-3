@@ -11,10 +11,6 @@ import os
 from lp.scripts.utilities.js.jsbuild import ComboFile
 from lp.scripts.utilities.js.combo import combine_files
 
-# This constant helps us meet maximum line-length goals.
-GALLERY_ACCORDION = 'yui3-gallery/gallery-accordion/assets/'
-
-
 root = os.path.abspath('.')
 root = os.path.normpath(${buildout:directory|path-repr})
 icing = os.path.join(root, 'lib/canonical/launchpad/icing')
@@ -35,15 +31,18 @@ names = [
     'build/autocomplete/assets/skins/sam/autocomplete.css',
     'build/overlay/assets/skins/sam/pretty-overlay.css',
     'build/formoverlay/assets/formoverlay-core.css',
+    'build/inlinehelp/assets/inlinehelp-core.css',
     'build/indicator/assets/indicator-core.css',
     'build/confirmationoverlay/assets/confirmationoverlay-core.css',
     'build/picker/assets/skins/sam/picker.css',
     'build/activator/assets/skins/sam/activator.css',
     'build/choiceedit/assets/choiceedit-core.css',
     'build/ordering/assets/ordering-core.css',
-    GALLERY_ACCORDION + 'gallery-accordion-core.css',
-    GALLERY_ACCORDION + 'skins/sam/gallery-accordion-skin.css',
-    'build/sprite.css',
+    'build/gallery-accordion/assets/gallery-accordion-core.css',
+    'build/gallery-accordion/assets/skins/sam/gallery-accordion-skin.css',
+    'build/inline-sprites-1.css',
+    'build/inline-sprites-2.css',
+    'build/block-sprites-1.css',
     # Include our main stylesheets at the end so they
     # take precedence over the others.
     'css/base.css',

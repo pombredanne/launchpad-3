@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gina db handlers.
@@ -41,6 +41,8 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import (
     quote,
@@ -58,13 +60,22 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
     )
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
 from lp.soyuz.model.processor import Processor
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.model.section import Section
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.gina.library import getLibraryAlias
 from lp.soyuz.scripts.gina.packages import (
     get_dsc_path,
@@ -179,7 +190,7 @@ class ImporterHandler:
         self.imported_bins = {}
 
         self.sphandler = SourcePackageHandler(
-            archive_root, pocket, component_override)
+            distro_name, archive_root, pocket, component_override)
         self.bphandler = BinaryPackageHandler(
             self.sphandler, archive_root, pocket)
 
@@ -198,9 +209,6 @@ class ImporterHandler:
 
     def ensure_archinfo(self, archtag):
         """Append retrived distroarchseries info to a dict."""
-        # Avoid circular imports.
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-
         if archtag in self.archinfo.keys():
             return
 
@@ -234,9 +242,6 @@ class ImporterHandler:
 
     def _get_distro(self, name):
         """Return the distro database object by name."""
-        # Avoid circular imports.
-        from lp.registry.model.distribution import Distribution
-
         distro = Distribution.selectOneBy(name=name)
         if not distro:
             raise DataSetupError("Error finding distribution %r" % name)
@@ -244,11 +249,7 @@ class ImporterHandler:
 
     def _get_distroseries(self, name):
         """Return the distroseries database object by name."""
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-
-        dr = DistroSeries.selectOneBy(name=name,
-                                       distributionID=self.distro.id)
+        dr = DistroSeries.selectOneBy(name=name, distributionID=self.distro.id)
         if not dr:
             raise DataSetupError("Error finding distroseries %r" % name)
         return dr
@@ -454,8 +455,9 @@ class SourcePackageHandler:
     on the launchpad db a little easier.
     """
 
-    def __init__(self, archive_root, pocket, component_override):
+    def __init__(self, distro_name, archive_root, pocket, component_override):
         self.distro_handler = DistroHandler()
+        self.distro_name = distro_name
         self.archive_root = archive_root
         self.pocket = pocket
         self.component_override = component_override
@@ -492,7 +494,7 @@ class SourcePackageHandler:
             return None
 
         # Process the package
-        sp_data.process_package(self.archive_root)
+        sp_data.process_package(self.distro_name, self.archive_root)
         sp_data.ensure_complete()
 
         spr = self.createSourcePackageRelease(sp_data, distroseries)
@@ -577,10 +579,6 @@ class SourcePackageHandler:
 
         # Check here to see if this release has ever been published in
         # the distribution, no matter what status.
-
-        # Avoid circular imports.
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
         query = """
                 SourcePackageRelease.sourcepackagename = %s AND
                 SourcePackageRelease.version = %s AND
@@ -605,9 +603,6 @@ class SourcePackageHandler:
 
         Returns the created SourcePackageRelease, or None if it failed.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
         displayname, emailaddress = src.maintainer
         comment = 'when the %s package was imported into %s' % (
             src.package, distroseries.displayname)
@@ -654,7 +649,7 @@ class SourcePackageHandler:
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,
             dsc_standards_version=src.standards_version,
-            dsc_binaries=" ".join(src.binaries),
+            dsc_binaries=", ".join(src.binaries),
             upload_archive=distroseries.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
@@ -734,10 +729,6 @@ class SourcePackagePublisher:
 
     def _checkPublishing(self, sourcepackagerelease):
         """Query for the publishing entry"""
-        # Avoid circular import.
-        from lp.soyuz.model.publishing import (
-            SourcePackagePublishingHistory)
-
         ret = SourcePackagePublishingHistory.select("""
             sourcepackagerelease = %s AND
             distroseries = %s AND
@@ -764,10 +755,6 @@ class BinaryPackageHandler:
 
     def checkBin(self, binarypackagedata, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
-        # Avoid circular imports.
-        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-        from lp.soyuz.model.binarypackagename import BinaryPackageName
-
         try:
             binaryname = BinaryPackageName.byName(binarypackagedata.package)
         except SQLObjectNotFound:
@@ -812,9 +799,6 @@ class BinaryPackageHandler:
 
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
         """Create a new binarypackage."""
-        # Avoid circular imports.
-        from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-
         fdir, fname = os.path.split(bin.filename)
         to_upload = check_not_in_librarian(fname, bin.archive_root, fdir)
         fname, path = to_upload[0]
@@ -866,9 +850,6 @@ class BinaryPackageHandler:
 
     def ensureBuild(self, binary, srcpkg, distroarchinfo, archtag):
         """Ensure a build record."""
-        # Avoid circular imports.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
         clauseTables = [
@@ -933,9 +914,6 @@ class BinaryPackagePublisher:
 
     def publish(self, binarypackage, bpdata):
         """Create the publishing entry on db if does not exist."""
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
         # These need to be pulled from the binary package data, not the
         # binary package release: the data represents data from /this
         # specific distroseries/, whereas the package represents data
@@ -991,9 +969,6 @@ class BinaryPackagePublisher:
 
     def _checkPublishing(self, binarypackage):
         """Query for the publishing entry"""
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
         ret = BinaryPackagePublishingHistory.select("""
             binarypackagerelease = %s AND
             distroarchseries = %s AND

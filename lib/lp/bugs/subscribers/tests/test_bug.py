@@ -7,7 +7,7 @@ from storm.store import Store
 from testtools.matchers import Is
 
 from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bugnotification import (
     BugNotification,

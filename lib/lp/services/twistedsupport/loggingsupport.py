@@ -10,7 +10,6 @@ __all__ = [
     'LaunchpadLogFile',
     'set_up_logging_for_script',
     'set_up_oops_reporting',
-    'set_up_tacfile_logging',
     ]
 
 

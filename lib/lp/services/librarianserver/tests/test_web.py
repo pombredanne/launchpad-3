@@ -34,6 +34,7 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     TimeLimitedToken,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -372,7 +373,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         try:
             urlopen(url)
             self.fail('404 not raised')
-        except HTTPError, e:
+        except HTTPError as e:
             self.failUnlessEqual(e.code, 404)
 
 
@@ -380,7 +381,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
+        switch_dbuser(config.librarian.dbuser)
 
     def commit(self):
         LaunchpadZopelessLayer.commit()
@@ -440,19 +441,17 @@ class DeletedContentTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
+        switch_dbuser(config.librarian.dbuser)
 
     def test_deletedContentNotFound(self):
         # Use a user with rights to change the deleted flag in the db.
         # This currently means a superuser.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
         alias = getUtility(ILibraryFileAliasSet).create(
                 'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain')
         alias_id = alias.id
         transaction.commit()
-
-        client = LibrarianClient()
 
         # This works
         alias = getUtility(ILibraryFileAliasSet)[alias_id]
@@ -464,7 +463,6 @@ class DeletedContentTestCase(unittest.TestCase):
         url = alias.http_url
         retrieved_content = urlopen(url).read()
         self.failUnlessEqual(retrieved_content, 'xxx\nxxx\n')
-
 
         # But when we flag the content as deleted
         cur = cursor()
@@ -481,5 +479,5 @@ class DeletedContentTestCase(unittest.TestCase):
         try:
             urlopen(url)
             self.fail('404 not raised')
-        except HTTPError, x:
+        except HTTPError as x:
             self.failUnlessEqual(x.code, 404)

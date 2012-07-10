@@ -17,7 +17,7 @@
     <tal:uses_launchpad_bugtracker
        condition="context/target/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <script type="text/javascript">
-          LPS.use('lp.registry.structural_subscription', function(Y) {
+          LPJS.use('lp.registry.structural_subscription', function(Y) {
               var module = Y.lp.registry.structural_subscription;
               Y.on('domready', function() {
                 module.setup({content_box: "#structural-subscription-content-box"});
@@ -39,11 +39,15 @@
       milestone_menu view/milestone/menu:overview;
       has_edit context/required:launchpad.Edit">
 
+      <tal:search_by_tags_form
+        content="structure context/@@+portlet-milestone-tag-search"
+        condition="view/is_project_milestone_tag"/>
+
       <div class="top-portlet">
-        <div id="description" tal:condition="view/milestone/summary">
+        <div id="description" tal:condition="view/milestone/summary|nothing">
           <p class="documentDescription"
             tal:content="structure view/milestone/summary/fmt:text-to-html">
-              Milestone.summary.
+              Milestone summary.
           </p>
         </div>
       </div>
@@ -67,11 +71,12 @@
               </dl>
 
               <dl id="version">
-                <dt>Version:</dt>
+                <dt tal:condition="view/is_project_milestone_tag">Tags:</dt>
+                <dt tal:condition="not: view/is_project_milestone_tag">Version:</dt>
                 <dd><tal:version replace="context/name" /></dd>
               </dl>
 
-              <dl id="code-name">
+              <dl id="code-name" tal:condition="view/milestone/code_name|nothing">
                 <dt>Code name:</dt>
                 <dd>
                   <tal:code-name replace="view/milestone/code_name" />
@@ -80,40 +85,42 @@
                 </dd>
               </dl>
 
-              <dl tal:condition="not: view/release">
-                <dt>Expected:</dt>
-                <dd><span
-                  tal:attributes="title context/dateexpected/fmt:datetime"
-                  tal:content="context/dateexpected/fmt:approximatedate" />
-                  &nbsp;
-                  <a tal:replace="structure milestone_menu/create_release/fmt:icon-link" />
-                </dd>
-              </dl>
-
-              <tal:has_release condition="view/release">
-                <dl>
-                  <dt>Released:</dt>
+              <tal:is_not_project_milestone_tag condition="not: view/is_project_milestone_tag">
+                <dl tal:condition="not: view/release">
+                  <dt>Expected:</dt>
                   <dd><span
-                    tal:attributes="title view/release/datereleased/fmt:datetime"
-                    tal:content="view/release/datereleased/fmt:approximatedate" />
+                    tal:attributes="title context/dateexpected/fmt:datetime"
+                    tal:content="context/dateexpected/fmt:approximatedate" />
                     &nbsp;
-                    <a tal:replace="structure release_menu/delete/fmt:icon" />
-                    <a tal:replace="structure release_menu/edit/fmt:icon" />
-                    </dd>
+                    <a tal:replace="structure milestone_menu/create_release/fmt:icon-link" />
+                  </dd>
                 </dl>
 
-                <dl>
-                  <dt>Registrant:</dt>
-                  <dd><tal:registrant replace="structure view/release/owner/fmt:link"/></dd>
-                </dl>
+                <tal:has_release condition="view/release">
+                  <dl>
+                    <dt>Released:</dt>
+                    <dd><span
+                      tal:attributes="title view/release/datereleased/fmt:datetime"
+                      tal:content="view/release/datereleased/fmt:approximatedate" />
+                      &nbsp;
+                      <a tal:replace="structure release_menu/delete/fmt:icon" />
+                      <a tal:replace="structure release_menu/edit/fmt:icon" />
+                      </dd>
+                  </dl>
 
-                <dl>
-                  <dt>Release registered:</dt>
-                  <dd><span
-                    tal:attributes="title view/release/datecreated/fmt:datetime"
-                    tal:content="view/release/datecreated/fmt:approximatedate" /></dd>
-                </dl>
-              </tal:has_release>
+                  <dl>
+                    <dt>Registrant:</dt>
+                    <dd><tal:registrant replace="structure view/release/owner/fmt:link"/></dd>
+                  </dl>
+
+                  <dl>
+                    <dt>Release registered:</dt>
+                    <dd><span
+                      tal:attributes="title view/release/datecreated/fmt:datetime"
+                      tal:content="view/release/datecreated/fmt:approximatedate" /></dd>
+                  </dl>
+                </tal:has_release>
+              </tal:is_not_project_milestone_tag>
             </div>
 
             <dl tal:condition="not: view/is_project_milestone">
@@ -125,7 +132,7 @@
                 <tal:no condition="not: context/active">
                   No.  Drivers cannot target bugs and blueprints to this milestone.
                 </tal:no>
-                &nbsp; <a tal:replace="structure milestone_menu/edit/fmt:icon" />
+                &nbsp;<a tal:replace="structure milestone_menu/edit/fmt:icon" />
               </dd>
             </dl>
 
@@ -140,8 +147,7 @@
         </div>
 
         <div class="yui-u">
-          <div id="milestone-activities" class="portlet"
-            tal:content="cache:anonymous, view/expire_cache_minutes minute">
+          <div id="milestone-activities" class="portlet">
             <h2>Activities</h2>
 
             <dl>
@@ -219,8 +225,7 @@
           targeted
         </h2>
 
-        <tal:has_specs condition="specs"
-          tal:content="cache:anonymous, view/expire_cache_minutes minute">
+        <tal:has_specs condition="specs">
           <table class="listing sortable" id="milestone_specs"
             style="margin-bottom: 2em;">
             <thead>
@@ -278,10 +283,8 @@
         </tal:has_specs>
 
         <tal:has_bugtasks condition="bugtasks">
-          <tal:cache content="cache:anonymous, view/expire_cache_minutes minute">
-            <tal:milestone-bugtasks
-              metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
-          </tal:cache>
+          <tal:milestone-bugtasks
+            metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
         </tal:has_bugtasks>
 
         <tal:neither_bugs_nor_specs condition="not: view/has_bugs_or_specs">
@@ -310,7 +313,7 @@
               milestones for
               <tal:project replace="view/milestone/target/project/displayname" /></a>
           </li>
-          <li tal:condition="view/milestone/series_target">
+          <li tal:condition="view/milestone/series_target|nothing">
             <a class="sprite info"
               tal:attributes="href view/milestone/series_target/fmt:url">View
               releases for the

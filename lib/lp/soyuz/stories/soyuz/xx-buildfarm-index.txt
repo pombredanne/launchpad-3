@@ -4,6 +4,7 @@ The BuildFarm page is accessible from the root page, although we don't
 link to it yet because we are not yet sure of the benefits of doing
 this, since the audience of this page is still restricted.
 
+    >>> anon_browser.mech_browser.set_handle_equiv(False)
     >>> anon_browser.open('http://launchpad.dev/+builds')
 
 The BuildFarm contains a list of all builders registered in Launchpad
@@ -120,6 +121,7 @@ and are not permitted if they go directly to the URL.
 
 Administrators can create new builders.
 
+    >>> admin_browser.mech_browser.set_handle_equiv(False)
     >>> admin_browser.open("http://launchpad.dev/+builds/+index")
 
     >>> admin_browser.getLink("Register a new build machine").click()
@@ -127,12 +129,11 @@ Administrators can create new builders.
     >>> print admin_browser.title
     Register a new...
 
-Registering a new builder involves setting its name, title,
-description and corresponding location.
+Registering a new builder involves setting its name, title and corresponding
+location.
 
     >>> admin_browser.getControl('Name').value = 'tubaina'
     >>> admin_browser.getControl('Title').value = 'Tubaina'
-    >>> admin_browser.getControl('Description').value = 'Bogus'
     >>> admin_browser.getControl(
     ...     'URL').value = 'http://tubaina.buildd'
 

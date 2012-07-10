@@ -66,7 +66,7 @@ comment, of the bug report.
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
-    ...     searchtext="bin pkg", user=current_user)
+    ...     searchtext=u"bin pkg", user=current_user)
 
     >>> latest_ubuntu_bugtask = ubuntu.searchTasks(search_params)[0]
 
@@ -358,7 +358,7 @@ still say 'Edit subscription':
     'edit'
 
 If we now unsubscribe Foo Bar, it will say 'Subscribe', since team
-unsubsription is handled by the remove icon next the the team in the
+unsubsription is handled by the remove icon next the team in the
 subscribers portlet.
 
     >>> bug_one.unsubscribe(foo_bar, foo_bar)
@@ -507,7 +507,7 @@ for upstream and an Ubuntu series and see how the list changes.
 
 (Login as a bug supervisor to be able to nominate.)
 
-    >>> login_person(nominator)
+    >>> ignored = login_person(nominator)
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> ubuntu_warty = ubuntu.getSeries("warty")

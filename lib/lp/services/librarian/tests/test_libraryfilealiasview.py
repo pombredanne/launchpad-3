@@ -23,8 +23,7 @@ class TestLibraryFileAliasView(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias()
         removeSecurityProxy(lfa).content = None
         self.assertTrue(lfa.deleted)
-        request = LaunchpadTestRequest(
-            environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME' : 'http' })
+        request = LaunchpadTestRequest()
         view = getMultiAdapter((lfa, request), name='+index')
         self.assertRaisesWithContent(
             GoneError, "'File deleted.'", view.initialize)

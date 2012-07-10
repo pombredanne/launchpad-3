@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -43,6 +43,7 @@ from lp.code.xmlrpc.codehosting import (
     run_with_login,
     )
 from lp.codehosting.inmemory import InMemoryFrontend
+from lp.registry.enums import InformationType
 from lp.services.database.constants import UTC_NOW
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.webapp.interfaces import ILaunchBag
@@ -56,6 +57,7 @@ from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.xmlrpc import faults
 
@@ -579,7 +581,8 @@ class CodehostingTest(TestCaseWithFactory):
         # requestMirror can be used to request the mirror of a private branch.
         requester = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(
-            owner=requester, private=True, branch_type=BranchType.MIRRORED)
+            owner=requester, branch_type=BranchType.MIRRORED,
+            information_type=InformationType.USERDATA)
         branch = removeSecurityProxy(branch)
         self.codehosting_api.requestMirror(requester.id, branch.id)
         self.assertSqlAttributeEqualsDate(
@@ -689,7 +692,12 @@ class CodehostingTest(TestCaseWithFactory):
         :return: The new Product and the new Branch.
         """
         product = self.factory.makeProduct()
-        branch = self.factory.makeProductBranch(private=private)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
+        branch = self.factory.makeProductBranch(
+            information_type=information_type)
         self.factory.enableDefaultStackingForProduct(product, branch)
         target = IBranchTarget(removeSecurityProxy(product))
         self.assertEqual(target.default_stacked_on_branch, branch)
@@ -792,7 +800,8 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
-                branch_type=BranchType.HOSTED, private=True, owner=requester))
+                branch_type=BranchType.HOSTED, owner=requester,
+                information_type=InformationType.USERDATA))
         path = escape(u'/%s' % branch.unique_name)
         translation = self.codehosting_api.translatePath(requester.id, path)
         login(ANONYMOUS)
@@ -802,7 +811,8 @@ class CodehostingTest(TestCaseWithFactory):
 
     def test_translatePath_cant_see_private_branch(self):
         requester = self.factory.makePerson()
-        branch = removeSecurityProxy(self.factory.makeAnyBranch(private=True))
+        branch = removeSecurityProxy(self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA))
         path = escape(u'/%s' % branch.unique_name)
         self.assertPermissionDenied(requester, path)
 
@@ -813,7 +823,8 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertNotFound(requester, path)
 
     def test_translatePath_launchpad_services_private(self):
-        branch = removeSecurityProxy(self.factory.makeAnyBranch(private=True))
+        branch = removeSecurityProxy(self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA))
         path = escape(u'/%s' % branch.unique_name)
         translation = self.codehosting_api.translatePath(
             LAUNCHPAD_SERVICES, path)
@@ -823,7 +834,8 @@ class CodehostingTest(TestCaseWithFactory):
             translation)
 
     def test_translatePath_anonymous_cant_see_private_branch(self):
-        branch = removeSecurityProxy(self.factory.makeAnyBranch(private=True))
+        branch = removeSecurityProxy(self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA))
         path = escape(u'/%s' % branch.unique_name)
         self.assertPermissionDenied(LAUNCHPAD_ANONYMOUS, path)
 
@@ -1041,7 +1053,7 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(expected, translation)
 
     def test_translatePath_branch_id_alias_owned(self):
-        # Even if the the requester is the owner, the branch is read only.
+        # Even if the requester is the owner, the branch is read only.
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
@@ -1058,7 +1070,8 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
-                branch_type=BranchType.HOSTED, private=True, owner=requester))
+                branch_type=BranchType.HOSTED, owner=requester,
+                information_type=InformationType.USERDATA))
         path = escape(branch_id_alias(branch))
         translation = self.codehosting_api.translatePath(requester.id, path)
         self.assertEqual(
@@ -1070,7 +1083,8 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
-                branch_type=BranchType.HOSTED, private=True))
+                branch_type=BranchType.HOSTED,
+                information_type=InformationType.USERDATA))
         path = escape(branch_id_alias(branch))
         self.assertPermissionDenied(requester, path)
 
@@ -1169,13 +1183,13 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         self.codehosting_api = frontend.getCodehostingEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
 
-    def assertNoBranchIsAquired(self, *branch_types):
+    def assertNoBranchIsAcquired(self, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch_types = tuple(branch_type.name for branch_type in branch_types)
         pull_info = self.codehosting_api.acquireBranchToPull(branch_types)
         self.assertEqual((), pull_info)
 
-    def assertBranchIsAquired(self, branch, *branch_types):
+    def assertBranchIsAcquired(self, branch, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch = removeSecurityProxy(branch)
         branch_types = tuple(branch_type.name for branch_type in branch_types)
@@ -1197,7 +1211,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         # This is a bit random, but it works.  acquireBranchToPull marks the
         # branch it returns as started mirroring, but we should check that the
         # one we want is returned...
-        self.assertBranchIsAquired(branch, branch.branch_type)
+        self.assertBranchIsAcquired(branch, branch.branch_type)
 
     def test_branch_type_returned_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
@@ -1229,7 +1243,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         # branch.
         product = self.factory.makeProduct()
         default_branch = self.factory.makeProductBranch(
-            product=product, private=True)
+            product=product, information_type=InformationType.USERDATA)
         self.factory.enableDefaultStackingForProduct(product, default_branch)
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
@@ -1290,7 +1304,7 @@ def test_suite():
          ])
     scenarios = [
         ('db', {'frontend': LaunchpadDatabaseFrontend,
-                'layer': DatabaseFunctionalLayer}),
+                'layer': LaunchpadFunctionalLayer}),
         ('inmemory', {'frontend': InMemoryFrontend,
                       'layer': FunctionalLayer}),
         ]

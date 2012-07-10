@@ -100,7 +100,7 @@ Where Sample person user can see the description previously entered.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Hoohay for PPA.
 
 The PPA owner is able to edit PPA 'displayname' and 'description'.
@@ -122,7 +122,7 @@ where he can see the updated information.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Howdy, cowboys !
 
 Empty 'description' fields are not rendered.
@@ -160,7 +160,7 @@ Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
 /
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
 
     >>> print find_tag_by_id(cprov_browser.contents, 'ppas')
@@ -214,7 +214,7 @@ That understood, the PPA gets activated.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Hoohay for Team PPA.
 
 Any team administrator can edit the description contents,
@@ -234,7 +234,7 @@ exactly the same as for a user-PPA, see above:
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Yay, I can change it.
 
 Cancelling the 'Edit' form will redirect the user to the PPA overview
@@ -250,7 +250,7 @@ page and discard the changes.
 
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Yay, I can change it.
 
 Create a publication in the team's PPA.
@@ -304,7 +304,7 @@ name of other users or teams:
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     Go for it, you lazy !
 
 LP-admins can also 'edit' PPAs of other people:
@@ -362,7 +362,8 @@ build on a virtualized builder.
     True
     >>> admin_browser.getControl(name="field.private").value
     False
-    >>> admin_browser.getControl(name="field.commercial").value
+    >>> admin_browser.getControl(
+    ...     name="field.suppress_subscription_notifications").value
     False
     >>> admin_browser.getControl(name="field.require_virtualized").value
     True
@@ -373,7 +374,8 @@ build on a virtualized builder.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.commercial").value = True
+    >>> admin_browser.getControl(
+    ...     name="field.suppress_subscription_notifications").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl(
     ...     name="field.require_virtualized").value = True
@@ -417,10 +419,7 @@ a sources.list entry.  If the field fails validation an error is displayed.
     'deb not_a_url' is not a complete and valid sources.list entry
 
 
-Setting the buildd secret for non-private archives also generates
-an error.  Because the "commercial" flag is also currently set, removing
-privacy will also trigger a validation error because the commercial flag can
-only be set on private archives:
+Setting the buildd secret for non-private archives also generates an error:
 
     >>> admin_browser.getControl(
     ...     name="field.external_dependencies").value = ""
@@ -430,8 +429,7 @@ only be set on private archives:
 
     >>> for error in get_feedback_messages(admin_browser.contents):
     ...     print error
-    There are 2 errors.
-    Can only set commericial for private archives.
+    There is 1 error.
     Do not specify for non-private archives
 
 
@@ -518,7 +516,7 @@ Activate the PPA in the first browser:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'edit-description'))
-    PPA description
+    Edit PPA description
     PPA rocks!
 
 Activating the default PPA in the second browser results in an error

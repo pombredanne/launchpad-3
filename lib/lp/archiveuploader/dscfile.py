@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -96,7 +96,7 @@ def cleanup_unpacked_dir(unpacked_dir):
     """
     try:
         shutil.rmtree(unpacked_dir)
-    except OSError, error:
+    except OSError as error:
         if errno.errorcode[error.errno] != 'EACCES':
             raise UploadError(
                 "couldn't remove tmp dir %s: code %s" % (
@@ -132,7 +132,7 @@ class SignableTagFile:
         try:
             with open(self.filepath, 'rb') as f:
                 self.raw_content = f.read()
-        except IOError, error:
+        except IOError as error:
             raise UploadError(
                 "Unable to read %s: %s" % (self.filename, error))
 
@@ -145,7 +145,7 @@ class SignableTagFile:
         try:
             self._dict = parse_tagfile_content(
                 self.parsed_content, filename=self.filepath)
-        except TagFileParseError, error:
+        except TagFileParseError as error:
             raise UploadError(
                 "Unable to parse %s: %s" % (self.filename, error))
 
@@ -164,7 +164,7 @@ class SignableTagFile:
         try:
             sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
                 content)
-        except GPGVerificationError, error:
+        except GPGVerificationError as error:
             raise UploadError(
                 "GPG verification of %s failed: %s" % (
                 filename, str(error)))
@@ -195,10 +195,14 @@ class SignableTagFile:
         try:
             (rfc822, rfc2047, name, email) = safe_fix_maintainer(
                 addr, fieldname)
-        except ParseMaintError, error:
+        except ParseMaintError as error:
             raise UploadError(str(error))
 
         person = getUtility(IPersonSet).getByEmail(email)
+        if person and person.private:
+            # Private teams can not be maintainers.
+            raise UploadError("Invalid Maintainer.")
+
         if person is None and self.policy.create_people:
             package = self._dict['Source']
             version = self._dict['Version']
@@ -336,7 +340,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # Check size and checksum of the DSC file itself
         try:
             self.checkSizeAndCheckSum()
-        except UploadError, error:
+        except UploadError as error:
             yield error
 
         files = []
@@ -354,7 +358,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             try:
                 file_instance = DSCUploadedFile(
                     filepath, digest, size, self.policy, self.logger)
-            except UploadError, error:
+            except UploadError as error:
                 yield error
             else:
                 files.append(file_instance)
@@ -385,7 +389,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     apt_pkg.parse_src_depends(field)
                 except (SystemExit, KeyboardInterrupt):
                     raise
-                except Exception, error:
+                except Exception as error:
                     # Swallow everything apt_pkg throws at us because
                     # it is not desperately pythonic and can raise odd
                     # or confusing exceptions at times and is out of
@@ -501,15 +505,15 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             try:
                 library_file, file_archive = self._getFileByName(
                     sub_dsc_file.filename)
-            except NotFoundError, error:
+            except NotFoundError as error:
                 library_file = None
                 file_archive = None
             else:
                 # try to check dsc-mentioned file against its copy already
                 # in librarian, if it's new (aka not found in librarian)
-                # dismiss. It prevent us to have scary duplicated filenames
-                # in Librarian and missapplied files in archive, fixes
-                # bug # 38636 and friends.
+                # dismiss. It prevents us from having scary duplicated
+                # filenames in Librarian and misapplied files in archive,
+                # fixes bug # 38636 and friends.
                 if sub_dsc_file.digest != library_file.content.md5:
                     yield UploadError(
                         "File %s already exists in %s, but uploaded version "
@@ -569,7 +573,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         try:
             unpacked_dir = unpack_source(self.filepath)
-        except DpkgSourceError, e:
+        except DpkgSourceError as e:
             yield UploadError(
                 "dpkg-source failed for %s [return: %s]\n"
                 "[dpkg-source output: %s]"
@@ -596,18 +600,18 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             # processing.
             try:
                 self.copyright = find_copyright(unpacked_dir, self.logger)
-            except UploadError, error:
+            except UploadError as error:
                 yield error
                 return
-            except UploadWarning, warning:
+            except UploadWarning as warning:
                 yield warning
 
             try:
                 self.changelog = find_changelog(unpacked_dir, self.logger)
-            except UploadError, error:
+            except UploadError as error:
                 yield error
                 return
-            except UploadWarning, warning:
+            except UploadWarning as warning:
                 yield warning
         finally:
             self.logger.debug("Cleaning up source tree.")
@@ -720,7 +724,7 @@ class DSCUploadedFile(NascentUploadFile):
         """Check Sub DSCFile mentioned size & checksum."""
         try:
             self.checkSizeAndCheckSum()
-        except UploadError, error:
+        except UploadError as error:
             yield error
 
 

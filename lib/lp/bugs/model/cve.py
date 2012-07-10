@@ -19,6 +19,8 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
+from storm.expr import In
+from storm.store import Store
 # Zope
 from zope.interface import implements
 
@@ -29,9 +31,11 @@ from lp.bugs.interfaces.cve import (
     ICve,
     ICveSet,
     )
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.bugs.model.cvereference import CveReference
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
@@ -42,6 +46,7 @@ from lp.services.database.sqlbase import (
 
 
 cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
+
 
 class Cve(SQLBase, BugLinkTargetMixin):
     """A CVE database record."""
@@ -148,7 +153,6 @@ class CveSet:
         cves = set()
         for match in cverefpat.finditer(text):
             # let's get the core CVE data
-            cvestate = match.group(1)
             sequence = match.group(2)
             # see if there is already a matching CVE ref in the db, and if
             # not, then create it
@@ -178,15 +182,41 @@ class CveSet:
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(cves, key=lambda a: a.sequence)
 
-    def getBugCvesForBugTasks(self, bugtasks):
-        bug_ids = set(task.bug.id for task in bugtasks)
-        assert bug_ids, "bugtasks must be non-empty, received %r" % bugtasks
-        return BugCve.select("""
-            BugCve.bug IN %s""" % sqlvalues(bug_ids),
-            prejoins=["cve"],
-            orderBy=['bug', 'cve'])
+    def getBugCvesForBugTasks(self, bugtasks, cve_mapper=None):
+        """See ICveSet."""
+        bugs = load_related(Bug, bugtasks, ('bugID', ))
+        if len(bugs) == 0:
+            return []
+        bug_ids = [bug.id for bug in bugs]
+
+        # Do not use BugCve instances: Storm may need a very long time
+        # to look up the bugs and CVEs referenced by a BugCve instance
+        # when the +cve view of a distroseries is rendered: There may
+        # be a few thousand (bug, CVE) tuples, while the number of bugs
+        # and CVEs is in the order of hundred. It is much more efficient
+        # to retrieve just (bug_id, cve_id) from the BugCve table and
+        # to map this to (Bug, CVE) here, instead of letting Storm
+        # look up the CVE and bug for a BugCve instance, even if bugs
+        # and CVEs are bulk loaded.
+        store = Store.of(bugtasks[0])
+        bugcve_ids = store.find(
+            (BugCve.bugID, BugCve.cveID), In(BugCve.bugID, bug_ids))
+        bugcve_ids.order_by(BugCve.bugID, BugCve.cveID)
+        bugcve_ids = list(bugcve_ids)
+
+        cve_ids = set(cve_id for bug_id, cve_id in bugcve_ids)
+        cves = store.find(Cve, In(Cve.id, list(cve_ids)))
+
+        if cve_mapper is None:
+            cvemap = dict((cve.id, cve) for cve in cves)
+        else:
+            cvemap = dict((cve.id, cve_mapper(cve)) for cve in cves)
+        bugmap = dict((bug.id, bug) for bug in bugs)
+        return [
+            (bugmap[bug_id], cvemap[cve_id])
+            for bug_id, cve_id in bugcve_ids
+            ]
 
     def getBugCveCount(self):
         """See ICveSet."""
         return BugCve.select().count()
-

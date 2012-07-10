@@ -60,7 +60,7 @@ class TestCodeImportDispatcherUnit(TestCase):
         self.assertEqual(socket.gethostname(), dispatcher.getHostname())
 
     def test_getHostnameOverride(self):
-        # getHostname can be overriden by the config for testing, however.
+        # getHostname can be overridden by the config for testing, however.
         dispatcher = self.makeDispatcher()
         self.pushConfig('codeimportdispatcher', forced_hostname='test-value')
         self.assertEqual('test-value', dispatcher.getHostname())

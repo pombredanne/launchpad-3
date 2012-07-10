@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -22,6 +22,7 @@ from lp.services.database import bulk
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.tests import block_on_job
 from lp.services.scripts.tests import run_script
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -42,7 +43,9 @@ from lp.soyuz.model.distroseriesdifferencejob import (
     may_require_job,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
+    CeleryJobLayer,
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
@@ -679,14 +682,12 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
             source_package_name)
 
     def runJob(self, job):
-        transaction.commit()
-        self.layer.switchDbUser('distroseriesdifferencejob')
+        switch_dbuser('distroseriesdifferencejob')
         dsdjob = DistroSeriesDifferenceJob(job)
         dsdjob.start()
         dsdjob.run()
         dsdjob.complete()
-        transaction.commit()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
     def test_parent_gets_newer(self):
         # When a new source package is uploaded to the parent distroseries,
@@ -940,12 +941,11 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         packages = dict(
             (user, self.factory.makeSourcePackageName())
             for user in script_users)
-        transaction.commit()
         for user in script_users:
-            self.layer.switchDbUser(user)
+            switch_dbuser(user)
             try:
                 create_job(derived, packages[user], parent)
-            except ProgrammingError, e:
+            except ProgrammingError as e:
                 self.assertTrue(
                     False,
                     "Database role %s was unable to create a job.  "
@@ -958,9 +958,8 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         # Check that DB users can query derived series.
         script_users = ['queued']
         dsp = self.factory.makeDistroSeriesParent()
-        transaction.commit()
         for user in script_users:
-            self.layer.switchDbUser(user)
+            switch_dbuser(user)
             list(dsp.parent_series.getDerivedSeries())
 
     def test_passesPackagesetFilter(self):
@@ -973,11 +972,27 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         dsdj = create_job(
             dsp.derived_series, spph.sourcepackagerelease.sourcepackagename,
             dsp.parent_series)
-        transaction.commit()
 
-        self.layer.switchDbUser('distroseriesdifferencejob')
+        switch_dbuser('distroseriesdifferencejob')
 
         dsdj.passesPackagesetFilter()
 
         # The test is that we get here without exceptions.
         pass
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_DerivedDistroseriesDifferenceJob(self):
+        self.useFixture(FeatureFixture({
+            FEATURE_FLAG_ENABLE_MODULE: u'on',
+            'jobs.celery.enabled_classes': 'DistroSeriesDifferenceJob',
+            }))
+        dsp = self.factory.makeDistroSeriesParent()
+        package = self.factory.makeSourcePackageName()
+        with block_on_job():
+            job = create_job(dsp.derived_series, package, dsp.parent_series)
+            transaction.commit()
+        self.assertEqual(JobStatus.COMPLETED, job.status)

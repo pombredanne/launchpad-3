@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -14,7 +14,6 @@ __all__ = [
     'bugtarget_renderer',
     'BugTargetTraversalMixin',
     'BugTargetView',
-    'bugtask_heat_html',
     'BugTaskBreadcrumb',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
@@ -32,7 +31,6 @@ __all__ = [
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
-    'calculate_heat_display',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
@@ -48,10 +46,6 @@ from datetime import (
     timedelta,
     )
 from itertools import groupby
-from math import (
-    floor,
-    log,
-    )
 from operator import attrgetter
 import os.path
 import re
@@ -142,6 +136,7 @@ from lp.app.browser.tales import (
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
+from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -222,7 +217,10 @@ from lp.bugs.interfaces.bugtracker import (
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.layers import FeedsLayer
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -347,9 +345,12 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
         slice_info=slice_info, show_spam_controls=show_spam_controls,
-        user=user)
+        user=user, hide_first=for_display)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
+    for comment in comments.values():
+        get_property_cache(comment._message).bugattachments = []
+
     for attachment in bugtask.bug.attachments_unpopulated:
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
@@ -359,8 +360,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             break
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
-        else:
-            comments[message_id].bugattachments.append(attachment)
+        cache = get_property_cache(attachment.message)
+        cache.bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
     for comment in comments:
@@ -371,12 +372,6 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             # this comment has a new title, so make that the rolling focus
             current_title = comment.title
             comment.display_title = True
-    if for_display and comments and comments[0].index == 0:
-        # We show the text of the first comment as the bug description,
-        # or via the special link "View original description", but we want
-        # to display attachments filed together with the bug in the
-        # comment list.
-        comments[0].text_for_display = ''
     return comments
 
 
@@ -645,8 +640,6 @@ class BugTaskTextView(LaunchpadView):
 class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
-    override_title_breadcrumbs = True
-
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
 
@@ -662,6 +655,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     @property
     def page_title(self):
+        return self.context.bug.id
+
+    @property
+    def label(self):
         heading = 'Bug #%s in %s' % (
             self.context.bug.id, self.context.bugtargetdisplayname)
         title = FormattersAPI(self.context.bug.title).obfuscate_email()
@@ -704,6 +701,15 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def recommended_canonical_url(self):
         return canonical_url(self.context.bug, rootsite='bugs')
+
+    @property
+    def information_type(self):
+        use_private_flag = getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled')
+        value = self.context.bug.information_type.title
+        if (use_private_flag and value == InformationType.USERDATA.title):
+            value = "Private"
+        return value
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -792,7 +798,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         else:
             activity = self.context.bug.activity
         bug_change_re = (
-            'affects|description|security vulnerability|'
+            'affects|description|security vulnerability|information type|'
             'summary|tags|visibility|bug task deleted')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
@@ -1041,15 +1047,25 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def official_tags(self):
         """The list of official tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        return [tag for tag in self.context.bug.tags
-                if tag in target_official_tags]
+        links = []
+        for tag in self.context.bug.tags:
+            if tag in target_official_tags:
+                links.append((tag, '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
+                        force_local_path=True), urllib.quote(tag))))
+        return links
 
     @property
     def unofficial_tags(self):
         """The list of unofficial tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        return [tag for tag in self.context.bug.tags
-                if tag not in target_official_tags]
+        links = []
+        for tag in self.context.bug.tags:
+            if tag not in target_official_tags:
+                links.append((tag, '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
+                        force_local_path=True), urllib.quote(tag))))
+        return links
 
     @property
     def available_official_tags_js(self):
@@ -1082,11 +1098,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        if IDistributionSourcePackage.providedBy(self.context.target):
-            return bugtask_heat_html(
-                self.context, target=self.context.distribution)
-        else:
-            return bugtask_heat_html(self.context)
+        return (
+            '<span><a href="/+help-bugs/bug-heat.html" target="help" '
+            'class="sprite flame">%d</a></span>' % self.context.bug.heat)
 
     @property
     def privacy_notice_classes(self):
@@ -1094,40 +1108,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             return 'hidden'
         else:
             return ''
-
-
-def calculate_heat_display(heat, max_bug_heat):
-    """Calculate the number of heat 'flames' to display."""
-    heat = float(heat)
-    max_bug_heat = float(max_bug_heat)
-    if max_bug_heat == 0:
-        return 0
-    if heat / max_bug_heat < 0.33333:
-        return 0
-    if heat / max_bug_heat < 0.66666 or max_bug_heat < 2:
-        return int(floor((heat / max_bug_heat) * 4))
-    else:
-        heat_index = int(floor((log(heat) / log(max_bug_heat)) * 4))
-        # ensure that we never return a value > 4, even if
-        # max_bug_heat is outdated.
-        return min(heat_index, 4)
-
-
-def bugtask_heat_html(bugtask, target=None):
-    """Render the HTML representing bug heat for a given bugask."""
-    if target is None:
-        target = bugtask.target
-    max_bug_heat = target.max_bug_heat
-    if max_bug_heat is None:
-        max_bug_heat = 5000
-    heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
-    html = (
-        '<span><a href="/+help-bugs/bug-heat.html" target="help" '
-        'class="icon"><img src="/@@/bug-heat-%(ratio)i.png" '
-        'alt="%(ratio)i out of 4 heat flames" title="Heat: %(heat)i" /></a>'
-        '</span>'
-        % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
-    return html
 
 
 class BugTaskBatchedCommentsAndActivityView(BugTaskView):
@@ -1221,7 +1201,7 @@ def get_assignee_vocabulary_info(context):
     else:
         vocab_name = 'AllUserTeamsParticipation'
     vocab = vocabulary_registry.get(None, vocab_name)
-    return vocab_name, vocab.supportedFilters()
+    return vocab_name, vocab
 
 
 class BugTaskBugWatchMixin:
@@ -1638,7 +1618,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         # from the form.
         if new_target is not missing and bugtask.target != new_target:
             changed = True
-            bugtask.transitionToTarget(new_target)
+            bugtask.transitionToTarget(new_target, self.user)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.
@@ -2006,8 +1986,8 @@ class BugsStatsMixin(BugsInfoMixin):
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
         bug_task_set = getUtility(IBugTaskSet)
-        groups = (BugSummary.status, BugSummary.importance,
-            BugSummary.has_patch, BugSummary.fixed_upstream)
+        groups = (
+            BugSummary.status, BugSummary.importance, BugSummary.has_patch)
         counts = bug_task_set.countBugs(self.user, [self.context], groups)
         # Sum the split out aggregates.
         new = 0
@@ -2016,12 +1996,10 @@ class BugsStatsMixin(BugsInfoMixin):
         critical = 0
         high = 0
         with_patch = 0
-        resolved_upstream = 0
         for metadata, count in counts.items():
             status = metadata[0]
             importance = metadata[1]
             has_patch = metadata[2]
-            was_resolved_upstream = metadata[3]
             if status == BugTaskStatus.NEW:
                 new += count
             elif status == BugTaskStatus.INPROGRESS:
@@ -2032,18 +2010,11 @@ class BugsStatsMixin(BugsInfoMixin):
                 high += count
             if has_patch and DISPLAY_BUG_STATUS_FOR_PATCHES[status]:
                 with_patch += count
-            if was_resolved_upstream:
-                resolved_upstream += count
             open += count
-        result = dict(new=new, open=open, inprogress=inprogress, high=high,
-            critical=critical, with_patch=with_patch,
-            resolved_upstream=resolved_upstream)
+        result = dict(
+            new=new, open=open, inprogress=inprogress, high=high,
+            critical=critical, with_patch=with_patch)
         return result
-
-    @property
-    def bugs_fixed_elsewhere_count(self):
-        """A count of bugs fixed elsewhere."""
-        return self._bug_stats['resolved_upstream']
 
     @property
     def open_cve_bugs_count(self):
@@ -2192,13 +2163,15 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_bug_branch,
-                 has_specification, has_patch, request=None,
-                 target_context=None):
+                 has_specification, has_patch, tags,
+                 people, request=None, target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
         self.has_patch = has_patch
+        self.tags = tags
+        self.people = people
         self.request = request
         self.target_context = target_context
 
@@ -2212,7 +2185,12 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        return bugtask_heat_html(self.bugtask, target=self.target_context)
+        if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
+            return (
+                '<span class="sprite flame">%d</span>'
+                % self.bugtask.bug.heat)
+        else:
+            return str(self.bugtask.bug.heat)
 
     @property
     def model(self):
@@ -2225,19 +2203,27 @@ class BugTaskListingItem:
             date_last_updated = self.bug.date_last_updated
         last_updated_formatter = DateTimeFormatterAPI(date_last_updated)
         last_updated = last_updated_formatter.displaydate()
-        badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
+        badges = getAdapter(self, IPathAdapter, 'image').badges()
         target_image = getAdapter(self.target, IPathAdapter, 'image')
         if self.bugtask.milestone is not None:
             milestone_name = self.bugtask.milestone.displayname
         else:
             milestone_name = None
         assignee = None
-        if self.assignee is not None:
-            assignee = self.assignee.displayname
+        if self.assigneeID is not None:
+            assignee = self.people[self.assigneeID].displayname
+        reporter = self.people[self.bug.ownerID]
 
-        base_tag_url = "%s/?field.tag=" % canonical_url(
-            self.bugtask.target,
-            view_name="+bugs")
+        # the case that there is no target context (e.g. viewing bug that
+        # are related to a user account) is intercepted
+        if self.target_context is None:
+            base_tag_url = "%s/?field.tag=" % canonical_url(
+                self.bugtask.target,
+                view_name="+bugs")
+        else:
+            base_tag_url = "%s/?field.tag=" % canonical_url(
+                self.target_context,
+                view_name="+bugs")
 
         flattened = {
             'age': age,
@@ -2252,11 +2238,11 @@ class BugTaskListingItem:
             'importance_class': 'importance' + self.importance.name,
             'last_updated': last_updated,
             'milestone_name': milestone_name,
-            'reporter': self.bug.owner.displayname,
+            'reporter': reporter.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
-            'tags': [{'url': base_tag_url + tag, 'tag': tag}
-                for tag in self.bug.tags],
+            'tags': [{'url': base_tag_url + urllib.quote(tag), 'tag': tag}
+                for tag in self.tags],
             'title': self.bug.title,
             }
 
@@ -2301,6 +2287,16 @@ class BugListingBatchNavigator(TableBatchNavigator):
         return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self.currentBatch())
 
+    @cachedproperty
+    def tags_for_batch(self):
+        """Return a dict matching bugtask to it's tags."""
+        return getUtility(IBugTaskSet).getBugTaskTags(self.currentBatch())
+
+    @cachedproperty
+    def bugtask_people(self):
+        """Return mapping of people related to this bugtask set."""
+        return getUtility(IBugTaskSet).getBugTaskPeople(self.currentBatch())
+
     def getCookieName(self):
         """Return the cookie name used in bug listings js code."""
         cookie_name_template = '%s-buglist-fields'
@@ -2336,6 +2332,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self.bug_badge_properties[bugtask]
+        tags = self.tags_for_batch.get(bugtask.id, ())
         if (IMaloneApplication.providedBy(self.target_context) or
             IPerson.providedBy(self.target_context)):
             # XXX Tom Berger bug=529846
@@ -2349,6 +2346,8 @@ class BugListingBatchNavigator(TableBatchNavigator):
             badge_property['has_branch'],
             badge_property['has_specification'],
             badge_property['has_patch'],
+            tags,
+            self.bugtask_people,
             request=self.request,
             target_context=target_context)
 
@@ -2605,14 +2604,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         else:
             return 'None specified'
 
-    @property
-    def upstream_launchpad_project(self):
+    @cachedproperty
+    def upstream_project(self):
         """The linked upstream `IProduct` for the package.
 
         If this `IBugTarget` is a `IDistributionSourcePackage` or an
-        `ISourcePackage` and it is linked to an upstream project that uses
-        Launchpad to track bugs, return the `IProduct`. Otherwise,
-        return None
+        `ISourcePackage` and it is linked to an upstream project, return
+        the `IProduct`. Otherwise, return None
 
         :returns: `IProduct` or None
         """
@@ -2625,9 +2623,24 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if sp is not None:
             packaging = sp.packaging
             if packaging is not None:
-                product = packaging.productseries.product
-                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
-                    return product
+                return packaging.productseries.product
+        return None
+
+    @cachedproperty
+    def upstream_launchpad_project(self):
+        """The linked upstream `IProduct` for the package.
+
+        If this `IBugTarget` is a `IDistributionSourcePackage` or an
+        `ISourcePackage` and it is linked to an upstream project that uses
+        Launchpad to track bugs, return the `IProduct`. Otherwise,
+        return None
+
+        :returns: `IProduct` or None
+        """
+        product = self.upstream_project
+        if (product is not None and
+            product.bug_tracking_usage == ServiceUsage.LAUNCHPAD):
+            return product
         return None
 
     @property
@@ -2691,38 +2704,41 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
         if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
-            cache = IJSONRequestCache(self.request)
-            view_names = set(reg.name for reg
-                in iter_view_registrations(self.__class__))
-            if len(view_names) != 1:
-                raise AssertionError("Ambiguous view name.")
-            cache.objects['view_name'] = view_names.pop()
-            batch_navigator = self.search()
-            cache.objects['mustache_model'] = batch_navigator.model
-            cache.objects['field_visibility'] = (
-                batch_navigator.field_visibility)
-            cache.objects['field_visibility_defaults'] = (
-                batch_navigator.field_visibility_defaults)
-            cache.objects['cbl_cookie_name'] = batch_navigator.getCookieName()
+            if not FeedsLayer.providedBy(self.request):
+                cache = IJSONRequestCache(self.request)
+                view_names = set(reg.name for reg
+                    in iter_view_registrations(self.__class__))
+                if len(view_names) != 1:
+                    raise AssertionError("Ambiguous view name.")
+                cache.objects['view_name'] = view_names.pop()
+                batch_navigator = self.search()
+                cache.objects['mustache_model'] = batch_navigator.model
+                cache.objects['field_visibility'] = (
+                    batch_navigator.field_visibility)
+                cache.objects['field_visibility_defaults'] = (
+                    batch_navigator.field_visibility_defaults)
+                cache.objects['cbl_cookie_name'] = (
+                    batch_navigator.getCookieName())
 
-            def _getBatchInfo(batch):
-                if batch is None:
-                    return None
-                return {'memo': batch.range_memo,
-                        'start': batch.startNumber() - 1}
+                def _getBatchInfo(batch):
+                    if batch is None:
+                        return None
+                    return {'memo': batch.range_memo,
+                            'start': batch.startNumber() - 1}
 
-            next_batch = batch_navigator.batch.nextBatch()
-            cache.objects['next'] = _getBatchInfo(next_batch)
-            prev_batch = batch_navigator.batch.prevBatch()
-            cache.objects['prev'] = _getBatchInfo(prev_batch)
-            cache.objects['total'] = batch_navigator.batch.total()
-            cache.objects['order_by'] = ','.join(
-                get_sortorder_from_request(self.request))
-            cache.objects['forwards'] = batch_navigator.batch.range_forwards
-            last_batch = batch_navigator.batch.lastBatch()
-            cache.objects['last_start'] = last_batch.startNumber() - 1
-            cache.objects.update(_getBatchInfo(batch_navigator.batch))
-            cache.objects['sort_keys'] = SORT_KEYS
+                next_batch = batch_navigator.batch.nextBatch()
+                cache.objects['next'] = _getBatchInfo(next_batch)
+                prev_batch = batch_navigator.batch.prevBatch()
+                cache.objects['prev'] = _getBatchInfo(prev_batch)
+                cache.objects['total'] = batch_navigator.batch.total()
+                cache.objects['order_by'] = ','.join(
+                    get_sortorder_from_request(self.request))
+                cache.objects['forwards'] = (
+                    batch_navigator.batch.range_forwards)
+                last_batch = batch_navigator.batch.lastBatch()
+                cache.objects['last_start'] = last_batch.startNumber() - 1
+                cache.objects.update(_getBatchInfo(batch_navigator.batch))
+                cache.objects['sort_keys'] = SORT_KEYS
 
     @property
     def show_config_portlet(self):
@@ -2788,13 +2804,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     field_name)
 
         orderby = get_sortorder_from_request(self.request)
-        bugset = getUtility(IBugTaskSet)
         for orderby_col in orderby:
             if orderby_col.startswith("-"):
                 orderby_col = orderby_col[1:]
 
             try:
-                bugset.orderby_expression[orderby_col]
+                orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
@@ -3028,7 +3043,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return self._batch_navigator
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return a `SelectResults` object for the GET search criteria.
 
         :param searchtext: Text that must occur in the bug report. If
@@ -3047,7 +3062,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
         try:
-            tasks = context.searchTasks(search_params, prejoins=prejoins)
+            tasks = context.searchTasks(search_params)
         except ValueError as e:
             self.request.response.addErrorNotification(str(e))
             self.request.response.redirect(canonical_url(
@@ -3504,7 +3519,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
               IDistributionSourcePackage.providedBy(self.context)):
             search_params.setSourcePackage(self.context)
         else:
-            raise AssertionError('Uknown context type: %s' % self.context)
+            raise AssertionError('Unknown context type: %s' % self.context)
 
         return u"".join("%d\n" % bug_id for bug_id in
             getUtility(IBugTaskSet).searchBugIds(search_params))
@@ -3850,12 +3865,6 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return None
 
-    @property
-    def _allow_multipillar_private_bugs(self):
-        """ Some teams still need to have multi pillar private bugs."""
-        return bool(getFeatureFlag(
-            'disclosure.allow_multipillar_private_bugs.enabled'))
-
     def canAddProjectTask(self):
         """Can a new bug task on a project be added to this bug?
 
@@ -3870,7 +3879,7 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         """
         bug = self.context
-        if self._allow_multipillar_private_bugs:
+        if bug.information_type != InformationType.PROPRIETARY:
             return True
         return len(bug.bugtasks) == 0
 
@@ -3891,7 +3900,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         is used to hide the link when body.private is True.
         """
         bug = self.context
-        if self._allow_multipillar_private_bugs:
+        if bug.information_type != InformationType.PROPRIETARY:
             return True
         for pillar in bug.affected_pillars:
             if IProduct.providedBy(pillar):
@@ -4027,6 +4036,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
 
             items = vocabulary_to_choice_edit_items(
                 SimpleVocabulary.fromItems(status_items),
+                include_description=True,
                 css_class_prefix='status',
                 disabled_items=disabled_items)
         else:
@@ -4049,6 +4059,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
 
             items = vocabulary_to_choice_edit_items(
                 SimpleVocabulary.fromItems(importance_items),
+                include_description=True,
                 css_class_prefix='importance')
         else:
             items = '[]'
@@ -4137,20 +4148,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
 
     def bugtask_config(self):
         """Configuration for the bugtask JS widgets on the row."""
-        assignee_vocabulary, assignee_vocabulary_filters = (
+        assignee_vocabulary_name, assignee_vocabulary = (
             get_assignee_vocabulary_info(self.context))
-        # If we have no filters or just the ALL filter, then no filtering
-        # support is required.
-        filter_details = []
-        if (len(assignee_vocabulary_filters) > 1 or
-               (len(assignee_vocabulary_filters) == 1
-                and assignee_vocabulary_filters[0].name != 'ALL')):
-            for filter in assignee_vocabulary_filters:
-                filter_details.append({
-                    'name': filter.name,
-                    'title': filter.title,
-                    'description': filter.description,
-                    })
+        filter_details = vocabulary_filters(assignee_vocabulary)
         # Display the search field only if the user can set any person
         # or team
         user = self.user
@@ -4168,7 +4168,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
             bug_title=cx.bug.title,
             assignee_value=cx.assignee and cx.assignee.name,
             assignee_is_team=cx.assignee and cx.assignee.is_team,
-            assignee_vocabulary=assignee_vocabulary,
+            assignee_vocabulary=assignee_vocabulary_name,
             assignee_vocabulary_filters=filter_details,
             hide_assignee_team_selection=hide_assignee_team_selection,
             user_can_unassign=cx.userCanUnassign(user),
@@ -4232,6 +4232,9 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
+
+    def search_macro_title(self):
+        return u'Search all bugs'
 
     @property
     def label(self):
@@ -4529,3 +4532,9 @@ class BugTaskBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return self.context.bug.displayname
+
+    @property
+    def detail(self):
+        bug = self.context.bug
+        title = smartquote('"%s"' % bug.title)
+        return '%s %s' % (bug.displayname, title)

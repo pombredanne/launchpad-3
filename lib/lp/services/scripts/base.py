@@ -47,6 +47,7 @@ from lp.services.features import (
 from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.scripts.logger import OopsHandler
+from lp.services.utils import total_seconds
 from lp.services.webapp.errorlog import globalErrorUtility
 from lp.services.webapp.interaction import (
     ANONYMOUS,
@@ -338,10 +339,10 @@ class LaunchpadScript:
                 profiler.runcall(self.main)
             else:
                 self.main()
-        except LaunchpadScriptFailure, e:
+        except LaunchpadScriptFailure as e:
             self.logger.error(str(e))
             sys.exit(e.exit_status)
-        except SilentLaunchpadScriptFailure, e:
+        except SilentLaunchpadScriptFailure as e:
             sys.exit(e.exit_status)
         else:
             date_completed = datetime.datetime.now(UTC)
@@ -352,13 +353,13 @@ class LaunchpadScript:
             profiler.dump_stats(self.options.profile)
 
     def _init_zca(self, use_web_security):
-        """Initialize the ZCA, this can be overriden for testing purpose."""
+        """Initialize the ZCA, this can be overridden for testing purposes."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
 
     def _init_db(self, isolation):
         """Initialize the database transaction.
 
-        Can be overriden for testing purpose.
+        Can be overridden for testing purposes.
         """
         dbuser = self.dbuser
         if dbuser is None:
@@ -414,6 +415,10 @@ class LaunchpadCronScript(LaunchpadScript):
         # overriding the name property.
         logging.getLogger().addHandler(OopsHandler(self.name))
 
+    def get_last_activity(self):
+        """Return the last activity, if any."""
+        return getUtility(IScriptActivitySet).getLastActivity(self.name)
+
     @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
@@ -424,6 +429,12 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+        # date_started is recorded *after* the lock is acquired and we've
+        # initialized Zope components and the database.  Thus this time is
+        # only for the script proper, rather than total execution time.
+        seconds_taken = total_seconds(date_completed - date_started)
+        self.logger.debug(
+            "%s ran in %ss (excl. load & lock)" % (self.name, seconds_taken))
 
 
 @contextmanager
@@ -446,13 +457,13 @@ def cronscript_enabled(control_url, name, log):
         # seconds.
         control_fp = urlopen(control_url, timeout=5)
     # Yuck. API makes it hard to catch 'does not exist'.
-    except HTTPError, error:
+    except HTTPError as error:
         if error.code == 404:
             log.debug("Cronscript control file not found at %s", control_url)
             return True
         log.exception("Error loading %s" % control_url)
         return True
-    except URLError, error:
+    except URLError as error:
         if getattr(error.reason, 'errno', None) == 2:
             log.debug("Cronscript control file not found at %s", control_url)
             return True

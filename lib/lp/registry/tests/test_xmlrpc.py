@@ -15,19 +15,20 @@ from lp.registry.interfaces.person import (
     ISoftwareCenterAgentAPI,
     ISoftwareCenterAgentApplication,
     PersonCreationRationale,
+    PersonVisibility,
     )
 from lp.registry.xmlrpc.softwarecenteragent import SoftwareCenterAgentAPI
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.xmlrpc import XMLRPCTestTransport
 from lp.xmlrpc.interfaces import IPrivateApplication
 
 
 class TestSoftwareCenterAgentAPI(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestSoftwareCenterAgentAPI, self).setUp()
@@ -61,7 +62,7 @@ class TestSoftwareCenterAgentAPI(TestCaseWithFactory):
 
 class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestSoftwareCenterAgentApplication, self).setUp()
@@ -86,7 +87,7 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
             removeSecurityProxy(
                 person.account).openid_identifiers.any().identifier)
 
-    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_error(self):
+    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_suspended(self):
         # A suspended account results in an appropriate xmlrpc fault.
         suspended_person = self.factory.makePerson(
             displayname='Joe Blogs', email='a@b.com',
@@ -99,10 +100,26 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
         try:
             self.rpc_proxy.getOrCreateSoftwareCenterCustomer(
                 openid_identifier, 'a@b.com', 'Joe Blogs')
-        except xmlrpclib.Fault, e:
+        except xmlrpclib.Fault as e:
             fault_raised = True
             self.assertEqual(370, e.faultCode)
             self.assertIn(openid_identifier, e.faultString)
+
+        self.assertTrue(fault_raised)
+
+    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_team(self):
+        # A team email address results in an appropriate xmlrpc fault.
+        self.factory.makeTeam(email='a@b.com')
+
+        # assertRaises doesn't let us check the type of Fault.
+        fault_raised = False
+        try:
+            self.rpc_proxy.getOrCreateSoftwareCenterCustomer(
+                'foo', 'a@b.com', 'Joe Blogs')
+        except xmlrpclib.Fault as e:
+            fault_raised = True
+            self.assertEqual(400, e.faultCode)
+            self.assertIn('a@b.com', e.faultString)
 
         self.assertTrue(fault_raised)
 
@@ -113,14 +130,54 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
             'http://test@canonical.com:test@'
             'xmlrpc.launchpad.dev/softwarecenteragent',
             transport=XMLRPCTestTransport())
+        e = self.assertRaises(
+            xmlrpclib.ProtocolError,
+            public_rpc_proxy.getOrCreateSoftwareCenterCustomer,
+            'openid-ident', 'a@b.com', 'Joe Blogs')
+        self.assertEqual(404, e.errcode)
 
-        # assertRaises doesn't let us check the type of Fault.
-        protocol_error_raised = False
-        try:
-            public_rpc_proxy.getOrCreateSoftwareCenterCustomer(
-                'openid-ident', 'a@b.com', 'Joe Blogs')
-        except xmlrpclib.ProtocolError, e:
-            protocol_error_raised = True
-            self.assertEqual(404, e.errcode)
 
-        self.assertTrue(protocol_error_raised)
+class TestCanonicalSSOApplication(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestCanonicalSSOApplication, self).setUp()
+        self.rpc_proxy = xmlrpclib.ServerProxy(
+            'http://xmlrpc-private.launchpad.dev:8087/canonicalsso',
+            transport=XMLRPCTestTransport())
+
+    def test_getPersonDetailsByOpenIDIdentifier(self):
+        person = self.factory.makePerson(time_zone='Australia/Melbourne')
+        self.factory.makeTeam(
+            name='pubteam', members=[person],
+            visibility=PersonVisibility.PUBLIC)
+        self.factory.makeTeam(
+            name='privteam', members=[person],
+            visibility=PersonVisibility.PRIVATE)
+        openid_identifier = removeSecurityProxy(
+            person.account).openid_identifiers.any().identifier
+        result = self.rpc_proxy.getPersonDetailsByOpenIDIdentifier(
+            openid_identifier)
+        self.assertEqual(
+            dict(
+                name=person.name,
+                time_zone=person.location.time_zone,
+                teams={'pubteam': False, 'privteam': True}),
+            result)
+
+    def test_not_available_on_public_api(self):
+        # The person set api is not available on the public xmlrpc
+        # service.
+        person = self.factory.makePerson()
+        openid_identifier = removeSecurityProxy(
+            person.account).openid_identifiers.any().identifier
+        public_rpc_proxy = xmlrpclib.ServerProxy(
+            'http://test@canonical.com:test@'
+            'xmlrpc.launchpad.dev/canonicalsso',
+            transport=XMLRPCTestTransport())
+        e = self.assertRaises(
+            xmlrpclib.ProtocolError,
+            public_rpc_proxy.getPersonDetailsByOpenIDIdentifier,
+            openid_identifier)
+        self.assertEqual(404, e.errcode)

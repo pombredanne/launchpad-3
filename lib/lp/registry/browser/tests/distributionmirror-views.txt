@@ -14,7 +14,7 @@ IDerivativeDistributions cannot use the form.
     >>> distribution.full_functionality
     False
 
-    >>> login_person(distribution.owner)
+    >>> ignored = login_person(distribution.owner)
     >>> view = create_initialized_view(
     ...     distribution, '+newmirror', principal=distribution.owner)
     >>> content = find_tag_by_id(view.render(), 'not-full-functionality')
@@ -28,7 +28,7 @@ mirrors.
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> owner = ubuntu.owner.teamowner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> view = create_initialized_view(ubuntu, '+newmirror', principal=owner)
     >>> content = find_tag_by_id(view.render(), 'full-functionality')
     >>> print extract_text(content)

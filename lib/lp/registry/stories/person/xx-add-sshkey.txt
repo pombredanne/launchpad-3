@@ -29,7 +29,7 @@ users.
 Salgado sees a message explaining that he can register his ssh key.
 
     >>> browser = setupBrowser(
-    ...     auth='Basic guilherme.salgado@canonical.com:zeca')
+    ...     auth='Basic guilherme.salgado@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~salgado')
     >>> print browser.title
     Guilherme Salgado in Launchpad
@@ -147,6 +147,20 @@ this case we'll raise an UnexpectedFormData.
     Traceback (most recent call last):
     ...
     UnexpectedFormData: ...
+
+If he removes a key then he will get a security warning email notification
+that the key has been removed.
+
+    >>> import email
+    >>> from lp.services.mail import stub
+    >>> stub.test_emails = []
+    >>> browser.open('http://launchpad.dev/~salgado/+editsshkeys')
+    >>> browser.getControl('Remove', index=0).click()
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> to_addr
+    ['guilherme.salgado@canonical.com']
+    >>> payload = email.message_from_string(msg).get_payload()
+    >>> assert payload.startswith('The SSH Key')
 
 
 == Blacklisted keys ==

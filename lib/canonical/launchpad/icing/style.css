@@ -254,7 +254,7 @@ a.bg-image {
   border-top: 1px solid #ddd;
 }
 .from-superseded {background-color: #ffffcc;}
-.adminHiddenComment {background-color:yellow;}
+.adminHiddenComment {background-color:gray;}
 
 /* --- Overview --- */
 
@@ -462,10 +462,7 @@ div.logtail {
     border: solid gray;
     border-width: 1px;
     font-family: 'Ubuntu Mono', monospace;
-    -moz-border-radius: 5px;
-    -o-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    -khtml-border-radius: 5px;
+    border-radius: 5px;
 }
 
 div.logtail p {
@@ -531,9 +528,7 @@ table.code th, table.code td {
   padding-right: 1em;
   padding-top: 0.2em;
   padding-bottom: 0.2em;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
+  border-radius: 5px;
 }
 
 .pending-update h3 {
@@ -658,12 +653,6 @@ div#sub-unsub-spinner, div#mute-unmute-spinner {
    lazr-pos when the associated button's action is in-progress. */
 button.spinner {
   background-image: url(/@@/spinner) !important;
-}
-
-/* This lets us have a help link sprite and a normal link sprite on the same
-   row, which the .vertical .sprite rule in the 3.0 file does not allow. */
-div#mute-link-container a.sprite {
-  width: auto;
 }
 
 /* Gives us some room after the description of the user's subscription. */
@@ -897,13 +886,6 @@ div.popupTitle {
   font-weight: bold;
 }
 
-/* From nice_pre in tales.py */
-pre.wrap {
-  white-space: -moz-pre-wrap;
-  white-space: -o-pre-wrap;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
 
 /* Don't add styles here.
 A chronologically-ordered style sheet is hard to maintain and debug.

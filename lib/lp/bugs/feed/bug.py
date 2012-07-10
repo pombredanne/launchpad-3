@@ -19,6 +19,7 @@ from lp.bugs.browser.bugtask import (
     BugsBugTaskSearchListingView,
     BugTargetView,
     )
+from lp.bugs.browser.person import PersonRelatedBugTaskSearchListingView
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -26,7 +27,6 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.registry.browser.person import PersonRelatedBugTaskSearchListingView
 from lp.registry.interfaces.person import IPerson
 from lp.services.config import config
 from lp.services.feeds.feed import (
@@ -77,11 +77,11 @@ class BugsFeedBase(FeedBase):
         different feeds.
         """
         self.show_column = dict(
-            id = True,
-            title = True,
-            bugtargetdisplayname = True,
-            importance = True,
-            status = True)
+            id=True,
+            title=True,
+            bugtargetdisplayname=True,
+            importance=True,
+            status=True)
 
     @property
     def logo(self):
@@ -221,6 +221,10 @@ class BugTargetBugsFeed(BugsFeedBase):
         if 'bugtargetdisplayname' in self.show_column:
             del self.show_column['bugtargetdisplayname']
 
+    def _createView(self):
+        """Create the delegate view used by this feed."""
+        return BugTargetView(self.context, self.request)
+
     @property
     def title(self):
         """See `IFeed`."""
@@ -245,7 +249,7 @@ class BugTargetBugsFeed(BugsFeedBase):
 
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
-        delegate_view = BugTargetView(self.context, self.request)
+        delegate_view = self._createView()
         # XXX: BradCrittenden 2008-03-25 bug=206811:
         # The feed should have `self.quantity` entries, each representing a
         # bug.  Our query returns bugtasks, not bugs.  We then work backward
@@ -270,10 +274,14 @@ class PersonBugsFeed(BugsFeedBase):
         """See `IFeed`."""
         return "Bugs for %s" % self.context.displayname
 
+    def _createView(self):
+        """Create the delegate view used by this feed."""
+        return PersonRelatedBugTaskSearchListingView(
+            self.context, self.request)
+
     def _getRawItems(self):
         """Perform the search."""
-        delegate_view = PersonRelatedBugTaskSearchListingView(
-            self.context, self.request)
+        delegate_view = self._createView()
         # Since the delegate_view derives from LaunchpadFormView the view must
         # be initialized to setup the widgets.
         delegate_view.initialize()

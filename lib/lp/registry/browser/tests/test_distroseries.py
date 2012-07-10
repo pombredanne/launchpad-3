@@ -13,6 +13,7 @@ from urllib import urlencode
 from urlparse import urlparse
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 from lxml import html
 import soupmatchers
@@ -43,7 +44,7 @@ from lp.registry.browser.distroseries import (
     RESOLVED,
     seriesToVocab,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -269,6 +270,12 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     """Test the distroseries +index page."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroSeriesIndexFunctionalTestCase, self).setUp()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _setupDifferences(self, name, parent_names, nb_diff_versions,
                           nb_diff_child, nb_diff_parent):
@@ -1520,7 +1527,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_diff_row_links_to_parent_changelog(self):
         # After the parent's version, there should be text "(changelog)"
         # linked to the parent distro source package +changelog page.  The
-        # text is styled with "discreet".
+        # text is styled with "lesser".
         set_derived_series_ui_feature_flag(self)
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
@@ -1528,7 +1535,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
 
-        changelog_span = row.findAll('span', {'class': 'discreet'})
+        changelog_span = row.findAll('span', {'class': 'lesser'})
         self.assertEqual(1, len(changelog_span))
         link = changelog_span[0].a
         self.assertEqual("changelog", link.string)

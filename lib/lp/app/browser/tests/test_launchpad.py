@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for traversal from the root branch object."""
@@ -20,6 +20,7 @@ from lp.app.browser.launchpad import (
 from lp.app.errors import GoneError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -172,7 +173,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
 
     def test_private_branch(self):
         # If an attempt is made to access a private branch, display an error.
-        branch = self.factory.makeProductBranch(private=True)
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
         branch_unique_name = removeSecurityProxy(branch).unique_name
         login(ANONYMOUS)
         requiredMessage = "No such branch: '%s'." % branch_unique_name
@@ -192,7 +194,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         naked_product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(naked_product).setBranch(branch)
-        removeSecurityProxy(branch).explicitly_private = True
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         login(ANONYMOUS)
         requiredMessage = (
             u"The target %s does not have a linked branch." %
@@ -218,7 +221,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         naked_product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(naked_product).setBranch(branch)
-        removeSecurityProxy(branch).explicitly_private = True
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         login(ANONYMOUS)
         self.assertNotFound(naked_product.name, use_default_referer=False)
 
@@ -248,7 +252,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # message telling the user there is no linked branch.
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(
-            sourcepackage=sourcepackage, private=True)
+            sourcepackage=sourcepackage,
+            information_type=InformationType.USERDATA)
         distro_package = sourcepackage.distribution_sourcepackage
         registrant = distro_package.distribution.owner
         with person_logged_in(registrant):
@@ -295,7 +300,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
     def test_private_branch_for_series(self):
         # If the development focus of a product series is private, display a
         # message telling the user there is no linked branch.
-        branch = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
         series = self.factory.makeProductSeries(branch=branch)
         login(ANONYMOUS)
         path = ICanHasLinkedBranch(series).bzr_path
@@ -431,6 +437,26 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
+
+
+class ExceptionHierarchyTestCase(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def test_exception(self):
+        view = create_view(IndexError('test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+    def test_zope_exception(self):
+        view = create_view(Unauthorized('test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+    def test_launchapd_exception(self):
+        view = create_view(NotFound(None, 'test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
 
 
 class TestIterViewRegistrations(TestCaseWithFactory):

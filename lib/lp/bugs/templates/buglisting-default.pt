@@ -1,24 +1,24 @@
 <html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
-  i18n:domain="malone"
+xmlns="http://www.w3.org/1999/xhtml"
+xmlns:tal="http://xml.zope.org/namespaces/tal"
+xmlns:metal="http://xml.zope.org/namespaces/metal"
+xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+metal:use-macro="view/macro:page/main_side"
+i18n:domain="malone"
 >
 
 <metal:block fill-slot="head_epilogue">
-  <meta condition="not: view/should_show_bug_information"
-        name="robots" content="noindex,nofollow" />
+<meta tal:condition="not: view/should_show_bug_information"
+    name="robots" content="noindex,nofollow" />
 
-    <tal:comment replace="nothing">
-        The javascript below should only be executed (or indeed even exist)
-        when the bug subscription links exist. They don't exist on the
-        advanced search form, so we don't show the js for that case.
-    </tal:comment>
-    <script type="text/javascript"
-      tal:condition="not: view/shouldShowAdvancedForm">
-    LPS.use('lp.registry.structural_subscription', function(Y) {
+<tal:comment replace="nothing">
+    The javascript below should only be executed (or indeed even exist)
+    when the bug subscription links exist. They don't exist on the
+    advanced search form, so we don't show the js for that case.
+</tal:comment>
+<script type="text/javascript"
+  tal:condition="not: view/shouldShowAdvancedForm">
+    LPJS.use('lp.registry.structural_subscription', function(Y) {
         Y.on('domready', function() {
             Y.lp.registry.structural_subscription.setup(
                 {content_box: "#structural-subscription-content-box"});
@@ -55,7 +55,7 @@
       </p>
 
       <a id="getting-started-help"
-         class="sprite maybe"
+         class="sprite maybe action-icon"
          href="https://help.launchpad.net/Bugs">
         Getting started with bug tracking in Launchpad</a>.
 
@@ -96,7 +96,7 @@
               </strong>
             </p>
             <p id="getting-started-help">
-              <a class="sprite maybe"
+              <a class="sprite maybe action-icon"
                  href="https://help.launchpad.net/Bugs">Getting started
                 with bug tracking in Launchpad</a>.
             </p>
@@ -142,17 +142,22 @@
         </ul>
 
       </div>
+      <div class="portlet">
+        <ul tal:define="menu context/menu:bugs">
+          <li tal:condition="menu/subscribe_to_bug_mail/enabled|nothing">
+            <a tal:replace="structure menu/subscribe_to_bug_mail/fmt:link" />
+          </li>
+          <li tal:condition="menu/edit_bug_mail/enabled|nothing">
+            <a tal:replace="structure menu/edit_bug_mail/fmt:link" />
+          </li>
+        </ul>
+      </div>
       <div class="portlet" tal:condition="view/show_config_portlet">
-        <tal:bugtracker
-           define="link context/menu:bugs/configure_bugtracker|nothing"
-           condition="link">
-          <ul tal:condition="link/enabled"
-              style="padding-top: 1em">
-            <li>
-              <a tal:replace="structure link/fmt:link" />
-            </li>
-          </ul>
-        </tal:bugtracker>
+        <ul tal:define="menu context/menu:bugs">
+          <li tal:condition="menu/configure_bugtracker/enabled|nothing">
+            <a tal:replace="structure menu/configure_bugtracker/fmt:link" />
+          </li>
+        </ul>
         <dl tal:define="bug_supervisor context/bug_supervisor"
             id="bug-supervisor">
           <dt>Bug supervisor:</dt>

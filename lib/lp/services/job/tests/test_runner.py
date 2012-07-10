@@ -4,10 +4,15 @@
 """Tests for job-running facilities."""
 
 import logging
+import re
 import sys
 from textwrap import dedent
 from time import sleep
 
+from lazr.jobrunner.jobrunner import (
+    LeaseHeld,
+    SuspendJobException,
+    )
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException
 import transaction
@@ -15,15 +20,15 @@ from zope.interface import implements
 
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
-    LeaseHeld,
-    SuspendJobException,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
     BaseRunnableJob,
+    celery_enabled,
     JobCronScript,
     JobRunner,
     TwistedJobRunner,
@@ -145,7 +150,7 @@ class TestJobRunner(TestCaseWithFactory):
         """Ensure status is set to completed when a job runs to completion."""
         job_1, job_2 = self.makeTwoJobs()
         runner = JobRunner(job_1)
-        runner.runJob(job_1)
+        runner.runJob(job_1, None)
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
 
@@ -301,7 +306,7 @@ class TestJobRunner(TestCaseWithFactory):
         """When a job fails, the failure needs to be recorded."""
         job = RaisingJob('boom')
         runner = JobRunner([job])
-        self.assertRaises(RaisingJobException, runner.runJob, job)
+        self.assertRaises(RaisingJobException, runner.runJob, job, None)
         # Abort the transaction to confirm that the update of the job status
         # has been committed.
         transaction.abort()
@@ -326,7 +331,7 @@ class TestJobRunner(TestCaseWithFactory):
         job = RaisingRetryJob('completion')
         runner = JobRunner([job])
         with self.expectedLog('Scheduling retry due to RetryError'):
-            runner.runJob(job)
+            runner.runJob(job, None)
         self.assertEqual(JobStatus.WAITING, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
@@ -334,11 +339,11 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runJob_exceeding_max_retries(self):
         """If a job exceeds maximum retries, it should raise normally."""
         job = RaisingRetryJob('completion')
-        JobRunner([job]).runJob(job)
+        JobRunner([job]).runJob(job, None)
         self.assertEqual(JobStatus.WAITING, job.status)
         runner = JobRunner([job])
         with ExpectedException(RetryError, ''):
-            runner.runJob(job)
+            runner.runJob(job, None)
         self.assertEqual(JobStatus.FAILED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
@@ -366,11 +371,21 @@ class TestJobRunner(TestCaseWithFactory):
         job = NullJob('suspended')
         job.run = FakeMethod(failure=SuspendJobException())
         runner = JobRunner([job])
-        runner.runJob(job)
+        runner.runJob(job, None)
 
         self.assertEqual(JobStatus.SUSPENDED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
+
+    def test_taskId(self):
+        # BaseRunnableJob.taskId() creates a task ID that consists
+        # of the Job's class name, the job ID and a UUID.
+        job = NullJob(completion_message="doesn't matter")
+        task_id = job.taskId()
+        uuid_expr = (
+            '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+        mo = re.search('^NullJob-%s-%s$' % (job.job_id, uuid_expr), task_id)
+        self.assertIsNot(None, mo)
 
 
 class StaticJobSource(BaseRunnableJob):
@@ -411,8 +426,8 @@ class StuckJob(StaticJobSource):
         self.job = Job()
 
     def __repr__(self):
-        return '<StuckJob(%r, lease_length=%s, delay=%s)>' % (
-            self.id, self.lease_length, self.delay)
+        return '<%s(%r, lease_length=%s, delay=%s)>' % (
+            self.__class__.__name__, self.id, self.lease_length, self.delay)
 
     def acquireLease(self):
         return self.job.acquireLease(self.lease_length)
@@ -550,18 +565,19 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.oops_capture.sync()
         oops = self.oopses[0]
-        self.assertEqual(
-            ('TimeoutError', 'Job ran too long.'),
-            (oops['type'], oops['value']))
+        expected_exception = ('TimeoutError', 'Job ran too long.')
+        self.assertEqual(expected_exception, (oops['type'], oops['value']))
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
             dedent("""\
-            INFO Running through Twisted.
-            INFO Running StuckJob \(ID .*\).
-            INFO Running StuckJob \(ID .*\).
-            INFO Job resulted in OOPS: .*
+                INFO Running through Twisted.
+                INFO Running <StuckJob.*?> \(ID .*?\).
+                INFO Running <StuckJob.*?> \(ID .*?\).
+                INFO Job resulted in OOPS: .*
             """)))
 
-    def test_timeout_short(self):
+    # XXX: BradCrittenden 2012-05-09 bug=994777: Disabled as a spurious
+    # failure.  In isolation this test fails 5% of the time.
+    def disabled_test_timeout_short(self):
         """When a job exceeds its lease, an exception is raised.
 
         Unfortunately, timeouts include the time it takes for the zope
@@ -582,8 +598,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             logger.getLogBuffer(), MatchesRegex(
                 dedent("""\
                 INFO Running through Twisted.
-                INFO Running ShorterStuckJob \(ID .*\).
-                INFO Running ShorterStuckJob \(ID .*\).
+                INFO Running <ShorterStuckJob.*?> \(ID .*?\).
+                INFO Running <ShorterStuckJob.*?> \(ID .*?\).
                 INFO Job resulted in OOPS: %s
                 """) % oops['id']))
         self.assertEqual(('TimeoutError', 'Job ran too long.'),
@@ -613,8 +629,10 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertEqual(
             (2, 0), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
 
-    def test_memory_hog_job(self):
+    def disable_test_memory_hog_job(self):
         """A job with a memory limit will trigger MemoryError on excess."""
+        # XXX: frankban 2012-03-29 bug=963455: This test fails intermittently,
+        # especially in parallel tests.
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
         runner = TwistedJobRunner.runFromSource(
@@ -657,10 +675,9 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             def runFromSource(cls, source, dbuser, logger):
                 expected_config = errorlog.ErrorReportingUtility()
                 expected_config.configure('merge_proposal_jobs')
-                # Check that the unique oops token was applied.
                 self.assertEqual(
-                    errorlog.globalErrorUtility.oops_prefix,
-                    expected_config.oops_prefix)
+                    'T-merge_proposal_jobs',
+                    errorlog.globalErrorUtility.oops_prefix)
                 return cls()
 
             completed_jobs = []
@@ -702,3 +719,32 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
         """No --log-twisted sets JobCronScript.log_twisted False."""
         jcs = JobCronScript(TwistedJobRunner, test_args=[])
         self.assertFalse(jcs.log_twisted)
+
+
+class TestCeleryEnabled(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_no_flag(self):
+        """With no flag set, result is False."""
+        self.assertFalse(celery_enabled('foo'))
+
+    def test_matching_flag(self):
+        """A matching flag returns True."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'foo bar'}))
+        self.assertTrue(celery_enabled('foo'))
+        self.assertTrue(celery_enabled('bar'))
+
+    def test_non_matching_flag(self):
+        """A non-matching flag returns false."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'foo bar'}))
+        self.assertFalse(celery_enabled('baz'))
+        self.assertTrue(celery_enabled('bar'))
+
+    def test_substring(self):
+        """A substring of an enabled class does not match."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'foobar'}))
+        self.assertFalse(celery_enabled('bar'))

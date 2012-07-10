@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This script will set up a brand new Ubuntu machine as a LP developer
@@ -52,17 +52,14 @@ hostnames=$(cat <<EOF
     answers.launchpad.dev
     archive.launchpad.dev
     api.launchpad.dev
+    bazaar.launchpad.dev
     bazaar-internal.launchpad.dev
-    beta.launchpad.dev
     blueprints.launchpad.dev
     bugs.launchpad.dev
     code.launchpad.dev
     feeds.launchpad.dev
-    id.launchpad.dev
     keyserver.launchpad.dev
     lists.launchpad.dev
-    openid.launchpad.dev
-    ubuntu-openid.launchpad.dev
     ppa.launchpad.dev
     private-ppa.launchpad.dev
     testopenid.dev
@@ -75,14 +72,6 @@ EOF
 for hostname in $hostnames; do
   dev_host;
 done
-
-grep -q "^127.0.0.99" /etc/hosts
-if [ $? -ne 0 ]; then
-  echo "
-127.0.0.99      bazaar.launchpad.dev
-" | sudo tee -a /etc/hosts > /dev/null
-  echo "bazaar.launchpad.dev added to /etc/hosts"
-fi
 
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
@@ -147,7 +136,7 @@ do_install() {
   }
 
 sudo apt-get update
-REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker"
+REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker libapache2-mod-wsgi"
 for pkg in $REQUIRED_PACKAGES; do
   do_install;
 done

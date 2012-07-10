@@ -89,7 +89,7 @@ class TestLibrarianDBOutage(TestCase):
             try:
                 urllib2.urlopen(self.url).read()
                 codes.add(200)
-            except urllib2.HTTPError, error:
+            except urllib2.HTTPError as error:
                 codes.add(error.code)
         self.assertTrue(len(codes) == 1, 'Mixed responses: %s' % str(codes))
         return codes.pop()

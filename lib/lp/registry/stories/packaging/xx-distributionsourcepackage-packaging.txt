@@ -19,10 +19,10 @@ source package in each series of this distribution.
     >>> content = anon_browser.contents
     >>> print extract_text(find_tag_by_id(content, 'packages_list'))
     The Hoary Hedgehog Release (active development)     Set upstream link
-      1.0.9a-4ubuntu1 release (main) ... weeks ago
+      1.0.9a-4ubuntu1 release (main) 2005-09-15
     The Warty Warthog Release (current stable release)  alsa-utils trunk series
-      1.0.8-1ubuntu1  release (main) ... weeks ago
-      1.0.9a-4        release (main) ... weeks ago
+      1.0.8-1ubuntu1  release (main) 2005-09-15
+      1.0.9a-4        release (main) 2005-09-16
 
 
 Delete Link Button
@@ -59,7 +59,7 @@ Clicking this button deletes the corresponding packaging association.
     Removed upstream association between alsa-utils trunk series and Warty.
     >>> print extract_text(find_tag_by_id(content, 'packages_list'))
     The Hoary Hedgehog Release (active development)     Set upstream link
-      1.0.9a-4ubuntu1 release (main) ... weeks ago
+      1.0.9a-4ubuntu1 release (main) 2005-09-15
     The Warty Warthog Release (current stable release)  Set upstream link
-      1.0.8-1ubuntu1  release (main) ... weeks ago
-      1.0.9a-4        release (main) ... weeks ago
+      1.0.8-1ubuntu1  release (main) 2005-09-15
+      1.0.9a-4        release (main) 2005-09-16

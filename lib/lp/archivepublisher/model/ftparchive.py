@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -21,6 +21,7 @@ from lp.services.command_spawner import (
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.stormexpr import Concatenate
 from lp.services.librarian.model import LibraryFileAlias
+from lp.services.osutils import write_file
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -40,12 +41,6 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 def package_name(filename):
     """Extract a package name from a debian package filename."""
     return (os.path.basename(filename).split("_"))[0]
-
-
-def f_touch(*parts):
-    """Touch the file named by the arguments concatenated as a path."""
-    fname = os.path.join(*parts)
-    open(fname, "w").close()
 
 
 def safe_mkdir(path):
@@ -215,15 +210,15 @@ class FTPArchiveHandler:
             (comp, "debian-installer"),
             (comp, "src"),
             ):
-            f_touch(os.path.join(
+            write_file(os.path.join(
                 self._config.overrideroot,
-                ".".join(("override", suite) + path)))
+                ".".join(("override", suite) + path)), "")
 
         # Create empty file lists.
         def touch_list(*parts):
-            f_touch(os.path.join(
+            write_file(os.path.join(
                 self._config.overrideroot,
-                "_".join((suite, ) + parts)))
+                "_".join((suite, ) + parts)), "")
         touch_list(comp, "source")
 
         arch_tags = [
@@ -443,11 +438,11 @@ class FTPArchiveHandler:
 
         # Set up filepaths for the overrides we read
         extra_extra_overrides = os.path.join(self._config.miscroot,
-            "more-extra.override.%s.%s" % (distroseries, component))
+            "more-extra.override.%s.main" % distroseries)
         if not os.path.exists(extra_extra_overrides):
             unpocketed_series = "-".join(distroseries.split('-')[:-1])
             extra_extra_overrides = os.path.join(self._config.miscroot,
-                "more-extra.override.%s.%s" % (unpocketed_series, component))
+                "more-extra.override.%s.main" % unpocketed_series)
         # And for the overrides we write out
         main_override = os.path.join(self._config.overrideroot,
                                      "override.%s.%s" %
@@ -573,7 +568,7 @@ class FTPArchiveHandler:
             SourcePackageName.name,
             LibraryFileAlias.filename,
             Component.name,
-            Concatenate("binary-", DistroArchSeries.architecturetag),
+            Concatenate(u"binary-", DistroArchSeries.architecturetag),
             )
         join_conditions = [
             BinaryPackageRelease.id ==

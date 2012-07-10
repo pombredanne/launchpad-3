@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -31,14 +31,20 @@ value_domain_info = sorted([
     ('int',
      "An integer."),
     ('space delimited',
-     'Space-delimited strings.')
+     'Space-delimited strings.'),
+    ('datetime',
+     'ISO 8601 datetime'),
     ])
 
 # Data for generating web-visible feature flag documentation.
 #
 # Entries for each flag are:
-# flag name, value domain, prose documentation, default behaviour, title,
-# URL to a page with more information about the feature.
+# 1. flag name
+# 2. value domain
+# 3. prose documentation
+# 4. default behaviour
+# 5. title
+# 6. URL to a page with more information about the feature.
 #
 # Value domain as in value_domain_info above.
 #
@@ -57,6 +63,14 @@ flag_info = sorted([
      '',
      '',
      'https://bugs.launchpad.net/launchpad/+bug/678090'),
+    ('bugs.bugtaskflattener.generation',
+     'string',
+     ("Sets the key used to store progress in a BugTaskFlat update pass. "
+      "Normally disabled unless recent schema changes require a full "
+      "update."),
+     'BugTaskFlattener disabled',
+     '',
+     ''),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
@@ -75,6 +89,13 @@ flag_info = sorted([
      '',
      'Listing pre-fetching',
      'https://bugs.launchpad.net/launchpad/+bug/888756'),
+    ('bugs.heat_updates.cutoff',
+     'timestamp',
+     ('Set the oldest that a bug\'s heat can be before it is '
+      'considered outdated.'),
+     '',
+     '',
+     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -105,15 +126,27 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('mail.dkim_authentication.disabled',
+    ('jobs.celery.enabled_classes',
+     'space delimited',
+     'Names of Job classes that should be run via celery',
+     'No jobs run via celery',
+     'Celery-enabled job classes',
+     'https://dev.launchpad.net/CeleryJobRunner'),
+    ('js.combo_loader.enabled',
      'boolean',
-     'Disable DKIM authentication checks on incoming mail.',
+     'Determines if we use a js combo loader or not.',
      '',
      '',
      ''),
-    ('malone.disable_targetnamesearch',
+    ('js.yui-version',
+     'space delimited',
+     'Allows us to change the YUI version we run against, e.g. yui-3.4.',
+     'As speficied in versions.cfg',
+     '',
+     ''),
+    ('mail.dkim_authentication.disabled',
      'boolean',
-     'If true, disables consultation of target names during bug text search.',
+     'Disable DKIM authentication checks on incoming mail.',
      '',
      '',
      ''),
@@ -184,36 +217,15 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.private_bug_visibility_rules.enabled',
-     'boolean',
-     ('Enables the application of additional privacy filter terms in bug '
-      'queries to allow defined project roles to see private bugs.'),
-     '',
-     '',
-     ''),
-    ('disclosure.enhanced_private_bug_subscriptions.enabled',
-     'boolean',
-     ('Enables the auto subscribing and unsubscribing of users as a bug '
-      'transitions between public, private and security related states.'),
-     '',
-     '',
-     ''),
-    ('disclosure.allow_multipillar_private_bugs.enabled',
-     'boolean',
-     'Allows private bugs to have more than one bug task.',
-     '',
-     '',
-     ''),
     ('disclosure.users_hide_own_bug_comments.enabled',
      'boolean',
      'Allows users in project roles and comment owners to hide bug comments.',
      '',
      '',
      ''),
-    ('disclosure.extra_private_team_LimitedView_security.enabled',
+    ('disclosure.add-team-person-picker.enabled',
      'boolean',
-     ('Enables additional checks to be done to determine whether a user has '
-      'launchpad.LimitedView permission on a private team.'),
+     'Allows users to add a new team directly from the person picker.',
      '',
      '',
      ''),
@@ -247,10 +259,77 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.log_private_team_leaks.enabled',
+    ('disclosure.enhanced_choice_popup.enabled',
      'boolean',
-     ('Enables soft OOPSes for code that is mixing visibility rules, such '
-      'as disclosing private teams, so the data can be analyzed.'),
+     ('If true, will include any available descriptive text with each choice '
+      'item in the selection popup.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_sharing.enabled',
+     'boolean',
+     ('If true, will allow the use of the new sharing view and apis used '
+      'for the new disclosure data model to view but not write data.'),
+     '',
+     'Sharing overview',
+     ''),
+    ('disclosure.enhanced_sharing_details.enabled',
+     'boolean',
+     ('If true, enables the details page for viewing the `Some` things that'
+      'shared with a user or team.'),
+     '',
+     '',
+     ''),
+    ('disclosure.legacy_subscription_visibility.enabled',
+     'boolean',
+     ('If true, the legacy behaviour of unsubscribing from a bug or branch'
+      'revokes access.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_sharing.writable',
+     'boolean',
+     ('If true, will allow the use of the new sharing view and apis used '
+      'to edit the new disclosure data model.'),
+     '',
+     'Sharing management',
+     ''),
+    ('disclosure.unsubscribe_jobs.enabled',
+     'boolean',
+     ('If true, the jobs to unsubscribe users who lose access to bugs'
+      'and branches are run.'),
+     '',
+     '',
+     ''),
+    ('garbo.workitem_migrator.enabled',
+     'boolean',
+     ('If true, garbo will try to migrate work items from the whiteboard of '
+      'specifications.'),
+     '',
+     '',
+     ''),
+    ('registry.upcoming_work_view.enabled',
+     'boolean',
+     ('If true, the new upcoming work view of teams is available.'),
+     '',
+     '',
+     ''),
+    ('disclosure.proprietary_information_type.disabled',
+     'boolean',
+     'If true, disables the PROPRIETARY information_type for bugs.',
+     '',
+     '',
+     ''),
+    ('disclosure.display_userdata_as_private.enabled',
+     'boolean',
+     'If true, displays the USERDATA information_type as Private.',
+     '',
+     '',
+     ''),
+    ('disclosure.information_type_notifications.enabled',
+     'boolean',
+     ('If true, calculate and store bugchange notifications to reference '
+      'information_type rather than private/security_related.'),
      '',
      '',
      ''),

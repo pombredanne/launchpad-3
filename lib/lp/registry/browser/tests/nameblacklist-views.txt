@@ -20,7 +20,7 @@ View all
 All the blacklisted regular expressions that filter pillar names and
 person names can be seen on the /+nameblacklist page.
 
-    >>> login_person(registry_expert)
+    >>> ignored = login_person(registry_expert)
     >>> view = create_initialized_view(name_blacklist_set, '+index',
     ...                                principal=registry_expert)
     >>> print extract_text(find_tag_by_id(view.render(), 'blacklist'))

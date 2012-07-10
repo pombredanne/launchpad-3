@@ -11,22 +11,10 @@
     <tal:lifecycle-selector replace="structure context/view/widgets/lifecycle"/>
     <tal:sort-by replace="structure context/view/widgets/sort_by"
                  condition="context/view/widgets/sort_by|nothing"/>
-    <noscript>
-      <input type="submit" value="Filter"/>
-    </noscript>
+    <input id="filter_form_submit" type="submit" value="Filter"/>
   </form>
 
 <script type="text/javascript">
-function submit_filter() {
-    getElement('filter_form').submit();
-}
-
-function hookUpFilterSubmission () {
-    connect('field.lifecycle', 'onchange', submit_filter);
-    if (getElement('field.sort_by')) {
-        connect('field.sort_by', 'onchange', submit_filter);
-    }
-}
 function show_commit(id) {
     var div = document.getElementById('branch-log-' + id);
     if (div) {
@@ -45,7 +33,11 @@ function hide_commit(id) {
 <tal:comment
 tal:condition="not: request/features/ajax.batch_navigator.enabled"
 replace='structure string:&lt;script type="text/javascript"&gt;
-    registerLaunchpadFunction(hookUpFilterSubmission);
+    LPJS.use("lp.code.util", function(Y) {
+      Y.on("domready", function(e) {
+          Y.lp.code.util.hookUpBranchFilterSubmission(Y);
+      }, window);
+    });
 &lt;/script&gt;'/>
 
   <tal:needs-batch condition="context/has_multiple_pages">
@@ -197,7 +189,7 @@ replace='structure string:&lt;script type="text/javascript"&gt;
   <tal:comment
     tal:condition="request/features/ajax.batch_navigator.enabled"
     replace='structure string:&lt;script type="text/javascript"&gt;
-    LPS.use("lp.app.batchnavigator",
+    LPJS.use("lp.app.batchnavigator",
         function(Y) {
             Y.on("domready", function () {
                 var config = {

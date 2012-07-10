@@ -95,7 +95,7 @@ class CodeImportBranchOpenPolicy(BranchOpenPolicy):
      - only open the allowed schemes
     """
 
-    allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp']
+    allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp', 'bzr']
 
     def shouldFollowReferences(self):
         """See `BranchOpenPolicy.shouldFollowReferences`.
@@ -731,10 +731,10 @@ class PullingImportWorker(ImportWorker):
             except NotBranchError:
                 self._logger.info("No branch found at remote location.")
                 return CodeImportWorkerExitCode.FAILURE_INVALID
-            except BadUrl, e:
+            except BadUrl as e:
                 self._logger.info("Invalid URL: %s" % e)
                 return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
-            except ConnectionError, e:
+            except ConnectionError as e:
                 self._logger.info("Unable to open remote branch: %s" % e)
                 return CodeImportWorkerExitCode.FAILURE_INVALID
             try:
@@ -751,7 +751,7 @@ class PullingImportWorker(ImportWorker):
                         result = CodeImportWorkerExitCode.SUCCESS_NOCHANGE
                 else:
                     result = CodeImportWorkerExitCode.SUCCESS_PARTIAL
-            except Exception, e:
+            except Exception as e:
                 if e.__class__ in self.unsupported_feature_exceptions:
                     self._logger.info(
                         "Unable to import branch because of limitations in "

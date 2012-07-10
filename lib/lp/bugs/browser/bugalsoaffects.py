@@ -193,7 +193,7 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
             structured("""
                 There is no project in Launchpad named "%s". Please
                 <a href="/projects"
-                onclick="LPS.use('event').Event.simulate(
+                onclick="LPJS.use('event').Event.simulate(
                          document.getElementById('%s'), 'click');
                          return false;"
                 >search for it</a> as it may be
@@ -511,8 +511,8 @@ class LinkUpstreamHowOptions(EnumeratedType):
 #    mailing lists."
 
     UNLINKED_UPSTREAM = Item(
-        """I just want to register that it is upstream right now; \
-           I don't have any way to link it.
+        """I want to add this upstream project to the bug report, but someone\
+        must find or report this bug in the upstream bug tracker.
 
         Launchpad will record that.
         """)
@@ -712,7 +712,7 @@ class BugTrackerCreationStep(AlsoAffectsStep):
         bug_url = data.get('bug_url').strip()
         try:
             getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
-        except NoBugTrackerFound, error:
+        except NoBugTrackerFound as error:
             getUtility(IBugTrackerSet).ensureBugTracker(
                 error.base_url, self.user, error.bugtracker_type)
         self.next_step = self._next_step

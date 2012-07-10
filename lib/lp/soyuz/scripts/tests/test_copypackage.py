@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -74,7 +74,6 @@ from lp.soyuz.scripts.packagecopier import (
     do_copy,
     PackageCopier,
     re_upload_file,
-    UnembargoSecurityPackage,
     update_files_privacy,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -83,6 +82,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
@@ -110,11 +110,9 @@ class ReUploadFileTestCase(TestCaseWithFactory):
 
         Their filename, mimetype and file contents should be the same.
         """
-        self.assertEquals(
-            old.filename, new.filename, 'Filename mismatch.')
-        self.assertEquals(
-            old.mimetype, new.mimetype, 'MIME type mismatch.')
-        self.assertEquals(old.read(), new.read(), 'Content mismatch.')
+        self.assertEqual(old.filename, new.filename, 'Filename mismatch.')
+        self.assertEqual(old.mimetype, new.mimetype, 'MIME type mismatch.')
+        self.assertEqual(old.read(), new.read(), 'Content mismatch.')
 
     def assertFileIsReset(self, reuploaded_file):
         """Assert the given `ILibraryFileAlias` attributes were reset.
@@ -122,10 +120,10 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         The expiration date and the hits counter are reset and the
         last access records was on file creation.
         """
-        self.assertIs(reuploaded_file.expires, None)
-        self.assertEquals(
+        self.assertIsNone(reuploaded_file.expires)
+        self.assertEqual(
             reuploaded_file.last_accessed, reuploaded_file.date_created)
-        self.assertEquals(reuploaded_file.hits, 0)
+        self.assertEqual(reuploaded_file.hits, 0)
 
     def testReUploadFileToTheSameContext(self):
         # Re-uploading a librarian file to the same privacy/server
@@ -138,7 +136,7 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         transaction.commit()
 
         self.assertIsNot(old, new)
-        self.assertEquals(
+        self.assertEqual(
             old.restricted, new.restricted, 'New file still private.')
         self.assertSameContent(old, new)
         self.assertFileIsReset(new)
@@ -222,9 +220,8 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
 
     def assertNewFiles(self, new_files, result):
         """Check new files created during update_files_privacy."""
-        self.assertEquals(
-            sorted([new_file.filename for new_file in new_files]),
-            result)
+        self.assertEqual(
+            sorted([new_file.filename for new_file in new_files]), result)
 
     def _checkSourceFilesPrivacy(self, pub_record, restricted,
                                  expected_n_files):
@@ -232,20 +229,20 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         n_files = 0
         source = pub_record.sourcepackagerelease
         for source_file in source.files:
-            self.assertEquals(
+            self.assertEqual(
                 source_file.libraryfile.restricted, restricted,
                 'Privacy mismatch on %s' % source_file.libraryfile.filename)
             n_files += 1
-        self.assertEquals(
+        self.assertEqual(
             source.upload_changesfile.restricted, restricted,
             'Privacy mismatch on %s' % source.upload_changesfile.filename)
         n_files += 1
         for diff in source.package_diffs:
-            self.assertEquals(
+            self.assertEqual(
                 diff.diff_content.restricted, restricted,
                 'Privacy mismatch on %s' % diff.diff_content.filename)
             n_files += 1
-        self.assertEquals(
+        self.assertEqual(
             n_files, expected_n_files,
             'Expected %d and got %d files' % (expected_n_files, n_files))
 
@@ -334,20 +331,20 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         n_files = 0
         binary = pub_record.binarypackagerelease
         for binary_file in binary.files:
-            self.assertEquals(
+            self.assertEqual(
                 binary_file.libraryfile.restricted, restricted,
                 'Privacy mismatch on %s' % binary_file.libraryfile.filename)
             n_files += 1
         build = binary.build
-        self.assertEquals(
+        self.assertEqual(
             build.upload_changesfile.restricted, restricted,
             'Privacy mismatch on %s' % build.upload_changesfile.filename)
         n_files += 1
-        self.assertEquals(
+        self.assertEqual(
             build.log.restricted, restricted,
             'Privacy mismatch on %s' % build.log.filename)
         n_files += 1
-        self.assertEquals(
+        self.assertEqual(
             n_files, expected_n_files,
             'Expected %d and got %d files' % (expected_n_files, n_files))
 
@@ -461,19 +458,19 @@ class CopyCheckerHarness:
          * Finally check whether is a delayed-copy or not according to the
            given state.
         """
-        copy_checker = CopyChecker(self.archive, include_binaries=False)
-        self.assertIs(
-            None,
+        copy_checker = CopyChecker(
+            self.archive, include_binaries=False, allow_delayed_copies=delayed)
+        self.assertIsNone(
             copy_checker.checkCopy(
                 self.source, self.series, self.pocket,
                 check_permissions=False))
         checked_copies = list(copy_checker.getCheckedCopies())
-        self.assertEquals(1, len(checked_copies))
+        self.assertEqual(1, len(checked_copies))
         [checked_copy] = checked_copies
-        self.assertEquals(
+        self.assertEqual(
             BuildSetStatus.NEEDSBUILD,
             checked_copy.getStatusSummaryForBuilds()['status'])
-        self.assertEquals(delayed, checked_copy.delayed)
+        self.assertEqual(delayed, checked_copy.delayed)
 
     def assertCanCopyBinaries(self, delayed=False):
         """Source and binary copy is allowed.
@@ -489,19 +486,19 @@ class CopyCheckerHarness:
          * Finally check whether is a delayed-copy or not according to the
            given state.
         """
-        copy_checker = CopyChecker(self.archive, include_binaries=True)
-        self.assertIs(
-            None,
+        copy_checker = CopyChecker(
+            self.archive, include_binaries=True, allow_delayed_copies=delayed)
+        self.assertIsNone(
             copy_checker.checkCopy(
                 self.source, self.series, self.pocket,
                 check_permissions=False))
         checked_copies = list(copy_checker.getCheckedCopies())
-        self.assertEquals(1, len(checked_copies))
+        self.assertEqual(1, len(checked_copies))
         [checked_copy] = checked_copies
         self.assertTrue(
             checked_copy.getStatusSummaryForBuilds()['status'] >=
             BuildSetStatus.FULLYBUILT_PENDING)
-        self.assertEquals(delayed, checked_copy.delayed)
+        self.assertEqual(delayed, checked_copy.delayed)
 
     def assertCannotCopySourceOnly(self, msg, person=None,
                                    check_permissions=False):
@@ -515,7 +512,7 @@ class CopyCheckerHarness:
             copy_checker.checkCopy, self.source, self.series, self.pocket,
             person, check_permissions)
         checked_copies = list(copy_checker.getCheckedCopies())
-        self.assertEquals(0, len(checked_copies))
+        self.assertEqual(0, len(checked_copies))
 
     def assertCannotCopyBinaries(self, msg):
         """`CopyChecker.checkCopy()` including binaries raises CannotCopy.
@@ -528,7 +525,7 @@ class CopyCheckerHarness:
             copy_checker.checkCopy, self.source, self.series, self.pocket,
             None, False)
         checked_copies = list(copy_checker.getCheckedCopies())
-        self.assertEquals(0, len(checked_copies))
+        self.assertEqual(0, len(checked_copies))
 
     def test_cannot_copy_binaries_from_building(self):
         [build] = self.source.createMissingBuilds()
@@ -606,13 +603,12 @@ class CopyCheckerQueries(TestCaseWithFactory,
         with StormStatementRecorder() as recorder:
             copy_checker = CopyChecker(self.archive, include_binaries=False)
             for source in sources:
-                self.assertIs(
-                    None,
+                self.assertIsNone(
                     copy_checker.checkCopy(
                         source, self.series, self.pocket, person=person,
                         check_permissions=check_permissions))
             checked_copies = list(copy_checker.getCheckedCopies())
-            self.assertEquals(nb_of_sources, len(checked_copies))
+            self.assertEqual(nb_of_sources, len(checked_copies))
         return recorder
 
     def test_queries_copy_check(self):
@@ -831,13 +827,11 @@ class CopyCheckerTestCase(TestCaseWithFactory):
 
         # At this point copy is allowed with or without binaries.
         copy_checker = CopyChecker(archive, include_binaries=False)
-        self.assertIs(
-            None,
+        self.assertIsNone(
             copy_checker.checkCopy(
                 source, series, pocket, check_permissions=False))
         copy_checker = CopyChecker(archive, include_binaries=True)
-        self.assertIs(
-            None,
+        self.assertIsNone(
             copy_checker.checkCopy(
                 source, series, pocket, check_permissions=False))
 
@@ -849,8 +843,8 @@ class CopyCheckerTestCase(TestCaseWithFactory):
 
         # Now source-only copies are allowed.
         copy_checker = CopyChecker(archive, include_binaries=False)
-        self.assertIs(
-            None, copy_checker.checkCopy(
+        self.assertIsNone(
+            copy_checker.checkCopy(
                 source, series, pocket, check_permissions=False))
 
         # Copies with binaries are denied.
@@ -987,8 +981,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
 
         # The first source-only copy is allowed, thus stored in the
         # copy checker inventory.
-        self.assertIs(
-            None,
+        self.assertIsNone(
             copy_checker.checkCopy(
                 source, source.distroseries, source.pocket,
                 check_permissions=False))
@@ -1026,24 +1019,22 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         self.layer.txn.commit()
         do_copy(
             [source], archive, series, pocket, include_binaries=False,
-            check_permissions=False)
+            allow_delayed_copies=True, check_permissions=False)
 
         # Repeating the copy is denied.
-        copy_checker = CopyChecker(archive, include_binaries=False)
+        copy_checker = CopyChecker(
+            archive, include_binaries=False, allow_delayed_copies=True)
         self.assertRaisesWithContent(
             CannotCopy,
             'same version already uploaded and waiting in ACCEPTED queue',
             copy_checker.checkCopy, source, series, pocket, None, False)
 
     def test_checkCopy_suppressing_delayed_copies(self):
-        # `CopyChecker` by default will request delayed-copies when it's
-        # the case (restricted files being copied to public archives).
-        # However this feature can be turned off, and the operation can
-        # be performed as a direct-copy by passing 'allow_delayed_copies'
-        # as False when initializing `CopyChecker`.
-        # This aspect is currently only used in `UnembargoSecurityPackage`
-        # script class, because it performs the file privacy fixes in
-        # place.
+        # `CopyChecker` can request delayed-copies by passing
+        # `allow_delayed_copies` as True, which was an old mechanism to
+        # support restricted files being copied to public archives.  If this
+        # is disabled, which is the default, the operation will be performed
+        # as a direct-copy.
 
         # Create a private archive with a restricted source publication.
         private_archive = self.factory.makeArchive(
@@ -1057,19 +1048,21 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         series = source.distroseries
         pocket = source.pocket
 
-        # Normally `CopyChecker` would store a delayed-copy representing
-        # this operation, since restricted files are being copied to
-        # public archives.
-        copy_checker = CopyChecker(archive, include_binaries=False)
+        # `CopyChecker` can store a delayed-copy representing this
+        # operation, since restricted files are being copied to public
+        # archives.
+        copy_checker = CopyChecker(
+            archive, include_binaries=False, allow_delayed_copies=True)
         copy_checker.checkCopy(
             source, series, pocket, check_permissions=False)
         [checked_copy] = list(copy_checker.getCheckedCopies())
         self.assertTrue(checked_copy.delayed)
 
         # When 'allow_delayed_copies' is off, a direct-copy will be
-        # scheduled.
+        # scheduled.  This requires an explicit option to say that we know
+        # we're going to be exposing previously restricted files.
         copy_checker = CopyChecker(
-            archive, include_binaries=False, allow_delayed_copies=False)
+            archive, include_binaries=False, unembargo=True)
         copy_checker.checkCopy(
             source, series, pocket, check_permissions=False)
         [checked_copy] = list(copy_checker.getCheckedCopies())
@@ -1161,7 +1154,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.test_publisher.prepareBreezyAutotest()
 
     def assertCopied(self, copies, series, arch_tags):
-        self.assertEquals(
+        self.assertEqual(
             [u'foo 666 in %s' % series.name] +
             [u'foo-bin 666 in %s %s' % (series.name, arch_tag)
              for arch_tag in arch_tags],
@@ -1265,9 +1258,9 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def assertComponentSectionAndPriority(self, component, source,
                                           destination):
-        self.assertEquals(component, destination.component)
-        self.assertEquals(source.section, destination.section)
-        self.assertEquals(source.priority, destination.priority)
+        self.assertEqual(component, destination.component)
+        self.assertEqual(source.section, destination.section)
+        self.assertEqual(source.priority, destination.priority)
 
     def test_new_publication_overrides(self):
         # When we copy publications, if the destination primary archive has
@@ -1294,7 +1287,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
         universe = getUtility(IComponentSet)['universe']
-        self.assertEquals(universe, copied_source.component)
+        self.assertEqual(universe, copied_source.component)
         self.assertComponentSectionAndPriority(
             universe, bin_i386, copied_bin_i386)
         self.assertComponentSectionAndPriority(
@@ -1330,17 +1323,25 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
-        self.assertEquals(copied_source.component, existing_source.component)
+        self.assertEqual(copied_source.component, existing_source.component)
         self.assertComponentSectionAndPriority(
             ebin_i386.component, ebin_i386, copied_bin_i386)
         self.assertComponentSectionAndPriority(
             ebin_hppa.component, ebin_hppa, copied_bin_hppa)
 
+    def _setup_archive(self):
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        return nobby, archive, source
+
     def test_existing_publication_overrides_pockets(self):
         # When we copy source/binaries from one pocket to another, the
         # overrides are unchanged from the source publication overrides.
-        nobby = self.createNobby(('i386', 'hppa'))
-        archive = self.test_publisher.ubuntutest.main_archive
+        nobby, archive, _ = self._setup_archive()
         source = self.test_publisher.getPubSource(
             archive=archive, version='1.0-1', architecturehintlist='any',
             distroseries=nobby, pocket=PackagePublishingPocket.PROPOSED)
@@ -1354,7 +1355,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, archive, nobby, PackagePublishingPocket.UPDATES, True)
-        self.assertEquals(copied_source.component, source.component)
+        self.assertEqual(copied_source.component, source.component)
         self.assertComponentSectionAndPriority(
             bin_i386.component, bin_i386, copied_bin_i386)
         self.assertComponentSectionAndPriority(
@@ -1376,7 +1377,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
         main = getUtility(IComponentSet)['main']
-        self.assertEquals(main, copied_source.component)
+        self.assertEqual(main, copied_source.component)
         self.assertComponentSectionAndPriority(
             main, bin_i386, copied_bin_i386)
         self.assertComponentSectionAndPriority(
@@ -1389,8 +1390,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             archive=archive, version='1.0-2', architecturehintlist='any')
         dsp = self.factory.makeDistroSeriesParent()
         target_archive = dsp.derived_series.main_archive
-        self.layer.txn.commit()
-        self.layer.switchDbUser('archivepublisher')
+        switch_dbuser('archivepublisher')
         # The real test is that the doCopy doesn't fail.
         [copied_source] = self.doCopy(
             source, target_archive, dsp.derived_series, source.pocket, False)
@@ -1409,8 +1409,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             self.factory.makeSection())
         getUtility(ISourcePackageFormatSelectionSet).add(
             dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
-        self.layer.txn.commit()
-        self.layer.switchDbUser('archivepublisher')
+        switch_dbuser('archivepublisher')
         [copied_source] = do_copy(
             [source], target_archive, dsp.derived_series, source.pocket,
             check_permissions=False, overrides=[override])
@@ -1422,25 +1421,21 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def test_copy_ppa_generates_notification(self):
         # When a copy into a PPA is performed, a notification is sent.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
+        nobby, archive, source = self._setup_archive()
         changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
         source.sourcepackagerelease.changelog = changelog
-        transaction.commit()  # Librarian.
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        transaction.commit()
+        person = self.factory.makePerson(name='archiver')
         target_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest)
+            distribution=self.test_publisher.ubuntutest,
+            owner=person, name='ppa')
         [copied_source] = do_copy(
             [source], target_archive, nobby, source.pocket, False,
             person=target_archive.owner, check_permissions=False,
             send_email=True)
         [notification] = pop_notifications()
-        self.assertEquals(
-            get_ppa_reference(target_archive),
-            notification['X-Launchpad-PPA'])
+        self.assertEqual(
+            get_ppa_reference(target_archive), notification['X-Launchpad-PPA'])
         body = notification.get_payload()[0].get_payload()
         expected = dedent("""\
             Accepted:
@@ -1451,8 +1446,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
               * 1.0-2.
 
-            -- =
-
+            --
+            http://launchpad.dev/~archiver/+archive/ppa
             You are receiving this email because you are the uploader of the above
             PPA package.
             """)
@@ -1477,11 +1472,10 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=source.sourcepackagerelease.creator,
             check_permissions=False, send_email=True)
         [notification, announcement] = pop_notifications()
-        self.assertEquals(
-            'Foo Bar <foo.bar@canonical.com>', notification['To'])
-        self.assertEquals('nobby-changes@example.com', announcement['To'])
+        self.assertEqual('Foo Bar <foo.bar@canonical.com>', notification['To'])
+        self.assertEqual('nobby-changes@example.com', announcement['To'])
         for mail in (notification, announcement):
-            self.assertEquals(
+            self.assertEqual(
                 '[ubuntutest/nobby] foo 1.0-2 (Accepted)', mail['Subject'])
         expected_text = dedent("""\
             foo (1.0-2) unstable; urgency=3Dlow
@@ -1503,16 +1497,11 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # If it's a sponsored copy then the From: address on the
         # notification is changed to the sponsored person and the
         # SPPH.creator is set to the same person.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
+        nobby, archive, source = self._setup_archive()
         changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
         source.sourcepackagerelease.changelog = changelog
         # Copying to a primary archive reads the changes to close bugs.
         transaction.commit()
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
         nobby.changeslist = 'nobby-changes@example.com'
         sponsored_person = self.factory.makePerson(
             displayname="Sponsored", email="sponsored@example.com")
@@ -1522,9 +1511,27 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
                     check_permissions=False, send_email=True,
                     sponsored=sponsored_person)
         [notification, announcement] = pop_notifications()
-        self.assertEquals(
+        self.assertEqual(
             'Sponsored <sponsored@example.com>', announcement['From'])
         self.assertEqual(sponsored_person, copied_source.creator)
+
+    def test_sponsored_copy_sponsor_field(self):
+        # If it's a sponsored copy then the SPPH's sponsored field is set to
+        # the user who sponsored the copy.
+        nobby, archive, source = self._setup_archive()
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
+        # Copying to a primary archive reads the changes to close bugs.
+        transaction.commit()
+        sponsored_person = self.factory.makePerson(
+            displayname="Sponsored", email="sponsored@example.com")
+        [copied_source] = do_copy(
+            [source], archive, nobby, source.pocket, False,
+                    person=source.sourcepackagerelease.creator,
+                    check_permissions=False, send_email=True,
+                    sponsored=sponsored_person)
+        self.assertEqual(source.sourcepackagerelease.creator,
+            copied_source.sponsor)
 
     def test_copy_notification_contains_aggregate_change_log(self):
         # When copying a package that generates a notification,
@@ -1567,14 +1574,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
     def test_copy_generates_rejection_email(self):
         # When a copy into a primary archive fails, we expect a rejection
         # email if the send_email parameter is True.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
-        transaction.commit()  # Librarian.
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby, archive, source = self._setup_archive()
         # Ensure the same source is already in the destination so that we
         # get a rejection.
         self.test_publisher.getPubSource(
@@ -1590,11 +1590,9 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         [notification] = notifications
-        self.assertEquals(
-            'Foo Bar <foo.bar@canonical.com>', notification['To'])
-        self.assertEquals(
-            '[ubuntutest/nobby] foo 1.0-2 (Rejected)',
-            notification['Subject'])
+        self.assertEqual('Foo Bar <foo.bar@canonical.com>', notification['To'])
+        self.assertEqual(
+            '[ubuntutest/nobby] foo 1.0-2 (Rejected)', notification['Subject'])
         expected_text = (
             "Rejected:\n"
             "foo 1.0-2 in breezy-autotest (a different source with the same "
@@ -1602,22 +1600,16 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertIn(expected_text, notification.as_string())
 
     def test_copy_does_not_generate_notification(self):
-        # When notify = False is passed to do_copy, no notification is
+        # When send_email = False is passed to do_copy, no notification is
         # generated.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby, archive, source = self._setup_archive()
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest)
         [copied_source] = do_copy(
             [source], target_archive, nobby, source.pocket, False,
             person=target_archive.owner, check_permissions=False,
             send_email=False)
-        self.assertEquals([], pop_notifications())
+        self.assertEqual([], pop_notifications())
 
     def test_copying_unsupported_arch_with_override(self):
         # When the copier is passed an unsupported arch with an override
@@ -1645,13 +1637,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
     def test_copy_sets_creator(self):
         # The creator for the copied SPPH is the person passed
         # to do_copy.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby, archive, source = self._setup_archive()
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest)
         [copied_source] = do_copy(
@@ -1659,9 +1645,19 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=target_archive.owner, check_permissions=False,
             send_email=False)
 
-        self.assertEqual(
-            target_archive.owner,
-            copied_source.creator)
+        self.assertEqual(target_archive.owner, copied_source.creator)
+
+    def test_unsponsored_copy_does_not_set_sponsor(self):
+        # If the copy is not sponsored, SPPH.sponsor is none
+        nobby, archive, source = self._setup_archive()
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        [copied_source] = do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=False)
+
+        self.assertIsNone(copied_source.sponsor)
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
@@ -1682,16 +1678,13 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
         # pocket can be accepted.
-        self.test_publisher.breezy_autotest.status = (
-            SeriesStatus.CURRENT)
+        self.test_publisher.breezy_autotest.status = SeriesStatus.CURRENT
 
     def assertCopied(self, copy, series, arch_tags):
-        self.assertEquals(
-            copy.sources[0].sourcepackagerelease.title,
-            'foo - 666')
-        self.assertEquals(
-            sorted(arch_tags),
-            sorted([pub.build.arch_tag for pub in copy.builds]))
+        self.assertEqual(
+            copy.sources[0].sourcepackagerelease.title, 'foo - 666')
+        self.assertContentEqual(
+            arch_tags, [pub.build.arch_tag for pub in copy.builds])
 
     def doCopy(self, source, archive, series, pocket, include_binaries):
         return _do_delayed_copy(source, archive, series, pocket, True)
@@ -1724,14 +1717,13 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
     def do_delayed_copy(self, source):
         """Execute and return the delayed copy."""
 
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
         delayed_copy = _do_delayed_copy(
             source, self.copy_archive, self.copy_series, self.copy_pocket,
             True)
 
-        self.layer.txn.commit()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
         return delayed_copy
 
     def test_do_delayed_copy_simple(self):
@@ -1745,35 +1737,32 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         # A delayed-copy `IPackageUpload` record is returned.
         self.assertTrue(delayed_copy.is_delayed_copy)
-        self.assertEquals(
-            PackageUploadStatus.ACCEPTED, delayed_copy.status)
+        self.assertEqual(PackageUploadStatus.ACCEPTED, delayed_copy.status)
 
         # The returned object has a more descriptive 'displayname'
         # attribute than plain `IPackageUpload` instances.
-        self.assertEquals(
+        self.assertEqual(
             'Delayed copy of foocomm - '
             '1.0-2 (source, i386, raw-dist-upgrader)',
             delayed_copy.displayname)
 
         # It is targeted to the right publishing context.
-        self.assertEquals(self.copy_archive, delayed_copy.archive)
-        self.assertEquals(self.copy_series, delayed_copy.distroseries)
-        self.assertEquals(self.copy_pocket, delayed_copy.pocket)
+        self.assertEqual(self.copy_archive, delayed_copy.archive)
+        self.assertEqual(self.copy_series, delayed_copy.distroseries)
+        self.assertEqual(self.copy_pocket, delayed_copy.pocket)
 
         # And it contains the source, build and custom files.
-        self.assertEquals(
+        self.assertEqual(
             [source.sourcepackagerelease],
             [pus.sourcepackagerelease for pus in delayed_copy.sources])
 
         [build] = source.getBuilds()
-        self.assertEquals(
-            [build],
-            [pub.build for pub in delayed_copy.builds])
+        self.assertEqual([build], [pub.build for pub in delayed_copy.builds])
 
         [custom_file] = [
             custom.libraryfilealias
             for custom in build.package_upload.customfiles]
-        self.assertEquals(
+        self.assertEqual(
             [custom_file],
             [custom.libraryfilealias for custom in delayed_copy.customfiles])
 
@@ -1830,23 +1819,20 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
         # Setup and execute the delayed copy procedure. This should
         # now result in an accepted delayed upload.
         delayed_copy = self.do_delayed_copy(source)
-        self.assertEquals(
-            PackageUploadStatus.ACCEPTED, delayed_copy.status)
+        self.assertEqual(PackageUploadStatus.ACCEPTED, delayed_copy.status)
 
         # And it contains the source, build and custom files.
-        self.assertEquals(
+        self.assertEqual(
             [source.sourcepackagerelease],
             [pus.sourcepackagerelease for pus in delayed_copy.sources])
 
         [build] = source.getBuilds()
-        self.assertEquals(
-            [build],
-            [pub.build for pub in delayed_copy.builds])
+        self.assertEqual([build], [pub.build for pub in delayed_copy.builds])
 
         [custom_file] = [
             custom.libraryfilealias
             for custom in build.package_upload.customfiles]
-        self.assertEquals(
+        self.assertEqual(
             [custom_file],
             [custom.libraryfilealias for custom in delayed_copy.customfiles])
 
@@ -1902,9 +1888,8 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
         # archive context. Also after this point, the same delayed-copy
         # request will be denied by `CopyChecker`.
         [build_hppa, build_i386] = source.getBuilds()
-        self.assertEquals(
-            [build_i386],
-            [pub.build for pub in delayed_copy.builds])
+        self.assertEqual(
+            [build_i386], [pub.build for pub in delayed_copy.builds])
 
 
 class CopyPackageScriptTestCase(unittest.TestCase):
@@ -1992,14 +1977,14 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.binaries_pending_ids = [pub.id for pub in pending_binaries]
 
         # Run test cases in the production context.
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
     def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
                   from_distribution='ubuntu', from_suite='warty',
                   to_distribution='ubuntu', to_suite='hoary',
                   component=None, from_ppa=None, to_ppa=None,
                   from_partner=False, to_partner=False,
-                  confirm_all=True, include_binaries=True):
+                  confirm_all=True, include_binaries=True, unembargo=False):
         """Return a PackageCopier instance.
 
         Allow tests to use a set of default options and pass an
@@ -2015,6 +2000,9 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         if include_binaries:
             test_args.append('-b')
+
+        if unembargo:
+            test_args.append('--unembargo')
 
         if sourceversion is not None:
             test_args.extend(['-e', sourceversion])
@@ -2052,8 +2040,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertEqual(len(copied), size)
 
         for candidate in copied:
-            self.assertEqual(
-                candidate.status, PackagePublishingStatus.PENDING)
+            self.assertEqual(PackagePublishingStatus.PENDING, candidate.status)
 
         def excludeOlds(found, old_pending_ids):
             return [pub.id for pub in found if pub.id not in old_pending_ids]
@@ -2383,16 +2370,14 @@ class CopyPackageTestCase(TestCaseWithFactory):
         active_warty_architectures = [
             arch.architecturetag for arch in warty.architectures
             if arch.getChroot()]
-        self.assertEqual(
-            active_warty_architectures, ['i386'])
+        self.assertEqual(active_warty_architectures, ['i386'])
 
         # Setup ubuntu/hoary supporting i386 and hppa architetures.
         hoary = ubuntu.getSeries('hoary')
         test_publisher.addFakeChroots(hoary)
         active_hoary_architectures = [
             arch.architecturetag for arch in hoary.architectures]
-        self.assertEqual(
-            sorted(active_hoary_architectures), ['hppa', 'i386'])
+        self.assertEqual(sorted(active_hoary_architectures), ['hppa', 'i386'])
 
         # We will create an architecture-specific source and its binaries
         # for i386 in ubuntu/warty. They will be copied over.
@@ -2484,8 +2469,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # architecture (hppa).
         [new_build] = copied_source.getBuilds()
         self.assertEqual(
-            new_build.title,
-            'hppa build of boing 1.0 in ubuntu hoary RELEASE')
+            new_build.title, 'hppa build of boing 1.0 in ubuntu hoary RELEASE')
 
     def testVersionConflictInDifferentPockets(self):
         """Copy-package stops copies conflicting in different pocket.
@@ -2610,8 +2594,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         [copied_source, original_source] = sources
 
-        self.assertEqual(
-            copied_source.pocket, PackagePublishingPocket.UPDATES)
+        self.assertEqual(copied_source.pocket, PackagePublishingPocket.UPDATES)
         self.assertEqual(
             original_source.pocket, PackagePublishingPocket.SECURITY)
 
@@ -2657,8 +2640,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         copied = copy_helper.mainTask()
 
         [source_copy, i386_copy] = copied
-        self.assertEqual(
-            source_copy.displayname, 'lazy-building 1.0 in hoary')
+        self.assertEqual(source_copy.displayname, 'lazy-building 1.0 in hoary')
         self.assertEqual(i386_copy.displayname, 'lazy-bin 1.0 in hoary i386')
 
         target_archive = copy_helper.destination.archive
@@ -2719,12 +2701,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
             from_suite='warty', to_suite='hoary', to_ppa='mark')
         copied = copy_helper.mainTask()
 
-        self.assertEqual(
-            str(copy_helper.location),
-            'cprov: warty-RELEASE')
-        self.assertEqual(
-            str(copy_helper.destination),
-            'mark: hoary-RELEASE')
+        self.assertEqual('cprov: warty-RELEASE', str(copy_helper.location))
+        self.assertEqual('mark: hoary-RELEASE', str(copy_helper.destination))
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
@@ -2901,84 +2879,32 @@ class CopyPackageTestCase(TestCaseWithFactory):
             distribution=ubuntu)
 
         # Create a source and binary private publication.
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher = self.getTestPublisher(hoary)
-        ppa_source = test_publisher.getPubSource(
-            archive=joe_private_ppa, version='1.0', distroseries=hoary)
-        test_publisher.getPubBinaries(
-            pub_source=ppa_source, distroseries=hoary)
-        self.layer.txn.commit()
-
-        # Run the copy package script storing the logged information.
-        copy_helper = self.getCopier(
-            sourcename='foo', from_ppa='joe',
-            include_binaries=True, from_suite='hoary', to_suite='hoary')
-        copied = copy_helper.mainTask()
-
-        # The private files are copied via a delayed-copy request.
-        self.assertEqual(len(copied), 1)
-        self.assertEqual(
-            ['INFO FROM: joe: hoary-RELEASE',
-             'INFO TO: Primary Archive for Ubuntu Linux: hoary-RELEASE',
-             'INFO Copy candidates:',
-             'INFO \tfoo 1.0 in hoary',
-             'INFO \tfoo-bin 1.0 in hoary hppa',
-             'INFO \tfoo-bin 1.0 in hoary i386',
-             'INFO Copied:',
-             'INFO \tDelayed copy of foo - 1.0 (source, i386)',
-             'INFO 1 package successfully copied.',
-             ],
-            copy_helper.logger.getLogBuffer().splitlines())
-
-    def testUnembargoing(self):
-        """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
-        # Set up a private PPA.
-        joe = self.factory.makePerson(name="joe")
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        joe_private_ppa = self.factory.makeArchive(
-            owner=joe, name='ppa', private=True,
-            distribution=ubuntu)
-
-        # Setup a SoyuzTestPublisher object, so we can create publication
-        # to be unembargoed.
         warty = ubuntu.getSeries('warty')
         test_publisher = self.getTestPublisher(warty)
-
-        # Create a source and binary pair to be unembargoed from the PPA.
         ppa_source = test_publisher.getPubSource(
-            archive=joe_private_ppa, version='1.1',
-            distroseries=warty,
+            archive=joe_private_ppa, version='1.1', distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
         other_source = test_publisher.getPubSource(
             archive=joe_private_ppa, version='1.1',
             sourcename="sourcefordiff", distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
-        test_publisher.addFakeChroots(warty)
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
 
         # Give the new source a private package diff.
-        sourcepackagerelease = other_source.sourcepackagerelease
+        spr = other_source.sourcepackagerelease
         diff_file = test_publisher.addMockFile("diff_file", restricted=True)
-        package_diff = sourcepackagerelease.requestDiffTo(
-            joe, ppa_source.sourcepackagerelease)
+        package_diff = spr.requestDiffTo(joe, ppa_source.sourcepackagerelease)
         package_diff.diff_content = diff_file
 
-        # Prepare a *restricted* buildlog file for the Build instances.
-        fake_buildlog = test_publisher.addMockFile(
-            'foo_source.buildlog', restricted=True)
-
-        for build in ppa_source.getBuilds():
-            build.log = fake_buildlog
-
         # Add a restricted changelog file.
-        fake_changelog = test_publisher.addMockFile(
-            'changelog', restricted=True)
-        ppa_source.sourcepackagerelease.changelog = fake_changelog
+        changelog = test_publisher.addMockFile("changelog", restricted=True)
+        ppa_source.sourcepackagerelease.changelog = changelog
 
-        # Create ancestry environment in the primary archive, so we can
-        # test unembargoed overrides.
+        # Create ancestry environment in the primary archive, so we can test
+        # unembargoed overrides.
         ancestry_source = test_publisher.getPubSource(
             version='1.0', distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
@@ -2986,7 +2912,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             pub_source=ancestry_source, distroseries=warty,
             status=PackagePublishingStatus.SUPERSEDED)
 
-        # Override the published ancestry source to 'universe'
+        # Override the published ancestry source to 'universe'.
         universe = getUtility(IComponentSet)['universe']
         ancestry_source.component = universe
 
@@ -2996,22 +2922,38 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         self.layer.txn.commit()
 
-        # Now we can invoke the unembargo script and check its results.
-        test_args = [
-            "--ppa", "joe",
-            "--ppa-name", "ppa",
-            "-s", "%s" % ppa_source.distroseries.name + "-security",
-            "foo",
-            ]
+        # Run the copy package script storing the logged information.
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='joe',
+            include_binaries=True, from_suite='warty',
+            to_suite='warty-security', unembargo=True)
+        copied = copy_helper.mainTask()
 
-        script = UnembargoSecurityPackage(
-            name='unembargo', test_args=test_args)
-        script.logger = BufferLogger()
-
-        copied = script.mainTask()
-
-        # Check the results.
-        self.checkCopies(copied, script.destination.archive, 3)
+        # The private files are copied via a direct-copy request.
+        self.checkCopies(copied, copy_helper.destination.archive, 3)
+        self.assertEqual(
+            ['INFO FROM: joe: warty-RELEASE',
+             'INFO TO: Primary Archive for Ubuntu Linux: warty-SECURITY',
+             'INFO Copy candidates:',
+             'INFO \tfoo 1.1 in warty',
+             'INFO \tfoo-bin 1.1 in warty hppa',
+             'INFO \tfoo-bin 1.1 in warty i386',
+             'INFO Re-uploaded foo_1.1.dsc to librarian',
+             'INFO Re-uploaded diff_file to librarian',
+             'INFO Re-uploaded foo_1.1_source.changes to librarian',
+             'INFO Re-uploaded changelog to librarian',
+             'INFO Re-uploaded foo-bin_1.1_all.deb to librarian',
+             'INFO Re-uploaded foo-bin_1.1_i386.changes to librarian',
+             'INFO Re-uploaded '
+                 'buildlog_ubuntu-warty-i386.foo_1.1_FULLYBUILT.txt.gz to '
+                 'librarian',
+             'INFO Copied:',
+             'INFO \tfoo 1.1 in warty',
+             'INFO \tfoo-bin 1.1 in warty hppa',
+             'INFO \tfoo-bin 1.1 in warty i386',
+             'INFO 3 packages successfully copied.',
+             ],
+            copy_helper.logger.getLogBuffer().splitlines())
 
         # Check that the librarian files are all unrestricted now.
         # We must commit the txn for SQL object to see the change.
@@ -3046,29 +2988,22 @@ class CopyPackageTestCase(TestCaseWithFactory):
                 published.pocket.title, "Security",
                 "Expected Security pocket, got %s" % published.pocket.title)
 
-    def testUnembargoSuite(self):
-        """Test that passing different suites works as expected."""
-        test_args = [
-            "--ppa", "cprov",
-            "-s", "warty-backports",
-            "foo",
-            ]
+    def testUnembargoStableReleasePocketForbidden(self):
+        """Unembargoing into release pocket of stable series is forbidden."""
+        # Set up a private PPA.
+        joe = self.factory.makePerson(name="joe")
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        self.factory.makeArchive(
+            owner=joe, name='ppa', private=True, distribution=ubuntu)
 
-        script = UnembargoSecurityPackage(
-            name='unembargo', test_args=test_args)
-        self.assertTrue(script.setUpCopierOptions())
-        self.assertEqual(
-            script.options.to_suite, "warty-backports",
-            "Got %s, expected warty-backports")
-
-        # Change the suite to one with the release pocket, it should
-        # copy nothing as you're not allowed to unembargo into the
-        # release pocket.
-        test_args[3] = "hoary"
-        script = UnembargoSecurityPackage(
-            name='unembargo', test_args=test_args)
-        script.logger = BufferLogger()
-        self.assertFalse(script.setUpCopierOptions())
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='joe',
+            include_binaries=True, from_suite='warty',
+            to_suite='warty', unembargo=True)
+        self.assertRaisesWithContent(
+            SoyuzScriptError,
+            "Can't unembargo into suite 'warty' of a distribution.",
+            copy_helper.mainTask)
 
     def testCopyClosesBugs(self):
         """Copying packages closes bugs.
@@ -3226,10 +3161,10 @@ class CopyPackageTestCase(TestCaseWithFactory):
             section='misc')
 
         checker = CopyChecker(warty.main_archive, include_binaries=False)
-        self.assertIs(
-            None,
-            checker.checkCopy(proposed_source, warty,
-            PackagePublishingPocket.UPDATES, check_permissions=False))
+        self.assertIsNone(
+            checker.checkCopy(
+                proposed_source, warty, PackagePublishingPocket.UPDATES,
+                check_permissions=False))
 
     def testCopySourceWithConflictingFilesInPPAs(self):
         """We can copy source if the source files match, both in name and
@@ -3314,10 +3249,10 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.layer.txn.commit()
 
         checker = CopyChecker(dest_ppa, include_binaries=False)
-        self.assertIs(
-            None,
-            checker.checkCopy(test2_source, warty,
-            PackagePublishingPocket.RELEASE, check_permissions=False))
+        self.assertIsNone(
+            checker.checkCopy(
+                test2_source, warty, PackagePublishingPocket.RELEASE,
+                check_permissions=False))
 
     def testCopySourceWithExpiredSourcesInDestination(self):
         """We can also copy sources if the destination archive has expired
@@ -3353,17 +3288,14 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test2_tar = test_publisher.addMockFile(
             orig_tarball, filecontent='aaabbbccc')
         test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-        # And set test1 source tarball to be expired
-        self.layer.switchDbUser('librarian')
+        # Set test1 source tarball to be expired.
+        switch_dbuser('librarian')
         naked_test1 = removeSecurityProxy(test1_tar)
         naked_test1.content = None
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
         checker = CopyChecker(dest_ppa, include_binaries=False)
-        self.assertIs(
-            None,
-            checker.checkCopy(test2_source, warty,
-            PackagePublishingPocket.RELEASE, check_permissions=False))
+        self.assertIsNone(
+            checker.checkCopy(
+                test2_source, warty, PackagePublishingPocket.RELEASE,
+                check_permissions=False))

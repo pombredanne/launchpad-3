@@ -27,9 +27,9 @@ And now we show that any logged-in user can edit public bugs.
     'http://.../debian/+source/mozilla-firefox/+bug/3'
     >>> content = find_main_content(browser.contents)
     >>> print extract_text(content.h1)
-    New Summary
+    New Summary Edit
     >>> print extract_text(find_tag_by_id(content, 'maincontentsub'))
-    Bug Description New description. ...
+    Edit Bug Description New description. ...
 
 
 Viewing the original description

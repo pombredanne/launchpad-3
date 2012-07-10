@@ -23,6 +23,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -82,7 +83,7 @@ def bugLinkedToQuestionSetUp(test):
 
 
 def uploaderBugLinkedToQuestionSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    switch_dbuser('launchpad')
     bugLinkedToQuestionSetUp(test)
     LaunchpadZopelessLayer.commit()
     uploaderSetUp(test)
@@ -90,7 +91,7 @@ def uploaderBugLinkedToQuestionSetUp(test):
 
 
 def uploadQueueBugLinkedToQuestionSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    switch_dbuser('launchpad')
     bugLinkedToQuestionSetUp(test)
     LaunchpadZopelessLayer.commit()
     uploadQueueSetUp(test)
@@ -105,20 +106,21 @@ special = {
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
             layer=DatabaseFunctionalLayer),
     'notifications-linked-bug.txt': LayeredDocFileSuite(
-            'notifications-linked-bug.txt',
-            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
-            layer=DatabaseFunctionalLayer),
-    'notifications-linked-bug.txt-uploader':
-            LayeredDocFileSuite(
-                'notifications-linked-bug.txt',
-                setUp=uploaderBugLinkedToQuestionSetUp,
-                tearDown=tearDown,
-                layer=LaunchpadZopelessLayer),
+        'notifications-linked-bug.txt',
+        setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
+        layer=DatabaseFunctionalLayer),
+    'notifications-linked-bug.txt-uploader': LayeredDocFileSuite(
+        'notifications-linked-bug.txt',
+        id_extensions=['notifications-linked-bug.txt-uploader'],
+        setUp=uploaderBugLinkedToQuestionSetUp,
+        tearDown=tearDown,
+        layer=LaunchpadZopelessLayer),
     'notifications-linked-bug.txt-queued': LayeredDocFileSuite(
-            'notifications-linked-bug.txt',
-            setUp=uploadQueueBugLinkedToQuestionSetUp,
-            tearDown=tearDown,
-            layer=LaunchpadZopelessLayer),
+        'notifications-linked-bug.txt',
+        id_extensions=['notifications-linked-bug.txt-queued'],
+        setUp=uploadQueueBugLinkedToQuestionSetUp,
+        tearDown=tearDown,
+        layer=LaunchpadZopelessLayer),
     }
 
 

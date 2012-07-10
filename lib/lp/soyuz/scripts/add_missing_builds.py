@@ -87,7 +87,7 @@ class AddMissingBuilds(SoyuzScript):
         """Entry point for `LaunchpadScript`s."""
         try:
             self.setupLocation()
-        except SoyuzScriptError, err:
+        except SoyuzScriptError as err:
             raise LaunchpadScriptFailure(err)
 
         if not self.options.arch_tags:
@@ -113,7 +113,7 @@ class AddMissingBuilds(SoyuzScript):
                 self.location.distroseries, self.location.pocket)
             self.txn.commit()
             self.logger.info("Finished adding builds.")
-        except Exception, err:
+        except Exception as err:
             self.logger.error(err)
             self.txn.abort()
             self.logger.info("Errors, aborted transaction.")

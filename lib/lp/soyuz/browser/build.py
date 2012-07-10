@@ -588,7 +588,7 @@ class BuildRecordsView(LaunchpadView):
         if self.text is not None or self.arch_tag is not None:
             binary_only = True
 
-        # request context build records according the selected state
+        # request context build records according to the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
             user=self.user, binary_only=binary_only)

@@ -73,10 +73,10 @@ class ValidatingMergeView(LaunchpadFormView):
                     "can be merged. It may take ten minutes to remove the "
                     "deleted PPA's files.",
                     mapping=dict(name=dupe_person.name)))
-            if dupe_person.is_merge_pending:
+            if dupe_person.isMergePending():
                 self.addError(_("${name} is already queued for merging.",
                       mapping=dict(name=dupe_person.name)))
-        if target_person is not None and target_person.is_merge_pending:
+        if target_person is not None and target_person.isMergePending():
             self.addError(_("${name} is already queued for merging.",
                   mapping=dict(name=target_person.name)))
 
@@ -134,11 +134,10 @@ class AdminMergeBaseView(ValidatingMergeView):
             # Transfer user email addresses. Team addresses will be deleted.
             for email in self.dupe_person_emails:
                 email = IMasterObject(email)
-                # EmailAddress.person and EmailAddress.account are readonly
-                # fields, so we need to remove the security proxy here.
+                # EmailAddress.person is a readonly field, so we need to
+                # remove the security proxy here.
                 naked_email = removeSecurityProxy(email)
                 naked_email.personID = self.target_person.id
-                naked_email.accountID = self.target_person.accountID
                 naked_email.status = EmailAddressStatus.NEW
         getUtility(IPersonSet).mergeAsync(
             self.dupe_person, self.target_person, reviewer=self.user,

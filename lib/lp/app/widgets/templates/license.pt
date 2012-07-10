@@ -26,7 +26,7 @@ function unset_licenses() {
 // and breaks with every YUI/lazr-js upgrade.
 // Tread carefully, or else please make this better
 // and add tests, too (preferably in reverse order there.)
-LPS.use('node', 'lazr.effects', function(Y) {
+LPJS.use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         function make_slider(cfg) {
             var table_name = '#' + cfg.which;
@@ -45,7 +45,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
                 // The table starts either collapsed or expanded.  The
                 // animation lives on the link target.  The initial state of
                 // the slider depends on whether there are any checked
-                // licenses in that category.  A '0' means 'no'.
+                // licences in that category.  A '0' means 'no'.
                 var arrow = Y.one(arrow_name);
                 if (arrow.getAttribute('start_expanded') == '0') {
                     target.slide = Y.lazr.effects.slide_in(table_name);
@@ -93,7 +93,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
                 // We have to pass in the height by hand if the tables
                 // are not visible when the page loads.
                 var visible_on_load = !Y.one(
-                    '#launchpad-form-widgets').hasClass('unseen');
+                    '#launchpad-form-widgets').hasClass('hidden');
                 if (visible_on_load) {
                     target.slide.set('reverse', !target.slide.get('reverse'));
                 } else {
@@ -113,12 +113,12 @@ LPS.use('node', 'lazr.effects', function(Y) {
         make_slider({which: 'special'});
 
         // Set a click event handler for the div containing all the
-        // license checkbox.  When any license checkbox is selected, the
-        // "I haven't specified the license yet" radio button is set to
+        // licence checkbox.  When any licence checkbox is selected, the
+        // "I haven't specified the licence yet" radio button is set to
         // "This project consists of code licensed under:".  However note
         // that the pending-div only shows up if the project has never
-        // selected a license.  In other cases, there's an "I don't know yet"
-        // choice in the "Other choices" license section.
+        // selected a licence.  In other cases, there's an "I don't know yet"
+        // choice in the "Other choices" licence section.
         var license_pending = Y.one('#license_pending');
         if (Y.Lang.isValue(license_pending)) {
             license_pending.on('click', reveal_details);
@@ -131,8 +131,8 @@ LPS.use('node', 'lazr.effects', function(Y) {
 
         // When Other/Proprietary or Other/Open Source is chosen, the
         // license_info widget is displayed.
-        var other_com = Y.one('input[value=OTHER_PROPRIETARY]');
-        var other_os = Y.one('input[value=OTHER_OPEN_SOURCE]');
+        var other_com = Y.one('input[value="OTHER_PROPRIETARY"]');
+        var other_os = Y.one('input[value="OTHER_OPEN_SOURCE"]');
         var details = Y.one('#license-details');
         var proprietary = Y.one('#proprietary');
 
@@ -158,7 +158,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
         }
         other_com.on('click', reveal_details);
         other_os.on('click', reveal_details);
-        proprietary.removeClass('unseen');
+        proprietary.removeClass('hidden');
 
         // Pre-reveal license_info widget.
         reveal_details(true);
@@ -185,13 +185,13 @@ LPS.use('node', 'lazr.effects', function(Y) {
     </div>
   </tal:copyright>
 
-  Select the license(s) under which you release your project.
+  Select the licence(s) under which you release your project.
   <div tal:condition="view/allow_pending_license"
        tal:define="is_empty not:view/_getFormInput">
     <input id="license_pending" name="license_status" type="radio"
            tal:attributes="checked is_empty"
             onClick="unset_licenses()" />
-    <label for="license_pending">I haven't specified the license yet</label>
+    <label for="license_pending">I haven't specified the licence yet</label>
     <br/>
 
     <input id="license_complete" name="license_status" type="radio"
@@ -205,29 +205,29 @@ LPS.use('node', 'lazr.effects', function(Y) {
     <a href="" id="recommended-expand" class="js-action">
       <img id="recommended-expand-arrow"
            src="/@@/treeExpanded"
-           title="Recommended open source licenses"
-           alt="Recommended open source licenses"
+           title="Recommended open source licences"
+           alt="Recommended open source licences"
            tal:attributes="start_expanded view/recommended_count"/>
-      Recommended open source licenses
+      Recommended open source licences
     </a>
     <input tal:replace="structure view/recommended" />
     <a href="" id="more-expand" class="js-action">
       <img id="more-expand-arrow"
            src="/@@/treeCollapsed"
-           title="More open source licenses"
-           alt="More open source licenses"
+           title="More open source licences"
+           alt="More open source licences"
            tal:attributes="start_expanded view/more_count"/>
-      More open source licenses
+      More open source licences
     </a>
     <input tal:replace="structure view/more" />
     <div tal:condition="view/deprecated_count">
       <a href="" id="deprecated-expand" class="js-action">
         <img id="deprecated-expand-arrow"
              src="/@@/treeCollapsed"
-             title="Deprecated licenses"
-             alt="Deprecated licenses"
+             title="Deprecated licences"
+             alt="Deprecated licences"
              tal:attributes="start_expanded view/deprecated_count"/>
-        Deprecated licenses
+        Deprecated licences
       </a>
       <input tal:replace="structure view/deprecated" />
     </div>
@@ -241,10 +241,10 @@ LPS.use('node', 'lazr.effects', function(Y) {
     </a>
     <input tal:replace="structure view/special" />
     <div id="license-details" style="margin-top: 10px">
-      <label for="field.license_info">License details:</label>
+      <label for="field.license_info">Licence details:</label>
       <input tal:replace="structure view/license_info_widget" />
-      <p class="formHelp">Additional license details are required.
-      Please include the URL to the license, its text, or other
+      <p class="formHelp">Additional licence details are required.
+      Please include the URL to the licence, or other
       detailed information.</p>
    </div>
   </div>
@@ -256,7 +256,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
       licensing policies.
     </a>
     <br/>
-    <div id="proprietary" class="unseen">
+    <div id="proprietary" class="hidden">
       Commercial and proprietary projects do not qualify for free hosting;
       therefore a subscription needs to be purchased in order to host this
       project on Launchpad.

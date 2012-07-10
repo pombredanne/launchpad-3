@@ -26,7 +26,7 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.bugs.enum import BugNotificationStatus
+from lp.bugs.enums import BugNotificationStatus
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import BugField

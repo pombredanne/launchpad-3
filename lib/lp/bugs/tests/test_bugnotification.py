@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug notifications."""
@@ -28,11 +28,12 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationFilter,
+    BugNotificationRecipient,
     BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
+from lp.registry.enums import InformationType
 from lp.services.config import config
-from lp.services.database.sqlbase import sqlvalues
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.messages.model.message import MessageSet
 from lp.testing import (
@@ -40,6 +41,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
@@ -66,7 +68,8 @@ class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
         self.bug_subscriber = factory.makePerson(name="bug-subscriber")
         self.bug_owner = factory.makePerson(name="bug-owner")
         self.private_bug = factory.makeBug(
-            product=self.product, private=True, owner=self.bug_owner)
+            product=self.product, owner=self.bug_owner,
+            information_type=InformationType.USERDATA)
         self.reporter = self.private_bug.owner
         self.private_bug.subscribe(self.bug_subscriber, self.reporter)
         [self.product_bugtask] = self.private_bug.bugtasks
@@ -131,8 +134,7 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         question.linkBug(self.bug)
         # Flush pending jobs for question creation.
         pop_questionemailjobs()
-        transaction.commit()
-        self.layer.switchDbUser(config.malone.expiration_dbuser)
+        switch_dbuser(config.malone.expiration_dbuser)
 
     def test_notifications_for_question_subscribers(self):
         # Ensure that notifications are sent to subscribers of a
@@ -165,14 +167,9 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
     def addNotificationRecipient(self, notification, person):
         # Manually insert BugNotificationRecipient for
         # construct_email_notifications to work.
-        # Not sure why using SQLObject constructor doesn't work (it
-        # tries to insert a row with only the ID which fails).
-        Store.of(notification).execute("""
-            INSERT INTO BugNotificationRecipient
-              (bug_notification, person, reason_header, reason_body)
-              VALUES (%s, %s, %s, %s)""" % sqlvalues(
-                          notification, person,
-                          u'reason header', u'reason body'))
+        BugNotificationRecipient(
+            bug_notification=notification, person=person,
+            reason_header=u'reason header', reason_body=u'reason body')
 
     def addNotification(self, person, bug=None):
         # Add a notification along with recipient data.

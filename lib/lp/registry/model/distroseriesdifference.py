@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a difference between two distribution series."""
@@ -40,7 +40,7 @@ from zope.interface import (
     )
 
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -705,8 +705,7 @@ class DistroSeriesDifference(StormBase):
     def _package_release(self, distro_series, version):
         pubs = distro_series.main_archive.getPublishedSources(
             name=self.source_package_name.name, version=version,
-            status=active_publishing_status, distroseries=distro_series,
-            exact_match=True)
+            distroseries=distro_series, exact_match=True)
 
         # Get the most recent publication (pubs are ordered by
         # (name, id)).

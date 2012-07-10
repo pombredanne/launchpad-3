@@ -13,7 +13,6 @@ __all__ = [
     'log',
     'logger',
     'logger_options',
-    'WatchedFileHandler',
     ]
 
 import atexit
@@ -35,8 +34,6 @@ from lp.services.scripts.logger import (
     logger,
     logger_options,
     )
-# Intentional re-export, following along the lines of the logger module.
-from lp.services.scripts.loghandlers import WatchedFileHandler
 from lp.services.webapp.authorization import (
     LaunchpadPermissiveSecurityPolicy,
     LaunchpadSecurityPolicy,

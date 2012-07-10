@@ -1,51 +1,64 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
+<!--
+Copyright 2012 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <html>
   <head>
-  <title>Status Editor</title>
+      <title>Test async_comment_loading</title>
 
-  <!-- YUI and test setup -->
-  <script type="text/javascript"
-          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
-  </script>
-  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
-  <script type="text/javascript"
-          src="../../../app/javascript/testing/testrunner.js"></script>
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/skins/sam/console.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test/assets/skins/sam/test.css" />
 
-  <!-- Dependency -->
-  <script type="text/javascript"
-    src="../../../../canonical/launchpad/icing/yui/attribute/attribute.js">
-  </script>
-  <script type="text/javascript"
-    src="../../../../canonical/launchpad/icing/yui/event-custom/event-custom.js">
-  </script>
-  <script type="text/javascript"
-    src="../../../../canonical/launchpad/icing/yui/oop/oop.js">
-  </script>
-  <script type="text/javascript"
-    src="../../../app/javascript/overlay/overlay.js">
-  </script>
-  <script type="text/javascript"
-    src="../../../app/javascript/choiceedit/choiceedit.js">
-  </script>
-  <script type="text/javascript"
-    src="../../../app/javascript/client.js"></script>
-  <script type="text/javascript"
-    src="../../../app/javascript/testing/mockio.js"></script>
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
 
-  <!-- The module under test -->
-  <script type="text/javascript" src="../bugtask_index.js"></script>
+      <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+
+      <!-- Dependencies -->
+      <script type="text/javascript" src="../../../../../build/js/lp/app/client.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/expander.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/lp.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/testing/mockio.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
 
 
-  <!-- The test suite -->
-  <script type="text/javascript" src="test_async_comment_loading.js"></script>
-  <style type="text/css">
-    /* CSS classes specific to this test */
-    .unseen { display: none; }
-  </style>
-  <div id="more-comments-spinner" style="display: hidden">
-    Look, I'm a spinner. *spins*
-  </div>
-</head>
-<body class="yui3-skin-sam">
-</body>
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../bugtask_index.js"></script>
+
+      <!-- Placeholder for any css asset for this module. -->
+      <!-- <link rel="stylesheet" href="../assets/async_comment_loading-core.css" /> -->
+
+      <!-- The test suite. -->
+      <script type="text/javascript" src="test_async_comment_loading.js"></script>
+
+      <style type="text/css">
+          /* CSS classes specific to this test */
+          .hidden { display: none; }
+      </style>
+    </head>
+    <body class="yui3-skin-sam">
+        <ul id="suites">
+            <!-- <li>lp.large_indicator.test</li> -->
+            <li>lp.bugs.async_comments.test</li>
+        </ul>
+        <div id="more-comments-spinner" style="display: hidden">
+            Look, I'm a spinner. *spins*
+        </div>
+    </body>
 </html>

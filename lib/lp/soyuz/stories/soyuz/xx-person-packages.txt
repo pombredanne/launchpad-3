@@ -290,9 +290,6 @@ his private one:
 It will now disppear from the listings because it's not published in any
 public archives.
 
-    >>> from lp.testing.layers import MemcachedLayer
-    >>> MemcachedLayer.purge()
-
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
 
@@ -314,7 +311,6 @@ Now we'll publish it in the primary archive.
 This makes the package appear in the listings again because the primary
 archive is public.
 
-    >>> MemcachedLayer.purge()
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
@@ -333,7 +329,6 @@ the listings.
     >>> flush_database_updates()
     >>> logout()
 
-    >>> MemcachedLayer.purge()
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
@@ -375,7 +370,7 @@ Then delete the 'source2' package.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     source2 666 in breezy-autotest
     Deletion comment: Bug 184490
 
@@ -391,7 +386,6 @@ Then delete the 'source2' package.
 Now re-list the PPA's packages, 'source2' was deleted but still
 appears.
 
-    >>> MemcachedLayer.purge()
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666

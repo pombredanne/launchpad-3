@@ -78,6 +78,7 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
 from lp.testing import (
+    clean_up_reactor,
     TestCase,
     TestCaseWithFactory,
     )
@@ -150,11 +151,13 @@ class TestBuilder(TestCaseWithFactory):
         lostbuilding_builder = MockBuilder(
             'Lost Building Broken Slave', slave, behavior=CorruptBehavior())
         d = lostbuilding_builder.updateStatus(BufferLogger())
+
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
             # 'Fault' comes from the LostBuildingBrokenSlave, this is
             # just testing that the value is passed through.
             self.assertIsInstance(failure.value, xmlrpclib.Fault)
+
         return d.addBoth(check_slave_status)
 
     def test_resumeSlaveHost_nonvirtual(self):
@@ -176,8 +179,10 @@ class TestBuilder(TestCaseWithFactory):
 
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         d = builder.resumeSlaveHost()
+
         def got_resume(output):
             self.assertEqual(('parp', ''), output)
+
         return d.addCallback(got_resume)
 
     def test_resumeSlaveHost_command_failed(self):
@@ -205,7 +210,7 @@ class TestBuilder(TestCaseWithFactory):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processor=processor, virtualized=True, vm_host="bladh")
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="i386",
@@ -252,9 +257,11 @@ class TestBuilder(TestCaseWithFactory):
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
         d = builder.findAndStartJob()
+
         def check_build_started(candidate):
             self.assertEqual(candidate.builder, builder)
             self.assertEqual(BuildStatus.BUILDING, build.status)
+
         return d.addCallback(check_build_started)
 
     def test_virtual_job_dispatch_pings_before_building(self):
@@ -265,9 +272,11 @@ class TestBuilder(TestCaseWithFactory):
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
         d = builder.findAndStartJob()
+
         def check_build_started(candidate):
             self.assertIn(
                 ('echo', 'ping'), removeSecurityProxy(builder.slave).call_log)
+
         return d.addCallback(check_build_started)
 
     def test_slave(self):
@@ -286,8 +295,10 @@ class TestBuilder(TestCaseWithFactory):
         builder = MockBuilder("mock_builder", aborted_slave)
         builder.currentjob = None
         d = builder.rescueIfLost()
+
         def check_slave_calls(ignored):
             self.assertIn('clean', aborted_slave.call_log)
+
         return d.addCallback(check_slave_calls)
 
     def test_recovery_of_aborted_nonvirtual_slave(self):
@@ -300,9 +311,11 @@ class TestBuilder(TestCaseWithFactory):
         builder.virtualized = False
         builder.builderok = True
         d = builder.rescueIfLost()
+
         def check_failed(ignored):
             self.assertFalse(builder.builderok)
             self.assertNotIn('clean', aborted_slave.call_log)
+
         return d.addCallback(check_failed)
 
     def test_recover_ok_slave(self):
@@ -310,9 +323,11 @@ class TestBuilder(TestCaseWithFactory):
         slave = OkSlave()
         builder = MockBuilder("mock_builder", slave, TrivialBehavior())
         d = builder.rescueIfLost()
+
         def check_slave_calls(ignored):
             self.assertNotIn('abort', slave.call_log)
             self.assertNotIn('clean', slave.call_log)
+
         return d.addCallback(check_slave_calls)
 
     def test_recover_waiting_slave_with_good_id(self):
@@ -321,9 +336,11 @@ class TestBuilder(TestCaseWithFactory):
         waiting_slave = WaitingSlave()
         builder = MockBuilder("mock_builder", waiting_slave, TrivialBehavior())
         d = builder.rescueIfLost()
+
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
             self.assertNotIn('clean', waiting_slave.call_log)
+
         return d.addCallback(check_slave_calls)
 
     def test_recover_waiting_slave_with_bad_id(self):
@@ -335,31 +352,39 @@ class TestBuilder(TestCaseWithFactory):
         waiting_slave = WaitingSlave()
         builder = MockBuilder("mock_builder", waiting_slave, CorruptBehavior())
         d = builder.rescueIfLost()
+
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
             self.assertIn('clean', waiting_slave.call_log)
+
         return d.addCallback(check_slave_calls)
 
     def test_recover_building_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave()
-        builder = MockBuilder("mock_builder", building_slave, TrivialBehavior())
+        builder = MockBuilder(
+            "mock_builder", building_slave, TrivialBehavior())
         d = builder.rescueIfLost()
+
         def check_slave_calls(ignored):
             self.assertNotIn('abort', building_slave.call_log)
             self.assertNotIn('clean', building_slave.call_log)
+
         return d.addCallback(check_slave_calls)
 
     def test_recover_building_slave_with_bad_id(self):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave()
-        builder = MockBuilder("mock_builder", building_slave, CorruptBehavior())
+        builder = MockBuilder(
+            "mock_builder", building_slave, CorruptBehavior())
         d = builder.rescueIfLost()
+
         def check_slave_calls(ignored):
             self.assertIn('abort', building_slave.call_log)
             self.assertNotIn('clean', building_slave.call_log)
+
         return d.addCallback(check_slave_calls)
 
     def test_recover_building_slave_with_job_that_finished_elsewhere(self):
@@ -370,7 +395,8 @@ class TestBuilder(TestCaseWithFactory):
         builder, build = self._setupBinaryBuildAndBuilder()
         candidate = build.queueBuild()
         building_slave = BuildingSlave()
-        builder.setSlaveForTesting(building_slave)
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave', FakeMethod(building_slave))
         candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
@@ -383,10 +409,12 @@ class TestBuilder(TestCaseWithFactory):
         self.layer.txn.commit()
         builder = getUtility(IBuilderSet)[builder.name]
         d = builder.rescueIfLost()
+
         def check_builder(ignored):
             self.assertIsInstance(
                 removeSecurityProxy(builder.current_build_behavior),
                 IdleBuildBehavior)
+
         return d.addCallback(check_builder)
 
 
@@ -405,7 +433,7 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
         builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         d = builder.slaveStatus()
 
         def got_status(status_dict):
@@ -458,13 +486,15 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
 
     def test_isAvailable_with_slave_fault(self):
         builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(BrokenSlave())
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
         d = builder.isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_idle(self):
         builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         d = builder.isAvailable()
         return d.addCallback(self.assertTrue)
 
@@ -927,10 +957,12 @@ class TestSlave(TestCase):
         build_id = 'status-build-id'
         d = self.slave_helper.triggerGoodBuild(slave, build_id)
         d.addCallback(lambda ignored: slave.status())
+
         def check_status(status):
             self.assertEqual([BuilderStatus.BUILDING, build_id], status[:2])
             [log_file] = status[2:]
             self.assertIsInstance(log_file, xmlrpclib.Binary)
+
         return d.addCallback(check_status)
 
     def test_ensurepresent_not_there(self):
@@ -961,9 +993,11 @@ class TestSlave(TestCase):
         slave = self.slave_helper.getClientSlave()
         self.slave_helper.makeCacheFile(tachandler, 'blahblah')
         d = slave.sendFileToSlave('blahblah', None, None, None)
+
         def check_present(ignored):
             d = slave.ensurepresent('blahblah', None, None, None)
             return d.addCallback(self.assertEqual, [True, 'No URL'])
+
         d.addCallback(check_present)
         return d
 
@@ -1100,6 +1134,11 @@ class TestSlaveConnectionTimeouts(TestCase):
         self.slave = self.slave_helper.getClientSlave(
             reactor=self.clock, proxy=self.proxy)
 
+    def tearDown(self):
+        # We need to remove any DelayedCalls that didn't actually get called.
+        clean_up_reactor()
+        super(TestSlaveConnectionTimeouts, self).tearDown()
+
     def test_connection_timeout(self):
         # The default timeout of 30 seconds should not cause a timeout,
         # only the config value should.
@@ -1164,9 +1203,11 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         slave = self.slave_helper.getClientSlave()
         d = slave.ensurepresent(
             lf.content.sha1, lf.http_url, "", "")
+
         def check_file(ignored):
             d = getPage(expected_url.encode('utf8'))
             return d.addCallback(self.assertEqual, content)
+
         return d.addCallback(check_file)
 
     def test_getFiles(self):
@@ -1183,7 +1224,6 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         def got_files(ignored):
             # Called back when getFiles finishes.  Make sure all the
             # content is as expected.
-            got_contents = []
             for sha1 in filemap:
                 local_file = filemap[sha1]
                 file = open(local_file)

@@ -5,6 +5,8 @@ The Person class is what we use to represent Launchpad users, teams and
 some people which have done work on the free software community but are
 not Launchpad users.
 
+    >>> from lp.services.mail import stub
+    >>> import transaction
     >>> from zope.component import getUtility
     >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
@@ -91,7 +93,6 @@ caused the entry to be created.
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
     ...     hide_email_addresses=True)
-    >>> import transaction
     >>> transaction.commit()
     >>> p.teamowner is None
     True
@@ -132,9 +133,6 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> email.accountID == p.accountID
-    True
-
     >>> p.setPreferredEmail(email)
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
@@ -145,10 +143,7 @@ using the createPersonAndEmail() method.
     >>> from lp.services.identity.model.account import Account
     >>> from lp.services.database.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
-    >>> account.activate(
-    ...     "Activated by doc test.",
-    ...     password=p.password,
-    ...     preferred_email=email)
+    >>> account.reactivate("Activated by doc test.")
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 
@@ -168,16 +163,22 @@ to the person, and it updates the email address's status.
     <DBItem EmailAddressStatus.VALIDATED...
 
 The user can add a new address and set it as the preferred address. The
-setPreferredEmail() method updated the address's status.
+setPreferredEmail() method updated the address's status. This will generate a
+security email notification to the original preferred email address.
 
     >>> preferred_email = emailset.new(
     ...     'preferred@canonical.com', p)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.NEW...
 
+    >>> login('validated@canonical.com')
     >>> p.setPreferredEmail(preferred_email)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
+    >>> transaction.commit()
+    >>> efrom, eto, emsg = stub.test_emails.pop()
+    >>> eto
+    ['randomuser@randomhost.com']
 
     >>> login(ANONYMOUS)
 
@@ -478,7 +479,6 @@ entries into teams.
     # notifications are sent when we add the owner as a member of
     # the team.
 
-    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
@@ -490,9 +490,6 @@ entries into teams.
 
     >>> verifyObject(ITeam, not_a_person)
     True
-
-    >>> print removeSecurityProxy(not_a_person).password
-    None
 
 The team owner is also added as an administrator of its team.
 
@@ -807,7 +804,7 @@ Anonymous users cannot see non-public teams, such as 'private-team'.
 
 But Owner, a member of that team, will see it in the results.
 
-    >>> login_person(private_team_owner)
+    >>> ignored = login_person(private_team_owner)
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
@@ -1098,7 +1095,7 @@ The method does not return inactive projects.
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> derby.active = False
     >>> for project in mark.getOwnedProjects():
@@ -1196,16 +1193,15 @@ him:
     ...     SpecificationFilter.COMPLETE]).count()
     0
 
-Next, Carlos has three incomplete specs *related* to him:
+Next, Carlos has two incomplete specs *related* to him:
 
     >>> filter = []
     >>> for spec in carlos.specifications(filter=filter):
     ...     print spec.name, spec.is_complete, spec.informational
     svg-support False False
     extension-manager-upgrades False True
-    media-integrity-check False False
 
-Carlos has 2 specifications assigned to him:
+These 2 specifications are assigned to Carlos:
 
     >>> for spec in carlos.assigned_specs:
     ...     print spec.name
@@ -1226,13 +1222,6 @@ is the approver.
     >>> for spec in mark.specifications(filter=filter):
     ...     print spec.name
     extension-manager-upgrades
-
-The Foo Bar person has a single spec which has feedback requested:
-
-    >>> filter = [SpecificationFilter.FEEDBACK]
-    >>> for spec in foobar.specifications(filter=filter):
-    ...     print spec.name
-    e4x
 
 But has registered 5 of them:
 
@@ -1377,7 +1366,7 @@ bugtracker.
 The method createPersonWithoutEmail() is used in these situations. This
 takes some parameters similar to those taken by createPersonAndEmail()
 but, since an emailless Person cannot be considered to be valid, it
-takes no parameters regarding to emails or passwords.
+takes no parameters regarding to emails.
 
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> new_person = person_set.createPersonWithoutEmail(

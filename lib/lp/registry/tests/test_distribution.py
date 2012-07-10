@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import datetime
 
+from fixtures import FakeLogger
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import soupmatchers
@@ -25,10 +26,12 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enums import InformationType
 from lp.registry.errors import (
     NoSuchDistroSeries,
     OpenTeamLinkageError,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -40,12 +43,10 @@ from lp.registry.interfaces.person import (
     OPEN_TEAM_POLICY,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.tests.test_distroseries import (
-    TestDistroSeriesCurrentSourceReleases,
-    )
-from lp.services.database.constants import UTC_NOW
+from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -53,6 +54,7 @@ from lp.testing import (
     celebrity_logged_in,
     login_person,
     person_logged_in,
+    TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
@@ -141,7 +143,8 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
-            binarypackagename='binary-package', dateremoved=UTC_NOW)
+            binarypackagename='binary-package',
+            status=PackagePublishingStatus.SUPERSEDED)
         with ExpectedException(NotFoundError, ".*Binary package.*"):
             distroseries.distribution.guessPublishedSourcePackageName(
                 'binary-package')
@@ -265,9 +268,17 @@ class TestDistribution(TestCaseWithFactory):
         provides_all = MatchesAll(*map(Provides, expected_interfaces))
         self.assertThat(distro, provides_all)
 
+    def test_distribution_creation_creates_accesspolicies(self):
+        # Creating a new distribution also creates AccessPolicies for it.
+        distro = self.factory.makeDistribution()
+        ap = getUtility(IAccessPolicySource).findByPillar((distro,))
+        expected = [
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
+
 
 class TestDistributionCurrentSourceReleases(
-    TestDistroSeriesCurrentSourceReleases):
+    CurrentSourceReleasesMixin, TestCase):
     """Test for Distribution.getCurrentSourceReleases().
 
     This works in the same way as
@@ -279,7 +290,7 @@ class TestDistributionCurrentSourceReleases(
     release_interface = IDistributionSourcePackageRelease
 
     @property
-    def test_target(self):
+    def target(self):
         return self.distribution
 
     def test_which_distroseries_does_not_matter(self):
@@ -423,6 +434,9 @@ class TestDistributionPage(TestCaseWithFactory):
         self.admin = getUtility(IPersonSet).getByEmail(
             'admin@canonical.com')
         self.simple_user = self.factory.makePerson()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_distributionpage_addseries_link(self):
         """ Verify that an admin sees the +addseries link."""
@@ -595,7 +609,7 @@ class TestWebService(WebServiceTestCase):
         now = datetime.datetime.now(tz=pytz.utc)
         day = datetime.timedelta(days=1)
         self.failUnlessEqual(
-            [oopsid.upper()],
+            [oopsid],
             ws_distro.findReferencedOOPS(start_date=now - day, end_date=now))
         self.failUnlessEqual(
             [],

@@ -9,13 +9,10 @@ __all__ = [
     'LaunchpadLoginSource',
     'LaunchpadPrincipal',
     'PlacelessAuthUtility',
-    'SSHADigestEncryptor',
     ]
 
 
 import binascii
-import hashlib
-import random
 from UserDict import UserDict
 
 from contrib.oauth import OAuthRequest
@@ -46,7 +43,6 @@ from lp.services.webapp.interfaces import (
     BasicAuthLoggedInEvent,
     CookieAuthPrincipalIdentifiedEvent,
     ILaunchpadPrincipal,
-    IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
@@ -64,13 +60,21 @@ class PlacelessAuthUtility:
         self.nobody.__parent__ = self
 
     def _authenticateUsingBasicAuth(self, credentials, request):
+        # authenticate() only attempts basic auth if it's enabled. But
+        # recheck here, just in case. There is a single password for all
+        # users, so this must never get anywhere near production!
+        if (not config.launchpad.basic_auth_password
+            or config.launchpad.basic_auth_password.lower() == 'none'):
+            raise AssertionError(
+                "Attempted to use basic auth when it is disabled")
+
         login = credentials.getLogin()
         if login is not None:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
-            if principal is not None and principal.account.is_valid:
+            if principal is not None and principal.person.is_valid_person:
                 password = credentials.getPassword()
-                if principal.validate(password):
+                if password == config.launchpad.basic_auth_password:
                     # We send a LoggedInEvent here, when the
                     # cookie auth below sends a PrincipalIdentified,
                     # as the login form is never visited for BasicAuth.
@@ -107,7 +111,7 @@ class PlacelessAuthUtility:
             # available in login source. This happens when account has
             # become invalid for some reason, such as being merged.
             return None
-        elif principal.account.is_valid:
+        elif principal.person.is_valid_person:
             login = authdata['login']
             assert login, 'login is %s!' % repr(login)
             notify(CookieAuthPrincipalIdentifiedEvent(
@@ -130,7 +134,8 @@ class PlacelessAuthUtility:
             # encoded properly. That's a client error, so we don't really
             # care, and we're done.
             raise Unauthorized("Bad Basic authentication.")
-        if credentials is not None and credentials.getLogin() is not None:
+        if (config.launchpad.basic_auth_password and credentials is not None
+            and credentials.getLogin() is not None):
             return self._authenticateUsingBasicAuth(credentials, request)
         else:
             # Hack to make us not even think of using a session if there
@@ -166,53 +171,9 @@ class PlacelessAuthUtility:
         utility = getUtility(IPlacelessLoginSource)
         return utility.getPrincipals(name)
 
-    def getPrincipalByLogin(self, login, want_password=True):
+    def getPrincipalByLogin(self, login):
         """See IAuthenticationService."""
-        utility = getUtility(IPlacelessLoginSource)
-        return utility.getPrincipalByLogin(login, want_password=want_password)
-
-
-class SSHADigestEncryptor:
-    """SSHA is a modification of the SHA digest scheme with a salt
-    starting at byte 20 of the base64-encoded string.
-    """
-    implements(IPasswordEncryptor)
-
-    # Source: http://developer.netscape.com/docs/technote/ldap/pass_sha.html
-
-    saltLength = 20
-
-    def generate_salt(self):
-        # Salt can be any length, but not more than about 37 characters
-        # because of limitations of the binascii module.
-        # All 256 characters are available.
-        salt = ''
-        for n in range(self.saltLength):
-            salt += chr(random.randrange(256))
-        return salt
-
-    def encrypt(self, plaintext, salt=None):
-        plaintext = str(plaintext)
-        if salt is None:
-            salt = self.generate_salt()
-        v = binascii.b2a_base64(
-                hashlib.sha1(plaintext + salt).digest() + salt)
-        return v[:-1]
-
-    def validate(self, plaintext, encrypted):
-        encrypted = str(encrypted)
-        plaintext = str(plaintext)
-        try:
-            ref = binascii.a2b_base64(encrypted)
-        except binascii.Error:
-            # Not valid base64.
-            return False
-        salt = ref[20:]
-        v = binascii.b2a_base64(
-            hashlib.sha1(plaintext + salt).digest() + salt)[:-1]
-        pw1 = (v or '').strip()
-        pw2 = (encrypted or '').strip()
-        return pw1 == pw2
+        return getUtility(IPlacelessLoginSource).getPrincipalByLogin(login)
 
 
 class LaunchpadLoginSource:
@@ -251,15 +212,9 @@ class LaunchpadLoginSource:
 
     def getPrincipalByLogin(self, login,
                             access_level=AccessLevel.WRITE_PRIVATE,
-                            scope=None, want_password=True):
+                            scope=None):
         """Return a principal based on the account with the email address
         signified by "login".
-
-        :param want_password: If want_password is False, the pricipal
-        will have None for a password. Use this when trying to retrieve a
-        principal in contexts where we don't need the password and the
-        database connection does not have access to the Account or
-        AccountPassword tables.
 
         :return: None if there is no account with the given email address.
 
@@ -276,32 +231,21 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        try:
-            account = getUtility(IAccountSet).getByEmail(login)
-        except LookupError:
+        person = getUtility(IPersonSet).getByEmail(login, filter_status=False)
+        if person is None or person.account is None:
             return None
-        else:
-            return self._principalForAccount(
-                account, access_level, scope, want_password)
+        return self._principalForAccount(person.account, access_level, scope)
 
-    def _principalForAccount(self, account, access_level, scope,
-                             want_password=True):
+    def _principalForAccount(self, account, access_level, scope):
         """Return a LaunchpadPrincipal for the given account.
 
         The LaunchpadPrincipal will also have the given access level and
         scope.
-
-        If want_password is True, the principal's password will be set to the
-        account's password.  Otherwise it's set to None.
         """
         naked_account = removeSecurityProxy(account)
-        if want_password:
-            password = naked_account.password
-        else:
-            password = None
         principal = LaunchpadPrincipal(
             naked_account.id, naked_account.displayname,
-            naked_account.displayname, account, password,
+            naked_account.displayname, account,
             access_level=access_level, scope=scope)
         principal.__parent__ = self
         return principal
@@ -317,7 +261,7 @@ class LaunchpadPrincipal:
 
     implements(ILaunchpadPrincipal)
 
-    def __init__(self, id, title, description, account, pwd=None,
+    def __init__(self, id, title, description, account,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):
         self.id = id
         self.title = title
@@ -326,16 +270,9 @@ class LaunchpadPrincipal:
         self.scope = scope
         self.account = account
         self.person = IPerson(account, None)
-        self.__pwd = pwd
 
     def getLogin(self):
         return self.title
-
-    def validate(self, pw):
-        encryptor = getUtility(IPasswordEncryptor)
-        pw1 = (pw or '').strip()
-        pw2 = (self.__pwd or '').strip()
-        return encryptor.validate(pw1, pw2)
 
 
 # zope.app.apidoc expects our principals to be adaptable into IAnnotations, so

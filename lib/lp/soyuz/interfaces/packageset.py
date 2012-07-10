@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -348,7 +348,16 @@ class IPackagesetEdit(Interface):
         """
 
 
-class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
+class IPackagesetRestricted(Interface):
+    """A writeable interface for restricted attributes of package sets."""
+    export_as_webservice_entry(publish_web_link=False)
+
+    relative_build_score = exported(Int(
+        title=_("Build score"), required=True, readonly=False,
+        description=_("Build score bonus for packages in this package set.")))
+
+
+class IPackageset(IPackagesetViewOnly, IPackagesetEdit, IPackagesetRestricted):
     """An interface for package sets."""
     export_as_webservice_entry(publish_web_link=False)
 

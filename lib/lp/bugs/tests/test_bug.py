@@ -1,4 +1,4 @@
-
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.bugs.model.Bug."""
@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -21,10 +21,6 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
-    )
-from lp.registry.interfaces.accesspolicy import (
-    AccessPolicyType,
-    UnsuitableAccessPolicyError,
     )
 from lp.testing import (
     person_logged_in,
@@ -291,7 +287,7 @@ class TestBugCreation(TestCaseWithFactory):
                 UserCannotEditBugTaskMilestone,
                 getUtility(IBugSet).createBug, params)
 
-    def test_createBugWithoutTarget_cve(self):
+    def test_createBug_cve(self):
         cve = self.factory.makeCVE('1999-1717')
         target = self.factory.makeProduct()
         person = self.factory.makePerson()
@@ -301,38 +297,3 @@ class TestBugCreation(TestCaseWithFactory):
         params.setBugTarget(product=target)
         bug = getUtility(IBugSet).createBug(params)
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
-
-
-class TestBugAccessPolicy(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
-
-    def test_setAccessPolicy(self):
-        product = self.factory.makeProduct()
-        policy = self.factory.makeAccessPolicy(
-            pillar=product, type=AccessPolicyType.PRIVATE)
-        bug = self.factory.makeBug(product=product)
-        self.assertIs(None, bug.access_policy)
-        with person_logged_in(bug.owner):
-            bug.setAccessPolicy(AccessPolicyType.PRIVATE)
-        self.assertEqual(policy, bug.access_policy)
-
-    def test_setAccessPolicy_none(self):
-        product = self.factory.makeProduct()
-        policy = self.factory.makeAccessPolicy(pillar=product)
-        bug = self.factory.makeBug(product=product)
-        self.assertIs(None, bug.access_policy)
-        with person_logged_in(bug.owner):
-            bug.setAccessPolicy(policy.type)
-            bug.setAccessPolicy(None)
-        self.assertIs(None, bug.access_policy)
-
-    def test_setAccessPolicy_without_use(self):
-        # Attempting to set the access policy to a type that is not used
-        # by the pillar fails.
-        bug = self.factory.makeBug()
-        self.assertIs(None, bug.access_policy)
-        with person_logged_in(bug.owner):
-            self.assertRaises(
-                UnsuitableAccessPolicyError, bug.setAccessPolicy,
-                AccessPolicyType.PRIVATE)
-        self.assertIs(None, bug.access_policy)

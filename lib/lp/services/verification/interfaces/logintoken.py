@@ -24,10 +24,12 @@ from lp.services.verification.interfaces.authtoken import IAuthToken
 
 
 class ILoginToken(IAuthToken):
-    """The object that stores one time tokens used for validating email
-    addresses and other tasks that require verifying if an email address is
-    valid such as password recovery, account merging and registration of new
-    accounts. All LoginTokens must be deleted once they are "consumed"."""
+    """The object that stores one time tokens.
+
+    Used for validating email addresses and other tasks that require verifying
+    if an email address is valid, account merging. All LoginTokens must be
+    deleted once they are "consumed".
+    """
 
     fingerprint = Text(
         title=_('OpenPGP key fingerprint used to retrieve key information '
@@ -42,8 +44,8 @@ class ILoginToken(IAuthToken):
         """Remove this LoginToken from the database.
 
         We need this because once the token is used (either when registering a
-        new user, validating an email address or reseting a password), we have
-        to delete it so nobody can use that token again.
+        new user or validating an email address), we have to delete it so
+        nobody can use that token again.
         """
 
     def sendGPGValidationRequest(key):
@@ -185,4 +187,3 @@ class IGPGKeyValidationForm(Interface):
     text_signature = Text(
         title=_('Signed text'), required=True,
         description=_('The validation text, signed with your key.'))
-

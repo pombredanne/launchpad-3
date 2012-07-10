@@ -43,6 +43,7 @@ from bzrlib.urlutils import (
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
+    run_with_log_observers,
     )
 from twisted.internet import defer
 
@@ -63,12 +64,14 @@ from lp.codehosting.vfs.branchfs import (
     BranchTransportDispatch,
     DirectDatabaseLaunchpadServer,
     get_lp_server,
+    get_real_branch_path,
     LaunchpadInternalServer,
     LaunchpadServer,
     TransportDispatch,
     UnknownTransportType,
     )
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
+from lp.services.config import config
 from lp.services.job.runner import TimeoutError
 from lp.services.webapp import errorlog
 from lp.testing import (
@@ -1081,7 +1084,8 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         # endpoint. We will then check the error handling.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name)
+        branch = run_with_log_observers(
+            [], self.make_branch, db_branch.unique_name)
         branch.lock_write()
         branch.unlock()
         stderr_text = sys.stderr.getvalue()
@@ -1194,3 +1198,14 @@ class TestGetLPServer(TestCase):
         lp_server = get_lp_server(1, 'http://xmlrpc.example.invalid', '')
         transport = lp_server._transport_dispatch._rw_dispatch.base_transport
         self.assertIsInstance(transport, ChrootTransport)
+
+
+class TestRealBranchLocation(TestCase):
+
+    def test_get_real_branch_path(self):
+        """Correctly calculates the on-disk location of a branch."""
+        path = get_real_branch_path(0x00abcdef)
+        self.assertTrue(path.startswith(
+            config.codehosting.mirrored_branches_root))
+        tail = path[len(config.codehosting.mirrored_branches_root):]
+        self.assertEqual('/00/ab/cd/ef', tail)

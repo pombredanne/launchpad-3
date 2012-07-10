@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -128,7 +128,7 @@
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
+        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonPortlet"
         permission="zope.Public"/>
     <browser:pages
         for="lp.blueprints.interfaces.sprint.IHasSprints"
@@ -274,9 +274,6 @@
             <browser:page
                 name="+portlet-blocked"
                 template="../templates/specification-portlet-blocked.pt"/>
-            <browser:page
-                name="+portlet-feedbackqueue"
-                template="../templates/specification-portlet-feedbackqueue.pt"/>
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
@@ -314,9 +311,6 @@
             <browser:page
                 name="+listing-detailed"
                 template="../templates/specification-listing-detailed.pt"/>
-            <browser:page
-                name="+listing-feedback"
-                template="../templates/specification-listing-feedback.pt"/>
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
@@ -336,12 +330,6 @@
             class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionDeleteView"
             permission="launchpad.Edit"
             template="../templates/specification-subscription-delete.pt"/>
-        <browser:page
-            for="lp.blueprints.interfaces.specification.ISpecification"
-            name="+givefeedback"
-            class="lp.blueprints.browser.specificationfeedback.SpecificationFeedbackClearingView"
-            permission="launchpad.AnyPerson"
-            template="../templates/specification-givefeedback.pt"/>
         <browser:page
             name="+addsubscriber"
             for="lp.blueprints.interfaces.specification.ISpecification"
@@ -370,6 +358,12 @@
             name="+whiteboard"
             for="lp.blueprints.interfaces.specification.ISpecification"
             class="lp.blueprints.browser.specification.SpecificationEditWhiteboardView"
+            permission="launchpad.AnyPerson"
+            template="../templates/specification-edit.pt"/>
+        <browser:page
+            name="+workitems"
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            class="lp.blueprints.browser.specification.SpecificationEditWorkItemsView"
             permission="launchpad.AnyPerson"
             template="../templates/specification-edit.pt"/>
         <browser:page
@@ -417,13 +411,6 @@
             class="lp.blueprints.browser.specification.SpecificationEditMilestoneView"
             permission="launchpad.Edit"
             template="../templates/specification-edit.pt"/>
-        <browser:page
-            name="+requestfeedback"
-            for="lp.blueprints.interfaces.specification.ISpecification"
-            class="lp.blueprints.browser.specificationfeedback.SpecificationFeedbackAddView"
-            permission="launchpad.AnyPerson"
-            template="../templates/specification-requestfeedback.pt">
-        </browser:page>
         <browser:page
             name="+linkbug"
             for="lp.blueprints.interfaces.specification.ISpecification"
@@ -562,7 +549,7 @@
         <browser:page
             name="+register-a-blueprint-button"
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationTarget"
-            class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
+            class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonPortlet"
             permission="zope.Public"/>
 
     <browser:page
@@ -621,6 +608,13 @@
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
     </facet>
+
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        class="lp.blueprints.browser.person_upcomingwork.PersonUpcomingWorkView"
+        permission="zope.Public"
+        name="+upcomingwork"
+        template="../templates/person-upcomingwork.pt"/>
 
   <adapter
       factory="lp.blueprints.browser.specification.starter_xhtml_representation"

@@ -39,6 +39,7 @@ And for every distribution we publish most of its attributes.
     icon_link: u'http://.../ubuntu/icon'
     logo_link: u'http://.../ubuntu/logo'
     main_archive_link: u'http://.../ubuntu/+archive/primary'
+    members_link: u'http://.../~ubuntu-team'
     mirror_admin_link: u'http://.../~ubuntu-mirror-admins'
     mugshot_link: u'http://.../ubuntu/mugshot'
     name: u'ubuntu'

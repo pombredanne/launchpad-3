@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for DistroSeriesDifferences."""
@@ -26,8 +26,11 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.app.browser.launchpadform import LaunchpadFormView
-from lp.registry.enum import (
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -41,6 +44,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
+from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
@@ -52,7 +56,6 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.launchpadform import custom_widget
 
 
 class DistroSeriesDifferenceNavigation(Navigation):
@@ -241,20 +244,27 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
             self.show_package_diffs_request_link)
 
 
-class DistroSeriesDifferenceDisplayComment:
-    """Used simply to provide `IComment` for rendering."""
-    implements(IComment)
+class IDistroSeriesDifferenceDisplayComment(IComment):
+    """Marker interface."""
 
-    has_body = True
-    has_footer = False
-    display_attachments = False
-    extra_css_class = ''
+
+class DistroSeriesDifferenceDisplayComment(MessageComment):
+    """Used simply to provide `IComment` for rendering."""
+    implements(IDistroSeriesDifferenceDisplayComment)
+
+    index = None
+
+    download_url = None
 
     def __init__(self, comment):
         """Setup the attributes required by `IComment`."""
-        self.comment_author = comment.comment_author
-        self.comment_date = comment.comment_date
-        self.body_text = comment.body_text
+        super(DistroSeriesDifferenceDisplayComment, self).__init__(None)
+        self.comment = comment
+
+
+def get_message(comment):
+    """Adapter from IDistroSeriesDifferenceDisplayComment to IMessage."""
+    return comment.comment.message
 
 
 class CommentXHTMLRepresentation(LaunchpadView):

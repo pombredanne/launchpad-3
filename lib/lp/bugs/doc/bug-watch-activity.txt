@@ -7,9 +7,8 @@ table.
 We can create a new BugWatchActivity record for a bug watch using that
 BugWatch's addActivity() method.
 
-    >>> from lp.services.config import config
     >>> from lp.services.database.lpstorm import IStore
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.bugs.model.bugwatch import BugWatchActivity
 
 In order to create a BugWatch to test with we need to switch DB users.
@@ -17,13 +16,8 @@ This is because the checkwatches DB user can't create BugWatches, whilst
 at the same time _only_ the checkwatches DB user can create
 BugWatchActivity instances.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug_watch = factory.makeBugWatch(remote_bug='42')
-
-    >>> # This commit is unavoidable, otherwise we lose the watch when we
-    >>> # switch users.
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     bug_watch = factory.makeBugWatch(remote_bug='42')
 
 When a BugWatch is first created there has been no activity on it.
 
@@ -120,7 +114,7 @@ Another entry will have been added to the watch's activity property.
     >>> print bug_watch.activity.count()
     3
 
-And this time its result field will record that the the remote bug was
+And this time its result field will record that the remote bug was
 not found.
 
     >>> most_recent_activity = bug_watch.activity.first()

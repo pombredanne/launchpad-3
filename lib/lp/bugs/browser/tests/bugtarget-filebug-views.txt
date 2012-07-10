@@ -126,7 +126,8 @@ The first inline part will be appended to the bug description.
     ... --boundary--
     ... """
     >>> import transaction
-    >>> from lp.services.temporaryblobstorage.interfaces import ITemporaryStorageManager
+    >>> from lp.services.temporaryblobstorage.interfaces import (
+    ...     ITemporaryStorageManager)
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
 
 We need to commit the transaction since the data will be stored in the
@@ -167,7 +168,8 @@ will be set with the actual data.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This should be added to the description.
@@ -226,7 +228,8 @@ to the bug.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This should be added to the description.
@@ -331,7 +334,7 @@ The attachments are all added to the same comment.
 
     >>> for comment in filebug_view.added_bug.messages[1:]:
     ...     print "Comment by %s: %s attachment(s)" % (
-    ...         comment.owner.displayname, comment.bugattachments.count())
+    ...         comment.owner.displayname, len(comment.bugattachments))
     Comment by No Privileges Person: 2 attachment(s)
 
 
@@ -375,16 +378,14 @@ the message.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This bug should be private.
 
-    >>> filebug_view.added_bug.private
-    True
-
-    >>> filebug_view.added_bug.security_related
-    False
+    >>> filebug_view.added_bug.information_type
+    <DBItem InformationType.USERDATA, (4) User Data>
 
 Since the bug was marked private before it was filed, only the bug
 reporter has been subscribed to the bug and there should be no indirect
@@ -438,7 +439,8 @@ We can also specify that a bug is public via the same field.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This bug should be public.
@@ -502,7 +504,8 @@ they can be identified by their Launchpad name or their e-mail address.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     Other people are interested in this bug.
@@ -572,7 +575,8 @@ subscribe certain people and teams to bugs when they are filed.
     >>> filebug_view.added_bug.title
     u'Test Title'
 
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    >>> description = filebug_view.added_bug.description
+    >>> print description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This bug should be private, and Mark Shuttleworth subscribed.
@@ -681,9 +685,10 @@ Filing security bugs
 
 The base class allows security bugs to be filed.
 
+    >>> from lp.registry.enums import InformationType
     >>> bug_data = dict(
     ...     title=u'Security bug', comment=u'Test description.',
-    ...     security_related=True)
+    ...     security_related=u'on')
 
     >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
@@ -706,17 +711,19 @@ Privileged users are offered several extra options when filing bugs.
     >>> person = factory.makePerson()
     >>> product = factory.makeProduct(owner=owner)
 
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> normal_fields = set(filebug_view.field_names)
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> owner_fields = set(filebug_view.field_names)
     >>> product.setBugSupervisor(owner, owner)
     >>> supervisor_fields = set(filebug_view.field_names)
 
-Privileged users get all the same fields as normal users, plus a few extra.
+Privileged users get most of the same fields as normal users, plus a few extra.
+The security_related checkbox is replaced by an information_type radio group.
 
+    >>> normal_fields.remove('security_related')
     >>> owner_fields == supervisor_fields
     True
     >>> supervisor_fields.issuperset(normal_fields)
@@ -726,6 +733,7 @@ Privileged users get all the same fields as normal users, plus a few extra.
     ...     print field
     assignee
     importance
+    information_type
     milestone
     status
 

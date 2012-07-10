@@ -45,10 +45,9 @@ handle, and register them for some domains:
 
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
-    >>> from lp.services.database.sqlbase import commit
     >>> from lp.services.mail.tests.helpers import read_test_message
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.services.mail.sendmail import sendmail as original_sendmail
+    >>> from lp.testing.dbuser import switch_dbuser
 
 For these examples, we don't want the Precedence header added. Domains
 are treated without regard to case: for incoming mail, foo.com and
@@ -57,7 +56,7 @@ FOO.COM are treated equivalently.
     >>> def sendmail(msg, to_addrs=None):
     ...     return original_sendmail(msg, to_addrs=to_addrs, bulk=False)
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
     >>> for domain in ('foo.com', 'bar.com', 'FOO.COM', 'baz.com'):
     ...     msg = read_test_message('signed_detached.txt')
@@ -75,9 +74,10 @@ import the keys before handleMail is called.
 
     >>> from lp.services.config import config
     >>> from lp.testing.gpgkeys import import_public_test_keys
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
+
     >>> import_public_test_keys()
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> switch_dbuser(config.processmail.dbuser)
     >>> zopeless_transaction = LaunchpadZopelessLayer.txn
 
     >>> handleMailForTest = lambda: handleMail(
@@ -183,7 +183,8 @@ silently rejected.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
-    >>> bigjools = person_set.getByEmail('launchpad@julian-edwards.com')
+    >>> bigjools = person_set.getByEmail('launchpad@julian-edwards.com',
+    ...                                  filter_status=False)
     >>> print bigjools.account_status.name
     NOACCOUNT
 

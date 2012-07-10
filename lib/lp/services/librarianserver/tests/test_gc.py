@@ -35,6 +35,7 @@ from lp.services.librarianserver import librariangc
 from lp.services.log.logger import BufferLogger
 from lp.services.utils import utc_now
 from lp.testing import TestCase
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -61,7 +62,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
         self.f1_id, self.f2_id = self._makeDupes()
 
-        self.layer.switchDbUser(config.librarian_gc.dbuser)
+        switch_dbuser(config.librarian_gc.dbuser)
         self.ztm = self.layer.txn
 
         # Make sure the files exist. We do this in setup, because we
@@ -102,7 +103,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Connect to the database as a user with file upload privileges,
         # in this case the PostgreSQL default user who happens to be an
         # administrator on launchpad development boxes.
-        self.layer.switchDbUser(dbuser='testadmin')
+        switch_dbuser('testadmin')
         ztm = self.layer.txn
 
         ztm.begin()
@@ -542,14 +543,14 @@ class TestLibrarianGarbageCollection(TestCase):
     def test_delete_unwanted_files_bug437084(self):
         # There was a bug where delete_unwanted_files() would die
         # if the last file found on disk was unwanted.
-        self.layer.switchDbUser(dbuser='testadmin')
+        switch_dbuser('testadmin')
         content = 'foo'
         self.client.addFile(
             'foo.txt', len(content), StringIO(content), 'text/plain')
         # Roll back the database changes, leaving the file on disk.
         transaction.abort()
 
-        self.layer.switchDbUser(config.librarian_gc.dbuser)
+        switch_dbuser(config.librarian_gc.dbuser)
 
         # This should cope.
         librariangc.delete_unwanted_files(self.con)
@@ -558,14 +559,14 @@ class TestLibrarianGarbageCollection(TestCase):
         # In production, our tree has symlinks in it now.  We need to be able
         # to cope.
         # First, let's make sure we have some trash.
-        self.layer.switchDbUser(dbuser='testadmin')
+        switch_dbuser('testadmin')
         content = 'foo'
         self.client.addFile(
             'foo.txt', len(content), StringIO(content), 'text/plain')
         # Roll back the database changes, leaving the file on disk.
         transaction.abort()
 
-        self.layer.switchDbUser(config.librarian_gc.dbuser)
+        switch_dbuser(config.librarian_gc.dbuser)
 
         # Now, we will move the directory containing the trash somewhere else
         # and make a symlink to it.
@@ -752,7 +753,7 @@ class TestBlobCollection(TestCase):
                 open(path, 'w').write('whatever')
         self.layer.txn.abort()
 
-        self.layer.switchDbUser(config.librarian_gc.dbuser)
+        switch_dbuser(config.librarian_gc.dbuser)
 
         # Open a connection for our test
         self.con = connect(

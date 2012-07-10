@@ -47,16 +47,15 @@ displayed as the bug report).
     wrote
     on 2007-03-15:
     #0
-    sample data
+    sample data Edit
     (8 bytes,
     text/plain)
     >>> link = browser.getLink('sample data')
     >>> print link.url
     http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
-    >>> edit_link = find_tags_by_class(browser.contents, 'edit sprite')[1]
-    >>> print edit_link
-    <a alt="edit" class="sprite edit"...
-    ...href="/jokosher/+bug/11/+attachment/1"></a>
+    >>> print comment_0.find('a', text='Edit').parent
+    <a class="sprite edit action-icon"
+       href="/jokosher/+bug/11/+attachment/1">Edit</a>
 
 
 Patch attachments are shown before non-patch attachments
@@ -72,7 +71,7 @@ Patch attachments are shown before non-patch attachments
     >>> logout()
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> print extract_text(browser.contents)
-    Bug #11 in Jokosher...
+    Bug #11 ...
     ...Patches...
     ...a patch...
     ...Bug attachments...

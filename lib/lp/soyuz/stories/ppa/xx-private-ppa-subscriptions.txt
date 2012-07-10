@@ -8,7 +8,7 @@ part of the stories in xx-private-ppa-subscription-stories.txt.
 Public PPAs do not have an option for managing subscriptions:
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> cprov_browser.getLink("Manage subscriptions")
     Traceback (most recent call last):
@@ -54,7 +54,6 @@ picker:
     >>> print extract_all_script_and_style_links(cprov_browser.contents)
     /...
     ...
-    http://launchpad.dev/+icing/.../build/app/calendar.js
     http://launchpad.dev/+icing/.../yui_2.7.0b/build/calendar/assets/skins/sam/calendar.css
 
 Initially there are no subscriptions for a newly privatized PPA (although,
@@ -72,12 +71,13 @@ with a message:
 Create two new users that can be subscribed to archives, and a team:
 
     >>> login('foo.bar@canonical.com')
-    >>> joesmith = factory.makePerson(name="joesmith", displayname="Joe Smith",
-    ...     password="test", email="joe@example.com")
+    >>> joesmith = factory.makePerson(
+    ...     name="joesmith", displayname="Joe Smith", email="joe@example.com")
     >>> teamjoe = factory.makeTeam(
     ...     owner=joesmith, displayname="Team Joe", name='teamjoe')
-    >>> bradsmith = factory.makePerson(name="bradsmith", displayname="Brad Smith",
-    ...     password="test", email="brad@example.com")
+    >>> bradsmith = factory.makePerson(
+    ...     name="bradsmith", displayname="Brad Smith",
+    ...     email="brad@example.com")
     >>> logout()
 
 People and teams can be subscribed by entering their details into the
@@ -219,4 +219,12 @@ subscriptions page.
     Archive                                            Owner
     PPA named p3a for Mark Shuttleworth (ppa:mark/p3a) Mark Shuttleworth View
     PPA named p3a for Celso Providelo (ppa:cprov/p3a)  Celso Providelo   View
+
+== Attempting to browse directly to a subscription ==
+
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions/foo")
+    Traceback (most recent call last):
+    ...
+    NotFound...
 

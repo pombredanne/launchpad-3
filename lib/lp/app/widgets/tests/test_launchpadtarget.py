@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -213,7 +213,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         form['field.target.package'] = 'non-existent'
         self.widget.request = LaunchpadTestRequest(form=form)
         message = (
-            "There is no package name 'non-existent' published in Fnord")
+            "There is no package named 'non-existent' published in Fnord.")
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
         self.assertEqual(message, self.widget.error())

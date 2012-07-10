@@ -110,7 +110,7 @@ class ICve(Interface):
         CollectionField(
             title=_('Bugs related to this CVE entry.'),
             readonly=True,
-            value_type=Reference(schema=Interface))) #  Redefined in bug.py.
+            value_type=Reference(schema=Interface))) # Redefined in bug.py.
 
     # Other attributes.
     url = exported(
@@ -181,11 +181,14 @@ class ICveSet(Interface):
         message.
         """
 
-    def getBugCvesForBugTasks(bugtasks):
-        """Return BugCve objects that correspond to the supplied bugtasks.
+    def getBugCvesForBugTasks(bugtasks, cve_mapper=None):
+        """Return (Bug, Cve) tuples that correspond to the supplied bugtasks.
 
-        Returns an iterable of BugCve objects for bugs related to the
+        Returns an iterable of (Bug, Cve) tuples for bugs related to the
         supplied sequence of bugtasks.
+
+        If a function cve_mapper is specified, a sequence of tuples
+        (bug, cve_mapper(cve)) is returned.
         """
 
     def getBugCveCount():

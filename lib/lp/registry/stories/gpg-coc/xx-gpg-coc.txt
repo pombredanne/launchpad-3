@@ -382,12 +382,8 @@ Sample person has never signed a code of conduct.
     >>> import os
     >>> def read_file(filename):
     ...     path = os.path.join(os.path.dirname(__file__), filename)
-    ...     file_object = open(path)
-    ...     # Change this to a with-statement when we switch to Python 2.5.
-    ...     try:
+    ...     with open(path) as file_object:
     ...         return file_object.read()
-    ...     finally:
-    ...         file_object.close()
 
 
 Code of Conduct registration problems
@@ -651,7 +647,7 @@ Test if the advertisement email was sent:
   ...         del browser.mech_browser.addheaders[pos]
   ...         break
   >>> browser.addHeader(
-  ...   'Authorization', 'Basic guilherme.salgado@canonical.com:zeca')
+  ...   'Authorization', 'Basic guilherme.salgado@canonical.com:test')
 
   Check if we can see the Code of conduct page
 

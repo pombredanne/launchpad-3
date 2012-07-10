@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to PersonTransferJob."""
@@ -27,7 +27,7 @@ from zope.interface import (
     )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enum import PersonTransferJobType
+from lp.registry.enums import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -52,7 +52,10 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.helpers import (
     get_contact_email_addresses,
@@ -115,6 +118,9 @@ class PersonTransferJob(StormBase):
         # but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
 
+    def makeDerived(self):
+        return PersonTransferJobDerived.makeSubclass(self)
+
 
 class PersonTransferJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from PersonTransferJob.
@@ -126,6 +132,7 @@ class PersonTransferJobDerived(BaseRunnableJob):
     the run() method.
     """
 
+    __metaclass__ = EnumeratedSubclass
     delegates(IPersonTransferJob)
     classProvides(IPersonTransferJobSource)
 
@@ -146,7 +153,9 @@ class PersonTransferJobDerived(BaseRunnableJob):
             major_person=major_person,
             job_type=cls.class_job_type,
             metadata=metadata)
-        return cls(job)
+        derived = cls(job)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def iterReady(cls):
@@ -175,6 +184,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
     classProvides(IMembershipNotificationJobSource)
 
     class_job_type = PersonTransferJobType.MEMBERSHIP_NOTIFICATION
+
+    config = config.IMembershipNotificationJobSource
 
     @classmethod
     def create(cls, member, team, reviewer, old_status, new_status,
@@ -238,8 +249,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         if self.reviewer != self.member:
             self.reviewer_name = self.reviewer.unique_displayname
         else:
-            # The user himself changed his self.membership.
-            self.reviewer_name = 'the user himself'
+            self.reviewer_name = 'the user'
 
         if self.last_change_comment:
             comment = ("\n%s said:\n %s\n" % (
@@ -343,11 +353,13 @@ class PersonMergeJob(PersonTransferJobDerived):
 
     class_job_type = PersonTransferJobType.MERGE
 
+    config = config.IPersonMergeJobSource
+
     @classmethod
     def create(cls, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonMergeJobSource`."""
-        if (from_person.is_merge_pending or
-            (not delete and to_person.is_merge_pending)):
+        if (from_person.isMergePending() or
+            (not delete and to_person.isMergePending())):
             return None
         if from_person.is_team:
             metadata = {'reviewer': reviewer.id}

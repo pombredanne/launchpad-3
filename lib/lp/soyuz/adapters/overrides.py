@@ -38,6 +38,11 @@ from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.model.section import Section
 
 
@@ -190,9 +195,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
                                  source_component=None):
-        # Avoid circular imports.
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
@@ -201,7 +203,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
-                (SourcePackageRelease.sourcepackagenameID,
+                (SourcePackagePublishingHistory.sourcepackagenameID,
                  SourcePackagePublishingHistory.componentID,
                  SourcePackagePublishingHistory.sectionID),
                 SourcePackagePublishingHistory.archiveID == archive.id,
@@ -209,15 +211,14 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
                     active_publishing_status),
-                SourcePackageRelease.id ==
-                    SourcePackagePublishingHistory.sourcepackagereleaseID,
-                SourcePackageRelease.sourcepackagenameID.is_in(
+                SourcePackagePublishingHistory.sourcepackagenameID.is_in(
                     spn.id for spn in spns)).order_by(
-                        SourcePackageRelease.sourcepackagenameID,
+                        SourcePackagePublishingHistory.sourcepackagenameID,
                         Desc(SourcePackagePublishingHistory.datecreated),
                         Desc(SourcePackagePublishingHistory.id),
                 ).config(
-                    distinct=(SourcePackageRelease.sourcepackagenameID,)),
+                    distinct=(
+                        SourcePackagePublishingHistory.sourcepackagenameID,)),
             id_resolver((SourcePackageName, Component, Section)),
             pre_iter_hook=eager_load)
         return [
@@ -226,10 +227,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
-        # Avoid circular imports.
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
@@ -356,10 +353,10 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
             self, archive, distroseries, pocket, binaries)
         existing = set(
             (
-                overide.binary_package_name,
-                overide.distro_arch_series.architecturetag,
+                override.binary_package_name,
+                override.distro_arch_series.architecturetag,
             )
-            for overide in overrides)
+            for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateBinaryOverrides(
@@ -383,8 +380,6 @@ def calculate_target_das(distroseries, binaries):
 
 
 def make_package_condition(archive, das, bpn):
-    # Avoid circular imports.
-    from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
     return And(
         BinaryPackagePublishingHistory.archiveID == archive.id,
         BinaryPackagePublishingHistory.distroarchseriesID == das.id,
@@ -392,9 +387,6 @@ def make_package_condition(archive, das, bpn):
 
 
 def id_resolver(lookups):
-    # Avoid circular imports.
-    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
     def _resolve(row):
         store = IStore(SourcePackagePublishingHistory)
         return tuple(

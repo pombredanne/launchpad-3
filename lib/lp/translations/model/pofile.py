@@ -102,7 +102,6 @@ from lp.translations.model.potmsgset import (
     credits_message_str,
     POTMsgSet,
     )
-from lp.translations.model.translatablemessage import TranslatableMessage
 from lp.translations.model.translationimportqueue import collect_import_info
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment,
@@ -328,10 +327,6 @@ class POFileMixIn(RosettaStats):
     def getFullLanguageName(self):
         """See `IPOFile`."""
         return self.language.englishname
-
-    def makeTranslatableMessage(self, potmsgset):
-        """See `IPOFile`."""
-        return TranslatableMessage(potmsgset, self)
 
     def markChanged(self, translator=None, timestamp=None):
         """See `IPOFile`."""
@@ -1049,7 +1044,7 @@ class POFile(SQLBase, POFileMixIn):
             entry_to_import.setErrorOutput(
                 "File was not exported from Launchpad.")
         except (MixedNewlineMarkersError, TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError, UnicodeDecodeError), (
+                TranslationFormatInvalidInputError, UnicodeDecodeError) as (
                 exception):
             # The import failed with a format error. We log it and select the
             # email template.
@@ -1064,7 +1059,7 @@ class POFile(SQLBase, POFileMixIn):
             error_text = str(exception)
             entry_to_import.setErrorOutput(error_text)
             needs_notification_for_imported = True
-        except OutdatedTranslationError, exception:
+        except OutdatedTranslationError as exception:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:

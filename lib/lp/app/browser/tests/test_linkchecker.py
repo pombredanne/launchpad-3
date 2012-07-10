@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the LinkCheckerAPI."""
@@ -11,6 +11,7 @@ import simplejson
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.linkchecker import LinkCheckerAPI
+from lp.registry.enums import InformationType
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -67,7 +68,8 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
         As far as searchBugs() is concerned, this is an invalid bug to the
         currently authenticated user
         """
-        bug_private = self.factory.makeBug(private=True)
+        bug_private = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
         return ['/bugs/%d' % (bug_private.id)]
 
     def invoke_link_checker(

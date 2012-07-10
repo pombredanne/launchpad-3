@@ -18,6 +18,19 @@
 
 <div metal:fill-slot="main">
 
+  <p id="push-instructions">
+    You can push the branch directly to Launchpad with the command:<br />
+    <tt class="command">
+      bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/<tal:series replace="context/name"/>
+    </tt>
+    <tal:no-keys condition="not:view/user/sshkeys">
+      <br/>To authenticate with the Launchpad branch upload service,
+      you need to
+      <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+        register a SSH key</a>.
+    </tal:no-keys>
+  </p>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <metal:formbody fill-slot="widgets">
@@ -34,15 +47,6 @@
                 <metal:block use-macro="context/@@launchpad_form/widget_row" />
               </tal:widget>
             </table>
-          </td>
-        </tr>
-
-        <tr>
-          <td>
-            <label tal:replace="structure view/branch_type_create">
-              Create a new, empty branch in Launchpad and link
-              to this series
-            </label>
           </td>
         </tr>
 
@@ -119,7 +123,7 @@
   </div>
 
   <script type="text/javascript">
-    LPS.use('lp.code.productseries_setbranch', function(Y) {
+    LPJS.use('lp.code.productseries_setbranch', function(Y) {
       Y.on('domready', Y.lp.code.productseries_setbranch.setup);
     });
   </script>

@@ -16,6 +16,7 @@ from urllib2 import (
     )
 
 from BeautifulSoup import BeautifulSoup
+import transaction
 from zope.component import getUtility
 
 from lp.bugs.interfaces.bugtracker import (
@@ -23,6 +24,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     )
 from lp.bugs.model.bugtracker import BugTrackerComponent
+from lp.services.database import bulk
 from lp.services.database.lpstorm import IStore
 from lp.services.scripts.logger import log as default_log
 
@@ -148,7 +150,7 @@ class BugzillaRemoteComponentFinder:
             try:
                 self.logger.debug("...Fetching page")
                 page_text = bz_bugtracker.getPage()
-            except HTTPError, error:
+            except HTTPError as error:
                 self.logger.warning("Could not fetch %s: %s" % (
                     lp_bugtracker.baseurl, error))
                 continue
@@ -199,18 +201,15 @@ class BugzillaRemoteComponentFinder:
             # added to launchpad.  Record them for now.
             for component in product['components'].values():
                 components_to_add.append(
-                    "('%s', %d, 'True', 'False')" % (
-                        component['name'], lp_component_group.id))
+                    (component['name'], lp_component_group, True, False))
 
         if len(components_to_add) > 0:
-            sqltext = """
-            INSERT INTO BugTrackerComponent
-            (name, component_group, is_visible, is_custom)
-            VALUES %s""" % ",\n ".join(components_to_add)
-
             self.logger.debug("...Inserting components into database")
-            store = IStore(BugTrackerComponent)
-            store.execute(sqltext)
-            store.commit()
-            store.flush()
+            bulk.create(
+                (BugTrackerComponent.name,
+                 BugTrackerComponent.component_group,
+                 BugTrackerComponent.is_visible,
+                 BugTrackerComponent.is_custom),
+                components_to_add)
+            transaction.commit()
             self.logger.debug("...Done")

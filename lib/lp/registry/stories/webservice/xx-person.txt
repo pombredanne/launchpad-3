@@ -25,7 +25,6 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~salgado/invited_members'
     irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
-    is_merge_pending: False
     is_probationary: True
     is_team: False
     is_ubuntu_coc_signer: False
@@ -85,7 +84,6 @@ for teams (as they're defined in the ITeam interface).
     invited_members_collection_link:
         u'http://.../~ubuntu-team/invited_members'
     irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
-    is_merge_pending: False
     is_probationary: False
     is_team: True
     is_ubuntu_coc_signer: False
@@ -184,7 +182,8 @@ People have SSH keys which we can manipulate over the API.
 The sample person "ssh-user" doesn't have any keys to begin with:
 
     >>> login('test@canonical.com')
-    >>> person = factory.makePerson(name="ssh-user")
+    >>> person = factory.makePerson(
+    ...     name="ssh-user", email='ssh@launchpad.net')
     >>> logout()
     >>> sample_person = webservice.get("/~ssh-user").jsonBody()
     >>> sshkeys = sample_person['sshkeys_collection_link']
@@ -192,13 +191,21 @@ The sample person "ssh-user" doesn't have any keys to begin with:
     http://.../~ssh-user/sshkeys
     >>> print_self_link_of_entries(webservice.get(sshkeys).jsonBody())
 
-Let's give "ssh-user" a key via the back door of our internal Python APIs:
+Let's give "ssh-user" a key via the back door of our internal Python APIs.
+This setting of the ssh key should trigger a notice that the key has been
+added.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> login(ANONYMOUS)
-    >>> ssh_user = getUtility(IPersonSet).getByName('ssh-user')
-    >>> ssh_key = factory.makeSSHKey(ssh_user)
+    >>> from lp.services.mail import stub
+    >>> import transaction
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(person):
+    ...     ssh_key = factory.makeSSHKey(person)
+    ...     transaction.commit()
+    ...     efrom, eto, emsg = stub.test_emails.pop()
+    ...     eto
+    ['ssh@launchpad.net']
+
     >>> logout()
 
 Now when we get the sshkey collection for 'sssh-user' again, the key should
@@ -233,7 +240,6 @@ The sample person "name12" doesn't have any keys to begin with:
 
 Let's give "name12" a key via the back door of our internal Python APIs:
 
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> gpg_user = getUtility(IPersonSet).getByName('name12')
@@ -737,10 +743,8 @@ Though it is not possible through the Launchpad UI, some users of the
 REST API propose other people (as opposed to teams) as part of a
 mentoring process (Bug 498181).
 
-    >>> from zope.component import getUtility
     >>> from lp.testing.pages import webservice_for_person
     >>> from lp.services.webapp.interfaces import OAuthPermission
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> owner = getUtility(IPersonSet).getByName('owner')
     >>> logout()

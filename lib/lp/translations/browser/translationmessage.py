@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0404
@@ -52,6 +52,7 @@ from lp.services.webapp import (
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import RedirectionView
 from lp.translations.browser.browser_helpers import (
     contract_rosetta_escapes,
     convert_newlines_to_web_form,
@@ -224,17 +225,13 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
         return Link('../+export', text, icon='download')
 
 
-class CurrentTranslationMessageIndexView:
+class CurrentTranslationMessageIndexView(RedirectionView):
     """A view to forward to the translation form."""
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Redirect to the translation form."""
-        url = '%s/%s' % (canonical_url(self.context), '+translate')
-        self.request.response.redirect(url)
+        target = canonical_url(context, view_name='+translate')
+        super(CurrentTranslationMessageIndexView, self).__init__(
+            target, request)
 
 
 def _getSuggestionFromFormId(form_id):
@@ -457,7 +454,7 @@ class BaseTranslationView(LaunchpadView):
         """
         try:
             self._storeTranslations(potmsgset)
-        except GettextValidationError, e:
+        except GettextValidationError as e:
             return unicode(e)
         except TranslationConflict:
             # The translations are demoted to suggestions, but they may

@@ -19,6 +19,7 @@ __all__ = [
     'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
+    'server',
     'read_locked',
     'remove_exception_logging_hook',
     ]
@@ -32,9 +33,11 @@ from bzrlib import (
     trace,
     )
 from bzrlib.errors import (
+    AppendRevisionsOnlyViolation,
     NotStacked,
     UnstackableBranchFormat,
     UnstackableRepositoryFormat,
+    UnsupportedProtocol,
     )
 from bzrlib.remote import (
     RemoteBranch,
@@ -42,6 +45,7 @@ from bzrlib.remote import (
     RemoteRepository,
     )
 from bzrlib.transport import (
+    get_transport,
     register_transport,
     unregister_transport,
     )
@@ -52,6 +56,14 @@ from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
+
+# Exception classes which are not converted into OOPSes
+NOT_OOPS_EXCEPTIONS = (AppendRevisionsOnlyViolation,)
+
+def should_log_oops(exc):
+    """Return true if exc should trigger an OOPS.
+    """
+    return not issubclass(exc, NOT_OOPS_EXCEPTIONS)
 
 
 def is_branch_stackable(bzr_branch):
@@ -160,7 +172,8 @@ def make_oops_logging_exception_hook(error_utility, request):
     """Make a hook for logging OOPSes."""
 
     def log_oops():
-        error_utility.raising(sys.exc_info(), request)
+        if should_log_oops(sys.exc_info()[0]):
+            error_utility.raising(sys.exc_info(), request)
     return log_oops
 
 
@@ -196,6 +209,7 @@ def install_oops_handler(user_id):
     request = BazaarOopsRequest(user_id)
     hook = make_oops_logging_exception_hook(error_utility, request)
     add_exception_logging_hook(hook)
+    return hook
 
 
 class HttpAsLocalTransport(LocalTransport):
@@ -329,3 +343,22 @@ def write_locked(branch):
         yield
     finally:
         branch.unlock()
+
+
+@contextmanager
+def server(server, no_replace=False):
+    run_server = True
+    if no_replace:
+        try:
+            get_transport(server.get_url())
+        except UnsupportedProtocol:
+            pass
+        else:
+            run_server = False
+    if run_server:
+        server.start_server()
+    try:
+        yield server
+    finally:
+        if run_server:
+            server.stop_server()

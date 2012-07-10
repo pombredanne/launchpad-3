@@ -115,7 +115,7 @@ Jeff is also an administrator and his subscription never expires, but he can
 demote himself. He starts by paging though the memberships, then he deselects
 the administrator control on the membership page.
 
-    >>> jdub_browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> jdub_browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> jdub_browser.open('http://launchpad.dev/~ubuntu-team/+members')
     >>> jdub_browser.getLink('Next').click()
     >>> url = '/~ubuntu-team/+member/jdub'

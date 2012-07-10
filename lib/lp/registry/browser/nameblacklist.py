@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -20,6 +20,7 @@ from zope.component import (
 from zope.interface import implements
 
 from lp.app.browser.launchpadform import (
+    action,
     custom_widget,
     LaunchpadFormView,
     )
@@ -28,7 +29,6 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
     )
-from lp.services.webapp import action
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import IBreadcrumb
 from lp.services.webapp.menu import (
@@ -62,7 +62,7 @@ class NameBlacklistValidationMixin:
                     self.setFieldError(
                         'regexp',
                         'This regular expression already exists.')
-        except re.error, e:
+        except re.error as e:
             self.setFieldError(
                 'regexp',
                 'Invalid regular expression: %s' % e)

@@ -8,8 +8,6 @@ __all__ = [
     'RemoteBugUpdater',
     ]
 
-import sys
-
 from zope.component import getUtility
 
 from lp.bugs.externalbugtracker.base import (
@@ -147,7 +145,7 @@ class RemoteBugUpdater(WorkingBase):
                         self.remote_bug))
                 new_malone_importance = self._convertRemoteImportance(
                     new_remote_importance)
-            except (InvalidBugId, BugNotFound, PrivateRemoteBug), ex:
+            except (InvalidBugId, BugNotFound, PrivateRemoteBug) as ex:
                 error = get_bugwatcherrortype_for_error(ex)
                 message = self.error_type_messages.get(
                     error, self.error_type_message_default)
@@ -172,7 +170,7 @@ class RemoteBugUpdater(WorkingBase):
                     bug_watch_updater.updateBugWatch(
                         new_remote_status, new_malone_status,
                         new_remote_importance, new_malone_importance)
-        except Exception, error:
+        except Exception as error:
             # Send the error to the log.
             oops_id = self.error(
                 "Failure updating bug %r on %s (local bugs: %s)." %
@@ -227,7 +225,7 @@ class RemoteBugUpdater(WorkingBase):
 
         try:
             launchpad_value = conversion_method(remote_value)
-        except UnknownRemoteValueError, e:
+        except UnknownRemoteValueError as e:
             # We log the warning, since we need to know about values
             # that we don't handle correctly.
             self.logger.info(

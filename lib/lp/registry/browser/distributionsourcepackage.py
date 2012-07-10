@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,14 +16,12 @@ __all__ = [
     'DistributionSourcePackageView',
     ]
 
-from datetime import datetime
 import itertools
 import operator
 
 from lazr.delegates import delegates
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
-import pytz
 from zope.component import (
     adapter,
     getUtility,
@@ -39,6 +37,10 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetTraversalMixin,
     )
 from lp.answers.enums import QuestionStatus
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    )
 from lp.app.browser.stringformatter import (
     extract_bug_numbers,
     extract_email_addresses,
@@ -64,10 +66,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
-    action,
     canonical_url,
-    LaunchpadEditFormView,
-    LaunchpadView,
     Navigation,
     redirection,
     StandardLaunchpadFacets,
@@ -80,6 +79,7 @@ from lp.services.webapp.menu import (
     Link,
     NavigationMenu,
     )
+from lp.services.webapp.publisher import LaunchpadView
 from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.soyuz.browser.sourcepackagerelease import linkify_changelog
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -530,11 +530,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             for version in pocket_dict:
                 most_recent_publication = pocket_dict[version][0]
                 date_published = most_recent_publication.datepublished
-                if date_published is None:
-                    published_since = None
-                else:
-                    now = datetime.now(tz=pytz.UTC)
-                    published_since = now - date_published
                 pockets = ", ".join(
                     [pub.pocket.name for pub in pocket_dict[version]])
                 row = {
@@ -545,7 +540,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                     'publication': most_recent_publication,
                     'pockets': pockets,
                     'component': most_recent_publication.component_name,
-                    'published_since': published_since,
+                    'date_published': date_published,
                     }
                 rows.append(row)
             # We need a blank row after each section, so the series

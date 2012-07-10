@@ -35,7 +35,14 @@ from zope.schema import (
 from lp import _
 
 
-__all__ = ['IHasAliases', 'IPillar', 'IPillarName', 'IPillarNameSet']
+__all__ = [
+    'IHasAliases',
+    'IPillar',
+    'IPillarName',
+    'IPillarNameSet',
+    'IPillarPerson',
+    'IPillarPersonFactory',
+    ]
 
 
 class IPillar(Interface):
@@ -150,3 +157,17 @@ class IPillarNameSet(Interface):
             value_type=Reference(schema=IPillar)),
         exported_as="featured_pillars"
         )
+
+
+class IPillarPerson(Interface):
+    """A Person's connection to a Pillar."""
+
+    person = Attribute("The person associated with the pillar.")
+    pillar = Attribute("The pillar associated with the person.")
+
+
+class IPillarPersonFactory(Interface):
+    """Creates `IPillarPerson`s."""
+
+    def create(person, pillar):
+        """Create and return an `IPillarPerson`."""

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'admin_logged_in',
     'anonymous_logged_in',
     'celebrity_logged_in',
     'login',
@@ -37,6 +38,7 @@ from lp.services.webapp.interaction import (
     setupInteractionByEmail,
     setupInteractionForPerson,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.vhosts import allvhosts
 from lp.testing.sampledata import ADMIN_EMAIL
@@ -69,6 +71,8 @@ def login(email, participation=None):
     setPrincipal(), otherwise it must allow setting its principal attribute.
     """
 
+    if not isinstance(email, basestring):
+        raise ValueError("Expected email parameter to be a string.")
     participation = _test_login_impl(participation)
     setupInteractionByEmail(email, participation)
 
@@ -82,6 +86,7 @@ def login_person(person, participation=None):
             raise ValueError("Got team, expected person: %r" % (person,))
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)
+    return person
 
 
 def login_team(team, participation=None):
@@ -125,6 +130,13 @@ def login_celebrity(celebrity_name, participation=None):
     return login_as(celeb, participation=participation)
 
 
+def login_admin(ignored, participation=None):
+    """Log in as an admin."""
+    login(ANONYMOUS)
+    admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+    return login_as(admin, participation=participation)
+
+
 def logout():
     """Tear down after login(...), ending the current interaction.
 
@@ -132,15 +144,17 @@ def logout():
     LaunchpadFunctionalTestCase's tearDown method so
     you generally won't need to call this.
     """
+    # Ensure the launchbag developer flag is off when logging out.
+    getUtility(ILaunchBag).setDeveloper(False)
     endInteraction()
 
 
 def _with_login(login_method, identifier):
     """Make a context manager that runs with a particular log in."""
     interaction = queryInteraction()
-    login_method(identifier)
+    person = login_method(identifier)
     try:
-        yield
+        yield person
     finally:
         if interaction is None:
             logout()
@@ -172,6 +186,12 @@ def anonymous_logged_in():
 def celebrity_logged_in(celebrity_name):
     """Make a context manager for running logged in as a celebrity."""
     return _with_login(login_celebrity, celebrity_name)
+
+
+@contextmanager
+def admin_logged_in():
+    # Use teamowner to avoid expensive and noisy team member additions.
+    return _with_login(login_admin, None)
 
 
 with_anonymous_login = decorate_with(person_logged_in, None)

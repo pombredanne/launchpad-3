@@ -31,7 +31,10 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.translations.interfaces.translationsharingjob import (
     ITranslationSharingJob,
     )
@@ -107,22 +110,20 @@ class TranslationSharingJob(StormBase):
         self.productseries = productseries
         self.potemplate = potemplate
 
-
-class RegisteredSubclass(type):
-    """Metaclass for when subclasses should be registered."""
-
-    def __init__(cls, name, bases, dict_):
-        cls._register_subclass(cls)
+    def makeDerived(self):
+        return TranslationSharingJobDerived.makeSubclass(self)
 
 
 class TranslationSharingJobDerived:
     """Base class for specialized TranslationTemplate Job types."""
 
-    __metaclass__ = RegisteredSubclass
+    __metaclass__ = EnumeratedSubclass
 
     delegates(ITranslationSharingJob, 'job')
 
-    _subclass = {}
+    def getDBClass(self):
+        return TranslationSharingJob
+
     _event_types = {}
 
     @property
@@ -136,12 +137,6 @@ class TranslationSharingJobDerived:
         # TranslationPackagingJob) need to be able to override it and call
         # into it, and there's no syntax to call a base class's version of a
         # classmethod with the subclass as the first parameter.
-        job_type = getattr(cls, 'class_job_type', None)
-        if job_type is not None:
-            value = cls._subclass.setdefault(job_type, cls)
-            assert value is cls, (
-                '%s already registered to %s.' % (
-                    job_type.name, value.__name__))
         event_type = getattr(cls, 'create_on_event', None)
         if event_type is not None:
             cls._event_types.setdefault(event_type, []).append(cls)
@@ -165,7 +160,9 @@ class TranslationSharingJobDerived:
         context = TranslationSharingJob(
             Job(), cls.class_job_type, productseries,
             distroseries, sourcepackagename, potemplate)
-        return cls(context)
+        derived = cls(context)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def schedulePackagingJob(cls, packaging, event):
@@ -215,7 +212,7 @@ class TranslationSharingJobDerived:
             TranslationSharingJob.job == Job.id,
             Job.id.is_in(Job.ready_jobs),
             *extra_clauses)
-        return (cls._subclass[job.job_type](job) for job in jobs)
+        return (cls.makeSubclass(job) for job in jobs)
 
     @classmethod
     def getNextJobStatus(cls, packaging):

@@ -61,22 +61,26 @@ Guided +filebug
 The most common case will be that the user is sent to the guided
 +filebug page and the user goes through the workflow there.
 
-    >>> filebug_url = (
-    ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
-    ...     '%s' % blob_token)
-    >>> user_browser.open(filebug_url)
+    >>> filebug_host = 'launchpad.dev'
+    >>> filebug_path = (
+    ...    '/ubuntu/+source/mozilla-firefox/+filebug/%s' % blob_token)
+    >>> filebug_url = 'http://%s%s' % (filebug_host, filebug_path)
+    >>> contents = str(http(
+    ...     "GET %s HTTP/1.1\nHostname: %s\n"
+    ...     "Authorization: Basic test@canonical.com:test\n\n"
+    ...     % (filebug_path, filebug_host)))
 
 At first, the user will be shown a message telling them that the extra
 data is being processed.
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    >>> for message in find_tags_by_class(contents, 'message'):
     ...     print message.renderContents()
     Please wait while bug data is processed. This page will refresh
     every 10 seconds until processing is complete.
 
 The page header contains a 10-second meta refresh tag.
 
-    >>> '<meta http-equiv="refresh" content="10"' in user_browser.contents
+    >>> '<meta http-equiv="refresh" content="10"' in contents
     True
 
 Once the data has been processed, the +filebug process can continue as

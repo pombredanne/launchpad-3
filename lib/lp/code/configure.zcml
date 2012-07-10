@@ -289,16 +289,6 @@
 
   <!-- Branch Merge Proposal Jobs -->
 
-  <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
-    <allow interface="lp.services.messages.interfaces.message.IMessageJob"/>
-    <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
-  </class>
-  <securedutility
-      component="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob"
-      provides="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource">
-    <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource"/>
-  </securedutility>
-
   <class class="lp.code.model.branchmergeproposaljob.MergeProposalNeedsReviewEmailJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJob"/>
@@ -514,8 +504,8 @@
       for="lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
   <subscriber
-      for="lp.codehosting.scanner.events.INewRevision"
-      handler="lp.codehosting.scanner.buglinks.got_new_revision"/>
+      for="lp.codehosting.scanner.events.INewMainlineRevisions"
+      handler="lp.codehosting.scanner.buglinks.got_new_mainline_revisions"/>
   <subscriber
       for="lp.codehosting.scanner.events.IScanCompleted"
       handler="lp.codehosting.scanner.mergedetection.auto_merge_proposals"/>
@@ -914,7 +904,7 @@
 
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
-    <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
   </class>
 
   <securedutility

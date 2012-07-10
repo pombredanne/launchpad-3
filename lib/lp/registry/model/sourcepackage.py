@@ -17,7 +17,7 @@ from lazr.restful.utils import smartquote
 from storm.locals import (
     And,
     Desc,
-    Select,
+    Join,
     Store,
     )
 from zope.component import getUtility
@@ -32,16 +32,10 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import (
-    IHasBugHeat,
-    ISeriesBugTarget,
-    )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    HasBugHeatMixin,
-    )
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.buildmaster.enums import BuildStatus
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import (
@@ -192,7 +186,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return self.distribution.owner
 
 
-class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
+class SourcePackage(BugTargetBase, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     HasBranchesMixin, HasMergeProposalsMixin,
                     HasDriversMixin):
@@ -204,7 +198,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     """
 
     implements(
-        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        IBugSummaryDimension, ISourcePackage, IHasBuildRecords,
         ISeriesBugTarget)
 
     classProvides(ISourcePackageFactory)
@@ -251,7 +245,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         clauses.append(
                 """SourcePackagePublishingHistory.sourcepackagerelease =
                    SourcePackageRelease.id AND
-                   SourcePackageRelease.sourcepackagename = %s AND
+                   SourcePackagePublishingHistory.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distroseries = %s AND
                    SourcePackagePublishingHistory.archive IN %s
                 """ % sqlvalues(
@@ -386,21 +380,22 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
         The results are ordered by descending version.
         """
-        subselect = Select(
-            SourcePackageRelease.id, And(
+        return IStore(SourcePackageRelease).using(
+            SourcePackageRelease,
+            Join(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id)
+            ).find(
+                SourcePackageRelease,
+                SourcePackagePublishingHistory.archiveID.is_in(
+                    self.distribution.all_distro_archive_ids),
                 SourcePackagePublishingHistory.distroseries ==
                     self.distroseries,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagename ==
-                    self.sourcepackagename,
-                SourcePackagePublishingHistory.archiveID.is_in(
-                    self.distribution.all_distro_archive_ids)))
-
-        return IStore(SourcePackageRelease).find(
-            SourcePackageRelease,
-            SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
-                SourcePackageRelease.version))
+                SourcePackagePublishingHistory.sourcepackagename ==
+                    self.sourcepackagename
+            ).config(distinct=True).order_by(
+                Desc(SourcePackageRelease.version))
 
     @property
     def name(self):
@@ -522,11 +517,6 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             And(BugSummary.distroseries == self.distroseries,
                 BugSummary.sourcepackagename == self.sourcepackagename),
             user, tag_limit=tag_limit, include_tags=include_tags)
-
-    @property
-    def max_bug_heat(self):
-        """See `IHasBugs`."""
-        return self.distribution_sourcepackage.max_bug_heat
 
     @property
     def drivers(self):
@@ -655,7 +645,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         condition_clauses = ["""
         BinaryPackageBuild.source_package_release =
             SourcePackageRelease.id AND
-        SourcePackageRelease.sourcepackagename = %s AND
+        SourcePackagePublishingHistory.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =

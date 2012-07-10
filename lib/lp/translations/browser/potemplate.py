@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401
 
@@ -43,7 +43,11 @@ from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
-from lp.app.browser.launchpadform import ReturnToReferrerMixin
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    ReturnToReferrerMixin,
+    )
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (
     service_uses_launchpad,
@@ -62,12 +66,9 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.helpers import is_tar_filename
 from lp.services.webapp import (
-    action,
     canonical_url,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadView,
     Link,
     Navigation,
     NavigationMenu,
@@ -80,6 +81,10 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     )
 from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import (
+    LaunchpadView,
+    RedirectionView,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
@@ -228,15 +233,11 @@ class POTemplateMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
-class POTemplateSubsetView:
+class POTemplateSubsetView(RedirectionView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        # We are not using this context directly, only for traversals.
-        self.request.response.redirect('../+translations')
+        super(POTemplateSubsetView, self).__init__(
+            '../+translations', request)
 
 
 class POTemplateView(LaunchpadView,
@@ -968,7 +969,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
                 SourcePackageName.id == POTemplate.sourcepackagenameID))
 
         return join.select(POTemplate, Packaging, ProductSeries, Product,
-            OtherTemplate, SourcePackageName)
+            OtherTemplate, SourcePackageName).order_by(
+                SourcePackageName.name, POTemplate.priority, POTemplate.name)
 
     def rowCSSClass(self, template):
         if template.iscurrent:
@@ -1010,7 +1012,9 @@ class BaseSeriesTemplatesView(LaunchpadView):
         escaped_source = cgi.escape(sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
-        edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
+        edit_link = (
+            '<a class="sprite edit action-icon" href="%s">Edit</a>' %
+            details_url)
 
         # If all the conditions are met for sharing...
         if packaging and upstream and other_template is not None:

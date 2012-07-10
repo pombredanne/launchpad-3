@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,11 +12,9 @@ import unittest
 from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.database.sqlbase import flush_database_updates
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.querydistro import LpQueryDistro
 from lp.testing.layers import (
     LaunchpadLayer,
     LaunchpadZopelessLayer,
@@ -50,15 +48,15 @@ class TestLpQueryDistroScript(unittest.TestCase):
         Check that:
          * return code is ZERO,
          * standard error is empty
-         * standard output contains only the 'current distroseries' name
+         * standard output contains only the 'supported distroseries' names
         """
         returncode, out, err = self.runLpQueryDistro(
-            extra_args=['current'])
+            extra_args=['supported'])
 
         self.assertEqual(
             0, returncode, "\nScript Failed:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
-        self.assertEqual(out.strip(), 'warty')
+        self.assertEqual(out.strip(), 'hoary warty')
         self.assertEqual(err.strip(), '')
 
     def testMissingAction(self):
@@ -108,7 +106,7 @@ class TestLpQueryDistroScript(unittest.TestCase):
          * standard error contains additional information about the failure.
         """
         returncode, out, err = self.runLpQueryDistro(
-            extra_args=['-s', 'hoary', 'current'])
+            extra_args=['-s', 'warty', 'supported'])
 
         self.assertEqual(
             1, returncode,
@@ -140,33 +138,6 @@ class TestLpQueryDistro(unittest.TestCase):
         """
         self.test_output = '%s' % args
 
-    def testSuccessfullyAction(self):
-        """Check if the 'current' action is executed sucessfully."""
-        helper = self.getLpQueryDistro(test_args=['current'])
-        helper.runAction(presenter=self.presenter)
-        warty = self.ubuntu['warty']
-        self.assertEqual(warty.status.name, 'CURRENT')
-        self.assertEqual(helper.location.distribution.name, u'ubuntu')
-        self.assertEqual(self.test_output, u'warty')
-
-    def testDevelopmentAndFrozenDistroSeries(self):
-        """The 'development' action should cope with FROZEN distroseries."""
-        helper = self.getLpQueryDistro(test_args=['development'])
-        helper.runAction(presenter=self.presenter)
-        hoary = self.ubuntu['hoary']
-        self.assertEqual(hoary.status.name, 'DEVELOPMENT')
-        self.assertEqual(helper.location.distribution.name, u'ubuntu')
-        self.assertEqual(self.test_output, u'hoary')
-
-        hoary.status = SeriesStatus.FROZEN
-        flush_database_updates()
-
-        helper = self.getLpQueryDistro(test_args=['development'])
-        helper.runAction(presenter=self.presenter)
-        self.assertEqual(hoary.status.name, 'FROZEN')
-        self.assertEqual(helper.location.distribution.name, u'ubuntu')
-        self.assertEqual(self.test_output, u'hoary')
-
     def testUnknownAction(self):
         """'runAction' should fail for an unknown action."""
         helper = self.getLpQueryDistro(test_args=['boom'])
@@ -185,7 +156,8 @@ class TestLpQueryDistro(unittest.TestCase):
         Some actions do not allow passing 'suite'.
         See testActionswithDefinedSuite for further information.
         """
-        helper = self.getLpQueryDistro(test_args=['-s', 'hoary', 'current'])
+        helper = self.getLpQueryDistro(
+            test_args=['-s', 'warty', 'supported'])
         self.assertRaises(LaunchpadScriptFailure,
                           helper.runAction, self.presenter)
 
@@ -213,23 +185,12 @@ class TestLpQueryDistro(unittest.TestCase):
     def testActionsWithUndefinedSuite(self):
         """Check the actions supposed to work with undefined suite.
 
-        Only 'current', 'development' and 'supported' work with undefined
-        suite.
-        The other actions ('archs', 'official_arch', 'nominated_arch_indep')
-        will assume the CURRENT distroseries in context.
+        Only 'supported' works with undefined suite.
         """
         helper = self.getLpQueryDistro(test_args=[])
         helper._buildLocation()
 
-        self.assertEqual(helper.current, 'warty')
-        self.assertEqual(helper.development, 'hoary')
         self.assertEqual(helper.supported, 'hoary warty')
-        self.assertEqual(helper.pending_suites, 'warty')
-        self.assertEqual(helper.archs, 'hppa i386')
-        self.assertEqual(helper.official_archs, 'i386')
-        self.assertEqual(helper.nominated_arch_indep, 'i386')
-        self.assertEqual(helper.pocket_suffixes,
-                         '-backports -proposed -security -updates')
 
     def assertAttributeRaisesScriptFailure(self, obj, attr_name):
         """Asserts if accessing the given attribute name fails.
@@ -242,20 +203,10 @@ class TestLpQueryDistro(unittest.TestCase):
     def testActionsWithDefinedSuite(self):
         """Opposite of  testActionsWithUndefinedSuite.
 
-        Only some actions ('archs', 'official_arch', 'nominated_arch_indep',
-        and pocket_suffixes) work with defined suite, the other actions
-        ('current', 'development' and 'supported') will raise
-        LaunchpadScriptError if the suite is defined.
+        The 'supported' action will raise LaunchpadScriptError if the suite
+        is defined.
         """
         helper = self.getLpQueryDistro(test_args=['-s', 'warty'])
         helper._buildLocation()
 
-        self.assertAttributeRaisesScriptFailure(helper, 'current')
-        self.assertAttributeRaisesScriptFailure(helper, 'development')
         self.assertAttributeRaisesScriptFailure(helper, 'supported')
-        self.assertAttributeRaisesScriptFailure(helper, 'pending_suites')
-        self.assertEqual(helper.archs, 'hppa i386')
-        self.assertEqual(helper.official_archs, 'i386')
-        self.assertEqual(helper.nominated_arch_indep, 'i386')
-        self.assertEqual(helper.pocket_suffixes,
-                         '-backports -proposed -security -updates')

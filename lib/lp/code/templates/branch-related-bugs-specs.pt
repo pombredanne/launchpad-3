@@ -15,7 +15,7 @@
               tal:define="show_edit show_edit|Nothing"
               tal:attributes="id string:buglink-${bugtask/bug/id}"
               class="bug-branch-summary">
-            <tal:buglink content="structure bugtask/fmt:link" />
+            <tal:buglink content="structure bugtask/fmt:link:bugs" />
             <tal:buglink-edit condition="show_edit|nothing">
               <a title="Remove link"
                  class="delete-buglink"
@@ -50,12 +50,10 @@
                       show_edit python: show_edit and has_edit_permission;
                       spec spec_branch/specification;"
           class="spec-branch-summary">
-          <tal:link replace="structure spec/fmt:link" />
+          <tal:link replace="structure spec/fmt:link:blueprints" />
           <tal:show-edit condition="show_edit|nothing">
-            <a tal:attributes="href spec_branch/fmt:url;
-                               onclick string:return switchSpecBranchFormAndSummary('${spec_branch/id}')">
-              edit<img src="/@@/edit"/>
-            </a>
+            <a class="sprite edit action-icon"
+              tal:attributes="href spec_branch/fmt:url;">Edit</a>
           </tal:show-edit>
         </li>
 
@@ -73,12 +71,7 @@
     string:&lt;script id='branchlink-script' type='text/javascript'&gt;" />
     <!--
 
-    LPS.use('io-base', 'lp.code.branch.bugspeclinks', function(Y) {
-
-    if(Y.UA.ie) {
-        return;
-    }
-
+    LPJS.use('io-base', 'lp.code.branch.bugspeclinks', function(Y) {
     Y.on('domready', function() {
         var logged_in = LP.links['me'] !== undefined;
 

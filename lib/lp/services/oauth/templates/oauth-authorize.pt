@@ -3,13 +3,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
   <div class="top-portlet" metal:fill-slot="main" tal:define="token view/token">
     <tal:no-token condition="not:token">
-      <h1>Unable to identify application</h1>
+      <h2>Unable to identify application</h2>
       <p>
         The information provided by the remote application was incorrect or
         incomplete. Because of that we were unable to identify the
@@ -28,7 +28,7 @@
           <div metal:fill-slot="extra_top">
 
            <tal:desktop-integration-token condition="token/consumer/is_integrated_desktop">
-             <h1>Confirm Computer Access</h1>
+             <h2>Confirm Computer Access</h2>
              <p>The
                <tal:desktop replace="structure
                token/consumer/integrated_desktop_type" />
@@ -78,9 +78,9 @@
            </tal:desktop-integration-token>
 
            <tal:web-integration-token condition="not:token/consumer/is_integrated_desktop">
-             <h1>Integrating
+             <h2>Integrating
                <tal:hostname replace="structure token/consumer/key" />
-               into your Launchpad account</h1>
+               into your Launchpad account</h2>
 
              <p>The application identified as
                <strong tal:content="token/consumer/key">consumer</strong>
@@ -134,7 +134,7 @@
 
           <tal:unauthorized
              condition="view/token/permission/enumvalue:UNAUTHORIZED">
-            <h1>You decided against desktop integration</h1>
+            <h2>You decided against desktop integration</h2>
 
             <p>
               You decided not to give
@@ -147,7 +147,7 @@
 
           <tal:authorized
              condition="not:view/token/permission/enumvalue:UNAUTHORIZED">
-            <h1>Almost finished ...</h1>
+            <h2>Almost finished ...</h2>
 
             <p>
               The
@@ -179,7 +179,7 @@
 
           <tal:unauthorized
              condition="view/token/permission/enumvalue:UNAUTHORIZED">
-            <h1>Access not granted to application</h1>
+            <h2>Access not granted to application</h2>
             <p>
               The application identified as
               <strong tal:content="view/token/consumer/key">key</strong> has not
@@ -189,7 +189,7 @@
 
           <tal:authorized
              condition="not:view/token/permission/enumvalue:UNAUTHORIZED">
-            <h1>Almost finished ...</h1>
+            <h2>Almost finished ...</h2>
             <p>
               To finish authorizing the application identified as
               <strong tal:content="view/token/consumer/key">key</strong>

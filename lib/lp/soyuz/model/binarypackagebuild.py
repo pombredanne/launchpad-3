@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -90,12 +90,10 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
-from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadBuild,
@@ -131,6 +129,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return results.one()
 
     def _getLatestPublication(self):
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         store = Store.of(self)
         results = store.find(
             SourcePackagePublishingHistory,
@@ -154,6 +153,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     @property
     def current_source_publication(self):
         """See `IBuild`."""
+        from lp.soyuz.interfaces.publishing import active_publishing_status
         latest_publication = self._getLatestPublication()
         if (latest_publication is not None and
             latest_publication.status in active_publishing_status):
@@ -327,9 +327,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def can_be_retried(self):
         """See `IBuild`."""
         # First check that the slave scanner would pick up the build record
-        # if we reset it.  PPA and Partner builds are always ok.
-        if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            not self.distro_series.canUploadToPocket(self.pocket)):
+        # if we reset it.
+        if not self.archive.canModifySuite(self.distro_series, self.pocket):
             # The slave scanner would not pick this up, so it cannot be
             # re-tried.
             return False
@@ -443,7 +442,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def _checkDependencyVersion(self, available, required, relation):
         """Return True if the available version satisfies the context."""
         # This dict maps the package version relationship syntax in lambda
-        # functions which returns boolean according the results of
+        # functions which returns boolean according to the results of
         # apt_pkg.version_compare function (see the order above).
         # For further information about pkg relationship syntax see:
         #
@@ -688,7 +687,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 recipients = recipients.union(
                     get_contact_email_addresses(dsc_key.owner))
 
-        # Modify notification contents according the targeted archive.
+        # Modify notification contents according to the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
         # We only send build-notifications to 'buildd-admin' celebrity for
         # main archive candidates.
@@ -856,7 +855,7 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         try:
             return BinaryPackageBuild.get(id)
-        except SQLObjectNotFound, e:
+        except SQLObjectNotFound as e:
             raise NotFoundError(str(e))
 
     def getByBuildFarmJob(self, build_farm_job):
@@ -982,7 +981,7 @@ class BinaryPackageBuildSet:
                         SourcePackageRelease.id AND
                     SourcePackageRelease.sourcepackagename =
                         SourcePackageName.id
-                    AND SourcepackageName.name LIKE '%%' || %s || '%%'
+                    AND SourcepackageName.name LIKE '%%%%' || %s || '%%%%'
                 ''' % quote_like(name))
             else:
                 queries.append('''
@@ -1180,7 +1179,7 @@ class BinaryPackageBuildSet:
             build = IMasterObject(build)
             try:
                 build.updateDependencies()
-            except UnparsableDependencies, e:
+            except UnparsableDependencies as e:
                 logger.error(e)
                 continue
 

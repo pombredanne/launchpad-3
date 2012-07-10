@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Contents files generator."""
@@ -15,7 +15,8 @@ from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.command_spawner import (
     CommandSpawner,
     OutputLineHandler,
@@ -31,7 +32,6 @@ from lp.services.webapp.dbpolicy import (
     DatabaseBlockedPolicy,
     SlaveOnlyDatabasePolicy,
     )
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 
 
 COMPONENTS = [
@@ -52,14 +52,6 @@ def differ_in_content(one_file, other_file):
             file(one_file).read() != file(other_file).read())
     else:
         return False
-
-
-class StoreArgument:
-    """Local helper for receiving `LpQueryDistro` results."""
-
-    def __call__(self, argument):
-        """Store call argument."""
-        self.argument = argument
 
 
 def get_template(template_name):
@@ -150,44 +142,36 @@ class GenerateContentsFiles(LaunchpadCronScript):
             if not file_exists(path):
                 os.makedirs(path)
 
-    def queryDistro(self, request, options=None):
-        """Call the query-distro script about `self.distribution`."""
-        args = ['-d', self.distribution.name]
-        if options is not None:
-            args += options
-        args.append(request)
-        query_distro = LpQueryDistro(test_args=args, logger=self.logger)
-        query_distro.txn = self.txn
-        receiver = StoreArgument()
-        query_distro.runAction(presenter=receiver)
-        return receiver.argument
+    def getSupportedSeries(self):
+        """Return suites that are supported in this distribution.
+
+        "Supported" means not EXPERIMENTAL or OBSOLETE.
+        """
+        unsupported_status = (SeriesStatus.EXPERIMENTAL,
+                              SeriesStatus.OBSOLETE)
+        for series in self.distribution:
+            if series.status not in unsupported_status:
+                yield series
 
     def getSuites(self):
-        """Query the distribution's suites."""
-        return self.queryDistro("supported").split()
-
-    def getPockets(self):
         """Return suites that are actually supported in this distribution."""
-        pockets = []
-        pocket_suffixes = pocketsuffix.values()
-        for suite in self.getSuites():
-            for pocket_suffix in pocket_suffixes:
-                pocket = suite + pocket_suffix
-                if file_exists(os.path.join(self.config.distsroot, pocket)):
-                    pockets.append(pocket)
-        return pockets
+        for series in self.getSupportedSeries():
+            for pocket in PackagePublishingPocket.items:
+                suite = series.getSuite(pocket)
+                if file_exists(os.path.join(self.config.distsroot, suite)):
+                    yield suite
 
-    def getArchs(self):
-        """Query architectures supported by the distribution."""
-        devel = self.queryDistro("development")
-        return self.queryDistro("archs", options=["-s", devel]).split()
+    def getArchs(self, suite):
+        """Query architectures supported by the suite."""
+        series, _ = self.distribution.getDistroSeriesAndPocket(suite)
+        return [arch.architecturetag for arch in series.architectures]
 
     def getDirs(self, archs):
         """Subdirectories needed for each component."""
         return ['source', 'debian-installer'] + [
             'binary-%s' % arch for arch in archs]
 
-    def writeAptContentsConf(self, suites, archs):
+    def writeAptContentsConf(self, suites):
         """Write apt-contents.conf file."""
         output_dirname = '%s-misc' % self.distribution.name
         output_path = os.path.join(
@@ -195,7 +179,6 @@ class GenerateContentsFiles(LaunchpadCronScript):
         output_file = file(output_path, 'w')
 
         parameters = {
-            'architectures': ' '.join(archs),
             'content_archive': self.content_archive,
             'distribution': self.distribution.name,
         }
@@ -206,15 +189,16 @@ class GenerateContentsFiles(LaunchpadCronScript):
         dist_template = file(get_template('apt_conf_dist.template')).read()
         for suite in suites:
             parameters['suite'] = suite
+            parameters['architectures'] = ' '.join(self.getArchs(suite))
             output_file.write(dist_template % parameters)
 
         output_file.close()
 
-    def createComponentDirs(self, suites, archs):
+    def createComponentDirs(self, suites):
         """Create the content archive's tree for all of its components."""
         for suite in suites:
             for component in COMPONENTS:
-                for directory in self.getDirs(archs):
+                for directory in self.getDirs(self.getArchs(suite)):
                     path = os.path.join(
                         self.content_archive, self.distribution.name, 'dists',
                         suite, component, directory)
@@ -309,11 +293,11 @@ class GenerateContentsFiles(LaunchpadCronScript):
             self.logger.debug(
                 "Skipping unmodified Contents file for %s/%s.", suite, arch)
 
-    def updateContentsFiles(self, suites, archs):
+    def updateContentsFiles(self, suites):
         """Update all Contents files that have changed."""
         self.logger.debug("Comparing contents files with public tree.")
         for suite in suites:
-            for arch in archs:
+            for arch in self.getArchs(suite):
                 self.updateContentsFile(suite, arch)
 
     def setUp(self):
@@ -332,10 +316,9 @@ class GenerateContentsFiles(LaunchpadCronScript):
     def process(self):
         """Do the bulk of the work."""
         self.setUp()
-        suites = self.getPockets()
-        archs = self.getArchs()
-        self.writeAptContentsConf(suites, archs)
-        self.createComponentDirs(suites, archs)
+        suites = list(self.getSuites())
+        self.writeAptContentsConf(suites)
+        self.createComponentDirs(suites)
 
         overrideroot = self.config.overrideroot
         distro_name = self.distribution.name
@@ -348,7 +331,7 @@ class GenerateContentsFiles(LaunchpadCronScript):
             self.generateContentsFiles(
                 overrideroot, distro_name, distro_title)
 
-        self.updateContentsFiles(suites, archs)
+        self.updateContentsFiles(suites)
 
     def main(self):
         """See `LaunchpadScript`."""

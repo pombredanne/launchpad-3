@@ -77,7 +77,7 @@ If the consumer key is empty, we respond with a 401 status.
     HTTP/1.1 401 Unauthorized
     ...
     WWW-Authenticate: OAuth realm="https://api.launchpad.net"
-    <BLANKLINE>
+    ...
 
 The only signature method supported is PLAINTEXT, which consists of the
 concatenated values of the consumer secret and token secret, separated

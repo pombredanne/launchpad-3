@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -128,7 +128,7 @@ class IPlainPackageCopyJobSource(IJobSource):
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
-               sponsored=None):
+               sponsored=None, unembargo=False):
         """Create a new `IPlainPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -146,11 +146,12 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param requester: The user requesting the copy.
         :param sponsored: The user who is being sponsored to make the copy.
             The person who is making this request then becomes the sponsor.
+        :param unembargo: See `do_copy`.
         """
 
     def createMultiple(target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
-                       include_binaries=False):
+                       include_binaries=False, unembargo=False):
         """Create multiple new `IPlainPackageCopyJob`s at once.
 
         :param target_distroseries: The `IDistroSeries` to which to copy the
@@ -161,6 +162,7 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param requester: The user requesting the copy.
         :param copy_policy: Applicable `PackageCopyPolicy`.
         :param include_binaries: As in `do_copy`.
+        :param unembargo: As in `do_copy`.
         :return: An iterable of `PackageCopyJob` ids.
         """
 
@@ -199,6 +201,9 @@ class IPlainPackageCopyJob(IRunnableJob):
         title=_("Target package publishing pocket"), required=True,
         readonly=True)
 
+    error_message = Int(
+        title=_("Error message"), required=True, readonly=True)
+
     include_binaries = Bool(
         title=_("Copy binaries"),
         required=False, readonly=True)
@@ -207,8 +212,15 @@ class IPlainPackageCopyJob(IRunnableJob):
         schema=IPerson, title=_('Sponsored Person'),
         required=False, readonly=True)
 
+    unembargo = Bool(
+        title=_("Unembargo restricted files"),
+        required=False, readonly=True)
+
     def addSourceOverride(override):
         """Add an `ISourceOverride` to the metadata."""
+
+    def setErrorMessage(message):
+        """Set the error message."""
 
     def getSourceOverride():
         """Get an `ISourceOverride` from the metadata."""

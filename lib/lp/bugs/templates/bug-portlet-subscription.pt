@@ -42,16 +42,16 @@
                   'hidden' if not view.user_should_see_mute_link else None"
             id="mute-link-container">
           <span tal:replace="structure context_menu/mute_subscription/render"
-          />&nbsp;<a target="help" class="sprite maybe mute-help"
+          /><a target="help" class="sprite maybe action-icon mute-help"
               href="/+help-bugs/subscription-mute.html"
-            >&nbsp;<span class="invisible-link">Mute help</span></a>
+            >Mute help</a>
         </div>
       </li>
       <li tal:content="structure context_menu/editsubscriptions/render" />
     </ul>
   </div>
   <script type="text/javascript">
-    LPS.use('io-base', 'node',
+    LPJS.use('io-base', 'node',
             'lp.bugs.bugtask_index.portlets.subscription', function(Y) {
         // Must be done inline here to ensure the load event fires.
         // This is a work around for a YUI3 issue with event handling.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'HasMilestonesMixin',
     'Milestone',
+    'MilestoneData',
     'MilestoneSet',
     'ProjectMilestone',
     'milestone_sort_key',
@@ -49,6 +50,7 @@ from lp.bugs.model.structuralsubscription import (
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
+    IMilestoneData,
     IMilestoneSet,
     IProjectGroupMilestone,
     )
@@ -129,11 +131,47 @@ class MultipleProductReleases(Exception):
         super(MultipleProductReleases, self).__init__(msg)
 
 
-class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
+class MilestoneData:
+    implements(IMilestoneData)
+
+    @property
+    def displayname(self):
+        """See IMilestone."""
+        return "%s %s" % (self.target.displayname, self.name)
+
+    @property
+    def title(self):
+        raise NotImplementedError
+
+    @property
+    def specifications(self):
+        raise NotImplementedError
+
+    def bugtasks(self, user):
+        """The list of non-conjoined bugtasks targeted to this milestone."""
+        # Put the results in a list so that iterating over it multiple
+        # times in this method does not make multiple queries.
+        non_conjoined_slaves = list(
+            getUtility(IBugTaskSet).getPrecachedNonConjoinedBugTasks(
+                user, self))
+        return non_conjoined_slaves
+
+
+class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
+                HasBugsBase):
     implements(IHasBugs, IMilestone, IBugSummaryDimension)
 
+    active = BoolCol(notNull=True, default=True)
+
+    # XXX: EdwinGrubbs 2009-02-06 bug=326384:
+    # The Milestone.dateexpected should be changed into a date column,
+    # since the class defines the field as a DateCol, so that a list of
+    # milestones can't have some dateexpected attributes that are
+    # datetimes and others that are dates, which can't be compared.
+    dateexpected = DateCol(notNull=False, default=None)
+
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
-    # Milestones should be associated with productseries/distroseriess
+    # Milestones should be associated with productseries/distroseries
     # so these columns are not needed.
     product = ForeignKey(dbName='product',
         foreignKey='Product', default=None)
@@ -145,21 +183,21 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
-    # XXX: EdwinGrubbs 2009-02-06 bug=326384:
-    # The Milestone.dateexpected should be changed into a date column,
-    # since the class defines the field as a DateCol, so that a list of
-    # milestones can't have some dateexpected attributes that are
-    # datetimes and others that are dates, which can't be compared.
-    dateexpected = DateCol(notNull=False, default=None)
-    active = BoolCol(notNull=True, default=True)
     summary = StringCol(notNull=False, default=None)
     code_name = StringCol(dbName='codename', notNull=False, default=None)
 
-    # joins
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
         orderBy=['-priority', 'definition_status',
                  'implementation_status', 'title'],
         prejoins=['assignee'])
+
+    @property
+    def target(self):
+        """See IMilestone."""
+        if self.product:
+            return self.product
+        elif self.distribution:
+            return self.distribution
 
     @property
     def product_release(self):
@@ -173,25 +211,12 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             return releases[0]
 
     @property
-    def target(self):
-        """See IMilestone."""
-        if self.product:
-            return self.product
-        elif self.distribution:
-            return self.distribution
-
-    @property
     def series_target(self):
         """See IMilestone."""
         if self.productseries:
             return self.productseries
         elif self.distroseries:
             return self.distroseries
-
-    @property
-    def displayname(self):
-        """See IMilestone."""
-        return "%s %s" % (self.target.displayname, self.name)
 
     @property
     def title(self):
@@ -255,6 +280,43 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         from lp.bugs.model.bugsummary import BugSummary
         return BugSummary.milestone_id == self.id
 
+    def setTags(self, tags, user):
+        """See IMilestone."""
+        # Circular reference prevention.
+        from lp.registry.model.milestonetag import MilestoneTag
+        store = Store.of(self)
+        if tags:
+            current_tags = set(self.getTags())
+            new_tags = set(tags)
+            if new_tags == current_tags:
+                return
+            # Removing deleted tags.
+            to_remove = current_tags.difference(new_tags)
+            if to_remove:
+                store.find(
+                    MilestoneTag, MilestoneTag.tag.is_in(to_remove)).remove()
+            # Adding new tags.
+            for tag in new_tags.difference(current_tags):
+                store.add(MilestoneTag(self, tag, user))
+        else:
+            store.find(
+                MilestoneTag, MilestoneTag.milestone_id == self.id).remove()
+
+    def getTagsData(self):
+        """See IMilestone."""
+        # Prevent circular references.
+        from lp.registry.model.milestonetag import MilestoneTag
+        store = Store.of(self)
+        return store.find(
+            MilestoneTag, MilestoneTag.milestone_id == self.id
+            ).order_by(MilestoneTag.tag)
+
+    def getTags(self):
+        """See IMilestone."""
+        # Prevent circular references.
+        from lp.registry.model.milestonetag import MilestoneTag
+        return list(self.getTagsData().values(MilestoneTag.tag))
+
 
 class MilestoneSet:
     implements(IMilestoneSet)
@@ -300,11 +362,11 @@ class MilestoneSet:
         return Milestone.selectBy(active=True, orderBy='id')
 
 
-class ProjectMilestone(HasBugsBase):
+class ProjectMilestone(MilestoneData, HasBugsBase):
     """A virtual milestone implementation for project.
 
     The current database schema has no formal concept of milestones related to
-    projects. A milestone named `milestone` is considererd to belong to
+    projects. A milestone named `milestone` is considered to belong to
     a project if the project contains at least one product with a milestone
     of the same name. A project milestone is considered to be active if at
     least one product milestone with the same name is active.  The
@@ -315,12 +377,13 @@ class ProjectMilestone(HasBugsBase):
     implements(IProjectGroupMilestone)
 
     def __init__(self, target, name, dateexpected, active):
-        self.name = name
         self.code_name = None
         # The id is necessary for generating a unique memcache key
         # in a page template loop. The ProjectMilestone.id is passed
         # in as the third argument to the "cache" TALes.
         self.id = 'ProjectGroup:%s/Milestone:%s' % (target.name, name)
+        self.name = name
+        self.target = target
         self.code_name = None
         self.product = None
         self.distribution = None
@@ -329,7 +392,6 @@ class ProjectMilestone(HasBugsBase):
         self.product_release = None
         self.dateexpected = dateexpected
         self.active = active
-        self.target = target
         self.series_target = None
         self.summary = None
 

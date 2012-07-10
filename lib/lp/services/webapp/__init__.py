@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The webapp package contains infrastructure that is common across Launchpad
@@ -9,18 +9,15 @@ This module also has an API for use by the application.
 __metaclass__ = type
 
 __all__ = [
-    'action',
     'ApplicationMenu',
     'canonical_name',
     'canonical_url',
     'ContextMenu',
-    'custom_widget',
+    'available_with_permission',
     'enabled_with_permission',
     'expand_numbers',
     'FacetMenu',
     'GetitemNavigation',
-    'LaunchpadEditFormView',
-    'LaunchpadFormView',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
     'Link',
@@ -28,27 +25,18 @@ __all__ = [
     'NavigationMenu',
     'nearest',
     'redirection',
-    'safe_action',
     'sorted_dotted_numbers',
     'sorted_version_numbers',
     'StandardLaunchpadFacets',
     'stepthrough',
     'stepto',
     'structured',
-    'UnsafeFormGetSubmissionError',
     'urlappend',
     'urlparse',
     'urlsplit',
     'Utf8PreferredCharsets',
     ]
 
-from lp.services.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    safe_action,
-    )
 from lp.services.webapp.menu import (
     ApplicationMenu,
     ContextMenu,

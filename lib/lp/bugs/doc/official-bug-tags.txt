@@ -43,8 +43,7 @@ But bug tags must be unique for each product and distribution.
     <lp.bugs.model.bugtarget.OfficialBugTag object at...
     >>> store.flush()
     Traceback (most recent call last):
-    IntegrityError: duplicate key value violates unique constraint
-    "officialbugtag__distribution__tag__key"
+    IntegrityError: ...
 
     >>> import transaction
     >>> transaction.abort()

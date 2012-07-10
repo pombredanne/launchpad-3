@@ -289,7 +289,7 @@ This is true even if its project has a bug tracker specified.
 
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> bug_tracker_set = getUtility(IBugTrackerSet)
     >>> gnome_bugzilla = bug_tracker_set.getByName('gnome-bugzilla')
     >>> firefox.project.bugtracker = gnome_bugzilla
@@ -368,27 +368,6 @@ When creating a product, a default product series is created for it:
     >>> trunk = product.series[0]
     >>> print trunk.name
     trunk
-
-A product's licenses is now being tracked. Previously registered products
-may not have a license set, so an empty tuple is valid. If the licenses
-or license_info attributes are changed, the project_reviewed is reset
-to false.
-
-    >>> login('admin@canonical.com')
-    >>> productset.getByName('jokosher').licenses == ()
-    True
-    >>> product.licenses
-    (<...License.GNU_GPL_V2...>,)
-    >>> product.project_reviewed = True
-    >>> product.licenses = (License.GNU_GPL_V2, License.GNU_LGPL_V2_1)
-    >>> product.licenses
-    (<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>)
-    >>> product.project_reviewed
-    False
-    >>> product.project_reviewed = True
-    >>> product.license_info = 'foo'
-    >>> product.project_reviewed
-    False
 
 This series is set as the development focus for the product:
 
@@ -743,7 +722,7 @@ A product owner can be changed by the current owner.
     >>> print mark.name
     mark
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> firefox.owner = mark
 
     >>> print firefox.owner.name

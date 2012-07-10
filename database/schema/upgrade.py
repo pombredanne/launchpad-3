@@ -33,6 +33,7 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
+from lp.services.utils import total_seconds
 import replication.helpers
 
 
@@ -43,7 +44,7 @@ def main():
     con = connect()
     patches = get_patchlist(con)
 
-    if replication.helpers.slony_installed(con):
+    if not options.ignore_slony and replication.helpers.slony_installed(con):
         con.close()
         if options.commit is False:
             parser.error("--dry-run does not make sense with replicated db")
@@ -112,11 +113,6 @@ FIX_PATCH_TIMES_POST_SQL = dedent("""\
     """)
 
 
-def to_seconds(td):
-    """Convert a timedelta to seconds."""
-    return td.days * (24 * 60 * 60) + td.seconds + td.microseconds / 1000000.0
-
-
 def report_patch_times(con, todays_patches):
     """Report how long it took to apply the given patches."""
     cur = con.cursor()
@@ -135,7 +131,7 @@ def report_patch_times(con, todays_patches):
     for major, minor, patch, start_time, db_time in cur.fetchall():
         if (major, minor, patch) in todays_patches:
             continue
-        db_time = to_seconds(db_time)
+        db_time = total_seconds(db_time)
         start_time = start_time.strftime('%Y-%m-%d')
         log.info(
             "%d-%02d-%d applied %s in %0.1f seconds"
@@ -157,7 +153,7 @@ def report_patch_times(con, todays_patches):
             continue
         log.info(
             "%d-%02d-%d applied just now in %0.1f seconds",
-            major, minor, patch, to_seconds(db_time))
+            major, minor, patch, total_seconds(db_time))
 
 
 def apply_patches_normal(con):
@@ -613,14 +609,14 @@ if __name__ == '__main__':
     db_options(parser)
     logger_options(parser)
     parser.add_option(
-            "-n", "--dry-run", dest="commit", default=True,
-            action="store_false", help="Don't actually commit changes"
-            )
+        "-n", "--dry-run", dest="commit", default=True,
+        action="store_false", help="Don't actually commit changes")
     parser.add_option(
-            "--partial", dest="partial", default=False,
-            action="store_true",
-            help="Commit after applying each patch",
-            )
+        "--partial", dest="partial", default=False,
+        action="store_true", help="Commit after applying each patch")
+    parser.add_option(
+        "--ignore-slony", dest="ignore_slony", default=False,
+        action="store_true", help="Ignore any Slony installations")
     (options, args) = parser.parse_args()
 
     if args:

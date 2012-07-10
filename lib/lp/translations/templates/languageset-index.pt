@@ -8,15 +8,10 @@
 
   <body>
     <div metal:fill-slot="head_epilogue">
-      <script
-        type="text/javascript"
-        tal:condition="devmode"
-        tal:attributes="src string:${icingroot}/build/worlddata/languages.js">
-      </script>
       <script type="text/javascript">
-          LPS.use('languages', 'event', function(Y) {
+          LPJS.use('lp.languages', 'event', function(Y) {
               Y.on('domready', function(e) {
-                  Y.languages.initialize_languages_page(Y);
+                  Y.lp.languages.initialize_languages_page(Y);
               });
           });
       </script>
@@ -80,7 +75,7 @@
             <a tal:attributes="href context/fmt:url/+add"
                  class="add sprite">Add new language</a>
           </p>
-          <p id="no_filter_matches" class="unseen">
+          <p id="no_filter_matches" class="hidden">
             No languages are matching your filter.
           </p>
           <ul id="all-languages" class="three-column-list">

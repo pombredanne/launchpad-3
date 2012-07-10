@@ -159,7 +159,7 @@ clicking the 'Propose Answer' button.
     ...     "support enabled. You can use apt-get or adept to upgrade.")
     >>> support_browser.getControl('Propose Answer').click()
 
-This moves the the question to the Answered state and adds the answer to
+This moves the question to the Answered state and adds the answer to
 the end of the discussion:
 
     >>> print find_request_status(support_browser.contents)

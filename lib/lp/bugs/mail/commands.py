@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -46,6 +46,7 @@ from lp.bugs.interfaces.bugtask import (
     IllegalTarget,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -184,10 +185,13 @@ class PrivateEmailCommand(EmailCommand):
                 stop_processing=True)
 
         if isinstance(context, CreateBugParams):
-            if context.security_related:
-                # BugSet.createBug() requires new security bugs to be private.
-                private = True
-            context.private = private
+            if private and (
+                context.information_type == InformationType.PUBLIC):
+                context.information_type = InformationType.USERDATA
+            elif (
+                context.information_type !=
+                InformationType.EMBARGOEDSECURITY):
+                context.information_type = InformationType.PUBLIC
             return context, current_event
 
         # Snapshot.
@@ -240,10 +244,8 @@ class SecurityEmailCommand(EmailCommand):
                 stop_processing=True)
 
         if isinstance(context, CreateBugParams):
-            context.security_related = security_related
             if security_related:
-                # BugSet.createBug() requires new security bugs to be private.
-                context.private = True
+                context.information_type = InformationType.EMBARGOEDSECURITY
             return context, current_event
 
         # Take a snapshot.
@@ -369,6 +371,7 @@ class SummaryEmailCommand(EditEmailCommand):
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
     RANK = 1
+    case_insensitive_args = False
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -430,7 +433,7 @@ class DuplicateEmailCommand(EmailCommand):
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
-        except ValidationError, error:
+        except ValidationError as error:
             raise EmailProcessingError(error.doc())
 
         context_snapshot = Snapshot(
@@ -449,6 +452,7 @@ class CVEEmailCommand(EmailCommand):
 
     _numberOfArguments = 1
     RANK = 5
+    case_insensitive_args = False
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -588,7 +592,7 @@ class AffectsEmailCommand(EmailCommand):
                 stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
-        except BugTargetNotFound, error:
+        except BugTargetNotFound as error:
             raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
 
@@ -614,7 +618,8 @@ class AffectsEmailCommand(EmailCommand):
             if bugtask is not None:
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IBugTask)
-                bugtask.transitionToTarget(bug_target)
+                bugtask.transitionToTarget(
+                    bug_target, getUtility(ILaunchBag).user)
                 event = ObjectModifiedEvent(
                     bugtask, bugtask_before_edit, ['sourcepackagename'])
 
@@ -812,6 +817,31 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
         return {self.name: dbitem}
 
 
+class InformationTypeEmailCommand(DBSchemaEditEmailCommand):
+    """Change the information type of a bug."""
+
+    implements(IBugEditEmailCommand)
+    dbschema = InformationType
+    RANK = 3
+
+    def convertArguments(self, context):
+        args = super(InformationTypeEmailCommand, self).convertArguments(
+            context)
+        return {'information_type': args['informationtype']}
+
+    def setAttributeValue(self, context, attr_name, attr_value):
+        """See EmailCommand."""
+        user = getUtility(ILaunchBag).user
+        if attr_value == InformationType.PROPRIETARY:
+            raise EmailProcessingError(
+                'Proprietary bugs are forbidden to be filed via the mail '
+                'interface.')
+        if isinstance(context, CreateBugParams):
+            context.information_type = attr_value
+        else:
+            context.transitionToInformationType(attr_value, user)
+
+
 class StatusEmailCommand(DBSchemaEditEmailCommand):
     """Changes a bug task's status."""
     dbschema = BugTaskStatus
@@ -899,6 +929,7 @@ class BugEmailCommands(EmailCommandCollection):
 
     _commands = {
         'bug': BugEmailCommand,
+        'informationtype': InformationTypeEmailCommand,
         'private': PrivateEmailCommand,
         'security': SecurityEmailCommand,
         'summary': SummaryEmailCommand,

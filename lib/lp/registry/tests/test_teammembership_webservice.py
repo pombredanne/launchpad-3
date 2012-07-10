@@ -29,7 +29,7 @@ class TestTeamMembershipTransitions(TestCaseWithFactory):
             name='some-team',
             owner=owner)
         membership_set = getUtility(ITeamMembershipSet)
-        membership = membership_set.new(
+        membership_set.new(
             self.person,
             self.team,
             TeamMembershipStatus.APPROVED,
@@ -43,7 +43,7 @@ class TestTeamMembershipTransitions(TestCaseWithFactory):
         team_membership = team.members_details[1]
         # The error in this instance should be a valueerror, b/c the
         # WADL used by launchpadlib will enforce the method args.
-        api_exception = self.assertRaises(
+        self.assertRaises(
             ValueError,
             team_membership.setStatus,
             status='NOTVALIDSTATUS')

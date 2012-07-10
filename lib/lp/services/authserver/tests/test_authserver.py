@@ -9,7 +9,10 @@ from zope.component import getUtility
 from zope.publisher.xmlrpc import TestRequest
 
 from lp.services.authserver.xmlrpc import AuthServerAPIView
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.xmlrpc import faults
 from lp.xmlrpc.interfaces import IPrivateApplication
@@ -48,8 +51,9 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
         # name of the key type (RSA or DSA) and the text of the keys under
         # 'keys' in the dict.
         new_person = self.factory.makePerson()
-        key = self.factory.makeSSHKey(person=new_person)
-        self.assertEqual(
-            dict(id=new_person.id, name=new_person.name,
-                 keys=[(key.keytype.title, key.keytext)]),
-            self.authserver.getUserAndSSHKeys(new_person.name))
+        with person_logged_in(new_person):
+            key = self.factory.makeSSHKey(person=new_person)
+            self.assertEqual(
+                dict(id=new_person.id, name=new_person.name,
+                     keys=[(key.keytype.title, key.keytext)]),
+                self.authserver.getUserAndSSHKeys(new_person.name))

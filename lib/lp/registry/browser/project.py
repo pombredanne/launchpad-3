@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Project-related View Classes"""
+from lp.registry.browser.pillar import PillarViewMixin
 
 __metaclass__ = type
 
@@ -29,6 +30,7 @@ __all__ = [
     'ProjectSpecificationsMenu',
     'ProjectView',
     ]
+
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
@@ -75,6 +77,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
+from lp.registry.browser.milestone import validate_tags
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.product import (
     ProductAddView,
@@ -87,6 +90,7 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSeries,
     IProjectGroupSet,
     )
+from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
@@ -129,6 +133,12 @@ class ProjectNavigation(Navigation,
     @stepthrough('+series')
     def traverse_series(self, series_name):
         return self.context.getSeries(series_name)
+
+    @stepthrough('+tags')
+    def traverse_tags(self, name):
+        tags = name.split(u',')
+        if validate_tags(tags):
+            return ProjectGroupMilestoneTag(self.context, tags)
 
 
 class ProjectSetNavigation(Navigation):
@@ -347,7 +357,7 @@ class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
         return Link('+filebug', text, icon='add')
 
 
-class ProjectView(HasAnnouncementsView, FeedsMixin):
+class ProjectView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
 
     implements(IProjectGroupActionMenu)
 
@@ -358,7 +368,7 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
             format_link(self.context.owner, empty_value="Not yet selected"),
             header='Change maintainer', edit_view='+reassign',
             step_title='Select a new maintainer',
-            null_display_value="Not yet selected")
+            null_display_value="Not yet selected", show_create_team=True)
 
     @property
     def driver_widget(self):
@@ -368,7 +378,7 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
             header='Change driver', edit_view='+driver',
             step_title='Select a new driver',
             null_display_value="Not yet selected",
-            help_link="/+help-registry/driver.html")
+            help_link="/+help-registry/driver.html", show_create_team=True)
 
     def initialize(self):
         super(ProjectView, self).initialize()
@@ -387,6 +397,11 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
         template may want to plan for a long list.
         """
         return self.context.products.count() > 10
+
+    @property
+    def project_group_milestone_tag(self):
+        """Return a ProjectGroupMilestoneTag based on this project."""
+        return ProjectGroupMilestoneTag(self.context, [])
 
 
 class ProjectEditView(LaunchpadEditFormView):

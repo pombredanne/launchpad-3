@@ -7,8 +7,8 @@ an external system running GNU Mailman.  The communication pattern is
 initiated by Mailman in all cases; in other words, Mailman polls Launchpad to
 see if there is any work for Mailman to do.
 
-    >>> # Note that this test is run multiple times, with the harness
-    >>> # providing `mailinglist_api` and `commit` for impedance matching.
+Note that this test is run multiple times, with the harness providing
+`mailinglist_api` and `commit` for impedance matching.
 
 
 Constructing the mailing lists
@@ -29,7 +29,7 @@ Mailing lists are always tied -- one-to-one -- to teams.
     >>> no_priv = person_set.getByName('no-priv')
     >>> team_one = factory.makeTeam(no_priv, name='team-one')
     >>> team_two = factory.makeTeam(no_priv, name='team-two')
-    >>> commit()
+    >>> transaction.commit()
 
 A team owner must request that a mailing list be created for their team.  When
 Mailman polls for actions, there will be mailing lists to create.
@@ -38,7 +38,7 @@ Mailman polls for actions, there will be mailing lists to create.
     >>> list_set = getUtility(IMailingListSet)
     >>> list_one = list_set.new(team_one)
     >>> list_two = list_set.new(team_two)
-    >>> commit()
+    >>> transaction.commit()
     >>> print list_one.status.name
     APPROVED
     >>> print list_two.status.name
@@ -85,7 +85,7 @@ for some reason.
     ...     'team-two': 'failure',
     ...     })
     True
-    >>> commit()
+    >>> transaction.commit()
 
 We can see that the statuses of the mailing lists have been updated in the
 database.
@@ -113,7 +113,7 @@ mailing lists.
     ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
     ...     visibility=PersonVisibility.PRIVATE)
     >>> list_private = list_set.new(team_private)
-    >>> commit()
+    >>> transaction.commit()
 
 Now there is another mailing list for Mailman to create.
 
@@ -125,7 +125,7 @@ Now there is another mailing list for Mailman to create.
     ...     'team-private': 'success',
     ...     })
     True
-    >>> commit()
+    >>> transaction.commit()
 
 
 Deactivating mailing lists
@@ -138,7 +138,7 @@ polls Launchpad.
 Now, say team one's owner wants to deactivate their list.
 
     >>> list_one.deactivate()
-    >>> commit()
+    >>> transaction.commit()
 
 This will show up in the actions pending for Mailman.
 
@@ -153,10 +153,10 @@ scenes.
     >>> ddaa = person_set.getByName('ddaa')
     >>> team_three = person_set.newTeam(ddaa, 'team-three', 'Team Three')
     >>> list_three = list_set.new(team_three)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> pending_actions = mailinglist_api.getPendingActions()
-    >>> commit()
+    >>> transaction.commit()
     >>> print_actions(pending_actions)
     team-three --> create {}
     team-one --> deactivate
@@ -164,7 +164,7 @@ scenes.
     True
     >>> list_three = list_set.get('team-three')
     >>> list_three.deactivate()
-    >>> commit()
+    >>> transaction.commit()
 
 We now have two active mailing lists for which deactivation has been
 requested.
@@ -201,7 +201,7 @@ create a couple more teams and mailing lists.
     >>> list_four = list_set.new(team_four)
     >>> team_five = person_set.newTeam(ddaa, 'team-five', 'Team Five')
     >>> list_five = list_set.new(team_five)
-    >>> commit()
+    >>> transaction.commit()
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> print_actions(pending_actions)
     team-five --> create {}
@@ -211,7 +211,7 @@ create a couple more teams and mailing lists.
     ...     'team-five': 'success',
     ...     })
     True
-    >>> commit()
+    >>> transaction.commit()
     >>> mailinglist_api.getPendingActions()
     {}
 
@@ -222,7 +222,7 @@ modification action the next time it polls.
     >>> list_four.welcome_message = u'Welcome to Team Four'
     >>> list_five = list_set.get('team-five')
     >>> list_five.welcome_message = u'Welcome to Team Five'
-    >>> commit()
+    >>> transaction.commit()
     >>> print_actions(mailinglist_api.getPendingActions())
     team-five --> modify {'welcome_message': u'Welcome to Team Five'}
     team-four --> modify {'welcome_message': u'Welcome to Team Four'}
@@ -337,7 +337,7 @@ an active list.
 
     >>> list_four = list_set.get('team-four')
     >>> list_four.deactivate()
-    >>> commit()
+    >>> transaction.commit()
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> print_actions(pending_actions)
     team-four --> deactivate

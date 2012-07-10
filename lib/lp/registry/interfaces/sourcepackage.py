@@ -77,8 +77,6 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
                            IHasDrivers, IHasOwner):
     """Public attributes for SourcePackage."""
 
-    id = Attribute("ID")
-
     name = exported(
         TextLine(
             title=_("Name"), required=True, readonly=True,
@@ -121,13 +119,6 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
             description=_("The DistroSeries for this SourcePackage")))
 
     sourcepackagename = Attribute("SourcePackageName")
-
-    bugtasks = Attribute("Bug Tasks that reference this Source Package name "
-                    "in the context of this distribution.")
-
-    product = Attribute(
-        "The best guess we have as to the Launchpad Project associated with "
-        "this SourcePackage.")
 
     # This is really a reference to an IProductSeries.
     productseries = exported(
@@ -232,7 +223,7 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
     def deletePackaging():
         """Delete the packaging for this sourcepackage."""
 
-    def getSharingDetailPermissions(self):
+    def getSharingDetailPermissions():
         """Return a dictionary of user permissions for +sharing-details page.
 
         This shows whether the user can change
@@ -273,11 +264,6 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
         :param pocket: A `PackagePublishingPocket`.
         :return: An `IBranch`.
         """
-
-    shouldimport = Attribute("""Whether we should import this or not.
-        By 'import' we mean sourcerer analysis resulting in a manifest and a
-        set of Bazaar branches which describe the source package release.
-        The attribute is True or False.""")
 
     latest_published_component = Object(
         title=u'The component in which the package was last published.',

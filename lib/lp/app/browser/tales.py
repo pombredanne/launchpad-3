@@ -71,13 +71,14 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.features import getFeatureFlag
+from lp.services.utils import total_seconds
 from lp.services.webapp import (
     canonical_url,
     urlappend,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
+from lp.services.webapp.error import SystemErrorView
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -90,6 +91,7 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.menu import (
     get_current_view,
     get_facet,
+    structured,
     )
 from lp.services.webapp.publisher import (
     get_current_browser_request,
@@ -320,7 +322,7 @@ class MenuAPI:
             except NoCanonicalUrl:
                 menu = None
             return self._getMenuLinksAndAttributes(menu)
-        except AttributeError, e:
+        except AttributeError as e:
             # If this method gets an AttributeError, we rethrow it as a
             # AssertionError. Otherwise, zope will hide the root cause
             # of the error and just say that "navigation" can't be traversed.
@@ -558,7 +560,7 @@ class ObjectFormatterAPI:
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
         'pagetitle': 'pagetitle',
-        'public-private-css': 'public_private_css',
+        'global-css': 'global_css',
         }
 
     def __init__(self, context):
@@ -657,30 +659,42 @@ class ObjectFormatterAPI:
             "No link implementation for %r, IPathAdapter implementation "
             "for %r." % (self, self._context))
 
-    def public_private_css(self):
-        """Return the CSS class that represents the object's privacy."""
-        privacy = IPrivacy(self._context, None)
-        if privacy is not None and privacy.private:
-            return 'private'
+    def global_css(self):
+        css_classes = set([])
+        view = self._context
+        private = getattr(view, 'private', False)
+        if private:
+            css_classes.add('private')
+            css_classes.add('global-notification-visible')
         else:
-            return 'public'
+            css_classes.add('public')
+        beta = getattr(view, 'beta_features', [])
+        if beta != []:
+            css_classes.add('global-notification-visible')
+        return ' '.join(list(css_classes))
+
+    def _getSaneBreadcrumbDetail(self, breadcrumb):
+        text = breadcrumb.detail
+        if len(text) > 64:
+            truncated = '%s...' % text[0:64]
+            if truncated.count(u'\u201c') > truncated.count(u'\u201cd'):
+                # Close the open smartquote if it was dropped.
+                truncated += u'\u201d'
+            return truncated
+        return text
 
     def pagetitle(self):
         """The page title to be used.
 
         By default, reverse breadcrumbs are always used if they are available.
         If not available, then the view's .page_title attribut is used.
-        If breadcrumbs are available, then a view can still choose to
-        override them by setting the attribute .override_title_breadcrumbs
-        to True.
         """
         ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
         hierarchy_view = getMultiAdapter(
             (view.context, request), name='+hierarchy')
-        override = getattr(view, 'override_title_breadcrumbs', False)
-        if (override or
+        if (isinstance(view, SystemErrorView) or
             hierarchy_view is None or
             not hierarchy_view.display_breadcrumbs):
             # The breadcrumbs are either not available or are overridden.  If
@@ -696,9 +710,15 @@ class ObjectFormatterAPI:
                 if template is None:
                     return ROOT_TITLE
         # Use the reverse breadcrumbs.
-        return SEPARATOR.join(
-            breadcrumb.text for breadcrumb
-            in reversed(hierarchy_view.items))
+        breadcrumbs = list(reversed(hierarchy_view.items))
+        if len(breadcrumbs) == 0:
+            # This implies there are no breadcrumbs, but this more often
+            # is caused when an Unauthorized error is being raised.
+            return ''
+        detail_breadcrumb = self._getSaneBreadcrumbDetail(breadcrumbs[0])
+        title_breadcrumbs = [breadcrumb.text for breadcrumb in breadcrumbs[1:]]
+        title_text = SEPARATOR.join([detail_breadcrumb] + title_breadcrumbs)
+        return FormattersAPI(title_text).obfuscate_email()
 
 
 class ObjectImageDisplayAPI:
@@ -862,9 +882,7 @@ class ObjectImageDisplayAPI:
             icon = 'yes'
         else:
             icon = 'no'
-        markup = (
-            '<span class="sprite %(icon)s">&nbsp;'
-            '<span class="invisible-link">%(icon)s</span></span>')
+        markup = '<span class="sprite %(icon)s action-icon">%(icon)s</span>'
         return markup % dict(icon=icon)
 
 
@@ -886,10 +904,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
+        '<span alt="%s" title="%s" class="%s"></span>')
 
     linked_icon_template = (
-        '<a href="%s" alt="%s" title="%s" class="%s">&nbsp;</a>')
+        '<a href="%s" alt="%s" title="%s" class="%s"></a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
@@ -1297,13 +1315,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
     def _report_visibility_leak(self):
-        if bool(getFeatureFlag('disclosure.log_private_team_leaks.enabled')):
-            request = get_current_browser_request()
-            try:
-                raise MixedVisibilityError()
-            except MixedVisibilityError:
-                getUtility(IErrorReportingUtility).raising(
-                    sys.exc_info(), request)
+        request = get_current_browser_request()
+        try:
+            raise MixedVisibilityError()
+        except MixedVisibilityError:
+            getUtility(IErrorReportingUtility).raising(
+                sys.exc_info(), request)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -1580,8 +1597,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         url = urlappend(canonical_url(self._release), '+download')
         # Quote the filename to eliminate non-ascii characters which
         # are invalid in the url.
-        url = urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
-        return str(URI(url).replace(scheme='http'))
+        return urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
 
 
 class BranchFormatterAPI(ObjectFormatterAPI):
@@ -2290,11 +2306,7 @@ class DurationFormatterAPI:
         # a useful name. It's also unlikely that these numbers will be
         # changed.
 
-        # Calculate the total number of seconds in the duration,
-        # including the decimal part.
-        seconds = self._duration.days * (3600 * 24)
-        seconds += self._duration.seconds
-        seconds += (float(self._duration.microseconds) / 10 ** 6)
+        seconds = total_seconds(self._duration)
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
@@ -2393,10 +2405,7 @@ class DurationFormatterAPI:
         return "%d weeks" % weeks
 
     def millisecondduration(self):
-        return str(
-            (self._duration.days * 24 * 3600
-             + self._duration.seconds * 1000
-             + self._duration.microseconds // 1000)) + 'ms'
+        return '%sms' % (total_seconds(self._duration) * 1000,)
 
 
 class LinkFormatterAPI(ObjectFormatterAPI):
@@ -2498,7 +2507,6 @@ class PageMacroDispatcher:
         view/macro:page/main_side
         view/macro:page/main_only
         view/macro:page/searchless
-        view/macro:page/locationless
 
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/globalsearch
@@ -2508,6 +2516,7 @@ class PageMacroDispatcher:
         view/macro:pagetype
 
         view/macro:is-page-contentless
+        view/macro:has-watermark
     """
 
     implements(ITraversable)
@@ -2542,6 +2551,8 @@ class PageMacroDispatcher:
             return self.pagetype()
         elif name == 'is-page-contentless':
             return self.isPageContentless()
+        elif name == 'has-watermark':
+            return self.hasWatermark()
         else:
             raise TraversalError(name)
 
@@ -2556,6 +2567,14 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def hasWatermark(self):
+        """Does the page havethe watermark block.
+
+        The default value is True, but the view can provide has_watermark
+        to force the page not render the standard location information.
+        """
+        return getattr(self.context, 'has_watermark', True)
 
     def isPageContentless(self):
         """Should the template avoid rendering detailed information.
@@ -2603,8 +2622,6 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=False,
                 portlets=False),
-       'locationless':
-            LayoutElements(),
         }
 
 
@@ -2680,6 +2697,14 @@ class POFileFormatterAPI(ObjectFormatterAPI):
         return self._context.title
 
 
+def download_link(url, description, file_size):
+    """Return HTML for downloading an item."""
+    file_size = NumberFormatterAPI(file_size).bytes()
+    formatted = structured(
+        '<a href="%s">%s</a> (%s)', url, description, file_size)
+    return formatted.escapedtext
+
+
 class PackageDiffFormatterAPI(ObjectFormatterAPI):
 
     def link(self, view_name, rootsite=None):
@@ -2687,19 +2712,17 @@ class PackageDiffFormatterAPI(ObjectFormatterAPI):
         if not diff.date_fulfilled:
             return '%s (pending)' % cgi.escape(diff.title)
         else:
-            file_size = NumberFormatterAPI(
-                diff.diff_content.content.filesize).bytes()
-            return '<a href="%s">%s</a> (%s)' % (
-                cgi.escape(diff.diff_content.http_url),
-                cgi.escape(diff.title), file_size)
+            return download_link(
+                diff.diff_content.http_url, diff.title,
+                diff.diff_content.content.filesize)
 
 
 class CSSFormatter:
     """A tales path adapter used for CSS rules.
 
     Using an expression like this:
-        value/css:select/visible/unseen
-    You will get "visible" if value evaluates to true, and "unseen" if the
+        value/css:select/visible/hidden
+    You will get "visible" if value evaluates to true, and "hidden" if the
     value evaluates to false.
     """
 
@@ -2741,6 +2764,6 @@ class IRCNicknameFormatterAPI(ObjectFormatterAPI):
     def formatted_displayname(self, view_name=None):
         return dedent("""\
             <strong>%s</strong>
-            <span class="discreet"> on </span>
+            <span class="lesser"> on </span>
             <strong>%s</strong>
         """ % (escape(self._context.nickname), escape(self._context.network)))

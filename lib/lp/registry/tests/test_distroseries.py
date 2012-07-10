@@ -1,11 +1,16 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
 
 __metaclass__ = type
 
+__all__ = [
+    'CurrentSourceReleasesMixin',
+    ]
+
 from datetime import timedelta
+from logging import getLogger
 
 import transaction
 from zope.component import getUtility
@@ -14,6 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.utils import utc_now
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -46,27 +52,23 @@ from lp.translations.interfaces.translations import (
     )
 
 
-class TestDistroSeriesCurrentSourceReleases(TestCase):
-    """Test for DistroSeries.getCurrentSourceReleases()."""
+class CurrentSourceReleasesMixin:
+    """Mixin class for current source release tests.
 
-    layer = LaunchpadFunctionalLayer
-    release_interface = IDistroSeriesSourcePackageRelease
-
+    Used by tests of DistroSeries and Distribution.  The mixin must not extend
+    TestCase or it will be run by other modules when imported.
+    """
     def setUp(self):
         # Log in as an admin, so that we can create distributions.
-        super(TestDistroSeriesCurrentSourceReleases, self).setUp()
+        super(CurrentSourceReleasesMixin, self).setUp()
         login('foo.bar@canonical.com')
         self.publisher = SoyuzTestPublisher()
         self.factory = self.publisher.factory
         self.development_series = self.publisher.setUpDefaultDistroSeries()
         self.distribution = self.development_series.distribution
-        self.published_package = self.test_target.getSourcePackage(
+        self.published_package = self.target.getSourcePackage(
             self.publisher.default_package_name)
         login(ANONYMOUS)
-
-    @property
-    def test_target(self):
-        return self.development_series
 
     def assertCurrentVersion(self, expected_version, package_name=None):
         """Assert the current version of a package is the expected one.
@@ -78,8 +80,8 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
         """
         if package_name is None:
             package_name = self.publisher.default_package_name
-        package = self.test_target.getSourcePackage(package_name)
-        releases = self.test_target.getCurrentSourceReleases(
+        package = self.target.getSourcePackage(package_name)
+        releases = self.target.getCurrentSourceReleases(
             [package.sourcepackagename])
         self.assertEqual(releases[package].version, expected_version)
 
@@ -93,7 +95,7 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
         # source package is used as the key, with
         # a DistroSeriesSourcePackageRelease as the values.
         self.publisher.getPubSource(version='0.9')
-        releases = self.test_target.getCurrentSourceReleases(
+        releases = self.target.getCurrentSourceReleases(
             [self.published_package.sourcepackagename])
         self.assertTrue(self.published_package in releases)
         self.assertTrue(self.release_interface.providedBy(
@@ -166,6 +168,18 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
             [foo_package.sourcepackagename, bar_package.sourcepackagename])
         self.assertEqual(releases[foo_package].version, '0.9')
         self.assertEqual(releases[bar_package].version, '1.0')
+
+
+class TestDistroSeriesCurrentSourceReleases(
+    CurrentSourceReleasesMixin, TestCase):
+    """Test for DistroSeries.getCurrentSourceReleases()."""
+
+    layer = LaunchpadFunctionalLayer
+    release_interface = IDistroSeriesSourcePackageRelease
+
+    @property
+    def target(self):
+        return self.development_series
 
 
 class TestDistroSeries(TestCaseWithFactory):
@@ -305,6 +319,43 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             [comment], distroseries.getDifferenceComments())
 
+    def checkLegalPocket(self, status, pocket):
+        distroseries = self.factory.makeDistroSeries(status=status)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, pocket=pocket)
+        return removeSecurityProxy(distroseries).checkLegalPocket(
+            spph, False, getLogger())
+
+    def test_checkLegalPocket_allows_unstable_release(self):
+        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_unstable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_forbids_unstable_updates(self):
+        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
+
+    def test_checkLegalPocket_forbids_stable_release(self):
+        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_stable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_allows_stable_updates(self):
+        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
@@ -321,22 +372,21 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.universe_component = component_set['universe']
         self.makeSeriesPackage('normal')
         self.makeSeriesPackage('translatable', messages=800)
-        hot_package = self.makeSeriesPackage('hot', heat=500)
+        hot_package = self.makeSeriesPackage('hot', bugs=50)
         # Create a second SPPH for 'hot', to verify that duplicates are
         # eliminated in the queries.
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=hot_package.sourcepackagename,
             distroseries=self.series,
             component=self.universe_component, section_name='web')
-        self.makeSeriesPackage('hot-translatable', heat=250, messages=1000)
+        self.makeSeriesPackage('hot-translatable', bugs=25, messages=1000)
         self.makeSeriesPackage('main', is_main=True)
         self.makeSeriesPackage('linked')
         self.linkPackage('linked')
         transaction.commit()
         login(ANONYMOUS)
 
-    def makeSeriesPackage(self, name,
-                          is_main=False, heat=None, messages=None,
+    def makeSeriesPackage(self, name, is_main=False, bugs=None, messages=None,
                           is_translations=False):
         # Make a published source package.
         if is_main:
@@ -353,10 +403,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             component=component, section_name=section)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
-        if heat is not None:
-            bugtask = self.factory.makeBugTask(
-                target=source_package, owner=self.user)
-            bugtask.bug.setHeat(heat)
+        if bugs is not None:
+            dsp = removeSecurityProxy(
+                source_package.distribution_sourcepackage)
+            dsp.bug_count = bugs
         if messages is not None:
             template = self.factory.makePOTemplate(
                 distroseries=self.series, sourcepackagename=sourcepackagename,

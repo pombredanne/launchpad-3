@@ -33,6 +33,7 @@ from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
 from lp.registry.interfaces.person import (
+    IPerson,
     IPersonSet,
     PersonVisibility,
     )
@@ -357,6 +358,19 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
         page = self.get_branch_list_page(target=self.team)
         self.assertThat(page, Not(self.registered_branches_matcher))
 
+    def test_branch_list_recipes_link(self):
+        # The link to the source package recipes is always displayed.
+        page = self.get_branch_list_page()
+        recipes_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source package recipes link', 'a',
+                text='Source package recipes',
+                attrs={'href': self.base_url + '/+recipes'}))
+        if IPerson.providedBy(self.default_target):
+            self.assertThat(page, recipes_matcher)
+        else:
+            self.assertThat(page, Not(recipes_matcher))
+
 
 class TestSimplifiedPersonProductBranchesView(
     TestSimplifiedPersonBranchesView):
@@ -640,11 +654,10 @@ class TestPersonBranchesPage(BrowserTestCase):
         private_team = self.factory.makeTeam(
             name='shh', displayname='Shh', owner=owner,
             visibility=PersonVisibility.PRIVATE)
-        member = self.factory.makePerson(
-            email='member@example.com', password='test')
+        member = self.factory.makePerson(email='member@example.com')
         with person_logged_in(owner):
             private_team.addMember(member, owner)
-        branch = self.factory.makeProductBranch(owner=private_team)
+            branch = self.factory.makeProductBranch(owner=private_team)
         return private_team, member, branch
 
     def test_private_team_membership_for_team_member(self):
@@ -683,6 +696,7 @@ class TestPersonBranchesPage(BrowserTestCase):
         # the content should not appear in tact because it's been escaped
         self.assertTrue(badname not in browser.contents)
         self.assertTrue(escapedname in browser.contents)
+
 
 class TestProjectGroupBranches(TestCaseWithFactory,
                                AjaxBatchNavigationMixin):

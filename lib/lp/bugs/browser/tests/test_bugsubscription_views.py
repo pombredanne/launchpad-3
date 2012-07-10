@@ -19,7 +19,7 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -40,10 +40,6 @@ from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
-ON = 'on'
-OFF = None
-
-
 class BugsubscriptionPrivacyTests(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -52,7 +48,7 @@ class BugsubscriptionPrivacyTests(TestCaseWithFactory):
         super(BugsubscriptionPrivacyTests, self).setUp()
         self.user = self.factory.makePerson()
         self.bug = self.factory.makeBug(owner=self.user)
-        removeSecurityProxy(self.bug).private = True
+        removeSecurityProxy(self.bug).setPrivate(True, self.user)
 
     def _assert_subscription_fails(self, team):
         with person_logged_in(self.user):

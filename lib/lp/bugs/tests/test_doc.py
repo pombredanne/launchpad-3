@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -11,7 +11,6 @@ import unittest
 
 from lp.code.tests.test_doc import branchscannerSetUp
 from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
@@ -22,6 +21,7 @@ from lp.testing import (
     login,
     logout,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
@@ -47,7 +47,7 @@ def lobotomizeSteveASetUp(test):
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    switch_dbuser(config.checkwatches.dbuser)
 
 
 def branchscannerBugsSetUp(test):
@@ -58,7 +58,7 @@ def branchscannerBugsSetUp(test):
 
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
+    switch_dbuser(config.malone.bugnotification_dbuser)
     setUp(test)
 
 
@@ -68,7 +68,7 @@ def bugNotificationSendingTearDown(test):
 
 def cveSetUp(test):
     lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
+    switch_dbuser(config.cveupdater.dbuser)
     setUp(test)
 
 
@@ -81,7 +81,7 @@ def uploaderBugsSetUp(test):
     """
     lobotomize_stevea()
     test_dbuser = config.uploader.dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    switch_dbuser(test_dbuser)
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
@@ -103,14 +103,13 @@ def noPrivSetUp(test):
 def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
     setUp(test)
-    test.globs['commit'] = commit
     login('test@canonical.com')
 
 
 def updateRemoteProductSetup(test):
     """Setup to use the 'updateremoteproduct' db user."""
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
+    switch_dbuser(config.updateremoteproduct.dbuser)
 
 
 def updateRemoteProductTeardown(test):
@@ -142,24 +141,28 @@ special = {
         ),
     'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
+        id_extensions=['bugnotificationrecipients.txt-uploader'],
         setUp=uploaderBugsSetUp,
         tearDown=uploaderBugsTearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
+        id_extensions=['bugnotificationrecipients.txt-queued'],
         setUp=uploadQueueSetUp,
         tearDown=uploadQueueTearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugnotificationrecipients.txt-branchscanner': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
+        id_extensions=['bugnotificationrecipients.txt-branchscanner'],
         setUp=branchscannerBugsSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugnotificationrecipients.txt': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
+        id_extensions=['bugnotificationrecipients.txt'],
         setUp=lobotomizeSteveASetUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer
         ),
@@ -185,12 +188,14 @@ special = {
         ),
     'bug-set-status.txt': LayeredDocFileSuite(
         '../doc/bug-set-status.txt',
+        id_extensions=['bug-set-status.txt'],
         setUp=uploadQueueSetUp,
         tearDown=uploadQueueTearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bug-set-status.txt-uploader': LayeredDocFileSuite(
         '../doc/bug-set-status.txt',
+        id_extensions=['bug-set-status.txt-uploader'],
         setUp=uploaderBugsSetUp,
         tearDown=uploaderBugsTearDown,
         layer=LaunchpadZopelessLayer
@@ -203,23 +208,27 @@ special = {
         ),
     'bugmessage.txt': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt'],
         setUp=noPrivSetUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer
         ),
     'bugmessage.txt-queued': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt-queued'],
         setUp=uploadQueueSetUp,
         tearDown=uploadQueueTearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugmessage.txt-uploader': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt-uploader'],
         setUp=uploaderSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugmessage.txt-checkwatches': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt-checkwatches'],
         setUp=checkwatchesSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer
@@ -430,11 +439,13 @@ special = {
         ),
     'bug-set-status.txt-processmail': LayeredDocFileSuite(
         '../doc/bug-set-status.txt',
+        id_extensions=['bug-set-status.txt-processmail'],
         setUp=bugSetStatusSetUp, tearDown=tearDown,
         layer=ProcessMailLayer,
         stdout_logging=False),
     'bugmessage.txt-processmail': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
+        id_extensions=['bugmessage.txt-processmail'],
         setUp=bugmessageSetUp, tearDown=tearDown,
         layer=ProcessMailLayer,
         stdout_logging=False),
@@ -464,8 +475,7 @@ def test_suite():
         )
 
     # Add special needs tests
-    for key in sorted(special):
-        special_suite = special[key]
+    for key, special_suite in sorted(special.items()):
         suite.addTest(special_suite)
 
     # Add tests using default setup/teardown

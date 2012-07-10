@@ -8,8 +8,8 @@ import sys
 
 
 def error_and_exit():
-    sys.stderr.write("ERROR: I'm a mock, I only support 'development' "
-                        "and 'supported' as argument\n")
+    sys.stderr.write("ERROR: I'm a mock, I only support 'supported' as "
+                     "argument\n")
     sys.exit(1)
 
 
@@ -18,12 +18,8 @@ def main(args):
     # test for it and error if it looks wrong
     if len(args) == 2:
         distro = args[1]
-        if distro == "development":
-                return "natty"
-        elif distro == "supported":
-                return "hardy jaunty karmic lucid maverick"
-    elif len(args) == 4 and args[1] == '-s' and args[3] == 'archs':
-        return "i386 amd64 powerpc armel"
+        if distro == "supported":
+            return "hardy jaunty karmic lucid maverick"
     error_and_exit()
 
 

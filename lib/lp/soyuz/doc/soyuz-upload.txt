@@ -405,7 +405,7 @@ We use getPackageUploads to inspect the current NEW queue and accept items.
     >>> for queue_item in queue_items:
     ...      try:
     ...          queue_item.setAccepted()
-    ...      except QueueInconsistentStateError, e:
+    ...      except QueueInconsistentStateError as e:
     ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name, e))
     ...      else:
     ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name,
@@ -451,15 +451,6 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     >>> stdout, stderr = process.communicate()
     >>> print stdout
     <BLANKLINE>
-    >>> print stderr
-    DEBUG Enabled by DEFAULT section
-    INFO  Creating lockfile: ...
-    DEBUG     Distribution: ubuntutest
-    ...
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz from library
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc from library
-    ...
 
     >>> transaction.commit()
 
@@ -541,16 +532,6 @@ Check careful publishing took place, as requested with -C. In careful
 publishing mode, publish-distro will attempt to publish files which are
 already marked as published in the database and, if the files are
 already on disk, verify the contents are as expected.
-
-    >>> print stderr
-    DEBUG Enabled by DEFAULT section
-    INFO  Creating lockfile: ...
-    DEBUG     Distribution: ubuntutest
-    ...
-    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
-    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
-    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
-    ...
 
 Check the publishing history again
 

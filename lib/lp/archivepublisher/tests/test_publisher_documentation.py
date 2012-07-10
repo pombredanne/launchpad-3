@@ -10,6 +10,7 @@ import os
 import unittest
 
 from lp.services.config import config
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -20,7 +21,7 @@ from lp.testing.systemdocs import (
 
 def archivePublisherSetUp(test):
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
+    switch_dbuser(config.archivepublisher.dbuser)
 
 
 def test_suite():

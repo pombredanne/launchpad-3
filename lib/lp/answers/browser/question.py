@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question views."""
@@ -1299,7 +1299,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
 
         Those found in `values` are marked as selected. The list of rendered
         values is controlled by the search query. The currently selected
-        value is always added the the set.
+        value is always added to the set.
         """
         rendered_items = []
         rendered_values = set()

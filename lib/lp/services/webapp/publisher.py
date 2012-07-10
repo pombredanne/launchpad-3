@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'DataDownloadView',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -26,6 +27,7 @@ __all__ = [
     ]
 
 import httplib
+import re
 
 from lazr.restful import (
     EntryResource,
@@ -36,6 +38,7 @@ from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.tales import WebLayerAPI
 from lazr.restful.utils import get_current_browser_request
 import simplejson
+from zope import i18n
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
@@ -44,6 +47,7 @@ from zope.component import (
     queryMultiAdapter,
     )
 from zope.component.interfaces import ComponentLookupError
+from zope.i18nmessageid import Message
 from zope.interface import (
     directlyProvides,
     implements,
@@ -61,6 +65,8 @@ from zope.security.checker import (
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import IPrivacy
+from lp.app.versioninfo import revno
 from lp.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -88,6 +94,9 @@ from lp.services.webapp.vhosts import allvhosts
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
 error_status(httplib.NOT_FOUND)(NotFound)
+
+# Used to match zope namespaces eg ++model++.
+RESERVED_NAMESPACE = re.compile('\\+\\+.*\\+\\+')
 
 
 class DecoratorAdvisor:
@@ -220,6 +229,29 @@ class redirection:
         return cls
 
 
+class DataDownloadView:
+    """Download data without templating.
+
+    Subclasses must provide getBody, content_type and filename.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Set the headers and return the body.
+
+        It is not necessary to supply Content-length, because this is added by
+        the caller.
+        """
+        self.request.response.setHeader('Content-Type', self.content_type)
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename="%s"' % (
+             self.filename))
+        return self.getBody()
+
+
 class UserAttributeCache:
     """Mix in to provide self.user, cached."""
 
@@ -255,7 +287,19 @@ class LaunchpadView(UserAttributeCache):
                        many templates not set via zcml, or you want to do
                        rendering from Python.
     - publishTraverse() <-- override this to support traversing-through.
+    - private      <-- used to indicate if the view contains private data.
+                       override this if the view has special privacy needs
+                       (i.e. context doesn't properly indicate privacy).
     """
+
+    @property
+    def private(self):
+        """A view is private if its context is."""
+        privacy = IPrivacy(self.context, None)
+        if privacy is not None:
+            return privacy.private
+        else:
+            return False
 
     def __init__(self, context, request):
         self.context = context
@@ -266,19 +310,33 @@ class LaunchpadView(UserAttributeCache):
         # IJSONRequestCache adapter.
         if isinstance(request, FakeRequest):
             return
+        # Several view objects may be created for one page request:
+        # One view for the main context and template, and other views
+        # for macros included in the main template.
+        cache = self._get_json_cache()
+        if cache is None:
+            return
+        related_features = cache.setdefault('related_features', {})
+        related_features.update(self.related_feature_info)
+
+    def _get_json_cache(self):
         # Some tests create views without providing any request
         # object at all; other tests run without the component
         # infrastructure.
         try:
             cache = IJSONRequestCache(self.request).objects
-        except TypeError, error:
+        except TypeError as error:
             if error.args[0] == 'Could not adapt':
-                return
-        # Several view objects may be created for one page request:
-        # One view for the main context and template, and other views
-        # for macros included in the main template.
-        related_features = cache.setdefault('related_features', {})
-        related_features.update(self.related_feature_info)
+                cache = None
+        return cache
+
+    @property
+    def beta_features(self):
+        cache = self._get_json_cache()
+        if cache is None:
+            return []
+        related_features = cache.setdefault('related_features', {}).values()
+        return [f for f in related_features if f['is_beta']]
 
     def initialize(self):
         """Override this in subclasses.
@@ -310,6 +368,33 @@ class LaunchpadView(UserAttributeCache):
     def template(self):
         """The page's template, if configured in zcml."""
         return self.index
+
+    @property
+    def yui_version(self):
+        """The version of YUI we are using."""
+        value = getFeatureFlag('js.yui_version')
+        if not value:
+            return 'yui'
+        else:
+            return value
+
+    @property
+    def yui_console_debug(self):
+        """Hide console debug messages in production."""
+        # We need to import here otherwise sitecustomize can't get imported,
+        # likely due to some non-obvious circular import issues.
+        from lp.services.config import config
+        return 'true' if config.devmode else 'false'
+
+    @property
+    def combo_url(self):
+        """Return the URL for the combo loader."""
+        # Circular imports, natch.
+        from lp.services.config import config
+        combo_url = '/+combo'
+        if not config.devmode:
+            combo_url += '/rev%s' % revno
+        return combo_url
 
     def render(self):
         """Return the body of the response.
@@ -847,6 +932,7 @@ class Navigation:
                     nextobj = handler(self)
                 except NotFoundError:
                     nextobj = None
+
                 return self._handle_next_object(nextobj, request, name)
 
         # Next, see if we have at least two path steps in total to traverse;
@@ -854,19 +940,51 @@ class Navigation:
         # If so, see if the name is in the namespace_traversals, and if so,
         # dispatch to the appropriate function.  We can optimise by changing
         # the order of these checks around a bit.
+        # If the next path step is a zope namespace eg ++model++, then we
+        # actually do not want to process the path steps as a stepthrough
+        # traversal so we just ignore it here.
         namespace_traversals = self.stepthrough_traversals
         if namespace_traversals is not None:
             if name in namespace_traversals:
                 stepstogo = request.stepstogo
                 if stepstogo:
-                    nextstep = stepstogo.consume()
-                    handler = namespace_traversals[name]
-                    try:
-                        nextobj = handler(self, nextstep)
-                    except NotFoundError:
-                        nextobj = None
-                    return self._handle_next_object(nextobj, request,
-                        nextstep)
+                    # First peek at the nextstep to see if we should ignore it.
+                    nextstep = stepstogo.peek()
+                    if not RESERVED_NAMESPACE.match(nextstep):
+                        nextstep = stepstogo.consume()
+                        handler = namespace_traversals[name]
+                        try:
+                            nextobj = handler(self, nextstep)
+                        except NotFoundError:
+                            nextobj = None
+                        else:
+                            # Circular import; breaks make.
+                            from lp.services.webapp.breadcrumb import Breadcrumb
+                            stepthrough_page = queryMultiAdapter(
+                                    (self.context, self.request), name=name)
+                            if stepthrough_page:
+                                # Not all stepthroughs have a page; if they
+                                # don't, there's no need for a breadcrumb.
+                                page_title = getattr(
+                                    stepthrough_page, 'page_title', None)
+                                label = getattr(
+                                    stepthrough_page, 'label', None)
+                                stepthrough_text = page_title or label
+                                if isinstance(stepthrough_text, Message):
+                                    stepthrough_text = i18n.translate(
+                                        stepthrough_text,
+                                        context=self.request)
+                                stepthrough_url = canonical_url(
+                                    self.context, view_name=name)
+                                stepthrough_breadcrumb = Breadcrumb(
+                                    context=self.context,
+                                    url=stepthrough_url,
+                                    text=stepthrough_text)
+                                self.request.traversed_objects.append(
+                                    stepthrough_breadcrumb)
+                                
+                        return self._handle_next_object(nextobj, request,
+                            nextstep)
 
         # Next, look up views on the context object.  If a view exists,
         # use it.

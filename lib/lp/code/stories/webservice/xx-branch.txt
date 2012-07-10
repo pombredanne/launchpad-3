@@ -116,6 +116,7 @@ time goes on.
     description: None
     display_name: u'lp://dev/~eric/fooix/trunk'
     explicitly_private: False
+    information_type: u'Public'
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
     last_mirror_attempt: None
@@ -261,17 +262,14 @@ the named operation 'setPrivate'.
     >>> response = webservice.named_post(
     ...     branch_url, 'setPrivate', api_version='beta', private=True)
     >>> branch = webservice.get(branch_url).jsonBody()
-    >>> print branch['explicitly_private']
-    True
-    >>> print branch['private']
-    True
+    >>> print branch['information_type']
+    User Data
 
-In subsequent versions, 'setPrivate' is gone; you have to set the
-'explicitly_private' field directly.
+In subsequent versions, 'setPrivate' is gone; you have to use the
+'transitionToInformationType' method.
 
     >>> print webservice.named_post(
-    ...     branch_url, 'setPrivate', api_version='devel',
-    ...     explicitly_private=True)
+    ...     branch_url, 'setPrivate', api_version='devel', private=True)
     HTTP/1.1 400 Bad Request
     ...
     No such operation: setPrivate

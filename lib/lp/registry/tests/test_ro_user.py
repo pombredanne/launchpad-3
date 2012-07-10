@@ -10,6 +10,7 @@ import unittest
 import psycopg2
 
 from lp.services.database.sqlbase import cursor
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -18,7 +19,7 @@ class RoUserTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('ro')
+        switch_dbuser('ro')
 
     def test(self):
         """Test that read-only users cannot make changes to the database."""

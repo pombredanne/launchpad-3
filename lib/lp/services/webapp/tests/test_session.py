@@ -1,12 +1,17 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
+from testtools import TestCase
+from testtools.matchers import Contains
 
-from lp.services.webapp.session import get_cookie_domain
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.session import (
+    get_cookie_domain,
+    LaunchpadCookieClientIdManager,
+    )
 
 
-class GetCookieDomainTestCase(unittest.TestCase):
+class GetCookieDomainTestCase(TestCase):
 
     def test_base_domain(self):
         # Test that the base Launchpad domain gives a domain parameter
@@ -38,3 +43,15 @@ class GetCookieDomainTestCase(unittest.TestCase):
                          '.launchpad.dev')
         self.assertEqual(get_cookie_domain('bugs.launchpad.dev'),
                          '.launchpad.dev')
+
+
+class TestLaunchpadCookieClientIdManager(TestCase):
+
+    def test_httponly(self):
+        # Authentication cookies are marked as httponly, so JavaScript
+        # can't read them directly.
+        request = LaunchpadTestRequest()
+        LaunchpadCookieClientIdManager().setRequestId(request, 'some-id')
+        self.assertThat(
+            dict(request.response.getHeaders())['Set-Cookie'],
+            Contains('; httponly;'))

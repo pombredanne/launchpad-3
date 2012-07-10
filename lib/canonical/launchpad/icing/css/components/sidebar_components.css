@@ -9,9 +9,6 @@
     width: 90%;
     margin: 0 auto 1em;
     border: 1px solid #dedede;
-    -moz-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    -khtml-border-radius: 5px;
     border-radius: 5px;
     padding: 0.5em;
     background: #fbfbfb;
@@ -27,16 +24,6 @@
 .side ul {
     background: #fbfbfb;
     }
-#privacy.private {
-    background: url(/@@/private-bg) top left repeat-x; /* 8px high */
-    padding-top: 12px; /* = 8px + the usual 4px top padding */
-    }
-/* Override for when the feature flag is active */
-.feature-flag-bugs-private-notification-enabled #privacy.private {
-    background-image: none;
-    background-color: #FBFBFB;
-    padding-top: 0.5em;
-    }
 .downloads li {
     margin: 0;
     padding: 2px 0 0;
@@ -46,28 +33,19 @@
     display: block;
     margin: 0;
     border: 1px solid #4f843c;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    -khtml-border-radius: 3px;
-    border-radius: 3px;
+    border-radius: 5px;
     background: #4f843c url(/@@/bg-project-downloads.png) center right no-repeat;
     padding: 6%;
     padding-right: 40px;
     color: #fff;
     }
 .downloads .version {
-    -moz-border-radius: 5px 5px 0 0;
-    -webkit-border-radius: 5px 5px 0 0;
-    -khtml-border-radius: 5px 5px 0 0;
     border-radius: 5px 5px 0 0;
     background: #d3e3c7;
     padding: 0.2em 1em;
     }
 .downloads .released {
     margin: .3em 0 .5em 0;
-    -moz-border-radius: 0 0 5px 5px;
-    -webkit-border-radius: 0 0 5px 5px;
-    -khtml-border-radius: 0 0 5px 5px;
     border-radius: 0 0 5px 5px;
     background: #d3e3c7;
     padding: 0.2em 1em;
@@ -82,7 +60,7 @@
     }
 .involvement li.single {
     border-top: 0;
-}
+    }
 .involvement a {
     display: block;
     padding: 0.3em;

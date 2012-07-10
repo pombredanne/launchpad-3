@@ -29,10 +29,10 @@ about the bug.
 
 The methods are called by the CheckwatchesMaster class:
 
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import switch_dbuser
     >>> txn = transaction
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
     >>> bug_watch = factory.makeBugWatch('42')
     >>> bug_watch.bug.default_bugtask.bugwatch = bug_watch
@@ -44,10 +44,12 @@ The methods are called by the CheckwatchesMaster class:
     >>> unlinked_bug = factory.makeBug()
 
     >>> txn.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('checkwatches')
+    >>> switch_dbuser('checkwatches')
 
+    >>> from lp.services.log.logger import DevNullLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> checkwatches_master = CheckwatchesMaster(txn)
+    >>> checkwatches_master = CheckwatchesMaster(
+    ...     txn, logger=DevNullLogger())
     >>> txn.commit()
 
     >>> external_bugtracker = BackLinkingExternalBugTracker(
@@ -91,13 +93,13 @@ be called on our BackLinkingExternalBugTracker.
 
     >>> transaction.commit()
 
-    >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
     ...     make_bug_watch_updater)
 
     >>> bug_watch_updater = make_bug_watch_updater(
-    ...     CheckwatchesMaster(transaction), bug_watch,
-    ...     external_bugtracker)
+    ...     CheckwatchesMaster(transaction, logger=FakeLogger()),
+    ...     bug_watch, external_bugtracker)
     >>> bug_watch_updater.linkLaunchpadBug()
     Getting Launchpad id for bug 42
 

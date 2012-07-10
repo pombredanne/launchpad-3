@@ -43,6 +43,7 @@ from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.dbuser import switch_dbuser
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -659,12 +660,17 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         :return: The queue items that were uploaded.
         """
-        test_files_dir = os.path.join(config.root,
-            "lib/lp/archiveuploader/tests/data/")
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        [build] = self.name16.archive.getBuildRecords(name="bar")
+
+        test_files_dir = os.path.join(
+            config.root, "lib/lp/archiveuploader/tests/data/")
+        self.options.context = "buildd"
         upload_dir = self.queueUpload(
             "debian-installer", "~name16/ubuntu/breezy",
             test_files_dir=test_files_dir)
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(self.build_uploadprocessor, upload_dir, build=build)
 
         queue_items = self.breezy.getPackageUploads(
             name=u"debian-installer",
@@ -802,7 +808,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.switchToAdmin()
         self.breezy['i386'].supports_virtualized = False
         self.switchToUploader()
-        self.layer.commit()
 
         # Next version can't be accepted because it can't be built.
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
@@ -1126,7 +1131,6 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         bar_src.requestDeletion(self.name16)
         bar_src.dateremoved = UTC_NOW
         self.switchToUploader()
-        self.layer.txn.commit()
 
         # bar_1.0-3 contains an orig file of the same version with
         # different contents than the one we previously uploaded.
@@ -1196,7 +1200,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         the given size in bytes.
 
         Uses `SoyuzTestPublisher` class to create the corresponding publishing
-        record, then switchDbUser as 'librariangc' and update the size of the
+        record, then switch_dbuser as 'librariangc' and update the size of the
         source file to the given value.
         """
         self.switchToAdmin()
@@ -1207,18 +1211,16 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             status=PackagePublishingStatus.PUBLISHED)
         alias_id = pub_src.sourcepackagerelease.files[0].libraryfile.id
 
-        self.layer.commit()
-        self.layer.switchDbUser('librariangc')
+        switch_dbuser('librariangc')
         content = getUtility(ILibraryFileAliasSet)[alias_id].content
         content = removeSecurityProxy(content)
         # Decrement the archive index parcel automatically added by
         # IArchive.estimated_size.
         content.filesize = size - 1024
-        self.layer.commit()
         self.switchToUploader()
 
         # Re-initialize uploadprocessor since it depends on the new
-        # transaction reset by switchDbUser.
+        # transaction reset by switch_dbuser.
         self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
     def testPPASizeQuotaSourceRejection(self):

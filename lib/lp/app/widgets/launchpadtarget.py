@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -144,7 +144,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s"
+                        "There is no package named '%s' published in %s."
                          % (entered_name, distribution.displayname))
                 if package_name is None:
                     return distribution
@@ -158,7 +158,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         dsp = distribution.getSourcePackage(source_name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s"
+                        "There is no package named '%s' published in %s."
                         % (package_name.name, distribution.displayname))
                 return dsp
             else:
@@ -187,7 +187,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         try:
             if self.hasInput():
                 self.getInputValue()
-        except InputErrors, error:
+        except InputErrors as error:
             self._error = error
         return super(LaunchpadTargetWidget, self).error()
 

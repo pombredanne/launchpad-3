@@ -78,6 +78,12 @@
         set_attributes="whiteboard"/>
   </class>
 
+  <!-- SpecificationWorkItem -->
+  <class class="lp.blueprints.model.specificationworkitem.SpecificationWorkItem">
+    <allow
+        interface="lp.blueprints.interfaces.specificationworkitem.ISpecificationWorkItem"/>
+  </class>
+
   <!-- SpecificationDependency -->
 
   <class class="lp.blueprints.model.specificationdependency.SpecificationDependency">
@@ -108,15 +114,6 @@
       for="lp.blueprints.interfaces.specificationsubscription.ISpecificationSubscription
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
       handler="lp.blueprints.mail.notifications.notify_specification_subscription_modified"/>
-
-  <!-- SpecificationFeedback -->
-
-  <class class="lp.blueprints.model.specificationfeedback.SpecificationFeedback">
-    <allow interface="lp.blueprints.interfaces.specificationfeedback.ISpecificationFeedback"/>
-    <require
-        permission="zope.Public"
-        set_schema="lp.blueprints.interfaces.specificationfeedback.ISpecificationFeedback"/>
-  </class>
 
   <!-- SprintAttendance -->
 
@@ -175,7 +172,8 @@
     <require
         permission="launchpad.AnyPerson"
         attributes="linkBug
-                    unlinkBug"/>
+                    unlinkBug
+                    setWorkItems"/>
   </class>
 
   <class class="lp.blueprints.model.specificationbug.SpecificationBug">

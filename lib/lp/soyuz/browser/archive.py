@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -58,6 +58,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.badge import HasBadgeBase
@@ -88,13 +89,18 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.person import Person
 from lp.services.browser_helpers import (
     get_plural_text,
     get_user_agent_distroseries,
     )
-from lp.services.database.bulk import load
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
+from lp.services.job.model.job import Job
 from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -131,7 +137,6 @@ from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
-    ArchivePurpose,
     ArchiveStatus,
     PackageCopyPolicy,
     PackagePublishingStatus,
@@ -159,7 +164,10 @@ from lp.soyuz.interfaces.publishing import (
     inactive_publishing_status,
     IPublishingSet,
     )
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import (
+    Archive,
+    validate_ppa,
+    )
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -394,6 +402,12 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
             if series is not None:
                 the_item = getUtility(IPackagesetSet).getByName(
                     item, distroseries=series)
+        elif item_type == 'pocket':
+            # See if "item" is a pocket name.
+            try:
+                the_item = PackagePublishingPocket.items[item]
+            except KeyError:
+                pass
         else:
             the_item = None
 
@@ -499,7 +513,7 @@ class ArchiveMenuMixin:
     def delete(self):
         """Display a delete menu option for non-copy archives."""
         text = 'Delete packages'
-        link = Link('+delete-packages', text, icon='edit')
+        link = Link('+delete-packages', text, icon='trash-icon')
 
         # This link should not be available for copy archives or
         # archives without any sources.
@@ -514,7 +528,7 @@ class ArchiveMenuMixin:
     def copy(self):
         """Display a copy menu option for non-copy archives."""
         text = 'Copy packages'
-        link = Link('+copy-packages', text, icon='edit')
+        link = Link('+copy-packages', text, icon='package-sync')
 
         # This link should not be available for copy archives.
         if self.context.is_copy:
@@ -1028,6 +1042,33 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # context and view menues.
         return self.context.is_copy
 
+    @cachedproperty
+    def package_copy_jobs(self):
+        """Return incomplete PCJs targeted at this archive."""
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        ppcjs = job_source.getIncompleteJobsForArchive(self.context)
+
+        # Convert PPCJ into PCJ.
+        # removeSecurityProxy is only used to fetch pcjs objects and preload
+        # related objects.
+        pcjs = [removeSecurityProxy(ppcj).context for ppcj in ppcjs]
+        # Pre-load related Jobs.
+        jobs = load_related(Job, pcjs, ['job_id'])
+        # Pre-load related requesters.
+        load_related(Person, jobs, ['requester_id'])
+        # Pre-load related source archives.
+        load_related(Archive, pcjs, ['source_archive_id'])
+
+        return ppcjs
+
+    @cachedproperty
+    def has_pending_copy_jobs(self):
+        return self.package_copy_jobs.any()
+
+    @cachedproperty
+    def has_append_perm(self):
+        return check_permission('launchpad.Append', self.context)
+
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
     """Base class to implement a source selection widget for PPAs."""
@@ -1178,20 +1219,15 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         publishing_set.requestDeletion(selected_sources, self.user, comment)
 
         # Present a page notification describing the action.
-        messages = []
-        messages.append(
-            '<p>Source and binaries deleted by %s request:'
-            % self.user.displayname)
+        messages = [structured(
+            '<p>Source and binaries deleted by %s:', self.user.displayname)]
         for source in selected_sources:
-            messages.append('<br/>%s' % source.displayname)
-        messages.append('</p>')
-        # Replace the 'comment' content added by the user via structured(),
-        # so it will be quoted appropriately.
-        messages.append("<p>Deletion comment: %(comment)s</p>")
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(
-            structured(notification, comment=comment))
+            messages.append(structured('<br/>%s', source.displayname))
+        messages.append(structured(
+            '</p>\n<p>Deletion comment: %s</p>', comment))
+        notification = structured(
+            '\n'.join([msg.escapedtext for msg in messages]))
+        self.request.response.addNotification(notification)
 
         self.setNextURL()
 
@@ -1275,16 +1311,14 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         not permitted.
     """
     if check_permissions:
-        spns = [
-            spph.sourcepackagerelease.sourcepackagename
-            for spph in source_pubs]
         check_copy_permissions(
-            person, dest_archive, dest_series, dest_pocket, spns)
+            person, dest_archive, dest_series, dest_pocket, source_pubs)
 
     job_source = getUtility(IPlainPackageCopyJobSource)
     for spph in source_pubs:
         job_source.create(
-            spph.source_package_name, spph.archive, dest_archive, dest_series,
+            spph.source_package_name, spph.archive, dest_archive,
+            dest_series if dest_series is not None else spph.distroseries,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
             copy_policy=PackageCopyPolicy.INSECURE,
@@ -1401,7 +1435,7 @@ class PackageCopyingMixin:
                     dest_display_name=dest_display_name, person=person,
                     check_permissions=check_permissions,
                     sponsored=sponsored_person)
-        except CannotCopy, error:
+        except CannotCopy as error:
             self.setFieldError(
                 sources_field_name, render_cannotcopy_as_html(error))
             return False
@@ -1945,7 +1979,8 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        errors = Archive.validatePPA(self.context, proposed_name)
+        errors = validate_ppa(
+            self.context, proposed_name, private=self.is_private_team)
         if errors is not None:
             self.addError(errors)
 
@@ -1957,20 +1992,14 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def save_action(self, action, data):
         """Activate a PPA and moves to its page."""
-
         # 'name' field is omitted from the form data for default PPAs and
         # it's dealt with by IArchive.new(), which will use the default
         # PPA name.
         name = data.get('name', None)
-
-        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
-        # for Ubuntu distribution. PPA creation should be revisited when we
-        # start supporting other distribution (debian, mainly).
-        ppa = getUtility(IArchiveSet).new(
-            owner=self.context, purpose=ArchivePurpose.PPA,
-            distribution=self.ubuntu, name=name,
-            displayname=data['displayname'], description=data['description'])
-
+        displayname = data['displayname']
+        description = data['description']
+        ppa = self.context.createPPA(
+            name, displayname, description, private=self.is_private_team)
         self.next_url = canonical_url(ppa)
 
     @property
@@ -2079,9 +2108,17 @@ ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
 
 class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
 
-    field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
-                   'build_debug_symbols', 'buildd_secret', 'authorized_size',
-                   'relative_build_score', 'external_dependencies']
+    field_names = [
+        'enabled',
+        'private',
+        'suppress_subscription_notifications',
+        'require_virtualized',
+        'build_debug_symbols',
+        'buildd_secret',
+        'authorized_size',
+        'relative_build_score',
+        'external_dependencies',
+        ]
     custom_widget('external_dependencies', TextAreaWidget, height=3)
     custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
     page_title = 'Administer'
@@ -2135,11 +2172,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
-
-        if data.get('commercial') is True and not data['private']:
-            self.setFieldError(
-                'commercial',
-                'Can only set commericial for private archives.')
 
         enabled_restricted_families = data.get('enabled_restricted_families')
         require_virtualized = data.get('require_virtualized')

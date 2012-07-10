@@ -79,7 +79,7 @@ delayed-copy was issued can additionally access a link to its original
 archive, nothing else.
 
     >>> cprov_browser = setupBrowser(
-    ...       auth="Basic celso.providelo@canonical.com:cprov")
+    ...       auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(anon_browser.url)
 
     >>> for row in find_tags_by_class(cprov_browser.contents, "queue-row"):

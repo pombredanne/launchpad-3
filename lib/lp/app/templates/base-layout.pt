@@ -14,17 +14,15 @@
     feature_scopes request/features/scopes;
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
-><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
+><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html&gt;" /></metal:doctype>
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
-  <head tal:define="
-    yui string:${icingroot}/yui/current/build;
-    lazr_js string:${icingroot}/lazr/build;
-    lp_js string:${icingroot}/build">
+  <head>
+    <meta charset="UTF-8" />
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <link
@@ -46,15 +44,6 @@
       html, body {background-image: url(/@@/demo) !important;}
     </style>
 
-    <tal:comment condition="nothing">
-      Removing the below <noscript></noscript> snippet makes two tests fail
-      with redirection problems:
-        xx-ubuntu-filebug.txt
-        xx-bug-reporting-tools.txt
-      No time to look into it now, so keeping it in. XXX Danilo 20110715
-    </tal:comment>
-    <noscript></noscript>
-
     <tal:view condition="not: view/macro:is-page-contentless">
       <meta name="description"
         tal:condition="view/page_description | nothing"
@@ -73,7 +62,7 @@
     itemtype="http://schema.org/WebPage"
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
-      ${view/context/fmt:public-private-css}
+      ${view/fmt:global-css}
       yui3-skin-sam">
         <script type="text/javascript"
           tal:condition="python: is_lpnet">
@@ -83,17 +72,20 @@
           _gaq.push(['_setAllowHash', false]);
           _gaq.push(['_trackPageview']);
         </script>
+        <script type="text/javascript"
+            tal:condition="python: is_lpnet"
+            tal:attributes="src string:${icingroot}/google-analytics/ga.js"></script>
     <div class="yui-d0">
       <div id="locationbar" class="login-logout">
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
 
       <div id="watermark" class="watermark-apps-portlet"
-           tal:condition="view/macro:pagehas/applicationtabs">
-        <div class="flowed-block">
+        tal:condition="view/macro:has-watermark">
+        <div>
           <span tal:replace="structure view/watermark:logo"></span>
         </div>
-        <div class="flowed-block wide">
+        <div class="wide">
           <h2 tal:replace="structure view/watermark:heading">
             Celso Providelo
           </h2>
@@ -105,13 +97,16 @@
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
+          <metal:privacy-banner
+            use-macro="view/@@+banner-macros/beta-banner"/>
+          <metal:privacy-banner
+            use-macro="view/@@+banner-macros/privacy-banner"/>
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <div class="context-publication"
-              tal:condition="view/macro:pagehas/applicationtabs">
+            <div class="context-publication">
               <h1
                 tal:condition="view/label|nothing"
                 tal:content="view/label"
@@ -178,6 +173,21 @@
 
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
+    <metal:debug-timeline
+      use-macro="context/@@+base-layout-macros/debug-timeline" />
+    <tal:comment
+        tal:condition="request/features/visible_render_time"
+        define="render_time modules/lp.services.webapp.adapter/summarize_requests;"
+        replace='structure string:&lt;script type="text/javascript"&gt;
+      var render_time = "${render_time}";
+      LPJS.use("node", "lp.ajax_log" , function(Y) {
+        Y.on("domready", function() {
+          var node = Y.one("#rendertime");
+          node.set("innerHTML", render_time);
+          var ajax_log = new Y.lp.ajax_log();
+        });
+      });
+    &lt;/script&gt;' />
   </body>
 
 <tal:template>
@@ -198,24 +208,5 @@
 
     --&gt;" />
 </tal:template>
-
-
-<metal:debug-timeline
-  use-macro="context/@@+base-layout-macros/debug-timeline" />
-
-<tal:comment
-    tal:condition="request/features/visible_render_time"
-    define="render_time modules/lp.services.webapp.adapter/summarize_requests;"
-    replace='structure string:&lt;script type="text/javascript"&gt;
-  start_ajax_logging();
-  var render_time = "${render_time}";
-  LPS.use("node", function(Y) {
-    Y.on("domready", function() {
-      var node = Y.one("#rendertime");
-      node.set("innerHTML", render_time);
-    });
-  });
-&lt;/script&gt;' />
-
 </html>
 </metal:page>

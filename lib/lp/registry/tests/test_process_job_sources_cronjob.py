@@ -62,7 +62,7 @@ class ProcessJobSourceTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', 'IMembershipNotificationJobSource'])
         self.assertIn(
-            ('DEBUG   Running <MembershipNotificationJob '
+            ('INFO    Running <MembershipNotificationJob '
              'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
@@ -99,8 +99,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
             output)
         self.assertIn('-e JOB_SOURCE, --exclude=JOB_SOURCE', output)
         self.assertIn('At least one group must be specified.', output)
-        self.assertIn('Group: MAIN\n    IMembershipNotificationJobSource',
-                      output)
+        self.assertIn('Group: MAIN\n    I', output)
 
     def test_empty_queue(self):
         # The script should just create a lockfile, launch a child for
@@ -126,7 +125,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', '--wait', 'MAIN'])
         self.assertTextMatchesExpressionIgnoreWhitespace(
-            ('DEBUG Running <MembershipNotificationJob '
+            ('INFO Running <MembershipNotificationJob '
              'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)

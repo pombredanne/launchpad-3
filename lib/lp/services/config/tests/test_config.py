@@ -62,7 +62,7 @@ def make_config_test(config_file, description):
             config = schema.load(config_file)
             try:
                 config.validate()
-            except ConfigErrors, error:
+            except ConfigErrors as error:
                 message = '\n'.join([str(e) for e in error.errors])
                 self.fail(message)
     # Hack the config file name into the class name.
@@ -84,6 +84,9 @@ class TestLaunchpadConfig(unittest.TestCase):
     def test_iter(self):
         # iter(config) returns an iterator of sections.
         config = lp.services.config.config
+        # Reload the config if needed: without this call,
+        # `config._config` can be None (see bug 987904).
+        config._getConfig()
         sections = set(config._config)
         self.assertEqual(sections, set(config))
 

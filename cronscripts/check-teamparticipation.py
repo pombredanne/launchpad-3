@@ -26,14 +26,14 @@ from lp.registry.scripts.teamparticipation import (
     fetch_team_participation_info,
     fix_teamparticipation_consistency,
     )
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.utils import (
     load_bz2_pickle,
     save_bz2_pickle,
     )
 
 
-class CheckTeamParticipationScript(LaunchpadScript):
+class CheckTeamParticipationScript(LaunchpadCronScript):
     description = "Check for invalid/missing TeamParticipation entries."
 
     def add_my_options(self):

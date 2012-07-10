@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0603
@@ -449,7 +449,7 @@ def start_launchpad(argv=list(sys.argv), setup=None):
                     signal.pause()
                 except KeyboardInterrupt:
                     pass
-    except Exception, e:
+    except Exception as e:
         print >> sys.stderr, "stopping services on exception %r" % e
         for service in services:
             print >> sys.stderr, service, "fixture details:"

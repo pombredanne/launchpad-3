@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Support for browser-cookie sessions."""
@@ -8,8 +8,6 @@ __metaclass__ = type
 from cookielib import domain_match
 
 from lazr.uri import URI
-from storm.zope.interfaces import IZStorm
-from zope.component import getUtility
 from zope.session.http import CookieClientIdManager
 
 from lp.services.config import config
@@ -42,6 +40,7 @@ def get_cookie_domain(request_domain):
     return None
 
 ANNOTATION_KEY = 'lp.services.webapp.session.sid'
+
 
 class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
@@ -104,6 +103,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
         cookie = request.response.getCookie(self.namespace)
         uri = URI(request.getURL())
+
+        # Forbid browsers from exposing it to JS.
+        cookie['HttpOnly'] = True
 
         # Set secure flag on cookie.
         if uri.scheme != 'http':

@@ -6,8 +6,6 @@ Configuration information pulled from launchpad.conf.
 
 The configuration section used is specified using the LPCONFIG
 environment variable, and defaults to 'development'
-
-XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.
 '''
 
 __metaclass__ = type
@@ -107,17 +105,25 @@ class LaunchpadConfig:
         :param instance_name: the configuration instance to use. Defaults to
             the value of the LPCONFIG environment variable.
         :param process_name: the process configuration name to use. Defaults
-            to the basename of sys.argv[0] without any extension.
+            to the basename of sys.argv[0] without any extension, or None if
+            sys.argv is not available.
        """
         self._config = None
         if instance_name is None:
             instance_name = find_instance_name()
 
         if process_name is None:
-            process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+            self._process_name = self._make_process_name()
+        else:
+            self._process_name = process_name
         self._instance_name = instance_name
-        self._process_name = process_name
         self.root = TREE_ROOT
+
+    def _make_process_name(self):
+        if getattr(sys, 'argv', None) is None:
+            return None
+        basename = os.path.basename(sys.argv[0])
+        return os.path.splitext(basename)[0]
 
     @property
     def instance_name(self):
@@ -174,6 +180,8 @@ class LaunchpadConfig:
         LaunchpadConfig loads the conf file named for the process. When
         the conf file does not exist, it loads launchpad-lazr.conf instead.
         """
+        if self._process_name is None:
+            self._process_name = self._make_process_name()
         return self._process_name
 
     def setProcess(self, process_name):
@@ -207,7 +215,7 @@ class LaunchpadConfig:
         self._config = schema.load(config_file)
         try:
             self._config.validate()
-        except ConfigErrors, error:
+        except ConfigErrors as error:
             message = '\n'.join([str(e) for e in error.errors])
             raise ConfigErrors(message)
         self._setZConfig()
@@ -365,7 +373,7 @@ def urlbase(value):
 
 
 def commalist(value):
-    """ZConfig validator for a comma seperated list"""
+    """ZConfig validator for a comma separated list"""
     return [v.strip() for v in value.split(',')]
 
 
@@ -450,7 +458,7 @@ class DatabaseConfig:
         """
         for attr, value in kwargs.iteritems():
             assert attr in self._db_config_attrs, (
-                "%s cannot be overriden" % attr)
+                "%s cannot be overridden" % attr)
             if value is None:
                 if hasattr(self.overrides, attr):
                     delattr(self.overrides, attr)

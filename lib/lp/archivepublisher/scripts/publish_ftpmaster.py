@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Master distro publishing script."""
@@ -18,17 +18,24 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.database.bulk import load_related
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
 from lp.soyuz.scripts.publishdistro import PublishDistro
 
@@ -121,27 +128,13 @@ def extend_PATH():
     return {"PATH": '"$PATH":%s' % shell_quote(scripts_dir)}
 
 
-class StoreArgument:
-    """Helper class: receive argument and store it."""
-
-    def __call__(self, argument):
-        self.argument = argument
-
-
 def find_run_parts_dir(distro, parts):
     """Find the requested run-parts directory, if it exists."""
     run_parts_location = config.archivepublisher.run_parts_location
     if not run_parts_location:
         return
 
-    if run_parts_location.startswith("/"):
-        # Absolute path.
-        base_dir = run_parts_location
-    else:
-        # Relative path.
-        base_dir = os.path.join(config.root, run_parts_location)
-
-    parts_dir = os.path.join(base_dir, distro.name, parts)
+    parts_dir = os.path.join(run_parts_location, distro.name, parts)
     if file_exists(parts_dir):
         return parts_dir
     else:
@@ -327,14 +320,19 @@ class PublishFTPMaster(LaunchpadCronScript):
         script.main()
 
     def getDirtySuites(self, distribution):
-        """Return list of suites that have packages pending publication."""
+        """Return set of suites that have packages pending publication."""
         self.logger.debug("Querying which suites are pending publication...")
-        query_distro = LpQueryDistro(
-            test_args=['-d', distribution.name, "pending_suites"],
-            logger=self.logger)
-        receiver = StoreArgument()
-        query_distro.runAction(presenter=receiver)
-        return receiver.argument.split()
+
+        archive = distribution.main_archive
+        pending = PackagePublishingStatus.PENDING
+        pending_sources = list(archive.getPublishedSources(status=pending))
+        pending_binaries = list(archive.getAllPublishedBinaries(
+            status=pending))
+        load_related(
+            DistroArchSeries, pending_binaries, ['distroarchseriesID'])
+        return set(
+            pub.distroseries.name + pocketsuffix[pub.pocket]
+            for pub in pending_sources + pending_binaries)
 
     def getDirtySecuritySuites(self, distribution):
         """List security suites with pending publications."""
@@ -593,7 +591,11 @@ class PublishFTPMaster(LaunchpadCronScript):
                 # This is a fresh series.
                 have_fresh_series = True
                 if series.previous_series is not None:
-                    CustomUploadsCopier(series).copy(series.previous_series)
+                    copier = CustomUploadsCopier(
+                        series, PackagePublishingPocket.RELEASE)
+                    copier.copy(
+                        series.previous_series,
+                        PackagePublishingPocket.RELEASE)
                 self.createIndexes(distribution, suites_needing_indexes)
 
         return have_fresh_series

@@ -47,17 +47,16 @@ imported into, and the remote bug number. At the moment only
 distributions are supported as the bug target.
 
     # Make sane data to play this test.
-    >>> from lp.services.config import config
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.testing.layers import LaunchpadZopelessLayer
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> evolution_dsp = debian.getSourcePackage('evolution')
-    >>> ignore = factory.makeSourcePackagePublishingHistory(
-    ...     distroseries=debian.currentseries,
-    ...     sourcepackagename=evolution_dsp.sourcepackagename)
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> with lp_dbuser():
+    ...     debian = getUtility(IDistributionSet).getByName('debian')
+    ...     evolution_dsp = debian.getSourcePackage('evolution')
+    ...     ignore = factory.makeSourcePackagePublishingHistory(
+    ...         distroseries=debian.currentseries,
+    ...         sourcepackagename=evolution_dsp.sourcepackagename)
 
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> debian = getUtility(IDistributionSet).getByName('debian')
@@ -65,7 +64,8 @@ distributions are supported as the bug target.
     ...     'package': 'evolution',
     ...     'reporter': ("Joe Bloggs", "joe.bloggs@example.com")}
     >>> transaction.commit()
-    >>> bug_watch_updater = CheckwatchesMaster(LaunchpadZopelessLayer.txn)
+    >>> bug_watch_updater = CheckwatchesMaster(
+    ...     LaunchpadZopelessLayer.txn, logger=FakeLogger())
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '3')
 
@@ -80,7 +80,7 @@ by getBugSummaryAndDescription().
 The bug reporter, as returned by getBugReporter(), got automatically created.
 
     >>> getUtility(IPersonSet).getByEmail(
-    ...     'joe.bloggs@example.com') is not None
+    ...     'joe.bloggs@example.com', filter_status=False) is not None
     True
     >>> print bug.owner.displayname
     Joe Bloggs
@@ -140,7 +140,7 @@ the script gets notified about it.
     None
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '5')
-    WARNING:...:Unknown debian package (#5 at http://...): no-such-package
+    WARNING Unknown debian package (#5 at http://...): no-such-package
     (OOPS-...)
 
     >>> [added_task] = bug.bugtasks

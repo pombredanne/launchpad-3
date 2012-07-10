@@ -39,7 +39,7 @@ class DecoratedResultSet(object):
     delegates(IResultSet, context='result_set')
 
     def __init__(self, result_set, result_decorator=None, pre_iter_hook=None,
-                 slice_info=False):
+                 slice_info=False, return_both=False):
         """
         Wrap `result_set` in a decorator.
 
@@ -55,23 +55,50 @@ class DecoratedResultSet(object):
         :param slice_info: If True pass information about the slice parameters
             to the result_decorator and pre_iter_hook. any() and similar
             methods will cause None to be supplied.
+        :param return_both: If True return both the plain and decorated
+            values as a tuple.
         """
         self.result_set = result_set
         self.result_decorator = result_decorator
         self.pre_iter_hook = pre_iter_hook
         self.slice_info = slice_info
+        self.config(return_both=return_both)
+
+    def _extract_plain_and_result(self, results):
+        """Extract the plain and normal results from a sub-result.
+
+        This gets slightly complicated when there are nested
+        DecoratedResultSets, as we have to propogate the plain result
+        all the way up.
+        """
+        if not results:
+            return [], []
+        elif (zope_isinstance(self.result_set, DecoratedResultSet)
+              and self.return_both):
+            assert self.result_set.return_both == self.return_both
+            return zip(*results)
+        else:
+            return results, results
 
     def decorate_or_none(self, result, row_index=None):
         """Decorate a result or return None if the result is itself None"""
+        # If we have a nested DecoratedResultSet we need to propogate
+        # the plain result.
+        ([plain], [result]) = self._extract_plain_and_result([result])
+
         if result is None:
-            return None
+            decorated = None
         else:
             if self.result_decorator is None:
-                return result
+                decorated = result
             elif self.slice_info:
-                return self.result_decorator(result, row_index)
+                decorated = self.result_decorator(result, row_index)
             else:
-                return self.result_decorator(result)
+                decorated = self.result_decorator(result)
+        if self.return_both:
+            return (plain, decorated)
+        else:
+            return decorated
 
     def copy(self, *args, **kwargs):
         """See `IResultSet`.
@@ -81,13 +108,19 @@ class DecoratedResultSet(object):
         new_result_set = self.result_set.copy(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook,
-            self.slice_info)
+            self.slice_info, self.return_both)
 
     def config(self, *args, **kwargs):
         """See `IResultSet`.
 
         :return: The decorated result set.after updating the config.
         """
+        return_both = kwargs.pop('return_both', None)
+        if return_both is not None:
+            self.return_both = return_both
+            if zope_isinstance(self.result_set, DecoratedResultSet):
+                self.result_set.config(return_both=return_both)
+
         self.result_set.config(*args, **kwargs)
         return self
 
@@ -106,10 +139,11 @@ class DecoratedResultSet(object):
             stop = start + len(results)
             result_slice = slice(start, stop)
         if self.pre_iter_hook is not None:
+            pre_iter_rows = self._extract_plain_and_result(results)[1]
             if self.slice_info:
-                self.pre_iter_hook(results, result_slice)
+                self.pre_iter_hook(pre_iter_rows, result_slice)
             else:
-                self.pre_iter_hook(results)
+                self.pre_iter_hook(pre_iter_rows)
         if self.slice_info:
             start = result_slice.start
             for offset, value in enumerate(results):
@@ -133,12 +167,17 @@ class DecoratedResultSet(object):
         else:
             return self.decorate_or_none(value)
 
+    def iterhook_one_elem(self, value):
+        if value is not None and self.pre_iter_hook is not None:
+            self.pre_iter_hook([value])
+
     def any(self, *args, **kwargs):
         """See `IResultSet`.
 
         :return: The decorated version of the returned value.
         """
         value = self.result_set.any(*args, **kwargs)
+        self.iterhook_one_elem(value)
         return self.decorate_or_none(value)
 
     def first(self, *args, **kwargs):
@@ -147,6 +186,7 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned value.
         """
         value = self.result_set.first(*args, **kwargs)
+        self.iterhook_one_elem(value)
         return self.decorate_or_none(value)
 
     def last(self, *args, **kwargs):
@@ -155,6 +195,7 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned value.
         """
         value = self.result_set.last(*args, **kwargs)
+        self.iterhook_one_elem(value)
         return self.decorate_or_none(value)
 
     def one(self, *args, **kwargs):
@@ -163,6 +204,7 @@ class DecoratedResultSet(object):
         :return: The decorated version of the returned value.
         """
         value = self.result_set.one(*args, **kwargs)
+        self.iterhook_one_elem(value)
         return self.decorate_or_none(value)
 
     def order_by(self, *args, **kwargs):
@@ -173,7 +215,7 @@ class DecoratedResultSet(object):
         new_result_set = self.result_set.order_by(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook,
-            self.slice_info)
+            self.slice_info, self.return_both)
 
     def get_plain_result_set(self):
         """Return the plain Storm result set."""
@@ -195,4 +237,4 @@ class DecoratedResultSet(object):
             new_result_set = self.result_set.find(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook,
-            self.slice_info)
+            self.slice_info, self.return_both)

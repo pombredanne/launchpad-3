@@ -28,7 +28,7 @@ import fileinput
 import os
 import re
 import sys
-from itertools import takewhile
+from itertools import takewhile, imap
 
 ${python-relative-path-setup}
 
@@ -37,6 +37,14 @@ TEST = "${buildout:directory/bin/test}"
 
 # Regular expression to match numbered stories.
 STORY_RE = re.compile("(.*)/\d{2}-.*")
+
+# Regular expression to remove terminal color escapes.
+COLOR_RE = re.compile("\x1b[[][0-9;]+m")
+
+
+def decolorize(text):
+    """Remove all ANSI terminal color escapes from `text`."""
+    return COLOR_RE.sub("", text)
 
 
 def get_test_name(test):
@@ -91,7 +99,8 @@ def run_tests(tests):
 
 
 if __name__ == '__main__':
-    tests = extract_tests(fileinput.input())
+    lines = imap(decolorize, fileinput.input())
+    tests = extract_tests(lines)
     if len(tests) >= 1:
         run_tests(tests)
     else:

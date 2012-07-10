@@ -8,22 +8,16 @@
   "
   tal:define="link context/menu:context/visibility"
 >
-  <div tal:condition="not:context/private" id="privacy-text">
-    <a class="sprite edit" id="privacy-link"
-       tal:attributes="href link/path; title link/text"
-       tal:condition="link/enabled">This report is public</a>
-    <tal:unchangeable condition="not:link/enabled">
-      This report is public
-    </tal:unchangeable>
+  <div id="privacy-text">
+       <span id="information-type-summary"
+         tal:attributes="class view/information_type_css;">This report
+         contains
+         <strong id="information-type" tal:content="view/information_type" />
+         information
+       </span>&nbsp;<a class="sprite edit action-icon" id="privacy-link"
+           tal:attributes="href link/path" tal:condition="link/enabled"
+           >Edit</a>
+      <div id="information-type-description" style="padding-top: 5px"
+                tal:content="view/information_type_description"></div>
   </div>
-  <div tal:condition="context/private" id="privacy-text">
-    <a class="sprite edit" id="privacy-link"
-      tal:attributes="href link/path; title link/text"
-      tal:condition="link/enabled">This report is <strong>private</strong></a>
-    <tal:unchangeable condition="not:link/enabled">
-      This report is private
-    </tal:unchangeable>
-  </div>
-  <div class="sprite security" id="security-message"
-       tal:condition="context/security_related">Security vulnerability</div>
 </div>

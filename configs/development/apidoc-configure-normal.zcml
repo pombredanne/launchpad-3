@@ -103,12 +103,6 @@
         parent="lp"
         />
     <apidoc:bookchapter
-        id="memcachetales"
-        title="Memcache Tales Expressions"
-        doc_path="../../lib/lp/services/memcache/doc/tales-cache.txt"
-        parent="lp"
-        />
-    <apidoc:bookchapter
         id="sprites"
         title="Image Sprites"
         doc_path="../../lib/lp/services/doc/sprites.txt"

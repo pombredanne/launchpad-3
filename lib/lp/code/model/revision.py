@@ -25,7 +25,6 @@ from sqlobject import (
     ForeignKey,
     IntCol,
     SQLMultipleJoin,
-    SQLObjectNotFound,
     StringCol,
     )
 from storm.expr import (
@@ -57,10 +56,12 @@ from lp.code.interfaces.revision import (
     IRevisionProperty,
     IRevisionSet,
     )
+from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.person import ValidPersonCache
+from lp.services.database.bulk import create
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -73,17 +74,11 @@ from lp.services.database.lpstorm import (
 from lp.services.database.sqlbase import (
     quote,
     SQLBase,
-    sqlvalues,
     )
 from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
     )
 
 
@@ -165,7 +160,8 @@ class Revision(SQLBase):
             self.id == BranchRevision.revision_id,
             BranchRevision.branch_id == Branch.id)
         if not allow_private:
-            query = And(query, Not(Branch.transitively_private))
+            query = And(
+                query, Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
         if not allow_junk:
             query = And(
                 query,
@@ -277,13 +273,13 @@ class RevisionSet:
             properties = {}
         if _date_created is None:
             _date_created = UTC_NOW
-        author = self.acquireRevisionAuthor(revision_author)
+        authors = self.acquireRevisionAuthors([revision_author])
 
         revision = Revision(
             revision_id=revision_id,
             log_body=log_body,
             revision_date=revision_date,
-            revision_author=author,
+            revision_author=authors[revision_author],
             date_created=_date_created)
         # Don't create future revisions.
         if revision.revision_date > revision.date_created:
@@ -303,22 +299,29 @@ class RevisionSet:
 
         return revision
 
-    def acquireRevisionAuthor(self, name):
-        """Find or create the RevisionAuthor with the specified name.
+    def acquireRevisionAuthors(self, author_names):
+        """Find or create the RevisionAuthors with the specified names.
 
-        Name may be any arbitrary string, but if it is an email-id, and
+        A name may be any arbitrary string, but if it is an email-id, and
         its email address is a verified email address, it will be
         automatically linked to the corresponding Person.
 
         Email-ids come in two major forms:
             "Foo Bar" <foo@bar.com>
             foo@bar.com (Foo Bar)
+        :return: a dict of name -> RevisionAuthor
         """
-        # create a RevisionAuthor if necessary:
-        try:
-            return RevisionAuthor.byName(name)
-        except SQLObjectNotFound:
-            return self._createRevisionAuthor(name)
+        store = IMasterStore(Revision)
+        author_names = set(author_names)
+        authors = {}
+        for author in store.find(RevisionAuthor,
+                RevisionAuthor.name.is_in(author_names)):
+            authors[author.name] = author
+        missing = author_names - set(authors.keys())
+        # create missing RevisionAuthors
+        for name in missing:
+            authors[name] = self._createRevisionAuthor(name)
+        return authors
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.
@@ -339,54 +342,76 @@ class RevisionSet:
         revision_date += timedelta(seconds=timestamp - int_timestamp)
         return revision_date
 
-    def newFromBazaarRevision(self, bzr_revision):
+    def newFromBazaarRevisions(self, revisions):
         """See `IRevisionSet`."""
-        revision_id = bzr_revision.revision_id
-        revision_date = self._timestampToDatetime(bzr_revision.timestamp)
-        authors = bzr_revision.get_apparent_authors()
-        # XXX: JonathanLange 2009-05-01 bug=362686: We can only have one
-        # author per revision, so we use the first on the assumption that
-        # this is the primary author.
-        try:
-            author = authors[0]
-        except IndexError:
-            author = None
-        return self.new(
-            revision_id=revision_id,
-            log_body=bzr_revision.message,
-            revision_date=revision_date,
-            revision_author=author,
-            parent_ids=bzr_revision.parent_ids,
-            properties=bzr_revision.properties)
+
+        # Find all author names for these revisions.
+        author_names = []
+        for bzr_revision in revisions:
+            authors = bzr_revision.get_apparent_authors()
+            try:
+                author = authors[0]
+            except IndexError:
+                author = None
+            author_names.append(author)
+        # Get or make every RevisionAuthor for these revisions.
+        revision_authors = dict(
+            (name, author.id) for name, author in
+            self.acquireRevisionAuthors(author_names).items())
+
+        # Collect all data for making Revision objects.
+        data = []
+        for bzr_revision, author_name in zip(revisions, author_names):
+            revision_id = bzr_revision.revision_id
+            revision_date = self._timestampToDatetime(bzr_revision.timestamp)
+            revision_author = revision_authors[author_name]
+
+            data.append(
+                (revision_id, bzr_revision.message, revision_date,
+                revision_author))
+        # Create all Revision objects.
+        db_revisions = create((
+            Revision.revision_id, Revision.log_body, Revision.revision_date,
+            Revision.revision_author_id), data, get_objects=True)
+
+        # Map revision_id to Revision database ID.
+        revision_db_id = dict(
+            (rev.revision_id, rev.id) for rev in db_revisions)
+
+        # Collect all data for making RevisionParent and RevisionProperty
+        # objects.
+        parent_data = []
+        property_data = []
+        for bzr_revision in revisions:
+            db_id = revision_db_id[bzr_revision.revision_id]
+            # Property data: revision DB id, name, value.
+            for name, value in bzr_revision.properties.iteritems():
+                property_data.append((db_id, name, value))
+            parent_ids = bzr_revision.parent_ids
+            # Parent data: revision DB id, sequence, revision_id
+            seen_parents = set()
+            for sequence, parent_id in enumerate(parent_ids):
+                if parent_id in seen_parents:
+                    continue
+                seen_parents.add(parent_id)
+                parent_data.append((db_id, sequence, parent_id))
+        # Create all RevisionParent objects.
+        create((
+            RevisionParent.revisionID, RevisionParent.sequence,
+            RevisionParent.parent_id), parent_data)
+
+        # Create all RevisionProperty objects.
+        create((
+            RevisionProperty.revisionID, RevisionProperty.name,
+            RevisionProperty.value), property_data)
 
     @staticmethod
     def onlyPresent(revids):
         """See `IRevisionSet`."""
-        if not revids:
-            return set()
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.execute(
-            """
-            CREATE TEMPORARY TABLE Revids
-            (revision_id text)
-            """)
-        data = []
-        for revid in revids:
-            data.append('(%s)' % sqlvalues(revid))
-        data = ', '.join(data)
-        store.execute(
-            "INSERT INTO Revids (revision_id) VALUES %s" % data)
-        result = store.execute(
-            """
-            SELECT Revids.revision_id
-            FROM Revids, Revision
-            WHERE Revids.revision_id = Revision.revision_id
-            """)
-        present = set()
-        for row in result.get_all():
-            present.add(row[0])
-        store.execute("DROP TABLE Revids")
-        return present
+        store = IStore(Revision)
+        clause = Revision.revision_id.is_in(revids)
+        present = store.find(Revision.revision_id, clause)
+        return set(present)
 
     def checkNewVerifiedEmail(self, email):
         """See `IRevisionSet`."""
@@ -481,7 +506,7 @@ class RevisionSet:
             Revision,
             And(revision_time_limit(day_limit),
                 person_condition,
-                Not(Branch.transitively_private)))
+                Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES)))
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
@@ -499,8 +524,9 @@ class RevisionSet:
             Join(Branch, BranchRevision.branch == Branch.id),
             ]
 
-        conditions = And(revision_time_limit(day_limit),
-                         Not(Branch.transitively_private))
+        conditions = And(
+            revision_time_limit(day_limit),
+            Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES))
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)

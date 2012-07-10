@@ -33,7 +33,7 @@ Multiple flags are divided by commas.
     >>> comments_text_representation(translation_message)
     u'#, fuzzy, c-format'
 
-Simple comments are preceeded by a single # sign.
+Simple comments are preceded by a single # sign.
 
     >>> translation_message = TranslationMessageData()
     >>> translation_message.msgid_singular = u'a'

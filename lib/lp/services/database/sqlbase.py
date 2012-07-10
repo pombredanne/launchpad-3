@@ -1,11 +1,10 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'block_implicit_flushes',
     'clear_current_connection_cache',
-    'commit',
     'connect',
     'convert_storm_clause_to_string',
     'cursor',
@@ -15,6 +14,7 @@ __all__ = [
     'ISOLATION_LEVEL_AUTOCOMMIT',
     'ISOLATION_LEVEL_DEFAULT',
     'ISOLATION_LEVEL_READ_COMMITTED',
+    'ISOLATION_LEVEL_REPEATABLE_READ',
     'ISOLATION_LEVEL_SERIALIZABLE',
     'quote',
     'quote_like',
@@ -30,11 +30,11 @@ __all__ = [
 
 from datetime import datetime
 
-from lazr.restful.interfaces import IRepresentationCache
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT,
     ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_REPEATABLE_READ,
     ISOLATION_LEVEL_SERIALIZABLE,
     )
 import pytz
@@ -50,7 +50,6 @@ from storm.locals import (
     Storm,
     )
 from storm.zope.interfaces import IZStorm
-import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.interface import implements
@@ -165,7 +164,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def __init__(self, *args, **kwargs):
         """Extended version of the SQLObjectBase constructor.
 
-        We we force use of the the master Store.
+        We force use of the master Store.
 
         We refetch any parameters from different stores from the
         correct master Store.
@@ -247,11 +246,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def __ne__(self, other):
         """Inverse of __eq__."""
         return not (self == other)
-
-    def __storm_flushed__(self):
-        """Invalidate the web service cache."""
-        cache = getUtility(IRepresentationCache)
-        cache.delete(self)
 
     def __storm_invalidated__(self):
         """Flush cached properties."""
@@ -562,11 +556,6 @@ def reset_store(func):
         finally:
             _get_sqlobject_store().reset()
     return mergeFunctionMetadata(func, reset_store_decorator)
-
-
-# DEPRECATED -- use transaction.commit() directly.
-def commit():
-    transaction.commit()
 
 
 def connect(user=None, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):

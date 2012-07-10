@@ -877,7 +877,7 @@ class HTTPStreamParser:
                 header_plus = s[:index]
                 consumed = len(data) - (len(s) - index)
                 self.in_header = 0
-                # Remove preceeding blank lines.
+                # Remove preceding blank lines.
                 header_plus = header_plus.lstrip()
                 if not header_plus:
                     self.empty = 1
@@ -1361,7 +1361,7 @@ def main(args):
                                         'no-record-responses',
                                         'no-record-errors',
                                        ])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         usageError(msg)
 
     fwd_params = []

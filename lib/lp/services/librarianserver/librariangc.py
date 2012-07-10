@@ -144,7 +144,7 @@ def merge_duplicates(con):
         """)
     rows = list(cur.fetchall())
 
-    # Merge the duplicate entries, each one in a seperate transaction
+    # Merge the duplicate entries, each one in a separate transaction
     for sha1, filesize in rows:
         cur = con.cursor()
 
@@ -486,7 +486,7 @@ class UnreferencedContentPruner:
             path = get_file_path(content_id)
             try:
                 os.unlink(path)
-            except OSError, e:
+            except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
                 if config.librarian_server.upstream_host is None:

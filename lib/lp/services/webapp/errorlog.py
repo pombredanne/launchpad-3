@@ -323,12 +323,9 @@ class ErrorReportingUtility:
         # Constants:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
         self._oops_config.template['revno'] = versioninfo.revno
-        reporter = config[section_name].oops_prefix
-        if reporter is None:
-            # Unconfigured section - make up a reporter slightly more useful
-            # than e.g 'T' or 'LPNET'
-            reporter = (config[self._default_config_section].oops_prefix +
-                '-' + section_name)
+        reporter = config[self._default_config_section].oops_prefix
+        if section_name != self._default_config_section:
+            reporter = '%s-%s' % (reporter, section_name)
         self._oops_config.template['reporter'] = reporter
         # Should go in an HTTP module.
         self._oops_config.template['req_vars'] = {}
@@ -367,11 +364,8 @@ class ErrorReportingUtility:
             add_publisher(amqp_publisher)
         # We want to publish reports to disk for gathering to the central
         # analysis server, but only if we haven't already published to rabbit.
-        error_dir = config[section_name].error_dir
-        if error_dir is None:
-            # Inherit the base error_dir - sharing error dirs is safe.
-            error_dir = config[self._default_config_section].error_dir
-        self._oops_datedir_repo = DateDirRepo(error_dir)
+        self._oops_datedir_repo = DateDirRepo(
+            config[self._default_config_section].error_dir)
         add_publisher(oops.publish_new_only(self._oops_datedir_repo.publish))
         # And send everything within the zope application server (only for
         # testing).
@@ -542,18 +536,16 @@ class UserRequestOops(Exception):
 def maybe_record_user_requested_oops():
     """If an OOPS has been requested, report one.
 
-    :return: The oopsid of the requested oops.  Returns None if an oops was
-        not requested, or if there is already an OOPS.
+    It will be stored in request.oopsid.
     """
     request = get_current_browser_request()
-    # If there is no request, or there is an oops already, then return.
-    if (request is None or
-        request.oopsid is not None or
-        not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
-        return None
-    globalErrorUtility.raising(
-        (UserRequestOops, UserRequestOops(), None), request)
-    return request.oopsid
+    # If there's a request and no existing OOPS, but an OOPS has been
+    # requested, record one.
+    if (request is not None
+        and request.oopsid is None
+        and request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
+        globalErrorUtility.raising(
+            (UserRequestOops, UserRequestOops(), None), request)
 
 
 class OopsNamespace(view):

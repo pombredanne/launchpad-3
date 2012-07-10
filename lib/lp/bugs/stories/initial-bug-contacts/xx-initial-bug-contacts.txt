@@ -11,7 +11,7 @@ to change the bug supervisor.
   ...
   LinkNotFoundError
 
-Collin is an an Ubuntu owner and can set the bug supervisor role.
+Colin is an Ubuntu owner and can set the bug supervisor role.
 
   >>> colin_browser = setupBrowser(
   ...     auth='Basic colin.watson@ubuntulinux.com:test')
@@ -40,7 +40,7 @@ Ubuntu.
   ...     ' colin.watson@ubuntulinux.com ')
   >>> colin_browser.getControl("Change").click()
 
-And then collin is redirected to the distribution bugs page.
+And then Colin is redirected to the distribution bugs page.
 
     >>> print extract_text(find_tag_by_id(
     ...     colin_browser.contents, 'bug-supervisor'))
@@ -149,8 +149,7 @@ subscribed, because Firefox does not have a security contact.
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Embargoed Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> other_bug_id = browser.url.split("/")[-1]
@@ -223,8 +222,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "top sekrit"
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Embargoed Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> other_bug_id = browser.url.split("/")[-1]

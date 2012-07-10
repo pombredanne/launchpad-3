@@ -114,6 +114,10 @@ class LoginToken(SQLBase):
         message = template % replacements
         subject = "Launchpad: Validate your email address"
         self._send_email("Launchpad Email Validator", subject, message)
+        self.requester.security_field_changed(
+            "A new email address is being added to your Launchpad account.",
+            "<%s> will be activated for your account when you follow the "
+            "instructions that were sent to <%s>." % (self.email, self.email))
 
     def sendGPGValidationRequest(self, key):
         """See ILoginToken."""
@@ -226,7 +230,9 @@ class LoginToken(SQLBase):
         """See `ILoginToken`."""
         template = get_email_template('claim-team.txt', app=MAIL_APP)
         from_name = "Launchpad"
-        profile = getUtility(IPersonSet).getByEmail(self.email)
+        profile = getUtility(IPersonSet).getByEmail(
+                                            self.email,
+                                            filter_status=False)
         replacements = {'profile_name': (
                             "%s (%s)" % (profile.displayname, profile.name)),
                         'requester_name': (
@@ -391,7 +397,6 @@ class LoginTokenSet:
             # Aha! According to our policy, we shouldn't raise ValueError.
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
-
         token = create_unique_token_for_table(20, LoginToken.token)
         return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,

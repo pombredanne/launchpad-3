@@ -11,7 +11,8 @@ __all__ = [
     'EmailAddressStatus',
     'IEmailAddress',
     'IEmailAddressSet',
-    'InvalidEmailAddress']
+    'InvalidEmailAddress',
+    'VALID_EMAIL_STATUSES']
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -26,13 +27,11 @@ from zope.interface import Interface
 from zope.schema import (
     Choice,
     Int,
-    Object,
     TextLine,
     )
 
 from lp import _
 from lp.registry.interfaces.role import IHasOwner
-from lp.services.identity.interfaces.account import IAccount
 
 
 class InvalidEmailAddress(Exception):
@@ -88,6 +87,10 @@ class EmailAddressStatus(DBEnumeratedType):
         receiving notifications from Launchpad.
         """)
 
+VALID_EMAIL_STATUSES = (
+    EmailAddressStatus.VALIDATED,
+    EmailAddressStatus.PREFERRED)
+
 
 class IEmailAddress(IHasOwner):
     """The object that stores the `IPerson`'s emails."""
@@ -99,12 +102,10 @@ class IEmailAddress(IHasOwner):
     status = Choice(
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
-    account = Object(title=_('Account'), schema=IAccount, required=False)
-    accountID = Int(title=_('AccountID'), required=False, readonly=True)
     person = exported(
-        Reference(title=_('Person'), required=False, readonly=False,
-                  schema=Interface))
-    personID = Int(title=_('PersonID'), required=False, readonly=True)
+        Reference(title=_('Person'), required=True, readonly=False,
+        schema=Interface))
+    personID = Int(title=_('PersonID'), required=True, readonly=True)
 
     rdf_sha1 = TextLine(
         title=_("RDF-ready SHA-1 Hash"),
@@ -131,12 +132,10 @@ class IEmailAddress(IHasOwner):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, person=None, status=EmailAddressStatus.NEW, account=None):
+    def new(email, person=None, status=EmailAddressStatus.NEW):
         """Create a new EmailAddress with the given email.
 
-        The newly created EmailAddress will point to the person
-        and/or account. If account is omitted and the person has a linked
-        account, that account will be used.
+        The newly created EmailAddress will point to the person.
 
         The given status must be an item of EmailAddressStatus.
 

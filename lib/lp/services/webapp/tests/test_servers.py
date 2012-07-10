@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E1002
@@ -36,8 +36,10 @@ from lp.services.webapp.interfaces import IFinishReadOnlyRequestEvent
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
     ApplicationServerSettingRequestFactory,
+    FeedsBrowserRequest,
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
+    PrivateXMLRPCRequest,
     VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory,
     web_service_request_to_browser_request,
@@ -365,6 +367,38 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertEquals(
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
+
+    def test_baserequest_security_headers(self):
+        response = LaunchpadBrowserRequest(StringIO.StringIO(''), {}).response
+        self.assertEquals(
+            response.getHeader('X-Frame-Options'), 'SAMEORIGIN')
+        self.assertEquals(
+            response.getHeader('X-Content-Type-Options'), 'nosniff')
+        self.assertEquals(
+            response.getHeader('X-XSS-Protection'), '1; mode=block')
+        self.assertEquals(
+            response.getHeader(
+                'Strict-Transport-Security'), 'max-age=2592000')
+
+
+class TestFeedsBrowserRequest(TestCase):
+    """Tests for `FeedsBrowserRequest`."""
+
+    def test_not_strict_transport_security(self):
+        # Feeds are served over HTTP, so no Strict-Transport-Security
+        # header is sent.
+        response = FeedsBrowserRequest(StringIO.StringIO(''), {}).response
+        self.assertIs(None, response.getHeader('Strict-Transport-Security'))
+
+
+class TestPrivateXMLRPCRequest(TestCase):
+    """Tests for `PrivateXMLRPCRequest`."""
+
+    def test_not_strict_transport_security(self):
+        # Private XML-RPC is served over HTTP, so no Strict-Transport-Security
+        # header is sent.
+        response = PrivateXMLRPCRequest(StringIO.StringIO(''), {}).response
+        self.assertIs(None, response.getHeader('Strict-Transport-Security'))
 
 
 class TestLaunchpadBrowserRequestMixin:

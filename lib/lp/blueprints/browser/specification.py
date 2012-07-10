@@ -21,6 +21,7 @@ __all__ = [
     'SpecificationEditStatusView',
     'SpecificationEditView',
     'SpecificationEditWhiteboardView',
+    'SpecificationEditWorkItemsView',
     'SpecificationGoalDecideView',
     'SpecificationGoalProposeView',
     'SpecificationLinkBranchView',
@@ -44,6 +45,8 @@ from subprocess import (
     Popen,
     )
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
@@ -57,11 +60,13 @@ from zope.app.form.browser import (
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import Fields
 from zope.interface import (
     implementer,
     Interface,
+    providedBy,
     )
 from zope.schema import (
     Bool,
@@ -109,6 +114,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.services.config import config
+from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -194,6 +200,7 @@ class NewSpecificationView(LaunchpadFormView):
 
     page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
+    custom_widget('specurl', TextWidget, displayWidth=60)
 
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
@@ -410,19 +417,13 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority',
-             'whiteboard', 'proposegoal',
-             'milestone', 'requestfeedback', 'givefeedback', 'subscription',
+             'whiteboard', 'proposegoal', 'workitems',
+             'milestone', 'subscription',
              'addsubscriber',
              'linkbug', 'unlinkbug', 'linkbranch',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
-
-    def givefeedback(self):
-        text = 'Give feedback'
-        enabled = (self.user is not None and
-                   bool(self.context.getFeedbackRequests(self.user)))
-        return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def milestone(self):
@@ -438,11 +439,6 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     def priority(self):
         text = 'Change priority'
         return Link('+priority', text, icon='edit')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def requestfeedback(self):
-        text = 'Request feedback'
-        return Link('+requestfeedback', text, icon='add')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def proposegoal(self):
@@ -520,6 +516,11 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         return Link('+whiteboard', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
+    def workitems(self):
+        text = 'Edit work items'
+        return Link('+workitems', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
         if self.context.linked_branches.count() > 0:
             text = 'Link to another branch'
@@ -530,12 +531,6 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
 class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
-
-    @cachedproperty
-    def feedbackrequests(self):
-        if self.user is None:
-            return []
-        return list(self.context.getFeedbackRequests(self.user))
 
     @cachedproperty
     def has_dep_tree(self):
@@ -572,11 +567,6 @@ class SpecificationView(SpecificationSimpleView):
 
         if not self.user:
             return
-
-        if self.feedbackrequests:
-            msg = "You have %d feedback request(s) on this blueprint."
-            msg %= len(self.feedbackrequests)
-            self.notices.append(msg)
 
     @property
     def approver_widget(self):
@@ -647,6 +637,14 @@ class SpecificationView(SpecificationSimpleView):
             hide_empty=False)
 
     @property
+    def workitems_text_widget(self):
+        """The Work Items text as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['workitems_text'], title="Work Items",
+            edit_view='+workitems', edit_title='Edit work items',
+            hide_empty=False)
+
+    @property
     def direction_widget(self):
         return BooleanChoiceWidget(
             self.context, ISpecification['direction_approved'],
@@ -675,6 +673,12 @@ class SpecificationEditSchema(ISpecification):
             "The state of progress being made on the actual "
             "implementation or delivery of this feature."))
 
+    workitems_text = WorkItemsText(
+        title=_('Work Items'), required=True,
+        description=_(
+            "Work items for this specification input in a text format. "
+            "Your changes will override the current work items."))
+
 
 class SpecificationEditView(LaunchpadEditFormView):
 
@@ -683,7 +687,7 @@ class SpecificationEditView(LaunchpadEditFormView):
     label = 'Edit specification'
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('whiteboard', TextAreaWidget, height=10)
-    custom_widget('specurl', TextWidget, width=60)
+    custom_widget('specurl', TextWidget, displayWidth=60)
 
     @property
     def adapters(self):
@@ -707,6 +711,20 @@ class SpecificationEditWhiteboardView(SpecificationEditView):
     label = 'Edit specification status whiteboard'
     field_names = ['whiteboard']
     custom_widget('whiteboard', TextAreaWidget, height=15)
+
+
+class SpecificationEditWorkItemsView(SpecificationEditView):
+    label = 'Edit specification work items'
+    field_names = ['workitems_text']
+    custom_widget('workitems_text', TextAreaWidget, height=15)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        old_spec = Snapshot(self.context, providing=providedBy(self.context))
+        self.context.setWorkItems(data['workitems_text'])
+        notify(ObjectModifiedEvent(
+            self.context, old_spec, edited_fields=['workitems_text']))
+        self.next_url = canonical_url(self.context)
 
 
 class SpecificationEditPeopleView(SpecificationEditView):
@@ -1289,7 +1307,7 @@ class SpecificationTreePNGView(SpecificationTreeGraphView):
         try:
             image = self.renderGraphvizGraph('png')
             self.request.response.setHeader('Content-type', 'image/png')
-        except (ProblemRenderingGraph, OSError), error:
+        except (ProblemRenderingGraph, OSError) as error:
             # The subprocess or command can raise errors that might not
             # occur if we used a Python bindings for GraphViz. Instead of
             # sending the generated image, return the fail-over image
@@ -1309,7 +1327,7 @@ class SpecificationTreeImageTag(SpecificationTreeGraphView):
         """Render the image and image map tags for this dependency graph."""
         try:
             image_map = self.renderGraphvizGraph('cmapx').decode('UTF-8')
-        except (ProblemRenderingGraph, OSError), error:
+        except (ProblemRenderingGraph, OSError) as error:
             # The subprocess or command can raise errors that might not
             # occur if we used a Python bindings for GraphViz. Instead
             # of rendering an image map, return an explanation that the

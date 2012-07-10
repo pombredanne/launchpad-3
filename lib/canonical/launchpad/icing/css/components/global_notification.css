@@ -15,17 +15,10 @@ body.global-notification-visible .login-logout {
     left: 0;
     right: 0;
     padding: 8px 20px;
-    /* Define colour for browsers that don't support transparency */
-    background-color: #8d1f1f;
-    /* Set transparent background for browsers that support it */
-    background-color: rgba(125,0,0,0.9);
-    color: #fff;
     text-shadow: 0 -1px 0 #631616;
     font-size: 14px;
     line-height: 21px;
     font-weight: bold;
-    -moz-box-shadow: 0 0 5px #333;
-    -webkit-box-shadow: 0 0 5px #333;
     box-shadow: 0 0 5px #333;
     }
 .global-notification .sprite.notification-private {
@@ -36,7 +29,8 @@ body.global-notification-visible .login-logout {
     margin-right: 10px;
     padding: 0;
     }
-.global-notification-close, .global-notification-close:active,
+.global-notification-close,
+.global-notification-close:active,
 .global-notification-close:visited {
     color: #e47a7a;
     }
@@ -57,3 +51,16 @@ body.global-notification-visible .login-logout {
     margin: 3px 0 0 7px;
     padding: 0;
     }
+
+/* =======
+   Privacy
+*/
+
+.yui3-privacybanner-content .global-notification{
+    /* Define colour for browsers that don't support transparency */
+    background-color: #8d1f1f;
+    /* Set transparent background for browsers that support it */
+    background-color: rgba(125,0,0,0.9);
+    color: #fff;
+    text-align: left;
+}

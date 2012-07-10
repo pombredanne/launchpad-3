@@ -52,6 +52,7 @@ def run_upgrade(options, log):
     # Fake expected command line arguments and global log
     options.commit = True
     options.partial = False
+    options.ignore_slony = False
     upgrade.options = options
     upgrade.log = log
     # Invoke the database schema upgrade process.
@@ -60,7 +61,7 @@ def run_upgrade(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
-    except SystemExit, x:
+    except SystemExit as x:
         log.fatal("upgrade.py failed [%s]", x)
 
 
@@ -83,7 +84,7 @@ def run_security(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
-    except SystemExit, x:
+    except SystemExit as x:
         log.fatal("security.py failed [%s]", x)
 
 

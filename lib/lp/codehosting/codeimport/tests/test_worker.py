@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -87,6 +87,7 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
+from lp.registry.enums import InformationType
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
@@ -185,7 +186,7 @@ class TestBazaarBranchStore(WorkerTest):
         store = self.makeBranchStore()
         bzr_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
-        self.assertEqual([], bzr_branch.revision_history())
+        self.assertEqual(0, bzr_branch.revno())
 
     def test_getNewBranch_without_tree(self):
         # If pull() with needs_tree=False creates a new branch, it doesn't
@@ -657,7 +658,7 @@ class TestWorkerCore(WorkerTest):
         # import.
         worker = self.makeImportWorker()
         bzr_branch = worker.getBazaarBranch()
-        self.assertEqual([], bzr_branch.revision_history())
+        self.assertEqual(0, bzr_branch.revno())
 
     def test_bazaarBranchLocation(self):
         # getBazaarBranch makes the working tree under the current working
@@ -843,8 +844,7 @@ class TestActualImportMixin:
             opener_policy=AcceptAnythingPolicy())
         worker.run()
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def test_sync(self):
         # Do an import.
@@ -853,8 +853,7 @@ class TestActualImportMixin:
             opener_policy=AcceptAnythingPolicy())
         worker.run()
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
         # Change the remote branch.
         self.makeForeignCommit(worker.source_details)
@@ -864,8 +863,7 @@ class TestActualImportMixin:
 
         # Check that the new revisions are in the Bazaar branch.
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def test_import_script(self):
         # Like test_import, but using the code-import-worker.py script
@@ -901,8 +899,7 @@ class TestActualImportMixin:
             source_details.branch_id)
         branch = Branch.open(branch_url)
 
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def test_script_exit_codes(self):
         # After a successful import that imports revisions, the worker exits
@@ -1381,8 +1378,7 @@ class TestBzrImport(WorkerTest, TestActualImportMixin,
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEqual(
-            1, len(branch.revision_history()))
+        self.assertEqual(1, branch.revno())
         self.assertEqual(
             "Some Random Hacker <jane@example.com>",
             branch.repository.get_revision(branch.last_revision()).committer)
@@ -1415,6 +1411,7 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertBadUrl("svn+ssh://svn.example.com/bla")
         self.assertGoodUrl("git://git.example.com/repo")
         self.assertGoodUrl("https://hg.example.com/hg/repo/branch")
+        self.assertGoodUrl("bzr://bzr.example.com/somebzrurl/")
 
 
 class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
@@ -1543,7 +1540,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             arguments)
 
     def test_bzr_stacked(self):
-        devfocus = self.factory.makeAnyBranch(private=False)
+        devfocus = self.factory.makeAnyBranch()
         code_import = self.factory.makeCodeImport(
                 bzr_branch_url='bzr://bzr.example.com/foo',
                 target=devfocus.target)
@@ -1558,7 +1555,8 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
 
     def test_bzr_stacked_private(self):
         # Code imports can't be stacked on private branches.
-        devfocus = self.factory.makeAnyBranch(private=True)
+        devfocus = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         code_import = self.factory.makeCodeImport(
                 target=devfocus.target,
                 bzr_branch_url='bzr://bzr.example.com/foo')

@@ -43,14 +43,11 @@ class TestFeatureControlPage(BrowserTestCase):
 
         :param teams: List of teams to add the new user to.
         """
-        # XXX MartinPool 2010-09-23 bug=646563: To make a UserBrowser, you
-        # must know the password; we can't get the password for an existing
-        # user so we have to make a new one.
-        self.user = self.factory.makePerson(password='test')
+        self.user = self.factory.makePerson()
         for team in teams:
             with person_logged_in(team.teamowner):
                 team.addMember(self.user, reviewer=team.teamowner)
-        return self.getUserBrowser(url=None, user=self.user, password='test')
+        return self.getUserBrowser(url=None, user=self.user)
 
     def getUserBrowserAsAdmin(self):
         """Make a new TestBrowser logged in as an admin user."""

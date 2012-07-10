@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Translations view classes related to `IDistroSeries`."""
@@ -16,14 +16,16 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    )
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import TranslationUnavailable
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp import action
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.launchpadform import LaunchpadEditFormView
 from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,

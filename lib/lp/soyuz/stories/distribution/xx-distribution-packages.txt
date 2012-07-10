@@ -238,7 +238,7 @@ the time elapsed since it was published.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
     The Warty Warthog Release (current stable release)      Set upstream link
-      1.0  release  (main)  ... weeks ago
+      1.0  release  (main)  2006-04-11
 
 Each 'version' line contains an expandable row that shows more information
 about that version.  To show it, click the expander icon.  If the user has
@@ -247,9 +247,9 @@ javascript enabled, the information is shown in-place.
     >>> expander_url = find_tags_by_class(
     ...     user_browser.contents, 'expander')[0]
     >>> print expander_url
-    <a class="expander" href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra" id="pub26-expander">
-      &nbsp;
-    </a>
+    <a class="expander"
+    href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra"
+    id="pub26-expander"></a>
 
     >>> browser.open(user_browser.getLink(id="pub26-expander").url)
     >>> print extract_text(browser.contents)
@@ -276,7 +276,8 @@ There's also a section on the page that gives some package information:
     Component:* main
     Architectures:* any
     Latest upload: 1.0
-    *actual publishing details may vary in this distribution, these are just the package defaults.
+    *actual publishing details may vary in this distribution, these are just
+    the package defaults.
 
 And if the source has direct packaging linkage, the upstream's description
 is used in another section:
@@ -581,7 +582,7 @@ Publishing History
 ------------------
 
 Users can inspect the full publishing history by clicking on a link in
-the action menu on the the distribution source package index page.
+the action menu on the distribution source package index page.
 
     >>> anon_browser.getLink('View full publishing history').click()
 

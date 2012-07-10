@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -171,7 +171,7 @@ class DistroSeriesVersionField(UniqueField):
             # have stricter version rules than the schema. The version must
             # be a debversion.
             Version(version)
-        except VersionError, error:
+        except VersionError as error:
             raise LaunchpadValidationError(
                 "'%s': %s" % (version, error))
 
@@ -402,26 +402,6 @@ class IDistroSeriesPublic(
         development moves on to the other pockets.
         """
 
-    def canUploadToPocket(pocket):
-        """Decides whether or not allow uploads for a given pocket.
-
-        Only allow uploads for RELEASE pocket in unreleased
-        distroseries and the opposite, only allow uploads for
-        non-RELEASE pockets in released distroseries.
-        For instance, in edgy time :
-
-                warty         -> DENY
-                edgy          -> ALLOW
-                warty-updates -> ALLOW
-                edgy-security -> DENY
-
-        Note that FROZEN is not considered either 'stable' or 'unstable'
-        state.  Uploads to a FROZEN distroseries will end up in the
-        UNAPPROVED queue.
-
-        Return True if the upload is allowed and False if denied.
-        """
-
     def getLatestUploads():
         """Return the latest five source uploads for this DistroSeries.
 
@@ -547,6 +527,13 @@ class IDistroSeriesPublic(
             description=_("Return only items with custom files of this "
                           "type."),
             required=False),
+        name=TextLine(title=_("Package or file name"), required=False),
+        version=TextLine(title=_("Package version"), required=False),
+        exact_match=Bool(
+            title=_("Exact match"),
+            description=_("Whether to filter name and version by exact "
+                          "matching."),
+            required=False),
         )
     # Really IPackageUpload, patched in _schema_circular_imports.py
     @operation_returns_collection_of(Interface)
@@ -603,8 +590,7 @@ class IDistroSeriesPublic(
         """
 
     def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,
-                            include_pending=False, exclude_pocket=None,
-                            archive=None):
+                            include_pending=False, archive=None):
         """Return the SourcePackagePublishingHistory(s)
 
         Deprecated.  Use IArchive.getPublishedSources instead.
@@ -614,9 +600,6 @@ class IDistroSeriesPublic(
         If pocket is not specified, we look in all pockets.
 
         If version is not specified, return packages with any version.
-
-        If exclude_pocket is specified we exclude results matching that
-        pocket.
 
         If 'include_pending' is True, we return also the pending publication
         records, those packages that will get published in the next publisher

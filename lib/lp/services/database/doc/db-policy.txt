@@ -41,7 +41,7 @@ a single master.
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
-    InternalError: transaction is read-only
+    InternalError: ...
 
     >>> transaction.abort()
 

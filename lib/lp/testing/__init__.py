@@ -10,11 +10,13 @@ __metaclass__ = type
 __all__ = [
     'AbstractYUITestCase',
     'ANONYMOUS',
+    'admin_logged_in',
     'anonymous_logged_in',
     'api_url',
     'BrowserTestCase',
     'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'clean_up_reactor',
     'ExpectedException',
     'extract_lp_cache',
     'FakeAdapterMixin',
@@ -107,6 +109,7 @@ from testtools.matchers import (
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
 from zope.component import (
+    ComponentLookupError,
     getMultiAdapter,
     getSiteManager,
     getUtility,
@@ -155,6 +158,7 @@ from lp.services.webapp.servers import (
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
+    admin_logged_in,
     anonymous_logged_in,
     celebrity_logged_in,
     login,
@@ -175,11 +179,13 @@ from lp.testing._webservice import (
     launchpadlib_for,
     oauth_access_token_for,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
+admin_logged_in
 anonymous_logged_in
 api_url
 celebrity_logged_in
@@ -421,8 +427,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         user, or you'll hit privilege violations later on.
         """
         assert self.layer, "becomeDbUser requires a layer."
-        transaction.commit()
-        self.layer.switchDbUser(dbuser)
+        switch_dbuser(dbuser)
 
     def __str__(self):
         """The string representation of a test is its id.
@@ -444,7 +449,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
-        return self.useContext(temp_dir())
+        return self.useFixture(fixtures.TempDir()).path
 
     def installKarmaRecorder(self, *args, **kwargs):
         """Set up and return a `KarmaRecorder`.
@@ -645,6 +650,11 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
+        # Remove all log handlers, tests should not depend on global logging
+        # config but should make their own config instead.
+        logger = logging.getLogger()
+        for handler in list(logger.handlers):
+            logger.removeHandler(handler)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
@@ -710,19 +720,17 @@ class TestCaseWithFactory(TestCase):
         # messages.
         trace._bzr_logger = logging.getLogger('bzr')
 
-    def getUserBrowser(self, url=None, user=None, password='test'):
+    def getUserBrowser(self, url=None, user=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
 
         :param user: The user to open a browser for.
-        :param password: The password to use.  (This cannot be determined
-            because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
         from lp.testing.pages import setupBrowserForUser
         login(ANONYMOUS)
         if user is None:
-            user = self.factory.makePerson(password=password)
-        browser = setupBrowserForUser(user, password)
+            user = self.factory.makePerson()
+        browser = setupBrowserForUser(user)
         if url is not None:
             browser.open(url)
         return browser
@@ -835,7 +843,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def setUp(self):
         """Provide useful defaults."""
         super(BrowserTestCase, self).setUp()
-        self.user = self.factory.makePerson(password='test')
+        self.user = self.factory.makePerson()
 
     def getViewBrowser(self, context, view_name=None, no_login=False,
                        rootsite=None, user=None):
@@ -1070,6 +1078,17 @@ class ZopeTestInSubProcess:
         assert isinstance(result, ZopeTestResult), (
             "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
+        # We flush __stdout__ and __stderr__ at this point in order to avoid
+        # bug 986429; they get copied in full when we fork, which means that
+        # we end up with repeated output, resulting in repeated subunit
+        # output.
+        # Why not sys.stdout and sys.stderr instead?  Because when generating
+        # subunit output we replace stdout and stderr with do-nothing objects
+        # and direct the subunit stream to __stdout__ instead.  Therefore we
+        # need to flush __stdout__ to be sure duplicate lines are not
+        # generated.
+        sys.__stdout__.flush()
+        sys.__stderr__.flush()
         pid = os.fork()
         if pid == 0:
             # Child.
@@ -1083,8 +1102,9 @@ class ZopeTestInSubProcess:
                 result, subunit.TestProtocolClient(fdwrite))
             super(ZopeTestInSubProcess, self).run(result)
             fdwrite.flush()
-            sys.stdout.flush()
-            sys.stderr.flush()
+            # See note above about flushing.
+            sys.__stdout__.flush()
+            sys.__stderr__.flush()
             # Exit hard to avoid running onexit handlers and to avoid
             # anything that could suppress SystemExit; this exit must
             # not be prevented.
@@ -1192,7 +1212,7 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-def run_script(cmd_line, env=None):
+def run_script(cmd_line, env=None, cwd=None):
     """Run the given command line as a subprocess.
 
     :param cmd_line: A command line suitable for passing to
@@ -1208,7 +1228,7 @@ def run_script(cmd_line, env=None):
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, env=env)
+        stderr=subprocess.PIPE, env=env, cwd=cwd)
     (out, err) = process.communicate()
     return out, err, process.returncode
 
@@ -1386,14 +1406,6 @@ class NestedTempfile(fixtures.Fixture):
 
 
 @contextmanager
-def temp_dir():
-    """Provide a temporary directory as a ContextManager."""
-    tempdir = tempfile.mkdtemp()
-    yield tempdir
-    shutil.rmtree(tempdir, ignore_errors=True)
-
-
-@contextmanager
 def monkey_patch(context, **kwargs):
     """In the ContextManager scope, monkey-patch values.
 
@@ -1521,3 +1533,27 @@ class FakeAdapterMixin:
 
     def getAdapter(self, for_interfaces, provided_interface, name=None):
         return getMultiAdapter(for_interfaces, provided_interface, name=name)
+
+    def registerUtility(self, component, for_interface, name=''):
+        try:
+            current_commponent = getUtility(for_interface, name=name)
+        except ComponentLookupError:
+            current_commponent = None
+        site_manager = getSiteManager()
+        site_manager.registerUtility(component, for_interface, name)
+        self.addCleanup(
+            site_manager.unregisterUtility, component, for_interface, name)
+        if current_commponent is not None:
+            # Restore the default utility.
+            self.addCleanup(
+                site_manager.registerUtility, current_commponent,
+                for_interface, name)
+
+
+def clean_up_reactor():
+    # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+    # calls around.  They need to be updated to use Twisted correctly.
+    # For the meantime, just blat the reactor.
+    from twisted.internet import reactor
+    for delayed_call in reactor.getDelayedCalls():
+        delayed_call.cancel()

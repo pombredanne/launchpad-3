@@ -8,7 +8,7 @@ branch.
     >>> from lp.app.enums import ServiceUsage
 
     >>> login(ANONYMOUS)
-    >>> owner = factory.makePerson(email='x@example.com', password='****')
+    >>> owner = factory.makePerson(email='x@example.com')
     >>> product = factory.makeProduct(owner=owner,
     ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> productseries = product.getSeries('trunk')
@@ -47,7 +47,7 @@ settings page.
     >>> link_page = productseries_url + '/+link-translations-branch'
     >>> logout()
 
-    >>> owner_browser = setupBrowser(auth='Basic x@example.com:****')
+    >>> owner_browser = setupBrowser(auth='Basic x@example.com:test')
     >>> owner_browser.open(settings_page)
 
 The settings page currently shows that no branch has been selected.
@@ -131,7 +131,7 @@ Security
 --------
 
 You can only set the translations_branch to a branch that you own.
-Otherwise you'd be giving Launchpad a blanket license to commit
+Otherwise you'd be giving Launchpad a blanket licence to commit
 translations to someone else's branch.
 
     >>> owner_browser.open(link_page)

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -24,6 +24,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
@@ -43,6 +44,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
+    OverrideError,
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
@@ -62,7 +64,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
@@ -574,7 +579,7 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
         super(TestNativePublishingBase, self).setUp()
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        switch_dbuser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
         self.config = getPubConfig(self.ubuntutest.main_archive)
         self.config.setupArchiveDirs()
@@ -1642,3 +1647,83 @@ class TestPublishBinaries(TestCaseWithFactory):
         # archive too.
         self.assertContentEqual(
             [], getUtility(IPublishingSet).publishBinaries(**args))
+
+
+class TestChangeOverride(TestNativePublishingBase):
+    """Test that changing overrides works."""
+
+    def setUpOverride(self, status=SeriesStatus.DEVELOPMENT,
+                      pocket=PackagePublishingPocket.RELEASE, binary=False,
+                      **kwargs):
+        self.distroseries.status = status
+        if binary:
+            pub = self.getPubBinaries(pocket=pocket)[0]
+        else:
+            pub = self.getPubSource(pocket=pocket)
+        return pub.changeOverride(**kwargs)
+
+    def assertCanOverride(self, status=SeriesStatus.DEVELOPMENT,
+                          pocket=PackagePublishingPocket.RELEASE, **kwargs):
+        new_pub = self.setUpOverride(status=status, pocket=pocket, **kwargs)
+        self.assertEqual(new_pub.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(new_pub.pocket, pocket)
+        if "new_component" in kwargs:
+            self.assertEqual(kwargs["new_component"], new_pub.component.name)
+        if "new_section" in kwargs:
+            self.assertEqual(kwargs["new_section"], new_pub.section.name)
+        if "new_priority" in kwargs:
+            self.assertEqual(
+                kwargs["new_priority"], new_pub.priority.name.lower())
+
+    def assertCannotOverride(self, **kwargs):
+        self.assertRaises(OverrideError, self.setUpOverride, **kwargs)
+
+    def test_changes_source(self):
+        # SPPH.changeOverride changes the properties of source publications.
+        self.assertCanOverride(new_component="universe", new_section="misc")
+
+    def test_changes_binary(self):
+        # BPPH.changeOverride changes the properties of binary publications.
+        self.assertCanOverride(
+            binary=True,
+            new_component="universe", new_section="misc", new_priority="extra")
+
+    def test_no_change(self):
+        # changeOverride does not create a new publication if the existing
+        # publication is already in the desired state.
+        self.assertIsNone(self.setUpOverride(
+            new_component="main", new_section="base"))
+        self.assertIsNone(self.setUpOverride(
+            binary=True,
+            new_component="main", new_section="base", new_priority="standard"))
+
+    def test_forbids_stable_RELEASE(self):
+        # changeOverride is not allowed in the RELEASE pocket of a stable
+        # distroseries.
+        self.assertCannotOverride(
+            status=SeriesStatus.CURRENT, new_component="universe")
+        self.assertCannotOverride(
+            status=SeriesStatus.CURRENT, binary=True, new_component="universe")
+
+    def test_allows_development_RELEASE(self):
+        # changeOverride is allowed in the RELEASE pocket of a development
+        # distroseries.
+        self.assertCanOverride(new_component="universe")
+        self.assertCanOverride(binary=True, new_component="universe")
+
+    def test_allows_stable_PROPOSED(self):
+        # changeOverride is allowed in the PROPOSED pocket of a stable
+        # distroseries.
+        self.assertCanOverride(
+            status=SeriesStatus.CURRENT,
+            pocket=PackagePublishingPocket.PROPOSED, new_component="universe")
+        self.assertCanOverride(
+            status=SeriesStatus.CURRENT,
+            pocket=PackagePublishingPocket.PROPOSED, binary=True,
+            new_component="universe")
+
+    def test_forbids_changing_archive(self):
+        # changeOverride refuses to make changes that would require changing
+        # archive.
+        self.assertCannotOverride(new_component="partner")
+        self.assertCannotOverride(binary=True, new_component="partner")

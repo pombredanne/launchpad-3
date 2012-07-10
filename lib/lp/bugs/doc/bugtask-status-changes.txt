@@ -18,7 +18,7 @@ the project registrant or the bug supervisor:
     >>> user = factory.makePerson()
 
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> bugtask.transitionToStatus(BugTaskStatus.WONTFIX, owner)
     >>> print bugtask.status.title
     Won't Fix
@@ -30,7 +30,7 @@ An additional restraint is added to Won't Fix.  Only the product
 registrant or bug supervisor can change from this status to any
 other status.
 
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED, user)
     Traceback (most recent call last):
     ...

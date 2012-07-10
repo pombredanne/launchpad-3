@@ -199,7 +199,7 @@ Admins team, and he should know if the list is available.
 
 Now Jdub can apply for team membership and mailing list access.
 
-    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -529,7 +529,7 @@ team. Users who have chosen the 'On registration' or 'Always'
 subscription settings will see the box checked by default.
 
     >>> browser = setupBrowser(
-    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
+    ...     auth='Basic james.blackwell@ubuntulinux.com:test')
 
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink(url="+editemails").click()

@@ -52,22 +52,11 @@ Private Bugs
 If a bug is marked private, and multiple Launchpad bugs are watching a
 particular remote bug, we do not expose the title of the remote bug.
 
-We need a feature flag so that multi-pillar bugs can be made private.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
 Mark bug 1 as private:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('This report is public').click()
-  >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
-  >>> browser.getControl('This bug report should be private').selected = True
+  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+secrecy')
+  >>> browser.getControl('User Data').selected = True
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
@@ -111,14 +100,8 @@ user logs in):
 
 Set the bug back to public:
 
-  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('This report is private').click()
-  >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
-  >>> browser.getControl('This bug report should be private').selected = False
+  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+secrecy')
+  >>> browser.getControl('Public').selected = True
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
-
-Clean up the feature flag.
-    >>> flags.cleanUp()

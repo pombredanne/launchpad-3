@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchSet."""
@@ -6,10 +6,13 @@
 __metaclass__ = type
 
 from testtools.matchers import LessThan
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
+from lp.registry.enums import InformationType
 from lp.testing import (
+    login_person,
     logout,
     TestCaseWithFactory,
     )
@@ -58,3 +61,89 @@ class TestBranchSet(TestCaseWithFactory):
             "Got %d for url %r with response %r" % (
             response.status, url, response.body))
         self.assertThat(collector, HasQueryCount(LessThan(17)))
+
+    def test_getBranchVisibilityInfo_empty_branch_names(self):
+        """Test the test_getBranchVisibilityInfo API with no branch names."""
+        person = self.factory.makePerson(name='fred')
+        info = BranchSet().getBranchVisibilityInfo(
+            person, person, branch_names=[])
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual([], info['visible_branches'])
+
+    def test_getBranchVisibilityInfo(self):
+        """Test the test_getBranchVisibilityInfo API."""
+        person = self.factory.makePerson(name='fred')
+        owner = self.factory.makePerson()
+        visible_branch = self.factory.makeBranch()
+        invisible_branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        invisible_name = removeSecurityProxy(invisible_branch).unique_name
+        branches = [
+            visible_branch.unique_name,
+            invisible_name]
+
+        login_person(owner)
+        info = BranchSet().getBranchVisibilityInfo(
+            owner, person, branch_names=branches)
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual(
+            [visible_branch.unique_name], info['visible_branches'])
+
+    def test_getBranchVisibilityInfo_unauthorised_user(self):
+        """Test the test_getBranchVisibilityInfo API.
+
+        If the user making the API request cannot see one of the branches,
+        that branch is not included in the results.
+        """
+        person = self.factory.makePerson(name='fred')
+        owner = self.factory.makePerson()
+        visible_branch = self.factory.makeBranch()
+        invisible_branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        invisible_name = removeSecurityProxy(invisible_branch).unique_name
+        branches = [
+            visible_branch.unique_name,
+            invisible_name]
+
+        someone = self.factory.makePerson()
+        login_person(someone)
+        info = BranchSet().getBranchVisibilityInfo(
+            someone, person, branch_names=branches)
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual(
+            [visible_branch.unique_name], info['visible_branches'])
+
+    def test_getBranchVisibilityInfo_anonymous(self):
+        """Test the test_getBranchVisibilityInfo API.
+
+        Anonymous users are not allowed to see any branch visibility info,
+        even if the branch they are querying about is public.
+        """
+        person = self.factory.makePerson(name='fred')
+        owner = self.factory.makePerson()
+        visible_branch = self.factory.makeBranch(owner=owner)
+        branches = [visible_branch.unique_name]
+
+        login_person(owner)
+        info = BranchSet().getBranchVisibilityInfo(
+            None, person, branch_names=branches)
+        self.assertEqual({}, info)
+
+    def test_getBranchVisibilityInfo_invalid_branch_name(self):
+        """Test the test_getBranchVisibilityInfo API.
+
+        If there is an invalid branch name specified, it is not included.
+        """
+        person = self.factory.makePerson(name='fred')
+        owner = self.factory.makePerson()
+        visible_branch = self.factory.makeBranch(owner=owner)
+        branches = [
+            visible_branch.unique_name,
+            'invalid_branch_name']
+
+        login_person(owner)
+        info = BranchSet().getBranchVisibilityInfo(
+            owner, person, branch_names=branches)
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual(
+            [visible_branch.unique_name], info['visible_branches'])

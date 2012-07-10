@@ -11,11 +11,11 @@ MISCROOT=$ARCHIVEROOT/../ubuntu-misc
 LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
 
-LAUNCHPADROOT=${TEST_LAUNCHPADROOT:-/srv/launchpad.net/codelines/current}
+LAUNCHPADROOT=${TEST_LAUNCHPADROOT:-`dirname $0`/../..}
 GENERATE=$LAUNCHPADROOT/cronscripts/generate-extra-overrides.py
 MAINTAINCE_CHECK=$LAUNCHPADROOT/cronscripts/publishing/maintenance-check.py
 
-FLAVOURS="ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu"
+FLAVOURS="ubuntu kubuntu kubuntu-active edubuntu xubuntu mythbuntu lubuntu"
 FLAVOURS="$FLAVOURS ubuntustudio"
 
 ## Check to see if another germinate run is in progress

@@ -30,7 +30,6 @@ from contrib.oauth import (
     OAuthSignatureMethod_PLAINTEXT,
     OAuthToken,
     )
-from lazr.restful.interfaces import IRepresentationCache
 from lazr.restful.testing.webservice import WebServiceCaller
 import transaction
 from zope.app.testing.functional import (
@@ -674,19 +673,15 @@ def setupBrowser(auth=None):
     return browser
 
 
-def setupBrowserForUser(user, password='test'):
+def setupBrowserForUser(user):
     """Setup a browser grabbing details from a user.
 
     :param user: The user to use.
-    :param password: The password to use.
     """
     naked_user = removeSecurityProxy(user)
     email = naked_user.preferredemail.email
-    if hasattr(naked_user, '_password_cleartext_cached'):
-        password = naked_user._password_cleartext_cached
     logout()
-    return setupBrowser(
-        auth="Basic %s:%s" % (str(email), password))
+    return setupBrowser(auth="Basic %s:test" % str(email))
 
 
 def safe_canonical_url(*args, **kwargs):
@@ -716,16 +711,6 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
-def ws_uncache(obj):
-    """Manually remove an object from the web service representation cache.
-
-    Directly modifying a data model object during a test may leave
-    invalid data in the representation cache.
-    """
-    cache = getUtility(IRepresentationCache)
-    cache.delete(obj)
-
-
 def setupDTCBrowser():
     """Testbrowser configured for Distribution Translations Coordinators.
 
@@ -734,8 +719,7 @@ def setupDTCBrowser():
     login('foo.bar@canonical.com')
     try:
         dtg_member = LaunchpadObjectFactory().makePerson(
-            name='ubuntu-translations-coordinator',
-            email="dtg-member@ex.com", password="test")
+            name='ubuntu-translations-coordinator', email="dtg-member@ex.com")
     except NameAlreadyTaken:
         # We have already created the translations coordinator
         pass
@@ -756,8 +740,7 @@ def setupRosettaExpertBrowser():
     login('admin@canonical.com')
     try:
         rosetta_expert = LaunchpadObjectFactory().makePerson(
-            name='rosetta-experts-member',
-            email='re@ex.com', password='test')
+            name='rosetta-experts-member', email='re@ex.com')
     except NameAlreadyTaken:
         # We have already created an Rosetta expert
         pass
@@ -830,7 +813,6 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
-    test.globs['ws_uncache'] = ws_uncache
 
 
 # This function name doesn't follow our standard naming conventions,
@@ -861,9 +843,10 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     # Add tests to the suite individually.
     if filenames:
         checker = doctest.OutputChecker()
+        paths=[os.path.join(storydir, filename)
+               for filename in filenames]
         suite.addTest(LayeredDocFileSuite(
+            paths=paths,
             package=package, checker=checker, stdout_logging=False,
-            layer=PageTestLayer, setUp=setUp,
-            *[os.path.join(storydir, filename)
-              for filename in filenames]))
+            layer=PageTestLayer, setUp=setUp))
     return suite

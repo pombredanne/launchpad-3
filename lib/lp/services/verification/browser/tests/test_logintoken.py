@@ -12,7 +12,10 @@ from lp.services.verification.browser.logintoken import (
     )
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.deprecated import LaunchpadFormHarness
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -45,10 +48,11 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
         self._testCancelAction(ValidateGPGKeyView, token)
 
     def test_ValidateEmailView(self):
-        token = getUtility(ILoginTokenSet).new(
-            self.person, self.email, 'foo@example.com',
-            LoginTokenType.VALIDATEEMAIL)
-        self._testCancelAction(ValidateEmailView, token)
+        with person_logged_in(self.person):
+            token = getUtility(ILoginTokenSet).new(
+                self.person, self.email, 'foo@example.com',
+                LoginTokenType.VALIDATEEMAIL)
+            self._testCancelAction(ValidateEmailView, token)
 
     def _testCancelAction(self, view_class, token):
         """Test the 'Cancel' action of the given view, using the given token.

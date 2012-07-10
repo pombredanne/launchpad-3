@@ -9,6 +9,8 @@ __all__ = [
     'ArchiveSubscriber',
     ]
 
+from operator import itemgetter
+
 import pytz
 from storm.expr import (
     And,
@@ -29,8 +31,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.interfaces.person import validate_person
+from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.emailaddress import EmailAddress
@@ -90,9 +94,6 @@ class ArchiveSubscriber(Storm):
 
     def getNonActiveSubscribers(self):
         """See `IArchiveSubscriber`."""
-        # Imported here because of circular imports.
-        from lp.registry.model.person import Person
-
         store = Store.of(self)
         if self.subscriber.is_team:
 
@@ -207,15 +208,15 @@ class ArchiveSubscriberSet:
 
     def getByArchive(self, archive, current_only=True):
         """See `IArchiveSubscriberSet`."""
-        # Grab the extra Storm expressions, for this query,
-        # depending on the params:
         extra_exprs = self._getExprsForSubscriptionQueries(
             archive, current_only)
 
         store = Store.of(archive)
-        return store.find(
-            ArchiveSubscriber,
-            *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
+        result = store.using(ArchiveSubscriber,
+             Join(Person, ArchiveSubscriber.subscriber_id == Person.id)).find(
+            (ArchiveSubscriber, Person),
+            *extra_exprs).order_by(Person.name)
+        return DecoratedResultSet(result, itemgetter(0))
 
     def _getExprsForSubscriptionQueries(self, archive=None,
                                         current_only=True):

@@ -15,8 +15,6 @@ __all__ = [
     'IBranchMergeProposalListingBatchNavigator',
     'ICodeReviewCommentEmailJob',
     'ICodeReviewCommentEmailJobSource',
-    'ICreateMergeProposalJob',
-    'ICreateMergeProposalJobSource',
     'IGenerateIncrementalDiffJob',
     'IGenerateIncrementalDiffJobSource',
     'IMergeProposalNeedsReviewEmailJob',
@@ -639,20 +637,6 @@ class IBranchMergeProposalGetter(Interface):
 
 for name in ['supersedes', 'superseded_by']:
     IBranchMergeProposal[name].schema = IBranchMergeProposal
-
-
-class ICreateMergeProposalJob(IRunnableJob):
-    """A Job that creates a branch merge proposal.
-
-    It uses a Message, which must contain a merge directive.
-    """
-
-
-class ICreateMergeProposalJobSource(IJobSource):
-    """Acquire MergeProposalJobs."""
-
-    def create(message_bytes):
-        """Return a CreateMergeProposalJob for this message."""
 
 
 class IMergeProposalNeedsReviewEmailJob(IRunnableJob):

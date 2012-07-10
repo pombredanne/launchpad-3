@@ -27,6 +27,7 @@ setup(
     # used in zcml.
     install_requires=[
         'ampoule',
+        'auditorfixture',
         'BeautifulSoup',
         'bzr',
         'Chameleon',
@@ -39,6 +40,7 @@ setup(
         'funkload',
         'html5browser',
         'pygpgme',
+        'python-subunit',
         'launchpadlib',
         'lazr.batchnavigator',
         'lazr.config',
@@ -46,9 +48,11 @@ setup(
         'lazr.enum',
         'lazr.lifecycle',
         'lazr.restful',
+        'lazr.jobrunner',
         'lazr.smtptest',
         'lazr.testing',
         'lazr.uri',
+        'lpjsmin',
         # Required for launchpadlib
         'keyring',
         'manuel',
@@ -173,7 +177,6 @@ setup(
             'twistd = twisted.scripts.twistd:run',
             'start_librarian = '
                 'lp.scripts.runlaunchpad:start_librarian',
-            'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),
 )

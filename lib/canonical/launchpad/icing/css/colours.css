@@ -107,7 +107,7 @@
     }
 .statusINVALID, .statusINVALID a,
 .statusWONTFIX, .statusWONTFIX a {
-    color: gray;
+    color: #555;
     }
 .importanceCRITICAL, .importanceCRITICAL a {
     color: red;
@@ -230,7 +230,7 @@ a.unofficial-tag {
     color: red;
     }
 .voteABSTAIN {
-    color: #bebebe;
+    color: #666;
     }
 .votePENDING {
     color: #f60;
@@ -253,7 +253,7 @@ a.unofficial-tag {
     color: black;
     }
 .mergestatusSUPERSEDED, .mergestatusSUPERSEDED a {
-    color: #bebebe;
+    color: #666;
     }
 .codeimportNEW {
     color: #930;
@@ -314,7 +314,7 @@ a.unofficial-tag {
     color: red;
     }
 .distromirrorstatusUNKNOWN {
-    color: #bebebe;
+    color: #666;
     }
 .buildstatusNEEDSBUILD {
     color: gray;

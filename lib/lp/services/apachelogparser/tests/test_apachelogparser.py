@@ -29,6 +29,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.testing import TestCase
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessLayer,
@@ -388,7 +389,7 @@ class TestParsedFilesDetection(TestCase):
 
     def setUp(self):
         super(TestParsedFilesDetection, self).setUp()
-        self.layer.switchDbUser(DBUSER)
+        switch_dbuser(DBUSER)
 
     def test_not_parsed_file(self):
         # A file that has never been parsed will have to be parsed from the
@@ -470,7 +471,7 @@ class Test_create_or_update_parsedlog_entry(TestCase):
 
     def setUp(self):
         super(Test_create_or_update_parsedlog_entry, self).setUp()
-        self.layer.switchDbUser(DBUSER)
+        switch_dbuser(DBUSER)
 
     def test_creation_of_new_entries(self):
         # When given a first_line that doesn't exist in the ParsedApacheLog

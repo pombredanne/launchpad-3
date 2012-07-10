@@ -5,10 +5,13 @@
 
 __metaclass__ = type
 __all__ = [
+    'branch_changed',
     'BranchFormat',
     'ControlFormat',
     'CURRENT_BRANCH_FORMATS',
     'CURRENT_REPOSITORY_FORMATS',
+    'branch_revision_history',
+    'get_ancestry',
     'get_branch_formats',
     'RepositoryFormat',
     ]
@@ -18,6 +21,9 @@ __all__ = [
 # line below this comment.
 import lp.codehosting
 
+# Silence lint warning.
+lp.codehosting
+
 from bzrlib.branch import (
     BranchReferenceFormat,
     BzrBranchFormat5,
@@ -25,6 +31,11 @@ from bzrlib.branch import (
     BzrBranchFormat7,
     )
 from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.errors import (
+    NotStacked,
+    NoSuchRevision,
+    UnstackableBranchFormat,
+    )
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1,
     BzrBranchLoomFormat6,
@@ -48,11 +59,16 @@ from bzrlib.repofmt.knitpack_repo import (
     RepositoryFormatKnitPack4,
     RepositoryFormatKnitPack5,
     )
+from bzrlib.revision import (
+    is_null,
+    NULL_REVISION,
+    )
 from bzrlib.repofmt.knitrepo import (
     RepositoryFormatKnit1,
     RepositoryFormatKnit3,
     RepositoryFormatKnit4,
     )
+from bzrlib.tsort import topo_sort
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -291,3 +307,73 @@ def get_branch_formats(bzr_branch):
     return (ControlFormat.get_enum(control_string),
             BranchFormat.get_enum(branch_string),
             RepositoryFormat.get_enum(repository_string))
+
+
+def branch_changed(db_branch, bzr_branch=None):
+    """Mark a database branch as changed.
+
+    :param db_branch: The branch to mark changed.
+    :param bzr_branch: (optional) The bzr branch to use to mark the branch
+        changed.
+    """
+    if bzr_branch is None:
+        bzr_branch = db_branch.getBzrBranch()
+    try:
+        stacked_on = bzr_branch.get_stacked_on_url()
+    except (NotStacked, UnstackableBranchFormat):
+        stacked_on = None
+    last_revision = bzr_branch.last_revision()
+    formats = get_branch_formats(bzr_branch)
+    db_branch.branchChanged(stacked_on, last_revision, *formats)
+
+
+def branch_revision_history(branch):
+    """Find the revision history of a branch.
+
+    This is a compatibility wrapper for code that still requires
+    access to the full branch mainline and previously used
+    Branch.revision_history(), which is now deprecated.
+
+    :param branch: Branch object
+    :return: Revision ids on the main branch
+    """
+    branch.lock_read()
+    try:
+        graph = branch.repository.get_graph()
+        ret = list(graph.iter_lefthand_ancestry(
+                branch.last_revision(), (NULL_REVISION,)))
+        ret.reverse()
+        return ret
+    finally:
+        branch.unlock()
+
+
+def get_ancestry(repository, revision_id):
+    """Return a list of revision-ids integrated by a revision.
+
+    The first element of the list is always None, indicating the origin
+    revision.  This might change when we have history horizons, or
+    perhaps we should have a new API.
+
+    This is topologically sorted.
+    """
+    if is_null(revision_id):
+        return set()
+    if not repository.has_revision(revision_id):
+        raise NoSuchRevision(repository, revision_id)
+    repository.lock_read()
+    try:
+        graph = repository.get_graph()
+        keys = set()
+        search = graph._make_breadth_first_searcher([revision_id])
+        while True:
+            try:
+                found, ghosts = search.next_with_ghosts()
+            except StopIteration:
+                break
+            keys.update(found)
+        if NULL_REVISION in keys:
+            keys.remove(NULL_REVISION)
+    finally:
+        repository.unlock()
+    return keys

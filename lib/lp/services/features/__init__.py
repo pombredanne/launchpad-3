@@ -181,6 +181,8 @@ other environments that have no explicit setup and teardown::
 
 import threading
 
+from lazr.restful.utils import safe_hasattr
+
 
 __all__ = [
     'currentScope',
@@ -205,9 +207,17 @@ def install_feature_controller(controller):
     per_thread.features = controller
 
 
+def uninstall_feature_controller():
+    """Remove, if it exists, the current feature controller from this thread.
+
+    This function is used to create a pristine environment in tests.
+    """
+    if safe_hasattr(per_thread, 'features'):
+        del per_thread.features
+
+
 def get_relevant_feature_controller():
     """Get a `FeatureController` for this thread."""
-
     # The noncommittal name "relevant" is because this function may change to
     # look things up from the current request or some other mechanism in
     # future.

@@ -34,7 +34,6 @@ its development focus.
     Gnome Applets
     NetApplet
     gnomebaker
-    ...
 
 The projects are linked.
 
@@ -185,4 +184,4 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/mozilla/+subscribe
     >>> print user_browser.title
-    Subscribe to Bugs in The Mozilla Project
+    Subscribe : The Mozilla Project

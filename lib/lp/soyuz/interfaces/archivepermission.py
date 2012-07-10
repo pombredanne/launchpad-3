@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0213
@@ -31,6 +31,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.fields import PublicPersonChoice
 from lp.soyuz.enums import ArchivePermissionType
@@ -115,6 +116,13 @@ class IArchivePermission(Interface):
             title=_(
                 "The name of the distro series associated with the "
                 "package set."),
+            required=True))
+
+    pocket = exported(
+        Choice(
+            title=_("Pocket"),
+            description=_("The pocket that this permission is for."),
+            vocabulary=PackagePublishingPocket,
             required=True))
 
 
@@ -305,6 +313,27 @@ class IArchivePermissionSet(Interface):
             authorized to upload to the named source package set.
         """
 
+    def uploadersForPocket(archive, pocket):
+        """The `ArchivePermission` records for authorised pocket uploaders.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param pocket: A `PackagePublishingPocket`.
+
+        :return: `ArchivePermission` records for all the uploaders who
+            are authorised for the supplied pocket.
+        """
+
+    def pocketsForUploader(archive, person):
+        """The `ArchivePermission` records for the person's upload pockets.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param person: An `IPerson` for whom you want to find out which
+            pockets he has access to.
+
+        :return: `ArchivePermission` records for all the pockets that
+            'person' is allowed to upload to.
+        """
+
     def queueAdminsForComponent(archive, component):
         """The `ArchivePermission` records for authorised queue admins.
 
@@ -370,6 +399,17 @@ class IArchivePermissionSet(Interface):
             already exists.
         """
 
+    def newPocketUploader(archive, person, pocket):
+        """Create and return a new `ArchivePermission` for an uploader.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param person: An `IPerson` for whom you want to add permission.
+        :param component: A `PackagePublishingPocket`.
+
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
+        """
+
     def newQueueAdmin(archive, person, component):
         """Create and return a new `ArchivePermission` for a queue admin.
 
@@ -409,6 +449,14 @@ class IArchivePermissionSet(Interface):
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to revoke permission.
         :param component: An `IComponent` or a string package name.
+        """
+
+    def deletePocketUploader(archive, person, pocket):
+        """Revoke upload permissions for a person.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param person: An `IPerson` for whom you want to revoke permission.
+        :param pocket: A `PackagePublishingPocket`.
         """
 
     def deleteQueueAdmin(archive, person, component):

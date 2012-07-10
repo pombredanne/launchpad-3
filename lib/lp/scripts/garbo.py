@@ -23,6 +23,7 @@ from contrib.glock import (
     GlobalLock,
     LockAlreadyAcquired,
     )
+import iso8601
 from psycopg2 import IntegrityError
 import pytz
 from storm.expr import In
@@ -31,6 +32,7 @@ from storm.locals import (
     Min,
     SQL,
     )
+from storm.store import EmptyResultSet
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -40,6 +42,7 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
@@ -63,6 +66,11 @@ from lp.services.database.sqlbase import (
     session_store,
     sqlvalues,
     )
+from lp.services.features import (
+    getFeatureFlag,
+    install_feature_controller,
+    make_script_feature_controller,
+    )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.account import Account
@@ -71,6 +79,7 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -92,6 +101,9 @@ from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
+    )
+from lp.translations.scripts.scrub_pofiletranslator import (
+    ScrubPOFileTranslator,
     )
 
 
@@ -311,12 +323,6 @@ class OAuthNoncePruner(BulkPruner):
         """
 
 
-class AccountOnlyEmailAddressPruner(BulkPruner):
-    """Remove EmailAddress records not linked to a Person."""
-    target_table_class = EmailAddress
-    ids_to_prune_query = "SELECT id FROM EmailAddress WHERE person IS NULL"
-
-
 class UnlinkedAccountPruner(BulkPruner):
     """Remove Account records not linked to a Person."""
     target_table_class = Account
@@ -328,11 +334,8 @@ class UnlinkedAccountPruner(BulkPruner):
     ids_to_prune_query = """
         SELECT Account.id
         FROM Account
-        LEFT OUTER JOIN EmailAddress ON Account.id = EmailAddress.account
         LEFT OUTER JOIN Person ON Account.id = Person.account
-        WHERE
-            EmailAddress.id IS NULL
-            AND Person.id IS NULL
+        WHERE Person.id IS NULL
         """
 
 
@@ -700,7 +703,7 @@ class PersonPruner(TunableLoop):
                     AND Person.id IN (%s)
                 """ % people_ids)
             self.store.execute("""
-                UPDATE EmailAddress SET person=NULL
+                DELETE FROM EmailAddress
                 WHERE person IN (%s)
                 """ % people_ids)
             # This cascade deletes any PersonSettings records.
@@ -785,22 +788,24 @@ class BugHeatUpdater(TunableLoop):
 
     maximum_chunk_size = 5000
 
-    def __init__(self, log, abort_time=None, max_heat_age=None):
+    def __init__(self, log, abort_time=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
         self.transaction = transaction
         self.total_processed = 0
         self.is_done = False
         self.offset = 0
-        if max_heat_age is None:
-            max_heat_age = config.calculate_bug_heat.max_heat_age
-        self.max_heat_age = max_heat_age
 
         self.store = IMasterStore(Bug)
 
     @property
     def _outdated_bugs(self):
+        try:
+            last_updated_cutoff = iso8601.parse_date(
+                getFeatureFlag('bugs.heat_updates.cutoff'))
+        except iso8601.ParseError:
+            return EmptyResultSet()
         outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
-            self.max_heat_age)
+            last_updated_cutoff)
         # We remove the security proxy so that we can access the set()
         # method of the result set.
         return removeSecurityProxy(outdated_bugs)
@@ -987,6 +992,47 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
+class BugTaskFlattener(TunableLoop):
+    """A `TunableLoop` to populate BugTaskFlat for all bugtasks."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(BugTaskFlattener, self).__init__(log, abort_time)
+        generation = getFeatureFlag('bugs.bugtaskflattener.generation')
+        if generation is None:
+            self.start_at = None
+        else:
+            self.memcache_key = (
+                '%s:bugtask-flattener:%s'
+                % (config.instance_name, generation.encode('utf-8')))
+            watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+            self.start_at = watermark or 0
+
+    def findTaskIDs(self):
+        if self.start_at is None:
+            return EmptyResultSet()
+        return IMasterStore(BugTask).find(
+            (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
+
+    def isDone(self):
+        return self.findTaskIDs().is_empty()
+
+    def __call__(self, chunk_size):
+        ids = [row[0] for row in self.findTaskIDs()[:chunk_size]]
+        list(IMasterStore(BugTask).using(BugTask).find(
+            SQL('bugtask_flatten(BugTask.id, false)'),
+            BugTask.id.is_in(ids)))
+
+        self.start_at = ids[-1] + 1
+        result = getUtility(IMemcacheClient).set(
+            self.memcache_key, self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
+
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1125,6 +1171,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         """
         self.logger.debug(
             "Worker thread %s running.", threading.currentThread().name)
+        install_feature_controller(make_script_feature_controller(self.name))
         self.login()
 
         while True:
@@ -1136,16 +1183,19 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     threading.currentThread().name)
                 break
 
-            num_remaining_tasks = len(tunable_loops)
-            if not num_remaining_tasks:
+            try:
+                tunable_loop_class = tunable_loops.pop(0)
+            except IndexError:
+                # We catch the exception rather than checking the
+                # length first to avoid race conditions with other
+                # threads.
                 break
-            tunable_loop_class = tunable_loops.pop(0)
 
             loop_name = tunable_loop_class.__name__
 
             loop_logger = self.get_loop_logger(loop_name)
 
-            # Aquire a lock for the task. Multiple garbo processes
+            # Acquire a lock for the task. Multiple garbo processes
             # might be running simultaneously.
             loop_lock_path = os.path.join(
                 LOCK_PATH, 'launchpad-garbo-%s.lock' % loop_name)
@@ -1153,7 +1203,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             loop_lock = GlobalLock(loop_lock_path, logger=None)
             try:
                 loop_lock.acquire()
-                loop_logger.debug("Aquired lock %s.", loop_lock_path)
+                loop_logger.debug("Acquired lock %s.", loop_lock_path)
             except LockAlreadyAcquired:
                 # If the lock cannot be acquired, but we have plenty
                 # of time remaining, just put the task back to the
@@ -1174,7 +1224,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             try:
                 loop_logger.info("Running %s", loop_name)
 
-                abort_time = self.get_loop_abort_time(num_remaining_tasks)
+                abort_time = self.get_loop_abort_time(len(tunable_loops) + 1)
                 loop_logger.debug2(
                     "Task will be terminated in %0.3f seconds",
                     abort_time)
@@ -1236,6 +1286,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        BugTaskFlattener,
         ]
     experimental_tunable_loops = []
 
@@ -1265,10 +1316,10 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
+        ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
-        AccountOnlyEmailAddressPruner,
         UnlinkedAccountPruner,
         ]
     experimental_tunable_loops = [

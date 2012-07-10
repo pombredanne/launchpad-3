@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Policy management for the upload handler."""
@@ -29,7 +29,6 @@ from zope.interface import (
     Interface,
     )
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -76,7 +75,7 @@ class AbstractUploadPolicy:
 
     name = 'abstract'
     options = None
-    accepted_type = None # Must be defined in subclasses.
+    accepted_type = None  # Must be defined in subclasses.
 
     def __init__(self):
         """Prepare a policy..."""
@@ -259,19 +258,26 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                     "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
-        """The insecure policy only auto-approves RELEASE pocket stuff.
+        """The insecure policy auto-approves RELEASE/PROPOSED pocket stuff.
 
         PPA uploads are always auto-approved.
-        Other uploads (to main archives) are only auto-approved if the
-        distroseries is not FROZEN (note that we already performed the
-        IDistroSeries.canUploadToPocket check in the checkUpload base method).
+        RELEASE and PROPOSED pocket uploads (to main archives) are only
+        auto-approved if the distroseries is in a non-FROZEN state
+        pre-release.  (We already performed the IArchive.canModifySuite
+        check in the checkUpload base method, which will deny RELEASE
+        uploads post-release, but it doesn't hurt to repeat this for that
+        case.)
         """
         if upload.is_ppa:
             return True
 
-        if self.pocket == PackagePublishingPocket.RELEASE:
-            if (self.distroseries.status !=
-                SeriesStatus.FROZEN):
+        auto_approve_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if self.pocket in auto_approve_pockets:
+            if (self.distroseries.isUnstable() and
+                self.distroseries.status != SeriesStatus.FROZEN):
                 return True
         return False
 
@@ -310,6 +316,14 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         elif not upload.sourceful and not upload.binaryful:
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
+
+    def autoApprove(self, upload):
+        """Check that all custom files in this upload can be auto-approved."""
+        if upload.binaryful:
+            for custom_file in upload.changes.custom_files:
+                if not custom_file.autoApprove():
+                    return False
+        return True
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):

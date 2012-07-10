@@ -125,7 +125,7 @@ class WalkerBase:
         """
         try:
             self.open()
-        except (IOError, socket.error), e:
+        except (IOError, socket.error) as e:
             self.log.info("Could not connect to %s" % self.base)
             self.log.info("Failure: %s" % e)
             return
@@ -136,7 +136,7 @@ class WalkerBase:
 
             try:
                 (dirnames, filenames) = self.list(sub_dir)
-            except WalkerError, exc:
+            except WalkerError:
                 self.log.info('could not retrieve directory '
                                    'listing for %s', sub_dir)
                 continue
@@ -339,12 +339,12 @@ class HTTPWalker(WalkerBase):
 
         self.log.debug("Checking if %s is a directory" % path)
         try:
-            response = self.request("HEAD", path)
+            self.request("HEAD", path)
             return False
-        except urllib2.HTTPError, exc:
+        except urllib2.HTTPError as exc:
             if exc.code != 301:
                 return False
-        except (IOError, socket.error), exc:
+        except (IOError, socket.error) as exc:
             # Raise HTTPWalkerError for other IO or socket errors.
             raise HTTPWalkerError(str(exc))
 
@@ -376,7 +376,7 @@ class HTTPWalker(WalkerBase):
                 soup = BeautifulSoup(response.read())
             finally:
                 response.close()
-        except (IOError, socket.error), exc:
+        except (IOError, socket.error) as exc:
             raise HTTPWalkerError(str(exc))
 
         base = URI(self.base).resolve(dirname)

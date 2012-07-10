@@ -11,8 +11,8 @@ We will need extra permissions to use this method.
 
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('rosettaadmin')
+    >>> from lp.testing.dbuser import switch_dbuser
+    >>> switch_dbuser('rosettaadmin')
 
 Select an existing ITranslationMessage and try to remove it.
 
@@ -33,9 +33,9 @@ POFileTranslator update on remove
 In two sharing POTemplates with one shared POTMsgSet with one shared
 translation, we get two POFileTranslator records for each of the POFiles.
 
-    >>> # We need to be able to create persons and projects so let's just use
-    >>> # a global 'postgres' permission which allows everything.
-    >>> LaunchpadZopelessLayer.switchDbUser('postgres')
+    # We need to be able to create persons and projects so let's just use
+    # a global 'postgres' permission which allows everything.
+    >>> switch_dbuser('postgres')
     >>> from lp.services.database.sqlbase import sqlvalues
     >>> from lp.app.enums import ServiceUsage
     >>> from lp.testing.factory import LaunchpadObjectFactory
@@ -63,13 +63,6 @@ translation, we get two POFileTranslator records for each of the POFiles.
     ...     potmsgset=potmsgset,
     ...     translations=[u"blah"])
     >>> print POFileTranslator.select(
-    ...     "latest_message=%s" % sqlvalues(tm)).count()
+    ...     "pofile IN (%s, %s)"
+    ...     % sqlvalues(devel_sr_pofile, stable_sr_pofile)).count()
     2
-
-Removing a translation message triggers POFileTranslator row removal as well.
-
-    >>> tm.destroySelf()
-    >>> print list(POFileTranslator.select(
-    ...     "latest_message=%s" % sqlvalues(tm)))
-    []
-

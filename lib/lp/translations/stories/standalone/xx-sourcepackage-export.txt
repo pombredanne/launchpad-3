@@ -97,13 +97,15 @@ admin or expert, but he is one of the owners of a translation group.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
     >>> carlos = personset.getByName('carlos')
-    >>> oofy = factory.makePerson(email='oofy@drones.example.com',
-    ...     name='oofy', password='test', displayname='Oofy Prosser')
+    >>> oofy = factory.makePerson(
+    ...     email='oofy@drones.example.com', name='oofy',
+    ...     displayname='Oofy Prosser')
     >>> rosetta_admins = personset.getByName('rosetta-admins')
     >>> ignored = rosetta_admins.addMember(oofy, carlos)
 
-    >>> gussie = factory.makePerson(email='gussie@drones.example.com',
-    ...     name='gussie', password='test', displayname='Gussie Fink-Nottle')
+    >>> gussie = factory.makePerson(
+    ...     email='gussie@drones.example.com', name='gussie',
+    ...     displayname='Gussie Fink-Nottle')
     >>> translators = factory.makeTeam(gussie)
     >>> group = factory.makeTranslationGroup(translators)
 
@@ -149,7 +151,7 @@ expert.
 "cprov" is able to download translations as an Ubuntu uploader.
 
     >>> ubuntu_member_browser = setupBrowser(
-    ...     auth='Basic cprov@ubuntu.com:cprov')
+    ...     auth='Basic cprov@ubuntu.com:test')
     >>> can_download_translations(ubuntu_member_browser)
     True
 

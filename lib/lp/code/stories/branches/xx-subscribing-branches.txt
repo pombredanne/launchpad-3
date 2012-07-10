@@ -218,7 +218,7 @@ Editing a team subscription
 ===========================
 
 In order to edit a team subscription the logged in user needs to be a member
-of the team that is subscribed, or must the the person who subscribed the team
+of the team that is subscribed, or must the person who subscribed the team
 to the branch.  There is a link shown in the subscriptions portlet to edit the
 subscription of a team that the logged in user is a member of.
 
@@ -270,8 +270,7 @@ to everyone.
     >>> private_team = factory.makeTeam(
     ...     name='shh', displayname='Shh',
     ...     visibility=PersonVisibility.PRIVATE)
-    >>> member = factory.makePerson(
-    ...     email='shh@example.com', password='test')
+    >>> member = factory.makePerson(email='shh@example.com')
     >>> ignored = private_team.addMember(member, private_team.teamowner)
     >>> owner = factory.makePerson(name='branch-owner')
     >>> branch = factory.makeAnyBranch(owner=owner)

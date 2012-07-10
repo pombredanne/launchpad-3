@@ -24,6 +24,10 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
+from lp.code.bzr import (
+    branch_revision_history,
+    get_ancestry,
+    )
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
@@ -48,6 +52,7 @@ class BzrSync:
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
+        self.revision_set = getUtility(IRevisionSet)
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch, handling locking.
@@ -84,7 +89,7 @@ class BzrSync:
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
         self.logger.info("Retrieving history from bzrlib.")
-        bzr_history = bzr_branch.revision_history()
+        bzr_history = branch_revision_history(bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -97,15 +102,9 @@ class BzrSync:
         new_db_revs = (
             new_ancestry - getUtility(IRevisionSet).onlyPresent(new_ancestry))
         self.logger.info("Adding %s new revisions.", len(new_db_revs))
-        for revids in iter_list_chunks(list(new_db_revs), 1000):
+        for revids in iter_list_chunks(list(new_db_revs), 10000):
             revisions = self.getBazaarRevisions(bzr_branch, revids)
-            for revision in revisions:
-                # This would probably go much faster if we found some way to
-                # bulk-load multiple revisions at once, but as this is only
-                # executed for revisions new to Launchpad, it doesn't seem
-                # worth it at this stage.
-                self.syncOneRevision(
-                    bzr_branch, revision, revids_to_insert)
+            self.syncRevisions(bzr_branch, revisions, revids_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
         transaction.commit()
@@ -159,8 +158,7 @@ class BzrSync:
         bzr_last = bzr_branch.last_revision()
         db_last = self.db_branch.last_scanned_id
         if db_last is None:
-            added_ancestry = set(bzr_branch.repository.get_ancestry(bzr_last))
-            added_ancestry.discard(None)
+            added_ancestry = get_ancestry(bzr_branch.repository, bzr_last)
             removed_ancestry = set()
         else:
             graph = self._getRevisionGraph(bzr_branch, db_last)
@@ -239,24 +237,23 @@ class BzrSync:
         revisions = bzr_branch.repository.get_parent_map(revisions)
         return bzr_branch.repository.get_revisions(revisions.keys())
 
-    def syncOneRevision(self, bzr_branch, bzr_revision, revids_to_insert):
-        """Import the revision with the given revision_id.
+    def syncRevisions(self, bzr_branch, bzr_revisions, revids_to_insert):
+        """Import the supplied revisions.
 
         :param bzr_branch: The Bazaar branch that's being scanned.
-        :param bzr_revision: the revision to import
+        :param bzr_revisions: the revisions to import
         :type bzr_revision: bzrlib.revision.Revision
         :param revids_to_insert: a dict of revision ids to integer
             revno. Non-mainline revisions will be mapped to None.
         """
-        revision_id = bzr_revision.revision_id
-        revision_set = getUtility(IRevisionSet)
-        # Revision not yet in the database. Load it.
-        self.logger.debug("Inserting revision: %s", revision_id)
-        db_revision = revision_set.newFromBazaarRevision(bzr_revision)
-        notify(
-            events.NewRevision(
-                self.db_branch, bzr_branch, db_revision, bzr_revision,
-                revids_to_insert[revision_id]))
+        self.revision_set.newFromBazaarRevisions(bzr_revisions)
+        mainline_revisions = []
+        for bzr_revision in bzr_revisions:
+            if revids_to_insert[bzr_revision.revision_id] is None:
+                continue
+            mainline_revisions.append(bzr_revision)
+        notify(events.NewMainlineRevisions(
+            self.db_branch, bzr_branch, mainline_revisions))
 
     @staticmethod
     def revisionsToInsert(added_history, last_revno, added_ancestry):
@@ -293,7 +290,7 @@ class BzrSync:
         self.logger.info("Inserting %d branchrevision records.",
             len(revids_to_insert))
         revid_seq_pairs = revids_to_insert.items()
-        for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
+        for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 10000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
 
     def updateBranchStatus(self, bzr_history):

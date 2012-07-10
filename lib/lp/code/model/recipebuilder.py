@@ -85,6 +85,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             None)
         args['archives'] = get_sources_list_for_building(self.build,
             distroarchseries, None)
+        args['archive_private'] = self.build.archive.private
 
         # config.builddmaster.bzr_builder_sources_list can contain a
         # sources.list entry for an archive that will contain a

@@ -51,6 +51,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -111,7 +112,7 @@ class ExtractBugTrackerAndBugTestBase:
         try:
             bugtracker, bug = self.bugwatch_set.extractBugTrackerAndBug(
                 self.bug_url)
-        except NoBugTrackerFound, error:
+        except NoBugTrackerFound as error:
             # The raised exception should contain enough information so
             # that we can register a new bug tracker.
             self.assertEqual(error.base_url, self.base_url)
@@ -581,8 +582,8 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         # the given bug watches.
         error = BugWatchActivityStatus.PRIVATE_REMOTE_BUG
         getUtility(IBugWatchSet).bulkAddActivity(
-            self.bug_watches, error, "Forbidden", "OOPS-1234")
-        self._checkActivityForBugWatches(error, "Forbidden", "OOPS-1234")
+            self.bug_watches, error, "OOPS-1234")
+        self._checkActivityForBugWatches(error, None, "OOPS-1234")
 
     def test_bulkAddActivity_with_id_list(self):
         # The ids of bug watches can be passed in.
@@ -641,9 +642,8 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         # where n is determined by checkwatches.scheduler.MAX_SAMPLE_SIZE.
         for i in range(5):
             self.bug_watch.addActivity(message="Activity %s" % i)
-        transaction.commit()
 
-        self.layer.switchDbUser('garbo')
+        switch_dbuser('garbo')
         self.pruner = BugWatchActivityPruner(BufferLogger())
         self.addCleanup(self.pruner.cleanUp)
 

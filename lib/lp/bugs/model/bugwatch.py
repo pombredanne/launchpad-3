@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -64,16 +64,17 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
-from lp.services.helpers import shortlist
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
 from lp.services.messages.model.message import Message
 from lp.services.webapp import (
     urlappend,
@@ -331,7 +332,7 @@ class BugWatch(SQLBase):
             self.next_check <= datetime.now(utc)):
             # If the watch is already scheduled for a time in the past
             # (or for right now) it can't be rescheduled, since it
-            # should be be checked by the next checkwatches run anyway.
+            # should be checked by the next checkwatches run anyway.
             return False
 
         if self.activity.is_empty():
@@ -431,7 +432,7 @@ class BugWatchSet(BugSetBase):
         for url in matches:
             try:
                 bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
-            except NoBugTrackerFound, error:
+            except NoBugTrackerFound as error:
                 # We don't want to auto-create EMAILADDRESS bug trackers
                 # based on mailto: URIs in comments.
                 if error.bugtracker_type == BugTrackerType.EMAILADDRESS:
@@ -739,18 +740,13 @@ class BugWatchSet(BugSetBase):
 
     def bulkAddActivity(self, references,
                         result=BugWatchActivityStatus.SYNC_SUCCEEDED,
-                        message=None, oops_id=None):
+                        oops_id=None):
         """See `IBugWatchSet`."""
-        bug_watch_ids = set(get_bug_watch_ids(references))
-        if len(bug_watch_ids) > 0:
-            insert_activity_statement = (
-                "INSERT INTO BugWatchActivity"
-                " (bug_watch, result, message, oops_id) "
-                "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
-                " WHERE BugWatch.id IN %s")
-            IStore(BugWatch).execute(
-                insert_activity_statement % sqlvalues(
-                    result, message, oops_id, bug_watch_ids))
+        bulk.create(
+            (BugWatchActivity.bug_watch_id, BugWatchActivity.result,
+             BugWatchActivity.oops_id),
+            [(bug_watch_id, result, ensure_unicode(oops_id))
+             for bug_watch_id in set(get_bug_watch_ids(references))])
 
 
 class BugWatchActivity(StormBase):

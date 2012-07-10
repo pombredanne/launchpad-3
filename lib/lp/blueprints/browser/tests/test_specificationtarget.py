@@ -1,10 +1,11 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -29,7 +30,7 @@ from lp.testing.views import (
     )
 
 
-class TestRegisterABlueprintButtonView(TestCaseWithFactory):
+class TestRegisterABlueprintButtonPortlet(TestCaseWithFactory):
     """Test specification menus links."""
     layer = DatabaseFunctionalLayer
 
@@ -69,6 +70,9 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.user = self.factory.makePerson(name="macadamia")
         login_person(self.user)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def verify_involvment(self, context):
         self.assertTrue(IHasSpecifications.providedBy(context))
@@ -121,6 +125,12 @@ class TestHasSpecificationsViewInvolvement(TestCaseWithFactory):
 class TestAssignments(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestAssignments, self).setUp()
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def test_assignments_are_batched(self):
         product = self.factory.makeProduct()
@@ -246,6 +256,9 @@ class TestSpecificationsRobots(TestCaseWithFactory):
         super(TestSpecificationsRobots, self).setUp()
         self.product = self.factory.makeProduct()
         self.naked_product = removeSecurityProxy(self.product)
+        # Use a FakeLogger fixture to prevent Memcached warnings to be
+        # printed to stdout while browsing pages.
+        self.useFixture(FakeLogger())
 
     def _configure_project(self, usage):
         self.naked_product.blueprints_usage = usage

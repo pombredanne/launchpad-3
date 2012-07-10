@@ -32,7 +32,7 @@
               <fieldset id="mergeproposal-extra-options"
                         class="collapsible">
                 <legend>Extra options</legend>
-                <div class="unseen"><!-- hidden by default -->
+                <div class="hidden"><!-- hidden by default -->
                 <table class="extra-options">
 
                   <tal:widget define="widget nocall:view/widgets/commit_message">
@@ -58,32 +58,15 @@
         </metal:formbody>
       </div>
 
-      <!-- We want to disable the review_type field if no reviewer is
-           specified. In such cases, the reviewer will be set by the back end
-           to be the default for the target branch and the review type will be
-           None.
-      -->
       <tal:script>
-        <script type="text/javascript" tal:content="string:
-          LPS.use('node', 'event', function(Y) {
-              function reviewer_changed(value) {
-                reviewer = Y.Lang.trim(value);
-                review_type = document.getElementById('field.review_type');
-                review_type.disabled = (reviewer == '');
-              };
-              Y.on('blur',
+        <script type="text/javascript">
+          LPJS.use('lp.code.branchmergeproposal.nominate', function(Y) {
+              Y.on('domready',
                   function(e) {
-                    reviewer_changed(e.target.get('value'))
-                  },
-                  document.getElementById('field.reviewer'));
-              Y.on('load',
-                  function(e) {
-                    f = document.getElementById('field.reviewer')
-                    reviewer_changed(f.value);
+                    Y.lp.code.branchmergeproposal.nominate.setup();
                   },
                   window);
-          });"
-        >
+          });
         </script>
       </tal:script>
 

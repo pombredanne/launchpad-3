@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -21,10 +21,7 @@ from lazr.restful.utils import smartquote
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
-    Count,
     Desc,
-    Max,
-    Sum,
     )
 from storm.locals import (
     Bool,
@@ -38,16 +35,8 @@ import transaction
 from zope.interface import implements
 
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtask import DB_UNRESOLVED_BUGTASK_STATUSES
-from lp.bugs.model.bug import (
-    Bug,
-    BugSet,
-    )
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    HasBugHeatMixin,
-    )
+from lp.bugs.model.bug import BugSet
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -116,9 +105,7 @@ class DistributionSourcePackageProperty:
                 SourcePackagePublishingHistory.distroseriesID ==
                     DistroSeries.id,
                 DistroSeries.distributionID == obj.distribution.id,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagenameID ==
+                SourcePackagePublishingHistory.sourcepackagenameID ==
                     obj.sourcepackagename.id).order_by(
                         Desc(SourcePackagePublishingHistory.id)).first()
             obj._new(obj.distribution, obj.sourcepackagename,
@@ -132,7 +119,6 @@ class DistributionSourcePackage(BugTargetBase,
                                 HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
                                 HasMergeProposalsMixin,
-                                HasBugHeatMixin,
                                 HasDriversMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
@@ -142,15 +128,13 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IBugSummaryDimension, IDistributionSourcePackage, IHasBugHeat,
+        IBugSummaryDimension, IDistributionSourcePackage,
         IHasCustomLanguageCodes)
 
     bug_reporting_guidelines = DistributionSourcePackageProperty(
         'bug_reporting_guidelines')
     bug_reported_acknowledgement = DistributionSourcePackageProperty(
         'bug_reported_acknowledgement')
-    max_bug_heat = DistributionSourcePackageProperty('max_bug_heat')
-    total_bug_heat = DistributionSourcePackageProperty('total_bug_heat')
     bug_count = DistributionSourcePackageProperty('bug_count')
     po_message_count = DistributionSourcePackageProperty('po_message_count')
     is_upstream_link_allowed = DistributionSourcePackageProperty(
@@ -236,24 +220,6 @@ class DistributionSourcePackage(BugTargetBase,
             return True
         return False
 
-    def recalculateBugHeatCache(self):
-        """See `IHasBugHeat`."""
-        row = IStore(Bug).find(
-            (Max(Bug.heat), Sum(Bug.heat), Count(Bug.id)),
-            BugTask.bug == Bug.id,
-            BugTask.distributionID == self.distribution.id,
-            BugTask.sourcepackagenameID == self.sourcepackagename.id,
-            Bug.duplicateof == None,
-            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES)).one()
-
-        # Aggregate functions return NULL if zero rows match.
-        row = list(row)
-        for i in range(len(row)):
-            if row[i] is None:
-                row[i] = 0
-
-        self.max_bug_heat, self.total_bug_heat, self.bug_count = row
-
     @property
     def latest_overall_publication(self):
         """See `IDistributionSourcePackage`."""
@@ -265,9 +231,7 @@ class DistributionSourcePackage(BugTargetBase,
         spph = SourcePackagePublishingHistory.selectFirst("""
             SourcePackagePublishingHistory.distroseries = DistroSeries.id AND
             DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.sourcepackagename = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             pocket NOT IN (%s, %s) AND
             status in (%s, %s)""" %
@@ -279,7 +243,6 @@ class DistributionSourcePackage(BugTargetBase,
                           PackagePublishingStatus.PUBLISHED,
                           PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
-                          "SourcePackageRelease",
                           "DistroSeries"],
             orderBy=["status",
                      SQLConstant(
@@ -433,9 +396,9 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s
+            SourcePackagePublishingHistory.sourcepackagename = %s AND
+            SourcePackageRelease.id =
+                SourcePackagePublishingHistory.sourcepackagerelease
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagename)
@@ -458,9 +421,10 @@ class DistributionSourcePackage(BugTargetBase,
             DistroSeries.distribution == self.distribution,
             SourcePackagePublishingHistory.archiveID.is_in(
                self.distribution.all_distro_archive_ids),
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagename == self.sourcepackagename)
+            SourcePackagePublishingHistory.sourcepackagename ==
+                self.sourcepackagename,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID)
         result.order_by(
             Desc(SourcePackageRelease.id),
             Desc(SourcePackagePublishingHistory.datecreated),
@@ -631,8 +595,6 @@ class DistributionSourcePackageInDatabase(Storm):
     bug_reporting_guidelines = Unicode()
     bug_reported_acknowledgement = Unicode()
 
-    max_bug_heat = Int()
-    total_bug_heat = Int()
     bug_count = Int()
     po_message_count = Int()
     is_upstream_link_allowed = Bool()

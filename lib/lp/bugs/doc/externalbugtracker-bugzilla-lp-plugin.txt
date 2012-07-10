@@ -55,17 +55,14 @@ doing the authentication work with the remote server. We'll override the
 _handleLoginToken() method of TestBugzillaXMLRPCTransport so that it can
 work with the right database user.
 
-    >>> from lp.services.config import config
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestInternalXMLRPCTransport)
+    >>> from lp.testing.dbuser import lp_dbuser
 
     >>> class ZopelessBugzillaXMLRPCTransport(TestBugzillaXMLRPCTransport):
     ...     def _handleLoginToken(self, token_text):
-    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
-    ...         self._consumeLoginToken(token_text)
-    ...         LaunchpadZopelessLayer.switchDbUser(
-    ...             config.checkwatches.dbuser)
+    ...         with lp_dbuser():
+    ...             self._consumeLoginToken(token_text)
 
     >>> test_transport = ZopelessBugzillaXMLRPCTransport(
     ...     'http://example.com/')
@@ -315,7 +312,7 @@ Getting remote statuses
 -----------------------
 
 BugzillaLPPlugin doesn't have any special functionality for getting
-remote statuses. See the "Getting remote statuses" section of 
+remote statuses. See the "Getting remote statuses" section of
 externalbugtracker-bugzilla-api.txt for details of getting remote
 statuses from Bugzilla APIs.
 
@@ -342,7 +339,6 @@ instance.
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from lp.services.database.sqlbase import commit
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -352,22 +348,17 @@ bugtracker and a couple of bugwatches.
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> bug = firefox.createBug(
-    ...     CreateBugParams(sample_person, "Yet another test bug",
-    ...         "Yet another test description.",
-    ...         subscribe_owner=False))
-
-    >>> bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
-    >>> bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
-    >>> bug_watch_broken = bug.addWatch(bug_tracker, '42', sample_person)
-    >>> commit()
-
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     sample_person = getUtility(IPersonSet).getByEmail(
+    ...         'test@canonical.com')
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     bug = firefox.createBug(
+    ...         CreateBugParams(sample_person, "Yet another test bug",
+    ...             "Yet another test description.",
+    ...             subscribe_owner=False))
+    ...     bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
+    ...     bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
+    ...     bug_watch_broken = bug.addWatch(bug_tracker, '42', sample_person)
 
 
 getCommentIds()

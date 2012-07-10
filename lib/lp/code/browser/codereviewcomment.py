@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,7 +7,6 @@ __all__ = [
     'CodeReviewCommentAddView',
     'CodeReviewCommentContextMenu',
     'CodeReviewCommentPrimaryContext',
-    'CodeReviewCommentSummary',
     'CodeReviewCommentView',
     'CodeReviewDisplayComment',
     ]
@@ -32,6 +31,8 @@ from lp.app.browser.launchpadform import (
     )
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.services.comments.browser.comment import download_body
+from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.comments.interfaces.conversation import IComment
 from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAlias
@@ -52,7 +53,7 @@ class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
     """Marker interface for displaying code review comments."""
 
 
-class CodeReviewDisplayComment:
+class CodeReviewDisplayComment(MessageComment):
     """A code review comment or activity or both.
 
     The CodeReviewComment itself does not implement the IComment interface as
@@ -64,13 +65,22 @@ class CodeReviewDisplayComment:
 
     delegates(ICodeReviewComment, 'comment')
 
-    def __init__(self, comment, from_superseded=False):
+    def __init__(self, comment, from_superseded=False, limit_length=True):
+        if limit_length:
+            comment_limit = config.malone.max_comment_size
+        else:
+            comment_limit = None
+        super(CodeReviewDisplayComment, self).__init__(comment_limit)
         self.comment = comment
         get_property_cache(self).has_body = bool(self.comment.message_body)
         self.has_footer = self.comment.vote is not None
         # The date attribute is used to sort the comments in the conversation.
         self.date = self.comment.message.datecreated
         self.from_superseded = from_superseded
+
+    @property
+    def index(self):
+        return self.comment.id
 
     @property
     def extra_css_class(self):
@@ -80,24 +90,9 @@ class CodeReviewDisplayComment:
             return ''
 
     @cachedproperty
-    def comment_author(self):
-        """The author of the comment."""
-        return self.comment.message.owner
-
-    @cachedproperty
-    def has_body(self):
-        """Is there body text?"""
-        return bool(self.body_text)
-
-    @cachedproperty
     def body_text(self):
         """Get the body text for the message."""
         return self.comment.message_body
-
-    @cachedproperty
-    def comment_date(self):
-        """The date of the comment."""
-        return self.comment.message.datecreated
 
     @cachedproperty
     def all_attachments(self):
@@ -112,6 +107,15 @@ class CodeReviewDisplayComment:
     def other_attachments(self):
         # Attachments to not show.
         return self.all_attachments[1]
+
+    @property
+    def download_url(self):
+        return canonical_url(self.comment, view_name='+download')
+
+
+def get_message(display_comment):
+    """Adapt an ICodeReviwComment to an IMessage."""
+    return display_comment.comment.message
 
 
 class CodeReviewCommentPrimaryContext:
@@ -173,11 +177,15 @@ class CodeReviewCommentView(LaunchpadView):
     @cachedproperty
     def comment(self):
         """The decorated code review comment."""
-        return CodeReviewDisplayComment(self.context)
+        return CodeReviewDisplayComment(self.context, limit_length=False)
 
     @property
     def page_description(self):
         return self.context.message_body
+
+    def download(self):
+        return download_body(
+            CodeReviewDisplayComment(self.context), self.request)
 
     # Should the comment be shown in full?
     full_comment = True
@@ -185,36 +193,13 @@ class CodeReviewCommentView(LaunchpadView):
     show_expanders = False
 
 
-class CodeReviewCommentSummary(CodeReviewCommentView):
-    """Summary view of a CodeReviewComment"""
+class CodeReviewCommentIndexView(CodeReviewCommentView):
 
-    # How many lines do we show in the main view?
-    SHORT_MESSAGE_LENGTH = 3
-
-    # Show comment expanders?
-    show_expanders = True
-
-    # Should the comment be shown in full?
-    @property
-    def full_comment(self):
-        """Show the full comment if it is short."""
-        return not self.is_long_message
-
-    @cachedproperty
-    def _comment_lines(self):
-        return self.context.message.text_contents.splitlines()
-
-    @property
-    def is_long_message(self):
-        return len(self._comment_lines) > self.SHORT_MESSAGE_LENGTH
-
-    @property
-    def message_summary(self):
-        """Return an elided message with the first X lines of the comment."""
-        short_message = (
-            '\n'.join(self._comment_lines[:self.SHORT_MESSAGE_LENGTH]))
-        short_message += "..."
-        return short_message
+    def __call__(self):
+        """View redirects to +download if comment is too long to render."""
+        if self.comment.too_long_to_render:
+            return self.request.response.redirect(self.comment.download_url)
+        return super(CodeReviewCommentIndexView, self).__call__()
 
 
 class IEditCodeReviewComment(Interface):
@@ -239,7 +224,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     schema = IEditCodeReviewComment
 
-    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
     custom_widget('vote', MyDropWidget)
 
     page_title = 'Reply to code review comment'

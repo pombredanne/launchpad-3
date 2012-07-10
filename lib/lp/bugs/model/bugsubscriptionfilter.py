@@ -23,7 +23,7 @@ from storm.locals import (
     )
 from zope.interface import implements
 
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import (
     IBugSubscriptionFilter,
     IBugSubscriptionFilterMute,

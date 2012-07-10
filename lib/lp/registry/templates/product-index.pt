@@ -14,27 +14,10 @@
 
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
-    <style type="text/css">
-      div.collapsible {
-        border:medium none;
-        margin:0;
-        padding:16px 0 0;
-      }
-
-      div.collapsed {
-        display: None
-      }
-    </style>
-
-    <noscript>
-      <style type="text/css">
-        div.collapsible, div.collapsed {display: block;}
-      </style>
-    </noscript>
     <tal:uses_launchpad_bugtracker
        condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <script type="text/javascript">
-          LPS.use('lp.registry.structural_subscription', function(Y) {
+          LPJS.use('lp.registry.structural_subscription', function(Y) {
               var module = Y.lp.registry.structural_subscription;
               Y.on('domready', function() {
                 module.setup({content_box: "#structural-subscription-content-box"});
@@ -139,7 +122,7 @@
               </dl>
 
               <dl id="licences">
-                <dt>Licenses:</dt>
+                <dt>Licences:</dt>
                 <dd>
                   <tal:licenses repeat="license context/licenses">
                     <tal:license replace="license/title">GPL</tal:license><tal:comma
@@ -168,7 +151,7 @@
             <div id="project-admin-whiteboard" class="whiteboard"
               tal:condition="context/required:launchpad.Moderate">
               <div>
-                <strong>Whiteboard</strong>
+                <strong>Whiteboard</strong>&nbsp;
                 <a tal:replace="structure overview_menu/review_license/fmt:icon"/>
               </div>
               <tal:whiteboard replace="structure context/reviewer_whiteboard/fmt:text-to-html" />
@@ -211,7 +194,7 @@
       <tal:warning-for-owner
         condition="view/show_commercial_subscription_info">
         <div
-          tal:condition="view/requires_commercial_subscription"
+          tal:condition="context/commercial_subscription_is_due"
           tal:content="structure context/@@+portlet-requires-subscription"/>
         <div
           tal:condition="not: context/licenses"

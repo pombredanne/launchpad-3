@@ -27,6 +27,9 @@ p {
     width: auto;
     margin-bottom: 0.8em;
     }
+div + p, ul + p, table + p {
+    margin-top: 0.8em;
+    }
 p, li, dt, dd, blockquote, .narrow, .narrow-listing {
     /* Wrap the text before the eye gets lost. */
     max-width: 45em;
@@ -43,11 +46,10 @@ pre, code, samp, tt, .console {
     }
 pre.wrap {
     /* From nice_pre in tales.py */
-    white-space: -moz-pre-wrap;
-    white-space: -o-pre-wrap;
     white-space: pre-wrap;
     word-wrap: break-word;
     }
+
 :link, :visited {
     /* Links are blue, brighter when clicked, and greyer once visited. */
     color: #03a;
@@ -69,7 +71,7 @@ a.help {
     border-bottom: 1px dotted #03a;
     cursor: help;
     }
-a.help:hover, a.help:hover {
+a.help:hover, a.action-icon:hover {
     text-decoration: none;
     }
 a.help.icon, a.sprite.maybe.help {
@@ -106,6 +108,9 @@ kbd {
     margin: 1px;
     min-width: 1em;
     outline: 1px #666;
+    }
+tt.command {
+    padding-left: 2em;
     }
 .nowrap {
     white-space: nowrap;

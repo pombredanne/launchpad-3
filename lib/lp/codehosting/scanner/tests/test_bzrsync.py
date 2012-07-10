@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0141
@@ -16,13 +16,14 @@ from bzrlib.revision import (
     )
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.uncommit import uncommit
+from fixtures import TempDir
 import pytz
 from storm.locals import Store
-import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.code.bzr import branch_revision_history
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
@@ -46,11 +47,12 @@ from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.osutils import override_environ
-from lp.testing import (
-    temp_dir,
-    TestCaseWithFactory,
+from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import (
+    dbuser,
+    lp_dbuser,
+    switch_dbuser,
     )
-from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
@@ -83,9 +85,8 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         SafeBranchOpener.install_hook()
         self.disable_directory_isolation()
         self.useBzrBranches(direct_database=True)
-        self.lp_db_user = config.launchpad.dbuser
         self.makeFixtures()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         # Catch both constraints and permissions for the db user.
         self.addCleanup(Store.of(self.db_branch).flush)
 
@@ -224,33 +225,30 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         :return: (db_trunk, trunk_tree), (db_branch, branch_tree).
         """
 
-        LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
+        with lp_dbuser():
+            # Make the base revision.
+            db_branch = self.makeDatabaseBranch()
+            db_branch, trunk_tree = self.create_branch_and_tree(
+                db_branch=db_branch)
+            # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+            # required to generate the revision-id.
+            with override_environ(BZR_EMAIL='me@example.com'):
+                trunk_tree.commit(u'base revision', rev_id=base_rev_id)
 
-        # Make the base revision.
-        db_branch = self.makeDatabaseBranch()
-        db_branch, trunk_tree = self.create_branch_and_tree(
-            db_branch=db_branch)
-        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
-        # required to generate the revision-id.
-        with override_environ(BZR_EMAIL='me@example.com'):
-            trunk_tree.commit(u'base revision', rev_id=base_rev_id)
+                # Branch from the base revision.
+                new_db_branch = self.makeDatabaseBranch(
+                    product=db_branch.product)
+                new_db_branch, branch_tree = self.create_branch_and_tree(
+                    db_branch=new_db_branch)
+                branch_tree.pull(trunk_tree.branch)
 
-            # Branch from the base revision.
-            new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
-            new_db_branch, branch_tree = self.create_branch_and_tree(
-                db_branch=new_db_branch)
-            branch_tree.pull(trunk_tree.branch)
+                # Commit to both branches.
+                trunk_tree.commit(u'trunk revision', rev_id=trunk_rev_id)
+                branch_tree.commit(u'branch revision', rev_id=branch_rev_id)
 
-            # Commit to both branches.
-            trunk_tree.commit(u'trunk revision', rev_id=trunk_rev_id)
-            branch_tree.commit(u'branch revision', rev_id=branch_rev_id)
-
-            # Merge branch into trunk.
-            trunk_tree.merge_from_branch(branch_tree.branch)
-            trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
-
-        LaunchpadZopelessLayer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+                # Merge branch into trunk.
+                trunk_tree.merge_from_branch(branch_tree.branch)
+                trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
 
         return (db_branch, trunk_tree), (new_db_branch, branch_tree)
 
@@ -422,7 +420,7 @@ class TestBzrSync(BzrSyncTestCase):
             graph = bzr_branch.repository.get_graph()
             revno = graph.find_distance_to_null(bzr_rev, [])
             if clean_repository:
-                tempdir = self.useContext(temp_dir())
+                tempdir = self.useFixture(TempDir()).path
                 delta_branch = self.createBranchAtURL(tempdir)
                 self.useContext(write_locked(delta_branch))
                 delta_branch.pull(bzr_branch, stop_revision=bzr_rev)
@@ -472,7 +470,7 @@ class TestBzrSync(BzrSyncTestCase):
         # yield each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
-        bzr_history = self.bzr_branch.revision_history()
+        bzr_history = branch_revision_history(self.bzr_branch)
         added_ancestry = bzrsync.getAncestryDelta(self.bzr_branch)[0]
         result = bzrsync.revisionsToInsert(
             bzr_history, self.bzr_branch.revno(), added_ancestry)
@@ -484,7 +482,7 @@ class TestBzrSync(BzrSyncTestCase):
         (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
-        bzr_history = bzr_tree.branch.revision_history()
+        bzr_history = branch_revision_history(bzr_tree.branch)
         added_ancestry = bzrsync.getAncestryDelta(bzr_tree.branch)[0]
         expected = {'base': 1, 'trunk': 2, 'merge': 3, 'branch': None}
         self.assertEqual(
@@ -583,8 +581,8 @@ class TestPlanDatabaseChanges(BzrSyncTestCase):
         self.assertIn(merge_id, branchrevisions_to_delete)
 
 
-class TestBzrSyncOneRevision(BzrSyncTestCase):
-    """Tests for `BzrSync.syncOneRevision`."""
+class TestBzrSyncRevisions(BzrSyncTestCase):
+    """Tests for `BzrSync.syncRevisions`."""
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
@@ -607,7 +605,7 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
-        self.bzrsync.syncOneRevision(None, fake_rev, {'rev42': None})
+        self.bzrsync.syncRevisions(None, [fake_rev], {'rev42': None})
 
         # Find the revision we just synced and check that it has the correct
         # date.
@@ -621,17 +619,13 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
     def _makeProductSeries(self, mode=None):
         """Switch to the Launchpad db user to create and configure a
-        product series that is linked to the the branch.
+        product series that is linked to the branch.
         """
-        try:
-            LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
+        with lp_dbuser():
             self.product_series = self.factory.makeProductSeries()
             self.product_series.branch = self.db_branch
             if mode is not None:
                 self.product_series.translations_autoimport_mode = mode
-            transaction.commit()
-        finally:
-            LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
     def test_upload_on_new_revision_no_series(self):
         # Syncing a branch with a changed tip does not create a
@@ -680,8 +674,7 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
         bmp.next_preview_diff_job.start()
         bmp.next_preview_diff_job.complete()
         self.assertIs(None, bmp.next_preview_diff_job)
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertIsNot(None, bmp.next_preview_diff_job)
 
@@ -712,8 +705,7 @@ class TestGenerateIncrementalDiffJob(BzrSyncTestCase):
         revision_id = commit_file(self.db_branch, 'foo', 'baz')
         removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
         self.assertEqual([], self.getPending())
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         (job,) = self.getPending()
         self.assertEqual(revision_id, job.new_revision_id)
@@ -729,8 +721,7 @@ class TestSetRecipeStale(BzrSyncTestCase):
         recipe = self.factory.makeSourcePackageRecipe(
             branches=[self.db_branch])
         removeSecurityProxy(recipe).is_stale = False
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(True, recipe.is_stale)
 
@@ -740,8 +731,7 @@ class TestSetRecipeStale(BzrSyncTestCase):
         recipe = self.factory.makeSourcePackageRecipe(
             branches=[self.factory.makeBranch(), self.db_branch])
         removeSecurityProxy(recipe).is_stale = False
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(True, recipe.is_stale)
 
@@ -750,8 +740,7 @@ class TestSetRecipeStale(BzrSyncTestCase):
         """On tip unrelated recipes are left alone."""
         recipe = self.factory.makeSourcePackageRecipe()
         removeSecurityProxy(recipe).is_stale = False
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(False, recipe.is_stale)
 

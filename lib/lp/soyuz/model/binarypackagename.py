@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -11,13 +11,12 @@ __all__ = [
     'getBinaryPackageDescriptions',
 ]
 
-# SQLObject/SQLBase
 from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
+from storm.expr import Join
 from storm.store import EmptyResultSet
-# Zope imports
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
@@ -32,11 +31,11 @@ from lp.services.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName,
     IBinaryPackageNameSet,
     )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
 
@@ -97,33 +96,29 @@ class BinaryPackageNameSet:
 
     def getNotNewByNames(self, name_ids, distroseries, archive_ids):
         """See `IBinaryPackageNameSet`."""
-        # Here we're returning `BinaryPackageName`s where the records
-        # for the supplied `BinaryPackageName` IDs are published in the
-        # supplied distroseries.  If they're already published then they
-        # must not be new.
+        # Circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         if len(name_ids) == 0:
             return EmptyResultSet()
 
-        statuses = (
-            PackagePublishingStatus.PUBLISHED,
-            PackagePublishingStatus.PENDING,
-            )
-
-        return BinaryPackageName.select("""
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.status IN %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
-            BinaryPackageName.id IN %s
-            """ % sqlvalues(distroseries, statuses, archive_ids, name_ids),
-            distinct=True,
-            clauseTables=["BinaryPackagePublishingHistory",
-                          "BinaryPackageRelease",
-                          "DistroArchSeries"])
+        return IStore(BinaryPackagePublishingHistory).using(
+            BinaryPackagePublishingHistory,
+            Join(BinaryPackageName,
+                BinaryPackagePublishingHistory.binarypackagenameID ==
+                BinaryPackageName.id),
+            Join(DistroArchSeries,
+                BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id)
+            ).find(
+                BinaryPackageName,
+                DistroArchSeries.distroseries == distroseries,
+                BinaryPackagePublishingHistory.status.is_in(
+                    active_publishing_status),
+                BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
+                BinaryPackagePublishingHistory.binarypackagenameID.is_in(
+                    name_ids)).config(distinct=True)
 
 
 class BinaryPackageNameIterator(BatchedCountableIterator):

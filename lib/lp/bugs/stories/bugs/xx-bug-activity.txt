@@ -98,18 +98,10 @@ that have been added.
     --------
 
 Alterations to a bug's privacy will show up as 'visibility' changes.
-We need a feature flag so that multi-pillar bugs can be made private.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl(
-    ...     "This bug report should be private").selected = True
+    >>> admin_browser.getControl("User Data").selected = True
     >>> admin_browser.getControl("Change").click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
@@ -123,9 +115,6 @@ We need a feature flag so that multi-pillar bugs can be made private.
     public => private
     --------
 
-Clean up the feature flag.
-    >>> flags.cleanUp()
-
 Changes to a bug's security_related field will be displayed as
 'security vulnerability' changes, with values of 'yes' or 'no'. Note
 that changes are grouped together if they occur at similar times, but
@@ -133,8 +122,7 @@ are still shown in the order the changes were made.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
+    >>> admin_browser.getControl("Embargoed Security").selected = True
     >>> admin_browser.getControl("Change").click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
@@ -321,4 +309,35 @@ If a bug task is deleted the pillar no longer affected will be shown.
     ... ago
     no longer affects:
     ubuntu
+    --------
+
+Changes to information_type are shown when the feature flag is set.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {
+    ...     'disclosure.information_type_notifications.enabled': 'on'}
+    >>> with FeatureFixture(feature_flag):
+    ...     admin_browser.open(
+    ...         "http://bugs.launchpad.dev/evolution/+bug/7/+secrecy")
+    ...     admin_browser.getControl("User Data").selected = True
+    ...     admin_browser.getControl('Change').click()
+    ...     admin_browser.open("http://bugs.launchpad.dev/evolution/+bug/7")
+    ...     print_comments(admin_browser.contents)
+    Foo Bar (name16)
+    ... ago
+    information type:
+    Public => User Data
+    --------
+
+    >>> with FeatureFixture(feature_flag):
+    ...     admin_browser.open(
+    ...         "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
+    ...     admin_browser.getControl("User Data").selected = True
+    ...     admin_browser.getControl('Change').click()
+    ...     admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/14")
+    ...     print_comments(admin_browser.contents)
+    Foo Bar (name16)
+    ... ago
+    information type:
+    Embargoed Security => User Data
     --------

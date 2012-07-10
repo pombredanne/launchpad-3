@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -45,6 +45,7 @@ from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
     )
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import DEFAULT
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import (
@@ -53,6 +54,10 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -138,11 +143,14 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         return IBuildFarmJobBehavior(self.specific_job)
 
-    @property
+    @cachedproperty
     def specific_job(self):
         """See `IBuildQueue`."""
         specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
+
+    def _clear_specific_job_cache(self):
+        del get_property_cache(self).specific_job
 
     @staticmethod
     def preloadSpecificJobData(queues):
@@ -150,14 +158,21 @@ class BuildQueue(SQLBase):
         for job_type, grouped_queues in groupby(queues, key=key):
             specific_class = specific_job_classes()[job_type]
             queue_subset = list(grouped_queues)
+            job_subset = load_related(Job, queue_subset, ['jobID'])
             # We need to preload the build farm jobs early to avoid
             # the call to _set_build_farm_job to look up BuildFarmBuildJobs
             # one by one.
-            specific_class.preloadBuildFarmJobs(queue_subset)
-            specific_jobs = specific_class.getByJobs(queue_subset)
-            if len(list(specific_jobs)) == 0:
+            specific_class.preloadBuildFarmJobs(job_subset)
+            specific_jobs = list(specific_class.getByJobs(job_subset))
+            if len(specific_jobs) == 0:
                 continue
             specific_class.preloadJobsData(specific_jobs)
+            specific_jobs_dict = dict(
+                (specific_job.job, specific_job)
+                    for specific_job in specific_jobs)
+            for queue in queue_subset:
+                cache = get_property_cache(queue)
+                cache.specific_job = specific_jobs_dict[queue.job]
 
     @property
     def date_started(self):
@@ -180,6 +195,7 @@ class BuildQueue(SQLBase):
         SQLBase.destroySelf(self)
         specific_job.cleanUp()
         job.destroySelf()
+        self._clear_specific_job_cache()
 
     def manualScore(self, value):
         """See `IBuildQueue`."""

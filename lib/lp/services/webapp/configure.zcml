@@ -169,12 +169,6 @@
         />
 
     <utility
-        factory="lp.services.webapp.authentication.SSHADigestEncryptor"
-        provides="lp.services.webapp.interfaces.IPasswordEncryptor"
-        permission="zope.Public"
-        />
-
-    <utility
         component="lp.services.webapp.authentication.loginSource"
         provides="lp.services.webapp.interfaces.IPlacelessLoginSource"
         permission="zope.Public"

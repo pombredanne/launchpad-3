@@ -4,6 +4,7 @@ An anonymous user visits the +builds page. He can see a summary of the
 builder state. In the sampledata, the builder 'bob' is building
 'mozilla-firefox'.
 
+    >>> anon_browser.mech_browser.set_handle_equiv(False)
     >>> anon_browser.open("http://launchpad.dev/builders")
     >>> anon_browser.getLink("bob").click()
 
@@ -27,6 +28,7 @@ When accessed by logged in users, the builder page renders the
 timezone. This way they can easily find out if they are reading
 outdated information.
 
+    >>> user_browser.mech_browser.set_handle_equiv(False)
     >>> user_browser.open(anon_browser.url)
     >>> print extract_text(find_portlet(
     ...     user_browser.contents, 'View full history Current status'))
@@ -38,8 +40,8 @@ outdated information.
     Updated on ...
 
 The anonymous user can see the builder details portlet and it contains
-information about the builder itself, like name, architecture,
-location and description.
+information about the builder itself, like name, architecture and
+location.
 
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Builder information'))
@@ -67,7 +69,8 @@ Celso is a member of launchpad-buildd-admins, he has full access to
 the builder actions.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
+    >>> cprov_browser.mech_browser.set_handle_equiv(False)
 
     >>> cprov_browser.open('http://launchpad.dev/builders')
     >>> cprov_browser.getLink('bob').click()
@@ -83,8 +86,6 @@ Celso can modify the location and the visible details of the builder.
     'bob'
     >>> cprov_browser.getControl(name="field.title").value
     'Bob The Builder'
-    >>> cprov_browser.getControl(name="field.description").value
-    'The default build-slave'
     >>> cprov_browser.getControl(name="field.processor").value
     ['386']
     >>> cprov_browser.getControl(name="field.owner").value
@@ -193,7 +194,7 @@ The builder administrators can hide a builder from the public list
 when they judge it convenient, for instance, when the builder present
 transient failures or is used for another purpose.
 
-    >>> cprov_browser.open('http://launchpad.dev/+builds')
+    >>> cprov_browser.open('http://launchpad.dev/builders')
     >>> cprov_browser.getLink('bob').click()
     >>> print backslashreplace(cprov_browser.title)
     Bob The Builder : Build Farm

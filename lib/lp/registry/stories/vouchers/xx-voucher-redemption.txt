@@ -2,7 +2,7 @@ Voucher Redemption
 ==================
 
 For a project to use Launchpad it must either be released under an
-approved open source license or the project administrators must buy a
+approved open source licence or the project administrators must buy a
 commercial subscription to use Launchpad.  Vouchers for commercial
 subscriptions are sold in the Canonical Store and the vouchers are
 then redeemed against a project in Launchpad to create or extend a
@@ -16,7 +16,7 @@ Accessing the voucher redemption page
 -------------------------------------
 
 Mark is an administrator for at least one project that does not have a
-valid open source license so he is displayed the voucher redemption
+valid open source licence so he is displayed the voucher redemption
 page.
 
     >>> browser = setupBrowser(auth='Basic mark@example.com:test')
@@ -74,7 +74,7 @@ Selecting a project the user owns and a valid voucher result in a
 successful voucher redemption.
 
     >>> browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~cprov/+vouchers')
     >>> browser.getControl(name='field.project').value='aptoncd'
     >>> browser.getControl(name='field.voucher').value = [
@@ -190,14 +190,3 @@ not shown to the user.
 Reset the class variable to disable forced faults.
 
     >>> SalesforceXMLRPCTestTransport.forced_fault = None
-
-
-Canceling the request
----------------------
-
-If the 'Cancel' button is selected the person's overview page is shown.
-
-    >>> browser.open('http://launchpad.dev/~bac/+vouchers')
-    >>> browser.getControl('Cancel').click()
-    >>> print browser.url
-    http://launchpad.dev/~bac

@@ -95,9 +95,6 @@ Then, subscribers of various types are added:
     >>> carlos = personset.getByEmail("carlos@canonical.com")
     >>> recipients.addStructuralSubscriber(carlos, pmount)
 
-    >>> testtest = personset.getByEmail("testtest@canonical.com")
-    >>> recipients.addRegistrant(testtest, gnomebaker)
-
 If we print out the recipients and rationales, here's what we get:
 
     >>> print_rationales(recipients)
@@ -143,9 +140,6 @@ duplicate of).
 
     >>> carlos = personset.getByEmail("carlos@canonical.com")
     >>> recipients.addStructuralSubscriber(carlos, pmount)
-
-    >>> testtest = personset.getByEmail("testtest@canonical.com")
-    >>> recipients.addRegistrant(testtest, gnomebaker)
 
 If you print out rationales in this situation, you'll see that the
 message says "via Bug 2". The reason for this is that the people being

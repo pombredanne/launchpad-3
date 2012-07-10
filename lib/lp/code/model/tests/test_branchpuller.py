@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the branch puller model code."""
@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchpuller import IBranchPuller
+from lp.registry.enums import InformationType
 from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     login_person,
@@ -167,27 +168,27 @@ class AcquireBranchToPullTests:
     """Tests for acquiring branches to pull.
 
     The tests apply to branches accessed directly or through an XML-RPC style
-    endpoint -- implement `assertNoBranchIsAquired`, `assertBranchIsAquired`
+    endpoint -- implement `assertNoBranchIsAcquired`, `assertBranchIsAcquired`
     and `startMirroring` as appropriate.
     """
 
-    def assertNoBranchIsAquired(self, *branch_types):
+    def assertNoBranchIsAcquired(self, *branch_types):
         """Assert that there is no branch to pull.
 
         :param branch_types: A list of branch types to pass to
             acquireBranchToPull.  Passing none means consider all types of
             branch.
         """
-        raise NotImplementedError(self.assertNoBranchIsAquired)
+        raise NotImplementedError(self.assertNoBranchIsAcquired)
 
-    def assertBranchIsAquired(self, branch, *branch_types):
+    def assertBranchIsAcquired(self, branch, *branch_types):
         """Assert that ``branch`` is the next branch to be pulled.
 
         :param branch_types: A list of branch types to pass to
             acquireBranchToPull.  Passing none means consider all types of
             branch.
         """
-        raise NotImplementedError(self.assertBranchIsAquired)
+        raise NotImplementedError(self.assertBranchIsAcquired)
 
     def startMirroring(self, branch):
         """Mark that ``branch`` has begun mirroring."""
@@ -196,14 +197,14 @@ class AcquireBranchToPullTests:
     def test_empty(self):
         # If there is no branch that needs pulling, acquireBranchToPull
         # returns None.
-        self.assertNoBranchIsAquired()
+        self.assertNoBranchIsAcquired()
 
     def test_simple(self):
         # If there is one branch that needs mirroring, acquireBranchToPull
         # returns that.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
-        self.assertBranchIsAquired(branch)
+        self.assertBranchIsAcquired(branch)
 
     def test_remote_branch_not_acquired(self):
         # On a few occasions a branch type that is mirrored has been
@@ -212,22 +213,23 @@ class AcquireBranchToPullTests:
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
         removeSecurityProxy(branch).branch_type = BranchType.REMOTE
-        self.assertNoBranchIsAquired()
+        self.assertNoBranchIsAcquired()
 
     def test_private(self):
         # If there is a private branch that needs mirroring,
         # acquireBranchToPull returns that.
         branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.MIRRORED, private=True)
+            branch_type=BranchType.MIRRORED,
+            information_type=InformationType.USERDATA)
         removeSecurityProxy(branch).requestMirror()
-        self.assertBranchIsAquired(branch)
+        self.assertBranchIsAcquired(branch)
 
     def test_no_inprogress(self):
         # If a branch is being mirrored, it is not returned.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
         self.startMirroring(branch)
-        self.assertNoBranchIsAquired()
+        self.assertNoBranchIsAcquired()
 
     def test_first_requested_returned(self):
         # If two branches are to be mirrored, the one that was requested first
@@ -244,28 +246,28 @@ class AcquireBranchToPullTests:
         second_branch.requestMirror()
         naked_second_branch = removeSecurityProxy(second_branch)
         naked_second_branch.next_mirror_time -= timedelta(seconds=50)
-        self.assertBranchIsAquired(naked_first_branch)
+        self.assertBranchIsAcquired(naked_first_branch)
 
     def test_type_filter_mirrrored_returns_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
-        self.assertBranchIsAquired(branch, BranchType.MIRRORED)
+        self.assertBranchIsAcquired(branch, BranchType.MIRRORED)
 
     def test_type_filter_imported_does_not_return_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
-        self.assertNoBranchIsAquired(BranchType.IMPORTED)
+        self.assertNoBranchIsAcquired(BranchType.IMPORTED)
 
     def test_type_filter_mirrored_imported_returns_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
-        self.assertBranchIsAquired(
+        self.assertBranchIsAcquired(
             branch, BranchType.MIRRORED, BranchType.IMPORTED)
 
     def test_type_filter_mirrored_imported_returns_imported(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
         branch.requestMirror()
-        self.assertBranchIsAquired(
+        self.assertBranchIsAcquired(
             branch, BranchType.MIRRORED, BranchType.IMPORTED)
 
 
@@ -275,13 +277,13 @@ class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
 
     layer = DatabaseFunctionalLayer
 
-    def assertNoBranchIsAquired(self, *branch_types):
+    def assertNoBranchIsAcquired(self, *branch_types):
         """See `AcquireBranchToPullTests`."""
         acquired_branch = getUtility(IBranchPuller).acquireBranchToPull(
             *branch_types)
         self.assertEqual(None, acquired_branch)
 
-    def assertBranchIsAquired(self, branch, *branch_types):
+    def assertBranchIsAcquired(self, branch, *branch_types):
         """See `AcquireBranchToPullTests`."""
         acquired_branch = getUtility(IBranchPuller).acquireBranchToPull(
             *branch_types)

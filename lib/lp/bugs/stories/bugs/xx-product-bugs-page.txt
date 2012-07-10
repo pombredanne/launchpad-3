@@ -40,12 +40,9 @@ It also displays the number of open bugs associated with a CVE.
 The link takes you to the list of bugs with CVEs linked to them.
 
     >>> cve_bugs_link.click()
-    >>> buglisting = find_tag_by_id(anon_browser.contents, 'buglisting')
-    >>> for tr in buglisting('tr'):
-    ...     if tr.td:
-    ...         print extract_text(tr)
-    1 Firefox does not support SVG
-      Low New
+    >>> from lp.bugs.tests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG  Low  New
 
 
 Bugs Fixed Elsewhere

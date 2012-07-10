@@ -153,7 +153,7 @@ def add_word_breaks(word):
     while pos < len(word):
         chunk, pos = next_word_chunk(word, pos, 7, 15)
         broken.append(chunk)
-    return '<wbr></wbr>'.join(broken)
+    return '<wbr />'.join(broken)
 
 
 break_text_pat = re.compile(r'''
@@ -347,7 +347,6 @@ class FormattersAPI:
             'irc',
             'jabber',
             'apt',
-            'data',
             ]
 
         for base in protocol_bases:
@@ -509,7 +508,7 @@ class FormattersAPI:
     _re_linkify = re.compile(r'''
       (?P<url>
         \b
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|irc|jabber|apt|data)
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|irc|jabber|apt)
         :
         (?:
           (?:
@@ -718,7 +717,7 @@ class FormattersAPI:
             return line[:-4]
 
         for line in self.text_to_html().split('\n'):
-            if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
+            if 'Desired=<wbr />Unknown/' in line and not in_fold:
                 # When we see a evidence of dpkg output, we switch the
                 # quote matching rules. We do not assume lines that start
                 # with a pipe are quoted passages. dpkg output is often

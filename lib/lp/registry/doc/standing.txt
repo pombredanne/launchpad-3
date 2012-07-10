@@ -46,14 +46,14 @@ are not a member of, their message gets held for moderator approval.
     ...     held_message = mailing_list.holdMessage(message)
     ...     return held_message
 
-    # A helper for the common case.  IWBNI we had Python 2.5 because
-    # then we could just use functools.partial().
-    >>> def lifeless_post(to_team_name):
-    ...     return post_message('robertc@robertcollins.net', to_team_name)
+    # A helper for the common case.
+    >>> from functools import partial
+    >>> lifeless_post = partial(post_message, 'robertc@robertcollins.net')
 
     >>> from lp.registry.scripts.standing import (
     ...     UpdatePersonalStanding)
     >>> from lp.services.config import config
+    >>> from lp.testing.dbuser import switch_dbuser
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.services.log.logger import DevNullLogger
     >>> class TestableScript(UpdatePersonalStanding):
@@ -63,16 +63,12 @@ are not a member of, their message gets held for moderator approval.
     ...         # Simulate Mailman acting changed state.
     ...         flush_database_updates()
     ...         mailinglists_helper.mailman.act()
-    ...         # Commit the in-progress transaction, since switching
-    ...         # database users does an abort.
-    ...         LaunchpadZopelessLayer.txn.commit()
     ...         launchpad_dbuser = config.launchpad.dbuser
-    ...         LaunchpadZopelessLayer.switchDbUser(
-    ...             config.standingupdater.dbuser)
+    ...         switch_dbuser(config.standingupdater.dbuser)
     ...         self.txn = LaunchpadZopelessLayer.txn
     ...         self.logger = DevNullLogger()
     ...         results = super(TestableScript, self).main()
-    ...         LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
+    ...         switch_dbuser(launchpad_dbuser)
     ...         return results
     >>> script = TestableScript('update-standing', test_args=[])
 
