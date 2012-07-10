@@ -16,9 +16,7 @@ from lp.testing.layers import (
     )
 
 
-LEGACY_VISIBILITY_FLAG = {
-    u"disclosure.enhanced_sharing.writable": "true",
-    u"disclosure.legacy_subscription_visibility.enabled": u"true"}
+LEGACY_VISIBILITY_FLAG = {u"disclosure.enhanced_sharing.writable": "true"}
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):
