@@ -110,6 +110,12 @@ class IBranchNamespacePolicy(Interface):
         :return: A Boolean value.
         """
 
+    def getAllowedInformationTypes():
+        """Get the information types that a branch in this namespace can have.
+
+        :return: A sequence of `InformationType`s.
+        """
+
     def areNewBranchesPrivate():
         """Are new branches in this namespace private?
 

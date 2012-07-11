@@ -261,6 +261,10 @@ class _BaseNamespace:
         else:
             return True
 
+    def getAllowedInformationTypes(self):
+        """See `IBranchNamespace`."""
+        raise NotImplementedError
+
     def areNewBranchesPrivate(self):
         """See `IBranchNamespace`."""
         # Always delegates to canBranchesBePrivate for now.
@@ -306,6 +310,16 @@ class PersonalNamespace(_BaseNamespace):
     def name(self):
         """See `IBranchNamespace`."""
         return '~%s/+junk' % self.owner.name
+
+    def getAllowedInformationTypes(self):
+        """See `IBranchNamespace`."""
+        # Private teams get private branches, everyone else gets public
+        # ones. It'll eventually be PROPRIETARY rather than USERDATA.
+        if (self.owner.is_team
+            and self.owner.visibility == PersonVisibility.PRIVATE):
+            return [InformationType.PUBLIC, InformationType.USERDATA]
+        else:
+            return [InformationType.PUBLIC]
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
@@ -395,6 +409,15 @@ class ProductNamespace(_BaseNamespace):
         base_rule = self.product.getBaseBranchVisibilityRule()
         return base_rule == BranchVisibilityRule.PUBLIC
 
+    def getAllowedInformationTypes(self):
+        """See `IBranchNamespace`."""
+        types = []
+        if self.canBranchesBePrivate():
+            types.append(InformationType.USERDATA)
+        if self.canBranchesBePublic():
+            types.append(InformationType.PUBLIC)
+        return types
+
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
         # If there is a rule for the namespace owner, use that.
@@ -452,6 +475,10 @@ class PackageNamespace(_BaseNamespace):
     def target(self):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.sourcepackage)
+
+    def getAllowedInformationTypes(self):
+        """See `IBranchNamespace`."""
+        return [InformationType.PUBLIC]
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""

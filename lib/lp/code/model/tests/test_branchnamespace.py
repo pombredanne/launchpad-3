@@ -984,18 +984,27 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         person = self.factory.makePerson()
         namespace = PersonalNamespace(person)
         self.assertFalse(namespace.canBranchesBePrivate())
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            namespace.getAllowedInformationTypes())
 
     def test_public_team(self):
         # +junk branches for public teams cannot be private
         team = self.factory.makeTeam()
         namespace = PersonalNamespace(team)
         self.assertFalse(namespace.canBranchesBePrivate())
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            namespace.getAllowedInformationTypes())
 
     def test_private_team(self):
         # +junk branches can be private for private teams
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         namespace = PersonalNamespace(team)
         self.assertTrue(namespace.canBranchesBePrivate())
+        self.assertContentEqual(
+            [InformationType.PUBLIC, InformationType.USERDATA],
+            namespace.getAllowedInformationTypes())
 
 
 class TestPersonalNamespaceCanBranchesBePublic(TestCaseWithFactory):
@@ -1021,6 +1030,9 @@ class TestPackageNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         person = self.factory.makePerson()
         namespace = PackageNamespace(person, source_package)
         self.assertFalse(namespace.canBranchesBePrivate())
+        self.assertContentEqual(
+            [InformationType.PUBLIC],
+            namespace.getAllowedInformationTypes())
 
 
 class TestPackageNamespaceCanBranchesBePublic(TestCaseWithFactory):
@@ -1048,15 +1060,22 @@ class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
     def _getNamespace(self, owner):
         return ProductNamespace(owner, self.product)
 
-    def assertNewBranchesPublic(self, owner):
+    def assertNewBranchesPublic(self, owner, check_type=True):
         # Assert that new branches in the owner namespace are public.
         namespace = self._getNamespace(owner)
         self.assertFalse(namespace.canBranchesBePrivate())
+        if check_type:
+            self.assertIn(
+                InformationType.PUBLIC,
+                namespace.getAllowedInformationTypes())
 
     def assertNewBranchesPrivate(self, owner):
         # Assert that new branches in the owner namespace are private.
         namespace = self._getNamespace(owner)
         self.assertTrue(namespace.canBranchesBePrivate())
+        self.assertIn(
+            InformationType.USERDATA,
+            namespace.getAllowedInformationTypes())
 
     def test_no_policies(self):
         # If there are no defined policies, any personal branch is not
@@ -1074,7 +1093,11 @@ class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         # considered public.
         self.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
-        self.assertNewBranchesPublic(self.factory.makePerson())
+        # Avoid checking getAllowedInformationTypes here, as this test
+        # uses assertNewBranchesPublic as more of an
+        # assertNewBranchesNotPrivate.
+        self.assertNewBranchesPublic(
+            self.factory.makePerson(), check_type=False)
 
     def test_team_member_with_private_rule(self):
         # If a person is a member of a team that has a PRIVATE rule, then new
