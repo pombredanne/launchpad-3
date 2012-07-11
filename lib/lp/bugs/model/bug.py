@@ -2072,12 +2072,12 @@ class Bug(SQLBase):
         """ Return True if the user has access to USER_DATA data."""
         # Check if the user has access via the pillar.
         pillars = list(self.affected_pillars)
-        pillars_and_types = [(p, InformationType.USERDATA) for p in pillars] 
+        pillars_and_types = [(p, InformationType.USERDATA) for p in pillars]
         access_policies = getUtility(IAccessPolicySource).find(
             pillars_and_types)
         access_grants = [(a, user) for a in access_policies]
         access_grants = getUtility(IAccessPolicyGrantSource).find(
-            access_grants) 
+            access_grants)
         if not access_grants.is_empty():
             return True
         # User has no access via the pillars, check the bug itself.
