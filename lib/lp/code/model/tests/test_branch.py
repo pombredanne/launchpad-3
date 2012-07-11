@@ -110,7 +110,11 @@ from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
@@ -2502,6 +2506,101 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertEqual(
             InformationType.EMBARGOEDSECURITY,
             get_policies_for_artifact(branch)[0].type)
+
+
+class TestBranchCanBePrivate(TestCaseWithFactory):
+    """Test IBranch.canBePrivate."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user as we aren't checking edit permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+
+    def test_arbitary_branch(self):
+        # By default branches cannot be private.
+        branch = self.factory.makeBranch()
+        self.assertFalse(branch.canBePrivate(branch.owner))
+
+    def test_admin(self):
+        # Admins can make a branch private.
+        branch = self.factory.makeBranch()
+        admin = getUtility(ILaunchpadCelebrities).admin
+        self.assertTrue(branch.canBePrivate(admin))
+
+    def test_visibility_policy_private(self):
+        # Users with a suitable  visibility policy can make a branch private.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        product = self.factory.makeProduct()
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        branch = self.factory.makeBranch(product=product, owner=team)
+        self.assertTrue(branch.canBePrivate(team))
+
+    def test_private_owner(self):
+        # Private team owners can make a branch private.
+        team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        branch = self.factory.makeBranch(owner=team)
+        self.assertTrue(branch.canBePrivate(team))
+
+    def test_commercial_project(self):
+        # Branches linked to commercial projects can be private.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        branch = self.factory.makeProductBranch(product=product)
+        user = self.factory.makePerson()
+        self.assertTrue(branch.canBePrivate(user))
+
+    def test_linked_private_bug(self):
+        # Users with access to linked private bugs can make a branch private.
+        for info_type in PRIVATE_INFORMATION_TYPES:
+            user = self.factory.makePerson()
+            bug = self.factory.makeBug(
+                owner=user, information_type=info_type)
+            branch = self.factory.makeBranch()
+            removeSecurityProxy(bug).linkBranch(branch, user)
+            self.assertTrue(branch.canBePrivate(user))
+
+    def test_linked_public_bug(self):
+        # Users with access to linked public bugs cannot make a branch private.
+        for info_type in PUBLIC_INFORMATION_TYPES:
+            user = self.factory.makePerson()
+            bug = self.factory.makeBug(
+                owner=user, information_type=info_type)
+            branch = self.factory.makeBranch()
+            removeSecurityProxy(bug).linkBranch(branch, user)
+            self.assertFalse(branch.canBePrivate(user))
+
+
+class TestBranchCanBePublic(TestCaseWithFactory):
+    """Test IBranch.canBePublic."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user as we aren't checking edit permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+
+    def test_arbitrary_branch(self):
+        # By default branches can be public.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA)
+        self.assertTrue(branch.canBePublic(branch.owner))
+
+    def test_visibility_policy_public_not_allowed(self):
+        # Branches cannot be public if the visibility policy forbids it.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        product = self.factory.makeProduct()
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE_ONLY)
+        branch = self.factory.makeBranch(
+            product=product, owner=team,
+            information_type=InformationType.USERDATA)
+        self.assertFalse(branch.canBePublic(team))
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
