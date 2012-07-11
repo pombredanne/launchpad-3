@@ -111,6 +111,7 @@ from lp.bugs.interfaces.bugwatch import (
     UnrecognizedBugTrackerURL,
     )
 from lp.bugs.interfaces.hasbug import IHasBug
+from lp.registry.enums import InformationType
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -922,10 +923,6 @@ UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
         "resolved_upstream",
         title="Show bugs that are resolved elsewhere"),
     ])
-
-
-# Avoid circular imports
-from lp.registry.enums import InformationType
 
 
 class IBugTaskSearchBase(Interface):
