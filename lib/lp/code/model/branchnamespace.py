@@ -409,22 +409,19 @@ class ProductNamespace(_BaseNamespace):
         if rule is not None:
             private = rule in private_rules
             public = rule != BranchVisibilityRule.PRIVATE_ONLY
-        elif len(self._getRelatedPrivatePolicies()) > 0:
-            private = True
         else:
-            private = False
+            private = len(self._getRelatedPrivatePolicies()) > 0
 
-        if public is None:
             # If there is another policy that allows public, then
             # branches can be public.
             for policy in self._getRelatedPolicies():
                 if policy.rule != BranchVisibilityRule.PRIVATE_ONLY:
                     public = True
-
-        if public is None:
-            # If the default is public, then we can have public branches.
-            base_rule = self.product.getBaseBranchVisibilityRule()
-            public = base_rule == BranchVisibilityRule.PUBLIC
+                    break
+            else:
+                # If the default is public, then we can have public branches.
+                base_rule = self.product.getBaseBranchVisibilityRule()
+                public = base_rule == BranchVisibilityRule.PUBLIC
 
         types = []
         if private:
