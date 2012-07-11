@@ -1757,6 +1757,66 @@ class TestBugActivityItem(TestCaseWithFactory):
             BugActivityItem(bug.activity[-1]).change_details)
 
 
+class TestCommentCollapseVisibility(TestCaseWithFactory):
+    """Test for the conditions around display of collapsed/hidden comments."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeBugWithComments(self, num_comments):
+        """Create and return a bug with a lot of comments and activity."""
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            for i in range(num_comments):
+                msg = self.factory.makeMessage(
+                    owner=bug.owner, content="Message %i." % i)
+                bug.linkMessage(msg, user=bug.owner)
+        return bug
+
+    def test_comments_hidden_message_truncation_only(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in contents)
+        self.assertEqual(1, contents.count('comments hidden'))
+
+    def test_comments_hidden_message_truncation_and_hidden(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+
+        #Hide a comment
+        comments = list(bug.messages)
+        removeSecurityProxy(comments[-5]).visible = False
+
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in browser.contents)
+        self.assertTrue("1 comments hidden" in browser.contents)
+        self.assertEqual(2, contents.count('comments hidden'))
+
+    def test_comments_hidden_message_truncation_and_hidden_out_of_order(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+
+        #Hide a comment
+        comments = list(bug.messages)
+        hidden_comment = comments[-5]
+        removeSecurityProxy(hidden_comment).visible = False
+
+        #Mess with ordering. This requires a transaction since the view will
+        #re-fetch the comments.
+        last_comment = comments[-1]
+        removeSecurityProxy(hidden_comment).datecreated += timedelta(1)
+        removeSecurityProxy(last_comment).datecreated += timedelta(2)
+        transaction.commit()
+
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in browser.contents)
+        self.assertTrue("1 comments hidden" in browser.contents)
+        self.assertEqual(2, contents.count('comments hidden'))
+
+
 class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     """Tests for the BugTaskBatchedCommentsAndActivityView class."""
 
@@ -1874,6 +1934,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         self._assertThatUnbatchedAndBatchedActivityMatch(
             unbatched_view.activity_and_comments[4:],
             batched_view.activity_and_comments)
+
 
 no_target_specified = object()
 
