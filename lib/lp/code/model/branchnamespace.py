@@ -172,7 +172,7 @@ class _BaseNamespace:
                     "%s cannot create branches owned by %s"
                     % (registrant.displayname, owner.displayname))
 
-        if not self.checkCreationPolicy(registrant):
+        if not self.getAllowedInformationTypes():
             raise BranchCreationForbidden(
                 'You cannot create branches in "%s"' % self.name)
 
@@ -277,13 +277,6 @@ class _BaseNamespace:
         """See `IBranchNamespace`."""
         raise NotImplementedError(self.getPrivacySubscriber)
 
-    def checkCreationPolicy(self, user):
-        """Check to see if user is allowed a branch in this namespace.
-
-        :return: True if the user is allowed, False otherwise.
-        """
-        raise NotImplementedError(self.checkCreationPolicy)
-
 
 class PersonalNamespace(_BaseNamespace):
     """A namespace for personal (or 'junk') branches.
@@ -318,10 +311,6 @@ class PersonalNamespace(_BaseNamespace):
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
         return None
-
-    def checkCreationPolicy(self, user):
-        """See `_BaseNamespace`."""
-        return True
 
     @property
     def target(self):
@@ -383,13 +372,6 @@ class ProductNamespace(_BaseNamespace):
             return private_policies[0].team
         else:
             return None
-
-    def checkCreationPolicy(self, user):
-        """See `_BaseNamespace`."""
-        if len(self._getRelatedPolicies()) > 0:
-            return True
-        base_rule = self.product.getBaseBranchVisibilityRule()
-        return base_rule == BranchVisibilityRule.PUBLIC
 
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
@@ -462,10 +444,6 @@ class PackageNamespace(_BaseNamespace):
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
         return None
-
-    def checkCreationPolicy(self, user):
-        """See `_BaseNamespace`."""
-        return True
 
 
 class BranchNamespaceSet:
