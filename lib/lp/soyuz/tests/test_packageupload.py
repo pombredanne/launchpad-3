@@ -15,6 +15,7 @@ from lazr.restfulclient.errors import (
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized as ZopeUnauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.schema import getFields
 
@@ -393,6 +394,25 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.setAccepted()
         [spph] = upload.realiseUpload()
         self.assertEqual(spph.packageupload, upload)
+
+
+class TestPackageUploadPrivacy(TestCaseWithFactory):
+    """Test PackageUpload security."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_private_archives_have_private_uploads(self):
+        # Only users with access to a private archive can see uploads to it.
+        owner = self.factory.makePerson()
+        archive = self.factory.makeArchive(owner=owner, private=True)
+        upload = self.factory.makePackageUpload(archive=archive)
+        # The private archive owner can see this upload.
+        with person_logged_in(owner):
+            self.assertFalse(upload.contains_source)
+        # But other users cannot.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(
+                ZopeUnauthorized, getattr, upload, "contains_source")
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
@@ -918,7 +938,9 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 person = self.factory.makePerson()
         if self.webservice is None:
             self.webservice = launchpadlib_for("testing", person)
-        return self.webservice.load(api_url(obj))
+        with person_logged_in(person):
+            url = api_url(obj)
+        return self.webservice.load(url)
 
     def makeSourcePackageUpload(self, person, **kwargs):
         with person_logged_in(person):
@@ -1015,12 +1037,13 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertFalse(ws_upload.contains_build)
         self.assertFalse(ws_upload.contains_copy)
         self.assertEqual("hello", ws_upload.display_name)
-        self.assertEqual(upload.package_version, ws_upload.display_version)
         self.assertEqual("source", ws_upload.display_arches)
         self.assertEqual("hello", ws_upload.package_name)
-        self.assertEqual(upload.package_version, ws_upload.package_version)
         self.assertEqual("universe", ws_upload.component_name)
-        self.assertEqual(upload.section_name, ws_upload.section_name)
+        with person_logged_in(person):
+            self.assertEqual(upload.package_version, ws_upload.display_version)
+            self.assertEqual(upload.package_version, ws_upload.package_version)
+            self.assertEqual(upload.section_name, ws_upload.section_name)
 
     def test_source_fetch(self):
         # API clients can fetch files attached to source uploads.
@@ -1052,7 +1075,8 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 new_component=self.main,
                 allowed_components=[self.main, self.universe])
         transaction.commit()
-        self.assertEqual("main", upload.component_name)
+        with person_logged_in(person):
+            self.assertEqual("main", upload.component_name)
         self.assertRaises(Unauthorized, ws_upload.overrideSource,
                           new_component="universe")
 

@@ -49,14 +49,24 @@ class DdtpTarballUpload(CustomUpload):
 
     @staticmethod
     def parsePath(tarfile_path):
-        name, component, version = os.path.basename(tarfile_path).split("_")
-        return name, component, version
+        tarfile_base = os.path.basename(tarfile_path)
+        bits = tarfile_base.split("_")
+        if len(bits) != 3:
+            raise ValueError("%s is not NAME_COMPONENT_VERSION" % tarfile_base)
+        return tuple(bits)
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         _, component, self.version = self.parsePath(tarfile_path)
         self.arch = None
         self.targetdir = os.path.join(
             pubconf.archiveroot, 'dists', distroseries, component)
+
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
+        try:
+            return cls.parsePath(tarfile_path)[1]
+        except ValueError:
+            return None
 
     def checkForConflicts(self):
         # We just overwrite older files, so no conflicts are possible.
