@@ -35,7 +35,11 @@ from lp.code.model.branchnamespace import (
     PersonalNamespace,
     ProductNamespace,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -932,8 +936,8 @@ class TestProductNamespaceCanCreateBranches(TestCaseWithFactory,
             BranchVisibilityRule.PRIVATE_ONLY)
 
 
-class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
-    """Tests for PersonalNamespace.canBranchesBePrivate."""
+class TestPersonalNamespaceAllowedInformationTypes(TestCaseWithFactory):
+    """Tests for PersonalNamespace.getAllowedInformationTypes."""
 
     layer = DatabaseFunctionalLayer
 
@@ -941,61 +945,44 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         # +junk branches are not private for individuals
         person = self.factory.makePerson()
         namespace = PersonalNamespace(person)
-        self.assertFalse(namespace.canBranchesBePrivate())
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
 
     def test_public_team(self):
         # +junk branches for public teams cannot be private
         team = self.factory.makeTeam()
         namespace = PersonalNamespace(team)
-        self.assertFalse(namespace.canBranchesBePrivate())
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
 
     def test_private_team(self):
-        # +junk branches can be private for private teams
+        # +junk branches can be private or public for private teams
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         namespace = PersonalNamespace(team)
-        self.assertTrue(namespace.canBranchesBePrivate())
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
 
 
-class TestPersonalNamespaceCanBranchesBePublic(TestCaseWithFactory):
-    """Tests for PersonalNamespace.canBranchesBePublic."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_anyone(self):
-        # All +junk branches are public.
-        person = self.factory.makePerson()
-        namespace = PersonalNamespace(person)
-        self.assertTrue(namespace.canBranchesBePublic())
-
-
-class TestPackageNamespaceCanBranchesBePrivate(TestCaseWithFactory):
-    """Tests for PackageNamespace.canBranchesBePrivate."""
+class TestPackageNamespaceAllowedInformationTypes(TestCaseWithFactory):
+    """Tests for PackageNamespace.getAllowedInformationTypes."""
 
     layer = DatabaseFunctionalLayer
 
     def test_anyone(self):
-        # No source package branches are private.
+        # Source package branches are always public.
         source_package = self.factory.makeSourcePackage()
         person = self.factory.makePerson()
         namespace = PackageNamespace(person, source_package)
-        self.assertFalse(namespace.canBranchesBePrivate())
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
 
 
-class TestPackageNamespaceCanBranchesBePublic(TestCaseWithFactory):
-    """Tests for PackageNamespace.canBranchesBePublic."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_anyone(self):
-        # All source package branches are public.
-        source_package = self.factory.makeSourcePackage()
-        person = self.factory.makePerson()
-        namespace = PackageNamespace(person, source_package)
-        self.assertTrue(namespace.canBranchesBePublic())
-
-
-class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
-    """Tests for ProductNamespace.canBranchesBePrivate."""
+class TestProductNamespaceAllowedInformationTypes(TestCaseWithFactory):
+    """Tests for ProductNamespace.getAllowedInformationTypes."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1006,33 +993,26 @@ class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
     def _getNamespace(self, owner):
         return ProductNamespace(owner, self.product)
 
-    def assertNewBranchesPublic(self, owner):
-        # Assert that new branches in the owner namespace are public.
+    def assertTypes(self, owner, types):
         namespace = self._getNamespace(owner)
-        self.assertFalse(namespace.canBranchesBePrivate())
-
-    def assertNewBranchesPrivate(self, owner):
-        # Assert that new branches in the owner namespace are private.
-        namespace = self._getNamespace(owner)
-        self.assertTrue(namespace.canBranchesBePrivate())
+        self.assertContentEqual(types, namespace.getAllowedInformationTypes())
 
     def test_no_policies(self):
         # If there are no defined policies, any personal branch is not
         # private.
-        self.assertNewBranchesPublic(self.factory.makePerson())
+        self.assertTypes(self.factory.makePerson(), PUBLIC_INFORMATION_TYPES)
 
     def test_any_person_with_public_base_rule(self):
         # If the base visibility rule is PUBLIC, then new branches are public.
         self.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.PUBLIC)
-        self.assertNewBranchesPublic(self.factory.makePerson())
+        self.assertTypes(self.factory.makePerson(), PUBLIC_INFORMATION_TYPES)
 
     def test_any_person_with_forbidden_base_rule(self):
-        # If the base visibility rule is FORBIDDEN, new branches are still
-        # considered public.
+        # If the base visibility rule is FORBIDDEN, there are no legal types.
         self.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
-        self.assertNewBranchesPublic(self.factory.makePerson())
+        self.assertTypes(self.factory.makePerson(), [])
 
     def test_team_member_with_private_rule(self):
         # If a person is a member of a team that has a PRIVATE rule, then new
@@ -1041,8 +1021,10 @@ class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         team = self.factory.makeTeam(owner=person)
         self.product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
-        self.assertNewBranchesPrivate(person)
-        self.assertNewBranchesPrivate(team)
+        self.assertTypes(
+            person, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(
+            team, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
 
     def test_team_member_with_private_only_rule(self):
         # If a person is a member of a team that has a PRIVATE_ONLY rule, then
@@ -1050,9 +1032,11 @@ class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         person = self.factory.makePerson()
         team = self.factory.makeTeam(owner=person)
         self.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        self.product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE_ONLY)
-        self.assertNewBranchesPrivate(person)
-        self.assertNewBranchesPrivate(team)
+        self.assertTypes(person, PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(team, PRIVATE_INFORMATION_TYPES)
 
     def test_non_team_member_with_private_rule(self):
         # If a person is a not a member of a team that has a privacy rule,
@@ -1061,7 +1045,7 @@ class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         team = self.factory.makeTeam(owner=person)
         self.product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
-        self.assertNewBranchesPublic(self.factory.makePerson())
+        self.assertTypes(self.factory.makePerson(), PUBLIC_INFORMATION_TYPES)
 
     def test_team_member_with_multiple_private_rules(self):
         # If a person is a member of multiple teams that has a privacy rules,
@@ -1073,9 +1057,12 @@ class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
             team_1, BranchVisibilityRule.PRIVATE)
         self.product.setBranchVisibilityTeamPolicy(
             team_2, BranchVisibilityRule.PRIVATE)
-        self.assertNewBranchesPrivate(person)
-        self.assertNewBranchesPrivate(team_1)
-        self.assertNewBranchesPrivate(team_2)
+        self.assertTypes(
+            person, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(
+            team_1, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(
+            team_2, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
 
     def test_team_member_with_multiple_differing_private_rules(self):
         # If a person is a member of multiple teams that has a privacy rules,
@@ -1089,103 +1076,12 @@ class TestProductNamespaceCanBranchesBePrivate(TestCaseWithFactory):
             private_team, BranchVisibilityRule.PRIVATE)
         self.product.setBranchVisibilityTeamPolicy(
             public_team, BranchVisibilityRule.PUBLIC)
-        self.assertNewBranchesPrivate(person)
-        self.assertNewBranchesPrivate(private_team)
-        self.assertNewBranchesPublic(public_team)
-
-
-class TestProductNamespaceCanBranchesBePublic(TestCaseWithFactory):
-    """Tests for ProductNamespace.canBranchesBePublic."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.product = self.factory.makeProduct()
-
-    def _getNamespace(self, owner):
-        return ProductNamespace(owner, self.product)
-
-    def assertBranchesCanBePublic(self, owner):
-        # Assert that branches can be public in the owner namespace.
-        namespace = self._getNamespace(owner)
-        self.assertTrue(namespace.canBranchesBePublic())
-
-    def assertBranchesMustBePrivate(self, owner):
-        # Assert that branches must be private in the owner namespace.
-        namespace = self._getNamespace(owner)
-        self.assertFalse(namespace.canBranchesBePublic())
-
-    def test_no_policies(self):
-        # If there are no defined policies, any branch can be public.
-        self.assertBranchesCanBePublic(self.factory.makePerson())
-
-    def test_any_person_with_public_base_rule(self):
-        # If the base visibility rule is PUBLIC, any branch can be public
-        self.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.PUBLIC)
-        self.assertBranchesCanBePublic(self.factory.makePerson())
-
-    def test_any_person_with_forbidden_base_rule(self):
-        # If the base visibility rule is FORBIDDEN, branches must be private.
-        self.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        self.assertBranchesMustBePrivate(self.factory.makePerson())
-
-    def test_team_member_with_private_rule(self):
-        # If a person is a member of a team that has a PRIVATE rule then the
-        # branches can be public even though the default is FORBIDDEN.
-        person = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=person)
-        self.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        self.product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE)
-        self.assertBranchesCanBePublic(person)
-        self.assertBranchesCanBePublic(team)
-
-    def test_team_member_with_private_only_rule(self):
-        # If a person is a member of a team that has a PRIVATE_ONLY rule, and
-        # the base rule is FORBIDDEN, then the branches must be private.
-        person = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=person)
-        self.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        self.product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE_ONLY)
-        self.assertBranchesMustBePrivate(person)
-        self.assertBranchesMustBePrivate(team)
-
-    def test_team_member_with_private_only_rule_public_base_rule(self):
-        # If a person is a member of a team that has a PRIVATE_ONLY rule, and
-        # the base rule is PUBLIC, then the branches must be private in the
-        # team namespace, but can be public in the personal namespace.
-        person = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=person)
-        self.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.PUBLIC)
-        self.product.setBranchVisibilityTeamPolicy(
-            team, BranchVisibilityRule.PRIVATE_ONLY)
-        self.assertBranchesCanBePublic(person)
-        self.assertBranchesMustBePrivate(team)
-
-    def test_team_member_with_multiple_private_rules(self):
-        # If a person is a member of multiple teams that has a privacy rules,
-        # then new branches must stay private in any namespace that defines
-        # PRIVATE_ONLY, but if the team member is a member of any teams that
-        # specify just PRIVATE, then branches can be made public.
-        person = self.factory.makePerson()
-        team_1 = self.factory.makeTeam(owner=person)
-        team_2 = self.factory.makeTeam(owner=person)
-        self.product.setBranchVisibilityTeamPolicy(
-            None, BranchVisibilityRule.FORBIDDEN)
-        self.product.setBranchVisibilityTeamPolicy(
-            team_1, BranchVisibilityRule.PRIVATE_ONLY)
-        self.product.setBranchVisibilityTeamPolicy(
-            team_2, BranchVisibilityRule.PRIVATE)
-        self.assertBranchesCanBePublic(person)
-        self.assertBranchesMustBePrivate(team_1)
-        self.assertBranchesCanBePublic(team_2)
+        self.assertTypes(
+            person, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(
+            private_team,
+            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(public_team, PUBLIC_INFORMATION_TYPES)
 
 
 class BaseValidateNewBranchMixin:
@@ -1347,7 +1243,8 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
         :param owner: The person or team that will be the owner of the branch.
         """
         namespace = get_branch_namespace(owner, product=self.product)
-        self.assertFalse(namespace.canBranchesBePrivate())
+        self.assertNotIn(
+            InformationType.USERDATA, namespace.getAllowedInformationTypes())
 
     def assertPrivateSubscriber(self, creator, owner, subscriber):
         """Assert that the policy check results in a private branch.
@@ -1358,7 +1255,8 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
         """
         policy = IBranchNamespacePolicy(
             get_branch_namespace(owner, product=self.product))
-        self.assertTrue(policy.canBranchesBePrivate())
+        self.assertIn(
+            InformationType.USERDATA, policy.getAllowedInformationTypes())
         if subscriber is None:
             self.assertIs(None, policy.getPrivacySubscriber())
         else:
