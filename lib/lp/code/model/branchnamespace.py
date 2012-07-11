@@ -402,24 +402,25 @@ class ProductNamespace(_BaseNamespace):
         private_rules = (
             BranchVisibilityRule.PRIVATE,
             BranchVisibilityRule.PRIVATE_ONLY)
-        public = None
 
-        # If there is an explicit rule for the namespace owner, use that.
         rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
         if rule is not None:
+            # If there is an explicit rule for the namespace owner, use that.
             private = rule in private_rules
             public = rule != BranchVisibilityRule.PRIVATE_ONLY
         else:
-            private = len(self._getRelatedPrivatePolicies()) > 0
+            # Otherwise find all the rules for the owner's teams.
+            related_rules = set(p.rule for p in self._getRelatedPolicies())
 
-            # If there is another policy that allows public, then
-            # branches can be public.
-            for policy in self._getRelatedPolicies():
-                if policy.rule != BranchVisibilityRule.PRIVATE_ONLY:
-                    public = True
-                    break
+            # If any of the rules allow private branches, allow them.
+            private = bool(related_rules.intersection(private_rules))
+
+            # If any of the rules allow public branches, allow them.
+            if related_rules.difference([BranchVisibilityRule.PRIVATE_ONLY]):
+                public = True
             else:
-                # If the default is public, then we can have public branches.
+                # There's no team-specific rules, or none of them allow
+                # public branches. Fall back to the default rule.
                 base_rule = self.product.getBaseBranchVisibilityRule()
                 public = base_rule == BranchVisibilityRule.PUBLIC
 
