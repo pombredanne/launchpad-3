@@ -399,40 +399,38 @@ class ProductNamespace(_BaseNamespace):
 
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
-        types = []
-        if self.canBranchesBePrivate():
-            types.append(InformationType.USERDATA)
-        if self.canBranchesBePublic():
-            types.append(InformationType.PUBLIC)
-        return types
-
-    def canBranchesBePrivate(self):
-        """See `IBranchNamespace`."""
-        # If there is a rule for the namespace owner, use that.
-        private = (
-            BranchVisibilityRule.PRIVATE,
-            BranchVisibilityRule.PRIVATE_ONLY)
-        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
-        if rule is not None:
-            return rule in private
-        # If the owner is a member of any team that has a PRIVATE or
-        # PRIVATE_ONLY rule, then the branches are private.
-        return len(self._getRelatedPrivatePolicies()) > 0
-
-    def canBranchesBePublic(self):
-        """See `IBranchNamespace`."""
         # If there is an explicit rule for the namespace owner, use that.
         rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        private_rules = (
+            BranchVisibilityRule.PRIVATE,
+            BranchVisibilityRule.PRIVATE_ONLY)
+        if (rule in private_rules
+            or (rule is None and len(self._getRelatedPrivatePolicies()) > 0)):
+            private = True
+        else:
+            private = False
+
+        public = None
         if rule is not None:
-            return rule != BranchVisibilityRule.PRIVATE_ONLY
-        # If there is another policy that allows public, then branches can be
-        # public.
-        for policy in self._getRelatedPolicies():
-            if policy.rule != BranchVisibilityRule.PRIVATE_ONLY:
-                return True
-        # If the default is public, then we can have public branches.
-        base_rule = self.product.getBaseBranchVisibilityRule()
-        return base_rule == BranchVisibilityRule.PUBLIC
+            public = rule != BranchVisibilityRule.PRIVATE_ONLY
+        if public is None:
+            # If there is another policy that allows public, then
+            # branches can be public.
+            for policy in self._getRelatedPolicies():
+                if policy.rule != BranchVisibilityRule.PRIVATE_ONLY:
+                    public = True
+
+        if public is None:
+            # If the default is public, then we can have public branches.
+            base_rule = self.product.getBaseBranchVisibilityRule()
+            public = base_rule == BranchVisibilityRule.PUBLIC
+
+        types = []
+        if private:
+            types.append(InformationType.USERDATA)
+        if public:
+            types.append(InformationType.PUBLIC)
+        return types
 
 
 class PackageNamespace(_BaseNamespace):
