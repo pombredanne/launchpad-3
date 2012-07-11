@@ -271,16 +271,7 @@ class _BaseNamespace:
 
     def areNewBranchesPrivate(self):
         """See `IBranchNamespace`."""
-        # Always delegates to canBranchesBePrivate for now.
-        return self.canBranchesBePrivate()
-
-    def canBranchesBePrivate(self):
-        """See `IBranchNamespace`."""
         return InformationType.USERDATA in self.getAllowedInformationTypes()
-
-    def canBranchesBePublic(self):
-        """See `IBranchNamespace`."""
-        return InformationType.PUBLIC in self.getAllowedInformationTypes()
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""

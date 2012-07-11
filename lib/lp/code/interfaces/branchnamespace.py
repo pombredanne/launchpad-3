@@ -124,22 +124,6 @@ class IBranchNamespacePolicy(Interface):
         :return: A Boolean value.
         """
 
-    def canBranchesBePrivate():
-        """Can branches by the user be private in this namespace?
-
-        No check is made about whether or not a user can create branches.
-
-        :return: A Boolean value.
-        """
-
-    def canBranchesBePublic():
-        """Can branches by the user be public in this namespace?
-
-        No check is made about whether or not a user can create branches.
-
-        :return: A Boolean value.
-        """
-
     def validateRegistrant(registrant):
         """Check that the registrant can create a branch on this namespace.
 
