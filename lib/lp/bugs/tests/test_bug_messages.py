@@ -47,15 +47,12 @@ class TestUserCanSetCommentVisibility(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    feature_flag = {'disclosure.users_hide_own_bug_comments.enabled': 'on'}
-
     def test_random_user_cannot_toggle_comment_visibility(self):
         # A random user cannot set bug comment visibility.
         person = self.factory.makePerson()
         bug = self.factory.makeBug()
         self.assertFalse(bug.userCanSetCommentVisibility(person))
-        with FeatureFixture(self.feature_flag):
-            self.assertFalse(bug.userCanSetCommentVisibility(person))
+        self.assertFalse(bug.userCanSetCommentVisibility(person))
 
     def test_registry_admin_can_toggle_comment_visibility(self):
         # Members of registry experts can set bug comment visibility.
@@ -75,8 +72,7 @@ class TestUserCanSetCommentVisibility(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=person)
         bug = self.factory.makeBug(product=product)
         self.assertFalse(bug.userCanSetCommentVisibility(person))
-        with FeatureFixture(self.feature_flag):
-            self.assertTrue(bug.userCanSetCommentVisibility(person))
+        self.assertTrue(bug.userCanSetCommentVisibility(person))
 
     def test_pillar_driver_can_toggle_comment_visibility(self):
         # Pillar driver can set bug comment visibility.
@@ -84,8 +80,7 @@ class TestUserCanSetCommentVisibility(TestCaseWithFactory):
         product = self.factory.makeProduct(driver=person)
         bug = self.factory.makeBug(product=product)
         self.assertFalse(bug.userCanSetCommentVisibility(person))
-        with FeatureFixture(self.feature_flag):
-            self.assertTrue(bug.userCanSetCommentVisibility(person))
+        self.assertTrue(bug.userCanSetCommentVisibility(person))
 
     def test_pillar_bug_supervisor_can_toggle_comment_visibility(self):
         # Pillar bug supervisor can set bug comment visibility.
@@ -93,8 +88,7 @@ class TestUserCanSetCommentVisibility(TestCaseWithFactory):
         product = self.factory.makeProduct(bug_supervisor=person)
         bug = self.factory.makeBug(product=product)
         self.assertFalse(bug.userCanSetCommentVisibility(person))
-        with FeatureFixture(self.feature_flag):
-            self.assertTrue(bug.userCanSetCommentVisibility(person))
+        self.assertTrue(bug.userCanSetCommentVisibility(person))
 
     def test_pillar_security_contact_can_toggle_comment_visibility(self):
         # Pillar security contact can set bug comment visibility.
@@ -102,5 +96,4 @@ class TestUserCanSetCommentVisibility(TestCaseWithFactory):
         product = self.factory.makeProduct(security_contact=person)
         bug = self.factory.makeBug(product=product)
         self.assertFalse(bug.userCanSetCommentVisibility(person))
-        with FeatureFixture(self.feature_flag):
-            self.assertTrue(bug.userCanSetCommentVisibility(person))
+        self.assertTrue(bug.userCanSetCommentVisibility(person))

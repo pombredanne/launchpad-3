@@ -57,8 +57,6 @@ class TestSetCommentVisibility(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    feature_flag = {'disclosure.users_hide_own_bug_comments.enabled': 'on'}
-
     def setUp(self):
         super(TestSetCommentVisibility, self).setUp()
         self.person_set = getUtility(IPersonSet)
@@ -137,9 +135,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
             HTTPError,
             self._set_visibility,
             bug)
-        with FeatureFixture(self.feature_flag):
-            self._set_visibility(bug)
-            self.assertCommentHidden()
+        self._set_visibility(bug)
+        self.assertCommentHidden()
 
     def test_pillar_owner_can_set_visible(self):
         # Pillar owner can set bug comment visibility.

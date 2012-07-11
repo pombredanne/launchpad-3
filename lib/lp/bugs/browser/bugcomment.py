@@ -218,10 +218,7 @@ class BugComment(MessageComment):
 
         self.synchronized = False
         # We use a feature flag to control users deleting their own comments.
-        user_owns_comment = False
-        flag = 'disclosure.users_hide_own_bug_comments.enabled'
-        if bool(getFeatureFlag(flag)):
-            user_owns_comment = user is not None and user == self.owner
+        user_owns_comment = user is not None and user == self.owner
         self.show_spam_controls = show_spam_controls or user_owns_comment
         self.hide_text = (display == 'hide')
 

@@ -232,8 +232,6 @@ class TestBugHideCommentControls(
 
     layer = DatabaseFunctionalLayer
 
-    feature_flag = {'disclosure.users_hide_own_bug_comments.enabled': 'on'}
-
     def getContext(self, comment_owner=None):
         """Required by the mixin."""
         bug = self.factory.makeBug()
@@ -251,10 +249,9 @@ class TestBugHideCommentControls(
         view = self.getView(context=context, user=user)
         hide_link = find_tag_by_id(view.contents, self.control_text)
         self.assertIs(None, hide_link)
-        with FeatureFixture(self.feature_flag):
-            view = self.getView(context=context, user=user)
-            hide_link = find_tag_by_id(view.contents, self.control_text)
-            self.assertIsNot(None, hide_link)
+        view = self.getView(context=context, user=user)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
 
     def test_comment_owner_sees_hide_control(self):
         # The comment owner sees the hide control.
