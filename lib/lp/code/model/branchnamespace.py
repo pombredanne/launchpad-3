@@ -272,11 +272,11 @@ class _BaseNamespace:
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
-        raise NotImplementedError(self.canBranchesBePrivate)
+        return InformationType.USERDATA in self.getAllowedInformationTypes()
 
     def canBranchesBePublic(self):
         """See `IBranchNamespace`."""
-        raise NotImplementedError(self.canBranchesBePublic)
+        return InformationType.PUBLIC in self.getAllowedInformationTypes()
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
@@ -320,18 +320,6 @@ class PersonalNamespace(_BaseNamespace):
             return [InformationType.PUBLIC, InformationType.USERDATA]
         else:
             return [InformationType.PUBLIC]
-
-    def canBranchesBePrivate(self):
-        """See `IBranchNamespace`."""
-        private = False
-        if self.owner.is_team and (
-            self.owner.visibility == PersonVisibility.PRIVATE):
-            private = True
-        return private
-
-    def canBranchesBePublic(self):
-        """See `IBranchNamespace`."""
-        return True
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
@@ -479,14 +467,6 @@ class PackageNamespace(_BaseNamespace):
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
         return [InformationType.PUBLIC]
-
-    def canBranchesBePrivate(self):
-        """See `IBranchNamespace`."""
-        return False
-
-    def canBranchesBePublic(self):
-        """See `IBranchNamespace`."""
-        return True
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
