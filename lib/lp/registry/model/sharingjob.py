@@ -380,7 +380,7 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                         TeamParticipation.personID,
                         where=TeamParticipation.team == self.grantee)))
             branch_filters.append(
-                In(BranchSubscription.person_id,
+                In(BranchSubscription.personID,
                     Select(
                         TeamParticipation.personID,
                         where=TeamParticipation.team == self.grantee)))
