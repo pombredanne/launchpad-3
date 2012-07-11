@@ -111,16 +111,22 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
 
     def makeUpload(self, distroseries=None, pocket=None,
                    custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
-                   version=None, arch=None):
+                   version=None, arch=None, component=None):
         """Create a `PackageUploadCustom`."""
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         package_name = self.factory.getUniqueString("package")
         if version is None:
             version = self.makeVersion()
-        if arch is None:
-            arch = self.factory.getUniqueString()
-        filename = "%s.tar.gz" % '_'.join([package_name, version, arch])
+        if custom_type == PackageUploadCustomFormat.DDTP_TARBALL:
+            if component is None:
+                component = self.factory.getUniqueString()
+            filename = "%s.tar.gz" % "_".join(
+                [package_name, component, version])
+        else:
+            if arch is None:
+                arch = self.factory.getUniqueString()
+            filename = "%s.tar.gz" % "_".join([package_name, version, arch])
         package_upload = self.factory.makeCustomPackageUpload(
             distroseries=distroseries, pocket=pocket, custom_type=custom_type,
             filename=filename)
@@ -230,9 +236,6 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
     def test_getKey_includes_format_and_architecture(self):
         # The key returned by getKey consists of custom upload type,
         # and architecture.
-        # XXX JeroenVermeulen 2011-08-17, bug=827941: To support
-        # ddtp-translations uploads, this will have to include the
-        # component name as well.
         source_series = self.factory.makeDistroSeries()
         upload = self.makeUpload(
             source_series, custom_type=PackageUploadCustomFormat.DIST_UPGRADER,
@@ -241,6 +244,20 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         expected_key = (
             PackageUploadCustomFormat.DIST_UPGRADER,
             'mips',
+            )
+        self.assertEqual(expected_key, copier.getKey(upload))
+
+    def test_getKey_ddtp_includes_format_and_component(self):
+        # The key returned by getKey for a ddtp-tarball upload consists of
+        # custom upload type, and component.
+        source_series = self.factory.makeDistroSeries()
+        upload = self.makeUpload(
+            source_series, custom_type=PackageUploadCustomFormat.DDTP_TARBALL,
+            component='restricted')
+        copier = CustomUploadsCopier(FakeDistroSeries())
+        expected_key = (
+            PackageUploadCustomFormat.DDTP_TARBALL,
+            'restricted',
             )
         self.assertEqual(expected_key, copier.getKey(upload))
 

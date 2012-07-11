@@ -42,8 +42,11 @@ class DebianInstallerUpload(CustomUpload):
 
     @staticmethod
     def parsePath(tarfile_path):
-        base, version, arch = os.path.basename(tarfile_path).split("_")
-        return base, version, arch.split(".")[0]
+        tarfile_base = os.path.basename(tarfile_path)
+        bits = tarfile_base.split("_")
+        if len(bits) != 3:
+            raise ValueError("%s is not BASE_VERSION_ARCH" % tarfile_base)
+        return bits[0], bits[1], bits[2].split(".")[0]
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         _, self.version, self.arch = self.parsePath(tarfile_path)

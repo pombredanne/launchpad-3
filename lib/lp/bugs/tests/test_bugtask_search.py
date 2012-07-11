@@ -24,6 +24,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtasksearch import _process_order_by
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -407,6 +408,20 @@ class OnceTests:
         self.assertSearchFinds(params, self.bugtasks[:2])
         params = self.getBugTaskSearchParams(
             user=None, importance=BugTaskImportance.MEDIUM)
+        self.assertSearchFinds(params, [])
+
+    def test_filter_by_information_types(self):
+        # Search results can be filtered by information_type.
+        with person_logged_in(self.owner):
+            self.bugtasks[2].bug.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, self.owner)
+        params = self.getBugTaskSearchParams(
+            user=self.owner,
+            information_type=InformationType.EMBARGOEDSECURITY)
+        self.assertSearchFinds(params, [self.bugtasks[2]])
+        params = self.getBugTaskSearchParams(
+            user=self.owner,
+            information_type=InformationType.UNEMBARGOEDSECURITY)
         self.assertSearchFinds(params, [])
 
     def test_omit_duplicate_bugs(self):

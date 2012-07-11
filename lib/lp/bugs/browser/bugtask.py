@@ -241,7 +241,10 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import MilestoneVocabulary
+from lp.registry.vocabularies import (
+    InformationTypeVocabulary,
+    MilestoneVocabulary,
+    )
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
@@ -3102,6 +3105,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
         return self.getWidgetValues(vocabulary=BugTaskImportance)
+
+    def getInformationTypeWidgetValues(self):
+        """Return data used to render the Information Type checkboxes."""
+        return self.getWidgetValues(
+            vocabulary=InformationTypeVocabulary(self.context))
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""

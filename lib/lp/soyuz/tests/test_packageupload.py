@@ -7,6 +7,10 @@ from datetime import timedelta
 from email import message_from_string
 import os
 import shutil
+from urllib2 import (
+    HTTPError,
+    urlopen,
+    )
 
 from lazr.restfulclient.errors import (
     BadRequest,
@@ -18,6 +22,8 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized as ZopeUnauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.schema import getFields
+from zope.testbrowser.browser import Browser
+from zope.testbrowser.testing import PublisherMechanizeBrowser
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.tests import datadir
@@ -394,6 +400,17 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.setAccepted()
         [spph] = upload.realiseUpload()
         self.assertEqual(spph.packageupload, upload)
+
+    def test_overrideSource_ignores_None_component_change(self):
+        # overrideSource accepts None as a component; it will not object
+        # based on permissions for the new component.
+        upload = self.factory.makeSourcePackageUpload()
+        spr = upload.sourcepackagerelease
+        current_component = spr.component
+        new_section = self.factory.makeSection()
+        upload.overrideSource(None, new_section, [current_component])
+        self.assertEqual(current_component, spr.component)
+        self.assertEqual(new_section, spr.section)
 
 
 class TestPackageUploadPrivacy(TestCaseWithFactory):
@@ -909,6 +926,14 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
+class NonRedirectingMechanizeBrowser(PublisherMechanizeBrowser):
+    """A `mechanize.Browser` that does not handle redirects."""
+
+    default_features = [
+        feature for feature in PublisherMechanizeBrowser.default_features
+        if feature != "_redirect"]
+
+
 class TestPackageUploadWebservice(TestCaseWithFactory):
     """Test the exposure of queue methods to the web service."""
 
@@ -980,6 +1005,22 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         transaction.commit()
         return upload, self.load(upload, person)
 
+    def makeNonRedirectingBrowser(self, person):
+        # The test browser can only work with the appserver, not the
+        # librarian, so follow one layer of redirection through the
+        # appserver and then ask the librarian for the real file.
+        browser = Browser(mech_browser=NonRedirectingMechanizeBrowser())
+        browser.handleErrors = False
+        with person_logged_in(person):
+            browser.addHeader(
+                "Authorization", "Basic %s:test" % person.preferredemail.email)
+        return browser
+
+    def assertCanOpenRedirectedUrl(self, browser, url):
+        redirection = self.assertRaises(HTTPError, browser.open, url)
+        self.assertEqual(303, redirection.code)
+        urlopen(redirection.hdrs["Location"]).close()
+
     def assertRequiresEdit(self, method_name, **kwargs):
         """Test that a web service queue method requires launchpad.Edit."""
         with admin_logged_in():
@@ -1050,14 +1091,19 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         person = self.makeQueueAdmin([self.universe])
         upload, ws_upload = self.makeSourcePackageUpload(
             person, component=self.universe)
+
         ws_source_file_urls = ws_upload.sourceFileUrls()
         self.assertNotEqual(0, len(ws_source_file_urls))
         with person_logged_in(person):
             source_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfile, upload.archive).http_url
+                ProxiedLibraryFileAlias(file.libraryfile, upload).http_url
                 for file in upload.sourcepackagerelease.files]
         self.assertContentEqual(source_file_urls, ws_source_file_urls)
+
+        browser = self.makeNonRedirectingBrowser(person)
+        for ws_source_file_url in ws_source_file_urls:
+            self.assertCanOpenRedirectedUrl(browser, ws_source_file_url)
+        self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
 
     def test_overrideSource_limited_component_permissions(self):
         # Overriding between two components requires queue admin of both.
@@ -1137,11 +1183,16 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertNotEqual(0, len(ws_binary_file_urls))
         with person_logged_in(person):
             binary_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfile, upload.archive).http_url
-                for bpr in upload.builds[0].build.binarypackages
+                ProxiedLibraryFileAlias(file.libraryfile, build.build).http_url
+                for build in upload.builds
+                for bpr in build.build.binarypackages
                 for file in bpr.files]
         self.assertContentEqual(binary_file_urls, ws_binary_file_urls)
+
+        browser = self.makeNonRedirectingBrowser(person)
+        for ws_binary_file_url in ws_binary_file_urls:
+            self.assertCanOpenRedirectedUrl(browser, ws_binary_file_url)
+        self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
 
     def test_overrideBinaries_limited_component_permissions(self):
         # Overriding between two components requires queue admin of both.
@@ -1277,14 +1328,19 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         upload, ws_upload = self.makeCustomPackageUpload(
             person, custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
             filename="debian-installer-images_1.tar.gz")
+
         ws_custom_file_urls = ws_upload.customFileUrls()
         self.assertNotEqual(0, len(ws_custom_file_urls))
         with person_logged_in(person):
             custom_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfilealias, upload.archive).http_url
+                ProxiedLibraryFileAlias(file.libraryfilealias, upload).http_url
                 for file in upload.customfiles]
         self.assertContentEqual(custom_file_urls, ws_custom_file_urls)
+
+        browser = self.makeNonRedirectingBrowser(person)
+        for ws_custom_file_url in ws_custom_file_urls:
+            self.assertCanOpenRedirectedUrl(browser, ws_custom_file_url)
+        self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
 
     def test_binary_and_custom_info(self):
         # API clients can inspect properties of uploads containing both

@@ -38,6 +38,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
@@ -308,6 +309,18 @@ class SourcePackageRelease(SQLBase):
             sourcepackagerelease=self,
             filetype=determine_source_file_type(file.filename),
             libraryfile=file)
+
+    def getFileByName(self, filename):
+        """See `ISourcePackageRelease`."""
+        sprf = Store.of(self).find(
+            SourcePackageReleaseFile,
+            SourcePackageReleaseFile.sourcepackagerelease == self.id,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            LibraryFileAlias.filename == filename).one()
+        if sprf:
+            return sprf.libraryfile
+        else:
+            raise NotFoundError(filename)
 
     def getPackageSize(self):
         """See ISourcePackageRelease."""
