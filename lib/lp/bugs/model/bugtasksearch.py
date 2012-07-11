@@ -182,6 +182,8 @@ orderby_expression = {
 
 def search_value_to_storm_where_condition(comp, search_value):
     """Convert a search value to a Storm WHERE condition."""
+    if zope_isinstance(search_value, (set, list, tuple)):
+        search_value = any(*search_value)
     if zope_isinstance(search_value, any):
         # When an any() clause is provided, the argument value
         # is a list of acceptable filter values.
@@ -733,6 +735,11 @@ def _build_query(params):
     if params.created_before:
         extra_clauses.append(
             BugTaskFlat.datecreated < params.created_before)
+
+    if params.information_type:
+        extra_clauses.append(
+            search_value_to_storm_where_condition(
+                BugTaskFlat.information_type, params.information_type))
 
     query = And(extra_clauses)
 
