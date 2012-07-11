@@ -12,8 +12,7 @@
     </tal:distribution>
   </h2>
 
-  <div class="portletBody portletContent"
-       tal:define="cr context/currentrelease">
+  <div tal:define="cr context/currentrelease">
 
     <div tal:condition="context/current_publishing_records">
       <tal:block repeat="item view/all_published_in_active_distroseries">
