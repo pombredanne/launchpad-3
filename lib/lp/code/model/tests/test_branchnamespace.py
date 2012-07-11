@@ -35,7 +35,11 @@ from lp.code.model.branchnamespace import (
     PersonalNamespace,
     ProductNamespace,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -985,7 +989,7 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         namespace = PersonalNamespace(person)
         self.assertFalse(namespace.canBranchesBePrivate())
         self.assertContentEqual(
-            [InformationType.PUBLIC],
+            PUBLIC_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
     def test_public_team(self):
@@ -994,7 +998,7 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         namespace = PersonalNamespace(team)
         self.assertFalse(namespace.canBranchesBePrivate())
         self.assertContentEqual(
-            [InformationType.PUBLIC],
+            PUBLIC_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
     def test_private_team(self):
@@ -1003,7 +1007,7 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         namespace = PersonalNamespace(team)
         self.assertTrue(namespace.canBranchesBePrivate())
         self.assertContentEqual(
-            [InformationType.PUBLIC, InformationType.USERDATA],
+            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
 
@@ -1031,7 +1035,7 @@ class TestPackageNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         namespace = PackageNamespace(person, source_package)
         self.assertFalse(namespace.canBranchesBePrivate())
         self.assertContentEqual(
-            [InformationType.PUBLIC],
+            PUBLIC_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
 
