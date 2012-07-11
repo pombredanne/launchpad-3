@@ -399,20 +399,21 @@ class ProductNamespace(_BaseNamespace):
 
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
-        # If there is an explicit rule for the namespace owner, use that.
-        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
         private_rules = (
             BranchVisibilityRule.PRIVATE,
             BranchVisibilityRule.PRIVATE_ONLY)
-        if (rule in private_rules
-            or (rule is None and len(self._getRelatedPrivatePolicies()) > 0)):
+        public = None
+
+        # If there is an explicit rule for the namespace owner, use that.
+        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
+        if rule is not None:
+            private = rule in private_rules
+            public = rule != BranchVisibilityRule.PRIVATE_ONLY
+        elif len(self._getRelatedPrivatePolicies()) > 0:
             private = True
         else:
             private = False
 
-        public = None
-        if rule is not None:
-            public = rule != BranchVisibilityRule.PRIVATE_ONLY
         if public is None:
             # If there is another policy that allows public, then
             # branches can be public.
