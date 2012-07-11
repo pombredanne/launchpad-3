@@ -69,7 +69,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.database.constants import UTC_NOW
-from lp.services.utils import iter_split
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -511,24 +510,6 @@ class BranchNamespaceSet:
             raise InvalidNamespace(namespace_name)
         data['person'] = data['person'][1:]
         return data
-
-    def parseBranchPath(self, namespace_path):
-        """See `IBranchNamespaceSet`."""
-        found = False
-        for branch_path, trailing_path in iter_split(namespace_path, '/'):
-            try:
-                branch_path, branch = branch_path.rsplit('/', 1)
-            except ValueError:
-                continue
-            try:
-                parsed = self.parse(branch_path)
-            except InvalidNamespace:
-                continue
-            else:
-                found = True
-                yield parsed, branch, trailing_path
-        if not found:
-            raise InvalidNamespace(namespace_path)
 
     def lookup(self, namespace_name):
         """See `IBranchNamespaceSet`."""

@@ -49,24 +49,12 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
     HasQueryCount,
     LessThan,
     )
-
-
-def disable_trigger_fixture():
-    # XXX 2012-05-22 wallyworld bug=1002596
-    # No need to use this fixture when triggers are removed.
-    return DisableTriggerFixture(
-            {'bugsubscription':
-                 'bugsubscription_mirror_legacy_access_t',
-             'bug': 'bug_mirror_legacy_access_t',
-             'bugtask': 'bugtask_mirror_legacy_access_t',
-        })
 
 
 class TestBug(TestCaseWithFactory):
@@ -757,13 +745,12 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers())
         some_person = self.factory.makePerson()
-        with disable_trigger_fixture():
-            with person_logged_in(bug_owner):
-                bug.subscribe(some_person, bug_owner)
-                subscribers = bug.getDirectSubscribers()
-                who = self.factory.makePerson(name='who')
-                bug.transitionToInformationType(
-                    InformationType.USERDATA, who)
+        with person_logged_in(bug_owner):
+            bug.subscribe(some_person, bug_owner)
+            subscribers = bug.getDirectSubscribers()
+            who = self.factory.makePerson(name='who')
+            bug.transitionToInformationType(
+                InformationType.USERDATA, who)
 
         service = getUtility(IService, 'sharing')
         peopleWithoutAccess = service.getPeopleWithoutAccess(bug, subscribers)
@@ -856,13 +843,10 @@ class TestBugPrivacy(TestCaseWithFactory):
         bug = self.factory.makeBug(
             information_type=InformationType.EMBARGOEDSECURITY)
 
-        # There are also transitional triggers that do this. Disable
-        # them temporarily so we can be sure the application side works.
-        with disable_trigger_fixture():
-            with admin_logged_in():
-                product = bug.default_bugtask.product
-                bug.transitionToInformationType(
-                    InformationType.USERDATA, bug.owner)
+        with admin_logged_in():
+            product = bug.default_bugtask.product
+            bug.transitionToInformationType(
+                InformationType.USERDATA, bug.owner)
 
         [policy] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)])
