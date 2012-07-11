@@ -308,8 +308,7 @@ class PersonalNamespace(_BaseNamespace):
 
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
-        # Private teams get private branches, everyone else gets public
-        # ones. It'll eventually be PROPRIETARY rather than USERDATA.
+        # Private teams get private branches, everyone else gets public ones.
         if (self.owner.is_team
             and self.owner.visibility == PersonVisibility.PRIVATE):
             return PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES
