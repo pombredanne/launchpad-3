@@ -30,7 +30,7 @@ from lp.coop.answersbugs.visibility import (
     )
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicySource,    
+    IAccessPolicySource,
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
@@ -287,6 +287,7 @@ class TestBugHideCommentControls(
         self.factory.makeAccessArtifactGrant(
             artifact=artifact, grantor=pillar.owner, grantee=person)
         self._test_hide_link_visible(context, person)
+
 
 class TestBugCommentMicroformats(BrowserTestCase):
 
