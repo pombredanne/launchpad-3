@@ -259,8 +259,7 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         if self.contains_source:
             return [
-                ProxiedLibraryFileAlias(
-                    file.libraryfile, self.archive).http_url
+                ProxiedLibraryFileAlias(file.libraryfile, self).http_url
                 for file in self.sourcepackagerelease.files]
         else:
             return []
@@ -272,7 +271,7 @@ class PackageUpload(SQLBase):
     def binaryFileUrls(self):
         """See `IPackageUpload`."""
         return [
-            ProxiedLibraryFileAlias(file.libraryfile, self.archive).http_url
+            ProxiedLibraryFileAlias(file.libraryfile, build.build).http_url
             for build in self.builds
             for bpr in build.build.binarypackages
             for file in bpr.files]
@@ -280,7 +279,7 @@ class PackageUpload(SQLBase):
     @property
     def changes_file_url(self):
         if self.changesfile is not None:
-            return self.changesfile.getURL()
+            return ProxiedLibraryFileAlias(self.changesfile, self).http_url
         else:
             return None
 
@@ -309,14 +308,12 @@ class PackageUpload(SQLBase):
     def custom_file_urls(self):
         """See `IPackageUpload`."""
         return tuple(
-            file.libraryfilealias.getURL() for file in self.customfiles)
+            ProxiedLibraryFileAlias(file.libraryfilealias, self).http_url
+            for file in self.customfiles)
 
     def customFileUrls(self):
         """See `IPackageUpload`."""
-        return [
-            ProxiedLibraryFileAlias(
-                file.libraryfilealias, self.archive).http_url
-            for file in self.customfiles]
+        return self.custom_file_urls
 
     def getBinaryProperties(self):
         """See `IPackageUpload`."""
@@ -328,6 +325,29 @@ class PackageUpload(SQLBase):
                 "customformat": file.customformat.title,
                 })
         return properties
+
+    def getFileByName(self, filename):
+        """See `IPackageUpload`."""
+        if (self.changesfile is not None and
+            self.changesfile.filename == filename):
+            return self.changesfile
+
+        if self.sourcepackagerelease is not None:
+            try:
+                return self.sourcepackagerelease.getFileByName(filename)
+            except NotFoundError:
+                pass
+
+        custom = Store.of(self).find(
+            PackageUploadCustom,
+            PackageUploadCustom.packageupload == self.id,
+            LibraryFileAlias.id ==
+                PackageUploadCustom.libraryfilealiasID,
+            LibraryFileAlias.filename == filename).one()
+        if custom is not None:
+            return custom.libraryfilealias
+
+        raise NotFoundError(filename)
 
     def setNew(self):
         """See `IPackageUpload`."""

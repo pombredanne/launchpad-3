@@ -170,6 +170,21 @@ class ISourcePackageRelease(Interface):
         in this package.
         """
 
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        SourcePackageRelease context:
+
+         * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc'.
+
+        :param filename: the exact filename to be looked up.
+
+        :raises NotFoundError if no file could be found.
+
+        :return the corresponding `ILibraryFileAlias` if the file was found.
+        """
+
     def createBuild(distroarchseries, pocket, archive, processor=None,
                     status=None):
         """Create a build for a given distroarchseries/pocket/archive
