@@ -66,6 +66,7 @@ from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
@@ -74,7 +75,6 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
     )
-from lp.soyuz.scripts.queue import QueueActionError
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -474,7 +474,7 @@ class SourcePackageRelease(SQLBase):
             if new_archive is not None:
                 self.upload_archive = new_archive
             else:
-                raise QueueActionError(
+                raise QueueInconsistentStateError(
                     "New component '%s' requires a non-existent archive.")
         if section is not None:
             self.section = section
