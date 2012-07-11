@@ -1,20 +1,30 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from StringIO import StringIO
 from textwrap import dedent
 
+from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepackagerelease,
     close_bugs_for_sourcepublication,
     )
-from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing import (
+    celebrity_logged_in,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestClosingBugs(TestCaseWithFactory):
@@ -24,7 +34,6 @@ class TestClosingBugs(TestCaseWithFactory):
     start a unification in a single file and those other tests need
     migrating here.
     See also:
-        * lp/soyuz/scripts/tests/test_queue.py
         * lib/lp/soyuz/doc/closing-bugs-from-changelogs.txt
         * lib/lp/archiveuploader/tests/nascentupload-closing-bugs.txt
     """
@@ -127,3 +136,34 @@ class TestClosingBugs(TestCaseWithFactory):
 
         for bug, bugtask in bugs:
             self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
+
+
+class TestClosingPrivateBugs(TestCaseWithFactory):
+    # The distroseries +queue page can close private bugs when accepting
+    # packages.
+
+    layer = DatabaseFunctionalLayer
+
+    def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
+        """close_bugs_for_sourcepackagerelease works with private bugs."""
+        changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
+        # changelog_entry is required for an assertion inside the function
+        # we're testing.
+        spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
+        archive_admin = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            sourcepackagename=spr.sourcepackagename,
+            distribution=spr.upload_distroseries.distribution,
+            information_type=InformationType.USERDATA)
+        changes = StringIO(changes_file_template % bug.id)
+
+        with person_logged_in(archive_admin):
+            # The archive admin user can't normally see this bug.
+            self.assertRaises(ForbiddenAttribute, bug, 'status')
+            # But the bug closure should work.
+            close_bugs_for_sourcepackagerelease(spr, changes)
+
+        # Verify it was closed.
+        with celebrity_logged_in("admin"):
+            self.assertEqual(
+                bug.default_bugtask.status, BugTaskStatus.FIXRELEASED)

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """queue tool base class tests."""
@@ -8,13 +8,11 @@ __metaclass__ = type
 import hashlib
 import os
 import shutil
-from StringIO import StringIO
 import tempfile
 from unittest import TestCase
 
 from testtools.matchers import StartsWith
 from zope.component import getUtility
-from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.nascentupload import NascentUpload
@@ -24,11 +22,7 @@ from lp.archiveuploader.tests import (
     insertFakeChangesFileForAllPackageUploads,
     )
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
-    IBugTaskSet,
-    )
-from lp.registry.enums import InformationType
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -49,9 +43,6 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadBuild
-from lp.soyuz.scripts.processaccepted import (
-    close_bugs_for_sourcepackagerelease,
-    )
 from lp.soyuz.scripts.queue import (
     CommandRunner,
     CommandRunnerError,
@@ -59,11 +50,7 @@ from lp.soyuz.scripts.queue import (
     QueueAction,
     QueueActionOverride,
     )
-from lp.testing import (
-    celebrity_logged_in,
-    person_logged_in,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import (
     dbuser,
     lp_dbuser,
@@ -71,7 +58,6 @@ from lp.testing.dbuser import (
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
-    DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     LibrarianLayer,
     )
@@ -1068,39 +1054,6 @@ class TestQueueActionLite(TestCaseWithFactory):
         action = self.makeQueueAction(upload)
         action.displayInfo(upload)
         self.assertNotEqual(0, action.display.call_count)
-
-
-class TestQueuePageClosingBugs(TestCaseWithFactory):
-    # The distroseries +queue page can close bug when accepting
-    # packages.  Unit tests for that belong here.
-
-    layer = DatabaseFunctionalLayer
-
-    def test_close_bugs_for_sourcepackagerelease_with_private_bug(self):
-        # lp.soyuz.scripts.processaccepted.close_bugs_for_sourcepackagerelease
-        # should work with private bugs where the person using the queue
-        # page doesn't have access to it.
-        changes_file_template = "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
-        # changelog_entry is required for an assertion inside the function
-        # we're testing.
-        spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
-        archive_admin = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            sourcepackagename=spr.sourcepackagename,
-            distribution=spr.upload_distroseries.distribution,
-            information_type=InformationType.USERDATA)
-        changes = StringIO(changes_file_template % bug.id)
-
-        with person_logged_in(archive_admin):
-            # The archive admin user can't normally see this bug.
-            self.assertRaises(ForbiddenAttribute, bug, 'status')
-            # But the bug closure should work.
-            close_bugs_for_sourcepackagerelease(spr, changes)
-
-        # Verify it was closed.
-        with celebrity_logged_in("admin"):
-            self.assertEqual(
-                bug.default_bugtask.status, BugTaskStatus.FIXRELEASED)
 
 
 class TestQueueToolInJail(TestQueueBase, TestCase):
