@@ -9,8 +9,6 @@
 
     <h2>Blocks</h2>
 
-    <div class="portletBody portletContent">
-
       <ul tal:condition="blocked_specs">
         <li class="spec" tal:repeat="spec blocked_specs">
           <a tal:attributes="href spec/fmt:url"
@@ -20,8 +18,6 @@
       <p tal:condition="not: blocked_specs">
         No blueprints are blocked on this one.
       </p>
-	
-    </div>
 
   </div>
 </tal:blocked_specs>

@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
+from lp.registry.interfaces.product import IProduct
 
 __metaclass__ = type
 __all__ = [
@@ -146,6 +147,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
+    PersonVisibility,
     validate_person,
     validate_public_person,
     )
@@ -1294,6 +1296,31 @@ class Branch(SQLBase, BzrIdentityMixin):
                 can_access = self.stacked_on.visibleByUser(
                     user, checked_branches)
         return can_access
+
+    def canBePublic(self, user):
+        """See `IBranch`."""
+        policy = IBranchNamespacePolicy(self.namespace)
+        return policy.canBranchesBePublic()
+
+    def canBePrivate(self, user):
+        """See `IBranch`."""
+        policy = IBranchNamespacePolicy(self.namespace)
+        # Do the easy checks first.
+        if (policy.canBranchesBePrivate() or
+                user_has_special_branch_access(user) or
+                user.visibility == PersonVisibility.PRIVATE):
+            return True
+        # Branches linked to commercial projects can be private.
+        target = self.target.context
+        if (IProduct.providedBy(target) and
+            target.has_current_commercial_subscription):
+            return True
+        # Branches linked to private bugs can be private.
+        params = BugTaskSearchParams(
+            user=user, linked_branches=self.id,
+            information_type=PRIVATE_INFORMATION_TYPES)
+        bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
+        return bug_ids.count() > 0
 
     @property
     def recipes(self):

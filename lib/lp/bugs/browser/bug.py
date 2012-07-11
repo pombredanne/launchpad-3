@@ -826,7 +826,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         class information_type_schema(Interface):
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary())
+                vocabulary=InformationTypeVocabulary(self.context))
         return information_type_schema
 
     @property

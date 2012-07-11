@@ -241,7 +241,10 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import MilestoneVocabulary
+from lp.registry.vocabularies import (
+    InformationTypeVocabulary,
+    MilestoneVocabulary,
+    )
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
@@ -945,9 +948,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                     continue
                 if prev_comment.index + 1 != comment.index:
                     # There is a gap here, record it.
+
+                    # The number of items between two items is one less than
+                    # their difference. There is one number between 1 and 3,
+                    # not 2 (their difference).
+                    num_hidden = abs(comment.index - prev_comment.index) - 1
                     separator = {
                         'date': prev_comment.datecreated,
-                        'num_hidden': comment.index - prev_comment.index,
+                        'num_hidden': num_hidden,
                         }
                     events.insert(index, separator)
                     index += 1
@@ -3097,6 +3105,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
         return self.getWidgetValues(vocabulary=BugTaskImportance)
+
+    def getInformationTypeWidgetValues(self):
+        """Return data used to render the Information Type checkboxes."""
+        return self.getWidgetValues(
+            vocabulary=InformationTypeVocabulary(self.context))
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""

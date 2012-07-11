@@ -113,7 +113,7 @@ class AskAQuestionButtonPortlet:
         return """
             <div id="involvement" class="portlet involvement">
               <ul>
-                <li style="border: none">
+                <li class="single">
                   <a class="menu-link-ask_question sprite answers"
                     href="%s">Ask a question</a>
                 </li>

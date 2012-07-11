@@ -182,7 +182,7 @@ Searching for DistributionSourcePackages
 The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
 
-    >>> packages = ubuntu.searchSourcePackageCaches("mozilla")
+    >>> packages = ubuntu.searchSourcePackageCaches(u"mozilla")
     >>> for distro_source_package_cache, source_name, rank in packages:
     ...     print "%-17s rank:%s" % (
     ...         distro_source_package_cache.name,
@@ -192,10 +192,10 @@ a certain string through the magic of fti. For instance:
 The search also matches on exact package names which fti doesn't like,
 and even on substrings:
 
-    >>> packages = ubuntu.searchSourcePackageCaches("linux-source-2.6.15")
+    >>> packages = ubuntu.searchSourcePackageCaches(u"linux-source-2.6.15")
     >>> print packages.count()
     1
-    >>> packages = ubuntu.searchSourcePackageCaches('a')
+    >>> packages = ubuntu.searchSourcePackageCaches(u'a')
     >>> for distro_source_package_cache, source_name, rank in packages:
     ...     print "%s: %-17s rank:%s" % (
     ...         distro_source_package_cache.__class__.__name__,
@@ -210,7 +210,7 @@ and even on substrings:
 The searchSourcePackages() method just returns a decorated version
 of the results from searchSourcePackageCaches():
 
-    >>> packages = ubuntu.searchSourcePackages('a')
+    >>> packages = ubuntu.searchSourcePackages(u'a')
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
     DistributionSourcePackage: alsa-utils
@@ -224,13 +224,13 @@ it just passes on to searchSourcePackageCaches(), and it restricts
 the results based on whether the source package has an entry
 in the Packaging table linking it to an upstream project.
 
-    >>> packages = ubuntu.searchSourcePackages('a', has_packaging=True)
+    >>> packages = ubuntu.searchSourcePackages(u'a', has_packaging=True)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
     DistributionSourcePackage: alsa-utils
     DistributionSourcePackage: mozilla-firefox
     DistributionSourcePackage: netapplet
-    >>> packages = ubuntu.searchSourcePackages('a', has_packaging=False)
+    >>> packages = ubuntu.searchSourcePackages(u'a', has_packaging=False)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
     DistributionSourcePackage: commercialpackage
@@ -242,7 +242,7 @@ results based on whether the source package has an entry in the
 SourcePackagePublishingHistory table for the given distroseries.
 
     >>> packages = ubuntu.searchSourcePackages(
-    ...     'a', publishing_distroseries=ubuntu.currentseries)
+    ...     u'a', publishing_distroseries=ubuntu.currentseries)
     >>> for dsp in packages:
     ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
     DistributionSourcePackage: alsa-utils
