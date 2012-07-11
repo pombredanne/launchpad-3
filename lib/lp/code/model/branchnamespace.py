@@ -44,7 +44,11 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -317,9 +321,9 @@ class PersonalNamespace(_BaseNamespace):
         # ones. It'll eventually be PROPRIETARY rather than USERDATA.
         if (self.owner.is_team
             and self.owner.visibility == PersonVisibility.PRIVATE):
-            return [InformationType.PUBLIC, InformationType.USERDATA]
+            return PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES
         else:
-            return [InformationType.PUBLIC]
+            return PUBLIC_INFORMATION_TYPES
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
@@ -425,10 +429,10 @@ class ProductNamespace(_BaseNamespace):
                 public = base_rule == BranchVisibilityRule.PUBLIC
 
         types = []
-        if private:
-            types.append(InformationType.USERDATA)
         if public:
-            types.append(InformationType.PUBLIC)
+            types.extend(PUBLIC_INFORMATION_TYPES)
+        if private:
+            types.extend(PRIVATE_INFORMATION_TYPES)
         return types
 
 
@@ -463,7 +467,7 @@ class PackageNamespace(_BaseNamespace):
 
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
-        return [InformationType.PUBLIC]
+        return PUBLIC_INFORMATION_TYPES
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
