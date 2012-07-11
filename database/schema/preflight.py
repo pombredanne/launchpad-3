@@ -255,12 +255,13 @@ class DatabasePreflight:
                 self.log.fatal("Slony cluster lag is high (%s)", max_lag)
                 slony_lagged = True
 
-        streaming_lagged = False
         # Do something harmless to force changes to be streamed in case
         # system is idle.
         self.lpmain_master_node.con.cursor().execute(
             'ANALYZE LaunchpadDatabaseRevision')
         start_time = time.time()
+        # Keep looking for low lag for 30 seconds, in case the system
+        # was idle and streaming needs time to kick in.
         while time.time() < start_time + 30:
             max_lag = timedelta(seconds=-1)
             for node in self.nodes:
@@ -273,13 +274,20 @@ class DatabasePreflight:
                 if is_standby:
                     self.log.debug2('streaming lag %s', lag)
                     max_lag = max(max_lag, lag)
-            if max_lag <= MAX_LAG:
-                streaming_lagged = False
+            if max_lag < MAX_LAG:
                 break
             time.sleep(0.2)
-        if max_lag > MAX_LAG:
+
+        if max_lag < timedelta(0):
+            streaming_lagged = False
+            self.log.debug("No streaming replication")
+        elif max_lag > MAX_LAG:
             streaming_lagged = True
             self.log.fatal("Streaming replication lag is high (%s)", max_lag)
+        else:
+            streaming_lagged = False
+            self.log.debug(
+                "Streaming replication lag is not high (%s)", max_lag)
 
         return not (slony_lagged or streaming_lagged)
 
@@ -447,7 +455,7 @@ def main():
         preflight_check = DatabasePreflight(log)
 
     # Add streaming replication standbys, which unfortunately cannot be
-    # detected.
+    # detected reliably.
     con = preflight_check.lpmain_master_node.con
     cur = con.cursor()
     cur.execute("SELECT COUNT(*) FROM pg_stat_replication")
