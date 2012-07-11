@@ -401,6 +401,17 @@ class PackageUploadTestCase(TestCaseWithFactory):
         [spph] = upload.realiseUpload()
         self.assertEqual(spph.packageupload, upload)
 
+    def test_overrideSource_ignores_None_component_change(self):
+        # overrideSource accepts None as a component; it will not object
+        # based on permissions for the new component.
+        upload = self.factory.makeSourcePackageUpload()
+        spr = upload.sourcepackagerelease
+        current_component = spr.component
+        new_section = self.factory.makeSection()
+        upload.overrideSource(None, new_section, [current_component])
+        self.assertEqual(current_component, spr.component)
+        self.assertEqual(new_section, spr.section)
+
 
 class TestPackageUploadPrivacy(TestCaseWithFactory):
     """Test PackageUpload security."""

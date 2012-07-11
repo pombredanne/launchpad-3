@@ -1085,8 +1085,10 @@ class PackageUpload(SQLBase):
 
         # We override our own archive too, as it is used to create
         # the SPPH during publish().
-        self.archive = self.distroseries.distribution.getArchiveByComponent(
-            new_component.name)
+        if new_component is not None:
+            distribution = self.distroseries.distribution
+            self.archive = distribution.getArchiveByComponent(
+                new_component.name)
 
         return made_changes
 
