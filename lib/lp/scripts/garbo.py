@@ -42,7 +42,6 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
@@ -79,7 +78,6 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
-from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -992,47 +990,6 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
-class BugTaskFlattener(TunableLoop):
-    """A `TunableLoop` to populate BugTaskFlat for all bugtasks."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(BugTaskFlattener, self).__init__(log, abort_time)
-        generation = getFeatureFlag('bugs.bugtaskflattener.generation')
-        if generation is None:
-            self.start_at = None
-        else:
-            self.memcache_key = (
-                '%s:bugtask-flattener:%s'
-                % (config.instance_name, generation.encode('utf-8')))
-            watermark = getUtility(IMemcacheClient).get(self.memcache_key)
-            self.start_at = watermark or 0
-
-    def findTaskIDs(self):
-        if self.start_at is None:
-            return EmptyResultSet()
-        return IMasterStore(BugTask).find(
-            (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
-
-    def isDone(self):
-        return self.findTaskIDs().is_empty()
-
-    def __call__(self, chunk_size):
-        ids = [row[0] for row in self.findTaskIDs()[:chunk_size]]
-        list(IMasterStore(BugTask).using(BugTask).find(
-            SQL('bugtask_flatten(BugTask.id, false)'),
-            BugTask.id.is_in(ids)))
-
-        self.start_at = ids[-1] + 1
-        result = getUtility(IMemcacheClient).set(
-            self.memcache_key, self.start_at)
-        if not result:
-            self.log.warning('Failed to set start_at in memcache.')
-
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1286,7 +1243,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        BugTaskFlattener,
         ]
     experimental_tunable_loops = []
 
