@@ -16,6 +16,7 @@ from soupmatchers import (
     HTMLContains,
     Tag,
     )
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.browser.bugcomment import (
@@ -26,6 +27,10 @@ from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
+    )
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicySource,    
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
@@ -262,38 +267,26 @@ class TestBugHideCommentControls(
         context = self.getContext(comment_owner=owner)
         self._test_hide_link_visible(context, owner)
 
-    def test_pillar_owner_sees_hide_control(self):
+    def test_userdata_grant_sees_hide_control(self):
         # The pillar owner sees the hide control.
         person = self.factory.makePerson()
         context = self.getContext()
-        naked_bugtask = removeSecurityProxy(context.default_bugtask)
-        removeSecurityProxy(naked_bugtask.pillar).owner = person
+        pillar = context.default_bugtask.product
+        policy = getUtility(IAccessPolicySource).find(
+            [(pillar, InformationType.USERDATA)])
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantor=pillar.owner, grantee=person)
         self._test_hide_link_visible(context, person)
 
-    def test_pillar_driver_sees_hide_control(self):
-        # The pillar driver sees the hide control.
+    def test_artifact_grant_sees_hide_control(self):
+        # The pillar owner sees the hide control.
         person = self.factory.makePerson()
         context = self.getContext()
-        naked_bugtask = removeSecurityProxy(context.default_bugtask)
-        removeSecurityProxy(naked_bugtask.pillar).driver = person
+        pillar = context.default_bugtask.product
+        artifact = self.factory.makeAccessArtifact(concrete=context)
+        self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantor=pillar.owner, grantee=person)
         self._test_hide_link_visible(context, person)
-
-    def test_pillar_bug_supervisor_sees_hide_control(self):
-        # The pillar bug supervisor sees the hide control.
-        person = self.factory.makePerson()
-        context = self.getContext()
-        naked_bugtask = removeSecurityProxy(context.default_bugtask)
-        removeSecurityProxy(naked_bugtask.pillar).bug_supervisor = person
-        self._test_hide_link_visible(context, person)
-
-    def test_pillar_security_contact_sees_hide_control(self):
-        # The pillar security contact sees the hide control.
-        person = self.factory.makePerson()
-        context = self.getContext()
-        naked_bugtask = removeSecurityProxy(context.default_bugtask)
-        removeSecurityProxy(naked_bugtask.pillar).security_contact = person
-        self._test_hide_link_visible(context, person)
-
 
 class TestBugCommentMicroformats(BrowserTestCase):
 
