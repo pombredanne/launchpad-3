@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0213,E0211
@@ -54,7 +54,7 @@ class IBranchNamespace(Interface):
 
     def getBranches(eager_load=False):
         """Return the branches in this namespace.
-        
+
         :param eager_load: If True eager load related data for the branches.
         """
 
@@ -239,26 +239,6 @@ class IBranchNamespaceSet(Interface):
         :raise InvalidNamespace: if the name is too long, too short or is
             malformed.
         :return: A dict with keys matching each component in 'namespace_name'.
-        """
-
-    def parseBranchPath(branch_path):
-        """Parse 'branch_path' into a namespace dict and a trailing path.
-
-        See `IBranchNamespaceSet.parse` for what we mean by 'namespace dict'.
-
-        Since some paths can be parsed as either package branch paths or
-        product branch paths, this method yields possible parses of the given
-        path. The order of the yielded parses is undefined and shouldn't be
-        relied on.
-
-        Note that at most one of the parses will actually be valid. This can
-        be determined by looking the objects up in the database, or by using
-        `IBranchNamespaceSet.interpret`.
-
-        :param branch_path: A path to or within a branch. This will often, but
-            not always, include a '.bzr' segment.
-        :return: An iterator that yields '(namespace_dict, branch_name,
-            trailing_path)' for all valid parses of 'branch_path'.
         """
 
     def traverse(segments):
