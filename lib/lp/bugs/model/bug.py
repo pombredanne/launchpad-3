@@ -166,6 +166,8 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -2058,25 +2060,34 @@ class Bug(SQLBase):
 
     def userCanSetCommentVisibility(self, user):
         """See `IBug`"""
-
         if user is None:
             return False
+        # Admins and registry experts always have permission.
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        return self.userInProjectRole(roles)
+        return self.userCanAccessUserData(user)
 
-    def userInProjectRole(self, user):
-        """ Return True if user has a project role for any affected pillar."""
-        roles = IPersonRoles(user)
-        if roles is None:
+    def userCanAccessUserData(self, user):
+        """ Return True if the user has access to USER_DATA data."""
+        # Check if the user has access via the pillar.
+        pillars = list(self.affected_pillars)
+        pillars_and_types = [(p, InformationType.USERDATA) for p in pillars] 
+        access_policies = getUtility(IAccessPolicySource).find(
+            pillars_and_types)
+        access_grants = [(a, user) for a in access_policies]
+        access_grants = getUtility(IAccessPolicyGrantSource).find(
+            access_grants) 
+        if not access_grants.is_empty():
+            return True
+        # User has no access via the pillars, check the bug itself.
+        artifact = getUtility(IAccessArtifactSource).find([self]).one()
+        if  artifact is None:
             return False
-        for pillar in self.affected_pillars:
-            if (roles.isOwner(pillar)
-                or roles.isOneOfDrivers(pillar)
-                or roles.isBugSupervisor(pillar)
-                or roles.isSecurityContact(pillar)):
-                return True
+        artifact_access_grant = getUtility(IAccessArtifactGrantSource).find(
+            [(artifact, user)]).one()
+        if artifact_access_grant is not None:
+            return True
         return False
 
     def linkHWSubmission(self, submission):
