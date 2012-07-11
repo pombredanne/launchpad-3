@@ -402,6 +402,25 @@ class TestSharingService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._assert_getPillarShareesUnauthorized(product)
 
+    def _assert_sharee_data(self, expected, actual):
+        # Assert that the actual and expected sharee data is equal.
+        # Sharee data is a list of (sharee, permissions, info_types) tuples.
+        expected_list = list(expected)
+        actual_list = list(actual)
+        self.assertEqual(len(expected_list), len(list(actual_list)))
+
+        expected_sharee_map = {}
+        for data in expected_list:
+            expected_sharee_map[data[0]] = data[1:]
+        actual_sharee_map = {}
+        for data in actual_list:
+            actual_sharee_map[data[0]] = data[1:]
+
+        for sharee, expected_permissions, expected_info_types in expected:
+            actual_permissions, actual_info_types = actual_sharee_map[sharee]
+            self.assertContentEqual(expected_permissions, actual_permissions)
+            self.assertContentEqual(expected_info_types, actual_info_types)
+
     def _assert_sharePillarInformation(self, pillar, pillar_type=None):
         """sharePillarInformations works and returns the expected data."""
         sharee = self.factory.makePerson()
@@ -464,7 +483,7 @@ class TestSharingService(TestCaseWithFactory):
         expected_sharee_data = self._makeShareeData(
             sharee, expected_permissions,
             [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA])
-        self.assertEqual(expected_sharee_data, sharee_data)
+        self.assertContentEqual(expected_sharee_data, sharee_data)
         # Check that getPillarSharees returns what we expect.
         if pillar_type == 'product':
             expected_sharee_grants = [
@@ -618,8 +637,7 @@ class TestSharingService(TestCaseWithFactory):
                 policy, SharingPermission.ALL) for policy in access_policies])
             owner_data = (pillar.owner, policy_permissions, [])
             expected_data.append(owner_data)
-            
-        self.assertContentEqual(
+        self._assert_sharee_data(
             expected_data, self.service.getPillarSharees(pillar))
 
     def test_deleteProductShareeAll(self):
