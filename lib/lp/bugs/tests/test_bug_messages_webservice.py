@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bug messages."""
-from lp.services.features.testing import FeatureFixture
-
 
 __metaclass__ = type
 

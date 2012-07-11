@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login,
     login_celebrity,

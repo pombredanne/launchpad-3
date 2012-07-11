@@ -32,7 +32,6 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
