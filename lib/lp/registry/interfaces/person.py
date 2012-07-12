@@ -28,7 +28,6 @@ __all__ = [
     'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
-    'ITeamCreation',
     'ITeamReassignment',
     'ImmutableVisibilityError',
     'NoSuchPerson',
@@ -2485,24 +2484,6 @@ class ITeamReassignment(Interface):
         title=_('New'), vocabulary='ValidTeamOwner', required=True)
 
 
-class ITeamCreation(ITeam):
-    """An interface to be used by the team creation form.
-
-    We need this special interface so we can allow people to specify a contact
-    email address for a team upon its creation.
-    """
-
-    contactemail = TextLine(
-        title=_("Contact Email Address"), required=False, readonly=False,
-        description=_(
-            "This is the email address we'll send all notifications to this "
-            "team. If no contact address is chosen, notifications directed "
-            "to this team will be sent to all team members. After finishing "
-            "the team creation, a new message will be sent to this address "
-            "with instructions on how to finish its registration."),
-        constraint=validate_new_team_email)
-
-
 class TeamContactMethod(EnumeratedType):
     """The method used by Launchpad to contact a given team."""
 
@@ -2532,6 +2513,9 @@ class ITeamContactAddressForm(Interface):
 
     contact_address = TextLine(
         title=_("Contact Email Address"), required=False, readonly=False)
+
+    mailinglist_address = TextLine(
+        title=_("Mailing List Address"), required=False, readonly=False)
 
     contact_method = Choice(
         title=_("How do people contact these team's members?"),
