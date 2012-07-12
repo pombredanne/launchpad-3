@@ -50,8 +50,8 @@
 
     <p id="email-warning" class="large-warning" style="padding:2px 2px 0 36px;">
         E-mail sent to a mailing list or external contact address may
-        be publically accessible.<br/>If this team is subscribed to private
-        bug or branches, private information may be leaked.<br/>
+        be publicly accessible.<br/>If this team is subscribed to private
+        bug or branches, private information may be disclosed.<br/>
         The safest option to avoid leaking private information is to
         send notifications to each member individually.
     </p>
