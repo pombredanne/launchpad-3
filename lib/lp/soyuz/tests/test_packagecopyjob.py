@@ -1043,7 +1043,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Now put the same named package in the target archive at the
         # oldest version in the changelog.
-        target_source_pub = self.publisher.getPubSource(
+        self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="libc",
             version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
             archive=target_archive)
