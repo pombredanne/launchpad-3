@@ -181,7 +181,7 @@ $(JS_LP): jsbuild_widget_css
 $(JS_YUI):
 	cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
 
-$(JS_OUT): $(JS_ALL)
+$(JS_OUT): $(JSBUILD) $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | bin/lpjsmin > $@
 else
@@ -192,7 +192,7 @@ combobuild:
 	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
 
-jsbuild: $(PY) $(JS_OUT)
+jsbuild: $(PY) $(JS_LP)
 	bin/combo-rootdir build/js
 
 eggs:
