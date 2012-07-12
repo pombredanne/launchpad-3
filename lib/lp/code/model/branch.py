@@ -1301,33 +1301,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                     user, checked_branches)
         return can_access
 
-    def canBePublic(self, user):
-        """See `IBranch`."""
-        policy = IBranchNamespacePolicy(self.namespace)
-        return InformationType.PUBLIC in policy.getAllowedInformationTypes()
-
-    def canBePrivate(self, user):
-        """See `IBranch`."""
-        policy = IBranchNamespacePolicy(self.namespace)
-        # Do the easy checks first.
-        policy_allows = (
-            InformationType.USERDATA in policy.getAllowedInformationTypes())
-        if (policy_allows or
-                user_has_special_branch_access(user) or
-                user.visibility == PersonVisibility.PRIVATE):
-            return True
-        # Branches linked to commercial projects can be private.
-        target = self.target.context
-        if (IProduct.providedBy(target) and
-            target.has_current_commercial_subscription):
-            return True
-        # Branches linked to private bugs can be private.
-        params = BugTaskSearchParams(
-            user=user, linked_branches=self.id,
-            information_type=PRIVATE_INFORMATION_TYPES)
-        bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
-        return bug_ids.count() > 0
-
     @property
     def recipes(self):
         """See `IHasRecipes`."""
