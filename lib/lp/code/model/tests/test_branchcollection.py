@@ -2,9 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
-from testtools.matchers import Equals
-from lp.app.interfaces.services import IService
-from lp.testing.matchers import HasQueryCount
 
 __metaclass__ = type
 
@@ -12,10 +9,12 @@ from datetime import datetime
 
 import pytz
 from storm.store import EmptyResultSet
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeProposalStatus,
@@ -44,9 +43,11 @@ from lp.services.webapp.interfaces import (
 from lp.testing import (
     person_logged_in,
     run_with_login,
+    StormStatementRecorder,
     TestCaseWithFactory,
-    StormStatementRecorder)
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBranchCollectionAdaptation(TestCaseWithFactory):
