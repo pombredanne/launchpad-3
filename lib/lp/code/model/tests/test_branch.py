@@ -76,7 +76,10 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     )
-from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.branchnamespace import (
+    IBranchNamespacePolicy,
+    IBranchNamespaceSet,
+    )
 from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.codehosting import branch_id_alias
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
@@ -108,7 +111,11 @@ from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
@@ -2382,6 +2389,38 @@ class TestBranchPrivacy(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         removeSecurityProxy(branch)._reconcileAccess()
         self.assertEqual([], get_policies_for_artifact(branch))
+
+
+class TestBranchGetAllowedInformationTypes(TestCaseWithFactory):
+    """Test Branch.getAllowedInformationTypes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_normal_user_sees_namespace_types(self):
+        # An unprivileged user sees the types allowed by the namespace.
+        branch = self.factory.makeBranch()
+        policy = IBranchNamespacePolicy(branch.namespace)
+        self.assertContentEqual(
+            policy.getAllowedInformationTypes(),
+            branch.getAllowedInformationTypes(branch.owner))
+        self.assertNotIn(
+            InformationType.PROPRIETARY,
+            branch.getAllowedInformationTypes(branch.owner))
+
+    def test_admin_sees_namespace_types(self):
+        # An admin sees all the types, since they occasionally need to
+        # override the namespace rules. This is hopefully temporary, and
+        # can go away once the new sharing rules (granting
+        # non-commercial projects limited use of private branches) are
+        # deployed.
+        branch = self.factory.makeBranch()
+        admin = self.factory.makeAdministrator()
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+            branch.getAllowedInformationTypes(admin))
+        self.assertIn(
+            InformationType.PROPRIETARY,
+            branch.getAllowedInformationTypes(admin))
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):
