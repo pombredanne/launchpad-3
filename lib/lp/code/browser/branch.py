@@ -1131,13 +1131,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
                 shown_types += hidden_types
 
-        # Now take the intersection of the allowed and shown types,
-        # plus the current type, and grab them from the vocab if
-        # they exist.
-        # The vocab uses feature flags to control what is displayed so we
-        # need to pull info_types from the vocab to use to make the subset
-        # of what we show the user. This is mostly to hide Proprietary
-        # while it's disabled.
+        # Now take the intersection of the allowed and shown types.
         combined_types = set(allowed_types).intersection(shown_types)
         combined_types.add(self.context.information_type)
         return combined_types
@@ -1147,6 +1141,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         if self.form_fields.get('information_type') is not None:
             # Customise the set of shown types.
             types_to_show = self.getInformationTypesToShow()
+            # Grab the types from the vocab if they exist.
+            # The vocab uses feature flags to control what is displayed so we
+            # need to pull info_types from the vocab to use to make the subset
+            # of what we show the user. This is mostly to hide Proprietary
+            # while it's disabled.
             info_type_vocab = self.widgets['information_type'].vocabulary
             self.widgets['information_type'].vocabulary = SimpleVocabulary(
                 [info_type for info_type in info_type_vocab
