@@ -55,6 +55,7 @@ from lp.services.job.model.job import (
     Job,
     )
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.adapters.overrides import (
     FromExistingOverridePolicy,
     SourceOverride,
@@ -223,6 +224,14 @@ class PackageCopyJobDerived(BaseRunnableJob):
             ('package_copy_job_type', self.context.job_type.title),
             ])
         return vars
+
+    def getOperationDescription(self):
+        """See `IPlainPackageCopyJob`."""
+        return "copying a package"
+
+    def getErrorRecipients(self):
+        """See `IPlainPackageCopyJob`."""
+        return [format_address_for_person(self.requester)]
 
     @property
     def copy_policy(self):

@@ -29,6 +29,7 @@ from lp.services.job.tests import (
     block_on_job,
     pop_remote_notifications,
     )
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
@@ -198,6 +199,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
     def test_job_source_implements_IPlainPackageCopyJobSource(self):
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertTrue(verifyObject(IPlainPackageCopyJobSource, job_source))
+
+    def test_getErrorRecipients_requester(self):
+        # The job requester is the recipient.
+        job = self.makeJob()
+        email = format_address_for_person(job.requester)
+        self.assertEqual([email], job.getErrorRecipients())
 
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
