@@ -2,6 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
+from testtools.matchers import Equals
+from lp.app.interfaces.services import IService
+from lp.testing.matchers import HasQueryCount
 
 __metaclass__ = type
 
@@ -42,7 +45,7 @@ from lp.testing import (
     person_logged_in,
     run_with_login,
     TestCaseWithFactory,
-    )
+    StormStatementRecorder)
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -131,6 +134,24 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         collection = GenericBranchCollection(
             self.store, [Branch.product == branch.product])
         self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_getBranches_caches_viewers(self):
+        # getBranches() caches the user as a known viewer so that
+        # branch.visibleByUser() does not have to hit the database.
+        collection = GenericBranchCollection(self.store)
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(
+            owner=owner,
+            product=product,
+            information_type=InformationType.USERDATA)
+        someone = self.factory.makePerson()
+        getUtility(IService, 'sharing').ensureAccessGrants(
+            [someone], owner, branches=[branch], ignore_permissions=True)
+        [branch] = list(collection.visibleByUser(someone).getBranches())
+        with StormStatementRecorder() as recorder:
+            self.assertTrue(branch.visibleByUser(someone))
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_count(self):
         # The 'count' property of a collection is the number of elements in
