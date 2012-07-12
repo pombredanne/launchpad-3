@@ -937,42 +937,6 @@ class TestBranchEditView(TestCaseWithFactory):
         self.assertRaises(
             LookupError, browser.getControl, "Information Type")
 
-    def test_authorised_user_can_change_branch_to_private(self):
-        # An authorised user can make the information type private.
-        team_owner = self.factory.makePerson()
-        user = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            owner=team_owner,
-            visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        with person_logged_in(team_owner):
-            team.addMember(user, team_owner)
-        with person_logged_in(user):
-            branch = self.factory.makeBranch(owner=team)
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=user)
-        self.assertIsNotNone(browser.getControl, "Embargoed Security")
-
-    def test_unauthorised_user_cannot_change_branch_to_private(self):
-        # An unauthorised user cannot make the information type private.
-        user = self.factory.makePerson()
-        with person_logged_in(user):
-            branch = self.factory.makeBranch(owner=user)
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=user)
-        self.assertRaises(
-            LookupError, browser.getControl, "Embargoed Security")
-
-    def test_branch_for_commercial_project(self):
-        # A branch for a commercial project can be private.
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        branch = self.factory.makeProductBranch(product=product)
-        with person_logged_in(branch.owner):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=branch.owner)
-        self.assertIsNotNone(browser.getControl, "Embargoed Security")
-
 
 class TestBranchUpgradeView(TestCaseWithFactory):
 
