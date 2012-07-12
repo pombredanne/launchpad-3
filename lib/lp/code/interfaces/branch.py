@@ -975,25 +975,6 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         the `IBranchNamespace` is consulted.
         """
 
-    def canBePublic(user):
-        """Can this branch be public?
-
-        A branch can be made public if:
-        - the branch has a visibility policy which allows it
-        - the user is an admin or bzr expert
-        """
-
-    def canBePrivate(user):
-        """Can this branch be private?
-
-        A branch can be made private if:
-        - the branch has a visibility policy which allows it
-        - the user is an admin or bzr expert
-        - the branch is owned by a private team
-          (The branch is already implicitly private)
-        - the branch is linked to a private bug the user can access
-        """
-
 
 class IBranchEditableAttributes(Interface):
     """IBranch attributes that can be edited.
