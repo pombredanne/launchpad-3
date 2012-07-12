@@ -154,6 +154,7 @@ class TestPackageDiffsBase(unittest.TestCase):
         Store the `FakePackager` object used in the test uploads as `packager`
         so the tests can reuse it if necessary.
         """
+        super(TestPackageDiffsBase, self).setUp()
         with dbuser(LAUNCHPAD_DBUSER_NAME):
             fake_chroot = LibraryFileAlias.get(CHROOT_LIBRARYFILEALIAS)
             ubuntu = getUtility(IDistributionSet).getByName(
