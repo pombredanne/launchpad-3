@@ -237,6 +237,17 @@ class Branch(SQLBase, BzrIdentityMixin):
             information_type = InformationType.PUBLIC
         return self.transitionToInformationType(information_type, user)
 
+    def getAllowedInformationTypes(self, who):
+        """See `IBranch`."""
+        if user_has_special_branch_access(who):
+            # Until sharing settles down, admins can set any type.
+            types = set(PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        else:
+            # Otherwise the permitted types are defined by the namespace.
+            policy = IBranchNamespacePolicy(self.namespace)
+            types = set(policy.getAllowedInformationTypes())
+        return types
+
     def transitionToInformationType(self, information_type, who,
                                     verify_policy=True):
         """See `IBranch`."""
@@ -246,11 +257,9 @@ class Branch(SQLBase, BzrIdentityMixin):
             and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
             and information_type in PUBLIC_INFORMATION_TYPES):
             raise BranchCannotChangeInformationType()
-        # Only check the privacy policy if the user is not special.
-        if verify_policy and not user_has_special_branch_access(who):
-            policy = IBranchNamespacePolicy(self.namespace)
-            if information_type not in policy.getAllowedInformationTypes():
-                raise BranchCannotChangeInformationType()
+        if (verify_policy
+            and information_type not in self.getAllowedInformationTypes(who)):
+            raise BranchCannotChangeInformationType()
         self.information_type = information_type
         self._reconcileAccess()
         if information_type in PRIVATE_INFORMATION_TYPES:
@@ -1291,33 +1300,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                 can_access = self.stacked_on.visibleByUser(
                     user, checked_branches)
         return can_access
-
-    def canBePublic(self, user):
-        """See `IBranch`."""
-        policy = IBranchNamespacePolicy(self.namespace)
-        return InformationType.PUBLIC in policy.getAllowedInformationTypes()
-
-    def canBePrivate(self, user):
-        """See `IBranch`."""
-        policy = IBranchNamespacePolicy(self.namespace)
-        # Do the easy checks first.
-        policy_allows = (
-            InformationType.USERDATA in policy.getAllowedInformationTypes())
-        if (policy_allows or
-                user_has_special_branch_access(user) or
-                user.visibility == PersonVisibility.PRIVATE):
-            return True
-        # Branches linked to commercial projects can be private.
-        target = self.target.context
-        if (IProduct.providedBy(target) and
-            target.has_current_commercial_subscription):
-            return True
-        # Branches linked to private bugs can be private.
-        params = BugTaskSearchParams(
-            user=user, linked_branches=self.id,
-            information_type=PRIVATE_INFORMATION_TYPES)
-        bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
-        return bug_ids.count() > 0
 
     @property
     def recipes(self):

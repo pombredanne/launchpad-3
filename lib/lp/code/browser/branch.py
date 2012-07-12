@@ -91,7 +91,11 @@ from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
-from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -121,6 +125,7 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.enums import (
+    InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
@@ -1095,36 +1100,56 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
+    def getInformationTypesToShow(self):
+        """Get the information types to display on the edit form.
+
+        We display a highly customised set of information types:
+        anything allowed by the namespace, plus the current type,
+        except some of the obscure types unless there's a linked
+        bug with an obscure type.
+        """
+        allowed_types = self.context.getAllowedInformationTypes(self.user)
+        shown_types = (
+            InformationType.PUBLIC,
+            InformationType.USERDATA,
+            InformationType.PROPRIETARY,
+            )
+
+        # We only show Embargoed Security and Unembargoed Security
+        # if the branch is linked to a bug with one of those types,
+        # as they're confusing and not generally useful otherwise.
+        # Once Proprietary is fully deployed, User Data should be
+        # added here.
+        hidden_types = (
+            InformationType.UNEMBARGOEDSECURITY,
+            InformationType.EMBARGOEDSECURITY,
+            )
+        if set(allowed_types).intersection(hidden_types):
+            params = BugTaskSearchParams(
+                user=self.user, linked_branches=self.context.id,
+                information_type=hidden_types)
+            if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
+                shown_types += hidden_types
+
+        # Now take the intersection of the allowed and shown types.
+        combined_types = set(allowed_types).intersection(shown_types)
+        combined_types.add(self.context.information_type)
+        return combined_types
+
     def setUpWidgets(self, context=None):
         super(BranchEditView, self).setUpWidgets()
-        branch = self.context
-
         if self.form_fields.get('information_type') is not None:
+            # Customise the set of shown types.
+            types_to_show = self.getInformationTypesToShow()
+            # Grab the types from the vocab if they exist.
             # The vocab uses feature flags to control what is displayed so we
             # need to pull info_types from the vocab to use to make the subset
-            # of what we show the user.
+            # of what we show the user. This is mostly to hide Proprietary
+            # while it's disabled.
             info_type_vocab = self.widgets['information_type'].vocabulary
-            public_types = [
-                    info_type
-                    for info_type in info_type_vocab
-                    if info_type.value in PUBLIC_INFORMATION_TYPES]
-            private_types = [
-                    info_type
-                    for info_type in info_type_vocab
-                    if info_type.value in PRIVATE_INFORMATION_TYPES]
-
-            allowed_information_types = []
-            if branch.private:
-                if branch.canBePublic(self.user):
-                    allowed_information_types.extend(public_types)
-                allowed_information_types.extend(private_types)
-            else:
-                allowed_information_types.extend(public_types)
-                if branch.canBePrivate(self.user):
-                    allowed_information_types.extend(private_types)
-
-            self.widgets['information_type'].vocabulary = (
-                SimpleVocabulary(allowed_information_types))
+            self.widgets['information_type'].vocabulary = SimpleVocabulary(
+                [info_type for info_type in info_type_vocab
+                 if info_type.value in types_to_show])
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk

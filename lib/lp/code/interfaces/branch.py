@@ -968,23 +968,11 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
-    def canBePublic(user):
-        """Can this branch be public?
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this branch.
 
-        A branch can be made public if:
-        - the branch has a visibility policy which allows it
-        - the user is an admin or bzr expert
-        """
-
-    def canBePrivate(user):
-        """Can this branch be private?
-
-        A branch can be made private if:
-        - the branch has a visibility policy which allows it
-        - the user is an admin or bzr expert
-        - the branch is owned by a private team
-          (The branch is already implicitly private)
-        - the branch is linked to a private bug the user can access
+        If the user is a Launchpad admin, any type is acceptable. Otherwise
+        the `IBranchNamespace` is consulted.
         """
 
 
