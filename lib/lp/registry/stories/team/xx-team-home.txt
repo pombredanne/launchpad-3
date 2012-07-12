@@ -143,6 +143,7 @@ address:
     ...     find_tag_by_id(sample_browser.contents, 'contact-email'))
     Email:
     None, members emailed directly
+    Set contact address
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'contact-user'))
     Contact this team's members
