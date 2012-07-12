@@ -47,6 +47,7 @@ from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     login,
     login_person,
@@ -936,6 +937,84 @@ class TestBranchEditView(TestCaseWithFactory):
                 canonical_url(branch) + '/+edit', user=owner)
         self.assertRaises(
             LookupError, browser.getControl, "Information Type")
+
+
+class TestBranchEditViewInformationTypes(TestCaseWithFactory):
+    """Tests for BranchEditView.getInformationTypesToShow."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertShownTypes(self, types, branch, user=None):
+        if user is None:
+            user = removeSecurityProxy(branch).owner
+        with person_logged_in(user):
+            view = create_initialized_view(branch, '+edit', user=user)
+            self.assertContentEqual(types, view.getInformationTypesToShow())
+
+    def test_public_branch(self):
+        # A normal public branch on a public project can only be public.
+        # We don't show information types like Unembargoed Security
+        # unless there's a linked branch of that type, as they're not
+        # useful or unconfusing otherwise.
+        # The model doesn't enforce this, so it's just a UI thing.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        self.assertShownTypes([InformationType.PUBLIC], branch)
+
+    def test_public_branch_with_security_bug(self):
+        # A public branch can be set to Unembargoed Security if it has a
+        # linked Unembargoed Security bug. The project policy doesn't
+        # allow private branches, so Embargoed Security and User Data
+        # are unavailable.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        bug = self.factory.makeBug(
+            information_type=InformationType.UNEMBARGOEDSECURITY)
+        with admin_logged_in():
+            branch.linkBug(bug, branch.owner)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY],
+            branch)
+
+    def test_branch_with_disallowed_type(self):
+        # We don't force branches with a disallowed type (eg. Proprietary on a
+        # non-commercial project) to change, so the current type is
+        # shown.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.PROPRIETARY], branch)
+
+    def test_private_branch(self):
+        # Branches on projects with a private policy can be set to
+        # User Data (aka. Private)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        with admin_logged_in():
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.USERDATA,
+             InformationType.PROPRIETARY], branch)
+
+    def test_private_branch_with_security_bug(self):
+        # Branches on projects that allow private branches can use the
+        # Embargoed Security information type if they have a security
+        # bug linked.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        with admin_logged_in():
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+        bug = self.factory.makeBug(
+            information_type=InformationType.UNEMBARGOEDSECURITY)
+        with admin_logged_in():
+            branch.linkBug(bug, branch.owner)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY,
+             InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY],
+            branch)
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):
