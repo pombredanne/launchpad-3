@@ -915,32 +915,11 @@ class TestBranchEditView(TestCaseWithFactory):
         admin = admins.teamowner
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=admin)
-        browser.getControl("Embargoed Security").click()
+        browser.getControl("User Data").click()
         browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEqual(
-                InformationType.EMBARGOEDSECURITY, branch.information_type)
-
-    def test_proprietary_in_ui_vocabulary_commercial_projects(self):
-        # Commercial projects can have information type Proprietary.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        branch = self.factory.makeProductBranch(product=product, owner=owner)
-        with person_logged_in(owner):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=owner)
-            self.assertIsNotNone(browser.getControl("Proprietary"))
-
-    def test_proprietary_not_in_ui_vocabulary_normal_projects(self):
-        # Non-commercial projects can not have information type Proprietary.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        branch = self.factory.makeProductBranch(product=product, owner=owner)
-        with person_logged_in(owner):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=owner)
-            self.assertRaises(LookupError, browser.getControl, "Proprietary")
+                InformationType.USERDATA, branch.information_type)
 
     def test_can_not_change_privacy_of_stacked_on_private(self):
         # The privacy field is not shown if the branch is stacked on a
