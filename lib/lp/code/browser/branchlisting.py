@@ -99,6 +99,7 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin,
     SortSeriesMixin,
     )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -759,7 +760,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
             return False
         namespace = target.getNamespace(self.user)
         policy = IBranchNamespacePolicy(namespace)
-        return policy.areNewBranchesPrivate()
+        return policy.getDefaultInformationType() in PRIVATE_INFORMATION_TYPES
 
 
 class NoContextBranchListingView(BranchListingView):

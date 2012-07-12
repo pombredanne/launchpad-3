@@ -110,12 +110,7 @@ class _BaseNamespace:
             distroseries = sourcepackage.distroseries
             sourcepackagename = sourcepackage.sourcepackagename
 
-        # If branches can be private, make them private initially.
-        private = self.areNewBranchesPrivate()
-        if private:
-            information_type = InformationType.USERDATA
-        else:
-            information_type = InformationType.PUBLIC
+        information_type = self.getDefaultInformationType()
 
         branch = Branch(
             registrant=registrant, name=name, owner=self.owner,
@@ -268,9 +263,11 @@ class _BaseNamespace:
         """See `IBranchNamespace`."""
         raise NotImplementedError
 
-    def areNewBranchesPrivate(self):
+    def getDefaultInformationType(self):
         """See `IBranchNamespace`."""
-        return InformationType.USERDATA in self.getAllowedInformationTypes()
+        if InformationType.USERDATA in self.getAllowedInformationTypes():
+            return InformationType.USERDATA
+        return InformationType.PUBLIC
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
