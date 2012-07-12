@@ -968,6 +968,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this branch.
+
+        If the user is a Launchpad admin, any type is acceptable. Otherwise
+        the `IBranchNamespace` is consulted.
+        """
+
     def canBePublic(user):
         """Can this branch be public?
 
