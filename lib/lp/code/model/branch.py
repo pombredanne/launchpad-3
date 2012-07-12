@@ -246,8 +246,6 @@ class Branch(SQLBase, BzrIdentityMixin):
             # Otherwise the permitted types are defined by the namespace.
             policy = IBranchNamespacePolicy(self.namespace)
             types = set(policy.getAllowedInformationTypes())
-        # The current information type is always permitted.
-        types.add(self.information_type)
         return types
 
     def transitionToInformationType(self, information_type, who,
