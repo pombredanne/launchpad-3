@@ -107,28 +107,29 @@ class DistroArchSeriesBinaryPackage:
             return self.cache.description
         return None
 
+    def _getPublicationJoins(self):
+        return [
+            BinaryPackagePublishingHistory.distroarchseries
+                == self.distroarchseries,
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.binarypackagename
+                == self.binarypackagename,
+            BinaryPackagePublishingHistory.binarypackagereleaseID
+                == BinaryPackageRelease.id,
+            ]
+
     def __getitem__(self, version):
         """See IDistroArchSeriesBinaryPackage."""
-        query = """
-        BinaryPackagePublishingHistory.distroarchseries = %s AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        BinaryPackagePublishingHistory.binarypackagerelease =
-            BinaryPackageRelease.id AND
-        BinaryPackageRelease.version = %s AND
-        BinaryPackageRelease.binarypackagename = %s
-        """ % sqlvalues(
-                self.distroarchseries,
-                self.distribution.all_distro_archive_ids,
-                version,
-                self.binarypackagename)
-
-        bpph = BinaryPackagePublishingHistory.selectFirst(
-            query, clauseTables=['binarypackagerelease'],
-            orderBy=["-datecreated"])
+        bpph = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackageRelease.version == version,
+            *self._getPublicationJoins()
+            ).order_by(Desc(BinaryPackagePublishingHistory.datecreated)
+            ).first()
 
         if bpph is None:
             return None
-
         return DistroArchSeriesBinaryPackageRelease(
             distroarchseries=self.distroarchseries,
             binarypackagerelease=bpph.binarypackagerelease)
@@ -136,19 +137,11 @@ class DistroArchSeriesBinaryPackage:
     @property
     def releases(self):
         """See IDistroArchSeriesBinaryPackage."""
-        ret = BinaryPackageRelease.select("""
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = %s
-            """ % sqlvalues(
-                    self.distroarchseries,
-                    self.distribution.all_distro_archive_ids,
-                    self.binarypackagename),
-            orderBy='-datecreated',
-            distinct=True,
-            clauseTables=['BinaryPackagePublishingHistory'])
+        ret = IStore(BinaryPackageRelease).find(
+            BinaryPackageRelease,
+            *self._getPublicationJoins()
+            ).order_by(Desc(BinaryPackageRelease.datecreated)
+            ).config(distinct=True)
         result = []
         versions = set()
         for bpr in ret:
@@ -163,62 +156,33 @@ class DistroArchSeriesBinaryPackage:
     @property
     def currentrelease(self):
         """See IDistroArchSeriesBinaryPackage."""
-        releases = BinaryPackageRelease.select("""
-            BinaryPackageRelease.binarypackagename = %s AND
-            BinaryPackageRelease.id =
-                BinaryPackagePublishingHistory.binarypackagerelease AND
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(
-                    self.binarypackagename,
-                    self.distroarchseries,
-                    self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.PUBLISHED),
-            orderBy='-datecreated',
-            limit=1,
-            distinct=True,
-            clauseTables=['BinaryPackagePublishingHistory'])
-
-        # Listify to limit the SQL queries to one only.
-        results = list(releases)
-        if len(results) == 0:
+        try:
+            bpph = self.current_published
+        except NotFoundError:
             return None
         return DistroArchSeriesBinaryPackageRelease(
             distroarchseries=self.distroarchseries,
-            binarypackagerelease=results[0])
+            binarypackagerelease=bpph.binarypackagerelease)
 
     @property
     def publishing_history(self):
         """See IDistroArchSeriesBinaryPackage."""
         return IStore(BinaryPackagePublishingHistory).find(
             BinaryPackagePublishingHistory,
-            BinaryPackageRelease.binarypackagename == self.binarypackagename,
-            BinaryPackagePublishingHistory.distroarchseries ==
-                self.distroarchseries,
-            BinaryPackagePublishingHistory.archiveID.is_in(
-                self.distribution.all_distro_archive_ids),
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id).config(distinct=True).order_by(
-                Desc(BinaryPackagePublishingHistory.datecreated))
+            *self._getPublicationJoins()
+            ).config(distinct=True
+            ).order_by(Desc(BinaryPackagePublishingHistory.datecreated))
 
     @property
     def current_published(self):
         """See IDistroArchSeriesBinaryPackage."""
-        current = BinaryPackagePublishingHistory.selectFirst("""
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = %s AND
-            BinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(
-                    self.distroarchseries,
-                    self.distribution.all_distro_archive_ids,
-                    self.binarypackagename,
-                    PackagePublishingStatus.PUBLISHED),
-            clauseTables=['BinaryPackageRelease'],
-            orderBy='-datecreated')
+        current = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.status
+                == PackagePublishingStatus.PUBLISHED,
+            *self._getPublicationJoins()
+            ).order_by(Desc(BinaryPackagePublishingHistory.datecreated)
+            ).first()
 
         if current is None:
             raise NotFoundError("Binary package %s not published in %s/%s"

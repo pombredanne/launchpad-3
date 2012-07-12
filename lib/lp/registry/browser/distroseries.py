@@ -1293,12 +1293,12 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 dsd.parent_source_version,
                 dsd.parent_series.main_archive,
                 target_distroseries.main_archive,
+                target_distroseries,
                 PackagePublishingPocket.RELEASE,
             )
             for dsd in self.getUpgrades()]
         getUtility(IPlainPackageCopyJobSource).createMultiple(
-            target_distroseries, copies, self.user,
-            copy_policy=PackageCopyPolicy.MASS_SYNC)
+            copies, self.user, copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "

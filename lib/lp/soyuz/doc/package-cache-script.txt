@@ -19,16 +19,16 @@ contents:
 'cdrkit' source and binary are published but it's not present in
 cache:
 
-  >>> ubuntu.searchSourcePackages('cdrkit').count()
+  >>> ubuntu.searchSourcePackages(u'cdrkit').count()
   0
-  >>> warty.searchPackages('cdrkit').count()
+  >>> warty.searchPackages(u'cdrkit').count()
   0
 
 'foobar' source and binary are removed but still present in cache:
 
-  >>> ubuntu.searchSourcePackages('foobar').count()
+  >>> ubuntu.searchSourcePackages(u'foobar').count()
   1
-  >>> warty.searchPackages('foobar').count()
+  >>> warty.searchPackages(u'foobar').count()
   1
 
 Normal operation produces INFO level information about the
@@ -62,14 +62,14 @@ the external script:
 
 Now, search results are up to date:
 
-  >>> ubuntu.searchSourcePackages('cdrkit').count()
+  >>> ubuntu.searchSourcePackages(u'cdrkit').count()
   1
-  >>> warty.searchPackages('cdrkit').count()
+  >>> warty.searchPackages(u'cdrkit').count()
   1
 
-  >>> ubuntu.searchSourcePackages('foobar').count()
+  >>> ubuntu.searchSourcePackages(u'foobar').count()
   0
-  >>> warty.searchPackages('foobar').count()
+  >>> warty.searchPackages(u'foobar').count()
   0
 
 Explicitly mark the database as dirty so that it is cleaned (see bug 994158).

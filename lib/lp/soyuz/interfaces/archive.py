@@ -43,6 +43,8 @@ __all__ = [
     'NoSuchPPA',
     'NoTokensForTeams',
     'PocketNotFound',
+    'PriorityNotFound',
+    'SectionNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
     'validate_external_dependencies',
@@ -156,13 +158,23 @@ class NoTokensForTeams(Exception):
 
 
 class ComponentNotFound(NameLookupFailed):
-    """Invalid source name."""
+    """Invalid component name."""
     _message_prefix = 'No such component'
 
 
 @error_status(httplib.BAD_REQUEST)
 class InvalidComponent(Exception):
     """Invalid component name."""
+
+
+class SectionNotFound(NameLookupFailed):
+    """Invalid section name."""
+    _message_prefix = "No such section"
+
+
+class PriorityNotFound(NameLookupFailed):
+    """Invalid priority name."""
+    _message_prefix = "No such priority"
 
 
 class NoSuchPPA(NameLookupFailed):

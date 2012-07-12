@@ -118,7 +118,10 @@ from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import InformationType
 from lp.registry.errors import CommercialSubscribersOnly
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicySource,
+    IAccessPolicyGrantSource,
+    )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -210,9 +213,6 @@ def get_license_status(license_approved, project_reviewed, licenses):
     # enough for us for the project to freely use Launchpad.
     if license_approved:
         return LicenseStatus.OPEN_SOURCE
-    if len(licenses) == 0:
-        # This can only happen in bad sample data.
-        return LicenseStatus.UNSPECIFIED
     elif License.OTHER_PROPRIETARY in licenses:
         return LicenseStatus.PROPRIETARY
     elif License.OTHER_OPEN_SOURCE in licenses:
@@ -557,6 +557,24 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
+    def _ensurePolicies(self, information_types):
+        # Ensure that the product has access policies for the specified
+        # information types.
+        aps = getUtility(IAccessPolicySource)
+        existing_policies = aps.findByPillar([self])
+        existing_types = set([
+            access_policy.type for access_policy in existing_policies])
+        # Create the missing policies.
+        required_types = set(information_types).difference(existing_types)
+        policies = itertools.product((self,), required_types)
+        policies = getUtility(IAccessPolicySource).create(policies)
+
+        # Add the maintainer to the policies.
+        grants = []
+        for p in policies:
+            grants.append((p, self.owner, self.owner))
+        getUtility(IAccessPolicyGrantSource).grant(grants)
+
     @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
@@ -626,6 +644,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.commercial_subscription.sales_system_id = voucher
             self.commercial_subscription.registrant = registrant
             self.commercial_subscription.purchaser = purchaser
+
+        # The product now has a commercial subscription, so we need to ensure
+        # it has a Proprietary access policy.
+        self._ensurePolicies([InformationType.PROPRIETARY])
 
     @property
     def qualifies_for_free_hosting(self):
@@ -1515,11 +1537,8 @@ class ProductSet:
         product.development_focus = trunk
 
         # Add default AccessPolicies.
-        policies = itertools.product(
-            (product,), (InformationType.USERDATA,
+        product._ensurePolicies((InformationType.USERDATA,
                 InformationType.EMBARGOEDSECURITY))
-        getUtility(IAccessPolicySource).create(policies)
-
         return product
 
     def forReview(self, search_text=None, active=None,

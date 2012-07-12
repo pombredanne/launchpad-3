@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
@@ -49,17 +49,17 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
-from lp.code.model.branch import Branch
+from lp.code.model.branch import (
+    Branch,
+    get_branch_privacy_filter,
+    )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
-from lp.registry.enums import (
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
@@ -75,10 +75,7 @@ from lp.services.database.bulk import (
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import (
-    quote,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import quote
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.interfaces import (
@@ -216,15 +213,6 @@ class GenericBranchCollection:
     def _getBranchVisibilityExpression(self, branch_class=None):
         """Return the where clauses for visibility."""
         return []
-
-    def _getCandidateBranchesWith(self):
-        """Return WITH clauses defining candidate branches.
-
-        These are defined in terms of scope_branches which should be
-        separately calculated.
-        """
-        return [
-            With("candidate_branches", SQL("SELECT id from scope_branches"))]
 
     @staticmethod
     def preloadVisibleStackedOnBranches(branches, user=None):
@@ -385,14 +373,15 @@ class GenericBranchCollection:
             return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
     def _scopedGetMergeProposals(self, statuses, eager_load=False):
-        scope_tables = [Branch] + self._tables.values()
-        scope_expressions = self._branch_filter_expressions
-        select = self.store.using(*scope_tables).find(
-            (Branch.id, Branch.information_type, Branch.ownerID),
-            *scope_expressions)
-        branches_query = select._get_select()
-        with_expr = [With("scope_branches", branches_query)
-            ] + self._getCandidateBranchesWith()
+        expressions = (
+            self._branch_filter_expressions
+            + self._getBranchVisibilityExpression())
+        with_expr = With(
+            "candidate_branches",
+            Select(
+                Branch.id,
+                tables=[Branch] + self._tables.values(),
+                where=And(*expressions) if expressions else True))
         expressions = [SQL("""
             source_branch IN (SELECT id FROM candidate_branches) AND
             target_branch IN (SELECT id FROM candidate_branches)""")]
@@ -760,20 +749,6 @@ class AnonymousBranchCollection(GenericBranchCollection):
         return [
             branch_class.information_type.is_in(PUBLIC_INFORMATION_TYPES)]
 
-    def _getCandidateBranchesWith(self):
-        """Return WITH clauses defining candidate branches.
-
-        These are defined in terms of scope_branches which should be
-        separately calculated.
-        """
-        # Anonymous users get public branches only.
-        return [
-            With("candidate_branches",
-                SQL("""select id from scope_branches
-                    where information_type in %s"""
-                % sqlvalues(PUBLIC_INFORMATION_TYPES)))
-            ]
-
 
 class VisibleBranchCollection(GenericBranchCollection):
     """A branch collection that has special logic for visibility."""
@@ -787,7 +762,6 @@ class VisibleBranchCollection(GenericBranchCollection):
             asymmetric_filter_expressions=asymmetric_filter_expressions,
             asymmetric_tables=asymmetric_tables)
         self._user = user
-        self._private_branch_ids = self._getPrivateBranchSubQuery()
 
     def _filterBy(self, expressions, table=None, join=None,
                   exclude_from_search=None, symmetric=True):
@@ -829,90 +803,14 @@ class VisibleBranchCollection(GenericBranchCollection):
             asymmetric_expr,
             asymmetric_tables)
 
-    def _getPrivateBranchSubQuery(self):
-        """Return a subquery to get the private branches the user can see.
-
-        If the user is None (which is used for anonymous access), then there
-        is no subquery.  Otherwise return the branch ids for the private
-        branches that the user owns or is subscribed to.
-        """
-        # Everyone can see public branches.
-        person = self._user
-        if person is None:
-            # Anonymous users can only see the public branches.
-            return None
-
-        # A union is used here rather than the more simplistic simple joins
-        # due to the query plans generated.  If we just have a simple query
-        # then we are joining across TeamParticipation and BranchSubscription.
-        # This creates a bad plan, hence the use of a union.
-        private_branches = Union(
-            # Private branches the person owns (or a team the person is in).
-            Select(Branch.id,
-                   And(Branch.owner == TeamParticipation.teamID,
-                       TeamParticipation.person == person,
-                       Branch.information_type.is_in(
-                           PRIVATE_INFORMATION_TYPES))),
-            # Private branches the person is subscribed to, either directly or
-            # indirectly.
-            Select(Branch.id,
-                   And(BranchSubscription.branch == Branch.id,
-                       BranchSubscription.person ==
-                       TeamParticipation.teamID,
-                       TeamParticipation.person == person,
-                       Branch.information_type.is_in(
-                           PRIVATE_INFORMATION_TYPES))))
-        return private_branches
-
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility.
 
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        public_branches = branch_class.information_type.is_in(
-            PUBLIC_INFORMATION_TYPES)
-        if self._private_branch_ids is None:
-            # Public only.
-            return [public_branches]
-        else:
-            public_or_private = Or(
-                public_branches,
-                branch_class.id.is_in(self._private_branch_ids))
-            return [public_or_private]
-
-    def _getCandidateBranchesWith(self):
-        """Return WITH clauses defining candidate branches.
-
-        These are defined in terms of scope_branches which should be
-        separately calculated.
-        """
-        person = self._user
-        if person is None:
-            # Really an anonymous sitation
-            return [
-                With("candidate_branches",
-                    SQL("""select id from scope_branches
-                        where information_type in %s"""
-                    % sqlvalues(PUBLIC_INFORMATION_TYPES)))
-                ]
-        return [
-            With("teams", self.store.find(TeamParticipation.teamID,
-                TeamParticipation.personID == person.id)._get_select()),
-            With("private_branches", SQL("""
-                SELECT scope_branches.id FROM scope_branches WHERE
-                scope_branches.information_type in %s AND (
-                    (scope_branches.owner in (select team from teams) OR
-                     EXISTS(SELECT true from BranchSubscription, teams WHERE
-                         branchsubscription.branch = scope_branches.id AND
-                         branchsubscription.person = teams.team)))"""
-                % sqlvalues(PRIVATE_INFORMATION_TYPES))),
-            With("candidate_branches", SQL("""
-                (SELECT id FROM private_branches) UNION
-                (select id FROM scope_branches
-                WHERE information_type in %s)"""
-                % sqlvalues(PUBLIC_INFORMATION_TYPES)))
-            ]
+        return get_branch_privacy_filter(
+            self._user, branch_class=branch_class)
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""

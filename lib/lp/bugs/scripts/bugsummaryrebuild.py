@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import transaction
-
 from storm.expr import (
     Alias,
     And,
@@ -17,13 +15,14 @@ from storm.expr import (
     With,
     )
 from storm.properties import Bool
+import transaction
 
 from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import (
-    bug_target_to_key,
     bug_target_from_key,
+    bug_target_to_key,
     BugTask,
     )
 from lp.bugs.model.bugtaskflat import BugTaskFlat
@@ -34,10 +33,10 @@ from lp.registry.enums import (
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import ISeriesMixin
-from lp.registry.model.product import Product
-from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import create
 from lp.services.database.lpstorm import IStore

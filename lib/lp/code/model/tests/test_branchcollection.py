@@ -636,20 +636,6 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             sorted([self.public_branch, self.private_branch1]),
             sorted(branches.getBranches()))
 
-    def test_owner_member_sees_own_branches(self):
-        # Members of teams that own branches can see branches owned by those
-        # teams, as well as public branches.
-        team_owner = self.factory.makePerson()
-        team = self.factory.makeTeam(team_owner)
-        private_branch = self.factory.makeAnyBranch(
-            owner=team, stacked_on=self.private_stacked_on_branch,
-            name='team')
-        removeSecurityProxy(private_branch).unsubscribe(team, team_owner)
-        branches = self.all_branches.visibleByUser(team_owner)
-        self.assertEqual(
-            sorted([self.public_branch, private_branch]),
-            sorted(branches.getBranches()))
-
     def test_launchpad_services_sees_all(self):
         # The LAUNCHPAD_SERVICES special user sees *everything*.
         branches = self.all_branches.visibleByUser(LAUNCHPAD_SERVICES)

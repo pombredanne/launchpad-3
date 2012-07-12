@@ -70,7 +70,7 @@ the documentation url through the edit view.
     ...     test_browser.open(
     ...         'http://translations.launchpad.dev/'
     ...         '+groups/testing-translation-team/eo/+admin')
-    ... except Unauthorized, e:
+    ... except Unauthorized as e:
     ...     print e
     (...'launchpad.Admin')
     >>> test_browser.open(

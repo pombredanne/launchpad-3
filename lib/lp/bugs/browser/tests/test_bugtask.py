@@ -299,14 +299,13 @@ class TestBugTaskView(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         login_person(owner)
         bugtask = self.factory.makeBugTask(bug=bug)
-        features = {'disclosure.show_information_type_in_ui.enabled': True}
-        with FeatureFixture(features):
-            view = create_initialized_view(bugtask, name="+index")
-            self.assertEqual('User Data', view.information_type)
-        features['disclosure.display_userdata_as_private.enabled'] = True
+        view = create_initialized_view(bugtask, name="+index")
+        self.assertEqual('User Data', view.information_type)
+        features = {'disclosure.display_userdata_as_private.enabled': True}
         with FeatureFixture(features):
             view = create_initialized_view(bugtask, name="+index")
             self.assertEqual('Private', view.information_type)
+
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
@@ -1758,6 +1757,66 @@ class TestBugActivityItem(TestCaseWithFactory):
             BugActivityItem(bug.activity[-1]).change_details)
 
 
+class TestCommentCollapseVisibility(TestCaseWithFactory):
+    """Test for the conditions around display of collapsed/hidden comments."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeBugWithComments(self, num_comments):
+        """Create and return a bug with a lot of comments and activity."""
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            for i in range(num_comments):
+                msg = self.factory.makeMessage(
+                    owner=bug.owner, content="Message %i." % i)
+                bug.linkMessage(msg, user=bug.owner)
+        return bug
+
+    def test_comments_hidden_message_truncation_only(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in contents)
+        self.assertEqual(1, contents.count('comments hidden'))
+
+    def test_comments_hidden_message_truncation_and_hidden(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+
+        #Hide a comment
+        comments = list(bug.messages)
+        removeSecurityProxy(comments[-5]).visible = False
+
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in browser.contents)
+        self.assertTrue("1 comments hidden" in browser.contents)
+        self.assertEqual(2, contents.count('comments hidden'))
+
+    def test_comments_hidden_message_truncation_and_hidden_out_of_order(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+
+        #Hide a comment
+        comments = list(bug.messages)
+        hidden_comment = comments[-5]
+        removeSecurityProxy(hidden_comment).visible = False
+
+        #Mess with ordering. This requires a transaction since the view will
+        #re-fetch the comments.
+        last_comment = comments[-1]
+        removeSecurityProxy(hidden_comment).datecreated += timedelta(1)
+        removeSecurityProxy(last_comment).datecreated += timedelta(2)
+        transaction.commit()
+
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in browser.contents)
+        self.assertTrue("1 comments hidden" in browser.contents)
+        self.assertEqual(2, contents.count('comments hidden'))
+
+
 class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     """Tests for the BugTaskBatchedCommentsAndActivityView class."""
 
@@ -1877,7 +1936,11 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory, bugtask=None):
+no_target_specified = object()
+
+
+def make_bug_task_listing_item(
+    factory, bugtask=None, target_context=no_target_specified):
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
@@ -1895,6 +1958,8 @@ def make_bug_task_listing_item(factory, bugtask=None):
     if tags != {}:
         tags = tags[bugtask.id]
     people = bug_task_set.getBugTaskPeople([bugtask])
+    if target_context is no_target_specified:
+        target_context = bugtask.target
     return owner, BugTaskListingItem(
         bugtask,
         badge_property['has_branch'],
@@ -1902,7 +1967,7 @@ def make_bug_task_listing_item(factory, bugtask=None):
         badge_property['has_patch'],
         tags,
         people,
-        target_context=bugtask.target)
+        target_context=target_context)
 
 
 @contextmanager
@@ -2442,6 +2507,31 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 product=item.bugtask.target)
             milestone_name = item.milestone.displayname
             self.assertEqual(milestone_name, item.model['milestone_name'])
+
+    def test_tag_urls_use_view_context(self):
+        """urls contain the correct project group if target_context is None"""
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project_group)
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=project_group)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(project_group, view_name="+bugs")))
+
+    def test_urls_without_target_context(self):
+        """urls contain the project if target_context is not None"""
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=None)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(product, view_name="+bugs")))
 
     def test_model_assignee(self):
         """Model contains expected fields with expected values."""

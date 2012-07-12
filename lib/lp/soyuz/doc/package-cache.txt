@@ -81,13 +81,13 @@ versions are not the same across architectures.
 Building these caches we can reach good performance on full and partial
 term searching.
 
-    >>> ubuntu.searchSourcePackages('mozilla').count()
+    >>> ubuntu.searchSourcePackages(u'mozilla').count()
     1
 
-    >>> ubuntu.searchSourcePackages('moz').count()
+    >>> ubuntu.searchSourcePackages(u'moz').count()
     1
 
-    >>> ubuntu.searchSourcePackages('biscoito').count()
+    >>> ubuntu.searchSourcePackages(u'biscoito').count()
     0
 
 The cache update procedure is done by cronscripts/update-pkgcache.py,
@@ -109,7 +109,7 @@ cache when it's updated.
     >>> foobar_pub.status.name
     'DELETED'
 
-    >>> ubuntu.searchSourcePackages('foobar').count()
+    >>> ubuntu.searchSourcePackages(u'foobar').count()
     1
 
     >>> foobar_cache = DistributionSourcePackageCache.selectOneBy(
@@ -131,7 +131,7 @@ Let's use a fake logger object:
     >>> import transaction
     >>> transaction.commit()
 
-    >>> ubuntu.searchSourcePackages('foobar').count()
+    >>> ubuntu.searchSourcePackages(u'foobar').count()
     0
 
     >>> foobar_cache = DistributionSourcePackageCache.selectOneBy(
@@ -149,7 +149,7 @@ cache when it's updated the next time.
     >>> cdrkit_pub.status.name
     'PUBLISHED'
 
-    >>> ubuntu.searchSourcePackages('cdrkit').count()
+    >>> ubuntu.searchSourcePackages(u'cdrkit').count()
     0
 
     >>> cdrkit_cache = DistributionSourcePackageCache.selectOneBy(
@@ -176,7 +176,7 @@ We can invoke the cache updater directly on IDistroSeries:
 Now we see that the 'cdrkit' source is part of the caches and can be
 reached via searches:
 
-    >>> ubuntu.searchSourcePackages('cdrkit').count()
+    >>> ubuntu.searchSourcePackages(u'cdrkit').count()
     1
 
     >>> cdrkit_cache = DistributionSourcePackageCache.selectOneBy(

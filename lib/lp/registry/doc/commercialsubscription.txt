@@ -215,10 +215,9 @@ or if the licence has been reviewed and been manually approved.
 
 The commercial subscription is about to expire here.
 
+    >>> from lp.registry.interfaces.product import License
     >>> login('foo.bar@canonical.com')
-    >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
-    >>> bzr.licenses
-    ()
+    >>> bzr.licenses = [License.OTHER_PROPRIETARY]
     >>> subscription.date_expires = (
     ...     datetime.now(UTC) + timedelta(29))
     >>> bzr.qualifies_for_free_hosting
@@ -251,8 +250,6 @@ Make the subscription no longer active.
 The qualifies_for_free_hosting attribute is False
 if the product has License.OTHER_PROPRIETARY.
 
-    >>> from lp.registry.interfaces.product import License
-    >>> bzr.licenses = [License.OTHER_PROPRIETARY]
     >>> bzr.qualifies_for_free_hosting
     False
     >>> bzr.licenses = [License.GNU_GPL_V2]
@@ -402,10 +399,6 @@ any one of the licences listed.
     ...     licenses=[License.GNU_GPL_V2, License.BSD]):
     ...     print product.name
     bzr
-    >>> for product in product_set.forReview(
-    ...     licenses=[License.GNU_GPL_V2, License.MIT]):
-    ...     print product.name
-    bzr
 
 It is possible to search for problem project that have been reviewed, but
 not approved
@@ -426,10 +419,6 @@ was created.
     ...     created_before=bzr.datecreated):
     ...     print product.name
     bzr
-    >>> for product in product_set.forReview(
-    ...     search_text='bzr',
-    ...     created_before=bzr.datecreated-timedelta(seconds=1)):
-    ...     print product.name
 
 You can search for products based on the expiration date of
 its commercial subscription.
@@ -441,10 +430,6 @@ its commercial subscription.
     ...     subscription_expires_before=date_expires):
     ...     print product.name
     bzr
-    >>> for product in product_set.forReview(
-    ...     search_text='bzr',
-    ...     subscription_expires_after=date_expires+timedelta(seconds=1)):
-    ...     print product.name
 
 You can also search using a datetime.date object, since that is what
 the web form delivers.
@@ -461,13 +446,6 @@ the web form delivers.
     ...     created_before=late_date,
     ...     subscription_modified_after=early_date,
     ...     subscription_modified_before=late_date):
-    ...     print product.name
-    bzr
-
-    >>> for product in product_set.forReview(
-    ...     search_text='bzr',
-    ...     subscription_expires_after=bzr.datecreated.date(),
-    ...     created_before=bzr.datecreated.date() + one_day):
     ...     print product.name
     bzr
 
@@ -489,11 +467,6 @@ happens when a voucher is redeemed.
     ...     subscription_modified_before=date_last_modified):
     ...     print product.name
     bzr
-    >>> for product in product_set.forReview(
-    ...     search_text='bzr',
-    ...     subscription_modified_after=date_last_modified
-    ...                                 +timedelta(seconds=1)):
-    ...     print product.name
 
 All the products are returned when no parameters are passed in.
 
@@ -509,19 +482,7 @@ but a clause is included to search specifically for the name.
     ...     print product.name
     abc.com
 
-The use of 'forReview' is limited to users with launchpad.Commercial
-permission.
-
-Anonymous users cannot access 'forReview'.
-
-    >>> login(ANONYMOUS)
-    >>> check_permission('launchpad.Moderate', product_set)
-    False
-    >>> gnome = product_set.forReview(search_text='gnome')
-    Traceback (most recent call last):
-    ...
-    Unauthorized:... 'forReview', 'launchpad.Moderate'...
-
+The use of 'forReview' is limited to users with launchpad.Moderate.
 No Privileges Person cannot access 'forReview'.
 
     >>> login('no-priv@canonical.com')
@@ -532,40 +493,6 @@ No Privileges Person cannot access 'forReview'.
     ...
     Unauthorized:... 'forReview', 'launchpad.Moderate'...
 
-But if we add No Privileges Person to the Registry Experts team he can
-access it.
-
-    >>> login('foo.bar@canonical.com')
-    >>> registry_member = factory.makePerson()
-    >>> registry = celebs.registry_experts
-    >>> ignored = registry.addMember(registry_member, registry.teamowner)
-
-    >>> ignored = login_person(registry_member)
-    >>> check_permission('launchpad.Moderate', product_set)
-    True
-    >>> gnome =  product_set.forReview(search_text='gnome')
-    >>> for product in gnome:
-    ...     print product.name
-    python-gnome2-dev
-    evolution
-    gnome-terminal
-    applets
-    gnomebaker
-
-An admin can access 'forReview'.
-
-    >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.Moderate', product_set)
-    True
-    >>> gnome =  product_set.forReview(search_text='gnome')
-    >>> for product in gnome:
-    ...     print product.name
-    python-gnome2-dev
-    evolution
-    gnome-terminal
-    applets
-    gnomebaker
-
 Members of the registry experts celebrity have permission to review
 IProduct and IProjectGroup objects and access an IProjectGroupSet.
 
@@ -575,6 +502,10 @@ IProduct and IProjectGroup objects and access an IProjectGroupSet.
     >>> product = factory.makeProduct(name='dog')
     >>> project = factory.makeProject(name='cat')
 
+    >>> registry_member = factory.makePerson()
+    >>> registry = celebs.registry_experts
+    >>> login('foo.bar@canonical.com')
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', project_set)
     True

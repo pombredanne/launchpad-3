@@ -218,7 +218,7 @@ class TextAreaEditorWidget(TextWidgetBase):
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
         :param hide_empty: If the attribute has no value, or is empty, then
-            hide the editor by adding the "unseen" CSS class.
+            hide the editor by adding the "hidden" CSS class.
         :param linkify_text: If True the HTML version of the text will have
             things that look like links made into anchors.
         """
@@ -233,7 +233,7 @@ class TextAreaEditorWidget(TextWidgetBase):
         """The CSS class for the widget."""
         classes = ['lazr-multiline-edit']
         if self.hide_empty and not self.value:
-            classes.append('unseen')
+            classes.append('hidden')
         return ' '.join(classes)
 
     @cachedproperty

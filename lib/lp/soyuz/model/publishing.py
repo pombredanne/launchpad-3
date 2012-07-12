@@ -6,10 +6,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'makePoolPath',
     'BinaryPackageFilePublishing',
     'BinaryPackagePublishingHistory',
+    'get_current_source_releases',
     'IndexStanzaFields',
+    'makePoolPath',
     'PublishingSet',
     'SourcePackageFilePublishing',
     'SourcePackagePublishingHistory',
@@ -53,7 +54,10 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import SQLBase
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
@@ -101,16 +105,19 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease,
     BinaryPackageReleaseDownloadCount,
     )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
 from lp.soyuz.model.packagediff import PackageDiff
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.pas import determineArchitecturesToBuild
 
 
@@ -313,7 +320,7 @@ class ArchivePublisherBase:
         try:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
-        except PoolFileOverwriteError, e:
+        except PoolFileOverwriteError as e:
             message = "PoolFileOverwriteError: %s, skipping." % e
             properties = [('error-explanation', message)]
             request = ScriptRequest(properties)
@@ -497,8 +504,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def getBuiltBinaries(self, want_files=False):
         """See `ISourcePackagePublishingHistory`."""
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
         binary_publications = list(Store.of(self).find(
             BinaryPackagePublishingHistory,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
@@ -1562,13 +1567,6 @@ class PublishingSet:
     def getBuildsForSourceIds(self, source_publication_ids, archive=None,
                               build_states=None, need_build_farm_job=False):
         """See `IPublishingSet`."""
-        # Import Build and DistroArchSeries locally to avoid circular
-        # imports, since that Build uses SourcePackagePublishingHistory
-        # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-        from lp.soyuz.model.distroarchseries import (
-            DistroArchSeries)
-
         # If an archive was passed in as a parameter, add an extra expression
         # to filter by archive:
         extra_exprs = []
@@ -1692,14 +1690,6 @@ class PublishingSet:
     def _getSourceBinaryJoinForSources(self, source_publication_ids,
         active_binaries_only=True):
         """Return the join linking sources with binaries."""
-        # Import Build and DistroArchSeries locally
-        # to avoid circular imports, since Build uses
-        # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
-        # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-        from lp.soyuz.model.distroarchseries import (
-            DistroArchSeries)
-
         join = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 BinaryPackageBuild.source_package_release_id,
@@ -1731,14 +1721,6 @@ class PublishingSet:
                                        one_or_more_source_publications,
                                        build_states=None):
         """See `IPublishingSet`."""
-        # Import Build, BinaryPackageRelease and DistroArchSeries locally
-        # to avoid circular imports, since Build uses
-        # SourcePackagePublishingHistory and DistroArchSeries uses
-        # BinaryPackagePublishingHistory.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-        from lp.soyuz.model.distroarchseries import (
-            DistroArchSeries)
-
         # The default build state that we'll search for is FULLYBUILT
         if build_states is None:
             build_states = [BuildStatus.FULLYBUILT]
@@ -1771,10 +1753,6 @@ class PublishingSet:
 
     def getBinaryFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Import Build locally to avoid circular imports, since that
-        # Build already imports SourcePackagePublishingHistory.
-        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
@@ -1823,9 +1801,6 @@ class PublishingSet:
     def getBinaryPublicationsForSources(self,
                                         one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Avoid circular imports.
-        from lp.soyuz.model.distroarchseries import DistroArchSeries
-
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
@@ -1874,8 +1849,6 @@ class PublishingSet:
         # Import PackageUpload and PackageUploadSource locally
         # to avoid circular imports, since PackageUpload uses
         # SourcePackagePublishingHistory.
-        from lp.soyuz.model.sourcepackagerelease import (
-            SourcePackageRelease)
         from lp.soyuz.model.queue import (
             PackageUpload, PackageUploadSource)
 
@@ -2079,3 +2052,45 @@ class PublishingSet:
             return ancestries[0]
         except IndexError:
             return None
+
+
+def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
+                                package_clause_func, extra_clauses, key_col):
+    """Get the current source package releases in a context.
+
+    You probably don't want to use this directly; try
+    (Distribution|DistroSeries)(Set)?.getCurrentSourceReleases instead.
+    """
+    # Builds one query for all the distro_source_packagenames.
+    # This may need tuning: its possible that grouping by the common
+    # archives may yield better efficiency: the current code is
+    # just a direct push-down of the previous in-python lookup to SQL.
+    series_clauses = []
+    for context, package_names in context_sourcepackagenames.items():
+        clause = And(
+            SourcePackagePublishingHistory.sourcepackagenameID.is_in(
+                map(operator.attrgetter('id'), package_names)),
+            SourcePackagePublishingHistory.archiveID.is_in(
+                archive_ids_func(context)),
+            package_clause_func(context),
+            )
+        series_clauses.append(clause)
+    if not len(series_clauses):
+        return {}
+
+    releases = IStore(SourcePackageRelease).find(
+        (SourcePackageRelease, key_col),
+        SourcePackagePublishingHistory.sourcepackagereleaseID
+            == SourcePackageRelease.id,
+        SourcePackagePublishingHistory.status.is_in(
+            active_publishing_status),
+        Or(*series_clauses),
+        *extra_clauses).config(
+            distinct=(
+                SourcePackageRelease.sourcepackagenameID,
+                key_col)
+        ).order_by(
+            SourcePackageRelease.sourcepackagenameID,
+            key_col,
+            Desc(SourcePackagePublishingHistory.id))
+    return releases

@@ -44,7 +44,11 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -69,7 +73,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.database.constants import UTC_NOW
-from lp.services.utils import iter_split
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -168,7 +171,7 @@ class _BaseNamespace:
                     "%s cannot create branches owned by %s"
                     % (registrant.displayname, owner.displayname))
 
-        if not self.checkCreationPolicy(registrant):
+        if not self.getAllowedInformationTypes():
             raise BranchCreationForbidden(
                 'You cannot create branches in "%s"' % self.name)
 
@@ -261,29 +264,17 @@ class _BaseNamespace:
         else:
             return True
 
+    def getAllowedInformationTypes(self):
+        """See `IBranchNamespace`."""
+        raise NotImplementedError
+
     def areNewBranchesPrivate(self):
         """See `IBranchNamespace`."""
-        # Always delegates to canBranchesBePrivate for now.
-        return self.canBranchesBePrivate()
-
-    def canBranchesBePrivate(self):
-        """See `IBranchNamespace`."""
-        raise NotImplementedError(self.canBranchesBePrivate)
-
-    def canBranchesBePublic(self):
-        """See `IBranchNamespace`."""
-        raise NotImplementedError(self.canBranchesBePublic)
+        return InformationType.USERDATA in self.getAllowedInformationTypes()
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
         raise NotImplementedError(self.getPrivacySubscriber)
-
-    def checkCreationPolicy(self, user):
-        """Check to see if user is allowed a branch in this namespace.
-
-        :return: True if the user is allowed, False otherwise.
-        """
-        raise NotImplementedError(self.checkCreationPolicy)
 
 
 class PersonalNamespace(_BaseNamespace):
@@ -307,25 +298,18 @@ class PersonalNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return '~%s/+junk' % self.owner.name
 
-    def canBranchesBePrivate(self):
+    def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
-        private = False
-        if self.owner.is_team and (
-            self.owner.visibility == PersonVisibility.PRIVATE):
-            private = True
-        return private
-
-    def canBranchesBePublic(self):
-        """See `IBranchNamespace`."""
-        return True
+        # Private teams get private branches, everyone else gets public ones.
+        if (self.owner.is_team
+            and self.owner.visibility == PersonVisibility.PRIVATE):
+            return PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES
+        else:
+            return PUBLIC_INFORMATION_TYPES
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
         return None
-
-    def checkCreationPolicy(self, user):
-        """See `_BaseNamespace`."""
-        return True
 
     @property
     def target(self):
@@ -388,40 +372,39 @@ class ProductNamespace(_BaseNamespace):
         else:
             return None
 
-    def checkCreationPolicy(self, user):
-        """See `_BaseNamespace`."""
-        if len(self._getRelatedPolicies()) > 0:
-            return True
-        base_rule = self.product.getBaseBranchVisibilityRule()
-        return base_rule == BranchVisibilityRule.PUBLIC
-
-    def canBranchesBePrivate(self):
+    def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
-        # If there is a rule for the namespace owner, use that.
-        private = (
+        private_rules = (
             BranchVisibilityRule.PRIVATE,
             BranchVisibilityRule.PRIVATE_ONLY)
-        rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
-        if rule is not None:
-            return rule in private
-        # If the owner is a member of any team that has a PRIVATE or
-        # PRIVATE_ONLY rule, then the branches are private.
-        return len(self._getRelatedPrivatePolicies()) > 0
 
-    def canBranchesBePublic(self):
-        """See `IBranchNamespace`."""
-        # If there is an explicit rule for the namespace owner, use that.
         rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
         if rule is not None:
-            return rule != BranchVisibilityRule.PRIVATE_ONLY
-        # If there is another policy that allows public, then branches can be
-        # public.
-        for policy in self._getRelatedPolicies():
-            if policy.rule != BranchVisibilityRule.PRIVATE_ONLY:
-                return True
-        # If the default is public, then we can have public branches.
-        base_rule = self.product.getBaseBranchVisibilityRule()
-        return base_rule == BranchVisibilityRule.PUBLIC
+            # If there is an explicit rule for the namespace owner, use that.
+            private = rule in private_rules
+            public = rule != BranchVisibilityRule.PRIVATE_ONLY
+        else:
+            # Otherwise find all the rules for the owner's teams.
+            related_rules = set(p.rule for p in self._getRelatedPolicies())
+
+            # If any of the rules allow private branches, allow them.
+            private = bool(related_rules.intersection(private_rules))
+
+            # If any of the rules allow public branches, allow them.
+            if related_rules.difference([BranchVisibilityRule.PRIVATE_ONLY]):
+                public = True
+            else:
+                # There's no team-specific rules, or none of them allow
+                # public branches. Fall back to the default rule.
+                base_rule = self.product.getBaseBranchVisibilityRule()
+                public = base_rule == BranchVisibilityRule.PUBLIC
+
+        types = []
+        if public:
+            types.extend(PUBLIC_INFORMATION_TYPES)
+        if private:
+            types.extend(PRIVATE_INFORMATION_TYPES)
+        return types
 
 
 class PackageNamespace(_BaseNamespace):
@@ -453,21 +436,13 @@ class PackageNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.sourcepackage)
 
-    def canBranchesBePrivate(self):
+    def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
-        return False
-
-    def canBranchesBePublic(self):
-        """See `IBranchNamespace`."""
-        return True
+        return PUBLIC_INFORMATION_TYPES
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
         return None
-
-    def checkCreationPolicy(self, user):
-        """See `_BaseNamespace`."""
-        return True
 
 
 class BranchNamespaceSet:
@@ -511,24 +486,6 @@ class BranchNamespaceSet:
             raise InvalidNamespace(namespace_name)
         data['person'] = data['person'][1:]
         return data
-
-    def parseBranchPath(self, namespace_path):
-        """See `IBranchNamespaceSet`."""
-        found = False
-        for branch_path, trailing_path in iter_split(namespace_path, '/'):
-            try:
-                branch_path, branch = branch_path.rsplit('/', 1)
-            except ValueError:
-                continue
-            try:
-                parsed = self.parse(branch_path)
-            except InvalidNamespace:
-                continue
-            else:
-                found = True
-                yield parsed, branch, trailing_path
-        if not found:
-            raise InvalidNamespace(namespace_path)
 
     def lookup(self, namespace_name):
         """See `IBranchNamespaceSet`."""

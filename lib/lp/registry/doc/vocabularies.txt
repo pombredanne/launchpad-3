@@ -731,8 +731,7 @@ well as teams:
 
     >>> [(p.name, getattr(p.teamowner, 'name', None))
     ...  for p in vocab.search('ubuntu-team')]
-    [(u'doc', None), (u'name18', u'mark'),
-     (u'ubuntu-security', u'kamion'), (u'ubuntu-team', u'mark')]
+    [(u'ubuntu-team', u'mark')]
 
 But it doesn't include merged accounts:
 
@@ -744,9 +743,8 @@ ValidPersonOrTeam
 .................
 
 All 'valid' persons or teams. This is currently defined as people with a
-password, a preferred email address and not merged (Person.merged is
-None).  It also includes all public teams and private teams the user has
-permission to view.
+preferred email address and not merged (Person.merged is None).  It also
+includes all public teams and private teams the user has permission to view.
 
     >>> vocab = get_naked_vocab(None, "ValidPersonOrTeam")
     >>> vocab.displayname

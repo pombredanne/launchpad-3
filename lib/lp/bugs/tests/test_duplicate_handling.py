@@ -48,7 +48,7 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
     def assertDuplicateError(self, bug, duplicateof, msg):
         try:
             bug.markAsDuplicate(duplicateof)
-        except InvalidDuplicateValue, err:
+        except InvalidDuplicateValue as err:
             self.assertEqual(str(err), msg)
 
     def test_error_on_duplicate_to_duplicate(self):

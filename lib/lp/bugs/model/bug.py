@@ -178,7 +178,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
+from lp.registry.interfaces.sharingjob import (
+    IRemoveArtifactSubscriptionsJobSource,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import (
@@ -895,13 +897,11 @@ class Bug(SQLBase):
                 self.updateHeat()
                 del get_property_cache(self)._known_viewers
 
-                # Revoke access to bug if feature flag is on.
-                flag = 'disclosure.legacy_subscription_visibility.enabled'
-                if bool(getFeatureFlag(flag)):
-                    artifacts_to_delete = getUtility(
-                        IAccessArtifactSource).find([self])
-                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-                        artifacts_to_delete, [person])
+                # Revoke access to bug
+                artifacts_to_delete = getUtility(
+                    IAccessArtifactSource).find([self])
+                getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                    artifacts_to_delete, [person])
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1831,7 +1831,8 @@ class Bug(SQLBase):
             # As a result of the transition, some subscribers may no longer
             # have access to the bug. We need to run a job to remove any such
             # subscriptions.
-            getUtility(IRemoveBugSubscriptionsJobSource).create(who, [self])
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                who, [self])
 
         return True
 
@@ -1977,7 +1978,7 @@ class Bug(SQLBase):
                         change, empty_recipients, deferred=True)
 
             self.duplicateof = duplicate_of
-        except LaunchpadValidationError, validation_error:
+        except LaunchpadValidationError as validation_error:
             raise InvalidDuplicateValue(validation_error)
         if duplicate_of is not None:
             # Maybe confirm bug tasks, now that more people might be affected

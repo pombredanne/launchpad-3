@@ -31,7 +31,9 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.addCleanup(drain_celery_queues)
         return job
 
-    def test_find_missing_ready(self):
+    # XXX wgrant 2012-06-27 bug=1018235: Disabled due to intermittent
+    # failure on buildbot.
+    def disabled_test_find_missing_ready(self):
         """A job which is ready but not queued is "missing"."""
         job = self.createMissingJob()
         self.assertEqual([job], self.find_missing_ready(BranchScanJob))

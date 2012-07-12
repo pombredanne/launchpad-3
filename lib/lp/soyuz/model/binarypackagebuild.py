@@ -90,12 +90,10 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
-from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadBuild,
@@ -131,6 +129,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return results.one()
 
     def _getLatestPublication(self):
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         store = Store.of(self)
         results = store.find(
             SourcePackagePublishingHistory,
@@ -154,6 +153,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     @property
     def current_source_publication(self):
         """See `IBuild`."""
+        from lp.soyuz.interfaces.publishing import active_publishing_status
         latest_publication = self._getLatestPublication()
         if (latest_publication is not None and
             latest_publication.status in active_publishing_status):
@@ -855,7 +855,7 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         try:
             return BinaryPackageBuild.get(id)
-        except SQLObjectNotFound, e:
+        except SQLObjectNotFound as e:
             raise NotFoundError(str(e))
 
     def getByBuildFarmJob(self, build_farm_job):
@@ -1179,7 +1179,7 @@ class BinaryPackageBuildSet:
             build = IMasterObject(build)
             try:
                 build.updateDependencies()
-            except UnparsableDependencies, e:
+            except UnparsableDependencies as e:
                 logger.error(e)
                 continue
 

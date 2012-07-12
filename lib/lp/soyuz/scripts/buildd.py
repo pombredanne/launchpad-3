@@ -211,7 +211,7 @@ class QueueBuilder(LaunchpadCronScript):
             try:
                 distroseries, pocket = distribution.getDistroSeriesAndPocket(
                     suite)
-            except NotFoundError, err:
+            except NotFoundError as err:
                 raise LaunchpadScriptFailure("Could not find suite %s" % err)
             distroseries_set.add(distroseries)
 

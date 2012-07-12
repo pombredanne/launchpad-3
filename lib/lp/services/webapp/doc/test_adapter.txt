@@ -371,7 +371,7 @@ affect other threads:
     >>> set_request_started()
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
-    >>> started_request.wait()
+    >>> _ = started_request.wait()
     >>> store.execute('SELECT 1', noresult=True)
     >>> statement_issued.set()
     >>> thread.join()
@@ -390,7 +390,7 @@ remove the timout:
     >>> set_request_started(time.time() - 60)
     >>> thread = threading.Thread(target=bar)
     >>> thread.start()
-    >>> started_request.wait()
+    >>> _ = started_request.wait()
     >>> store.execute('SELECT 1', noresult=True)
     Traceback (most recent call last):
     ...

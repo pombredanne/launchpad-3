@@ -747,7 +747,7 @@ class Publisher(object):
                 continue
             try:
                 shutil.rmtree(directory)
-            except (shutil.Error, OSError), e:
+            except (shutil.Error, OSError) as e:
                 self.log.warning(
                     "Failed to delete directory '%s' for archive "
                     "'%s/%s'\n%s" % (

@@ -69,7 +69,7 @@
 
                   <div class="collapsible">
                     <div>Release information</div>
-                    <div class="unseen">
+                    <div class="hidden">
                     <div tal:condition="release/release_notes">
                       <strong>Release notes:</strong>
                       <div style="margin-bottom: 0px;"

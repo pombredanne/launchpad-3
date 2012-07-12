@@ -54,7 +54,7 @@ from lp.services.fields import (
 def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
-    except CvsRootError, e:
+    except CvsRootError as e:
         raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')

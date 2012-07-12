@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -6,13 +6,11 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
-    'DoesNotExistView',
     'ExceptionHierarchy',
     'Hierarchy',
     'IcingFolder',
     'iter_view_registrations',
     'LaunchpadImageFolder',
-    'LaunchpadGraphics',
     'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
@@ -618,12 +616,11 @@ class LaunchpadRootNavigation(Navigation):
         target_url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
-            branch_data = getUtility(IBranchLookup).getByLPPath(path)
-            branch, trailing = branch_data
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
             target_url = canonical_url(branch)
-            if trailing is not None:
+            if trailing != '':
                 target_url = urlappend(target_url, trailing)
-        except (NoLinkedBranch), e:
+        except (NoLinkedBranch) as e:
             # A valid ICanHasLinkedBranch target exists but there's no
             # branch or it's not visible.
 
@@ -636,7 +633,7 @@ class LaunchpadRootNavigation(Navigation):
             self.request.response.addNotification(
                 "The target %s does not have a linked branch." % path)
         except (CannotHaveLinkedBranch, InvalidNamespace,
-                InvalidProductName, NotFoundError), e:
+                InvalidProductName, NotFoundError) as e:
             # If are aren't arriving at this invalid branch URL from another
             # page then we just raise a NotFoundError to generate a 404,
             # otherwise we end up in a bad recursion loop. The target url will
@@ -936,10 +933,6 @@ class AppFrontPageSearchView(LaunchpadFormView):
         return self.getFieldError('scope')
 
 
-class LaunchpadGraphics(LaunchpadView):
-    label = page_title = 'Overview of Launchpad graphics and icons'
-
-
 def get_launchpad_views(cookies):
     """The state of optional page elements the user may choose to view.
 
@@ -976,26 +969,3 @@ def iter_view_registrations(cls):
     for registration in getGlobalSiteManager().registeredAdapters():
         if registration.factory == cls:
             yield registration
-
-
-class DoesNotExistView:
-    """A view that simply raises NotFound when rendered.
-
-    Useful to register as a view that shouldn't appear on a particular
-    virtual host.
-    """
-    implements(IBrowserPublisher)
-
-    def __init__(self, context, request):
-        self.context = context
-
-    def publishTraverse(self, request, name):
-        """See `IBrowserPublisher`."""
-        return self
-
-    def browserDefault(self, request):
-        """See `IBrowserPublisher`."""
-        return self, ()
-
-    def __call__(self):
-        raise NotFound(self.context, self.__name__)

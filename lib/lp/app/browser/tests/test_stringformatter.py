@@ -256,16 +256,6 @@ class TestLinkifyingProtocols(TestCase):
             "file://<wbr />some/file.<wbr />txt</p>")
         self.assertEqual(expected_html, html)
 
-    def test_data_is_linked(self):
-        test_string = "This becomes a link: data:text/plain,test"
-        html = FormattersAPI(test_string).text_to_html()
-        expected_html = (
-            "<p>This becomes a link: "
-            '<a rel="nofollow" '
-            'href="data:text/plain,test">'
-            'data:text/<wbr />plain,test</a></p>')
-        self.assertEqual(expected_html, html)
-
     def test_no_link_with_linkify_text_false(self):
         test_string = "This doesn't become a link: http://www.example.com/"
         html = FormattersAPI(test_string).text_to_html(linkify_text=False)

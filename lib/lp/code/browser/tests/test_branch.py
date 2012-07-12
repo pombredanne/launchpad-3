@@ -36,7 +36,10 @@ from lp.code.enums import (
     BranchVisibilityRule,
     )
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -627,7 +630,7 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         with person_logged_in(branch.owner):
             self.factory.makeBranchMergeProposal(
                 source_branch=branch, target_branch=target_branch,
-                reviewer=private_reviewer)
+                reviewer=removeSecurityProxy(private_reviewer))
         return branch
 
     def test_view_branch_with_private_reviewer(self):
@@ -904,36 +907,39 @@ class TestBranchEditView(TestCaseWithFactory):
             self.assertEquals(team, branch.owner)
 
     def test_information_type_in_ui(self):
-        # The information_type of a branch can be changed via the UI when
-        # the feature flag is enabled.
+        # The information_type of a branch can be changed via the UI by an
+        # authorised user.
         person = self.factory.makePerson()
         branch = self.factory.makeProductBranch(owner=person)
-        feature_flag = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
         admins = getUtility(ILaunchpadCelebrities).admin
         admin = admins.teamowner
-        with FeatureFixture(feature_flag):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=admin)
-            browser.getControl("Embargoed Security").click()
-            browser.getControl("Change Branch").click()
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=admin)
+        browser.getControl("Embargoed Security").click()
+        browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEqual(
                 InformationType.EMBARGOEDSECURITY, branch.information_type)
 
-    def test_information_type_in_ui_vocabulary(self):
-        # The vocabulary that Branch:+edit uses for the information_type
-        # has been correctly created.
-        person = self.factory.makePerson()
-        branch = self.factory.makeProductBranch(owner=person)
-        feature_flags = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
-            'disclosure.proprietary_information_type.disabled': 'on'}
-        admins = getUtility(ILaunchpadCelebrities).admin
-        admin = admins.teamowner
-        with FeatureFixture(feature_flags):
+    def test_proprietary_in_ui_vocabulary_commercial_projects(self):
+        # Commercial projects can have information type Proprietary.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        branch = self.factory.makeProductBranch(product=product, owner=owner)
+        with person_logged_in(owner):
             browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=admin)
+                canonical_url(branch) + '/+edit', user=owner)
+            self.assertIsNotNone(browser.getControl("Proprietary"))
+
+    def test_proprietary_not_in_ui_vocabulary_normal_projects(self):
+        # Non-commercial projects can not have information type Proprietary.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=owner)
+        with person_logged_in(owner):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=owner)
             self.assertRaises(LookupError, browser.getControl, "Proprietary")
 
     def test_can_not_change_privacy_of_stacked_on_private(self):
@@ -950,7 +956,43 @@ class TestBranchEditView(TestCaseWithFactory):
             browser = self.getUserBrowser(
                 canonical_url(branch) + '/+edit', user=owner)
         self.assertRaises(
-            LookupError, browser.getControl, "Keep branch confidential")
+            LookupError, browser.getControl, "Information Type")
+
+    def test_authorised_user_can_change_branch_to_private(self):
+        # An authorised user can make the information type private.
+        team_owner = self.factory.makePerson()
+        user = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=team_owner,
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        with person_logged_in(team_owner):
+            team.addMember(user, team_owner)
+        with person_logged_in(user):
+            branch = self.factory.makeBranch(owner=team)
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=user)
+        self.assertIsNotNone(browser.getControl, "Embargoed Security")
+
+    def test_unauthorised_user_cannot_change_branch_to_private(self):
+        # An unauthorised user cannot make the information type private.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            branch = self.factory.makeBranch(owner=user)
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=user)
+        self.assertRaises(
+            LookupError, browser.getControl, "Embargoed Security")
+
+    def test_branch_for_commercial_project(self):
+        # A branch for a commercial project can be private.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        branch = self.factory.makeProductBranch(product=product)
+        with person_logged_in(branch.owner):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=branch.owner)
+        self.assertIsNotNone(browser.getControl, "Embargoed Security")
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):
@@ -978,17 +1020,13 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_information_type_in_ui(self):
-        # With the show_information_type_in_branch_ui feature flag on, the
-        # privacy portlet shows the information_type.
+        # The privacy portlet shows the information_type.
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        feature_flag = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            with person_logged_in(owner):
-                view = create_initialized_view(branch, '+portlet-privacy')
-                soup = BeautifulSoup(view.render())
+        with person_logged_in(owner):
+            view = create_initialized_view(branch, '+portlet-privacy')
+            soup = BeautifulSoup(view.render())
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
         self.assertEqual('User Data', information_type.renderContents())
@@ -998,16 +1036,14 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
             description.renderContents())
 
     def test_information_type_in_ui_with_display_as_private(self):
-        # With both show_information_type_in_branch_ui and
-        # display_userdata_as_private, the information_type is shown with
-        # User Data masked as Private.
+        # With display_userdata_as_private, the information_type is shown
+        # with User Data masked as Private.
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
             owner=owner, information_type=InformationType.USERDATA)
-        feature_flags = {
-            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
+        feature_flag = {
             'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flags):
+        with FeatureFixture(feature_flag):
             with person_logged_in(owner):
                 view = create_initialized_view(branch, '+portlet-privacy')
                 soup = BeautifulSoup(view.render())

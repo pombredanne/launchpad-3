@@ -44,7 +44,7 @@ def main():
     con = connect()
     patches = get_patchlist(con)
 
-    if replication.helpers.slony_installed(con):
+    if not options.ignore_slony and replication.helpers.slony_installed(con):
         con.close()
         if options.commit is False:
             parser.error("--dry-run does not make sense with replicated db")
@@ -609,14 +609,14 @@ if __name__ == '__main__':
     db_options(parser)
     logger_options(parser)
     parser.add_option(
-            "-n", "--dry-run", dest="commit", default=True,
-            action="store_false", help="Don't actually commit changes"
-            )
+        "-n", "--dry-run", dest="commit", default=True,
+        action="store_false", help="Don't actually commit changes")
     parser.add_option(
-            "--partial", dest="partial", default=False,
-            action="store_true",
-            help="Commit after applying each patch",
-            )
+        "--partial", dest="partial", default=False,
+        action="store_true", help="Commit after applying each patch")
+    parser.add_option(
+        "--ignore-slony", dest="ignore_slony", default=False,
+        action="store_true", help="Ignore any Slony installations")
     (options, args) = parser.parse_args()
 
     if args:

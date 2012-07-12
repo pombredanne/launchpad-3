@@ -90,18 +90,39 @@ class TestBugView(TestCaseWithFactory):
                 'private information.',
                 view.information_type_description)
 
-    def test_proprietary_hidden(self):
-        # When the proprietary_information_type.disabled feature flag is
-        # enabled, it isn't in the JSON request cache.
-        feature_flag = {
-            'disclosure.proprietary_information_type.disabled': 'on'}
-        with FeatureFixture(feature_flag):
-            view = BugView(self.bug, LaunchpadTestRequest())
-            view.initialize()
-            cache = IJSONRequestCache(view.request)
-            expected = [
-                InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY,
-                InformationType.EMBARGOEDSECURITY, InformationType.USERDATA]
-            self.assertContentEqual(expected, [
-                type['value']
-                for type in cache.objects['information_types']])
+    def test_proprietary_excluded_for_normal_projects(self):
+        # The Proprietary information type isn't in the JSON request cache for
+        # projects without commercial subscriptions.
+        # projects with commercial subscriptions.
+        product = self.factory.makeProduct(official_malone=True)
+        bug = self.factory.makeBug(product=product)
+        view = BugView(bug, LaunchpadTestRequest())
+        view.initialize()
+        cache = IJSONRequestCache(view.request)
+        expected = [
+            InformationType.PUBLIC.name,
+            InformationType.UNEMBARGOEDSECURITY.name,
+            InformationType.EMBARGOEDSECURITY.name,
+            InformationType.USERDATA.name]
+        self.assertContentEqual(expected, [
+            type['value']
+            for type in cache.objects['information_type_data']])
+
+    def test_proprietary_included_for_commercial_projects(self):
+        # The Proprietary information type is in the JSON request cache for
+        # projects with commercial subscriptions.
+        product = self.factory.makeProduct(official_malone=True)
+        self.factory.makeCommercialSubscription(product)
+        bug = self.factory.makeBug(product=product)
+        view = BugView(bug, LaunchpadTestRequest())
+        view.initialize()
+        cache = IJSONRequestCache(view.request)
+        expected = [
+            InformationType.PUBLIC.name,
+            InformationType.UNEMBARGOEDSECURITY.name,
+            InformationType.EMBARGOEDSECURITY.name,
+            InformationType.USERDATA.name,
+            InformationType.PROPRIETARY.name]
+        self.assertContentEqual(expected, [
+            type['value']
+            for type in cache.objects['information_type_data']])

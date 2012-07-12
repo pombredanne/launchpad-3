@@ -295,9 +295,8 @@ def print_bugfilters_portlet_unfilled(browser, target):
     """
     browser.open(
         'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % target)
-    table = BeautifulSoup(browser.contents).find('table', 'bug-links')
-    [tbody_info] = table('tbody')
-    print_table(tbody_info)
+    ul = BeautifulSoup(browser.contents).find('ul', 'data-list')
+    print_ul(ul)
 
 
 def print_bugfilters_portlet_filled(browser, target):
@@ -316,8 +315,17 @@ def print_bugfilters_portlet_filled(browser, target):
     browser.open(
         'http://bugs.launchpad.dev'
         '/%s/+bugtarget-portlet-bugfilters-stats' % target)
-    table = BeautifulSoup('<table>%s</table>' % browser.contents)
-    print_table(table)
+    ul = BeautifulSoup(browser.contents).find('ul', 'data-list')
+    print_ul(ul)
+
+
+def print_ul(ul):
+    """Print the data from a list."""
+    li_content = []
+    for li in ul.findAll('li'):
+        li_content.append(extract_text(li))
+    if len(li_content) > 0:
+        print '\n'.join(li_content)
 
 
 def print_bug_tag_anchors(anchors):

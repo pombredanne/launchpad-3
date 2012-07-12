@@ -54,11 +54,7 @@ from lp.soyuz.interfaces.distroarchseries import (
 from lp.soyuz.interfaces.publishing import ICanPublishPackages
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distroarchseriesbinarypackage import (
-    DistroArchSeriesBinaryPackage,
-    )
 from lp.soyuz.model.processor import Processor
-from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
 class DistroArchSeries(SQLBase):
@@ -119,6 +115,8 @@ class DistroArchSeries(SQLBase):
 
     def updatePackageCount(self):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         query = """
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -174,6 +172,8 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         origin = [
             BinaryPackageRelease,
@@ -242,6 +242,9 @@ class DistroArchSeries(SQLBase):
 
     def getBinaryPackage(self, name):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.distroarchseriesbinarypackage import (
+            DistroArchSeriesBinaryPackage,
+            )
         if not IBinaryPackageName.providedBy(name):
             try:
                 name = BinaryPackageName.byName(name)
@@ -273,6 +276,8 @@ class DistroArchSeries(SQLBase):
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, archive=None):
         """See IDistroArchSeries."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         queries = []
 
         if not IBinaryPackageName.providedBy(binary_name):
@@ -307,6 +312,8 @@ class DistroArchSeries(SQLBase):
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See `ICanPublishPackages`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         queries = [
             "distroarchseries = %s AND archive = %s"
             % sqlvalues(self, archive)

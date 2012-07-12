@@ -74,7 +74,6 @@ from lp.soyuz.scripts.packagecopier import (
     do_copy,
     PackageCopier,
     re_upload_file,
-    UnembargoSecurityPackage,
     update_files_privacy,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -1660,41 +1659,6 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         self.assertIsNone(copied_source.sponsor)
 
-    def test_copy_custom_upload_files(self):
-        # Custom upload files are queued for republication when they are
-        # copied.
-        self.test_publisher.breezy_autotest.status = SeriesStatus.CURRENT
-        source = self.test_publisher.getPubSource(
-            pocket=PackagePublishingPocket.PROPOSED)
-        self.test_publisher.getPubBinaries(
-            pocket=PackagePublishingPocket.PROPOSED, pub_source=source)
-        [build] = source.getBuilds()
-        custom_file = self.factory.makeLibraryFileAlias()
-        build.package_upload.addCustom(
-            custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
-        # Make the new librarian file available.
-        self.layer.txn.commit()
-
-        self.doCopy(
-            source, source.archive, source.distroseries,
-            PackagePublishingPocket.UPDATES, include_binaries=True)
-        [upload] = source.distroseries.getPackageUploads(
-            status=PackageUploadStatus.ACCEPTED, archive=source.archive,
-            pocket=PackagePublishingPocket.UPDATES,
-            custom_type=PackageUploadCustomFormat.DIST_UPGRADER)
-
-        # The upload is targeted to the right publishing context.
-        self.assertEqual(source.archive, upload.archive)
-        self.assertEqual(source.distroseries, upload.distroseries)
-        self.assertEqual(PackagePublishingPocket.UPDATES, upload.pocket)
-
-        # It contains only the custom files.
-        self.assertEqual([], list(upload.sources))
-        self.assertEqual([], list(upload.builds))
-        self.assertEqual(
-            [custom_file],
-            [custom.libraryfilealias for custom in upload.customfiles])
-
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 
@@ -2915,95 +2879,32 @@ class CopyPackageTestCase(TestCaseWithFactory):
             distribution=ubuntu)
 
         # Create a source and binary private publication.
-        hoary = ubuntu.getSeries('hoary')
-        hoary.status = SeriesStatus.CURRENT
-        test_publisher = self.getTestPublisher(hoary)
-        ppa_source = test_publisher.getPubSource(
-            archive=joe_private_ppa, version='1.0', distroseries=hoary)
-        test_publisher.getPubBinaries(
-            pub_source=ppa_source, distroseries=hoary)
-        self.layer.txn.commit()
-
-        # Run the copy package script storing the logged information.
-        copy_helper = self.getCopier(
-            sourcename='foo', from_ppa='joe',
-            include_binaries=True, from_suite='hoary',
-            to_suite='hoary-security', unembargo=True)
-        copied = copy_helper.mainTask()
-
-        # The private files are copied via a direct-copy request.
-        self.assertEqual(len(copied), 3)
-        self.assertEqual(
-            ['INFO FROM: joe: hoary-RELEASE',
-             'INFO TO: Primary Archive for Ubuntu Linux: hoary-SECURITY',
-             'INFO Copy candidates:',
-             'INFO \tfoo 1.0 in hoary',
-             'INFO \tfoo-bin 1.0 in hoary hppa',
-             'INFO \tfoo-bin 1.0 in hoary i386',
-             'INFO Re-uploaded foo_1.0.dsc to librarian',
-             'INFO Re-uploaded foo_1.0_source.changes to librarian',
-             'INFO Re-uploaded foo-bin_1.0_all.deb to librarian',
-             'INFO Re-uploaded foo-bin_1.0_i386.changes to librarian',
-             'INFO Re-uploaded '
-                 'buildlog_ubuntu-hoary-i386.foo_1.0_FULLYBUILT.txt.gz to '
-                 'librarian',
-             'INFO Copied:',
-             'INFO \tfoo 1.0 in hoary',
-             'INFO \tfoo-bin 1.0 in hoary hppa',
-             'INFO \tfoo-bin 1.0 in hoary i386',
-             'INFO 3 packages successfully copied.',
-             ],
-            copy_helper.logger.getLogBuffer().splitlines())
-
-    def testUnembargoing(self):
-        """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
-        # Set up a private PPA.
-        joe = self.factory.makePerson(name="joe")
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        joe_private_ppa = self.factory.makeArchive(
-            owner=joe, name='ppa', private=True,
-            distribution=ubuntu)
-
-        # Setup a SoyuzTestPublisher object, so we can create publication
-        # to be unembargoed.
         warty = ubuntu.getSeries('warty')
         test_publisher = self.getTestPublisher(warty)
-
-        # Create a source and binary pair to be unembargoed from the PPA.
         ppa_source = test_publisher.getPubSource(
-            archive=joe_private_ppa, version='1.1',
-            distroseries=warty,
+            archive=joe_private_ppa, version='1.1', distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
         other_source = test_publisher.getPubSource(
             archive=joe_private_ppa, version='1.1',
             sourcename="sourcefordiff", distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
-        test_publisher.addFakeChroots(warty)
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
 
         # Give the new source a private package diff.
-        sourcepackagerelease = other_source.sourcepackagerelease
+        spr = other_source.sourcepackagerelease
         diff_file = test_publisher.addMockFile("diff_file", restricted=True)
-        package_diff = sourcepackagerelease.requestDiffTo(
-            joe, ppa_source.sourcepackagerelease)
+        package_diff = spr.requestDiffTo(joe, ppa_source.sourcepackagerelease)
         package_diff.diff_content = diff_file
 
-        # Prepare a *restricted* buildlog file for the Build instances.
-        fake_buildlog = test_publisher.addMockFile(
-            'foo_source.buildlog', restricted=True)
-
-        for build in ppa_source.getBuilds():
-            build.log = fake_buildlog
-
         # Add a restricted changelog file.
-        fake_changelog = test_publisher.addMockFile(
-            'changelog', restricted=True)
-        ppa_source.sourcepackagerelease.changelog = fake_changelog
+        changelog = test_publisher.addMockFile("changelog", restricted=True)
+        ppa_source.sourcepackagerelease.changelog = changelog
 
-        # Create ancestry environment in the primary archive, so we can
-        # test unembargoed overrides.
+        # Create ancestry environment in the primary archive, so we can test
+        # unembargoed overrides.
         ancestry_source = test_publisher.getPubSource(
             version='1.0', distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
@@ -3011,7 +2912,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             pub_source=ancestry_source, distroseries=warty,
             status=PackagePublishingStatus.SUPERSEDED)
 
-        # Override the published ancestry source to 'universe'
+        # Override the published ancestry source to 'universe'.
         universe = getUtility(IComponentSet)['universe']
         ancestry_source.component = universe
 
@@ -3021,22 +2922,38 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         self.layer.txn.commit()
 
-        # Now we can invoke the unembargo script and check its results.
-        test_args = [
-            "--ppa", "joe",
-            "--ppa-name", "ppa",
-            "-s", "%s" % ppa_source.distroseries.name + "-security",
-            "foo",
-            ]
+        # Run the copy package script storing the logged information.
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='joe',
+            include_binaries=True, from_suite='warty',
+            to_suite='warty-security', unembargo=True)
+        copied = copy_helper.mainTask()
 
-        script = UnembargoSecurityPackage(
-            name='unembargo', test_args=test_args)
-        script.logger = BufferLogger()
-
-        copied = script.mainTask()
-
-        # Check the results.
-        self.checkCopies(copied, script.destination.archive, 3)
+        # The private files are copied via a direct-copy request.
+        self.checkCopies(copied, copy_helper.destination.archive, 3)
+        self.assertEqual(
+            ['INFO FROM: joe: warty-RELEASE',
+             'INFO TO: Primary Archive for Ubuntu Linux: warty-SECURITY',
+             'INFO Copy candidates:',
+             'INFO \tfoo 1.1 in warty',
+             'INFO \tfoo-bin 1.1 in warty hppa',
+             'INFO \tfoo-bin 1.1 in warty i386',
+             'INFO Re-uploaded foo_1.1.dsc to librarian',
+             'INFO Re-uploaded diff_file to librarian',
+             'INFO Re-uploaded foo_1.1_source.changes to librarian',
+             'INFO Re-uploaded changelog to librarian',
+             'INFO Re-uploaded foo-bin_1.1_all.deb to librarian',
+             'INFO Re-uploaded foo-bin_1.1_i386.changes to librarian',
+             'INFO Re-uploaded '
+                 'buildlog_ubuntu-warty-i386.foo_1.1_FULLYBUILT.txt.gz to '
+                 'librarian',
+             'INFO Copied:',
+             'INFO \tfoo 1.1 in warty',
+             'INFO \tfoo-bin 1.1 in warty hppa',
+             'INFO \tfoo-bin 1.1 in warty i386',
+             'INFO 3 packages successfully copied.',
+             ],
+            copy_helper.logger.getLogBuffer().splitlines())
 
         # Check that the librarian files are all unrestricted now.
         # We must commit the txn for SQL object to see the change.
@@ -3071,43 +2988,22 @@ class CopyPackageTestCase(TestCaseWithFactory):
                 published.pocket.title, "Security",
                 "Expected Security pocket, got %s" % published.pocket.title)
 
-    def testUnembargoSuite(self):
-        """Test that passing different suites works as expected."""
+    def testUnembargoStableReleasePocketForbidden(self):
+        """Unembargoing into release pocket of stable series is forbidden."""
         # Set up a private PPA.
         joe = self.factory.makePerson(name="joe")
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         self.factory.makeArchive(
             owner=joe, name='ppa', private=True, distribution=ubuntu)
 
-        test_args = [
-            "--ppa", "joe",
-            "-s", "warty-backports",
-            "foo",
-            ]
-
-        script = UnembargoSecurityPackage(
-            name='unembargo', test_args=test_args)
-        script.setUpCopierOptions()
-        script.setupLocation()
-        script.setupDestination()
-        script.destination.distroseries.status = SeriesStatus.CURRENT
-        script.checkPrivacyOptions()
-        self.assertEqual("warty-backports", script.options.to_suite)
-
-        # Change the suite to one with the release pocket.  It should copy
-        # nothing as you're not allowed to unembargo into the release
-        # pocket of a stable series.
-        test_args[3] = "warty"
-        script = UnembargoSecurityPackage(
-            name='unembargo', test_args=test_args)
-        script.logger = BufferLogger()
-        script.setUpCopierOptions()
-        script.setupLocation()
-        script.setupDestination()
+        copy_helper = self.getCopier(
+            sourcename='foo', from_ppa='joe',
+            include_binaries=True, from_suite='warty',
+            to_suite='warty', unembargo=True)
         self.assertRaisesWithContent(
             SoyuzScriptError,
             "Can't unembargo into suite 'warty' of a distribution.",
-            script.checkPrivacyOptions)
+            copy_helper.mainTask)
 
     def testCopyClosesBugs(self):
         """Copying packages closes bugs.
