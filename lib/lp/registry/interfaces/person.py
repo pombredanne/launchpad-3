@@ -111,7 +111,6 @@ from lp.app.interfaces.launchpad import (
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.validators.name import name_validator
-from lp.app.validators.validation import validate_new_team_email
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
