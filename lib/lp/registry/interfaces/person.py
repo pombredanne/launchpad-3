@@ -2513,9 +2513,6 @@ class ITeamContactAddressForm(Interface):
     contact_address = TextLine(
         title=_("Contact Email Address"), required=False, readonly=False)
 
-    mailinglist_address = TextLine(
-        title=_("Mailing List Address"), required=False, readonly=False)
-
     contact_method = Choice(
         title=_("How do people contact these team's members?"),
         required=True, vocabulary=TeamContactMethod)
