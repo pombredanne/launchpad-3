@@ -243,6 +243,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     class_job_type = PackageCopyJobType.PLAIN
     classProvides(IPlainPackageCopyJobSource)
     config = config.IPlainPackageCopyJobSource
+    user_error_types = (CannotCopy,)
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
@@ -494,6 +495,9 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         try:
             self.attemptCopy()
         except CannotCopy as e:
+            # Remember the target archive purpose, as otherwise aborting the
+            # transaction will forget it.
+            target_archive_purpose = self.target_archive.purpose
             logger = logging.getLogger()
             logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
             self.abort()  # Abort the txn.
@@ -503,9 +507,18 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # else it will sit in ACCEPTED forever.
             self._rejectPackageUpload()
 
-            # Rely on the job runner to do the final commit.  Note that
-            # we're not raising any exceptions here, failure of a copy is
-            # not a failure of the job.
+            if target_archive_purpose == ArchivePurpose.PPA:
+                # If copying to a PPA, commit the failure and re-raise the
+                # exception.  We turn a copy failure into a job failure in
+                # order that it can show up in the UI.
+                transaction.commit()
+                raise
+            else:
+                # Otherwise, rely on the job runner to do the final commit,
+                # and do not consider a failure of a copy to be a failure of
+                # the job.  We will normally have a DistroSeriesDifference
+                # in this case.
+                pass
         except SuspendJobException:
             raise
         except:

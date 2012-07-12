@@ -325,7 +325,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # exception and posts a DistroSeriesDifferenceComment with the
         # failure message.
         dsd = self.factory.makeDistroSeriesDifference()
-        self.factory.makeArchive(distribution=dsd.derived_series.distribution)
+        self.factory.makeArchive(
+            distribution=dsd.derived_series.distribution,
+            purpose=ArchivePurpose.PRIMARY)
         job = self.makeJob(dsd)
         removeSecurityProxy(job).attemptCopy = FakeMethod(
             failure=CannotCopy("Server meltdown"))
@@ -357,7 +359,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
 
-        job.run()
+        self.assertRaises(CannotCopy, job.run)
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
@@ -397,13 +399,13 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
 
-        job.run()
+        self.assertRaises(CannotCopy, job.run)
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
     def test_target_ppa_message(self):
         # When copying to a PPA archive the error message is stored in the
-        # job's metadatas.
+        # job's metadata and the job fails.
         distroseries = self.factory.makeDistroSeries()
         package = self.factory.makeSourcePackageName()
         archive1 = self.factory.makeArchive(distroseries.distribution)
@@ -415,7 +417,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=False, package_version='1.0',
             requester=self.factory.makePerson())
         transaction.commit()
-        job.run()
+        self.runJob(job)
+        self.assertEqual(JobStatus.FAILED, job.status)
 
         self.assertEqual(
             "Destination pocket must be 'release' for a PPA.",
