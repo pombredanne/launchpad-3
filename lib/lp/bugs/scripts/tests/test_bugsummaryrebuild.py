@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import subprocess
-
 from testtools.content import text_content
 from testtools.matchers import MatchesRegex
 import transaction
