@@ -237,6 +237,19 @@ class Branch(SQLBase, BzrIdentityMixin):
             information_type = InformationType.PUBLIC
         return self.transitionToInformationType(information_type, user)
 
+    def getAllowedInformationTypes(self, who):
+        """See `IBranch`."""
+        if user_has_special_branch_access(who):
+            # Until sharing settles down, admins can set any type.
+            types = set(PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        else:
+            # Otherwise the permitted types are defined by the namespace.
+            policy = IBranchNamespacePolicy(self.namespace)
+            types = set(policy.getAllowedInformationTypes())
+        # The current information type is always permitted.
+        types.add(self.information_type)
+        return types
+
     def transitionToInformationType(self, information_type, who,
                                     verify_policy=True):
         """See `IBranch`."""
@@ -246,11 +259,9 @@ class Branch(SQLBase, BzrIdentityMixin):
             and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
             and information_type in PUBLIC_INFORMATION_TYPES):
             raise BranchCannotChangeInformationType()
-        # Only check the privacy policy if the user is not special.
-        if verify_policy and not user_has_special_branch_access(who):
-            policy = IBranchNamespacePolicy(self.namespace)
-            if information_type not in policy.getAllowedInformationTypes():
-                raise BranchCannotChangeInformationType()
+        if (verify_policy
+            and information_type not in self.getAllowedInformationTypes(who)):
+            raise BranchCannotChangeInformationType()
         self.information_type = information_type
         self._reconcileAccess()
         if information_type in PRIVATE_INFORMATION_TYPES:
