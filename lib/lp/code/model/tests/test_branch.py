@@ -54,8 +54,6 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
-    BranchCannotBePrivate,
-    BranchCannotBePublic,
     BranchCannotChangeInformationType,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
@@ -2419,10 +2417,10 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
-        # BranchCannotBePrivate is rasied.
+        # BranchCannotChangeInformationType is rasied.
         branch = self.factory.makeProductBranch()
         self.assertRaises(
-            BranchCannotBePrivate,
+            BranchCannotChangeInformationType,
             branch.setPrivate,
             True, branch.owner)
 
@@ -2460,7 +2458,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
-        # to change the branch to be public raises BranchCannotBePublic.
+        # to change the branch to be public raises
+        # BranchCannotChangeInformationType.
         branch = self.factory.makeProductBranch(
             information_type=InformationType.USERDATA)
         branch.product.setBranchVisibilityTeamPolicy(
@@ -2468,7 +2467,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE_ONLY)
         self.assertRaises(
-            BranchCannotBePublic,
+            BranchCannotChangeInformationType,
             branch.setPrivate,
             False, branch.owner)
 

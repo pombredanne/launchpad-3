@@ -83,8 +83,6 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
-    BranchCannotBePrivate,
-    BranchCannotBePublic,
     BranchCannotChangeInformationType,
     BranchMergeProposalExists,
     BranchTargetError,
@@ -248,14 +246,11 @@ class Branch(SQLBase, BzrIdentityMixin):
             and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
             and information_type in PUBLIC_INFORMATION_TYPES):
             raise BranchCannotChangeInformationType()
-        private = information_type in PRIVATE_INFORMATION_TYPES
         # Only check the privacy policy if the user is not special.
         if verify_policy and not user_has_special_branch_access(who):
             policy = IBranchNamespacePolicy(self.namespace)
-            if private and not policy.canBranchesBePrivate():
-                raise BranchCannotBePrivate()
-            if not private and not policy.canBranchesBePublic():
-                raise BranchCannotBePublic()
+            if information_type not in policy.getAllowedInformationTypes():
+                raise BranchCannotChangeInformationType()
         self.information_type = information_type
         self._reconcileAccess()
         if information_type in PRIVATE_INFORMATION_TYPES:
@@ -1300,13 +1295,15 @@ class Branch(SQLBase, BzrIdentityMixin):
     def canBePublic(self, user):
         """See `IBranch`."""
         policy = IBranchNamespacePolicy(self.namespace)
-        return policy.canBranchesBePublic()
+        return InformationType.PUBLIC in policy.getAllowedInformationTypes()
 
     def canBePrivate(self, user):
         """See `IBranch`."""
         policy = IBranchNamespacePolicy(self.namespace)
         # Do the easy checks first.
-        if (policy.canBranchesBePrivate() or
+        policy_allows = (
+            InformationType.USERDATA in policy.getAllowedInformationTypes())
+        if (policy_allows or
                 user_has_special_branch_access(user) or
                 user.visibility == PersonVisibility.PRIVATE):
             return True

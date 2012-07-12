@@ -40,10 +40,10 @@ If the text field is optional, then that is noted after the widget.
     <tr>
     <td colspan="2">
     <div>
-    <label for="field.contactemail">Contact Email Address:</label>
+    <label for="field.defaultmembershipperiod">Subscription period:</label>
     <span class="fieldRequired">(Optional)</span>
     <div>
-    <input ... id="field.contactemail" ... />
+    <input ... id="field.defaultmembershipperiod" ... />
     </div>
     <p class="formHelp">...</p>
     </div>
