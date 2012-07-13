@@ -3,8 +3,9 @@
 
 SET client_min_messages=ERROR;
 
--- Add new columns to replace Product.private_bugs and BranchVisibilityPolicy.
-ALTER TABLE product ADD COLUMN branch_information_type_policy integer;
-ALTER TABLE product ADD COLUMN bug_information_type_policy integer;
+-- Add new enum columns to replace Product.private_bugs and
+-- BranchVisibilityPolicy.
+ALTER TABLE product ADD COLUMN branch_sharing_policy integer;
+ALTER TABLE product ADD COLUMN bug_sharing_policy integer;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 26, 0);
