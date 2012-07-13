@@ -46,7 +46,6 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
-from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import (
     CeleryJobLayer,
     DatabaseFunctionalLayer,
@@ -163,25 +162,10 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
             'artifacts.'), oops_vars)
 
 
-def disable_trigger_fixture():
-    # XXX 2012-05-22 wallyworld bug=1002596
-    # No need to use this fixture when triggers are removed.
-    return DisableTriggerFixture(
-            {'bugsubscription':
-                 'bugsubscription_mirror_legacy_access_t',
-             'bug': 'bug_mirror_legacy_access_t',
-             'bugtask': 'bugtask_mirror_legacy_access_t',
-        })
-
-
 class TestRunViaCron(TestCaseWithFactory):
     """Sharing jobs run via cron."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        self.useFixture(disable_trigger_fixture())
-        super(TestRunViaCron, self).setUp()
 
     def _assert_run_cronscript(self, create_job):
         # The cronscript is configured: schema-lazr.conf and security.cfg.
@@ -241,7 +225,6 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
-        self.useFixture(disable_trigger_fixture())
         super(RemoveArtifactSubscriptionsJobTestCase, self).setUp()
 
     def test_create(self):
