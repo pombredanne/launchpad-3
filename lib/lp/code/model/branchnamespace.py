@@ -429,6 +429,27 @@ class ProductNamespace(_BaseNamespace):
             types.extend(PRIVATE_INFORMATION_TYPES)
         return types
 
+    def getDefaultInformationType(self):
+        """See `IBranchNamespace`."""
+        if not self._using_branchvisibilitypolicy:
+            default_types = {
+                BranchInformationTypePolicy.PUBLIC:
+                    InformationType.PUBLIC,
+                BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
+                    InformationType.PUBLIC,
+                BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
+                    InformationType.USERDATA,
+                BranchInformationTypePolicy.PROPRIETARY:
+                    InformationType.USERDATA,
+                }
+            default_type = default_types[
+                self.product.branch_information_type_policy]
+            if default_type not in self.getAllowedInformationTypes():
+                return None
+            return default_type
+
+        return super(ProductNamespace, self).getDefaultInformationType()
+
 
 class PackageNamespace(_BaseNamespace):
     """A namespace for source package branches.
