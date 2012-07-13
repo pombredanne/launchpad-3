@@ -200,7 +200,8 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        select = self.getBranches(eager_load=False)._get_select()
+        branches = self.getBranches(eager_load=False)
+        select = branches.get_plain_result_set()._get_select()
         select.columns = (Branch.id,)
         return select
 
