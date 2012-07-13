@@ -1393,6 +1393,20 @@ class IBranchSet(Interface):
         branches.
         """
 
+    @operation_returns_collection_of(Interface)
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_parameters(merged_revision=TextLine())
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(merged_revision, visible_by_user=None):
+        """Return the merge proposals that resulted in this revision.
+
+        :param merged_revision: The revision_id of the revision that resulted
+            from this merge proposal.
+        :param visible_by_user: The user to whom the proposals must be
+            visible.  If None, only public proposals will be returned.
+        """
+
 
 class IBranchListingQueryOptimiser(Interface):
     """Interface for a helper utility to do efficient queries for branches.

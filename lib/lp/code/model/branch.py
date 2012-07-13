@@ -1541,6 +1541,11 @@ class BranchSet:
             'person_name': person.displayname,
             'visible_branches': visible_branches}
 
+    def getMergeProposals(self, merged_revision, visible_by_user=None):
+        """See IBranchSet."""
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        return collection.getMergeProposals(merged_revision=merged_revision)
+
 
 def update_trigger_modified_fields(branch):
     """Make the trigger updated fields reload when next accessed."""
