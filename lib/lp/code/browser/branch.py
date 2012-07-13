@@ -48,9 +48,7 @@ from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 import simplejson
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import (
     getUtility,
     queryAdapter,
@@ -124,11 +122,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import (

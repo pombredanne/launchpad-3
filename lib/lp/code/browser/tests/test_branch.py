@@ -36,10 +36,7 @@ from lp.code.enums import (
     BranchVisibilityRule,
     )
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
-    )
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
