@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
+from lp.registry.interfaces.product import IProduct
 
 __metaclass__ = type
 __all__ = [
@@ -144,6 +145,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
+    PersonVisibility,
     validate_person,
     validate_public_person,
     )
