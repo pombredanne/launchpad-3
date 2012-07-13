@@ -318,6 +318,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.branch_information_type_policy.show_to_admin',
+     'boolean',
+     ('If true, the branch information type policy field is shown on '
+      'Product:+admin, letting BranchVisibilityPolicy be overriden.'),
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.

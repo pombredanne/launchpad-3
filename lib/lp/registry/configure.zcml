@@ -1324,7 +1324,7 @@
                 project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
-            set_attributes="active"/>
+            set_attributes="active branch_information_type_policy"/>
 
         <!-- IHasAliases -->
 

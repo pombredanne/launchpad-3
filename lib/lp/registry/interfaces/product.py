@@ -641,7 +641,8 @@ class IProductPublic(
     branch_information_type_policy = exported(Choice(
         title=_('Branch information type policy'),
         description=_("Information type policy for this project's branches."),
-        required=False, readonly=True, vocabulary=BranchInformationTypePolicy),
+        required=False, readonly=False,
+        vocabulary=BranchInformationTypePolicy),
         as_of='devel')
     bug_information_type_policy = exported(Choice(
         title=_('Bug information type policy'),
