@@ -14,7 +14,6 @@ BUILD_DIR=$1
 
 # Populate YUI.
 if [ ! -h $BUILD_DIR/yui ]; then
-    ./bin/lpyui -d $BUILD_DIR extract
     ln -sf yui-${versions:yui} $BUILD_DIR/yui
 fi
 

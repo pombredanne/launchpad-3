@@ -189,11 +189,11 @@ else
 endif
 
 combobuild:
-	bin/combo-rootdir build/js
 	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
 
-jsbuild: $(PY) combobuild jsbuild_widget_css $(JS_OUT)
+jsbuild: $(PY) $(JS_OUT)
+	bin/combo-rootdir build/js
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
