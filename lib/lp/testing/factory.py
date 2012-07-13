@@ -1444,6 +1444,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 reviewer=None, merged_revno=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
+            target_branch = removeSecurityProxy(target_branch)
             target = target_branch.target
         elif source_branch is not None:
             target = source_branch.target
@@ -1643,6 +1644,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                            parent_ids=None, revision_date=None):
         if branch is None:
             branch = self.makeBranch()
+        else:
+            branch = removeSecurityProxy(branch)
         revision = self.makeRevision(
             rev_id=revision_id, parent_ids=parent_ids,
             revision_date=revision_date)

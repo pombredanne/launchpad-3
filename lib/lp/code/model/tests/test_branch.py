@@ -2951,14 +2951,16 @@ class TestBranchSetTarget(TestCaseWithFactory):
 
 def make_proposal_and_branch_revision(factory, revno, revision_id,
                                       userdata_target=False):
-    revision = factory.makeBranchRevision(revision_id=revision_id,
-                                          sequence=revno)
-    bmp = factory.makeBranchMergeProposal(merged_revno=revno,
-                                          target_branch=revision.branch)
     if userdata_target:
-        naked_target = removeSecurityProxy(bmp.target_branch)
-        naked_target.information_type = InformationType.USERDATA
-    return bmp
+        information_type = InformationType.USERDATA
+    else:
+        information_type = InformationType.PUBLIC
+    target_branch = factory.makeAnyBranch(information_type=information_type)
+    revision = factory.makeBranchRevision(revision_id=revision_id,
+                                          branch=target_branch,
+                                          sequence=revno)
+    return factory.makeBranchMergeProposal(merged_revno=revno,
+                                           target_branch=target_branch)
 
 
 class TestGetMergeProposalsWS(WebServiceTestCase):
