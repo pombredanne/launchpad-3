@@ -19,6 +19,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchSubscriptionDiffSize,
@@ -96,6 +97,15 @@ POLICY_DEFAULT_TYPES = {
         InformationType.PUBLIC,
     BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
         InformationType.PUBLIC,
+    BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
+        InformationType.USERDATA,
+    BranchInformationTypePolicy.PROPRIETARY:
+        InformationType.USERDATA,
+    }
+
+POLICY_REQUIRED_GRANTS = {
+    BranchInformationTypePolicy.PUBLIC: None,
+    BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY: None,
     BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
         InformationType.USERDATA,
     BranchInformationTypePolicy.PROPRIETARY:
@@ -407,6 +417,17 @@ class ProductNamespace(_BaseNamespace):
         if not self._using_branchvisibilitypolicy:
             # The project uses the new simplified
             # branch_information_type_policy rules, so check them.
+
+            # Some policies require that the owner have full access to
+            # an information type. If it's required and the owner
+            # doesn't hold it, no information types are legal.
+            required_grant = POLICY_REQUIRED_GRANTS[
+                self.product.branch_information_type_policy]
+            if (required_grant is not None
+                and not getUtility(IService, 'sharing').checkPillarAccess(
+                    self.product, required_grant, self.owner)):
+                return []
+
             return POLICY_ALLOWED_TYPES[
                 self.product.branch_information_type_policy]
 
