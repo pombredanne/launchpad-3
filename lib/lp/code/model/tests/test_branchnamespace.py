@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -36,9 +37,11 @@ from lp.code.model.branchnamespace import (
     ProductNamespace,
     )
 from lp.registry.enums import (
+    BranchInformationTypePolicy,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    SharingPermission,
     )
 from lp.registry.errors import (
     NoSuchDistroSeries,
@@ -52,7 +55,11 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
-from lp.testing import TestCaseWithFactory
+from lp.services.features.testing import FeatureFixture
+from lp.testing import (
+    admin_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -356,8 +363,12 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         self.assertEqual(IBranchTarget(product), namespace.target)
 
 
-class TestProductNamespacePrivacy(TestCaseWithFactory):
-    """Tests for the privacy aspects of `ProductNamespace`."""
+class TestProductNamespacePrivacyWithBranchVisibility(TestCaseWithFactory):
+    """Tests for the privacy aspects of `ProductNamespace`.
+
+    This tests the behaviour for a product using the old
+    BranchVisibilityPolicy rules.
+    """
 
     layer = DatabaseFunctionalLayer
 
@@ -434,6 +445,84 @@ class TestProductNamespacePrivacy(TestCaseWithFactory):
         product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
         self.assertEqual(team, namespace.getPrivacySubscriber())
+
+
+class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
+    """Tests for the privacy aspects of `ProductNamespace`.
+
+    This tests the behaviour for a product using the new
+    branch_information_type_policy rules.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductNamespacePrivacyWithInformationType, self).setUp()
+        self.useFixture(FeatureFixture(
+            {'disclosure.enhanced_sharing.writable': 'true'}))
+
+    def makeProductNamespace(self, information_type_policy, person=None):
+        if person is None:
+            person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).branch_information_type_policy = (
+            information_type_policy)
+        namespace = ProductNamespace(person, product)
+        return namespace
+
+    def test_public_anyone(self):
+        namespace = self.makeProductNamespace(
+            BranchInformationTypePolicy.PUBLIC)
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC, namespace.getDefaultInformationType())
+
+    def test_public_or_proprietary_anyone(self):
+        namespace = self.makeProductNamespace(
+            BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY)
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC, namespace.getDefaultInformationType())
+
+    def test_proprietary_or_public_anyone(self):
+        namespace = self.makeProductNamespace(
+            BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC)
+        self.assertContentEqual([], namespace.getAllowedInformationTypes())
+        self.assertIs(None, namespace.getDefaultInformationType())
+
+    def test_proprietary_or_public_grantor(self):
+        namespace = self.makeProductNamespace(
+            BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC)
+        with admin_logged_in():
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, namespace.owner, namespace.product.owner,
+                {InformationType.USERDATA: SharingPermission.ALL})
+        self.assertContentEqual(
+            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
+        self.assertEqual(
+            InformationType.USERDATA, namespace.getDefaultInformationType())
+
+    def test_proprietary_anyone(self):
+        namespace = self.makeProductNamespace(
+            BranchInformationTypePolicy.PROPRIETARY)
+        self.assertContentEqual([], namespace.getAllowedInformationTypes())
+        self.assertIs(None, namespace.getDefaultInformationType())
+
+    def test_proprietary_grantor(self):
+        namespace = self.makeProductNamespace(
+            BranchInformationTypePolicy.PROPRIETARY)
+        with admin_logged_in():
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, namespace.owner, namespace.product.owner,
+                {InformationType.USERDATA: SharingPermission.ALL})
+        self.assertContentEqual(
+            PRIVATE_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
+        self.assertEqual(
+            InformationType.USERDATA, namespace.getDefaultInformationType())
 
 
 class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):

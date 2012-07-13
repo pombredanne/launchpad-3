@@ -45,6 +45,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.enums import (
+    BranchInformationTypePolicy,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -340,6 +341,10 @@ class ProductNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.product)
 
+    @property
+    def _using_branchvisibilitypolicy(self):
+        return self.product.branch_information_type_policy is None
+
     def _getRelatedPolicies(self):
         """Return the privacy policies relating to the owner."""
         policies = self.product.getBranchVisibilityTeamPolicies()
@@ -355,6 +360,12 @@ class ProductNamespace(_BaseNamespace):
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
+        # New branch_information_type_policy-based privacy doesn't
+        # require a privacy subscriber, as branches are shared through
+        # AccessPolicyGrants.
+        if not self._using_branchvisibilitypolicy:
+            return None
+
         # If there is a rule defined for the owner, then there is no privacy
         # subscriber.
         rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
@@ -371,6 +382,21 @@ class ProductNamespace(_BaseNamespace):
 
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
+        if not self._using_branchvisibilitypolicy:
+            # The project uses the new simplified
+            # branch_information_type_policy rules, so check them.
+            allowed_types = {
+                BranchInformationTypePolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
+                BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
+                    PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+                BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
+                    PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+                BranchInformationTypePolicy.PROPRIETARY:
+                    PRIVATE_INFORMATION_TYPES,
+                }
+            return allowed_types[self.product.branch_information_type_policy]
+
+        # The project still uses BranchVisibilityPolicy, so check that.
         private_rules = (
             BranchVisibilityRule.PRIVATE,
             BranchVisibilityRule.PRIVATE_ONLY)
