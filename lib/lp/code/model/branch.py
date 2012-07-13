@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
-from lp.registry.interfaces.product import IProduct
 
 __metaclass__ = type
 __all__ = [
@@ -145,7 +144,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
-    PersonVisibility,
     validate_person,
     validate_public_person,
     )
@@ -597,6 +595,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
+
+    def getStackedOnBranches(self):
+        """See `IBranch`."""
+        if not self.stacked_on:
+            return []
+        stacked_on_branches = [self.stacked_on]
+        stacked_on_branches.extend(self.stacked_on.getStackedOnBranches())
+        return  stacked_on_branches
 
     @property
     def code_is_browseable(self):
