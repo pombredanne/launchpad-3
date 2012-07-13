@@ -108,6 +108,10 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.enums import (
+    BranchInformationTypePolicy,
+    BugInformationTypePolicy,
+    )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
@@ -634,6 +638,17 @@ class IProductPublic(
                         description=_(
                             "Whether or not bugs reported into this project "
                             "are private by default.")))
+    branch_information_type_policy = exported(Choice(
+        title=_('Branch information type policy'),
+        description=_("Information type policy for this project's branches."),
+        required=False, readonly=True, vocabulary=BranchInformationTypePolicy),
+        as_of='devel')
+    bug_information_type_policy = exported(Choice(
+        title=_('Bug information type policy'),
+        description=_("Information type policy for this project's bugs."),
+        required=False, readonly=True, vocabulary=BugInformationTypePolicy),
+        as_of='devel')
+
     licenses = exported(
         Set(title=_('Licences'),
             value_type=Choice(vocabulary=License)))
