@@ -344,19 +344,13 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
         logger = logging.getLogger()
         logger.info(self.getOperationDescription())
 
-        # Find all bug subscriptions for which the subscriber cannot see the
-        # bug.
-        bug_invisible_filter = Not(
-            Or(*get_bug_privacy_filter_terms(BugSubscription.person_id)))
-        bug_filters = [bug_invisible_filter]
-        branch_invisible_filter = Not(
-            Or(*get_branch_privacy_filter(BranchSubscription.personID)))
-        branch_filters = [branch_invisible_filter]
+        bug_filters = []
+        branch_filters = []
 
+        if self.branch_ids:
+            branch_filters.append(Branch.id.is_in(self.branch_ids))
         if self.bug_ids:
             bug_filters.append(BugTaskFlat.bug_id.is_in(self.bug_ids))
-        elif self.branch_ids:
-            branch_filters.append(Branch.id.is_in(self.branch_ids))
         else:
             if self.information_types:
                 bug_filters.append(
@@ -385,15 +379,26 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                         TeamParticipation.personID,
                         where=TeamParticipation.team == self.grantee)))
 
-        bug_subscriptions = IStore(BugSubscription).using(
-            BugSubscription,
-            Join(BugTaskFlat, BugTaskFlat.bug_id == BugSubscription.bug_id)
-            ).find(BugSubscription, *bug_filters).config(distinct=True)
-        branch_subscriptions = IStore(BranchSubscription).find(
-            BranchSubscription, *branch_filters).config(distinct=True)
-        for sub in bug_subscriptions:
-            sub.bug.unsubscribe(
-                sub.person, self.requestor, ignore_permissions=True)
-        for sub in branch_subscriptions:
-            sub.branch.unsubscribe(
-                sub.person, self.requestor, ignore_permissions=True)
+        if bug_filters:
+            bug_filters.append(Not(
+                Or(*get_bug_privacy_filter_terms(
+                    BugSubscription.person_id))))
+            bug_subscriptions = IStore(BugSubscription).using(
+                BugSubscription,
+                Join(BugTaskFlat,
+                    BugTaskFlat.bug_id == BugSubscription.bug_id)
+                ).find(BugSubscription, *bug_filters).config(distinct=True)
+            for sub in bug_subscriptions:
+                sub.bug.unsubscribe(
+                    sub.person, self.requestor, ignore_permissions=True)
+        if branch_filters:
+            branch_filters.append(Not(
+                Or(*get_branch_privacy_filter(BranchSubscription.personID))))
+            branch_subscriptions = IStore(BranchSubscription).using(
+                BranchSubscription,
+                Join(Branch, Branch.id == BranchSubscription.branchID)
+                ).find(BranchSubscription, *branch_filters).config(
+                    distinct=True)
+            for sub in branch_subscriptions:
+                sub.branch.unsubscribe(
+                    sub.person, self.requestor, ignore_permissions=True)
