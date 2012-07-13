@@ -80,7 +80,7 @@ def find_missing_ready(job_source):
             queued_job_ids]
 
 
-@task
+@task(ignore_result=True)
 def run_missing_ready(_no_init=False):
     """Task to run any jobs that are ready but not scheduled.
 

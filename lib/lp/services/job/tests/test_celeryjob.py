@@ -1,10 +1,15 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from cStringIO import StringIO
+import sys
+from time import sleep
+from lazr.jobrunner.bin.clear_queues import clear_queues
 from lp.code.model.branchjob import BranchScanJob
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import (
+    celeryd,
     drain_celery_queues,
     monitor_celery,
     )
@@ -61,3 +66,50 @@ class TestRunMissingJobs(TestCaseWithFactory):
                 with TransactionFreeOperation.require():
                     self.run_missing_ready(_no_init=True)
         self.assertEqual(1, len(responses))
+
+    def test_run_missing_ready_does_not_return_results(self):
+        """The celerybeat task run_missing_ready does not create a
+        result queue."""
+        from lazr.jobrunner.celerytask import list_queued
+        job_queue_name = 'job'
+        request = self.run_missing_ready.apply_async(
+            kwargs={'_no_init': True}, queue=job_queue_name)
+        result_queue_name = request.task_id.replace('-', '')
+        # Paranoia check: This test intends to prove that a Celery
+        # result queue fot the task created above will _not_ be created.
+        # This would also happen when "with celeryd()" would do nothing.
+        # So let's be sure that right now a task is queued...
+        self.assertEqual(
+            1, len(list_queued(self.run_missing_ready.app, [job_queue_name])))
+        # ...and that list_queued() calls do not consume messages.
+        self.assertEqual(
+            1, len(list_queued(self.run_missing_ready.app, [job_queue_name])))
+        with celeryd(job_queue_name):
+            sleep(2)
+        # But now the message has been consumed by celeryd.
+        self.assertEqual(
+            0, len(list_queued(self.run_missing_ready.app, [job_queue_name])))
+        try:
+            real_stdout = sys.stdout
+            real_stderr = sys.stderr
+            sys.stdout = fake_stdout = StringIO()
+            sys.stderr = fake_stderr = StringIO()
+            clear_queues(
+                ['script_name', '-c', 'lp.services.job.celeryconfig',
+                 result_queue_name])
+        finally:
+            sys.stdout = real_stdout
+            sys.stderr = real_stderr
+        fake_stdout = fake_stdout.getvalue()
+        fake_stderr = fake_stderr.getvalue()
+        self.assertEqual(
+            '', fake_stdout,
+            "Unexpected output from clear_queues:\n"
+            "stdout: %r\n"
+            "stderr: %r" % (fake_stdout, fake_stderr))
+        self.assertEqual(
+            "NOT_FOUND - no queue '%s' in vhost '/'\n" % result_queue_name,
+            fake_stderr,
+            "Unexpected output from clear_queues:\n"
+            "stdout: %r\n"
+            "stderr: %r" % (fake_stdout, fake_stderr))
