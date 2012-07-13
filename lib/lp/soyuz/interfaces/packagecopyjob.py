@@ -228,3 +228,9 @@ class IPlainPackageCopyJob(IRunnableJob):
     copy_policy = Choice(
         title=_("Applicable copy policy"),
         values=PackageCopyPolicy, required=True, readonly=True)
+
+    def getOperationDescription():
+        """Return a description of the copy operation."""
+
+    def getErrorRecipients():
+        """Return a list of email-ids to notify about copy errors."""
