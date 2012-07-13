@@ -7,9 +7,6 @@
     <h2>Details for <span tal:replace="context/displayname">warty
     i386</span></h2>
 
-    <div class="portletBody">
-        <div class="portletContent">
-
             <b>Architecture tag:</b>
             <a tal:attributes="href context/fmt:url"
                tal:content="context/architecturetag" >
@@ -25,6 +22,4 @@
             <b><span tal:content="context/package_count">4234</span> binary
             packages</b><br />
 
-        </div>
-    </div>
 </div>

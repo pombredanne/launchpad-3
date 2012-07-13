@@ -18,4 +18,6 @@ YUI.add('lp.${LIBRARY}.test', function (Y) {
 
     }));
 
-}, '0.1', {'requires': ['test', 'lp.testing.helpers', 'console', 'lp.${LIBRARY}']});
+}, '0.1', {
+    requires: ['test', 'lp.testing.helpers', 'console', 'lp.${LIBRARY}']
+});

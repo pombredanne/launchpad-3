@@ -2,11 +2,13 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
+from lp.registry.interfaces.product import IProduct
 
 __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'get_branch_privacy_filter',
     ]
 
 from datetime import datetime
@@ -25,13 +27,16 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Coalesce,
     Count,
     Desc,
     Insert,
+    Join,
     NamedFunc,
     Not,
     Or,
     Select,
+    SQL,
     )
 from storm.locals import (
     AutoReload,
@@ -78,8 +83,6 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
-    BranchCannotBePrivate,
-    BranchCannotBePublic,
     BranchCannotChangeInformationType,
     BranchMergeProposalExists,
     BranchTargetError,
@@ -142,10 +145,15 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
+    PersonVisibility,
     validate_person,
     validate_public_person,
     )
-from lp.registry.model.accesspolicy import reconcile_access_for_artifact
+from lp.registry.model.accesspolicy import (
+    AccessPolicyGrant,
+    reconcile_access_for_artifact,
+    )
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
@@ -159,6 +167,10 @@ from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayIntersects,
     )
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
@@ -188,6 +200,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     mirror_status_message = StringCol(default=None)
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
+    access_policy = IntCol()
 
     # These can die after the UI is dropped.
     @property
@@ -233,16 +246,22 @@ class Branch(SQLBase, BzrIdentityMixin):
             and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
             and information_type in PUBLIC_INFORMATION_TYPES):
             raise BranchCannotChangeInformationType()
-        private = information_type in PRIVATE_INFORMATION_TYPES
         # Only check the privacy policy if the user is not special.
         if verify_policy and not user_has_special_branch_access(who):
             policy = IBranchNamespacePolicy(self.namespace)
-            if private and not policy.canBranchesBePrivate():
-                raise BranchCannotBePrivate()
-            if not private and not policy.canBranchesBePublic():
-                raise BranchCannotBePublic()
+            if information_type not in policy.getAllowedInformationTypes():
+                raise BranchCannotChangeInformationType()
         self.information_type = information_type
         self._reconcileAccess()
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            # Grant the subscriber access if they can't see the branch.
+            service = getUtility(IService, 'sharing')
+            blind_subscribers = service.getPeopleWithoutAccess(
+                self, self.subscribers)
+            if len(blind_subscribers):
+                service.ensureAccessGrants(
+                    blind_subscribers, who, branches=[self],
+                    ignore_permissions=True)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -1257,34 +1276,48 @@ class Branch(SQLBase, BzrIdentityMixin):
         job.celeryRunOnCommit()
         return job
 
-    def _checkBranchVisibleByUser(self, user):
-        """Is *this* branch visible by the user.
-
-        This method doesn't check the stacked upon branch.  That is handled by
-        the `visibleByUser` method.
-        """
-        if self.information_type in PUBLIC_INFORMATION_TYPES:
-            return True
-        if user is None:
-            return False
-        if user.inTeam(self.owner):
-            return True
-        for subscriber in self.subscribers:
-            if user.inTeam(subscriber):
-                return True
-        return user_has_special_branch_access(user)
-
     def visibleByUser(self, user, checked_branches=None):
         """See `IBranch`."""
         if checked_branches is None:
             checked_branches = []
-        can_access = self._checkBranchVisibleByUser(user)
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            can_access = True
+        else:
+            can_access = not getUtility(IAllBranches).withIds(
+                self.id).visibleByUser(user).is_empty()
         if can_access and self.stacked_on is not None:
             checked_branches.append(self)
             if self.stacked_on not in checked_branches:
                 can_access = self.stacked_on.visibleByUser(
                     user, checked_branches)
         return can_access
+
+    def canBePublic(self, user):
+        """See `IBranch`."""
+        policy = IBranchNamespacePolicy(self.namespace)
+        return InformationType.PUBLIC in policy.getAllowedInformationTypes()
+
+    def canBePrivate(self, user):
+        """See `IBranch`."""
+        policy = IBranchNamespacePolicy(self.namespace)
+        # Do the easy checks first.
+        policy_allows = (
+            InformationType.USERDATA in policy.getAllowedInformationTypes())
+        if (policy_allows or
+                user_has_special_branch_access(user) or
+                user.visibility == PersonVisibility.PRIVATE):
+            return True
+        # Branches linked to commercial projects can be private.
+        target = self.target.context
+        if (IProduct.providedBy(target) and
+            target.has_current_commercial_subscription):
+            return True
+        # Branches linked to private bugs can be private.
+        params = BugTaskSearchParams(
+            user=user, linked_branches=self.id,
+            information_type=PRIVATE_INFORMATION_TYPES)
+        bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
+        return bug_ids.count() > 0
 
     @property
     def recipes(self):
@@ -1523,3 +1556,33 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def get_branch_privacy_filter(user, branch_class=Branch):
+    public_branch_filter = (
+        branch_class.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+
+    if user is None:
+        return [public_branch_filter]
+
+    artifact_grant_query = Coalesce(
+        ArrayIntersects(
+            SQL('%s.access_grants' % branch_class.__storm_table__),
+            Select(
+                ArrayAgg(TeamParticipation.teamID),
+                tables=TeamParticipation,
+                where=(TeamParticipation.person == user)
+            )), False)
+
+    policy_grant_query = branch_class.access_policy.is_in(
+            Select(
+                AccessPolicyGrant.policy_id,
+                tables=(AccessPolicyGrant,
+                        Join(TeamParticipation,
+                            TeamParticipation.teamID ==
+                            AccessPolicyGrant.grantee_id)),
+                where=(TeamParticipation.person == user)
+            ))
+
+    return [
+        Or(public_branch_filter, artifact_grant_query, policy_grant_query)]

@@ -22,6 +22,7 @@ from lp.services.log.logger import BufferLogger
 from lp.testing import (
     FakeTime,
     nonblocking_readline,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -225,6 +226,29 @@ class TestBranchRewriter(TestCaseWithFactory):
         result = rewriter._getBranchIdAndTrailingPath(
             '/' + branch.unique_name + '/.bzr/README')
         self.assertEqual(id_path + ('HIT',), result)
+
+    def test_branch_id_alias_private(self):
+        # Private branches are not found at all (this is for anonymous access)
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            path = branch_id_alias(branch)
+        result = self.makeRewriter()._getBranchIdAndTrailingPath(path)
+        self.assertEqual((None, None, 'MISS'), result)
+
+    def test_branch_id_alias_transitive_private(self):
+        # Transitively private branches are not found at all
+        # (this is for anonymous access)
+        owner = self.factory.makePerson()
+        private_branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        branch = self.factory.makeAnyBranch(
+            stacked_on=private_branch, owner=owner)
+        with person_logged_in(owner):
+            path = branch_id_alias(branch)
+        result = self.makeRewriter()._getBranchIdAndTrailingPath(path)
+        self.assertEqual((None, None, 'MISS'), result)
 
 
 class TestBranchRewriterScript(TestCaseWithFactory):

@@ -6,7 +6,6 @@
   <h2 tal:content="context/englishname">
     Spanish
   </h2>
-  <div class="portletBody portletContent">
     <b>English name:</b>
     <tal:englishname replace="context/englishname">Spanish</tal:englishname>
     <br />
@@ -24,5 +23,4 @@
     <tal:direction replace="context/direction/title">
       Left to Right
     </tal:direction>
-  </div>
 </div>

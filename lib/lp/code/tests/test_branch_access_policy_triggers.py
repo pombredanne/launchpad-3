@@ -32,9 +32,10 @@ class TestBranchAccessPolicyTriggers(TestCaseWithFactory):
 
     def test_adding_aag_with_private_branch(self):
         # Adding a new AAG updates the branch columns via trigger.
+        owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
-            information_type=InformationType.USERDATA)
-        self.assertAccess(branch, 65, [])
+            information_type=InformationType.USERDATA, owner=owner)
+        self.assertAccess(branch, 66, [owner.id])
         artifact = self.factory.makeAccessArtifact(concrete=branch)
         grant = self.factory.makeAccessArtifactGrant(artifact=artifact)
-        self.assertAccess(branch, 65, [grant.grantee.id])
+        self.assertAccess(branch, 66, [owner.id, grant.grantee.id])
