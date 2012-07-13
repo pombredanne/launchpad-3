@@ -200,7 +200,8 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        select = self.getBranches(eager_load=False)._get_select()
+        branches = self.getBranches(eager_load=False)
+        select = branches.get_plain_result_set()._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -295,8 +296,6 @@ class GenericBranchCollection:
         tables = [Branch] + list(all_tables)
         expressions = self._getBranchExpressions()
         resultset = self.store.using(*tables).find(Branch, *expressions)
-        if not eager_load:
-            return resultset
 
         def do_eager_load(rows):
             branch_ids = set(branch.id for branch in rows)
@@ -309,7 +308,17 @@ class GenericBranchCollection:
             load_related(Person, rows,
                 ['ownerID', 'registrantID', 'reviewerID'])
             load_referencing(BugBranch, rows, ['branchID'])
-        return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
+
+        def cache_permission(branch):
+            if self._user:
+                get_property_cache(branch)._known_viewers = (
+                    set([self._user.id]))
+            return branch
+
+        eager_load_hook = do_eager_load if eager_load else None
+        return DecoratedResultSet(
+            resultset, pre_iter_hook=eager_load_hook,
+            result_decorator=cache_permission)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None, merged_revnos=None,

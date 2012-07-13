@@ -1285,11 +1285,29 @@ class Branch(SQLBase, BzrIdentityMixin):
         job.celeryRunOnCommit()
         return job
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A set of known persons able to view this branch.
+
+        This method must return an empty set or branch searches will trigger
+        late evaluation. Any 'should be set on load' properties must be done by
+        the branch search.
+
+        If you are tempted to change this method, don't. Instead see
+        visibleByUser which defines the just-in-time policy for branch
+        visibility, and IBranchCollection which honours visibility rules.
+        """
+        return set()
+
     def visibleByUser(self, user, checked_branches=None):
         """See `IBranch`."""
         if checked_branches is None:
             checked_branches = []
         if self.information_type in PUBLIC_INFORMATION_TYPES:
+            can_access = True
+        elif user is None:
+            can_access = False
+        elif user.id in self._known_viewers:
             can_access = True
         else:
             can_access = not getUtility(IAllBranches).withIds(
