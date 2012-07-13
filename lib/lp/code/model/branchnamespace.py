@@ -80,6 +80,28 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 
+POLICY_ALLOWED_TYPES = {
+    BranchInformationTypePolicy.PUBLIC:
+        PUBLIC_INFORMATION_TYPES,
+    BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
+        PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+    BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
+        PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+    BranchInformationTypePolicy.PROPRIETARY:
+        PRIVATE_INFORMATION_TYPES,
+    }
+
+POLICY_DEFAULT_TYPES = {
+    BranchInformationTypePolicy.PUBLIC:
+        InformationType.PUBLIC,
+    BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
+        InformationType.PUBLIC,
+    BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
+        InformationType.USERDATA,
+    BranchInformationTypePolicy.PROPRIETARY:
+        InformationType.USERDATA,
+    }
+
 
 class _BaseNamespace:
     """Common code for branch namespaces."""
@@ -385,16 +407,8 @@ class ProductNamespace(_BaseNamespace):
         if not self._using_branchvisibilitypolicy:
             # The project uses the new simplified
             # branch_information_type_policy rules, so check them.
-            allowed_types = {
-                BranchInformationTypePolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
-                BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
-                    PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-                BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
-                    PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-                BranchInformationTypePolicy.PROPRIETARY:
-                    PRIVATE_INFORMATION_TYPES,
-                }
-            return allowed_types[self.product.branch_information_type_policy]
+            return POLICY_ALLOWED_TYPES[
+                self.product.branch_information_type_policy]
 
         # The project still uses BranchVisibilityPolicy, so check that.
         private_rules = (
@@ -432,17 +446,7 @@ class ProductNamespace(_BaseNamespace):
     def getDefaultInformationType(self):
         """See `IBranchNamespace`."""
         if not self._using_branchvisibilitypolicy:
-            default_types = {
-                BranchInformationTypePolicy.PUBLIC:
-                    InformationType.PUBLIC,
-                BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
-                    InformationType.PUBLIC,
-                BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
-                    InformationType.USERDATA,
-                BranchInformationTypePolicy.PROPRIETARY:
-                    InformationType.USERDATA,
-                }
-            default_type = default_types[
+            default_type = POLICY_DEFAULT_TYPES[
                 self.product.branch_information_type_policy]
             if default_type not in self.getAllowedInformationTypes():
                 return None
