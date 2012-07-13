@@ -1109,27 +1109,33 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         bug with an obscure type.
         """
         allowed_types = self.context.getAllowedInformationTypes(self.user)
-        shown_types = (
-            InformationType.PUBLIC,
-            InformationType.USERDATA,
-            InformationType.PROPRIETARY,
-            )
 
-        # We only show Embargoed Security and Unembargoed Security
-        # if the branch is linked to a bug with one of those types,
-        # as they're confusing and not generally useful otherwise.
-        # Once Proprietary is fully deployed, User Data should be
-        # added here.
-        hidden_types = (
-            InformationType.UNEMBARGOEDSECURITY,
-            InformationType.EMBARGOEDSECURITY,
-            )
-        if set(allowed_types).intersection(hidden_types):
-            params = BugTaskSearchParams(
-                user=self.user, linked_branches=self.context.id,
-                information_type=hidden_types)
-            if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
-                shown_types += hidden_types
+        # If we're stacked on a private branch, only show that
+        # information type.
+        if self.context.stacked_on and self.context.stacked_on.private:
+            shown_types = set([self.context.stacked_on.information_type])
+        else:
+            shown_types = (
+                InformationType.PUBLIC,
+                InformationType.USERDATA,
+                InformationType.PROPRIETARY,
+                )
+
+            # We only show Embargoed Security and Unembargoed Security
+            # if the branch is linked to a bug with one of those types,
+            # as they're confusing and not generally useful otherwise.
+            # Once Proprietary is fully deployed, User Data should be
+            # added here.
+            hidden_types = (
+                InformationType.UNEMBARGOEDSECURITY,
+                InformationType.EMBARGOEDSECURITY,
+                )
+            if set(allowed_types).intersection(hidden_types):
+                params = BugTaskSearchParams(
+                    user=self.user, linked_branches=self.context.id,
+                    information_type=hidden_types)
+                if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
+                    shown_types += hidden_types
 
         # Now take the intersection of the allowed and shown types.
         combined_types = set(allowed_types).intersection(shown_types)

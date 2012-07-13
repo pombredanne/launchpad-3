@@ -985,6 +985,23 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         self.assertShownTypes(
             [InformationType.PUBLIC, InformationType.PROPRIETARY], branch)
 
+    def test_stacked_on_private(self):
+        # A branch stacked on a private branch has its choices limited
+        # to the current type and the stacked-on type.
+        product = self.factory.makeProduct()
+        stacked_on_branch = self.factory.makeBranch(
+            product=product, information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(
+            product=product, stacked_on=stacked_on_branch,
+            owner=product.owner,
+            information_type=InformationType.EMBARGOEDSECURITY)
+        with admin_logged_in():
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+        self.assertShownTypes(
+            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA],
+            branch)
+
     def test_private_branch(self):
         # Branches on projects with a private policy can be set to
         # User Data (aka. Private)
