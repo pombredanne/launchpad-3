@@ -1033,34 +1033,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     def setUpFields(self):
         super(BranchEditView, self).setUpFields()
-        # This is to prevent users from converting push/import
-        # branches to pull branches.
         branch = self.context
-        if branch.private:
-            # If this branch is stacked on a private branch, render some text
-            # to inform the user the information type cannot be changed.
-            if (branch.stacked_on and branch.stacked_on.information_type in
-                PRIVATE_INFORMATION_TYPES):
-                stacked_info_type = branch.stacked_on.information_type.title
-                private_info = Bool(
-                    __name__="private",
-                    title=_("Branch is %s" % stacked_info_type),
-                    description=_(
-                        "This branch is %(info_type)s because it is "
-                        "stacked on a %(info_type)s branch." % {
-                            'info_type': stacked_info_type}))
-                private_info_field = form.Fields(
-                    private_info, render_context=self.render_context)
-                self.form_fields = (private_info_field
-                    + self.form_fields.omit('information_type'))
-                new_field_names = self.field_names
-                index = new_field_names.index('information_type')
-                new_field_names[index] = 'private'
-                self.form_fields = self.form_fields.select(*new_field_names)
-                self.form_fields['private'].custom_widget = (
-                    CustomWidgetFactory(
-                        CheckBoxWidget, extra='disabled="disabled"'))
-
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
         if check_permission('launchpad.Admin', branch):
