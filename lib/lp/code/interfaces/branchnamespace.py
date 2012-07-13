@@ -116,12 +116,10 @@ class IBranchNamespacePolicy(Interface):
         :return: A sequence of `InformationType`s.
         """
 
-    def areNewBranchesPrivate():
-        """Are new branches in this namespace private?
+    def getDefaultInformationType():
+        """Get the default information type for branches in this namespace.
 
-        No check is made about whether or not a user can create branches.
-
-        :return: A Boolean value.
+        :return: An `InformationType`.
         """
 
     def validateRegistrant(registrant):
