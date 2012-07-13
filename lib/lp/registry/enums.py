@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'BranchInformationTypePolicy',
-    'BugInformationTypePolicy',
+    'BranchSharingPolicy',
+    'BugSharingPolicy',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
     'InformationType',
@@ -104,7 +104,7 @@ class SharingPermission(DBEnumeratedType):
         """)
 
 
-class BranchInformationTypePolicy(DBEnumeratedType):
+class BranchSharingPolicy(DBEnumeratedType):
 
     PUBLIC = DBItem(1, """
         Public
@@ -135,7 +135,7 @@ class BranchInformationTypePolicy(DBEnumeratedType):
         """)
 
 
-class BugInformationTypePolicy(DBEnumeratedType):
+class BugSharingPolicy(DBEnumeratedType):
 
     PUBLIC = DBItem(1, """
         Public

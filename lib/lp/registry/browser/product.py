@@ -1575,7 +1575,7 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         ]
 
     custom_widget(
-        'branch_information_type_policy', LaunchpadRadioWidgetWithDescription)
+        'branch_sharing_policy', LaunchpadRadioWidgetWithDescription)
 
     @property
     def page_title(self):
@@ -1594,9 +1594,8 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         if not admin:
             self.field_names.remove('owner')
             self.field_names.remove('autoupdate')
-        if getFeatureFlag(
-            'disclosure.branch_information_type_policy.show_to_admin'):
-            self.field_names.append('branch_information_type_policy')
+        if getFeatureFlag('disclosure.branch_sharing_policy.show_to_admin'):
+            self.field_names.append('branch_sharing_policy')
         super(ProductAdminView, self).setUpFields()
         self.form_fields = self._createAliasesField() + self.form_fields
         if admin:

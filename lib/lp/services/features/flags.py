@@ -318,10 +318,10 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.branch_information_type_policy.show_to_admin',
+    ('disclosure.branch_sharing_policy.show_to_admin',
      'boolean',
-     ('If true, the branch information type policy field is shown on '
-      'Product:+admin, letting BranchVisibilityPolicy be overriden.'),
+     ('If true, the branch sharing policy field is shown on '
+      'Product:+admin, letting BranchVisibilityPolicy be overridden.'),
      '',
      '',
      ''),

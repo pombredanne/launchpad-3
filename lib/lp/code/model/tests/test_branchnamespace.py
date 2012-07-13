@@ -37,7 +37,7 @@ from lp.code.model.branchnamespace import (
     ProductNamespace,
     )
 from lp.registry.enums import (
-    BranchInformationTypePolicy,
+    BranchSharingPolicy,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -451,7 +451,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     """Tests for the privacy aspects of `ProductNamespace`.
 
     This tests the behaviour for a product using the new
-    branch_information_type_policy rules.
+    branch_sharing_policy rules.
     """
 
     layer = DatabaseFunctionalLayer
@@ -461,18 +461,18 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'disclosure.enhanced_sharing.writable': 'true'}))
 
-    def makeProductNamespace(self, information_type_policy, person=None):
+    def makeProductNamespace(self, sharing_policy, person=None):
         if person is None:
             person = self.factory.makePerson()
         product = self.factory.makeProduct()
-        removeSecurityProxy(product).branch_information_type_policy = (
-            information_type_policy)
+        removeSecurityProxy(product).branch_sharing_policy = (
+            sharing_policy)
         namespace = ProductNamespace(person, product)
         return namespace
 
     def test_public_anyone(self):
         namespace = self.makeProductNamespace(
-            BranchInformationTypePolicy.PUBLIC)
+            BranchSharingPolicy.PUBLIC)
         self.assertContentEqual(
             PUBLIC_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
         self.assertEqual(
@@ -480,7 +480,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
 
     def test_public_or_proprietary_anyone(self):
         namespace = self.makeProductNamespace(
-            BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY)
+            BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertContentEqual(
             PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
@@ -489,13 +489,13 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
 
     def test_proprietary_or_public_anyone(self):
         namespace = self.makeProductNamespace(
-            BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC)
+            BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
     def test_proprietary_or_public_grantor(self):
         namespace = self.makeProductNamespace(
-            BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC)
+            BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
         with admin_logged_in():
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,
@@ -508,13 +508,13 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
 
     def test_proprietary_anyone(self):
         namespace = self.makeProductNamespace(
-            BranchInformationTypePolicy.PROPRIETARY)
+            BranchSharingPolicy.PROPRIETARY)
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
     def test_proprietary_grantor(self):
         namespace = self.makeProductNamespace(
-            BranchInformationTypePolicy.PROPRIETARY)
+            BranchSharingPolicy.PROPRIETARY)
         with admin_logged_in():
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,

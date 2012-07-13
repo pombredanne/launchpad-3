@@ -117,8 +117,8 @@ from lp.code.model.hasbranches import (
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
-    BranchInformationTypePolicy,
-    BugInformationTypePolicy,
+    BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     )
 from lp.registry.errors import CommercialSubscribersOnly
@@ -473,10 +473,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
-    bug_information_type_policy = EnumCol(
-        enum=BugInformationTypePolicy, notNull=False, default=None)
-    branch_information_type_policy = EnumCol(
-        enum=BranchInformationTypePolicy, notNull=False, default=None)
+    bug_sharing_policy = EnumCol(
+        enum=BugSharingPolicy, notNull=False, default=None)
+    branch_sharing_policy = EnumCol(
+        enum=BranchSharingPolicy, notNull=False, default=None)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)

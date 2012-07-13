@@ -46,7 +46,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.enums import (
-    BranchInformationTypePolicy,
+    BranchSharingPolicy,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -82,34 +82,26 @@ from lp.services.webapp.interfaces import (
     )
 
 POLICY_ALLOWED_TYPES = {
-    BranchInformationTypePolicy.PUBLIC:
-        PUBLIC_INFORMATION_TYPES,
-    BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
+    BranchSharingPolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY:
         PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-    BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC:
         PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-    BranchInformationTypePolicy.PROPRIETARY:
-        PRIVATE_INFORMATION_TYPES,
+    BranchSharingPolicy.PROPRIETARY: PRIVATE_INFORMATION_TYPES,
     }
 
 POLICY_DEFAULT_TYPES = {
-    BranchInformationTypePolicy.PUBLIC:
-        InformationType.PUBLIC,
-    BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY:
-        InformationType.PUBLIC,
-    BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
-        InformationType.USERDATA,
-    BranchInformationTypePolicy.PROPRIETARY:
-        InformationType.USERDATA,
+    BranchSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
     }
 
 POLICY_REQUIRED_GRANTS = {
-    BranchInformationTypePolicy.PUBLIC: None,
-    BranchInformationTypePolicy.PUBLIC_OR_PROPRIETARY: None,
-    BranchInformationTypePolicy.PROPRIETARY_OR_PUBLIC:
-        InformationType.USERDATA,
-    BranchInformationTypePolicy.PROPRIETARY:
-        InformationType.USERDATA,
+    BranchSharingPolicy.PUBLIC: None,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: None,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
     }
 
 
@@ -375,7 +367,7 @@ class ProductNamespace(_BaseNamespace):
 
     @property
     def _using_branchvisibilitypolicy(self):
-        return self.product.branch_information_type_policy is None
+        return self.product.branch_sharing_policy is None
 
     def _getRelatedPolicies(self):
         """Return the privacy policies relating to the owner."""
@@ -392,7 +384,7 @@ class ProductNamespace(_BaseNamespace):
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
-        # New branch_information_type_policy-based privacy doesn't
+        # New branch_sharing_policy-based privacy doesn't
         # require a privacy subscriber, as branches are shared through
         # AccessPolicyGrants.
         if not self._using_branchvisibilitypolicy:
@@ -415,21 +407,21 @@ class ProductNamespace(_BaseNamespace):
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
         if not self._using_branchvisibilitypolicy:
-            # The project uses the new simplified
-            # branch_information_type_policy rules, so check them.
+            # The project uses the new simplified branch_sharing_policy
+            # rules, so check them.
 
             # Some policies require that the owner have full access to
             # an information type. If it's required and the owner
             # doesn't hold it, no information types are legal.
             required_grant = POLICY_REQUIRED_GRANTS[
-                self.product.branch_information_type_policy]
+                self.product.branch_sharing_policy]
             if (required_grant is not None
                 and not getUtility(IService, 'sharing').checkPillarAccess(
                     self.product, required_grant, self.owner)):
                 return []
 
             return POLICY_ALLOWED_TYPES[
-                self.product.branch_information_type_policy]
+                self.product.branch_sharing_policy]
 
         # The project still uses BranchVisibilityPolicy, so check that.
         private_rules = (
@@ -468,7 +460,7 @@ class ProductNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         if not self._using_branchvisibilitypolicy:
             default_type = POLICY_DEFAULT_TYPES[
-                self.product.branch_information_type_policy]
+                self.product.branch_sharing_policy]
             if default_type not in self.getAllowedInformationTypes():
                 return None
             return default_type
