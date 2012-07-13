@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
-from lp.registry.interfaces.product import IProduct
 
 __metaclass__ = type
 __all__ = [
@@ -145,9 +144,11 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
-    PersonVisibility,
     validate_person,
     validate_public_person,
+    )
+from lp.registry.interfaces.sharingjob import (
+    IRemoveArtifactSubscriptionsJobSource,
     )
 from lp.registry.model.accesspolicy import (
     AccessPolicyGrant,
@@ -172,6 +173,7 @@ from lp.services.database.stormexpr import (
     ArrayAgg,
     ArrayIntersects,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -271,6 +273,13 @@ class Branch(SQLBase, BzrIdentityMixin):
                 service.ensureAccessGrants(
                     blind_subscribers, who, branches=[self],
                     ignore_permissions=True)
+        flag = 'disclosure.unsubscribe_jobs.enabled'
+        if bool(getFeatureFlag(flag)):
+            # As a result of the transition, some subscribers may no longer
+            # have access to the branch. We need to run a job to remove any
+            # such subscriptions.
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                who, [self])
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
