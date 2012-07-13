@@ -36,10 +36,7 @@ from lp.code.enums import (
     BranchVisibilityRule,
     )
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
-    )
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -47,6 +44,7 @@ from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
     login,
     login_person,
@@ -915,32 +913,11 @@ class TestBranchEditView(TestCaseWithFactory):
         admin = admins.teamowner
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=admin)
-        browser.getControl("Embargoed Security").click()
+        browser.getControl("User Data").click()
         browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEqual(
-                InformationType.EMBARGOEDSECURITY, branch.information_type)
-
-    def test_proprietary_in_ui_vocabulary_commercial_projects(self):
-        # Commercial projects can have information type Proprietary.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        branch = self.factory.makeProductBranch(product=product, owner=owner)
-        with person_logged_in(owner):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=owner)
-            self.assertIsNotNone(browser.getControl("Proprietary"))
-
-    def test_proprietary_not_in_ui_vocabulary_normal_projects(self):
-        # Non-commercial projects can not have information type Proprietary.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        branch = self.factory.makeProductBranch(product=product, owner=owner)
-        with person_logged_in(owner):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=owner)
-            self.assertRaises(LookupError, browser.getControl, "Proprietary")
+                InformationType.USERDATA, branch.information_type)
 
     def test_can_not_change_privacy_of_stacked_on_private(self):
         # The privacy field is not shown if the branch is stacked on a
@@ -958,41 +935,100 @@ class TestBranchEditView(TestCaseWithFactory):
         self.assertRaises(
             LookupError, browser.getControl, "Information Type")
 
-    def test_authorised_user_can_change_branch_to_private(self):
-        # An authorised user can make the information type private.
-        team_owner = self.factory.makePerson()
-        user = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            owner=team_owner,
-            visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        with person_logged_in(team_owner):
-            team.addMember(user, team_owner)
-        with person_logged_in(user):
-            branch = self.factory.makeBranch(owner=team)
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=user)
-        self.assertIsNotNone(browser.getControl, "Embargoed Security")
 
-    def test_unauthorised_user_cannot_change_branch_to_private(self):
-        # An unauthorised user cannot make the information type private.
-        user = self.factory.makePerson()
-        with person_logged_in(user):
-            branch = self.factory.makeBranch(owner=user)
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=user)
-        self.assertRaises(
-            LookupError, browser.getControl, "Embargoed Security")
+class TestBranchEditViewInformationTypes(TestCaseWithFactory):
+    """Tests for BranchEditView.getInformationTypesToShow."""
 
-    def test_branch_for_commercial_project(self):
-        # A branch for a commercial project can be private.
+    layer = DatabaseFunctionalLayer
+
+    def assertShownTypes(self, types, branch, user=None):
+        if user is None:
+            user = removeSecurityProxy(branch).owner
+        with person_logged_in(user):
+            view = create_initialized_view(branch, '+edit', user=user)
+            self.assertContentEqual(types, view.getInformationTypesToShow())
+
+    def test_public_branch(self):
+        # A normal public branch on a public project can only be public.
+        # We don't show information types like Unembargoed Security
+        # unless there's a linked branch of that type, as they're not
+        # useful or unconfusing otherwise.
+        # The model doesn't enforce this, so it's just a UI thing.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        self.assertShownTypes([InformationType.PUBLIC], branch)
+
+    def test_public_branch_with_security_bug(self):
+        # A public branch can be set to Unembargoed Security if it has a
+        # linked Unembargoed Security bug. The project policy doesn't
+        # allow private branches, so Embargoed Security and User Data
+        # are unavailable.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        bug = self.factory.makeBug(
+            information_type=InformationType.UNEMBARGOEDSECURITY)
+        with admin_logged_in():
+            branch.linkBug(bug, branch.owner)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY],
+            branch)
+
+    def test_branch_with_disallowed_type(self):
+        # We don't force branches with a disallowed type (eg. Proprietary on a
+        # non-commercial project) to change, so the current type is
+        # shown.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.PROPRIETARY], branch)
+
+    def test_stacked_on_private(self):
+        # A branch stacked on a private branch has its choices limited
+        # to the current type and the stacked-on type.
         product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        branch = self.factory.makeProductBranch(product=product)
-        with person_logged_in(branch.owner):
-            browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=branch.owner)
-        self.assertIsNotNone(browser.getControl, "Embargoed Security")
+        stacked_on_branch = self.factory.makeBranch(
+            product=product, information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(
+            product=product, stacked_on=stacked_on_branch,
+            owner=product.owner,
+            information_type=InformationType.EMBARGOEDSECURITY)
+        with admin_logged_in():
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+        self.assertShownTypes(
+            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA],
+            branch)
+
+    def test_private_branch(self):
+        # Branches on projects with a private policy can be set to
+        # User Data (aka. Private)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        with admin_logged_in():
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.USERDATA,
+             InformationType.PROPRIETARY], branch)
+
+    def test_private_branch_with_security_bug(self):
+        # Branches on projects that allow private branches can use the
+        # Embargoed Security information type if they have a security
+        # bug linked.
+        branch = self.factory.makeBranch(
+            information_type=InformationType.PUBLIC)
+        with admin_logged_in():
+            branch.product.setBranchVisibilityTeamPolicy(
+                branch.owner, BranchVisibilityRule.PRIVATE)
+        bug = self.factory.makeBug(
+            information_type=InformationType.UNEMBARGOEDSECURITY)
+        with admin_logged_in():
+            branch.linkBug(bug, branch.owner)
+        self.assertShownTypes(
+            [InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY,
+             InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY],
+            branch)
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):
