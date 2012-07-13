@@ -48,9 +48,7 @@ from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 import simplejson
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import (
     getUtility,
     queryAdapter,
@@ -124,11 +122,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import (
@@ -1033,34 +1027,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     def setUpFields(self):
         super(BranchEditView, self).setUpFields()
-        # This is to prevent users from converting push/import
-        # branches to pull branches.
         branch = self.context
-        if branch.private:
-            # If this branch is stacked on a private branch, render some text
-            # to inform the user the information type cannot be changed.
-            if (branch.stacked_on and branch.stacked_on.information_type in
-                PRIVATE_INFORMATION_TYPES):
-                stacked_info_type = branch.stacked_on.information_type.title
-                private_info = Bool(
-                    __name__="private",
-                    title=_("Branch is %s" % stacked_info_type),
-                    description=_(
-                        "This branch is %(info_type)s because it is "
-                        "stacked on a %(info_type)s branch." % {
-                            'info_type': stacked_info_type}))
-                private_info_field = form.Fields(
-                    private_info, render_context=self.render_context)
-                self.form_fields = (private_info_field
-                    + self.form_fields.omit('information_type'))
-                new_field_names = self.field_names
-                index = new_field_names.index('information_type')
-                new_field_names[index] = 'private'
-                self.form_fields = self.form_fields.select(*new_field_names)
-                self.form_fields['private'].custom_widget = (
-                    CustomWidgetFactory(
-                        CheckBoxWidget, extra='disabled="disabled"'))
-
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
         if check_permission('launchpad.Admin', branch):
@@ -1109,27 +1076,33 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         bug with an obscure type.
         """
         allowed_types = self.context.getAllowedInformationTypes(self.user)
-        shown_types = (
-            InformationType.PUBLIC,
-            InformationType.USERDATA,
-            InformationType.PROPRIETARY,
-            )
 
-        # We only show Embargoed Security and Unembargoed Security
-        # if the branch is linked to a bug with one of those types,
-        # as they're confusing and not generally useful otherwise.
-        # Once Proprietary is fully deployed, User Data should be
-        # added here.
-        hidden_types = (
-            InformationType.UNEMBARGOEDSECURITY,
-            InformationType.EMBARGOEDSECURITY,
-            )
-        if set(allowed_types).intersection(hidden_types):
-            params = BugTaskSearchParams(
-                user=self.user, linked_branches=self.context.id,
-                information_type=hidden_types)
-            if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
-                shown_types += hidden_types
+        # If we're stacked on a private branch, only show that
+        # information type.
+        if self.context.stacked_on and self.context.stacked_on.private:
+            shown_types = set([self.context.stacked_on.information_type])
+        else:
+            shown_types = (
+                InformationType.PUBLIC,
+                InformationType.USERDATA,
+                InformationType.PROPRIETARY,
+                )
+
+            # We only show Embargoed Security and Unembargoed Security
+            # if the branch is linked to a bug with one of those types,
+            # as they're confusing and not generally useful otherwise.
+            # Once Proprietary is fully deployed, User Data should be
+            # added here.
+            hidden_types = (
+                InformationType.UNEMBARGOEDSECURITY,
+                InformationType.EMBARGOEDSECURITY,
+                )
+            if set(allowed_types).intersection(hidden_types):
+                params = BugTaskSearchParams(
+                    user=self.user, linked_branches=self.context.id,
+                    information_type=hidden_types)
+                if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
+                    shown_types += hidden_types
 
         # Now take the intersection of the allowed and shown types.
         combined_types = set(allowed_types).intersection(shown_types)
