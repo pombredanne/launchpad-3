@@ -15,6 +15,7 @@ from zope.traversing.browser.absoluteurl import absoluteURL
 from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import (
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
@@ -25,6 +26,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -856,6 +858,12 @@ class TestSharingService(TestCaseWithFactory):
         for person in [team_grantee, person_grantee]:
             for bug in bugs or []:
                 bug.subscribe(person, pillar.owner)
+                # XXX 2012-06-12 wallyworld bug=1002596
+                # No need to revoke AAG with triggers removed.
+                if person == person_grantee:
+                    accessartifact_source = getUtility(IAccessArtifactSource)
+                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                        accessartifact_source.find([bug]), [person_grantee])
             for branch in branches or []:
                 branch.subscribe(person,
                     BranchSubscriptionNotificationLevel.NOEMAIL, None,
@@ -1113,6 +1121,17 @@ class TestSharingService(TestCaseWithFactory):
             grant_access(bug, i == 9)
         for i, branch in enumerate(branches):
             grant_access(branch, i == 9)
+            # XXX bug=1001042 wallyworld 2012-05-18
+            # for now we need to subscribe users to the branch in order
+            # for the underlying BranchCollection to allow access. This will
+            # no longer be the case when BranchCollection supports the new
+            # access policy framework.
+            if i < 9:
+                branch.subscribe(
+                    user, BranchSubscriptionNotificationLevel.NOEMAIL,
+                    BranchSubscriptionDiffSize.NODIFF,
+                    CodeReviewNotificationLevel.NOEMAIL,
+                    owner)
 
         # Check the results.
         shared_bugtasks, shared_branches = self.service.getSharedArtifacts(

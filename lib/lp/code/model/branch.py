@@ -604,7 +604,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             return []
         stacked_on_branches = [self.stacked_on]
         stacked_on_branches.extend(self.stacked_on.getStackedOnBranches())
-        return  stacked_on_branches
+        return stacked_on_branches
 
     @property
     def code_is_browseable(self):

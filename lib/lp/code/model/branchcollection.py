@@ -140,7 +140,7 @@ class GenericBranchCollection:
     def ownerCounts(self):
         """See `IBranchCollection`."""
         is_team = Person.teamowner != None
-        branch_owners = self._getBranchSelect(Branch.ownerID)
+        branch_owners = self._getBranchSelect((Branch.ownerID,))
         counts = dict(self.store.find(
             (is_team, Count(Person.id)),
             Person.id.is_in(branch_owners)).group_by(is_team))
@@ -197,12 +197,10 @@ class GenericBranchCollection:
             asymmetric_expr,
             asymmetric_tables)
 
-    def _getBranchSelect(self, columns=Branch.id):
+    def _getBranchSelect(self, columns=(Branch.id,)):
         """Return a Storm 'Select' for columns in this collection."""
         branches = self.getBranches(eager_load=False, find_expr=columns)
-        select = branches.get_plain_result_set()._get_select()
-#        select.columns = columns
-        return select
+        return branches.get_plain_result_set()._get_select()
 
     def _getBranchExpressions(self):
         """Return the where expressions for this collection."""
@@ -532,7 +530,7 @@ class GenericBranchCollection:
         # BranchCollection conceptual model, but we're not quite sure how to
         # fix it just yet.  Perhaps when bug 337494 is fixed, we'd be able to
         # sensibly be able to move this method to another utility class.
-        branch_query = self._getBranchSelect(Branch.ownerID)
+        branch_query = self._getBranchSelect((Branch.ownerID,))
         return self.store.find(
             Person,
             Person.id == TeamParticipation.teamID,
