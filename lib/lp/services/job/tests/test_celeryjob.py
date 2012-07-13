@@ -26,10 +26,10 @@ class TestRunMissingJobs(TestCaseWithFactory):
         super(TestRunMissingJobs, self).setUp()
         from lp.services.job.celeryjob import (
             find_missing_ready,
-            run_missing_ready,
+            RunMissingReady,
         )
         self.find_missing_ready = find_missing_ready
-        self.run_missing_ready = run_missing_ready
+        self.RunMissingReady = RunMissingReady
 
     def createMissingJob(self):
         job = BranchScanJob.create(self.factory.makeBranch())
@@ -53,7 +53,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         with monitor_celery() as responses:
             with dbuser('run_missing_ready'):
                 with TransactionFreeOperation.require():
-                    self.run_missing_ready(_no_init=True)
+                    self.RunMissingReady().run(_no_init=True)
         self.assertEqual([], responses)
 
     def test_run_missing_ready(self):
@@ -64,7 +64,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         with monitor_celery() as responses:
             with dbuser('run_missing_ready'):
                 with TransactionFreeOperation.require():
-                    self.run_missing_ready(_no_init=True)
+                    self.RunMissingReady().run(_no_init=True)
         self.assertEqual(1, len(responses))
 
     def test_run_missing_ready_does_not_return_results(self):
@@ -72,7 +72,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         result queue."""
         from lazr.jobrunner.celerytask import list_queued
         job_queue_name = 'job'
-        request = self.run_missing_ready.apply_async(
+        request = self.RunMissingReady().apply_async(
             kwargs={'_no_init': True}, queue=job_queue_name)
         result_queue_name = request.task_id.replace('-', '')
         # Paranoia check: This test intends to prove that a Celery
@@ -80,15 +80,15 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # This would also happen when "with celeryd()" would do nothing.
         # So let's be sure that right now a task is queued...
         self.assertEqual(
-            1, len(list_queued(self.run_missing_ready.app, [job_queue_name])))
+            1, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
         # ...and that list_queued() calls do not consume messages.
         self.assertEqual(
-            1, len(list_queued(self.run_missing_ready.app, [job_queue_name])))
+            1, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
         with celeryd(job_queue_name):
             sleep(2)
         # But now the message has been consumed by celeryd.
         self.assertEqual(
-            0, len(list_queued(self.run_missing_ready.app, [job_queue_name])))
+            0, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
         try:
             real_stdout = sys.stdout
             real_stderr = sys.stderr
