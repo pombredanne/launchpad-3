@@ -54,10 +54,12 @@ from lp.code.model.branch import (
     get_branch_privacy_filter,
     )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.revision import Revision
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.model.distribution import Distribution
@@ -322,7 +324,7 @@ class GenericBranchCollection:
 
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None, merged_revnos=None,
-                          eager_load=False):
+                          merged_revision=None, eager_load=False):
         """See `IBranchCollection`."""
         if for_branches is not None and not for_branches:
             # We have an empty branches list, so we can shortcut.
@@ -333,10 +335,11 @@ class GenericBranchCollection:
         elif (self._asymmetric_filter_expressions or
             for_branches is not None or
             target_branch is not None or
-            merged_revnos is not None):
+            merged_revnos is not None or
+            merged_revision is not None):
             return self._naiveGetMergeProposals(
                 statuses, for_branches, target_branch, merged_revnos,
-                eager_load=eager_load)
+                merged_revision, eager_load=eager_load)
         else:
             # When examining merge proposals in a scope, this is a moderately
             # effective set of constrained queries. It is not effective when
@@ -346,7 +349,7 @@ class GenericBranchCollection:
 
     def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
                                 target_branch=None, merged_revnos=None,
-                                eager_load=False):
+                                merged_revision=None, eager_load=False):
         Target = ClassAlias(Branch, "target")
         extra_tables = list(set(
             self._tables.values() + self._asymmetric_tables.values()))
@@ -369,6 +372,15 @@ class GenericBranchCollection:
         if merged_revnos is not None:
             expressions.append(
                 BranchMergeProposal.merged_revno.is_in(merged_revnos))
+        if merged_revision is not None:
+            expressions.extend([
+                BranchMergeProposal.merged_revno == BranchRevision.sequence,
+                BranchRevision.revision_id == Revision.id,
+                BranchRevision.branch_id ==
+                    BranchMergeProposal.target_branchID,
+                Revision.revision_id == merged_revision
+            ])
+            tables.extend([BranchRevision, Revision])
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
