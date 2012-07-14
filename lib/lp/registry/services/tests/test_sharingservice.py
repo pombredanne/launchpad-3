@@ -493,7 +493,7 @@ class TestSharingService(TestCaseWithFactory):
                  [InformationType.USERDATA,
                   InformationType.EMBARGOEDSECURITY]),
                  ]
-        else:
+        else: 
             expected_sharee_grants = [
                 (sharee,
                  {es_policy: SharingPermission.ALL,
@@ -997,34 +997,6 @@ class TestSharingService(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         self._assert_ensureAccessGrants(owner, None, [branch])
 
-    def test_ensureAccessGrantsStackedBranches(self):
-        # Access grants created for branches also grant access to any private
-        # stacked on branches.
-        owner = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=owner)
-        login_person(owner)
-        stacked_on_branch = self.factory.makeBranch(
-            product=product, owner=owner,
-            information_type=InformationType.EMBARGOEDSECURITY)
-        branch = self.factory.makeBranch(
-            product=product, owner=owner, stacked_on=stacked_on_branch,
-            information_type=InformationType.USERDATA)
-
-        # Grant access to the top level branch.
-        grantee = self.factory.makePerson()
-        with FeatureFixture(WRITE_FLAG):
-            self.service.ensureAccessGrants(
-                [grantee], owner, branches=[branch])
-
-        # Check that the expected access grants have been created.
-        shared_branches = []
-        policies = getUtility(IAccessPolicySource).findByPillar([product])
-        apgfs = getUtility(IAccessPolicyGrantFlatSource)
-        access_artifacts = apgfs.findArtifactsByGrantee(grantee, policies)
-        for a in access_artifacts:
-            shared_branches.append(a.concrete_artifact)
-        self.assertContentEqual([branch, stacked_on_branch], shared_branches)
-
     def test_ensureAccessGrantsExisting(self):
         # Any existing access grants are retained and new ones created.
         owner = self.factory.makePerson()
@@ -1182,8 +1154,8 @@ class TestSharingService(TestCaseWithFactory):
         without_access = self.service.getPeopleWithoutAccess(bug, people)
         self.assertContentEqual(people[:5], without_access)
 
-    def _make_Artifacts(self):
-        # Make artifacts for test (in)visible artifact methods.
+    def test_getVisibleArtifacts(self):
+        # Test the getVisibleArtifacts method.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         grantee = self.factory.makePerson()
@@ -1214,25 +1186,22 @@ class TestSharingService(TestCaseWithFactory):
             grant_access(bug)
         for branch in branches[:5]:
             grant_access(branch)
-        return grantee, branches, bugs
+            # XXX bug=1001042 wallyworld 2012-05-18
+            # for now we need to subscribe users to the branch in order
+            # for the underlying BranchCollection to allow access. This will
+            # no longer be the case when BranchCollection supports the new
+            # access policy framework.
+            branch.subscribe(
+                grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL,
+                owner)
 
-    def test_getVisibleArtifacts(self):
-        # Test the getVisibleArtifacts method.
-        grantee, branches, bugs = self._make_Artifacts()
         # Check the results.
         shared_bugs, shared_branches = self.service.getVisibleArtifacts(
             grantee, branches, bugs)
         self.assertContentEqual(bugs[:5], shared_bugs)
         self.assertContentEqual(branches[:5], shared_branches)
-
-    def test_getInvisibleArtifacts(self):
-        # Test the getInvisibleArtifacts method.
-        grantee, branches, bugs = self._make_Artifacts()
-        # Check the results.
-        not_shared_bugs, not_shared_branches = (
-            self.service.getInvisibleArtifacts(grantee, branches, bugs))
-        self.assertContentEqual(bugs[5:], not_shared_bugs)
-        self.assertContentEqual(branches[5:], not_shared_branches)
 
     def _assert_getVisibleArtifacts_bug_change(self, change_callback):
         # Test the getVisibleArtifacts method excludes bugs after a change of

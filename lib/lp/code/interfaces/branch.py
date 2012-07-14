@@ -641,9 +641,6 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def getStackedBranches():
         """The branches that are stacked on this one."""
 
-    def getStackedOnBranches():
-        """The branches on which this one is stacked."""
-
     def getMainlineBranchRevisions(start_date, end_date=None,
                                    oldest_first=False):
         """Return the matching mainline branch revision objects.
