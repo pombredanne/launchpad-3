@@ -600,10 +600,14 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getStackedOnBranches(self):
         """See `IBranch`."""
-        if not self.stacked_on:
-            return []
-        stacked_on_branches = [self.stacked_on]
-        stacked_on_branches.extend(self.stacked_on.getStackedOnBranches())
+        # We need to ensure we avoid being caught by accidental circular
+        # dependencies.
+        stacked_on_branches = []
+        branch = self
+        while (branch.stacked_on and
+               branch.stacked_on not in stacked_on_branches):
+            stacked_on_branches.append(branch.stacked_on)
+            branch = branch.stacked_on
         return stacked_on_branches
 
     @property
