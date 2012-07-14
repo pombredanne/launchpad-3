@@ -147,20 +147,12 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             product=product,
             information_type=InformationType.USERDATA)
         someone = self.factory.makePerson()
-        with person_logged_in(owner):
-            getUtility(IService, 'sharing').ensureAccessGrants(
-                [someone], owner, branches=[branch], ignore_permissions=True)
+        getUtility(IService, 'sharing').ensureAccessGrants(
+            [someone], owner, branches=[branch], ignore_permissions=True)
         [branch] = list(collection.visibleByUser(someone).getBranches())
         with StormStatementRecorder() as recorder:
             self.assertTrue(branch.visibleByUser(someone))
             self.assertThat(recorder, HasQueryCount(Equals(0)))
-
-    def test_getBranchIds(self):
-        branch = self.factory.makeProductBranch()
-        self.factory.makeAnyBranch()
-        collection = GenericBranchCollection(
-            self.store, [Branch.product == branch.product])
-        self.assertEqual([branch.id], list(collection.getBranchIds()))
 
     def test_count(self):
         # The 'count' property of a collection is the number of elements in
@@ -658,14 +650,12 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         self.assertEqual([self.public_branch], list(branches.getBranches()))
 
     def test_owner_sees_own_branches(self):
-        # Users can always see the branches that they own, those their own
-        # branches are stacked on, as well as public branches.
+        # Users can always see the branches that they own, as well as public
+        # branches.
         owner = removeSecurityProxy(self.private_branch1).owner
         branches = self.all_branches.visibleByUser(owner)
         self.assertEqual(
-            sorted([self.public_branch, self.private_branch1,
-                    self.public_stacked_on_branch,
-                    self.private_stacked_on_branch]),
+            sorted([self.public_branch, self.private_branch1]),
             sorted(branches.getBranches()))
 
     def test_launchpad_services_sees_all(self):
@@ -687,8 +677,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             sorted(branches.getBranches()))
 
     def test_subscribers_can_see_branches(self):
-        # A person subscribed to a branch can see it, as well as any it is
-        # stacked on, even if it's private.
+        # A person subscribed to a branch can see it, even if it's private.
         subscriber = self.factory.makePerson()
         removeSecurityProxy(self.private_branch1).subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
@@ -697,9 +686,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             subscriber)
         branches = self.all_branches.visibleByUser(subscriber)
         self.assertEqual(
-            sorted([self.public_branch, self.private_branch1,
-                    self.public_stacked_on_branch,
-                    self.private_stacked_on_branch]),
+            sorted([self.public_branch, self.private_branch1]),
             sorted(branches.getBranches()))
 
     def test_subscribed_team_members_can_see_branches(self):

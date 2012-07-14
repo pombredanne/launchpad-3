@@ -72,9 +72,6 @@ class IBranchCollection(Interface):
             objects in the collection.
         """
 
-    def getBranchIds():
-        """Return a result set of all branch ids in this collection."""
-
     def getMergeProposals(statuses=None, for_branches=None,
                           target_branch=None, eager_load=False):
         """Return a result set of merge proposals for the branches in this
