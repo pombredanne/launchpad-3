@@ -142,8 +142,7 @@ class GenericBranchCollection:
     def ownerCounts(self):
         """See `IBranchCollection`."""
         is_team = Person.teamowner != None
-        branch_owners = self._getBranchIdQuery()
-        branch_owners.columns = (Branch.ownerID,)
+        branch_owners = self._getBranchSelect((Branch.ownerID,))
         counts = dict(self.store.find(
             (is_team, Count(Person.id)),
             Person.id.is_in(branch_owners)).group_by(is_team))
@@ -200,12 +199,10 @@ class GenericBranchCollection:
             asymmetric_expr,
             asymmetric_tables)
 
-    def _getBranchIdQuery(self):
-        """Return a Storm 'Select' for the branch IDs in this collection."""
-        branches = self.getBranches(eager_load=False)
-        select = branches.get_plain_result_set()._get_select()
-        select.columns = (Branch.id,)
-        return select
+    def _getBranchSelect(self, columns=(Branch.id,)):
+        """Return a Storm 'Select' for columns in this collection."""
+        branches = self.getBranches(eager_load=False, find_expr=columns)
+        return branches.get_plain_result_set()._get_select()
 
     def _getBranchExpressions(self):
         """Return the where expressions for this collection."""
@@ -291,13 +288,13 @@ class GenericBranchCollection:
             cache = caches[code_import.branchID]
             cache.code_import = code_import
 
-    def getBranches(self, eager_load=False):
+    def getBranches(self, find_expr=Branch, eager_load=False):
         """See `IBranchCollection`."""
         all_tables = set(
             self._tables.values() + self._asymmetric_tables.values())
         tables = [Branch] + list(all_tables)
         expressions = self._getBranchExpressions()
-        resultset = self.store.using(*tables).find(Branch, *expressions)
+        resultset = self.store.using(*tables).find(find_expr, *expressions)
 
         def do_eager_load(rows):
             branch_ids = set(branch.id for branch in rows)
@@ -317,10 +314,15 @@ class GenericBranchCollection:
                     set([self._user.id]))
             return branch
 
-        eager_load_hook = do_eager_load if eager_load else None
+        eager_load_hook = (
+            do_eager_load if eager_load and find_expr == Branch else None)
         return DecoratedResultSet(
             resultset, pre_iter_hook=eager_load_hook,
             result_decorator=cache_permission)
+
+    def getBranchIds(self):
+        """See `IBranchCollection`."""
+        return self.getBranches(find_expr=Branch.id).get_plain_result_set()
 
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None, merged_revnos=None,
@@ -454,8 +456,7 @@ class GenericBranchCollection:
 
         expressions = [
             CodeReviewVoteReference.reviewer == reviewer,
-            BranchMergeProposal.source_branchID.is_in(
-                self._getBranchIdQuery())]
+            BranchMergeProposal.source_branchID.is_in(self._getBranchSelect())]
         visibility = self._getBranchVisibilityExpression()
         if visibility:
             expressions.append(BranchMergeProposal.target_branchID.is_in(
@@ -541,8 +542,7 @@ class GenericBranchCollection:
         # BranchCollection conceptual model, but we're not quite sure how to
         # fix it just yet.  Perhaps when bug 337494 is fixed, we'd be able to
         # sensibly be able to move this method to another utility class.
-        branch_query = self._getBranchIdQuery()
-        branch_query.columns = (Branch.ownerID,)
+        branch_query = self._getBranchSelect((Branch.ownerID,))
         return self.store.find(
             Person,
             Person.id == TeamParticipation.teamID,
