@@ -357,6 +357,28 @@ class IArchivePermissionSet(Interface):
             'person' is allowed to administer the queue for.
         """
 
+    def queueAdminsForPocket(archive, pocket):
+        """The `ArchivePermission` records for authorised pocket queue admins.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param pocket: A `PackagePublishingPocket`.
+
+        :return: `ArchivePermission` records for all the persons who are
+            allowed to administer the pocket upload queue.
+        """
+
+    def pocketsForQueueAdmin(archive, person):
+        """Return `ArchivePermission` for the person's queue admin pockets.
+
+        :param archive: The context `IArchive` for the permission check, or
+            an iterable of `IArchive`s.
+        :param person: An `IPerson` for whom you want to find out which
+            components he has access to.
+
+        :return: `ArchivePermission` records for all the pockets that
+            'person' is allowed to administer the queue for.
+        """
+
     def newPackageUploader(archive, person, sourcepackagename):
         """Create and return a new `ArchivePermission` for an uploader.
 
@@ -421,6 +443,17 @@ class IArchivePermissionSet(Interface):
             already exists.
         """
 
+    def newPocketQueueAdmin(archive, person, pocket):
+        """Create and return a new `ArchivePermission` for a queue admin.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param person: An `IPerson` for whom you want to add permission.
+        :param pocket: A `PackagePublishingPocket`.
+
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
+        """
+
     def deletePackageUploader(archive, person, sourcepackagename):
         """Revoke upload permissions for a person.
 
@@ -465,4 +498,12 @@ class IArchivePermissionSet(Interface):
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to revoke permission.
         :param component: An `IComponent` or a string package name.
+        """
+
+    def deletePocketQueueAdmin(archive, person, pocket):
+        """Revoke queue admin permissions for a person.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param person: An `IPerson` for whom you want to revoke permission.
+        :param component: A `PackagePublishingPocket`.
         """

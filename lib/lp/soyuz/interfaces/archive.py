@@ -1235,6 +1235,36 @@ class IArchiveView(IHasBuildRecords):
         :return: A list of `IArchivePermission` records.
         """
 
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        )
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getQueueAdminsForPocket(pocket):
+        """Return `IArchivePermission` records for authorised queue admins.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(person=Reference(schema=IPerson))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getPocketsForQueueAdmin(person):
+        """Return `IArchivePermission` for the person's queue admin pockets.
+
+        :param person: An `IPerson`.
+        :return: A list of `IArchivePermission` records.
+        """
+
     def hasAnyPermission(person):
         """Whether or not this person has any permission at all on this
         archive.
@@ -1590,7 +1620,7 @@ class IArchiveEdit(Interface):
         """Add permission for a person to upload to a pocket.
 
         :param person: An `IPerson` whom should be given permission.
-        :param component: A `PackagePublishingPocket`.
+        :param pocket: A `PackagePublishingPocket`.
         :return: An `IArchivePermission` which is the newly-created
             permission.
         :raises InvalidPocketForPartnerArchive: if this archive is a partner
@@ -1613,6 +1643,28 @@ class IArchiveEdit(Interface):
 
         :param person: An `IPerson` whom should be given permission.
         :param component: An `IComponent` or textual component name.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    @operation_for_version("devel")
+    def newPocketQueueAdmin(person, pocket):
+        """Add permission for a person to administer a distroseries queue.
+
+        The supplied person will gain permission to administer the
+        distroseries queue for packages in the supplied pocket.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param pocket: A `PackagePublishingPocket`.
         :return: An `IArchivePermission` which is the newly-created
             permission.
         """
@@ -1695,6 +1747,25 @@ class IArchiveEdit(Interface):
 
         :param person: An `IPerson` whose permission should be revoked.
         :param component: An `IComponent` or textual component name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def deletePocketQueueAdmin(person, pocket):
+        """Revoke permission for the person to administer distroseries queues.
+
+        The supplied person will lose permission to administer the
+        distroseries queue for packages in the supplied pocket.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param pocket: A `PackagePublishingPocket`.
         """
 
     @operation_parameters(

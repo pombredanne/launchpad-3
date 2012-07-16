@@ -661,6 +661,58 @@ deletePocketUploader removes that permission:
     The signer of this package has no upload rights to
     this distribution's primary archive.  Did you mean to upload to a PPA?
 
+getQueueAdminsForPocket returns all the permissions where someone can
+administer distroseries queues in a particular pocket.
+
+    >>> def show_admins_for_pocket(pocket):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu_devel['main_archive_link'], 'getQueueAdminsForPocket',
+    ...         api_version='devel', pocket=pocket).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_admins_for_pocket('Security')
+
+getPocketsForQueueAdmin returns all the permissions relating to pockets
+where the user is able to administer distroseries queues.
+
+    >>> def show_pockets_for_admin(person):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu_devel['main_archive_link'], 'getPocketsForQueueAdmin',
+    ...         api_version='devel', person=person['self_link']).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_pockets_for_admin(name12)
+
+newPocketQueueAdmin adds a new permission for a person to administer
+distroseries queues in a particular pocket.
+
+    >>> response = ubuntu_owner_webservice.named_post(
+    ...     ubuntu_devel['main_archive_link'], 'newPocketQueueAdmin', {},
+    ...     api_version='devel', person=name12['self_link'], pocket='Security')
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = ubuntu_owner_webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+queue-admin/name12?type=pocket&item=SECURITY
+
+    >>> show_pockets_for_admin(name12)
+    Queue Administration Rights ...~name12 None None Security
+
+deletePocketQueueAdmin removes that permission.
+
+    >>> print ubuntu_owner_webservice.named_post(
+    ...     ubuntu_devel['main_archive_link'], 'deletePocketQueueAdmin', {},
+    ...     api_version='devel', person=name12['self_link'], pocket='Security')
+    HTTP/1.1 200 Ok
+    ...
+
+And we can see that it's gone:
+
+    >>> show_pockets_for_admin(name12)
+
 Malformed archive permission URLs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

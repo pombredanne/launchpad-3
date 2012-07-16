@@ -1087,6 +1087,16 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
 
+    def getQueueAdminsForPocket(self, pocket):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.queueAdminsForPocket(self, pocket)
+
+    def getPocketsForQueueAdmin(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.pocketsForQueueAdmin(self, person)
+
     def hasAnyPermission(self, person):
         """See `IArchive`."""
         # Avoiding circular imports.
@@ -1406,6 +1416,11 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newQueueAdmin(self, person, component_name)
 
+    def newPocketQueueAdmin(self, person, pocket):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPocketQueueAdmin(self, person, pocket)
+
     def deletePackageUploader(self, person, source_package_name):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
@@ -1427,6 +1442,11 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.deleteQueueAdmin(self, person, component_name)
+
+    def deletePocketQueueAdmin(self, person, pocket):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deletePocketQueueAdmin(self, person, pocket)
 
     def getUploadersForPackageset(self, packageset, direct_permissions=True):
         """See `IArchive`."""
