@@ -2499,9 +2499,12 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual(item.bugtargetdisplayname, model['bugtarget'])
             self.assertEqual('sprite product', model['bugtarget_css'])
             self.assertEqual(item.bug_heat_html, model['bug_heat_html'])
-            self.assertEqual(
-                '<span alt="private" title="Private" class="sprite private">'
-                '</span>', model['badges'])
+            self.assertTextMatchesExpressionIgnoreWhitespace(
+                '<span alt="Embargoed Security" '
+                'title="Visible only to users with whom the project has '
+                'shared embargoed\nsecurity information.\n" '
+                'class="sprite private"></span>',
+                model['badges'])
             self.assertEqual(None, model['milestone_name'])
             item.bugtask.milestone = self.factory.makeMilestone(
                 product=item.bugtask.target)
