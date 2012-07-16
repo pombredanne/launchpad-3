@@ -308,6 +308,22 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.ownedBy(person).inProduct(product)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_ownedBy_and_isPrivate(self):
+        # 'ownedBy' and 'isPrivate' can combine to form a collection that is
+        # restricted to private branches owned by a particular person.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(
+            product=product, owner=person,
+            information_type=InformationType.USERDATA)
+        self.factory.makeAnyBranch(owner=person)
+        self.factory.makeProductBranch(product=product)
+        collection = self.all_branches.isPrivate().ownedBy(person)
+        self.all_branches.isPrivate().ownedBy(person)
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.ownedBy(person).isPrivate()
+        self.assertEqual([branch], list(collection.getBranches()))
+
     def test_ownedByTeamMember_and_inProduct(self):
         # 'ownedBy' and 'inProduct' can combine to form a collection that is
         # restricted to branches of a particular product owned by a particular
