@@ -303,7 +303,6 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.factory.makeAnyBranch(owner=person)
         self.factory.makeProductBranch(product=product)
         collection = self.all_branches.inProduct(product).ownedBy(person)
-        self.all_branches.inProduct(product).ownedBy(person)
         self.assertEqual([branch], list(collection.getBranches()))
         collection = self.all_branches.ownedBy(person).inProduct(product)
         self.assertEqual([branch], list(collection.getBranches()))
