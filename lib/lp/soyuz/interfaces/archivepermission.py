@@ -373,7 +373,7 @@ class IArchivePermissionSet(Interface):
         :param archive: The context `IArchive` for the permission check, or
             an iterable of `IArchive`s.
         :param person: An `IPerson` for whom you want to find out which
-            components he has access to.
+            pockets he has access to.
 
         :return: `ArchivePermission` records for all the pockets that
             'person' is allowed to administer the queue for.
