@@ -505,5 +505,5 @@ class IArchivePermissionSet(Interface):
 
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to revoke permission.
-        :param component: A `PackagePublishingPocket`.
+        :param pocket: A `PackagePublishingPocket`.
         """
