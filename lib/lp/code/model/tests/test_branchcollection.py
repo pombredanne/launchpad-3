@@ -319,7 +319,6 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.factory.makeAnyBranch(owner=person)
         self.factory.makeProductBranch(product=product)
         collection = self.all_branches.isPrivate().ownedBy(person)
-        self.all_branches.isPrivate().ownedBy(person)
         self.assertEqual([branch], list(collection.getBranches()))
         collection = self.all_branches.ownedBy(person).isPrivate()
         self.assertEqual([branch], list(collection.getBranches()))
