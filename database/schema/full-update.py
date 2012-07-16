@@ -91,6 +91,13 @@ def run_security(options, log):
 def main():
     parser = OptionParser()
 
+    # Unfortunatly, we can't reliably detect streaming replicas so
+    # we pass them in on the command line.
+    parser.add_option(
+        '--standby', dest='standbys', default=[], action="append",
+        metavar='CONN_STR',
+        help="libpq connection string to a hot standby database")
+
     # Add all the command command line arguments.
     db_options(parser)
     logger_options(parser)
@@ -113,7 +120,7 @@ def main():
 
     # We initially ignore open connections, as they will shortly be
     # killed.
-    if not NoConnectionCheckPreflight(log).check_all():
+    if not NoConnectionCheckPreflight(log, options.standbys).check_all():
         return 99
 
     #
@@ -137,7 +144,7 @@ def main():
             return pgbouncer_rc
         pgbouncer_down = True
 
-        if not KillConnectionsPreflight(log).check_all():
+        if not KillConnectionsPreflight(log, options.standbys).check_all():
             return 100
 
         log.info("Preflight check succeeded. Starting upgrade.")
@@ -164,7 +171,7 @@ def main():
 
         # We will start seeing connections as soon as pgbouncer is
         # reenabled, so ignore them here.
-        if not NoConnectionCheckPreflight(log).check_all():
+        if not NoConnectionCheckPreflight(log, options.standbys).check_all():
             return 101
 
         log.info("All good. All done.")
