@@ -318,6 +318,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.branch_sharing_policy.show_to_admin',
+     'boolean',
+     ('If true, the branch sharing policy field is shown on '
+      'Product:+admin, letting BranchVisibilityPolicy be overridden.'),
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.

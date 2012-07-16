@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchSharingPolicy',
+    'BugSharingPolicy',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
     'InformationType',
@@ -99,6 +101,65 @@ class SharingPermission(DBEnumeratedType):
         Some
 
         Share bug and branch subscriptions.
+        """)
+
+
+class BranchSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Branches are public unless they contain sensitive security
+        information.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New branches are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New branches are proprietary, but can be made public later. Only
+        people who can see the project's proprietary information can create
+        new branches.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Branches are always proprietary. Only people who can see the
+        project's proprietary information can create new branches.
+        """)
+
+
+class BugSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Bugs are public unless they contain sensitive security
+        information.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New bugs are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New bugs are proprietary, but can be made public later.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Bugs are always proprietary.
         """)
 
 
