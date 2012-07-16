@@ -180,6 +180,7 @@ from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
+from lp.services.webapp.authorization import check_permission
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -607,6 +608,18 @@ class Branch(SQLBase, BzrIdentityMixin):
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
 
+    def getStackedOnBranches(self):
+        """See `IBranch`."""
+        # We need to ensure we avoid being caught by accidental circular
+        # dependencies.
+        stacked_on_branches = []
+        branch = self
+        while (branch.stacked_on and
+               branch.stacked_on not in stacked_on_branches):
+            stacked_on_branches.append(branch.stacked_on)
+            branch = branch.stacked_on
+        return stacked_on_branches
+
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
@@ -849,8 +862,13 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
-                  code_review_level, subscribed_by):
-        """See `IBranch`."""
+                  code_review_level, subscribed_by,
+                  check_stacked_visibility=True):
+        """See `IBranch`.
+
+        Subscribe person to this branch and also to any editable stacked on
+        branches they cannot see.
+        """
         if (person.is_team and self.information_type in
             PRIVATE_INFORMATION_TYPES and person.anyone_can_join()):
             raise SubscriptionPrivacyViolation(
@@ -878,6 +896,23 @@ class Branch(SQLBase, BzrIdentityMixin):
             service.ensureAccessGrants(
                 [person], subscribed_by, branches=[self],
                 ignore_permissions=True)
+
+        if not check_stacked_visibility:
+            return subscription
+
+        # We now grant access to any stacked on branches which are not
+        # currently accessible to the person but which the subscribed_by user
+        # has edit permissions for.
+        service = getUtility(IService, 'sharing')
+        ignored, invisible_stacked_branches = service.getInvisibleArtifacts(
+            person, branches=self.getStackedOnBranches())
+        editable_stacked_on_branches = [
+            branch for branch in invisible_stacked_branches
+            if check_permission('launchpad.Edit', branch)]
+        for invisible_branch in editable_stacked_on_branches:
+            invisible_branch.subscribe(
+                person, notification_level, max_diff_lines, code_review_level,
+                subscribed_by, check_stacked_visibility=False)
         return subscription
 
     def getSubscription(self, person):
