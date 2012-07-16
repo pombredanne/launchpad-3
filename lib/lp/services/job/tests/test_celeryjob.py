@@ -74,6 +74,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         job_queue_name = 'job'
         request = self.RunMissingReady().apply_async(
             kwargs={'_no_init': True}, queue=job_queue_name)
+        self.assertTrue(request.task_id.startswith('RunMissingReady_'))
         result_queue_name = request.task_id.replace('-', '')
         # Paranoia check: This test intends to prove that a Celery
         # result queue fot the task created above will _not_ be created.
@@ -89,6 +90,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # But now the message has been consumed by celeryd.
         self.assertEqual(
             0, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
+        # No result queue was created for the task.
         try:
             real_stdout = sys.stdout
             real_stderr = sys.stderr
