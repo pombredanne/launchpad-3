@@ -164,6 +164,8 @@ class TestBranchSubscriptions(TestCaseWithFactory):
             ignored, visible_branches = service.getVisibleArtifacts(
                 grantee, branches=[private_stacked_on_branch])
             self.assertContentEqual([], visible_branches)
+            self.assertIn(
+                grantee, branch.subscribers)
             self.assertNotIn(
                 grantee, private_stacked_on_branch.subscribers)
 
@@ -184,8 +186,10 @@ class TestBranchSubscriptions(TestCaseWithFactory):
             branch.subscribe(
                 grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
                 None, CodeReviewNotificationLevel.NOEMAIL, owner)
-        self.assertNotIn(
-            grantee, public_stacked_on_branch.subscribers)
+            self.assertIn(
+                grantee, branch.subscribers)
+            self.assertNotIn(
+                grantee, public_stacked_on_branch.subscribers)
 
 
 class TestBranchSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):

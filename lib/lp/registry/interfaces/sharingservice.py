@@ -75,6 +75,8 @@ class ISharingService(IService):
 
         Given lists of artifacts, return those a person does not have access to
         either via a policy grant or artifact grant.
+        * Do not export this method to the API since it could be used to gain
+          access to private information. *
 
         :param person: the person whose access is being checked.
         :param branches: the branches to check for which a person has access.
