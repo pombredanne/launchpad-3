@@ -70,7 +70,7 @@ MAX_LAG = timedelta(seconds=60)
 
 
 class DatabasePreflight:
-    def __init__(self, log):
+    def __init__(self, log, standbys):
         master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
@@ -110,6 +110,33 @@ class DatabasePreflight:
             self.nodes = set([node])
             self.lpmain_nodes = self.nodes
             self.lpmain_master_node = node
+
+        # Add streaming replication standbys, which unfortunately cannot be
+        # detected reliably and has to be passed in via the command line.
+        self._num_standbys = len(standbys)
+        for standby in standbys:
+            standby_node = Node(None, None, standby, False)
+            standby_node.con = standby_node.connect(
+                ISOLATION_LEVEL_AUTOCOMMIT)
+            self.nodes.add(standby_node)
+            self.lpmain_nodes.add(standby_node)
+
+    def check_standby_count(self):
+        # We sanity check the options as best we can to protect against
+        # operator error.
+        cur = self.lpmain_master_node.con.cursor()
+        cur.execute("SELECT COUNT(*) FROM pg_stat_replication")
+        required_standbys = cur.fetchone()[0]
+
+        if required_standbys <> self._num_standbys:
+            self.log.fatal(
+                "%d streaming standbys connected, but %d provided on cli"
+                % (required_standbys, self._num_standbys))
+            return False
+        else:
+            self.log.info(
+                "%d streaming standby servers streaming", required_standbys)
+            return True
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
@@ -352,6 +379,8 @@ class DatabasePreflight:
         self.report_patches()
 
         success = True
+        if not self.check_standby_count():
+            success = False
         if not self.check_replication_lag():
             success = False
         if not self.check_can_sync():
@@ -448,27 +477,11 @@ def main():
     log = logger(options)
 
     if options.kill_connections:
-        preflight_check = KillConnectionsPreflight(log)
+        preflight_check = KillConnectionsPreflight(log, options.standbys)
     elif options.skip_connection_check:
-        preflight_check = NoConnectionCheckPreflight(log)
+        preflight_check = NoConnectionCheckPreflight(log, options.standbys)
     else:
-        preflight_check = DatabasePreflight(log)
-
-    # Add streaming replication standbys, which unfortunately cannot be
-    # detected reliably.
-    con = preflight_check.lpmain_master_node.con
-    cur = con.cursor()
-    cur.execute("SELECT COUNT(*) FROM pg_stat_replication")
-    required_standbys = cur.fetchone()[0]
-    if required_standbys <> len(options.standbys):
-        parser.error(
-            "%d hot standbys connected, but %d connection strings provided"
-            % (required_standbys, len(options.standbys)))
-    for standby in options.standbys:
-        standby_node = Node(None, None, standby, False)
-        standby_node.con = standby_node.connect(ISOLATION_LEVEL_AUTOCOMMIT)
-        preflight_check.nodes.add(standby_node)
-        preflight_check.lpmain_nodes.add(standby_node)
+        preflight_check = DatabasePreflight(log, options.standbys)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')
