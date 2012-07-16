@@ -17,8 +17,6 @@ from optparse import OptionParser
 import os.path
 import time
 
-import psycopg2
-
 from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
@@ -128,7 +126,7 @@ class DatabasePreflight:
         cur.execute("SELECT COUNT(*) FROM pg_stat_replication")
         required_standbys = cur.fetchone()[0]
 
-        if required_standbys <> self._num_standbys:
+        if required_standbys != self._num_standbys:
             self.log.fatal(
                 "%d streaming standbys connected, but %d provided on cli"
                 % (required_standbys, self._num_standbys))
