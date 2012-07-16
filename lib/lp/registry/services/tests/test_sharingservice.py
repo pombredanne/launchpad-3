@@ -39,6 +39,7 @@ from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    admin_logged_in,
     login,
     login_person,
     StormStatementRecorder,
@@ -493,7 +494,7 @@ class TestSharingService(TestCaseWithFactory):
                  [InformationType.USERDATA,
                   InformationType.EMBARGOEDSECURITY]),
                  ]
-        else: 
+        else:
             expected_sharee_grants = [
                 (sharee,
                  {es_policy: SharingPermission.ALL,
@@ -1252,6 +1253,38 @@ class TestSharingService(TestCaseWithFactory):
             bug.default_bugtask.transitionToTarget(another_product, owner)
 
         self._assert_getVisibleArtifacts_bug_change(retarget_bugtask)
+
+    def test_checkPillarAccess(self):
+        # checkPillarAccess checks whether the user has full access to
+        # an information type.
+        product = self.factory.makeProduct()
+        right_person = self.factory.makePerson()
+        right_team = self.factory.makeTeam(members=[right_person])
+        wrong_person = self.factory.makePerson()
+        with FeatureFixture(WRITE_FLAG):
+            with admin_logged_in():
+                self.service.sharePillarInformation(
+                    product, right_team, product.owner,
+                    {InformationType.USERDATA: SharingPermission.ALL})
+                self.service.sharePillarInformation(
+                    product, wrong_person, product.owner,
+                    {InformationType.EMBARGOEDSECURITY: SharingPermission.ALL})
+        self.assertEqual(
+            False,
+            self.service.checkPillarAccess(
+                product, InformationType.USERDATA, wrong_person))
+        self.assertEqual(
+            True,
+            self.service.checkPillarAccess(
+                product, InformationType.USERDATA, right_person))
+
+    def test_checkPillarAccess_no_policy(self):
+        # checkPillarAccess returns False if there's no policy.
+        self.assertEqual(
+            False,
+            self.service.checkPillarAccess(
+                self.factory.makeProduct(), InformationType.PUBLIC,
+                self.factory.makePerson()))
 
 
 class ApiTestMixin:
