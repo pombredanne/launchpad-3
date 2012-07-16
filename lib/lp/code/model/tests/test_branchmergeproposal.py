@@ -47,8 +47,6 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
-    ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource,
     notify_modified,
     )
 from lp.code.model.branchmergeproposal import (
@@ -57,7 +55,6 @@ from lp.code.model.branchmergeproposal import (
     )
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
-    CreateMergeProposalJob,
     MergeProposalNeedsReviewEmailJob,
     UpdatePreviewDiffJob,
     )
@@ -65,10 +62,13 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
-from lp.services.messages.interfaces.message import IMessageJob
 from lp.services.webapp import canonical_url
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -81,15 +81,10 @@ from lp.testing import (
     WebServiceTestCase,
     ws_object,
     )
-from lp.testing.factory import (
-    GPGSigningContext,
-    LaunchpadObjectFactory,
-    )
-from lp.testing.gpgkeys import import_secret_test_key
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 
@@ -158,6 +153,40 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             self.factory.makeBranch(product=bmp.source_branch.product))
         self.setPrivate(bmp.prerequisite_branch)
         self.assertTrue(bmp.private)
+
+    def test_open_reviewer_with_private_branch(self):
+        """If the reviewer is an open team, and either of the branches are
+        private, they are not subscribed."""
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        trunk = self.factory.makeBranch(product=product, owner=owner)
+        team = self.factory.makeTeam()
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA, owner=owner,
+            product=product)
+        with person_logged_in(owner):
+            trunk.reviewer = team
+            self.factory.makeBranchMergeProposal(
+                source_branch=branch, target_branch=trunk)
+            subscriptions = [bsub.person for bsub in branch.subscriptions]
+            self.assertEqual([owner], subscriptions)
+
+    def test_closed_reviewer_with_private_branch(self):
+        """If the reviewer is a closed team, they are subscribed."""
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        trunk = self.factory.makeBranch(product=product, owner=owner)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        branch = self.factory.makeBranch(
+            information_type=InformationType.USERDATA, owner=owner,
+            product=product)
+        with person_logged_in(owner):
+            trunk.reviewer = team
+            self.factory.makeBranchMergeProposal(
+                source_branch=branch, target_branch=trunk)
+            subscriptions = [bsub.person for bsub in branch.subscriptions]
+            self.assertContentEqual([owner, team], subscriptions)
 
 
 class TestBranchMergeProposalTransitions(TestCaseWithFactory):
@@ -937,13 +966,14 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
-        removeSecurityProxy(bmp.source_branch).explicitly_private = True
-        removeSecurityProxy(bmp.target_branch).explicitly_private = True
+        for branch in (bmp.source_branch, bmp.target_branch):
+            removeSecurityProxy(branch).transitionToInformationType(
+                InformationType.USERDATA, branch.owner, verify_policy=False)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        self.assertFalse(bob in recipients)
-        self.assertFalse(eric in recipients)
-        self.assertTrue(charlie in recipients)
+        self.assertNotIn(bob, recipients)
+        self.assertNotIn(eric, recipients)
+        self.assertIn(charlie, recipients)
 
 
 class TestGetAddress(TestCaseWithFactory):
@@ -1167,7 +1197,9 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         # proposals that the logged in user is able to see.
         proposal = self._make_merge_proposal('albert', 'november', 'work')
         # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).explicitly_private = True
+        proposal.source_branch.transitionToInformationType(
+            InformationType.USERDATA, proposal.source_branch.owner,
+            verify_policy=False)
         self._make_merge_proposal('albert', 'mike', 'work')
 
         albert = getUtility(IPersonSet).getByName('albert')
@@ -1205,10 +1237,10 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
         proposal = self._make_merge_proposal(
             'xray', 'november', 'work', registrant=albert)
-        # Mark the source branch private by making it's stacked on branch
-        # private.
-        removeSecurityProxy(
-            proposal.source_branch.stacked_on).explicitly_private = True
+        # Mark the source branch private.
+        proposal.source_branch.transitionToInformationType(
+            InformationType.USERDATA, proposal.source_branch.owner,
+            verify_policy=False)
 
         november = getUtility(IProductSet).getByName('november')
         # The proposal is visible to charles.
@@ -1281,7 +1313,8 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         bmp.source_branch.linkBug(bug, bmp.registrant)
         person = self.factory.makePerson()
         with person_logged_in(person):
-            private_bug = self.factory.makeBug(private=True, owner=person)
+            private_bug = self.factory.makeBug(
+                owner=person, information_type=InformationType.USERDATA)
             bmp.source_branch.linkBug(private_bug, person)
             private_tasks = private_bug.bugtasks
         self.assertEqual(
@@ -1510,9 +1543,10 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         product = self.factory.makeProduct()
         # We make a source branch stacked on a private one.
         base_branch = self.factory.makeBranch(
-            owner=owner, private=True, product=product)
+            owner=owner, product=product,
+            information_type=InformationType.USERDATA)
         source_branch = self.factory.makeBranch(
-            stacked_on=base_branch, product=product)
+            stacked_on=base_branch, product=product, owner=owner)
         target_branch = self.factory.makeBranch(owner=owner, product=product)
         target_branch.product.setBranchVisibilityTeamPolicy(
             owner, BranchVisibilityRule.PRIVATE)
@@ -1535,7 +1569,8 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self._test_nominate_grants_visibility(reviewer)
 
     def test_nominate_team_grants_visibility(self):
-        reviewer = self.factory.makeTeam()
+        reviewer = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         self._test_nominate_grants_visibility(reviewer)
 
     def test_comment_with_vote_creates_reference(self):
@@ -1747,66 +1782,6 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
                     second_mp.target_branch)
             self.assertEqual(
                 BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
-
-
-class TestCreateMergeProposalJob(TestCaseWithFactory):
-    """Tests for CreateMergeProposalJob."""
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self, user='test@canonical.com')
-
-    def test_providesInterface(self):
-        """The class and instances correctly implement their interfaces."""
-        verifyObject(ICreateMergeProposalJobSource, CreateMergeProposalJob)
-        file_alias = self.factory.makeMergeDirectiveEmail()[1]
-        job = CreateMergeProposalJob.create(file_alias)
-        job.context.sync()
-        verifyObject(IMessageJob, job)
-        verifyObject(ICreateMergeProposalJob, job)
-
-    def test_run_creates_proposal(self):
-        """CreateMergeProposalJob.run should create a merge proposal."""
-        key = import_secret_test_key()
-        signing_context = GPGSigningContext(key.fingerprint, password='test')
-        message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail(
-                signing_context=signing_context))
-        job = CreateMergeProposalJob.create(file_alias)
-        transaction.commit()
-        proposal = job.run()
-        self.assertEqual(proposal.source_branch, source)
-        self.assertEqual(proposal.target_branch, target)
-
-    def test_getOopsMailController(self):
-        """The sender is notified when creating a bmp from email fails."""
-        key = import_secret_test_key()
-        signing_context = GPGSigningContext(key.fingerprint, password='test')
-        message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail(
-                signing_context=signing_context))
-        job = CreateMergeProposalJob.create(file_alias)
-        transaction.commit()
-        ctrl = job.getOopsMailController('1234')
-        self.assertEqual([message['From']], ctrl.to_addrs)
-        desc = ('creating a merge proposal from message with subject %s' %
-                message['Subject'])
-        self.assertIn(desc, ctrl.body)
-
-    def test_iterReady_includes_ready_jobs(self):
-        """Ready jobs should be listed."""
-        file_alias = self.factory.makeMergeDirectiveEmail()[1]
-        job = CreateMergeProposalJob.create(file_alias)
-        self.assertEqual([job], list(CreateMergeProposalJob.iterReady()))
-
-    def test_iterReady_excludes_unready_jobs(self):
-        """Unready jobs should not be listed."""
-        file_alias = self.factory.makeMergeDirectiveEmail()[1]
-        job = CreateMergeProposalJob.create(file_alias)
-        job.job.start()
-        job.job.complete()
-        self.assertEqual([], list(CreateMergeProposalJob.iterReady()))
 
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):

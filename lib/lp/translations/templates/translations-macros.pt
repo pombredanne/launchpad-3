@@ -67,7 +67,7 @@
         <tal:legal-warning condition="submission/legal_warning">
           <a href="https://help.launchpad.net/Translations/ReusingPackagedTranslations"
              class="legal-warning">
-            <img alt="Legal warning" title="Do not use this translation before checking for license compatibility" src="/@@/warning" /></a>
+            <img alt="Legal warning" title="Do not use this translation before checking for licence compatibility" src="/@@/warning" /></a>
         </tal:legal-warning>
       </td>
       <td style="overflow: auto;"
@@ -124,7 +124,7 @@
             tal:content="structure link/render"></li>
         <li tal:condition="view/user_is_official_translator"
             id="translation-switch-working-mode-container"
-            class="unseen">
+            class="hidden">
           <span>
           <a id="translation-switch-working-mode"
              class="sprite edit js-action widget-hd">
@@ -140,11 +140,11 @@
 <metal:pofile-js-footer define-macro="pofile-js-footer">
     <script type="text/javascript"
         tal:content="
-        structure string:<!--
+        structure string:
         var autofocus_field = '${view/autofocus_html_id}';
         var translations_order = '${view/translations_order}';
         var plural_forms = ${context/plural_forms};
-        // -->" />
+        "></script>
 </metal:pofile-js-footer>
 
 

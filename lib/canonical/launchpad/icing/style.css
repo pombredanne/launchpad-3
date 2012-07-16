@@ -655,12 +655,6 @@ button.spinner {
   background-image: url(/@@/spinner) !important;
 }
 
-/* This lets us have a help link sprite and a normal link sprite on the same
-   row, which the .vertical .sprite rule in the 3.0 file does not allow. */
-div#mute-link-container a.sprite {
-  width: auto;
-}
-
 /* Gives us some room after the description of the user's subscription. */
 div#current_user_subscription {
     padding-bottom: 8px;
@@ -669,23 +663,6 @@ div#current_user_subscription {
 /* This lets us have a link that spans lines. */
 div#current_user_subscription a.sprite {
   display: inline;
-}
-
-/* Tags portlet */
-.tag-list {
-    margin-bottom: 0.5em;
-    }
-.tag-list li {
-    padding-bottom: 0;
-    }
-.tag-count {
-    display: inline-block;
-    min-width: 1.5em;
-    text-align: right;
-    padding-right: 0.25em;
-    }
-.edit-official-tags {
-    margin-top: 1em;
 }
 
 /* === Translations === */

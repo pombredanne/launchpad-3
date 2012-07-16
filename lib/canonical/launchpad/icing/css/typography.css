@@ -71,7 +71,7 @@ a.help {
     border-bottom: 1px dotted #03a;
     cursor: help;
     }
-a.help:hover, a.help:hover {
+a.help:hover, a.action-icon:hover {
     text-decoration: none;
     }
 a.help.icon, a.sprite.maybe.help {

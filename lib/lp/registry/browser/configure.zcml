@@ -567,7 +567,7 @@
     <browser:page
         name="+get-involved"
         for="*"
-        class="lp.registry.browser.pillar.PillarView"
+        class="lp.registry.browser.pillar.PillarInvolvementView"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
         <browser:url
@@ -981,13 +981,6 @@
             template="../../blueprints/templates/person-table-specworkload.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
-            name="+specfeedback"
-            facet="specifications"
-            class="lp.registry.browser.person.PersonSpecFeedbackView"
-            permission="zope.Public"
-            template="../../blueprints/templates/person-specfeedback.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
             name="+specworkload"
             facet="specifications"
             class="lp.registry.browser.person.PersonSpecWorkloadView"
@@ -1084,12 +1077,6 @@
             name="+mugshots"
             template="../templates/team-mugshots.pt"
             class="lp.registry.browser.team.TeamMugshotView"/>
-      <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.registry.browser.person.PersonUpcomingWorkView"
-            permission="zope.Public"
-            name="+upcomingwork"
-            template="../templates/person-upcomingwork.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamIndexView"
@@ -1223,6 +1210,12 @@
             class="lp.registry.browser.team.TeamAddView"
             permission="launchpad.AnyPerson"
             template="../templates/people-newteam.pt"/>
+        <browser:page
+            name="+simplenewteam"
+            for="lp.registry.interfaces.person.IPersonSet"
+            class="lp.registry.browser.team.SimpleTeamAddView"
+            permission="launchpad.AnyPerson"
+            template="../../app/templates/generic-edit.pt"/>
         <browser:pages
             for="lp.registry.interfaces.person.IPersonSet"
             permission="zope.Public"
@@ -1429,9 +1422,6 @@
         <browser:page
             name="+portlet-requires-subscription"
             template="../templates/product-portlet-requires-subscription.pt"/>
-        <browser:page
-            name="+portlet-license-missing"
-            template="../templates/product-portlet-license-missing.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"

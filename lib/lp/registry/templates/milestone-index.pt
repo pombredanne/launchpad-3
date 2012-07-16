@@ -132,7 +132,7 @@
                 <tal:no condition="not: context/active">
                   No.  Drivers cannot target bugs and blueprints to this milestone.
                 </tal:no>
-                &nbsp; <a tal:replace="structure milestone_menu/edit/fmt:icon" />
+                &nbsp;<a tal:replace="structure milestone_menu/edit/fmt:icon" />
               </dd>
             </dl>
 
@@ -147,8 +147,7 @@
         </div>
 
         <div class="yui-u">
-          <div id="milestone-activities" class="portlet"
-            tal:content="cache:anonymous, view/expire_cache_minutes minute">
+          <div id="milestone-activities" class="portlet">
             <h2>Activities</h2>
 
             <dl>
@@ -226,8 +225,7 @@
           targeted
         </h2>
 
-        <tal:has_specs condition="specs"
-          tal:content="cache:anonymous, view/expire_cache_minutes minute">
+        <tal:has_specs condition="specs">
           <table class="listing sortable" id="milestone_specs"
             style="margin-bottom: 2em;">
             <thead>
@@ -254,6 +252,16 @@
                          title spec/summary/fmt:shorten/400">Foo Bar Baz</a>
                   <img src="/@@/info" alt="Informational"
                        tal:condition="spec/informational" />
+                  <tal:comment condition="nothing">
+                    Compare milestone names to see if a blueprint is only
+                    partially targeted to this milestone.
+
+                    If a blueprint is untargeted, then it's partial as well.
+                  </tal:comment>
+                  <span tal:condition="
+                      python:(not spec.milestone or
+                              spec.milestone.name != context.name)">
+                    (some work for this milestone)</span>
                 </td>
                 <td tal:condition="view/is_project_milestone">
                     <span class="sortkey" tal:content="spec/product/displayname" />
@@ -285,10 +293,8 @@
         </tal:has_specs>
 
         <tal:has_bugtasks condition="bugtasks">
-          <tal:cache content="cache:anonymous, view/expire_cache_minutes minute">
-            <tal:milestone-bugtasks
-              metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
-          </tal:cache>
+          <tal:milestone-bugtasks
+            metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
         </tal:has_bugtasks>
 
         <tal:neither_bugs_nor_specs condition="not: view/has_bugs_or_specs">

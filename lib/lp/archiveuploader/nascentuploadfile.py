@@ -31,6 +31,10 @@ from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
+from lp.archivepublisher.debian_installer import DebianInstallerUpload
+from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
+from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
+from lp.archivepublisher.uefi import UefiUpload
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     prefix_multi_line_string,
@@ -254,7 +258,8 @@ class CustomUploadFile(NascentUploadFile):
     results in new archive files.
     """
 
-    # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
+    # This is a marker as per the comment in lib/lp/soyuz/enums.py:
+    ##CUSTOMFORMAT##
     # Essentially if you change anything to do with custom formats, grep for
     # the marker in the codebase and make sure the same changes are made
     # everywhere which needs them.
@@ -267,6 +272,14 @@ class CustomUploadFile(NascentUploadFile):
             PackageUploadCustomFormat.STATIC_TRANSLATIONS,
         'raw-meta-data':
             PackageUploadCustomFormat.META_DATA,
+        'raw-uefi': PackageUploadCustomFormat.UEFI,
+        }
+
+    custom_handlers = {
+        PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
+        PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
+        PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
+        PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
     @property
@@ -283,6 +296,16 @@ class CustomUploadFile(NascentUploadFile):
         if self.section_name not in self.custom_sections:
             yield UploadError(
                 "Unsupported custom section name %r" % self.section_name)
+        else:
+            handler = self.custom_handlers.get(
+                self.custom_sections[self.section_name])
+            if handler is not None:
+                try:
+                    handler.parsePath(self.filename)
+                except ValueError:
+                    yield UploadError(
+                        "Invalid filename %r for section name %r" % (
+                            self.filename, self.section_name))
 
     def storeInDatabase(self):
         """Create and return the corresponding LibraryFileAlias reference."""
@@ -292,6 +315,13 @@ class CustomUploadFile(NascentUploadFile):
             self.content_type,
             restricted=self.policy.archive.private)
         return libraryfile
+
+    def autoApprove(self):
+        """Return whether this custom upload can be automatically approved."""
+        # UEFI uploads are signed, and must therefore be approved by a human.
+        if self.custom_type == PackageUploadCustomFormat.UEFI:
+            return False
+        return True
 
 
 class PackageUploadFile(NascentUploadFile):
@@ -711,47 +741,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "data.tar.bz2, data.tar.lzma or data.tar.xz." %
                 (self.filename, data_tar))
 
-        # xz-compressed debs must pre-depend on dpkg >= 1.15.6~.
-        XZ_REQUIRED_DPKG_VER = '1.15.6~'
-        if data_tar == "data.tar.xz":
-            parsed_deps = []
-            try:
-                parsed_deps = apt_pkg.parse_depends(
-                    self.control['Pre-Depends'])
-            except (ValueError, TypeError):
-                yield UploadError(
-                    "Can't parse Pre-Depends in the control file.")
-                return
-            except KeyError:
-                # Go past the for loop and yield the error below.
-                pass
-
-            for token in parsed_deps:
-                try:
-                    name, version, relation = token[0]
-                except ValueError:
-                    yield("APT error processing token '%r' from Pre-Depends.")
-                    return
-
-                if name == 'dpkg':
-                    # VersionCompare returns values similar to cmp;
-                    # negative if first < second, zero if first ==
-                    # second and positive if first > second.
-                    if apt_pkg.version_compare(
-                        version, XZ_REQUIRED_DPKG_VER) >= 0:
-                        # Pre-Depends dpkg is fine.
-                        return
-                    else:
-                        yield UploadError(
-                            "Pre-Depends dpkg version should be >= %s "
-                            "when using xz compression." %
-                            XZ_REQUIRED_DPKG_VER)
-                        return
-
-            yield UploadError(
-                "Require Pre-Depends: dpkg (>= %s) when using xz "
-                "compression." % XZ_REQUIRED_DPKG_VER)
-
     def verifyDebTimestamp(self):
         """Check specific DEB format timestamp checks."""
         self.logger.debug("Verifying timestamps in %s" % (self.filename))
@@ -764,7 +753,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         tar_checker.reset()
         try:
             deb_file = apt_inst.DebFile(self.filepath)
-        except SystemError, error:
+        except SystemError as error:
             # We get an error from the constructor if the .deb does not
             # contain all the expected top-level members (debian-binary,
             # control.tar.gz, and data.tar.*).
@@ -793,7 +782,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                         timestamp))
         except (SystemExit, KeyboardInterrupt):
             raise
-        except Exception, error:
+        except Exception as error:
             # There is a very large number of places where we
             # might get an exception while checking the timestamps.
             # Many of them come from apt_inst/apt_pkg and they are

@@ -229,7 +229,7 @@ class PropertyFile:
             try:
                 string = line.encode('raw-unicode_escape')
                 line = string.decode('unicode_escape')
-            except UnicodeDecodeError, exception:
+            except UnicodeDecodeError as exception:
                 raise TranslationFormatInvalidInputError(
                     filename=self.filename, line_number=line_num,
                     message=str(exception))
@@ -280,7 +280,7 @@ class PropertyFile:
                         # Comments must end always with a new line.
                         last_comment += '\n'
                     elif line.startswith(self.license_block_text):
-                        # It's a comment with a license notice, this
+                        # It's a comment with a licence notice, this
                         # comment can be ignored.
                         ignore_comment = True
                         # Jump the whole tag

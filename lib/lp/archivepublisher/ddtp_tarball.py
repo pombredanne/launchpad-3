@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of translated packages descriptions (ddtp) tarballs.
@@ -12,7 +12,10 @@ to enable developers to publish indexes of DDTP contents.
 
 __metaclass__ = type
 
-__all__ = ['process_ddtp_tarball']
+__all__ = [
+    'DdtpTarballUpload',
+    'process_ddtp_tarball',
+    ]
 
 import os
 
@@ -22,7 +25,7 @@ from lp.archivepublisher.customupload import CustomUpload
 class DdtpTarballUpload(CustomUpload):
     """DDTP (Debian Description Translation Project) tarball upload
 
-    The tarball should be name as:
+    The tarball filename must be of the form:
 
      <NAME>_<COMPONENT>_<VERSION>.tar.gz
 
@@ -42,13 +45,32 @@ class DdtpTarballUpload(CustomUpload):
 
     Old contents will be preserved.
     """
-    def __init__(self, archive_root, tarfile_path, distroseries):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
+    custom_type = "ddtp-tarball"
 
+    @staticmethod
+    def parsePath(tarfile_path):
         tarfile_base = os.path.basename(tarfile_path)
-        name, component, self.version = tarfile_base.split('_')
-        self.targetdir = os.path.join(archive_root, 'dists',
-                                      distroseries, component)
+        bits = tarfile_base.split("_")
+        if len(bits) != 3:
+            raise ValueError("%s is not NAME_COMPONENT_VERSION" % tarfile_base)
+        return tuple(bits)
+
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+        _, component, self.version = self.parsePath(tarfile_path)
+        self.arch = None
+        self.targetdir = os.path.join(
+            pubconf.archiveroot, 'dists', distroseries, component)
+
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
+        try:
+            return cls.parsePath(tarfile_path)[1]
+        except ValueError:
+            return None
+
+    def checkForConflicts(self):
+        # We just overwrite older files, so no conflicts are possible.
+        pass
 
     def shouldInstall(self, filename):
         # Ignore files outside of the i18n subdirectory
@@ -59,13 +81,12 @@ class DdtpTarballUpload(CustomUpload):
         pass
 
 
-def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
+def process_ddtp_tarball(pubconf, tarfile_path, distroseries):
     """Process a raw-ddtp-tarball tarfile.
 
     Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if
     anything goes wrong.
     """
-    upload = DdtpTarballUpload(archive_root, tarfile_path, distroseries)
-    upload.process()
-
+    upload = DdtpTarballUpload()
+    upload.process(pubconf, tarfile_path, distroseries)

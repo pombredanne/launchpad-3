@@ -73,6 +73,9 @@ class TestProcessUpload(unittest.TestCase):
         # just to check if local assertion is working as expect.
         self.assertRaises(AssertionError, self.assertQueuePath, 'foobar')
 
+        # Explicitly mark the database dirty.
+        self.layer.force_dirty_database()
+
     def testTopLevelLockFile(self):
         """Try a simple process-upload run.
 

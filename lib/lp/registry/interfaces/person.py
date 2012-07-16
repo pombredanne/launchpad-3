@@ -17,6 +17,7 @@ __all__ = [
     'IObjectReassignment',
     'IPerson',
     'IPersonClaim',
+    'IPersonEditRestricted',
     'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
@@ -27,7 +28,6 @@ __all__ = [
     'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
-    'ITeamCreation',
     'ITeamReassignment',
     'ImmutableVisibilityError',
     'NoSuchPerson',
@@ -111,7 +111,6 @@ from lp.app.interfaces.launchpad import (
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.validators.name import name_validator
-from lp.app.validators.validation import validate_new_team_email
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
@@ -680,9 +679,6 @@ class IPersonPublic(IPrivacy):
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_merge_pending = exported(Bool(
-        title=_("Is this person due to be merged with another?"),
-        required=False, default=False))
     is_team = exported(
         Bool(title=_('Is this object a team?'), readonly=True))
     account_status = Choice(
@@ -724,6 +720,9 @@ class IPersonPublic(IPrivacy):
             be changed.
         :return: None.
         """
+
+    def isMergePending():
+        """Is this person due to be merged with another?"""
 
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
@@ -1482,30 +1481,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: True if the user was subscribed, false if they weren't.
         """
 
-    @operation_parameters(
-        name=TextLine(required=True, constraint=name_validator),
-        displayname=TextLine(required=False),
-        description=TextLine(required=False),
-        private=Bool(required=False),
-        commercial=Bool(required=False),
-        )
-    @export_factory_operation(Interface, [])  # Really IArchive.
-    @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None,
-                  private=False, commercial=False):
-        """Create a PPA.
-
-        :param name: A string with the name of the new PPA to create. If
-            not specified, defaults to 'ppa'.
-        :param displayname: The displayname for the new PPA.
-        :param description: The description for the new PPA.
-        :param private: Whether or not to create a private PPA. Defaults to
-            False, which means the PPA will be public.
-        :raises: `PPACreationError` if an error is encountered
-
-        :return: a PPA `IArchive` record.
-        """
-
     def checkRename():
         """Check if a person or team can be renamed.
 
@@ -1815,12 +1790,39 @@ class IPersonEditRestricted(Interface):
     def security_field_changed(subject, change_description,
         recipient_emails=None):
         """Trigger email when a secured field like preferredemail changes.
-        
+
         :param recipient_emails: If supplied custom email addresses to notify.
             This is used when a new preferred email address is set.
         :param subject: The subject to use.
         :param change_description: A textual description to use when notifying
             about the change.
+        """
+
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False),
+        private=Bool(required=False),
+        suppress_subscription_notifications=Bool(required=False),
+        )
+    @export_factory_operation(Interface, [])  # Really IArchive.
+    @operation_for_version("beta")
+    def createPPA(name=None, displayname=None, description=None,
+                  private=False, suppress_subscription_notifications=False):
+        """Create a PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+            not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :param private: Whether or not to create a private PPA. Defaults to
+            False, which means the PPA will be public.
+        :param suppress_subscription_notifications: Whether or not to suppress
+            emails to new subscribers about their subscriptions.  Only
+            meaningful for private PPAs.
+        :raises: `PPACreationError` if an error is encountered
+
+        :return: a PPA `IArchive` record.
         """
 
 
@@ -1938,7 +1940,7 @@ class ITeamPublic(Interface):
     subscriptionpolicy = exported(
         TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
                vocabulary=TeamSubscriptionPolicy,
-               default=TeamSubscriptionPolicy.MODERATED, required=True,
+               default=TeamSubscriptionPolicy.RESTRICTED, required=True,
                description=_(
                 TeamSubscriptionPolicy.__doc__.split('\n\n')[1])),
         exported_as='subscription_policy')
@@ -2149,6 +2151,18 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
+    @operation_parameters(identifier=TextLine(required=True))
+    @operation_returns_entry(IPerson)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getByOpenIDIdentifier(identifier):
+        """Get the person for a given OpenID identifier.
+
+        :param openid_identifier: full OpenID identifier URL for the user.
+        :return: the corresponding `IPerson` or None if the identifier is
+            unknown
+        """
+
     def getOrCreateByOpenIDIdentifier(openid_identifier, email,
                                       full_name, creation_rationale, comment):
         """Get or create a person for a given OpenID identifier.
@@ -2163,7 +2177,8 @@ class IPersonSet(Interface):
         If there is no existing Launchpad person for the account, we
         create it.
 
-        :param openid_identifier: representing the authenticated user.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
         :param email_address: the email address of the user.
         :param full_name: the full name of the user.
         :param creation_rationale: When an account or person needs to
@@ -2466,24 +2481,6 @@ class ITeamReassignment(Interface):
 
     owner = PublicPersonChoice(
         title=_('New'), vocabulary='ValidTeamOwner', required=True)
-
-
-class ITeamCreation(ITeam):
-    """An interface to be used by the team creation form.
-
-    We need this special interface so we can allow people to specify a contact
-    email address for a team upon its creation.
-    """
-
-    contactemail = TextLine(
-        title=_("Contact Email Address"), required=False, readonly=False,
-        description=_(
-            "This is the email address we'll send all notifications to this "
-            "team. If no contact address is chosen, notifications directed "
-            "to this team will be sent to all team members. After finishing "
-            "the team creation, a new message will be sent to this address "
-            "with instructions on how to finish its registration."),
-        constraint=validate_new_team_email)
 
 
 class TeamContactMethod(EnumeratedType):

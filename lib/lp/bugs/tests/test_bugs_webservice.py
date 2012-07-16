@@ -133,6 +133,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
 class TestBugCommentRepresentation(TestCaseWithFactory):
     """Test ways of interacting with BugComment webservice representations."""
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):

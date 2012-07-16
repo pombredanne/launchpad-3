@@ -463,7 +463,8 @@ be acceptable.
     u'thunderbird (Ubuntu Grumpy)'
 
     >>> thunderbird_grumpy.transitionToTarget(
-    ...     ubuntu.getSeries('grumpy').getSourcePackage('pmount'))
+    ...     ubuntu.getSeries('grumpy').getSourcePackage('pmount'),
+    ...     getUtility(ILaunchBag).user)
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
@@ -490,7 +491,8 @@ The same is done if the distribution task's source package is changed.
     u'pmount (Ubuntu)'
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
-    >>> pmount_ubuntu.transitionToTarget(ubuntu_thunderbird)
+    >>> pmount_ubuntu.transitionToTarget(
+    ...     ubuntu_thunderbird, getUtility(ILaunchBag).user)
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)

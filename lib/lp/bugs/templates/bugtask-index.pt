@@ -14,11 +14,9 @@
                   'lp.bugs.subscribers',
                   'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
                   function(Y) {
-            Y.lp.bugs.bugtask_index.setup_bugtask_index();
-            Y.on('load', function(e) {
-                Y.lp.code.branchmergeproposal.diff.connect_diff_links();
-            }, window);
             Y.on('domready', function() {
+                Y.lp.code.branchmergeproposal.diff.connect_diff_links();
+                Y.lp.bugs.bugtask_index.setup_bugtask_index();
                 Y.lp.bugs.bugtask_index.setup_bugtask_table();
                 LP.cache.comment_context = LP.cache.bug;
                 Y.lp.comments.hide.setup_hide_controls();
@@ -27,7 +25,7 @@
                     subscribers_details_view:
                         '/+bug-portlet-subscribers-details',
                     subscribe_someone_else_link: '.menu-link-addsubscriber'
-                });
+                }, window);
             });
          });
       </script>
@@ -86,10 +84,6 @@
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-      <div id="tags-autocomplete">
-       <div id="tags-autocomplete-content"></div>
-      </div>
-
       <p class="informational message"
          tal:condition="view/notices"
          tal:repeat="notice view/notices"
@@ -97,26 +91,21 @@
         Reported this bug as also occurring in upstream firefox
       </p>
 
-      <p
-         id="can-expire"
-         tal:condition="python: context.bug.isExpirable(days_old=0)"
-         >
+      <p id="can-expire"
+         tal:condition="python: context.bug.isExpirable(days_old=0)">
         <tal:expiration_message replace="view/expiration_message" />
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
       </p>
 
-      <p id="bug-is-question" class="informational message"
+      <p id="bug-is-question"
          tal:condition="context/bug/getQuestionCreatedFromBug"
          tal:define="question context/bug/getQuestionCreatedFromBug">
+        <span class="sprite info"></span>
         This bug report was converted into a question:
         question #<tal:question-id replace="question/id" />:
         <a href=""
            tal:attributes="href question/fmt:url"
            tal:content="question/title">%s</a>.
-        <tal:XXX condition="nothing">
-          # XXX mpt 20080716 bug=249094: This should be an alert only when
-          # you have just now converted the report into a question.
-        </tal:XXX>
       </p>
 
       <div style="float: right;">
@@ -124,81 +113,55 @@
       </div>
 
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-portal" />
+
       <div id="maincontentsub">
-        <div><!-- id="nonportlets"> -->
         <div class="top-portlet">
 
       <div itemprop="mainContentOfPage" class="report">
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-        <tal:widget replace="structure view/bug_description_html"/>
+        <tal:widget tal:replace="structure view/bug_description_html"/>
 
         <div style="margin:-10px 0 20px 5px" class="clearfix">
           <span tal:condition="view/wasDescriptionModified"
           >See <a href="comments/0">original description</a></span>
         </div>
 
-          <div id="bug-tags"
-               tal:attributes="class python: (context.bug.tags and
-                                             'tags-show' or 'tags-hide')">
-            Tags:
-            <span id="tag-list">
-              <a tal:repeat="tag view/official_tags"
-                 tal:content="python: tag[0]"
-                 class="official-tag"
-                 tal:attributes="href python: tag[1]">tag</a>
-              <a tal:repeat="tag view/unofficial_tags"
-                 tal:content="python: tag[0]"
-                 class="unofficial-tag"
-                 tal:attributes="href python: tag[1]">tag</a>
-            </span>
-            <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
-                <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
-                <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
-              <script type="text/javascript">
-                  LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
-                      // XXX intellectronica 2009-04-16 bug #362309:
-                      // The load event fires very late on bug pages that take a
-                      // long time to render, but we prefer to use it since the
-                      // domready event isn't reliable in YUI3 yet. To make sure
-                      // that user doesn't click the trigger and navigates to the
-                      // non-JS form, we first disable the link. This is awful and
-                      // must be fixed as soon as YUI3 is fixed.
-                      if (LP.links['me'] !== undefined) {
-                          Y.one('#edit-tags-trigger').on('click', function(e) {
-                              e.halt();
-                          });
-                      }
-                      Y.on('load',
-                           function(e) {
-                               Y.lp.bugs.bug_tags_entry.setup_tag_entry(
-                                   available_official_tags);
-                           },
-                           window);
-                  });
-              </script>
+        <div id="bug-tags">
+          <span id="tags-heading">
+            <tal:heading condition="context/bug/tags">Tags:</tal:heading>
+          </span>
+          <span id="tag-list">
+            <a tal:repeat="tag view/official_tags"
+               tal:content="python: tag[0]"
+               class="official-tag"
+               tal:attributes="href python: tag[1]">tag</a>
+            <a tal:repeat="tag view/unofficial_tags"
+               tal:content="python: tag[0]"
+               class="unofficial-tag"
+               tal:attributes="href python: tag[1]">tag</a>
+          </span>
+          <a href="+edit" title="Add tags" id="tags-trigger"
+            class="sprite add"
+            tal:condition="not: context/bug/tags">Add tags</a>
+          <a href="+edit" title="Edit tags" id="tags-trigger"
+            class="sprite edit action-icon"
+            tal:condition="context/bug/tags">Edit</a>
+          <a href="/+help-bugs/tag-help.html" target="help"
+            class="sprite maybe action-icon">Tag help</a>
+        </div>
 
-              <button class="lazr-pos lazr-btn yui-ieditor-submit_button hidden"
-                      id="edit-tags-ok"
-                      type="button">Ok</button>
-              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button hidden"
-                      id="edit-tags-cancel"
-                      type="button">Cancel</button>
-           </form>
-           <a href="/+help-bugs/tag-help.html" target="help" class="sprite maybe">&nbsp;
-             <span class="invisible-link">Tag help</span></a>
-          </div>
-          <div id="add-bug-tags"
-               tal:attributes="class python: (not(context.bug.tags) and
-                                             'tags-show' or 'tags-hide')">
-            <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
-              Add tags
-            </a>
-            <a href="/+help-bugs/tag-help.html" target="help" class="sprite maybe">&nbsp;
-             <span class="invisible-link">Tag help</span></a>
-          </div>
+        <script type="text/javascript">
+          LPJS.use('event', 'node', 'lp.bugs.tags_entry', function(Y) {
+              Y.on('domready',
+                   function(e) {
+                       Y.lp.bugs.tags_entry.setup_tag_entry(
+                           available_official_tags);
+                   },
+                   window);
+          });
+        </script>
 
         <div class="clearfix"></div>
       </div>
@@ -235,6 +198,9 @@
         <div class="clearfix"></div>
       </div> <!-- branches and CVEs -->
 
+      </div>
+
+      <div>
       <tal:comments>
         <tal:comment repeat="comment_or_activity view/activity_and_comments">
           <tal:is-comment
@@ -310,7 +276,6 @@
       </tal:comments>
 
       </div><!-- class="top-portlet" -->
-        </div><!-- id="nonportlets"-->
       </div><!--- id="maincontentsub"-->
       <div>
         <div id="duplicate-form-container"></div>

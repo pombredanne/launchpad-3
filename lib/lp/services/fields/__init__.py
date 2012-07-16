@@ -1,5 +1,5 @@
 # copyright 2009-2010 canonical ltd.  this software is licensed under the
-# gnu affero general public license version 3 (see the file license).
+# gnu affero general public license version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,W0401
 
@@ -220,7 +220,7 @@ class IBaseImageUpload(IBytes):
         title=_('The default image'),
         description=_(
             'The URL of the zope3 resource of the default image that should '
-            'be used. Something of the form /@@/nyet-mugshot'))
+            'be used. Something of the form /@@/team-mugshot'))
 
     def getCurrentImage():
         """Return the value of the field for the object bound to it.
@@ -625,7 +625,7 @@ class URIField(TextLine):
         input = input.strip()
         try:
             uri = URI(input)
-        except InvalidURIError, exc:
+        except InvalidURIError as exc:
             raise LaunchpadValidationError(str(exc))
         # If there is a policy for whether trailing slashes are
         # allowed at the end of the path segment, ensure that the
@@ -892,22 +892,23 @@ class WorkItemsText(Text):
         sequence = 0
         milestone = None
         work_items = []
-        for line in text.splitlines():
-            if line.strip() == '':
-                continue
-            milestone_match = MILESTONE_RE.search(line)
-            if milestone_match:
-                milestone_part = milestone_match.group(1).strip()
-                if milestone_part == '':
-                    milestone = None
+        if text is not None:
+            for line in text.splitlines():
+                if line.strip() == '':
+                    continue
+                milestone_match = MILESTONE_RE.search(line)
+                if milestone_match:
+                    milestone_part = milestone_match.group(1).strip()
+                    if milestone_part == '':
+                        milestone = None
+                    else:
+                        milestone = milestone_part.split()[-1]
                 else:
-                    milestone = milestone_part.split()[-1]
-            else:
-                new_work_item = self.parseLine(line)
-                new_work_item['milestone'] = milestone
-                new_work_item['sequence'] = sequence
-                sequence += 1
-                work_items.append(new_work_item)
+                    new_work_item = self.parseLine(line)
+                    new_work_item['milestone'] = milestone
+                    new_work_item['sequence'] = sequence
+                    sequence += 1
+                    work_items.append(new_work_item)
         return work_items
 
     def validate(self, value):

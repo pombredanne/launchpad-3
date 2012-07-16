@@ -55,7 +55,7 @@ i18n:domain="malone"
       </p>
 
       <a id="getting-started-help"
-         class="sprite maybe"
+         class="sprite maybe action-icon"
          href="https://help.launchpad.net/Bugs">
         Getting started with bug tracking in Launchpad</a>.
 
@@ -96,7 +96,7 @@ i18n:domain="malone"
               </strong>
             </p>
             <p id="getting-started-help">
-              <a class="sprite maybe"
+              <a class="sprite maybe action-icon"
                  href="https://help.launchpad.net/Bugs">Getting started
                 with bug tracking in Launchpad</a>.
             </p>
@@ -128,7 +128,7 @@ i18n:domain="malone"
     <div id="bug-portlets" tal:condition="view/should_show_bug_information">
       <div id="involvement" class="portlet">
         <ul class="involvement">
-          <li style="border: 0">
+          <li class="first">
             <a href="+filebug" class="menu-link-filebug sprite bugs">
               Report a bug
             </a>

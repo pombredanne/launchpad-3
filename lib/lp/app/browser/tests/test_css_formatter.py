@@ -19,20 +19,20 @@ class TestCSSFormatter(TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_select(self):
-        value = test_tales('value/css:select/visible/unseen', value=None)
-        self.assertThat(value, Equals('unseen'))
-        value = test_tales('value/css:select/visible/unseen', value=False)
-        self.assertThat(value, Equals('unseen'))
-        value = test_tales('value/css:select/visible/unseen', value='')
-        self.assertThat(value, Equals('unseen'))
-        value = test_tales('value/css:select/visible/unseen', value=True)
+        value = test_tales('value/css:select/visible/hidden', value=None)
+        self.assertThat(value, Equals('hidden'))
+        value = test_tales('value/css:select/visible/hidden', value=False)
+        self.assertThat(value, Equals('hidden'))
+        value = test_tales('value/css:select/visible/hidden', value='')
+        self.assertThat(value, Equals('hidden'))
+        value = test_tales('value/css:select/visible/hidden', value=True)
         self.assertThat(value, Equals('visible'))
-        value = test_tales('value/css:select/visible/unseen', value='Hello')
+        value = test_tales('value/css:select/visible/hidden', value='Hello')
         self.assertThat(value, Equals('visible'))
-        value = test_tales('value/css:select/visible/unseen', value=object())
+        value = test_tales('value/css:select/visible/hidden', value=object())
         self.assertThat(value, Equals('visible'))
 
     def test_select_chaining(self):
         value = test_tales(
-            'value/css:select/VISIBLE/UNSEEN/fmt:lower', value=None)
-        self.assertThat(value, Equals('unseen'))
+            'value/css:select/VISIBLE/hidden/fmt:lower', value=None)
+        self.assertThat(value, Equals('hidden'))

@@ -120,36 +120,6 @@ parameter is available to override the user recorded in the event.
               Owner: steve-harris
            Filed by: rod-smallwood
 
-However, some circumstances demand that we defer notification, most
-specifically when we do not yet have a target. A variant,
-createBugWithoutTarget(), exists to allow for this. No notifications
-are sent, but an event is returned to make explicit the contract that
-the caller is responsible for notifying other components of bug
-creation.
-
-    >>> params = CreateBugParams(
-    ...     owner=steve_harris, filed_by=rod_smallwood,
-    ...     title="Janick is making strange noises again",
-    ...     comment="But maybe it's Bruce throat warbling?")
-    >>> bug, event = bugset.createBugWithoutTarget(params)
-
-    >>> print event
-    <security proxied lazr...ObjectCreatedEvent instance at ...>
-
-Once the first bugtask has been created, the event should be sent. We
-need to log in here because the event object is security proxied.
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> bug.addTask(owner=params.owner, target=jukebox)
-    <BugTask ...>
-
-    >>> from zope.event import notify
-    >>> notify(event)
-    New bug created: Janick is making strange noises again
-              Owner: steve-harris
-           Filed by: rod-smallwood
-
     >>> login(ANONYMOUS)
 
 We must unregister the handler.
@@ -172,44 +142,6 @@ It is guaranteed to implement the correct interface, too:
 security proxied, which doesn't make sense to test here.)
 
 
-Searching for Bugs
-------------------
-
-To search for bugs matching specific criteria, use IBugSet.searchAsUser:
-
-    >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> from lp.services.webapp.interfaces import ILaunchBag
-
-    >>> def current_user():
-    ...     return getUtility(ILaunchBag).user
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> firefox = productset.get(4)
-    >>> firefox_test_bug = bugset.get(3)
-    >>> firefox_master_bug = factory.makeBug(product=firefox)
-    >>> firefox_test_bug.markAsDuplicate(firefox_master_bug)
-    >>> flush_database_updates()
-
-    >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_master_bug, user=current_user())
-    >>> print dups_of_bug_six.count()
-    1
-    >>> dups_of_bug_six[0].id
-    3
-
-    >>> firefox_test_bug.markAsDuplicate(None)
-    >>> flush_database_updates()
-    >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_crashes, user=current_user())
-    >>> print dups_of_bug_six.count()
-    0
-
-    >>> login(ANONYMOUS)
-
-
 Absolute URLs
 -------------
 
@@ -217,6 +149,7 @@ For things like bug notification emails, it's handy to be able to
 include a URL to the bug inside the email.
 
     >>> from lp.services.webapp import canonical_url
+    >>> login(ANONYMOUS)
     >>> print canonical_url(firefox_crashes)
     http://.../bugs/6
 
@@ -234,6 +167,11 @@ Marking Bugs Private
 
 For the purposes of demonstration, we'll make the firefox crashing bug
 private. A bug cannot be made private by an anonymous user.
+
+    >>> from lp.services.webapp.interfaces import ILaunchBag
+    
+    >>> def current_user():
+    ...     return getUtility(ILaunchBag).user
 
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
@@ -316,14 +254,18 @@ firefox_crashes bug, we can still access properties of this bug:
 Note that a search will return all public bugs, omitting bug 14 which is
 private:
 
-    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     IBugTaskSet, BugTaskSearchParams)
     >>> from lp.bugs.model.bug import Bug
+    >>> from lp.services.database.lpstorm import IStore
+
     >>> all_bugs = set(IStore(Bug).find(Bug).values(Bug.id))
 
+    >>> taskset = getUtility(IBugTaskSet)
     >>> def hidden_bugs():
     ...     found_bugs = set(
-    ...         bug.id for bug in bugset.searchAsUser(
-    ...             user=current_user()))
+    ...         task.bug.id for task in taskset.search(
+    ...             BugTaskSearchParams(current_user())))
     ...     return sorted(all_bugs - found_bugs)
 
     >>> login("test@canonical.com")
@@ -345,16 +287,6 @@ Likewise Foo Bar, an admin, can access the bug.
 Bug 14, which is private, is returned by the search results for an
 admin as well:
 
-    >>> hidden_bugs()
-    []
-
-If a bug is private, bugtask assignees can see the bug.  Previously
-sample person could not see bug 14.  But after making him the
-assignee it is visible.
-
-    >>> bug14 = bugset.get(14)
-    >>> bug14.default_bugtask.transitionToAssignee(sample_person)
-    >>> login("test@canonical.com")
     >>> hidden_bugs()
     []
 
@@ -434,6 +366,9 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> firefox = productset.get(4)
     >>> foobar = personset.getByEmail('foo.bar@canonical.com')
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
@@ -865,7 +800,7 @@ Marking as duplicate.
 
     >>> print firefox_bug.duplicateof
     None
-    >>> firefox_bug.markAsDuplicate(firefox_master_bug)
+    >>> firefox_bug.markAsDuplicate(factory.makeBug())
 
     >>> bug_duplicateof_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["duplicateof"])

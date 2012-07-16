@@ -328,8 +328,6 @@ class HasSpecificationsView(LaunchpadView):
             filter.append(SpecificationFilter.DRAFTER)
         elif role == 'approver':
             filter.append(SpecificationFilter.APPROVER)
-        elif role == 'feedback':
-            filter.append(SpecificationFilter.FEEDBACK)
         elif role == 'subscriber':
             filter.append(SpecificationFilter.SUBSCRIBER)
 
@@ -456,7 +454,7 @@ class RegisterABlueprintButtonPortlet:
         return """
             <div id="involvement" class="portlet involvement">
               <ul>
-                <li style="border: none">
+                <li class="first">
                   <a class="menu-link-register_blueprint sprite blueprints"
                     href="%s">Register a blueprint</a>
                 </li>

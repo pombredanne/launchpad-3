@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401,W0611
@@ -90,6 +90,7 @@ from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
@@ -247,11 +248,16 @@ class IBranchPublic(Interface):
             title=_('Date Last Modified'),
             required=True,
             readonly=False))
-
     explicitly_private = Bool(
         title=_("Explicitly Private"),
         description=_("This branch is explicitly marked private as opposed "
         "to being private because it is stacked on a private branch."))
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True, default=InformationType.PUBLIC,
+            description=_(
+                'The type of information contained in this branch.')))
 
 
 class IBranchAnyone(Interface):
@@ -962,6 +968,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this branch.
+
+        If the user is a Launchpad admin, any type is acceptable. Otherwise
+        the `IBranchNamespace` is consulted.
+        """
+
 
 class IBranchEditableAttributes(Interface):
     """IBranch attributes that can be edited.
@@ -1112,6 +1125,16 @@ class IBranchEdit(Interface):
             branch by deleting items with mandatory references and
             NULLing other references.
         :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
+
+    def transitionToInformationType(information_type, who,
+                                    verify_policy=True):
+        """Set the information type for this branch.
+
+        :param information_type: The `InformationType` to transition to.
+        :param who: The `IPerson` who is making the change.
+        :param verify_policy: Check if the new information type complies
+            with the `IBranchNamespacePolicy`.
         """
 
 
@@ -1368,6 +1391,20 @@ class IBranchSet(Interface):
         This API call is provided for use by the client Javascript. It is not
         designed to efficiently scale to handle requests for large numbers of
         branches.
+        """
+
+    @operation_returns_collection_of(Interface)
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_parameters(merged_revision=TextLine())
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(merged_revision, visible_by_user=None):
+        """Return the merge proposals that resulted in this revision.
+
+        :param merged_revision: The revision_id of the revision that resulted
+            from this merge proposal.
+        :param visible_by_user: The user to whom the proposals must be
+            visible.  If None, only public proposals will be returned.
         """
 
 

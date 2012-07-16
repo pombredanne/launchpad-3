@@ -40,8 +40,8 @@ outdated information.
     Updated on ...
 
 The anonymous user can see the builder details portlet and it contains
-information about the builder itself, like name, architecture,
-location and description.
+information about the builder itself, like name, architecture and
+location.
 
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Builder information'))
@@ -86,8 +86,6 @@ Celso can modify the location and the visible details of the builder.
     'bob'
     >>> cprov_browser.getControl(name="field.title").value
     'Bob The Builder'
-    >>> cprov_browser.getControl(name="field.description").value
-    'The default build-slave'
     >>> cprov_browser.getControl(name="field.processor").value
     ['386']
     >>> cprov_browser.getControl(name="field.owner").value

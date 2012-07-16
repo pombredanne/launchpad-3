@@ -8,8 +8,7 @@ __all__ = [
     'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
-    'BranchCannotBePrivate',
-    'BranchCannotBePublic',
+    'BranchCannotChangeInformationType',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
@@ -147,12 +146,8 @@ class BranchTypeError(Exception):
     """
 
 
-class BranchCannotBePublic(Exception):
-    """The branch cannot be made public."""
-
-
-class BranchCannotBePrivate(Exception):
-    """The branch cannot be made private."""
+class BranchCannotChangeInformationType(Exception):
+    """The information type of this branch cannot be changed."""
 
 
 class InvalidBranchException(Exception):

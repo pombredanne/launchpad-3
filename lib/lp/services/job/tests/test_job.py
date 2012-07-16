@@ -6,15 +6,13 @@ __metaclass__ = type
 from datetime import datetime
 import time
 
-import pytz
 from lazr.jobrunner.jobrunner import LeaseHeld
+import pytz
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
 
-from lp.code.model.branchmergeproposaljob import (
-    CodeReviewCommentEmailJob,
-    )
+from lp.code.model.branchmergeproposaljob import CodeReviewCommentEmailJob
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import (
@@ -462,14 +460,15 @@ class TestUniversalJobSource(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_rawGet_with_merge_proposal_job(self):
+    def test_get_with_merge_proposal_job(self):
+        """Getting a MergeProposalJob works and is efficient."""
         comment = self.factory.makeCodeReviewComment()
         job = CodeReviewCommentEmailJob.create(comment)
         job_id = job.job_id
         transaction.commit()
         with StormStatementRecorder() as recorder:
-            got_job = UniversalJobSource.rawGet(
-                job_id, 'lp.code.model.branchmergeproposaljob',
-                 'BranchMergeProposalJob')
+            got_job = UniversalJobSource.get(
+                (job_id, 'lp.code.model.branchmergeproposaljob',
+                 'BranchMergeProposalJob'))
         self.assertThat(recorder, HasQueryCount(Equals(1)))
         self.assertEqual(got_job, job)

@@ -45,7 +45,6 @@ class IMaloneApplication(ILaunchpadApplication):
         "products and distributions")
     bugtracker_count = Attribute("The number of bug trackers in Launchpad")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
-    latest_bugs = Attribute("The latest 5 bugs filed.")
 
     @collection_default_content()
     def empty_list():

@@ -101,7 +101,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     def toTerm(self, archive):
         """See `IVocabulary`."""
         description = archive.description
-        if description is not None:
+        if description:
             summary = description.splitlines()[0]
         else:
             summary = "No description available"

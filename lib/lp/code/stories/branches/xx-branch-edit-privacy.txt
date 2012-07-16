@@ -39,13 +39,13 @@ However an admin can.
 
     >>> admin_browser.open('http://code.launchpad.dev/~eric/fooix/trunk')
     >>> admin_browser.getLink('Change branch details').click()
-    >>> admin_browser.getControl('Keep branch confidential').click()
+    >>> admin_browser.getControl('User Data').click()
     >>> admin_browser.getControl('Change Branch').click()
 
 The branch is now private, so it assumes the standard private presentation.
 
     >>> print_tag_with_id(admin_browser.contents, 'privacy')
-    This branch is private
+    This branch contains User Data information...
 
 
 Private branches allowed
@@ -68,33 +68,23 @@ able to mark the branch as private.
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
     >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Keep branch confidential').selected = True
+    >>> browser.getControl('User Data').selected = True
     >>> browser.getControl('Change Branch').click()
-
-A notification is added to say the branch is now private.
-
-    >>> print_feedback_messages(browser.contents)
-    The branch is now private, and only visible to the owner and to subscribers.
 
 Since the branch is now private, it will have the standard Launchpad
 presentation for private things.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This branch is private
+    This branch contains User Data information...
 
 If Sample Person changes the branch from private back to public, the page
 reverts to its normal presentation.
 
     >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Keep branch confidential').selected = False
+    >>> browser.getControl('Public').selected = True
     >>> browser.getControl('Change Branch').click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This branch is public
-
-A notification is added to say the branch is now public.
-
-    >>> print_feedback_messages(browser.contents)
-    The branch is now publicly accessible.
+    This branch contains Public information...
 
 
 Private Only branches
@@ -113,52 +103,19 @@ a public branch private, but not vice versa.
 Mark the public branch private.
 
     >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Keep branch confidential').selected = True
+    >>> browser.getControl('User Data').selected = True
     >>> browser.getControl('Change Branch').click()
 
 The branch is now private, so it assumes the standard private presentation.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This branch is private
+    This branch contains User Data information...
 
 However when the user now looks to edit the branch details, there
 is no option to mark the branch as public.
 
     >>> browser.getLink('Change branch details').click()
-    >>> browser.getControl('Keep branch confidential')
+    >>> browser.getControl('Public')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Keep branch confidential'
-
-
-Branches stacked on private branches
-------------------------------------
-
-A public branch is private if it is stacked on a private branch. When the
-branch is edited, it is shown as private but the checkbox widget is disabled
-and the title and hint text is updated to inform the user.
-
-    >>> login('admin@canonical.com')
-    >>> stacked_on_branch = factory.makeAnyBranch(private=True)
-    >>> stacked_branch = factory.makeAnyBranch(stacked_on=stacked_on_branch)
-    >>> url = canonical_url(stacked_branch)
-    >>> logout()
-
-    >>> admin_browser.open(url)
-    >>> admin_browser.getLink('Change branch details').click()
-    >>> privacy_checkbox = admin_browser.getControl('Branch is confidential')
-    >>> print privacy_checkbox.selected
-    True
-    >>> print privacy_checkbox.disabled
-    True
-    >>> ('branch is confidential because it is stacked on a private branch'
-    ...  in admin_browser.contents)
-    True
-
-If the branch is edited and saved, there is no user message displayed since
-the transitive privacy status hasn't changed.
-
-    >>> admin_browser.getControl('Description').value = "New changes"
-    >>> admin_browser.getControl('Change Branch').click()
-    >>> print_feedback_messages(browser.contents)
-    ...
+    LookupError: label 'Public'

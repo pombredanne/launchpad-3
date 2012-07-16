@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 import email
+import os
 
 from bzrlib.uncommit import uncommit
-import os
 from zope.component import getUtility
 from zope.event import notify
 
@@ -22,18 +22,18 @@ from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource,
     )
 from lp.code.model.branchjob import RevisionMailJob
-from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.scanner import events
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
-from lp.services.mail import stub
 from lp.services.job.tests import (
     block_on_job,
     pop_remote_notifications,
     )
+from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
@@ -200,11 +200,14 @@ class TestViaCelery(TestCaseWithFactory):
         self.assertEqual(1, len(pop_remote_notifications()))
 
     def test_revisions_added(self):
-        """RevisionMailJob for removed revisions runs via Celery."""
-        db_branch, tree = self.prepare('RevisionsAddedJob')
+        """RevisionsAddedJob for added revisions runs via Celery."""
+        # Enable RevisionMailJob to let celery activate a new connection
+        # before trying to flush sent emails calling pop_remote_notifications.
+        db_branch, tree = self.prepare('RevisionMailJob RevisionsAddedJob')
         tree.commit('message')
         bzr_sync = BzrSync(db_branch)
-        bzr_sync.syncBranchAndClose(tree.branch)
+        with block_on_job():
+            bzr_sync.syncBranchAndClose(tree.branch)
         pop_remote_notifications()
         tree.commit('message2')
         with block_on_job():

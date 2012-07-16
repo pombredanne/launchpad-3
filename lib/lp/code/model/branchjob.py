@@ -56,7 +56,10 @@ from zope.interface import (
     implements,
     )
 
-from lp.code.bzr import get_branch_formats
+from lp.code.bzr import (
+    branch_revision_history,
+    get_branch_formats,
+    )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
@@ -94,13 +97,13 @@ from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import SQLBase
 from lp.services.database.locking import (
     AdvisoryLockHeld,
     LockType,
     try_advisory_lock,
     )
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import (
     EnumeratedSubclass,
@@ -522,7 +525,7 @@ class RevisionsAddedJob(BranchJobDerived):
         # Avoid hitting the database since bzrlib makes it easy to check.
         # There are possibly more efficient ways to get the mainline
         # revisions, but this is simple and it works.
-        history = self.bzr_branch.revision_history()
+        history = branch_revision_history(self.bzr_branch)
         for num, revid in enumerate(history):
             if revid in added_revisions:
                 yield repository.get_revision(revid), num + 1

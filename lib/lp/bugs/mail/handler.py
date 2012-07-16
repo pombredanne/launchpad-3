@@ -188,9 +188,10 @@ class MaloneHandler:
         content = get_main_body(signed_msg)
         if content is None:
             return []
-        return [BugEmailCommands.get(name=name, string_args=args) for
-                name, args in parse_commands(content,
-                                             BugEmailCommands.names())]
+        return [
+            BugEmailCommands.get(name=name, string_args=args) for
+            name, args in parse_commands(
+                content, BugEmailCommands.parsingParameters())]
 
     def extractAndAuthenticateCommands(self, signed_msg, to_addr):
         """Extract commands and handle special destinations.
@@ -301,7 +302,7 @@ class MaloneHandler:
                         bugtask, bugtask_event = command.execute(
                             bugtask, bugtask_event)
 
-                except EmailProcessingError, error:
+                except EmailProcessingError as error:
                     processing_errors.append((error, command))
                     if error.stop_processing:
                         commands = []
@@ -320,7 +321,7 @@ class MaloneHandler:
             self.notify_bug_event(bug_event)
             self.notify_bugtask_event(bugtask_event, bug_event)
 
-        except IncomingEmailError, error:
+        except IncomingEmailError as error:
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',

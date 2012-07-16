@@ -1,15 +1,14 @@
-If we look at a bug which hasn't got any tags the tags display is hidden, and
-instead we see an add link.
+Users can see bugs tags on the bug page.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
-    >>> print find_tag_by_id(user_browser.contents, 'add-bug-tags')
-    <div id="add-bug-tags" class="tags-show">...
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'bug-tags'))
+    Add tags  Tag help
 
 Let's specify some tags:
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
+    >>> user_browser.getLink('Add tags').click()
     >>> tags = user_browser.getControl('Tags')
     >>> tags.value
     ''

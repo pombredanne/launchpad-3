@@ -95,7 +95,7 @@
               <h3>Related FAQ:</h3>
 
               <p>
-                <a class="sprite question"
+                <a class="sprite faq"
                   tal:condition="context/faq"
                   tal:attributes="href context/faq/fmt:url"
                   tal:content="context/faq/title">FAQ Title</a>

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/soyuz modules."""
@@ -423,8 +423,8 @@ class PackagePublishingStatus(DBEnumeratedType):
 
 
 # If you change this (add items, change the meaning, whatever) search for
-# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
-# update the stuff marked with it.
+# the token ##CUSTOMFORMAT## e.g. queue.py or nascentupload.py and update
+# the stuff marked with it.
 class PackageUploadCustomFormat(DBEnumeratedType):
     """Custom formats valid for the upload queue
 
@@ -472,6 +472,12 @@ class PackageUploadCustomFormat(DBEnumeratedType):
 
         A file containing meta-data about the package, mainly for use in
         the Software Center.
+        """)
+
+    UEFI = DBItem(6, """
+        uefi
+
+        A UEFI boot loader image to be signed.
         """)
 
 

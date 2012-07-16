@@ -183,7 +183,8 @@ silently rejected.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
-    >>> bigjools = person_set.getByEmail('launchpad@julian-edwards.com')
+    >>> bigjools = person_set.getByEmail('launchpad@julian-edwards.com',
+    ...                                  filter_status=False)
     >>> print bigjools.account_status.name
     NOACCOUNT
 

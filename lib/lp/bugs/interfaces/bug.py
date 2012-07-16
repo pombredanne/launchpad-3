@@ -1199,13 +1199,6 @@ class IBugSet(Interface):
         If it can't be found, NotFoundError will be raised.
         """
 
-    def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
-        """Find bugs matching the search criteria provided.
-
-        To search as an anonymous user, the user argument passed
-        should be None.
-        """
-
     def queryByRemoteBug(bugtracker, remotebug):
         """Find one or None bugs for the BugWatch and bug tracker.
 
@@ -1237,17 +1230,6 @@ class IBugSet(Interface):
 
           * if either product or distribution is specified, an appropiate
             bug task will be created
-        """
-
-    def createBugWithoutTarget(bug_params):
-        """Create a bug without a bug target and return it.
-
-        This is a variant of `createBug()` that does not create the
-        first bugtask for the bug. The bug creation event is not sent,
-        and a `(bug, event)` tuple is returned instead. The caller is
-        therefore responsible for sending the event at a later point.
-
-        See `createBug()` for more information.
         """
 
     def getDistinctBugsForBugTasks(bug_tasks, user, limit=10):

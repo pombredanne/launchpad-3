@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -30,6 +30,7 @@ from lp.code.model.branchmergeproposaljob import (
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
+from lp.registry.enums import InformationType
 from lp.services.database.lpstorm import IStore
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -219,9 +220,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         bugtask = bug.default_bugtask
         bmp.source_branch.linkBug(bug, bmp.registrant)
         private_bug = self.factory.makeBug(
-            title='I am a private bug',
-            owner=private_bug_owner,
-            private=True)
+            title='I am a private bug', owner=private_bug_owner,
+            information_type=InformationType.USERDATA)
         private_bugtask = private_bug.default_bugtask
         with person_logged_in(private_bug_owner):
             bmp.source_branch.linkBug(private_bug, bmp.registrant)
@@ -493,8 +493,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
                          'who were implicitly subscribed to their branches.')
         email = emails[0]
         self.assertEqual('[Merge] '
-            'lp://dev/~bob/super-product/fix-foo-for-bar into\n\t'
-            'lp://dev/~mary/super-product/bar', email['subject'])
+            'lp://dev/~bob/super-product/fix-foo-for-bar into\n'
+            ' lp://dev/~mary/super-product/bar',
+            email['subject'].replace('\n\t', '\n '))
         bmp = job.branch_merge_proposal
         expected = dedent("""\
             The proposal to merge %(source)s into %(target)s has been updated.

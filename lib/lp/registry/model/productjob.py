@@ -6,14 +6,25 @@
 __metaclass__ = type
 __all__ = [
     'ProductJob',
+    'ProductJobManager',
     'CommercialExpiredJob',
     'SevenDayCommercialExpirationJob',
     'ThirtyDayCommercialExpirationJob',
     ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 from lazr.delegates import delegates
+from pytz import utc
 import simplejson
-from storm.expr import And
+from storm.expr import (
+    And,
+    Not,
+    Select,
+    )
 from storm.locals import (
     Int,
     Reference,
@@ -26,6 +37,7 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
@@ -33,17 +45,18 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.registry.interfaces.productjob import (
+    ICommercialExpiredJob,
+    ICommercialExpiredJobSource,
     IProductJob,
     IProductJobSource,
     IProductNotificationJob,
     IProductNotificationJobSource,
-    ICommercialExpiredJob,
-    ICommercialExpiredJobSource,
     ISevenDayCommercialExpirationJob,
     ISevenDayCommercialExpirationJobSource,
     IThirtyDayCommercialExpirationJob,
     IThirtyDayCommercialExpirationJobSource,
     )
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -53,20 +66,56 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.propertycache import cachedproperty
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.mail.helpers import (
-    get_email_template,
-    )
-from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
     simple_sendmail,
     )
+from lp.services.propertycache import cachedproperty
+from lp.services.scripts import log
 from lp.services.webapp.publisher import canonical_url
+
+
+class ProductJobManager:
+    """Creates jobs for product that need updating or notification."""
+
+    def __init__(self, logger):
+        self.logger = logger
+
+    def createAllDailyJobs(self):
+        """Create jobs for all products that have timed updates.
+
+        :return: The count of jobs that were created.
+        """
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        total = 0
+        total += self.createDailyJobs(CommercialExpiredJob, reviewer)
+        total += self.createDailyJobs(
+            SevenDayCommercialExpirationJob, reviewer)
+        total += self.createDailyJobs(
+            ThirtyDayCommercialExpirationJob, reviewer)
+        return total
+
+    def createDailyJobs(self, job_class, reviewer):
+        """Create jobs for products that have timed updates.
+
+        :param job_class: A JobSource class that provides `ExpirationSource`.
+        :param reviewer: The user that is creating the job.
+        :return: The count of jobs that were created.
+        """
+        total = 0
+        for product in job_class.getExpiringProducts():
+            self.logger.debug(
+                'Creating a %s for %s' %
+                (job_class.__class__.__name__, product.name))
+            job_class.create(product, reviewer)
+            total += 1
+        return total
 
 
 class ProductJob(StormBase):
@@ -284,6 +333,8 @@ class ProductNotificationJob(ProductJobDerived):
             body, headers = self.getBodyAndHeaders(
                 email_template, address, self.reply_to)
             simple_sendmail(from_address, address, subject, body, headers)
+        log.debug("%s has sent email to the maintainer of %s.",
+            self.log_name, self.product.name)
 
     def run(self):
         """See `BaseRunnableJob`.
@@ -305,11 +356,31 @@ class CommericialExpirationMixin:
 
     @classmethod
     def create(cls, product, reviewer):
-        """Create a job."""
+        """See `ExpirationSourceMixin`."""
         subject = cls._subject_template % product.name
         return super(CommericialExpirationMixin, cls).create(
             product, cls._email_template_name, subject, reviewer,
             reply_to_commercial=True)
+
+    @classmethod
+    def getExpiringProducts(cls):
+        """See `ExpirationSourceMixin`."""
+        earliest_date, latest_date, past_date = cls._get_expiration_dates()
+        recent_jobs = And(
+            ProductJob.job_type == cls.class_job_type,
+            ProductJob.job_id == Job.id,
+            Job.date_created > past_date,
+            )
+        conditions = [
+            Product.active == True,
+            CommercialSubscription.productID == Product.id,
+            CommercialSubscription.date_expires >= earliest_date,
+            CommercialSubscription.date_expires < latest_date,
+            Not(Product.id.is_in(Select(
+                ProductJob.product_id,
+                tables=[ProductJob, Job], where=recent_jobs))),
+            ]
+        return IStore(Product).find(Product, *conditions)
 
     @cachedproperty
     def message_data(self):
@@ -332,6 +403,13 @@ class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
     classProvides(ISevenDayCommercialExpirationJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
 
+    @staticmethod
+    def _get_expiration_dates():
+        now = datetime.now(utc)
+        in_seven_days = now + timedelta(days=7)
+        seven_days_ago = now - timedelta(days=7)
+        return now, in_seven_days, seven_days_ago
+
 
 class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
                                        ProductNotificationJob):
@@ -340,6 +418,15 @@ class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
     implements(IThirtyDayCommercialExpirationJob)
     classProvides(IThirtyDayCommercialExpirationJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+    @staticmethod
+    def _get_expiration_dates():
+        now = datetime.now(utc)
+        # Avoid overlay with the seven day notification.
+        in_twenty_three_days = now + timedelta(days=7)
+        in_thirty_days = now + timedelta(days=30)
+        thirty_days_ago = now - timedelta(days=30)
+        return in_twenty_three_days, in_thirty_days, thirty_days_ago
 
 
 class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
@@ -353,16 +440,23 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     _subject_template = (
         'The commercial subscription for %s in Launchpad expired')
 
+    @staticmethod
+    def _get_expiration_dates():
+        now = datetime.now(utc)
+        ten_years_ago = now - timedelta(days=3650)
+        thirty_days_ago = now - timedelta(days=30)
+        return ten_years_ago, now, thirty_days_ago
+
     @property
     def _is_proprietary(self):
-        """Does the product have a proprietary license?"""
+        """Does the product have a proprietary licence?"""
         return License.OTHER_PROPRIETARY in self.product.licenses
 
     @property
     def email_template_name(self):
         """See `IProductNotificationJob`.
 
-        The email template is determined by the product's licenses.
+        The email template is determined by the product's licences.
         """
         if self._is_proprietary:
             return 'product-commercial-subscription-expired-proprietary'
@@ -376,8 +470,9 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
         else:
             removeSecurityProxy(self.product).private_bugs = False
             for series in self.product.series:
-                if series.branch.private:
+                if series.branch is not None and series.branch.private:
                     removeSecurityProxy(series).branch = None
+            self.product.commercial_subscription.delete()
 
     def run(self):
         """See `ProductNotificationJob`."""

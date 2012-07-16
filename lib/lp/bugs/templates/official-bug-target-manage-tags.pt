@@ -17,9 +17,7 @@
   <div metal:fill-slot="main">
     <div class="yui-g">
       <div class="yui-u first">
-        <noscript>
-            <div metal:use-macro="context/@@launchpad_form/form" />
-        </noscript>
+        <div metal:use-macro="context/@@launchpad_form/form" />
 
         <script tal:replace="structure view/tags_js_data" />
         <script type="text/javascript">

@@ -22,7 +22,7 @@ class CheckScriptTestCase(TestCase):
         # sys.args.  We don't care about the log messages, so just throw them
         # away.
         class FakeOptions:
-            log_file = '/dev/null'
+            log_file = None
             loglevel = 1000
             verbose = False
         self.con = connect()

@@ -16,25 +16,24 @@
             <form tal:attributes="action string:${context/fmt:url}/@@+try-again"
                   tal:condition="python:view.user and code_import.review_status.name == 'FAILING'"
                   style="display: inline; padding-left: 1em"
+                  id="tryagain"
                   name="tryagain"
                   method="post"
                   enctype="multipart/form-data" accept-charset="UTF-8">
-              <noscript>
-                <img src="/@@/retry" />
-                <input id="tryagain.actions.tryagain" name="tryagain.actions.tryagain" value="Try Again" class="button" type="submit" />
-              </noscript>
               <input
                  type="hidden"
                  name="tryagain.actions.tryagain"
                  value="" />
-              <a href="javascript:document.tryagain.submit()" class="hidden" id="tryagainlink">
-                <img src="/@@/retry" />
-                Try again
-              </a>
+              <input type="submit" id="tryagain.actions.tryagain"
+                 name="tryagain.actions.tryagain" value="Try Again"
+                 class="button"  />
+              <a href="#" class="hidden sprite retry"
+                id="tryagainlink">Try again</a>
               <script type="text/javascript">
-                  LPJS.use('event', 'node', function(Y) {
-                    Y.on("domready", function () { Y.one('#tryagainlink').setStyle('display', 'inline') });
-                  });
+                  LPJS.use('lp.code.util', function(Y) {
+                      Y.on("domready", function () {
+                          Y.lp.code.util.hookUpRetyImportSubmission(Y);
+                      }, window);});
               </script>
             </form>
         </div>

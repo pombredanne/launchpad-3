@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test NascentUploadFile functionality."""
@@ -25,6 +25,7 @@ from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
+from lp.services.osutils import write_file
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
@@ -91,6 +92,36 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         libraryfile = uploadfile.storeInDatabase()
         self.assertEquals("bla.txt", libraryfile.filename)
         self.assertEquals("application/octet-stream", libraryfile.mimetype)
+
+    def test_debian_installer_verify(self):
+        # debian-installer uploads are required to have sensible filenames.
+        uploadfile = self.createCustomUploadFile(
+            "debian-installer-images_20120627_i386.tar.gz", "data",
+            "main/raw-installer", "extra")
+        self.assertEqual([], list(uploadfile.verify()))
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        errors = list(uploadfile.verify())
+        self.assertEqual(1, len(errors))
+        self.assertIsInstance(errors[0], UploadError)
+
+    def test_no_handler_no_verify(self):
+        # Uploads without special handlers have no filename checks.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-meta-data", "extra")
+        self.assertEqual([], list(uploadfile.verify()))
+
+    def test_debian_installer_auto_approved(self):
+        # debian-installer uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-installer", "extra")
+        self.assertTrue(uploadfile.autoApprove())
+
+    def test_uefi_not_auto_approved(self):
+        # UEFI uploads are auto-approved.
+        uploadfile = self.createCustomUploadFile(
+            "bla.txt", "data", "main/raw-uefi", "extra")
+        self.assertFalse(uploadfile.autoApprove())
 
 
 class PackageUploadFileTestCase(NascentUploadFileTestCase):
@@ -286,8 +317,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "data.tar.%s" % data_format,
             ]
         for member in members:
-            with open(os.path.join(tempdir, member), "w") as f:
-                pass
+            write_file(os.path.join(tempdir, member), "")
         retcode = subprocess.call(
             ["ar", "rc", filename] + members, cwd=tempdir)
         self.assertEqual(0, retcode)
@@ -325,41 +355,14 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", uploadfile.source_version)
         self.assertEquals("0.42", uploadfile.control_version)
 
-    def test_verifyFormat_xz_good_predep(self):
-        # verifyFormat accepts xz-compressed .debs with a sufficient dpkg
-        # pre-dependency.
+    def test_verifyFormat_xz(self):
+        # verifyFormat accepts xz-compressed .debs.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None, data_format="xz")
         control = self.getBaseControl()
-        control["Pre-Depends"] = "dpkg (>= 1.15.6~)"
         uploadfile.parseControl(control)
         self.assertEqual([], list(uploadfile.verifyFormat()))
-
-    def test_verifyFormat_xz_bad_predep(self):
-        # verifyFormat rejects xz-compressed .debs with an insufficient dpkg
-        # pre-dependency.
-        uploadfile = self.createDebBinaryUploadFile(
-            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
-            None, data_format="xz")
-        control = self.getBaseControl()
-        control["Pre-Depends"] = "dpkg (>= 1.15.5)"
-        uploadfile.parseControl(control)
-        errors = list(uploadfile.verifyFormat())
-        self.assertEqual(1, len(errors))
-        self.assertIsInstance(errors[0], UploadError)
-
-    def test_verifyFormat_xz_no_predep(self):
-        # verifyFormat rejects xz-compressed .debs with no dpkg
-        # pre-dependency.
-        uploadfile = self.createDebBinaryUploadFile(
-            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
-            None, data_format="xz")
-        control = self.getBaseControl()
-        uploadfile.parseControl(control)
-        errors = list(uploadfile.verifyFormat())
-        self.assertEqual(1, len(errors))
-        self.assertIsInstance(errors[0], UploadError)
 
     def test_storeInDatabase(self):
         # storeInDatabase creates a BinaryPackageRelease.

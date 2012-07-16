@@ -103,7 +103,9 @@ from zope.security.proxy import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
@@ -180,7 +182,12 @@ from lp.services.helpers import (
     ensure_unicode,
     shortlist,
     )
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    VALID_EMAIL_STATUSES,
+    )
+from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
     cachedproperty,
@@ -232,6 +239,7 @@ class BasePersonVocabulary:
             # lookup based on that.
             email = IStore(EmailAddress).find(
                 EmailAddress,
+                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
                 EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
                 raise LookupError(token)
@@ -701,6 +709,7 @@ class ValidPersonOrTeamVocabulary(
                 SQL("MatchingPerson"),
                 Person,
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+                LeftJoin(Account, Account.id == Person.accountID),
                 ]
 
             # If private_tables is empty, we are searching for all private
@@ -720,6 +729,9 @@ class ValidPersonOrTeamVocabulary(
                 Person,
                 And(
                     SQL("Person.id = MatchingPerson.id"),
+                    Or(
+                        Account.status == AccountStatus.ACTIVE,
+                        Person.teamowner != None),
                     Or(
                         And(  # A public person or team
                             Person.visibility == PersonVisibility.PUBLIC,
@@ -833,6 +845,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
             email_storm_query = self.store.find(
                 EmailAddress.personID,
+                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
                 EmailAddress.email.lower().startswith(text))
             email_subquery = Alias(email_storm_query._get_select(),
                                    'EmailAddress')
@@ -1053,7 +1066,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
     existing sharee for the pillar.
     """
 
-    displayname = 'Grant access to project artifacts'
+    displayname = 'Share project information'
     step_title = 'Search for user or exclusive team with whom to share'
 
     def __init__(self, context):
@@ -2231,18 +2244,49 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self):
-        types = [
-            InformationType.PUBLIC,
-            InformationType.UNEMBARGOEDSECURITY,
-            InformationType.EMBARGOEDSECURITY,
-            InformationType.USERDATA]
-        proprietary_disabled = bool(getFeatureFlag(
-            'disclosure.proprietary_information_type.disabled'))
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
-        if not proprietary_disabled:
-            types.append(InformationType.PROPRIETARY)
+    def __init__(self, context=None, public_only=False, private_only=False):
+        types = []
+        if not public_only:
+            types = [
+                InformationType.EMBARGOEDSECURITY,
+                InformationType.USERDATA]
+            show_userdata_as_private = bool(getFeatureFlag(
+                'disclosure.display_userdata_as_private.enabled'))
+            # So long as not disabled by the feature flag, Proprietary is
+            # allowed for:
+            # - single pillar bugs where the target has a current commercial
+            #   subscription
+            # - branches for a project with a current commercial subscription
+            # - projects with current commercial subscriptions
+            # - contexts which already have an information type set to
+            #   proprietary
+            proprietary_disabled = bool(getFeatureFlag(
+                'disclosure.proprietary_information_type.disabled'))
+            if not proprietary_disabled:
+                subscription_context = context
+                if (IBug.providedBy(context)
+                    and len(context.affected_pillars) == 1):
+                    subscription_context = context.affected_pillars[0]
+                elif (IBugTask.providedBy(context)
+                    and len(context.bug.affected_pillars) == 1):
+                    subscription_context = context.pillar
+                elif IBranch.providedBy(context):
+                    subscription_context = context.target.context
+                has_commercial_subscription = (
+                    IProduct.providedBy(subscription_context) and
+                    subscription_context.has_current_commercial_subscription)
+                already_proprietary = (
+                    safe_hasattr(context, 'information_type') and
+                    context.information_type == InformationType.PROPRIETARY)
+                if has_commercial_subscription or already_proprietary:
+                    types.append(InformationType.PROPRIETARY)
+        # Disallow public items for projects with private bugs.
+        if (not private_only and (context is None or
+            not IProduct.providedBy(context) or
+            not context.private_bugs)):
+            types = [InformationType.PUBLIC,
+                     InformationType.UNEMBARGOEDSECURITY] + types
+
         terms = []
         for type in types:
             title = type.title
@@ -2250,8 +2294,10 @@ class InformationTypeVocabulary(SimpleVocabulary):
             if type == InformationType.USERDATA and show_userdata_as_private:
                 title = 'Private'
                 description = (
-                    description.replace('user data', 'private information'))
+                    'Visible only to users with whom the project has '
+                    'shared private information.')
             term = SimpleTerm(type, type.name, title)
+            term.name = type.name
             term.description = description
             terms.append(term)
         super(InformationTypeVocabulary, self).__init__(terms)

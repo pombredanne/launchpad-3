@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.schema.vocabulary import SimpleVocabulary
 
+from lazr.restful.interfaces import IJSONRequestCache
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import ServiceUsage
+from lp.registry.interfaces.person import CLOSED_TEAM_POLICY
 from lp.registry.interfaces.product import (
     IProductSet,
     License,
@@ -110,14 +114,14 @@ class TestProductView(TestCaseWithFactory):
         self.assertTrue(view.show_programming_languages)
 
     def test_show_license_info_without_other_license(self):
-        # show_license_info is false when one of the "other" licenses is
+        # show_license_info is false when one of the "other" licences is
         # not selected.
         view = create_initialized_view(self.product, '+index')
         self.assertEqual((License.GNU_GPL_V2, ), self.product.licenses)
         self.assertFalse(view.show_license_info)
 
     def test_show_license_info_with_other_open_source_license(self):
-        # show_license_info is true when the Other/Open Source license is
+        # show_license_info is true when the Other/Open Source licence is
         # selected.
         view = create_initialized_view(self.product, '+index')
         with person_logged_in(self.product.owner):
@@ -125,7 +129,7 @@ class TestProductView(TestCaseWithFactory):
         self.assertTrue(view.show_license_info)
 
     def test_show_license_info_with_other_open_proprietary_license(self):
-        # show_license_info is true when the Other/Proprietary license is
+        # show_license_info is true when the Other/Proprietary licence is
         # selected.
         view = create_initialized_view(self.product, '+index')
         with person_logged_in(self.product.owner):
@@ -133,14 +137,14 @@ class TestProductView(TestCaseWithFactory):
         self.assertTrue(view.show_license_info)
 
     def test_is_proprietary_with_proprietary_license(self):
-        # is_proprietary is true when the project has a proprietary license.
+        # is_proprietary is true when the project has a proprietary licence.
         with person_logged_in(self.product.owner):
             self.product.licenses = [License.OTHER_PROPRIETARY]
         view = create_initialized_view(self.product, '+index')
         self.assertTrue(view.is_proprietary)
 
     def test_is_proprietary_without_proprietary_license(self):
-        # is_proprietary is false when the project has a proprietary license.
+        # is_proprietary is false when the project has a proprietary licence.
         with person_logged_in(self.product.owner):
             self.product.licenses = [License.GNU_GPL_V2]
         view = create_initialized_view(self.product, '+index')
@@ -156,7 +160,7 @@ class TestProductView(TestCaseWithFactory):
             widget.edit_url)
 
     def test_project_reviewed_widget(self):
-        # The license reviewed widget is is unique to the product.
+        # The licence reviewed widget is is unique to the product.
         login_celebrity('registry_experts')
         view = create_initialized_view(self.product, '+index')
         widget = view.project_reviewed_widget
@@ -166,7 +170,7 @@ class TestProductView(TestCaseWithFactory):
             widget.edit_url)
 
     def test_license_approved_widget_any_license(self):
-        # The license approved widget is is unique to the product.
+        # The licence approved widget is is unique to the product.
         login_celebrity('registry_experts')
         view = create_initialized_view(self.product, '+index')
         widget = view.license_approved_widget
@@ -185,13 +189,13 @@ class TestProductView(TestCaseWithFactory):
         self.assertEqual('Commercial subscription required', text)
 
     def test_license_approved_widget_no_license(self):
-        # Projects without a license cannot be approved.
+        # Projects without a licence cannot be approved.
         with person_logged_in(self.product.owner):
             self.product.licenses = [License.DONT_KNOW]
         login_celebrity('registry_experts')
         view = create_initialized_view(self.product, '+index')
         text = view.license_approved_widget
-        self.assertEqual('License required', text)
+        self.assertEqual('Licence required', text)
 
     def test_widget_id_for_name_dots(self):
         # Dots are replaced with dashes to make a valid CSS Id.
@@ -207,6 +211,18 @@ class TestProductView(TestCaseWithFactory):
         self.assertEqual(
             'fnord-dom-edit-license-approved',
             view.license_approved_widget.content_box_id)
+
+    def test_view_data_model(self):
+        # The view's json request cache contains the expected data.
+        view = create_initialized_view(self.product, '+index')
+        cache = IJSONRequestCache(view.request)
+        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
+        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        self.assertContentEqual(
+            team_subscriptionpolicy_data,
+            cache.objects['team_subscriptionpolicy_data'])
 
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
@@ -273,7 +289,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         self.assertTrue(content.find(id='fnord-license-info') is not None)
 
     def test_project_commercial_subscription_data(self):
-        # The projects with the OTHER_Proprietary license show commercial
+        # The projects with the OTHER_Proprietary licence show commercial
         # subscription information.
         product = self.factory.makeProduct(name='fnord')
         with person_logged_in(product.owner):

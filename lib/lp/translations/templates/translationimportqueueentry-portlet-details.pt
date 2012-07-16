@@ -15,7 +15,7 @@
         <li>
           <tal:license
             replace="structure product/license_status/description">
-            This project's license is open source.
+            This project's licence is open source.
           </tal:license>
         </li>
         <li>

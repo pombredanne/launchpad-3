@@ -258,10 +258,6 @@ class LoopTuner:
             time.sleep(seconds)
 
 
-def timedelta_to_seconds(td):
-    return 24 * 60 * td.days + td.seconds
-
-
 class DBLoopTuner(LoopTuner):
     """A LoopTuner that plays well with PostgreSQL and replication.
 

@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'AbstractYUITestCase',
     'ANONYMOUS',
+    'admin_logged_in',
     'anonymous_logged_in',
     'api_url',
     'BrowserTestCase',
@@ -157,6 +158,7 @@ from lp.services.webapp.servers import (
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
+    admin_logged_in,
     anonymous_logged_in,
     celebrity_logged_in,
     login,
@@ -183,6 +185,7 @@ from lp.testing.karma import KarmaRecorder
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
+admin_logged_in
 anonymous_logged_in
 api_url
 celebrity_logged_in
@@ -647,6 +650,11 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
+        # Remove all log handlers, tests should not depend on global logging
+        # config but should make their own config instead.
+        logger = logging.getLogger()
+        for handler in list(logger.handlers):
+            logger.removeHandler(handler)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
@@ -1070,12 +1078,17 @@ class ZopeTestInSubProcess:
         assert isinstance(result, ZopeTestResult), (
             "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
-        # We flush stdout and stderror at this point in order to avoid
-        # bug 986429; it appears that stdout and stderror get copied in
-        # full when we fork, which means that we end up with repeated
-        # output, resulting in repeated subunit output.
-        sys.stdout.flush()
-        sys.stderr.flush()
+        # We flush __stdout__ and __stderr__ at this point in order to avoid
+        # bug 986429; they get copied in full when we fork, which means that
+        # we end up with repeated output, resulting in repeated subunit
+        # output.
+        # Why not sys.stdout and sys.stderr instead?  Because when generating
+        # subunit output we replace stdout and stderr with do-nothing objects
+        # and direct the subunit stream to __stdout__ instead.  Therefore we
+        # need to flush __stdout__ to be sure duplicate lines are not
+        # generated.
+        sys.__stdout__.flush()
+        sys.__stderr__.flush()
         pid = os.fork()
         if pid == 0:
             # Child.
@@ -1089,8 +1102,9 @@ class ZopeTestInSubProcess:
                 result, subunit.TestProtocolClient(fdwrite))
             super(ZopeTestInSubProcess, self).run(result)
             fdwrite.flush()
-            sys.stdout.flush()
-            sys.stderr.flush()
+            # See note above about flushing.
+            sys.__stdout__.flush()
+            sys.__stderr__.flush()
             # Exit hard to avoid running onexit handlers and to avoid
             # anything that could suppress SystemExit; this exit must
             # not be prevented.

@@ -46,10 +46,9 @@ are not a member of, their message gets held for moderator approval.
     ...     held_message = mailing_list.holdMessage(message)
     ...     return held_message
 
-    # A helper for the common case.  IWBNI we had Python 2.5 because
-    # then we could just use functools.partial().
-    >>> def lifeless_post(to_team_name):
-    ...     return post_message('robertc@robertcollins.net', to_team_name)
+    # A helper for the common case.
+    >>> from functools import partial
+    >>> lifeless_post = partial(post_message, 'robertc@robertcollins.net')
 
     >>> from lp.registry.scripts.standing import (
     ...     UpdatePersonalStanding)

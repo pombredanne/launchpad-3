@@ -350,6 +350,42 @@ Check what milestones are displayed on the advanced search form:
     Mozilla Firefox 1.0
 
 
+== Searching by information type ==
+
+The advanced form allows us to query for bugs matching specific
+information types.
+
+First we'll change the information type of one of the bugtasks (we are still
+logged in from earlier):
+
+    >>> from lp.registry.enums import InformationType
+    >>> previous_information_type = open_bugtasks[0].bug.information_type
+    >>> open_bugtasks[0].bug.transitionToInformationType(
+    ...     InformationType.USERDATA, getUtility(ILaunchBag).user)
+    True
+    >>> flush_database_updates()
+
+Submit the search:
+
+    >>> form_values = {
+    ...     'search': 'Search bugs in Firefox',
+    ...     'advanced': 1,
+    ...     'field.information_type': 'USERDATA',
+    ...     'field.searchtext': '',
+    ...     'field.orderby': '-importance'}
+
+    >>> mozilla_search_listingview = create_view(mozilla, '+bugs', form_values)
+    >>> userdata_bugtasks = list(mozilla_search_listingview.search().batch)
+    >>> for bugtask in userdata_bugtasks:
+    ...     print bugtask.bug.id, bugtask.product.name, bugtask.bug.information_type.name
+    15 thunderbird USERDATA
+
+    >>> open_bugtasks[0].bug.transitionToInformationType(
+    ...     previous_information_type, getUtility(ILaunchBag).user)
+    True
+    >>> flush_database_updates()
+
+
 == Constructing search filter urls ==
 
 There is a helper method, get_buglisting_search_filter_url(), which can

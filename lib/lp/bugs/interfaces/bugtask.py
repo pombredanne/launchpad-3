@@ -47,6 +47,7 @@ __all__ = [
     'valid_remote_bug_url',
     ]
 
+import collections
 import httplib
 
 from lazr.enum import (
@@ -110,6 +111,7 @@ from lp.bugs.interfaces.bugwatch import (
     UnrecognizedBugTrackerURL,
     )
 from lp.bugs.interfaces.hasbug import IHasBug
+from lp.registry.enums import InformationType
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -141,43 +143,40 @@ class BugTaskImportance(DBEnumeratedType):
         The importance of this bug is not known.
         """)
 
+    UNDECIDED = DBItem(5, """
+        Undecided
+
+        Not decided yet. Maybe needs more discussion.
+        """)
+
     CRITICAL = DBItem(50, """
         Critical
 
-        This bug must be fixed as soon as possible.
+        Fix now or as soon as possible.
         """)
 
     HIGH = DBItem(40, """
         High
 
-        This bug is important, but doesn't need to be done immediately. It
-        should be scheduled for work soon.
+        Schedule to be fixed soon.
         """)
 
     MEDIUM = DBItem(30, """
         Medium
 
-        This bug should be fixed, but can wait until more serious bugs have
-        been dealt with.
+        Fix when convenient, or schedule to fix later.
         """)
 
     LOW = DBItem(20, """
         Low
 
-        This is a minor bug and can be fixed when it's convenient. For
-        example, it might be a typo.
+        Fix when convenient.
         """)
 
     WISHLIST = DBItem(10, """
         Wishlist
 
-        This is not a bug. It's a request for an enhancement or new feature.
-        """)
-
-    UNDECIDED = DBItem(5, """
-        Undecided
-
-        This bug's importance has not yet been decided.
+        Not a bug. It's an enhancement/new feature.
         """)
 
 
@@ -190,7 +189,7 @@ class BugTaskStatus(DBEnumeratedType):
     NEW = DBItem(10, """
         New
 
-        This is a new bug. It hasn't been looked at yet.
+        Not looked at yet.
         """)
 
     # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
@@ -201,28 +200,25 @@ class BugTaskStatus(DBEnumeratedType):
     INCOMPLETE = DBItem(15, """
         Incomplete
 
-        The reporter of this bug needs to provide more information before it
-        can be confirmed.
+        Cannot be verified, the reporter needs to give more info.
         """)
 
     OPINION = DBItem(16, """
         Opinion
 
-        The bug remains open for discussion only; there is disagreement over
-        whether the bug is relevant and whether it should be fixed.
+        Doesn't fit with the project, but can be discussed.
         """)
 
     INVALID = DBItem(17, """
         Invalid
 
-        This is not a bug. It might be a support request or spam.
+        Not a bug. May be a support request or spam.
         """)
 
     WONTFIX = DBItem(18, """
         Won't Fix
 
-        This bug will not be fixed. It doesn't mean the bug isn't valid, it
-        just doesn't fit with the project's plans.
+        Doesn't fit with the project plans, sorry.
         """)
 
     EXPIRED = DBItem(19, """
@@ -234,34 +230,31 @@ class BugTaskStatus(DBEnumeratedType):
     CONFIRMED = DBItem(20, """
         Confirmed
 
-        This bug has been reviewed and verified by someone other than the
-        reporter.
+        Verified by someone other than the reporter.
         """)
 
     TRIAGED = DBItem(21, """
         Triaged
 
-        This bug has been reviewed and verified by a bug supervisor.
+        Verified by the bug supervisor.
         """)
 
     INPROGRESS = DBItem(22, """
         In Progress
 
-        The person assigned to fix this bug is working on it.
+        The assigned person is working on it.
         """)
 
     FIXCOMMITTED = DBItem(25, """
         Fix Committed
 
-        A fix for this bug has been created but is not yet available in a
-        released or deployed version of the affected software.
+        Fixed, but not available until next release.
         """)
 
     FIXRELEASED = DBItem(30, """
         Fix Released
 
-        The fix for this bug is available in a released or deployed version of
-        the affected software.
+        The fix was released.
         """)
 
     UNKNOWN = DBItem(999, """
@@ -839,10 +832,11 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     @mutator_for(target)
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         target=copy_field(target))
     @export_write_operation()
-    def transitionToTarget(target):
+    def transitionToTarget(target, user):
         """Convert the bug task to a different bug target."""
 
     def updateTargetNameCache():
@@ -949,6 +943,14 @@ class IBugTaskSearchBase(Interface):
         description=_('Show only bugs with the given importance '
                       'or list of importances.'),
         value_type=IBugTask['importance'],
+        required=False)
+    information_type = List(
+        title=_('Information Type'),
+        description=_('Show only bugs with the given information type '
+                      'or list of information types.'),
+        value_type=Choice(
+            title=_('Information Type'),
+            vocabulary=InformationType),
         required=False)
     assignee = Choice(
         title=_('Assignee'),
@@ -1186,7 +1188,8 @@ class BugTaskSearchParams:
                  structural_subscriber=None, modified_since=None,
                  created_since=None, exclude_conjoined_tasks=False, cve=None,
                  upstream_target=None, milestone_dateexpected_before=None,
-                 milestone_dateexpected_after=None):
+                 milestone_dateexpected_after=None, created_before=None,
+                 information_type=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1234,11 +1237,18 @@ class BugTaskSearchParams:
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
         self.created_since = created_since
+        self.created_before = created_before
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
         self.cve = cve
         self.upstream_target = upstream_target
         self.milestone_dateexpected_before = milestone_dateexpected_before
         self.milestone_dateexpected_after = milestone_dateexpected_after
+        if isinstance(information_type, collections.Iterable):
+            self.information_type = set(information_type)
+        elif information_type:
+            self.information_type = set((information_type,))
+        else:
+            self.information_type = None
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1383,7 +1393,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
                        linked_blueprints=None, structural_subscriber=None,
-                       modified_since=None, created_since=None):
+                       modified_since=None, created_since=None,
+                       created_before=None, information_type=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1454,6 +1465,8 @@ class BugTaskSearchParams:
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
         search_params.created_since = created_since
+        search_params.created_before = created_before
+        search_params.information_type = information_type
 
         return search_params
 
@@ -1569,6 +1582,10 @@ class IBugTaskSet(Interface):
         :param product_series: ProductSeries object.
         :return: A list of tuples containing (status_id, count).
         """
+
+    def createManyTasks(bug, owner, targets, status=None, importance=None,
+                   assignee=None, milestone=None):
+        """Create a series of bug tasks and return them."""
 
     def createTask(bug, owner, target, status=None, importance=None,
                    assignee=None, milestone=None):

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the product view classes and templates."""
@@ -21,6 +21,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.publisher import CodeLayer
+from lp.registry.enums import InformationType
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -104,22 +106,23 @@ class TestProductCodeIndexView(ProductTestBase):
         # see at least one branch for the product they can still see the
         # +code-index page.
         product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=True)
+            information_type=InformationType.USERDATA)
         self.factory.makeProductBranch(product=product)
         # This is just "assertNotRaises"
         self.getUserBrowser(canonical_url(product, rootsite='code'))
 
     def test_initial_branches_contains_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
-        view = create_initialized_view(product, '+code-index',
-                                       rootsite='code')
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code')
         self.assertIn(branch, view.initial_branches)
 
     def test_initial_branches_does_not_contain_private_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=True)
-        view = create_initialized_view(product, '+code-index',
-                                       rootsite='code')
+            information_type=InformationType.USERDATA)
+        login(ANONYMOUS)
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code')
         self.assertNotIn(branch, view.initial_branches)
 
     def test_committer_count_with_revision_authors(self):
@@ -144,7 +147,7 @@ class TestProductCodeIndexView(ProductTestBase):
         # for a private branch.
         fsm = self.factory.makePerson(email='flyingpasta@example.com')
         product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=True, owner=fsm)
+            owner=fsm, information_type=InformationType.USERDATA)
         date_generator = time_counter(
             datetime.now(pytz.UTC) - timedelta(days=30),
             timedelta(days=1))
@@ -166,7 +169,7 @@ class TestProductCodeIndexView(ProductTestBase):
         # for a private branch.
         fsm = self.factory.makePerson(email='flyingpasta@example.com')
         product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=True, owner=fsm)
+            owner=fsm, information_type=InformationType.USERDATA)
         date_generator = time_counter(
             datetime.now(pytz.UTC) - timedelta(days=30),
             timedelta(days=1))
@@ -358,11 +361,15 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         product.development_focus.branch = branch
         product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
-        view = create_initialized_view(
-            product, '+code-index', rootsite='code', principal=product.owner)
-        text = extract_text(find_tag_by_id(view.render(), 'privacy'))
-        expected = ("New branches you create for %(name)s are private "
-                    "initially.*" % dict(name=product.displayname))
+        with FeatureFixture(
+                {'disclosure.display_userdata_as_private.enabled': 'true'}):
+            view = create_initialized_view(
+                product, '+code-index', rootsite='code',
+                principal=product.owner)
+            text = extract_text(find_tag_by_id(view.render(), 'privacy'))
+        expected = (
+            "New branches for %(name)s are Private.*"
+            % dict(name=product.displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_is_public(self):
@@ -372,8 +379,9 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         product.development_focus.branch = branch
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         text = extract_text(find_tag_by_id(browser.contents, 'privacy'))
-        expected = ("New branches you create for %(name)s are public "
-                    "initially.*" % dict(name=product.displayname))
+        expected = (
+            "New branches for %(name)s are Public.*"
+            % dict(name=product.displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
 

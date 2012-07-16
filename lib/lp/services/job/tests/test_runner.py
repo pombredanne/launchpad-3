@@ -4,6 +4,7 @@
 """Tests for job-running facilities."""
 
 import logging
+import re
 import sys
 from textwrap import dedent
 from time import sleep
@@ -376,6 +377,16 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
 
+    def test_taskId(self):
+        # BaseRunnableJob.taskId() creates a task ID that consists
+        # of the Job's class name, the job ID and a UUID.
+        job = NullJob(completion_message="doesn't matter")
+        task_id = job.taskId()
+        uuid_expr = (
+            '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+        mo = re.search('^NullJob-%s-%s$' % (job.job_id, uuid_expr), task_id)
+        self.assertIsNot(None, mo)
+
 
 class StaticJobSource(BaseRunnableJob):
 
@@ -564,7 +575,9 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
                 INFO Job resulted in OOPS: .*
             """)))
 
-    def test_timeout_short(self):
+    # XXX: BradCrittenden 2012-05-09 bug=994777: Disabled as a spurious
+    # failure.  In isolation this test fails 5% of the time.
+    def disabled_test_timeout_short(self):
         """When a job exceeds its lease, an exception is raised.
 
         Unfortunately, timeouts include the time it takes for the zope
@@ -662,10 +675,9 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             def runFromSource(cls, source, dbuser, logger):
                 expected_config = errorlog.ErrorReportingUtility()
                 expected_config.configure('merge_proposal_jobs')
-                # Check that the unique oops token was applied.
                 self.assertEqual(
-                    errorlog.globalErrorUtility.oops_prefix,
-                    expected_config.oops_prefix)
+                    'T-merge_proposal_jobs',
+                    errorlog.globalErrorUtility.oops_prefix)
                 return cls()
 
             completed_jobs = []

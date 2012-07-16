@@ -7,18 +7,14 @@
 
   <metal:block fill-slot="head_epilogue">
     <script type="text/javascript">
-      LPJS.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
-      function(Y) {
-      Y.on('domready', function() {
-      Y.lp.bugs.filebug_dupefinder.setup_dupes();
-      Y.lp.bugs.filebug_dupefinder.setup_dupe_finder();
-      var search_button = Y.one(Y.DOM.byId('field.actions.projectgroupsearch'));
-      if (search_button != null)
-        search_button.set('value', 'Check again');
-      });
-      });
+        LPJS.use(
+          'lp.bugs.filebug',
+          function(Y) {
+            Y.on('domready', function() {
+              Y.lp.bugs.filebug.setup_filebug();
+            });
+        });
     </script>
-    <metal:privacy use-macro="view/@@+filebug-macros/bug-reporting-privacy"/>
   </metal:block>
 
   <div metal:fill-slot="heading">
@@ -92,7 +88,7 @@
                 </td>
                 <td style="text-align: left;">
                   <input tal:replace="structure view/actions/field.actions.projectgroupsearch/render" />
-                  <span id="spinner" style="text-align: center" class="unseen">
+                  <span id="spinner" style="text-align: center" class="hidden">
                     <img src="/@@/spinner" />
                   </span>
                 </td>

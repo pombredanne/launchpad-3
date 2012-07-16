@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-import email
 import doctest
+import email
 from textwrap import dedent
 
 import soupmatchers
@@ -119,7 +119,7 @@ class TestPersonIndexView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_is_merge_pending(self):
+    def test_isMergePending(self):
         dupe_person = self.factory.makePerson(name='finch')
         target_person = self.factory.makePerson()
         job_source = getUtility(IPersonMergeJobSource)
@@ -611,7 +611,6 @@ class TestTeamCreationView(TestCaseWithFactory):
     def test_team_creation_good_data(self):
         form = {
             'field.actions.create': 'Create Team',
-            'field.contactemail': 'contactemail@example.com',
             'field.displayname': 'liberty-land',
             'field.name': 'libertyland',
             'field.renewal_policy': 'NONE',
@@ -625,32 +624,6 @@ class TestTeamCreationView(TestCaseWithFactory):
         team = person_set.getByName('libertyland')
         self.assertTrue(team is not None)
         self.assertEqual('libertyland', team.name)
-
-    def test_validate_email_catches_taken_emails(self):
-        email_address = self.factory.getUniqueEmailAddress()
-        self.factory.makePerson(
-            name='libertylandaccount',
-            displayname='libertylandaccount',
-            email=email_address,
-            account_status=AccountStatus.NOACCOUNT)
-        form = {
-            'field.actions.create': 'Create Team',
-            'field.contactemail': email_address,
-            'field.displayname': 'liberty-land',
-            'field.name': 'libertyland',
-            'field.renewal_policy': 'NONE',
-            'field.renewal_policy-empty-marker': 1,
-            'field.subscriptionpolicy': 'RESTRICTED',
-            'field.subscriptionpolicy-empty-marker': 1,
-            }
-        person_set = getUtility(IPersonSet)
-        view = create_initialized_view(person_set, '+newteam', form=form)
-        expected_msg = (
-            '%s is already registered in Launchpad and is associated with '
-            '<a href="http://launchpad.dev/~libertylandaccount">'
-            'libertylandaccount</a>.' % email_address)
-        error_msg = view.errors[0].errors[0]
-        self.assertEqual(expected_msg, error_msg)
 
 
 class TestPersonParticipationView(TestCaseWithFactory):
@@ -1321,7 +1294,7 @@ class BugTaskViewsTestBase:
         Store.of(milestones[0]).invalidate()
         with StormStatementRecorder() as recorder:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
-        self.assertThat(recorder, HasQueryCount(LessThan(5)))
+        self.assertThat(recorder, HasQueryCount(LessThan(6)))
 
     def test_context_description(self):
         # view.context_description returns a string that can be used

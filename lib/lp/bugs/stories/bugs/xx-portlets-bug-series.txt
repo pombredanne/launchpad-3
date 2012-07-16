@@ -18,22 +18,28 @@ Change debian to track bugs in Launchpad and the portlet becomes visible.
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  sarge 1
-  woody 2
+  1
+  sarge
+  2
+  woody
 
   >>> anon_browser.open("http://bugs.launchpad.dev/debian/sarge/+bugs")
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  sarge 1
-  woody 2
+  1
+  sarge
+  2
+  woody
 
   >>> anon_browser.open("http://bugs.launchpad.dev/ubuntu/+bugs")
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  hoary           1
-  warty           1
+  1
+  hoary
+  1
+  warty
 
   >>> print anon_browser.getLink("hoary").url
   http://bugs.launchpad.dev/ubuntu/hoary/+bugs
@@ -45,10 +51,12 @@ listings and homepages:
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  1.0   1
+  1
+  1.0
 
   >>> anon_browser.open("http://bugs.launchpad.dev/firefox/1.0/+bugs")
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  1.0   1
+  1
+  1.0

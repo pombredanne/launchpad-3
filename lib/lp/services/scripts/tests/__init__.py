@@ -23,30 +23,6 @@ SCRIPT_LOCATIONS = [
     ]
 
 
-KNOWN_BROKEN = [
-    # Needs mysqldb module
-    'scripts/migrate-bugzilla-initialcontacts.py',
-    'scripts/rosetta/gettext_check_messages.py',
-    # sqlobject.DatbaseIndex ?
-    'scripts/linkreport.py',
-    # Python executable without '.py' extension.
-    'scripts/list-team-members',
-    'scripts/queue',
-    # Bad script, no help.
-    'scripts/librarian-report.py',
-    'scripts/get-stacked-on-branches.py',
-    'scripts/start-loggerhead.py',
-    'scripts/stop-loggerhead.py',
-    ]
-
-
-def is_broken(script_path):
-    for broken_path in KNOWN_BROKEN:
-        if script_path.endswith(broken_path):
-            return True
-    return False
-
-
 def find_lp_scripts():
     """Find all scripts/ and cronscripts/ files in the current tree.
 
@@ -60,8 +36,7 @@ def find_lp_scripts():
             for filename in filenames:
                 script_path = os.path.join(path, filename)
                 if (filename.startswith('_') or
-                    not filename.endswith('.py') or
-                    is_broken(script_path)):
+                    not filename.endswith('.py')):
                     continue
                 scripts.append(script_path)
     return sorted(scripts)

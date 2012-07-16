@@ -58,6 +58,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -98,6 +99,8 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -254,14 +257,9 @@ class FileBugReportingGuidelines(LaunchpadFormView):
     schema = IBug
 
     @property
-    def show_information_type_in_ui(self):
-        return bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled'))
-
-    @property
     def field_names(self):
         """Return the list of field names to display."""
-        if self.show_information_type_in_ui:
+        if self.is_bug_supervisor:
             return ['information_type']
         else:
             return ['security_related']
@@ -273,17 +271,39 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         cache = IJSONRequestCache(self.request)
         cache.objects['private_types'] = [
             type.name for type in PRIVATE_INFORMATION_TYPES]
-        cache.objects['show_information_type_in_ui'] = (
-            self.show_information_type_in_ui)
+        cache.objects['show_userdata_as_private'] = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        cache.objects['bug_private_by_default'] = (
+            IProduct.providedBy(self.context) and self.context.private_bugs)
+        cache.objects['information_type_data'] = [
+            {'value': term.name, 'description': term.description,
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in InformationTypeVocabulary(self.context)]
+        bugtask_status_data = vocabulary_to_choice_edit_items(
+            BugTaskStatus, include_description=True, css_class_prefix='status',
+            excluded_items=[
+                BugTaskStatus.UNKNOWN,
+                BugTaskStatus.EXPIRED,
+                BugTaskStatus.INVALID,
+                BugTaskStatus.OPINION,
+                BugTaskStatus.WONTFIX,
+                BugTaskStatus.INCOMPLETE])
+        cache.objects['bugtask_status_data'] = bugtask_status_data
+        bugtask_importance_data = vocabulary_to_choice_edit_items(
+            BugTaskImportance, include_description=True,
+            css_class_prefix='importance',
+            excluded_items=[BugTaskImportance.UNKNOWN])
+        cache.objects['bugtask_importance_data'] = bugtask_importance_data
 
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugReportingGuidelines, self).setUpFields()
 
-        if self.show_information_type_in_ui:
+        if self.is_bug_supervisor:
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary())
+                vocabulary=InformationTypeVocabulary(self.context))
             self.form_fields = self.form_fields.omit('information_type')
             self.form_fields += Fields(information_type_field)
         else:
@@ -295,15 +315,11 @@ class FileBugReportingGuidelines(LaunchpadFormView):
     @property
     def initial_values(self):
         """See `LaunchpadFormView`."""
-        if self.show_information_type_in_ui:
-            value = InformationType.PUBLIC
-            if (
-                self.context and IProduct.providedBy(self.context) and
-                self.context.private_bugs):
-                value = InformationType.USERDATA
-            return {'information_type': value}
-        else:
-            return {}
+        value = InformationType.PUBLIC
+        if (self.context and IProduct.providedBy(self.context) and
+            self.context.private_bugs):
+            value = InformationType.USERDATA
+        return {'information_type': value}
 
     @property
     def bug_reporting_guidelines(self):
@@ -352,6 +368,13 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         else:
             return self.context
 
+    @cachedproperty
+    def is_bug_supervisor(self):
+        """ Return True if the logged in user is a bug supervisor."""
+        context = self.getMainContext()
+        return BugTask.userHasBugSupervisorPrivilegesContext(
+            context, self.user)
+
 
 class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     """Base class for views related to filing a bug."""
@@ -379,9 +402,12 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # either. It makes for better diagnosis of failing tests.
         if self.redirect_ubuntu_filebug:
             pass
-        LaunchpadFormView.initialize(self)
-        if (not self.redirect_ubuntu_filebug and
-            self.extra_data_token is not None and
+        super(FileBugViewBase, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['enable_bugfiling_duplicate_search'] = (
+            IProjectGroup.providedBy(self.context)
+            or self.context.enable_bugfiling_duplicate_search)
+        if (self.extra_data_token is not None and
             not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
@@ -425,8 +451,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         """Return the list of field names to display."""
         context = self.context
         field_names = ['title', 'comment', 'tags']
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
+        if self.is_bug_supervisor:
             field_names.append('information_type')
         else:
             field_names.append('security_related')
@@ -448,9 +473,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # selected project supports them.
         include_extra_fields = IProjectGroup.providedBy(context)
         if not include_extra_fields:
-            include_extra_fields = (
-                BugTask.userHasBugSupervisorPrivilegesContext(
-                    context, self.user))
+            include_extra_fields = self.is_bug_supervisor
 
         if include_extra_fields:
             field_names.extend(
@@ -465,10 +488,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             return {}
 
         return {'packagename': self.context.name}
-
-    def isPrivate(self):
-        """Whether bug reports on this target are private by default."""
-        return IProduct.providedBy(self.context) and self.context.private_bugs
 
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
@@ -609,12 +628,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
-            information_type = data.get(
-                "information_type", InformationType.PUBLIC)
-        else:
-            security_related = data.get("security_related", False)
+        information_type = data.get(
+            "information_type", InformationType.PUBLIC)
+        security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
 
@@ -633,8 +649,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if self.request.form.get("packagename_option") == "none":
             packagename = None
 
-        if not bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
+        if not self.is_bug_supervisor:
             # If the old UI is enabled, security bugs are always embargoed
             # when filed, but can be disclosed after they've been reported.
             if security_related:
@@ -677,14 +692,12 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             notifications.append(
                 'Additional information was added to the bug description.')
 
-        if (not bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')) and
-            extra_data.private):
+        if not self.is_bug_supervisor and extra_data.private:
             if params.information_type == InformationType.PUBLIC:
                 params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
-        if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):
+        if self.is_bug_supervisor:
             if 'assignee' in data:
                 params.assignee = data['assignee']
             if 'status' in data:
@@ -1002,11 +1015,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             return True
 
 
-class FileBugInlineFormView(FileBugViewBase):
-    """A browser view for displaying the inline filebug form."""
-    schema = IBugAddForm
-
-
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
 
@@ -1095,7 +1103,7 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
           - There are no widget errors.
         """
         return (
-            self.contextUsesMalone and
+            self.contextUsesMalone() and
             len(self.similar_bugs) > 0 and
             len(self.widget_errors) == 0)
 
@@ -1186,7 +1194,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         """Make sure some keywords are provided."""
         try:
             data['title'] = self.widgets['title'].getInputValue()
-        except InputErrors, error:
+        except InputErrors as error:
             self.setFieldError("title", "A summary is required.")
             return [error]
 

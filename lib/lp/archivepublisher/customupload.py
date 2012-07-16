@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for handling custom uploads.
@@ -71,7 +71,7 @@ class CustomUploadTarballBadSymLink(CustomUploadError):
 
 class CustomUploadTarballBadFile(CustomUploadError):
     """A file was found which resolves outside the immediate tree.
-    
+
     This can happen if someone embeds ../file in the tar, for example.
     """
     def __init__(self, tarfile_path, file_name):
@@ -80,29 +80,71 @@ class CustomUploadTarballBadFile(CustomUploadError):
         CustomUploadError.__init__(self, message)
 
 
+class CustomUploadAlreadyExists(CustomUploadError):
+    """A build for this type, architecture, and version already exists."""
+    def __init__(self, custom_type, arch, version):
+        message = ('%s build %s for architecture %s already exists' %
+                   (custom_type, arch, version))
+        CustomUploadError.__init__(self, message)
+
+
 class CustomUpload:
     """Base class for custom upload handlers"""
 
-    # The following should be overridden by subclasses, probably in
-    # their __init__
-    targetdir = None
-    version = None
+    # This should be set as a class property on each subclass.
+    custom_type = None
 
-    def __init__(self, archive_root, tarfile_path, distroseries):
-        self.archive_root = archive_root
-        self.tarfile_path = tarfile_path
-        self.distroseries = distroseries
+    def __init__(self):
+        self.targetdir = None
+        self.version = None
+        self.arch = None
 
         self.tmpdir = None
 
-    def process(self):
+    def process(self, pubconf, tarfile_path, distroseries):
         """Process the upload and install it into the archive."""
+        self.tarfile_path = tarfile_path
         try:
+            self.setTargetDirectory(pubconf, tarfile_path, distroseries)
+            self.checkForConflicts()
             self.extract()
             self.installFiles()
             self.fixCurrentSymlink()
         finally:
             self.cleanup()
+
+    @staticmethod
+    def parsePath(tarfile_path):
+        """Parse tarfile_path, returning its useful components.
+
+        :raises ValueError: If tarfile_path is incorrectly formed.
+        """
+        raise NotImplementedError
+
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+        """Set self.targetdir based on parameters.
+
+        This should also set self.version and self.arch (if applicable) as a
+        side-effect.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
+        """Get a unique key for instances of this custom upload type.
+
+        The key should differ for any uploads that may be published
+        simultaneously, but should be identical for (e.g.) different
+        versions of the same type of upload on the same architecture in the
+        same series.  Returns None on failure to parse tarfile_path.
+        """
+        raise NotImplementedError
+
+    def checkForConflicts(self):
+        """Check for conflicts with existing publications in the archive."""
+        if os.path.exists(os.path.join(self.targetdir, self.version)):
+            raise CustomUploadAlreadyExists(
+                self.custom_type, self.arch, self.version)
 
     def verifyBeforeExtracting(self, tar):
         """Verify the tarball before extracting it.
@@ -172,7 +214,7 @@ class CustomUpload:
                     tar.extract(tarinfo, self.tmpdir)
             finally:
                 tar.close()
-        except tarfile.TarError, exc:
+        except tarfile.TarError as exc:
             raise CustomUploadTarballTarError(self.tarfile_path, exc)
 
     def shouldInstall(self, filename):

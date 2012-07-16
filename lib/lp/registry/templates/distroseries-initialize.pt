@@ -16,9 +16,8 @@
       <tal:enabled condition="view/show_derivation_form">
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
-        <a href="/+help-registry/init-series-title-help.html"
-           target="help" class="sprite maybe">&nbsp;
-          <span class="invisible-link">Initialization help</span></a>
+        <a href="/+help-registry/init-series-title-help.html" target="help"
+           class="sprite maybe action-icon">Initialization help</a>
       </div>
       <p class="error message javascript-disabled">
         Javascript is required to use this page. Please enable
@@ -26,7 +25,7 @@
         please use the <code>initDerivedDistroSeries</code> API call via the
         web service.
       </p>
-      <div class="unseen" id="initseries-form-container">
+      <div class="hidden" id="initseries-form-container">
         <metal:form use-macro="context/@@launchpad_form/form" />
       </div>
       <script type="text/javascript">

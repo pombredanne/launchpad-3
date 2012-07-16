@@ -288,46 +288,6 @@ class BugComment(MessageComment):
             self.bugwatch or
             self.show_spam_controls)
 
-    @property
-    def rendered_cache_time(self):
-        """The number of seconds we can cache the rendered comment for.
-
-        Bug comments are cached with 'authenticated' visibility, so
-        should contain no information hidden from some users. We use
-        'authenticated' rather than 'public' as email addresses are
-        obfuscated for unauthenticated users.
-        """
-        now = datetime.now(tz=utc)
-
-        # The major factor in how long we can cache a bug comment is the
-        # timestamp. For up to 5 minutes comments and activity can be grouped
-        # together as related, so do not cache.
-        if self.datecreated > now - COMMENT_ACTIVITY_GROUPING_WINDOW:
-            # Don't return 0 because that indicates no time limit.
-            return -1
-
-        # The rendering of the timestamp changes every minute for the first
-        # hour because we say '7 minutes ago'.
-        elif self.datecreated > now - timedelta(hours=1):
-            return 60
-
-        # Don't cache for long if we are waiting for synchronization.
-        elif self.bugwatch and not self.synchronized:
-            return 5 * 60
-
-        # For the rest of the first day, the rendering changes every
-        # hour. '4 hours ago'. Expire in 15 minutes so the timestamp
-        # is at most 15 minutes out of date.
-        elif self.datecreated > now - timedelta(days=1):
-            return 15 * 60
-
-        # Otherwise, cache away. Lets cache for 6 hours. We don't want
-        # to cache for too long as there are still things that can
-        # become stale - eg. if a bug attachment has been deleted we
-        # should stop rendering the link.
-        else:
-            return 6 * 60 * 60
-
 
 class BugCommentView(LaunchpadView):
     """View for a single bug comment."""

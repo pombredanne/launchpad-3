@@ -372,7 +372,7 @@ def rescueBuilderIfLost(builder, logger=None):
         slave_build_id = status_sentence[ident_position[status]]
         try:
             builder.verifySlaveBuildCookie(slave_build_id)
-        except CorruptBuildCookie, reason:
+        except CorruptBuildCookie as reason:
             if status == 'BuilderStatus.WAITING':
                 d = builder.cleanSlave()
             else:
@@ -410,7 +410,6 @@ class Builder(SQLBase):
     url = StringCol(dbName='url', notNull=True)
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -883,13 +882,12 @@ class BuilderSet(object):
     def __getitem__(self, name):
         return self.getByName(name)
 
-    def new(self, processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None, manual=True):
+    def new(self, processor, url, name, title, owner, active=True,
+            virtualized=False, vm_host=None, manual=True):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
-                       description=description, owner=owner, active=active,
-                       virtualized=virtualized, vm_host=vm_host,
-                       _builderok=True, manual=manual)
+                       owner=owner, active=active, virtualized=virtualized,
+                       vm_host=vm_host, _builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""

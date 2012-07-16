@@ -27,6 +27,7 @@ from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.registry.enums import InformationType
 from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
@@ -290,19 +291,19 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(expected_pillars, received_pillars)
 
     def test_no_merge_pending(self):
-        # is_merge_pending returns False when this person is not the "from"
+        # isMergePending() returns False when this person is not the "from"
         # person of an active merge job.
         person = self.factory.makePerson()
-        self.assertFalse(person.is_merge_pending)
+        self.assertFalse(person.isMergePending())
 
-    def test_is_merge_pending(self):
-        # is_merge_pending returns True when this person is being merged with
+    def test_isMergePending(self):
+        # isMergePending() returns True when this person is being merged with
         # another person in an active merge job.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
         getUtility(IPersonSet).mergeAsync(from_person, to_person)
-        self.assertTrue(from_person.is_merge_pending)
-        self.assertFalse(to_person.is_merge_pending)
+        self.assertTrue(from_person.isMergePending())
+        self.assertFalse(to_person.isMergePending())
 
     def test_mergeAsync_success(self):
         # mergeAsync returns a job with the from and to persons.
@@ -705,7 +706,7 @@ class TestPersonStates(TestCaseWithFactory):
         self.otherteam.visibility = PersonVisibility.PRIVATE
         try:
             self.otherteam.visibility = PersonVisibility.PUBLIC
-        except ImmutableVisibilityError, exc:
+        except ImmutableVisibilityError as exc:
             self.assertEqual(
                 str(exc),
                 'A private team cannot change visibility.')
@@ -1142,24 +1143,51 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         workitem = self.factory.makeSpecificationWorkItem(
             title=u'workitem 1', specification=assigned_spec)
 
-        # Create a workitem with somebody who's not a member of our team as
-        # the assignee. This workitem must not be in the list returned by
-        # getAssignedSpecificationWorkItemsDueBefore().
-        self.factory.makeSpecificationWorkItem(
-            title=u'workitem 2', specification=assigned_spec,
-            assignee=self.factory.makePerson())
-
         # Create a workitem targeted to a milestone too far in the future.
         # This workitem must not be in the list returned by
         # getAssignedSpecificationWorkItemsDueBefore().
         self.factory.makeSpecificationWorkItem(
-            title=u'workitem 3', specification=assigned_spec,
+            title=u'workitem 2', specification=assigned_spec,
             milestone=self.future_milestone)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
             self.current_milestone.dateexpected)
 
         self.assertEqual([workitem], list(workitems))
+
+    def test_skips_deleted_workitems(self):
+        assigned_spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=self.current_milestone,
+            product=self.product)
+        # Create a deleted work item.
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem', specification=assigned_spec, deleted=True)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+        self.assertEqual([], list(workitems))
+
+    def test_workitems_assigned_to_others_working_on_blueprint(self):
+        assigned_spec = self.factory.makeSpecification(
+                assignee=self.team.teamowner, milestone=self.current_milestone,
+                product=self.product)
+        # Create a workitem with no explicit assignee/milestone. This way it
+        # will inherit the ones from the spec it belongs to.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=assigned_spec)
+
+        # Create a workitem with somebody who's not a member of our team as
+        # the assignee. This workitem must be in the list returned by
+        # getAssignedSpecificationWorkItemsDueBefore().
+        workitem_for_other_person = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=assigned_spec,
+            assignee=self.factory.makePerson())
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        self.assertContentEqual([workitem, workitem_for_other_person],
+                                list(workitems))
 
     def test_skips_workitems_with_milestone_in_the_past(self):
         today = datetime.today().date()
@@ -1326,10 +1354,14 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
     def test_skips_private_bugs_the_user_is_not_allowed_to_see(self):
         milestone = self.factory.makeMilestone(dateexpected=self.today)
         private_bug = removeSecurityProxy(
-            self.factory.makeBug(milestone=milestone, private=True))
+            self.factory.makeBug(
+                milestone=milestone,
+                information_type=InformationType.USERDATA))
         self._assignBugTaskToTeamOwner(private_bug.bugtasks[0])
         private_bug2 = removeSecurityProxy(
-            self.factory.makeBug(milestone=milestone, private=True))
+            self.factory.makeBug(
+                milestone=milestone,
+                information_type=InformationType.USERDATA))
         self._assignBugTaskToTeamOwner(private_bug2.bugtasks[0])
 
         with person_logged_in(private_bug2.owner):
@@ -1450,4 +1482,4 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
         # 9. One to get all sourcepackagenames;
         # 10. One to get all distroseries of a bug's distro. (See comment on
         # getAssignedBugTasksDueBefore() to understand why it's needed)
-        self.assertThat(recorder, HasQueryCount(Equals(11)))
+        self.assertThat(recorder, HasQueryCount(Equals(12)))

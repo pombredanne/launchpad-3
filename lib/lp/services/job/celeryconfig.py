@@ -1,8 +1,11 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import argparse
+from datetime import timedelta
 import sys
+
+import argparse
+
 from lp.services.config import config
 
 
@@ -79,10 +82,24 @@ def configure(argv):
     result['CELERY_IMPORTS'] = ("lp.services.job.celeryjob", )
     result['CELERY_QUEUES'] = celery_queues
     result['CELERY_RESULT_BACKEND'] = 'amqp'
+    result['CELERYBEAT_SCHEDULE'] = {
+        'schedule-missing': {
+            'task': 'lp.services.job.celeryjob.run_missing_ready',
+            'schedule': timedelta(seconds=600)
+        }
+    }
+    # See http://ask.github.com/celery/userguide/optimizing.html:
+    # The AMQP message of a job should stay in the RabbitMQ server
+    # until the job has been finished. This allows to simply kill
+    # a celeryd instance while a job is executed; when another
+    # instance is started later, it will run the aborted job again.
+    result['CELERYD_PREFETCH_MULTIPLIER'] = 1
+    result['CELERY_ACKS_LATE'] = True
+
     return result
 
 try:
     globals().update(configure(getattr(sys, 'argv', [''])))
-except ConfigurationError, error:
+except ConfigurationError as error:
     print >>sys.stderr, error
     sys.exit(1)

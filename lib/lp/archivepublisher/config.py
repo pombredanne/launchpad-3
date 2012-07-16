@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This is the python package that defines the
@@ -80,6 +80,11 @@ def getPubConfig(archive):
         pubconf.cacheroot = None
         pubconf.miscroot = None
         pubconf.germinateroot = None
+
+    if archive.is_main:
+        pubconf.uefiroot = pubconf.archiveroot + '-uefi'
+    else:
+        pubconf.uefiroot = None
 
     pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
     pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')

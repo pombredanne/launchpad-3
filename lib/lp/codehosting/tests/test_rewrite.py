@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the dynamic RewriteMap used to serve branches over HTTP."""
@@ -16,11 +16,13 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.interfaces.codehosting import branch_id_alias
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
+from lp.registry.enums import InformationType
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     FakeTime,
     nonblocking_readline,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -85,7 +87,8 @@ class TestBranchRewriter(TestCaseWithFactory):
         # rewritten to codebrowse, which will then redirect them to https and
         # handle them there.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         unique_name = removeSecurityProxy(branch).unique_name
         transaction.commit()
         output = [
@@ -102,9 +105,9 @@ class TestBranchRewriter(TestCaseWithFactory):
         # branches are served from by ID if they are public.
         rewriter = self.makeRewriter()
         branches = [
-            self.factory.makeProductBranch(private=False),
-            self.factory.makePersonalBranch(private=False),
-            self.factory.makePackageBranch(private=False)]
+            self.factory.makeProductBranch(),
+            self.factory.makePersonalBranch(),
+            self.factory.makePackageBranch()]
         transaction.commit()
         output = [
             rewriter.rewriteLine(
@@ -120,7 +123,8 @@ class TestBranchRewriter(TestCaseWithFactory):
         # All requests for /+branch-id/$id/... for private branches return
         # 'NULL'.  This is translated by apache to a 404.
         rewriter = self.makeRewriter()
-        branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
         path = branch_id_alias(removeSecurityProxy(branch))
         transaction.commit()
         output = [
@@ -222,6 +226,29 @@ class TestBranchRewriter(TestCaseWithFactory):
         result = rewriter._getBranchIdAndTrailingPath(
             '/' + branch.unique_name + '/.bzr/README')
         self.assertEqual(id_path + ('HIT',), result)
+
+    def test_branch_id_alias_private(self):
+        # Private branches are not found at all (this is for anonymous access)
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            path = branch_id_alias(branch)
+        result = self.makeRewriter()._getBranchIdAndTrailingPath(path)
+        self.assertEqual((None, None, 'MISS'), result)
+
+    def test_branch_id_alias_transitive_private(self):
+        # Transitively private branches are not found at all
+        # (this is for anonymous access)
+        owner = self.factory.makePerson()
+        private_branch = self.factory.makeAnyBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        branch = self.factory.makeAnyBranch(
+            stacked_on=private_branch, owner=owner)
+        with person_logged_in(owner):
+            path = branch_id_alias(branch)
+        result = self.makeRewriter()._getBranchIdAndTrailingPath(path)
+        self.assertEqual((None, None, 'MISS'), result)
 
 
 class TestBranchRewriterScript(TestCaseWithFactory):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -211,6 +211,15 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
 
     page_title = label = "Subscribe to branch"
 
+    def validate(self, data):
+        if data.has_key('person'):
+            person = data['person']
+            subscription = self.context.getSubscription(person)
+            if (subscription is None and person.is_team and 
+                person.anyone_can_join()):
+                self.setFieldError('person', "Open and delegated teams "
+                "cannot be subscribed to private branches.")
+
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):
         """Subscribe the specified user to the branch.
@@ -229,7 +238,6 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
             self.context.subscribe(
                 person, notification_level, max_diff_lines, review_level,
                 self.user)
-
             self.add_notification_message(
                 '%s has been subscribed to this branch with: '
                 % person.displayname, notification_level, max_diff_lines,

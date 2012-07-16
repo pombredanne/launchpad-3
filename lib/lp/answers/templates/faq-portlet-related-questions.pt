@@ -4,12 +4,9 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-related-questions"
   tal:define="questions context/related_questions"
-  tal:condition="questions">
+  tal:condition="questions" >
 
     <h2>Related questions</h2>
-
-    <div class="portletBody">
-
       <ul>
         <li class="question-row" tal:repeat="question questions">
           <tal:description
@@ -20,7 +17,4 @@
              class="sprite question"># Title</a>
         </li>
       </ul>
-
-    </div>
-
 </div>

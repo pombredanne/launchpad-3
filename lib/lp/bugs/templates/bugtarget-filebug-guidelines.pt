@@ -11,7 +11,7 @@
   </tr>
 
   <tr tal:define="security_context view/getMainContext">
-  <tal:information_type tal:condition="view/show_information_type_in_ui">
+  <tal:information_type tal:condition="view/is_bug_supervisor">
     <td colspan="2" width="100%"
         tal:define="widget nocall: view/widgets/information_type|nothing"
         tal:condition="widget">
@@ -21,7 +21,7 @@
       <input tal:replace="structure widget" />
     </td>
   </tal:information_type>
-  <tal:security_related tal:condition="not: view/show_information_type_in_ui">
+  <tal:security_related tal:condition="not: view/is_bug_supervisor">
       <td colspan="2" width="100%"
         tal:define="widget nocall: view/widgets/security_related|nothing"
         tal:condition="widget">
@@ -35,22 +35,10 @@
               <label tal:attributes="for widget/name">
                 This bug is a security vulnerability
               </label>
-              <div tal:define="security_contact security_context/security_contact|nothing">
-                <tal:security-contact tal:condition="security_contact">
-                  The security contact for
-                  <tal:security-context content="security_context/displayname" />,
-                  <a tal:replace="structure security_contact/fmt:link" />,
+              <div>
+                  The security group for
+                  <tal:security-context content="security_context/displayname" />
                   will be notified.
-                </tal:security-contact>
-                <tal:maintainer condition="not:security_contact"
-                                define="maintainer security_context/owner">
-                  The maintainer of
-                  <tal:security-context content="security_context/displayname">
-                    Mozilla Firefox</tal:security-context>,
-                  <a tal:replace="structure maintainer/fmt:link">
-                    Sample Person</a>,
-                  will be notified.
-                </tal:maintainer>
               </div>
             </td>
           </tr>

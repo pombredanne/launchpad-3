@@ -108,7 +108,7 @@ class QueueScript(LaunchpadScript):
         for single_args in args_list:
             try:
                 cmd_runner.execute(single_args, self.options.exact_match)
-            except CommandRunnerError, info:
+            except CommandRunnerError as info:
                 print (info)
                 if self.options.ignore_errors:
                     continue

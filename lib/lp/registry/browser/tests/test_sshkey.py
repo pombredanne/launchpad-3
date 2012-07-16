@@ -10,8 +10,8 @@ from zope.component import getUtility
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.services.webapp import canonical_url
 from lp.testing import (
-    TestCaseWithFactory,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import (

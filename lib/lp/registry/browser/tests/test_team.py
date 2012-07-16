@@ -16,6 +16,7 @@ from lp.registry.browser.team import (
     TeamMailingListArchiveView,
     TeamOverviewMenu,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -343,7 +344,8 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         # the team has any ppas.
 
         def setup_team(team):
-            team.createPPA()
+            with person_logged_in(team.teamowner):
+                team.createPPA()
 
         self._test_edit_team_view_expected_subscription_vocab(
             setup_team, CLOSED_TEAM_POLICY)
@@ -368,7 +370,9 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         # the team is subscribed to a private bug.
 
         def setup_team(team):
-            bug = self.factory.makeBug(owner=team.teamowner, private=True)
+            bug = self.factory.makeBug(
+                owner=team.teamowner,
+                information_type=InformationType.USERDATA)
             with person_logged_in(team.teamowner):
                 bug.default_bugtask.transitionToAssignee(team)
 
@@ -497,8 +501,7 @@ class TestTeamAddView(TestCaseWithFactory):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         with person_logged_in(team.teamowner):
             view = create_initialized_view(
                 personset, name=self.view_name, principal=team.teamowner)
@@ -510,8 +513,7 @@ class TestTeamAddView(TestCaseWithFactory):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
+        self.factory.grantCommercialSubscription(team)
         team_name = self.factory.getUniqueString()
         form = {
             'field.name': team_name,
@@ -555,6 +557,32 @@ class TestTeamAddView(TestCaseWithFactory):
         self.assertEqual(
             ['PRIVATE'],
             browser.getControl(name="field.visibility").value)
+
+
+class TestSimpleTeamAddView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+simplenewteam'
+
+    def test_create_team(self):
+        personset = getUtility(IPersonSet)
+        team_name = self.factory.getUniqueString()
+        form = {
+            'field.name': team_name,
+            'field.displayname': 'New Team',
+            'field.visibility': 'PRIVATE',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.actions.create': 'Create',
+            }
+        login_celebrity('admin')
+        create_initialized_view(
+            personset, name=self.view_name, form=form)
+        team = personset.getByName(team_name)
+        self.assertIsNotNone(team)
+        self.assertEqual('New Team', team.displayname)
+        self.assertEqual(PersonVisibility.PRIVATE, team.visibility)
+        self.assertEqual(
+            TeamSubscriptionPolicy.RESTRICTED, team.subscriptionpolicy)
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -786,7 +814,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, '+index')
         self.assertEqual('Search', view.add_member_step_title)
 
-    def test_is_merge_pending(self):
+    def test_isMergePending(self):
         target_team = self.factory.makeTeam()
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(

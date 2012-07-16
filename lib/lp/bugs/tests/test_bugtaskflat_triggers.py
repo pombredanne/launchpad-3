@@ -14,8 +14,8 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import Bug
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactSource,
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
@@ -28,15 +28,18 @@ from lp.testing import (
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 
+
 BUGTASKFLAT_COLUMNS = (
     'bugtask',
     'bug',
     'datecreated',
+    'latest_patch_uploaded',
+    'date_closed',
+    'date_last_updated',
     'duplicateof',
     'bug_owner',
     'fti',
     'information_type',
-    'date_last_updated',
     'heat',
     'product',
     'productseries',
@@ -90,8 +93,13 @@ class BugTaskFlatTestMixin(TestCaseWithFactory):
 
     def makeLoggedInTask(self, private=False):
         owner = self.factory.makePerson()
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
         login_person(owner)
-        bug = self.factory.makeBug(private=private, owner=owner)
+        bug = self.factory.makeBug(
+            information_type=information_type, owner=owner)
         return bug.default_bugtask
 
     @contextmanager
@@ -316,8 +324,8 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         task = self.makeLoggedInTask(private=True)
         with self.bugtaskflat_is_updated(
             task, [
-                'information_type', 'date_last_updated', 'heat',
-                'access_policies', 'access_grants']):
+                'information_type', 'heat', 'access_policies',
+                'access_grants']):
             task.bug.setPrivate(False, task.owner)
 
     def test_bug_change_unflattened(self):

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'CaptureOops',
     'DemoMode',
+    'DisableTriggerFixture',
     'PGBouncerFixture',
     'PGNotReadyError',
     'Urllib2Fixture',
@@ -17,6 +18,7 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 import os.path
+import socket
 import time
 
 import amqplib.client_0_8 as amqp
@@ -24,7 +26,6 @@ from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
-import itertools
 from lazr.restful.utils import get_current_browser_request
 import oops
 import oops_amqp
@@ -40,6 +41,7 @@ from wsgi_intercept.urllib2_intercept import (
 from zope.component import (
     adapter,
     getGlobalSiteManager,
+    getUtility,
     provideHandler,
     )
 from zope.interface import Interface
@@ -56,6 +58,12 @@ from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.errorlog import ErrorReportEvent
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.testing.dbuser import dbuser
 
 
 class PGNotReadyError(Exception):
@@ -128,14 +136,20 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
             reconnect_stores()
 
     def start(self, retries=20, sleep=0.5):
-        """Simply return to simulate an error starting PGBouncer."""
+        """Start PGBouncer, waiting for it to accept connections if neccesary.
+        """
         super(PGBouncerFixture, self).start()
-        for i in itertools.count(1):
-            if self.is_running:
-                return
-            if i == retries:
-                raise PGNotReadyError("Not ready after %d attempts." % i)
+        for i in xrange(retries):
+            try:
+                socket.create_connection((self.host, self.port))
+            except socket.error:
+                # Try again.
+                pass
+            else:
+                break
             time.sleep(sleep)
+        else:
+            raise PGNotReadyError("Not ready after %d attempts." % retries)
 
 
 class ZopeAdapterFixture(Fixture):
@@ -379,3 +393,33 @@ site_message = This is a demo site mmk. \
 <a href="http://example.com">File a bug</a>.
             ''')
         self.addCleanup(lambda: config.pop('demo-fixture'))
+
+
+class DisableTriggerFixture(Fixture):
+    """Let tests disable database triggers."""
+
+    def __init__(self, table_triggers=None):
+        self.table_triggers = table_triggers or {}
+
+    def setUp(self):
+        super(DisableTriggerFixture, self).setUp()
+        self._disable_triggers()
+        self.addCleanup(self._enable_triggers)
+
+    def _process_triggers(self, mode):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        with dbuser('postgres'):
+            for table, trigger in self.table_triggers.items():
+                sql = ("ALTER TABLE %(table)s %(mode)s trigger "
+                       "%(trigger)s") % {
+                    'table': table,
+                    'mode': mode,
+                    'trigger': trigger,
+                }
+                store.execute(sql)
+
+    def _disable_triggers(self):
+        self._process_triggers(mode='DISABLE')
+
+    def _enable_triggers(self):
+        self._process_triggers(mode='ENABLE')
