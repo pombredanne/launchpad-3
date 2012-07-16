@@ -968,23 +968,11 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
-    def canBePublic(user):
-        """Can this branch be public?
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this branch.
 
-        A branch can be made public if:
-        - the branch has a visibility policy which allows it
-        - the user is an admin or bzr expert
-        """
-
-    def canBePrivate(user):
-        """Can this branch be private?
-
-        A branch can be made private if:
-        - the branch has a visibility policy which allows it
-        - the user is an admin or bzr expert
-        - the branch is owned by a private team
-          (The branch is already implicitly private)
-        - the branch is linked to a private bug the user can access
+        If the user is a Launchpad admin, any type is acceptable. Otherwise
+        the `IBranchNamespace` is consulted.
         """
 
 
@@ -1403,6 +1391,20 @@ class IBranchSet(Interface):
         This API call is provided for use by the client Javascript. It is not
         designed to efficiently scale to handle requests for large numbers of
         branches.
+        """
+
+    @operation_returns_collection_of(Interface)
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_parameters(merged_revision=TextLine())
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(merged_revision, visible_by_user=None):
+        """Return the merge proposals that resulted in this revision.
+
+        :param merged_revision: The revision_id of the revision that resulted
+            from this merge proposal.
+        :param visible_by_user: The user to whom the proposals must be
+            visible.  If None, only public proposals will be returned.
         """
 
 

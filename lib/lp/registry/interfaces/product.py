@@ -108,6 +108,10 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
@@ -634,6 +638,17 @@ class IProductPublic(
                         description=_(
                             "Whether or not bugs reported into this project "
                             "are private by default.")))
+    branch_sharing_policy = exported(Choice(
+        title=_('Branch sharing policy'),
+        description=_("Sharing policy for this project's branches."),
+        required=False, readonly=False, vocabulary=BranchSharingPolicy),
+        as_of='devel')
+    bug_sharing_policy = exported(Choice(
+        title=_('Bug sharing policy'),
+        description=_("Sharing policy for this project's bugs."),
+        required=False, readonly=True, vocabulary=BugSharingPolicy),
+        as_of='devel')
+
     licenses = exported(
         Set(title=_('Licences'),
             value_type=Choice(vocabulary=License)))

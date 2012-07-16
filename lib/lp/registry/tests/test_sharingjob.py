@@ -46,7 +46,6 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
-from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import (
     CeleryJobLayer,
     DatabaseFunctionalLayer,
@@ -163,25 +162,10 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
             'artifacts.'), oops_vars)
 
 
-def disable_trigger_fixture():
-    # XXX 2012-05-22 wallyworld bug=1002596
-    # No need to use this fixture when triggers are removed.
-    return DisableTriggerFixture(
-            {'bugsubscription':
-                 'bugsubscription_mirror_legacy_access_t',
-             'bug': 'bug_mirror_legacy_access_t',
-             'bugtask': 'bugtask_mirror_legacy_access_t',
-        })
-
-
 class TestRunViaCron(TestCaseWithFactory):
     """Sharing jobs run via cron."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        self.useFixture(disable_trigger_fixture())
-        super(TestRunViaCron, self).setUp()
 
     def _assert_run_cronscript(self, create_job):
         # The cronscript is configured: schema-lazr.conf and security.cfg.
@@ -241,7 +225,6 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
-        self.useFixture(disable_trigger_fixture())
         super(RemoveArtifactSubscriptionsJobTestCase, self).setUp()
 
     def test_create(self):
@@ -293,6 +276,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         bug = self.factory.makeBug(
             owner=owner, product=product,
             information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(
+            owner=owner, product=product,
+            information_type=InformationType.USERDATA)
 
         # The artifact grantees will not lose access when the job is run.
         artifact_indirect_grantee = self.factory.makePerson()
@@ -304,6 +290,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         bug.subscribe(policy_indirect_grantee, owner)
         bug.subscribe(artifact_team_grantee, owner)
         bug.subscribe(artifact_indirect_grantee, owner)
+        branch.subscribe(artifact_indirect_grantee,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, owner)
         # Subscribing policy_team_grantee has created an artifact grant so we
         # need to revoke that to test the job.
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
@@ -332,6 +321,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertNotIn(policy_indirect_grantee, subscribers)
         self.assertIn(artifact_team_grantee, subscribers)
         self.assertIn(artifact_indirect_grantee, subscribers)
+        self.assertIn(artifact_indirect_grantee, branch.subscribers)
 
     def _assert_branch_change_unsubscribes(self, change_callback):
         product = self.factory.makeProduct()
@@ -346,6 +336,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
 
         self.factory.makeAccessPolicyGrant(policy, policy_team_grantee, owner)
         login_person(owner)
+        bug = self.factory.makeBug(
+            owner=owner, product=product,
+            information_type=InformationType.USERDATA)
         branch = self.factory.makeBranch(
             owner=owner, product=product,
             information_type=InformationType.USERDATA)
@@ -371,6 +364,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
             artifact_indirect_grantee,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL, owner)
+        bug.subscribe(artifact_indirect_grantee, owner)
         # Subscribing policy_team_grantee has created an artifact grant so we
         # need to revoke that to test the job.
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
@@ -398,6 +392,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertNotIn(policy_indirect_grantee, branch.subscribers)
         self.assertIn(artifact_team_grantee, branch.subscribers)
         self.assertIn(artifact_indirect_grantee, branch.subscribers)
+        self.assertIn(artifact_indirect_grantee, bug.getDirectSubscribers())
 
     def test_change_information_type_branch(self):
         def change_information_type(branch):

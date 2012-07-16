@@ -29,6 +29,7 @@ from lp.services.job.tests import (
     block_on_job,
     pop_remote_notifications,
     )
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
@@ -199,6 +200,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertTrue(verifyObject(IPlainPackageCopyJobSource, job_source))
 
+    def test_getErrorRecipients_requester(self):
+        # The job requester is the recipient.
+        job = self.makeJob()
+        email = format_address_for_person(job.requester)
+        self.assertEqual([email], job.getErrorRecipients())
+
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
         distroseries = self.factory.makeDistroSeries()
@@ -325,7 +332,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # exception and posts a DistroSeriesDifferenceComment with the
         # failure message.
         dsd = self.factory.makeDistroSeriesDifference()
-        self.factory.makeArchive(distribution=dsd.derived_series.distribution)
+        self.factory.makeArchive(
+            distribution=dsd.derived_series.distribution,
+            purpose=ArchivePurpose.PRIMARY)
         job = self.makeJob(dsd)
         removeSecurityProxy(job).attemptCopy = FakeMethod(
             failure=CannotCopy("Server meltdown"))
@@ -357,7 +366,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
 
-        job.run()
+        self.assertRaises(CannotCopy, job.run)
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
@@ -397,13 +406,13 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
 
-        job.run()
+        self.assertRaises(CannotCopy, job.run)
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
     def test_target_ppa_message(self):
         # When copying to a PPA archive the error message is stored in the
-        # job's metadatas.
+        # job's metadata and the job fails.
         distroseries = self.factory.makeDistroSeries()
         package = self.factory.makeSourcePackageName()
         archive1 = self.factory.makeArchive(distroseries.distribution)
@@ -415,7 +424,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=False, package_version='1.0',
             requester=self.factory.makePerson())
         transaction.commit()
-        job.run()
+        self.runJob(job)
+        self.assertEqual(JobStatus.FAILED, job.status)
 
         self.assertEqual(
             "Destination pocket must be 'release' for a PPA.",
@@ -1033,7 +1043,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Now put the same named package in the target archive at the
         # oldest version in the changelog.
-        target_source_pub = self.publisher.getPubSource(
+        self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="libc",
             version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
             archive=target_archive)

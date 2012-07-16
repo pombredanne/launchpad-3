@@ -19,6 +19,7 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchSubscriptionDiffSize,
@@ -45,6 +46,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.enums import (
+    BranchSharingPolicy,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -78,6 +80,29 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+
+POLICY_ALLOWED_TYPES = {
+    BranchSharingPolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY:
+        PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC:
+        PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+    BranchSharingPolicy.PROPRIETARY: PRIVATE_INFORMATION_TYPES,
+    }
+
+POLICY_DEFAULT_TYPES = {
+    BranchSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
+    }
+
+POLICY_REQUIRED_GRANTS = {
+    BranchSharingPolicy.PUBLIC: None,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: None,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
+    }
 
 
 class _BaseNamespace:
@@ -340,6 +365,10 @@ class ProductNamespace(_BaseNamespace):
         """See `IBranchNamespace`."""
         return IBranchTarget(self.product)
 
+    @property
+    def _using_branchvisibilitypolicy(self):
+        return self.product.branch_sharing_policy is None
+
     def _getRelatedPolicies(self):
         """Return the privacy policies relating to the owner."""
         policies = self.product.getBranchVisibilityTeamPolicies()
@@ -355,6 +384,12 @@ class ProductNamespace(_BaseNamespace):
 
     def getPrivacySubscriber(self):
         """See `IBranchNamespace`."""
+        # New branch_sharing_policy-based privacy doesn't
+        # require a privacy subscriber, as branches are shared through
+        # AccessPolicyGrants.
+        if not self._using_branchvisibilitypolicy:
+            return None
+
         # If there is a rule defined for the owner, then there is no privacy
         # subscriber.
         rule = self.product.getBranchVisibilityRuleForTeam(self.owner)
@@ -371,6 +406,24 @@ class ProductNamespace(_BaseNamespace):
 
     def getAllowedInformationTypes(self):
         """See `IBranchNamespace`."""
+        if not self._using_branchvisibilitypolicy:
+            # The project uses the new simplified branch_sharing_policy
+            # rules, so check them.
+
+            # Some policies require that the owner have full access to
+            # an information type. If it's required and the owner
+            # doesn't hold it, no information types are legal.
+            required_grant = POLICY_REQUIRED_GRANTS[
+                self.product.branch_sharing_policy]
+            if (required_grant is not None
+                and not getUtility(IService, 'sharing').checkPillarAccess(
+                    self.product, required_grant, self.owner)):
+                return []
+
+            return POLICY_ALLOWED_TYPES[
+                self.product.branch_sharing_policy]
+
+        # The project still uses BranchVisibilityPolicy, so check that.
         private_rules = (
             BranchVisibilityRule.PRIVATE,
             BranchVisibilityRule.PRIVATE_ONLY)
@@ -402,6 +455,17 @@ class ProductNamespace(_BaseNamespace):
         if private:
             types.extend(PRIVATE_INFORMATION_TYPES)
         return types
+
+    def getDefaultInformationType(self):
+        """See `IBranchNamespace`."""
+        if not self._using_branchvisibilitypolicy:
+            default_type = POLICY_DEFAULT_TYPES[
+                self.product.branch_sharing_policy]
+            if default_type not in self.getAllowedInformationTypes():
+                return None
+            return default_type
+
+        return super(ProductNamespace, self).getDefaultInformationType()
 
 
 class PackageNamespace(_BaseNamespace):
