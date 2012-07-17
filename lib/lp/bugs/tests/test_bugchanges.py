@@ -642,7 +642,7 @@ class TestBugChanges(TestCaseWithFactory):
             'newvalue': 'Private Security',
             }
         information_type_change_notification = {
-            'text': '** Information type changed from Public to Embargoed '
+            'text': '** Information type changed from Public to Private '
                 'Security',
             'person': self.user,
             }
@@ -672,7 +672,7 @@ class TestBugChanges(TestCaseWithFactory):
             'newvalue': 'Private Security',
             }
         information_type_change_notification = {
-            'text': '** Information type changed from Public to Embargoed '
+            'text': '** Information type changed from Public to Private '
                 'Security',
             'person': person,
             }

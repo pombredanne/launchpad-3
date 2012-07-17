@@ -422,7 +422,7 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = InformationTypeEmailCommand(
-            'informationtype', ['unembargoedsecurity'])
+            'informationtype', ['publicsecurity'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
@@ -434,7 +434,7 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         bug = self.factory.makeBug()
         login_person(bug.owner)
         command = InformationTypeEmailCommand(
-            'informationtype', ['embargoedsecurity'])
+            'informationtype', ['privatesecurity'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
         self.assertEqual(
