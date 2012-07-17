@@ -91,7 +91,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # Wait at most 10 seconds for celeryd to start and process
         # the task.
         with celeryd(job_queue_name):
-            wait_until = time() + 10
+            wait_until = time() + 60
             while (time() < wait_until):
                 queued_tasks = list_queued(
                     self.RunMissingReady.app, [job_queue_name])
