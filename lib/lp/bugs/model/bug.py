@@ -1817,14 +1817,15 @@ class Bug(SQLBase):
         # information type value.
         if information_type in PRIVATE_INFORMATION_TYPES:
             # Grant the subscriber access if they can't see the bug.
-            service = getUtility(IService, 'sharing')
             subscribers = self.getDirectSubscribers()
-            blind_subscribers = service.getPeopleWithoutAccess(
-                self, subscribers)
-            if len(blind_subscribers):
-                service.ensureAccessGrants(
-                    blind_subscribers, who, bugs=[self],
-                    ignore_permissions=True)
+            if subscribers:
+                service = getUtility(IService, 'sharing')
+                blind_subscribers = service.getPeopleWithoutAccess(
+                    self, subscribers)
+                if len(blind_subscribers):
+                    service.ensureAccessGrants(
+                        blind_subscribers, who, bugs=[self],
+                        ignore_permissions=True)
 
         self.updateHeat()
 
