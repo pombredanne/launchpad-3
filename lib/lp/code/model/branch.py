@@ -264,7 +264,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             raise BranchCannotChangeInformationType()
         self.information_type = information_type
         self._reconcileAccess()
-        if information_type in PRIVATE_INFORMATION_TYPES:
+        if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:
             # Grant the subscriber access if they can't see the branch.
             service = getUtility(IService, 'sharing')
             blind_subscribers = service.getPeopleWithoutAccess(
