@@ -361,12 +361,10 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         product.development_focus.branch = branch
         product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
-        with FeatureFixture(
-                {'disclosure.display_userdata_as_private.enabled': 'true'}):
-            view = create_initialized_view(
-                product, '+code-index', rootsite='code',
-                principal=product.owner)
-            text = extract_text(find_tag_by_id(view.render(), 'privacy'))
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code',
+            principal=product.owner)
+        text = extract_text(find_tag_by_id(view.render(), 'privacy'))
         expected = (
             "New branches for %(name)s are Private.*"
             % dict(name=product.displayname))

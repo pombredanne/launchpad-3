@@ -84,6 +84,25 @@ class SharingService:
             bool(getFeatureFlag(
             'disclosure.enhanced_sharing.writable')))
 
+    def checkPillarAccess(self, pillar, information_type, person):
+        """See `ISharingService`."""
+        policy = getUtility(IAccessPolicySource).find(
+            [(pillar, information_type)]).one()
+        if policy is None:
+            return False
+        store = IStore(AccessPolicyGrant)
+        tables = [
+            AccessPolicyGrant,
+            Join(
+                TeamParticipation,
+                TeamParticipation.teamID == AccessPolicyGrant.grantee_id),
+            ]
+        result = store.using(*tables).find(
+            AccessPolicyGrant,
+            AccessPolicyGrant.policy_id == policy.id,
+            TeamParticipation.personID == person.id)
+        return not result.is_empty()
+
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
@@ -215,7 +234,7 @@ class SharingService:
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [
-            InformationType.EMBARGOEDSECURITY,
+            InformationType.PRIVATESECURITY,
             InformationType.USERDATA]
         # Products with current commercial subscriptions are also allowed to
         # have a PROPRIETARY information type.

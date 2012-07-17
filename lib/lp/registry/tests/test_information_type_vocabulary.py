@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the Distribution Source Package vocabulary."""
-from zope.security.proxy import removeSecurityProxy
-from lp.testing._login import person_logged_in
 
 __metaclass__ = type
 
@@ -17,7 +15,10 @@ from lp.registry.enums import (
     )
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.features.testing import FeatureFixture
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -96,27 +97,6 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
             vocab = InformationTypeVocabulary(bug)
         term = vocab.getTermByToken('PROPRIETARY')
         self.assertEqual('Proprietary', term.title)
-
-    def test_display_userdata_as_private(self):
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            vocab = InformationTypeVocabulary()
-            term = vocab.getTermByToken('USERDATA')
-            self.assertEqual('Private', term.title)
-            self.assertTextMatchesExpressionIgnoreWhitespace(
-                "Visible only to users with whom the project has "
-                "shared private information.",
-                term.description)
-
-    def test_userdata(self):
-        vocab = InformationTypeVocabulary()
-        term = vocab.getTermByToken('USERDATA')
-        self.assertEqual('User Data', term.title)
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            "Visible only to users with whom the project has shared "
-            "information containing user data.",
-            term.description)
 
     def test_multi_pillar_bugs(self):
         # Multi-pillar bugs are forbidden from being PROPRIETARY, no matter

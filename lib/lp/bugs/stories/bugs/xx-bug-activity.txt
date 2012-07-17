@@ -74,6 +74,7 @@ page.
     ...
     #7
     Here's a comment for testing, like.
+    ...
     --------
 
     >>> admin_browser.open(
@@ -101,7 +102,7 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl("User Data").selected = True
+    >>> admin_browser.getControl("Private", index=1).selected = True
     >>> admin_browser.getControl("Change").click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
@@ -122,7 +123,7 @@ are still shown in the order the changes were made.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl("Embargoed Security").selected = True
+    >>> admin_browser.getControl("Private Security").selected = True
     >>> admin_browser.getControl("Change").click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
@@ -319,25 +320,25 @@ Changes to information_type are shown when the feature flag is set.
     >>> with FeatureFixture(feature_flag):
     ...     admin_browser.open(
     ...         "http://bugs.launchpad.dev/evolution/+bug/7/+secrecy")
-    ...     admin_browser.getControl("User Data").selected = True
+    ...     admin_browser.getControl("Private", index=1).selected = True
     ...     admin_browser.getControl('Change').click()
     ...     admin_browser.open("http://bugs.launchpad.dev/evolution/+bug/7")
     ...     print_comments(admin_browser.contents)
     Foo Bar (name16)
     ... ago
     information type:
-    Public => User Data
+    Public => Private
     --------
 
     >>> with FeatureFixture(feature_flag):
     ...     admin_browser.open(
     ...         "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
-    ...     admin_browser.getControl("User Data").selected = True
+    ...     admin_browser.getControl("Private", index=1).selected = True
     ...     admin_browser.getControl('Change').click()
     ...     admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/14")
     ...     print_comments(admin_browser.contents)
     Foo Bar (name16)
     ... ago
     information type:
-    Embargoed Security => User Data
+    Private Security => Private
     --------

@@ -2549,9 +2549,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             stacked_on=stacked_on, information_type=InformationType.USERDATA)
         branch.transitionToInformationType(
-            InformationType.UNEMBARGOEDSECURITY, branch.owner)
+            InformationType.PUBLICSECURITY, branch.owner)
         self.assertEqual(
-            InformationType.UNEMBARGOEDSECURITY, branch.information_type)
+            InformationType.PUBLICSECURITY, branch.information_type)
 
     def test_transition_reconciles_access(self):
         # transitionToStatus calls _reconcileAccess to make the sharing
@@ -2560,11 +2560,24 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         with admin_logged_in():
             branch.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, branch.owner,
+                InformationType.PRIVATESECURITY, branch.owner,
                 verify_policy=False)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY,
+            InformationType.PRIVATESECURITY,
             get_policies_for_artifact(branch)[0].type)
+
+    def test_can_transition_with_no_subscribers(self):
+        # Ensure that a branch can transition to another private type when
+        # there are no subscribers to the branch.
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            branch.unsubscribe(owner, owner)
+        branch.transitionToInformationType(
+            InformationType.PRIVATESECURITY, owner, verify_policy=False)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, branch.information_type)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
@@ -2919,9 +2932,9 @@ def make_proposal_and_branch_revision(factory, revno, revision_id,
     else:
         information_type = InformationType.PUBLIC
     target_branch = factory.makeAnyBranch(information_type=information_type)
-    revision = factory.makeBranchRevision(revision_id=revision_id,
-                                          branch=target_branch,
-                                          sequence=revno)
+    factory.makeBranchRevision(revision_id=revision_id,
+                               branch=target_branch,
+                               sequence=revno)
     return factory.makeBranchMergeProposal(merged_revno=revno,
                                            target_branch=target_branch)
 

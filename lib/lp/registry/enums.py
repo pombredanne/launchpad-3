@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchSharingPolicy',
+    'BugSharingPolicy',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
     'InformationType',
@@ -35,46 +37,42 @@ class InformationType(DBEnumeratedType):
         Everyone can see this information.
         """)
 
-    UNEMBARGOEDSECURITY = DBItem(2, """
-        Unembargoed Security
+    PUBLICSECURITY = DBItem(2, """
+        Public Security
 
-        Everyone can see this information pertaining to a resolved security
-        related bug.
+        Everyone can see this security related information.
         """)
 
-    EMBARGOEDSECURITY = DBItem(3, """
-        Embargoed Security
+    PRIVATESECURITY = DBItem(3, """
+        Private Security
 
-        Visible only to users with whom the project has shared embargoed
-        security information.
+       Only the security group can see this information.
         """)
 
     USERDATA = DBItem(4, """
-        User Data
+        Private
 
-        Visible only to users with whom the project has shared information
-        containing user data.
+        Only shared with users permitted to see private user information.
         """)
 
     PROPRIETARY = DBItem(5, """
         Proprietary
 
-        Visible only to users with whom the project has shared proprietary
-        information.
+        Only shared with users permitted to see proprietary information.
         """)
 
 
 PUBLIC_INFORMATION_TYPES = (
-    InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY)
+    InformationType.PUBLIC, InformationType.PUBLICSECURITY)
 
 
 PRIVATE_INFORMATION_TYPES = (
-    InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+    InformationType.PRIVATESECURITY, InformationType.USERDATA,
     InformationType.PROPRIETARY)
 
 
 SECURITY_INFORMATION_TYPES = (
-    InformationType.UNEMBARGOEDSECURITY, InformationType.EMBARGOEDSECURITY)
+    InformationType.PUBLICSECURITY, InformationType.PRIVATESECURITY)
 
 
 class SharingPermission(DBEnumeratedType):
@@ -99,6 +97,65 @@ class SharingPermission(DBEnumeratedType):
         Some
 
         Share bug and branch subscriptions.
+        """)
+
+
+class BranchSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Branches are public unless they contain sensitive security
+        information.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New branches are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New branches are proprietary, but can be made public later. Only
+        people who can see the project's proprietary information can create
+        new branches.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Branches are always proprietary. Only people who can see the
+        project's proprietary information can create new branches.
+        """)
+
+
+class BugSharingPolicy(DBEnumeratedType):
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Bugs are public unless they contain sensitive security
+        information.
+        """)
+
+    PUBLIC_OR_PROPRIETARY = DBItem(2, """
+        Public, can be proprietary
+
+        New bugs are public, but can be made proprietary later.
+        """)
+
+    PROPRIETARY_OR_PUBLIC = DBItem(3, """
+        Proprietary, can be public
+
+        New bugs are proprietary, but can be made public later.
+        """)
+
+    PROPRIETARY = DBItem(4, """
+        Proprietary
+
+        Bugs are always proprietary.
         """)
 
 
