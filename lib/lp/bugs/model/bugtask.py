@@ -1644,7 +1644,7 @@ class BugTaskSet:
             validate_new_target(bug, target)
             pillars.add(target.pillar)
             target_keys.append(bug_target_to_key(target))
-        if bug.information_type == InformationType.UNEMBARGOEDSECURITY:
+        if bug.information_type == InformationType.PUBLICSECURITY:
             for pillar in pillars:
                 if pillar.security_contact:
                     bug.subscribe(pillar.security_contact, owner)

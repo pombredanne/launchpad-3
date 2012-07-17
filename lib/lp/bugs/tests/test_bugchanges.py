@@ -630,7 +630,7 @@ class TestBugChanges(TestCaseWithFactory):
         bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         with FeatureFixture(feature_flag):
             bug.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, self.user)
+                InformationType.PRIVATESECURITY, self.user)
             notify(ObjectModifiedEvent(
                 bug, bug_before_modification, ['information_type'],
                 user=self.user))
@@ -639,7 +639,7 @@ class TestBugChanges(TestCaseWithFactory):
             'person': self.user,
             'whatchanged': 'information type',
             'oldvalue': 'Public',
-            'newvalue': 'Embargoed Security',
+            'newvalue': 'Private Security',
             }
         information_type_change_notification = {
             'text': '** Information type changed from Public to Embargoed '
@@ -663,13 +663,13 @@ class TestBugChanges(TestCaseWithFactory):
         lp_bug = webservice.load(api_url(bug))
         with FeatureFixture(feature_flag):
             lp_bug.transitionToInformationType(
-                information_type='Embargoed Security')
+                information_type='Private Security')
 
         information_type_change_activity = {
             'person': person,
             'whatchanged': 'information type',
             'oldvalue': 'Public',
-            'newvalue': 'Embargoed Security',
+            'newvalue': 'Private Security',
             }
         information_type_change_notification = {
             'text': '** Information type changed from Public to Embargoed '

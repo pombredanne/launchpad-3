@@ -202,7 +202,7 @@ class SharingService:
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [
-            InformationType.EMBARGOEDSECURITY,
+            InformationType.PRIVATESECURITY,
             InformationType.USERDATA]
         # Products with current commercial subscriptions are also allowed to
         # have a PROPRIETARY information type.

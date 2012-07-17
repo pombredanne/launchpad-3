@@ -949,7 +949,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
 
     def test_public_branch(self):
         # A normal public branch on a public project can only be public.
-        # We don't show information types like Unembargoed Security
+        # We don't show information types like Public Security
         # unless there's a linked branch of that type, as they're not
         # useful or unconfusing otherwise.
         # The model doesn't enforce this, so it's just a UI thing.
@@ -958,18 +958,18 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         self.assertShownTypes([InformationType.PUBLIC], branch)
 
     def test_public_branch_with_security_bug(self):
-        # A public branch can be set to Unembargoed Security if it has a
-        # linked Unembargoed Security bug. The project policy doesn't
-        # allow private branches, so Embargoed Security and Private
+        # A public branch can be set to Public Security if it has a
+        # linked Public Security bug. The project policy doesn't
+        # allow private branches, so Private Security and Private
         # are unavailable.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
         bug = self.factory.makeBug(
-            information_type=InformationType.UNEMBARGOEDSECURITY)
+            information_type=InformationType.PUBLICSECURITY)
         with admin_logged_in():
             branch.linkBug(bug, branch.owner)
         self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY],
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY],
             branch)
 
     def test_branch_with_disallowed_type(self):
@@ -990,12 +990,12 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             product=product, stacked_on=stacked_on_branch,
             owner=product.owner,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         with admin_logged_in():
             branch.product.setBranchVisibilityTeamPolicy(
                 branch.owner, BranchVisibilityRule.PRIVATE)
         self.assertShownTypes(
-            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA],
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA],
             branch)
 
     def test_private_branch(self):
@@ -1011,7 +1011,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
 
     def test_private_branch_with_security_bug(self):
         # Branches on projects that allow private branches can use the
-        # Embargoed Security information type if they have a security
+        # Private Security information type if they have a security
         # bug linked.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
@@ -1019,12 +1019,12 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             branch.product.setBranchVisibilityTeamPolicy(
                 branch.owner, BranchVisibilityRule.PRIVATE)
         bug = self.factory.makeBug(
-            information_type=InformationType.UNEMBARGOEDSECURITY)
+            information_type=InformationType.PUBLICSECURITY)
         with admin_logged_in():
             branch.linkBug(bug, branch.owner)
         self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY,
-             InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY, InformationType.USERDATA,
              InformationType.PROPRIETARY],
             branch)
 

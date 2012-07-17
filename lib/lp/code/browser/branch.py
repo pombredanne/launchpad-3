@@ -1088,13 +1088,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 InformationType.PROPRIETARY,
                 )
 
-            # We only show Embargoed Security and Unembargoed Security
+            # We only show Private Security and Public Security
             # if the branch is linked to a bug with one of those types,
             # as they're confusing and not generally useful otherwise.
             # Once Proprietary is fully deployed, it should be added here.
             hidden_types = (
-                InformationType.UNEMBARGOEDSECURITY,
-                InformationType.EMBARGOEDSECURITY,
+                InformationType.PUBLICSECURITY,
+                InformationType.PRIVATESECURITY,
                 )
             if set(allowed_types).intersection(hidden_types):
                 params = BugTaskSearchParams(

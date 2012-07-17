@@ -419,7 +419,7 @@ inserted at the top of the message body.
     ...     sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
-    ...         information_type=InformationType.EMBARGOEDSECURITY))
+    ...         information_type=InformationType.PRIVATESECURITY))
 
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
@@ -768,16 +768,16 @@ Now transition the bug to embargoed security:
 
     >>> with lp_dbuser():
     ...     bug_three.transitionToInformationType(
-    ...         InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)
+    ...         InformationType.PRIVATESECURITY, getUtility(ILaunchBag).user)
     True
     >>> print bug_three.information_type.title
-    Embargoed Security
+    Private Security
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print_message_header_details(message)
-    foo.bar@canonical.com ['yes'] ['yes'] ['Embargoed Security']
-    mark@example.com ['yes'] ['yes']  ['Embargoed Security']
-    test@canonical.com ['yes'] ['yes']  ['Embargoed Security']
+    foo.bar@canonical.com ['yes'] ['yes'] ['Private Security']
+    mark@example.com ['yes'] ['yes']  ['Private Security']
+    test@canonical.com ['yes'] ['yes']  ['Private Security']
 
 
 The X-Launchpad-Bug-Commenters header

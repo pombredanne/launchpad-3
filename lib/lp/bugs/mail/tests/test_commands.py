@@ -377,13 +377,13 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(
             title='bug title', owner=user,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         command = PrivateEmailCommand('private', ['no'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug_params.information_type)
+            InformationType.PRIVATESECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 
@@ -409,7 +409,7 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug_params.information_type)
+            InformationType.PRIVATESECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 
@@ -427,7 +427,7 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(
-            InformationType.UNEMBARGOEDSECURITY, bug_params.information_type)
+            InformationType.PUBLICSECURITY, bug_params.information_type)
         self.assertTrue(IObjectModifiedEvent.providedBy(event))
 
     def test_execute_bug(self):
@@ -438,7 +438,7 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug.information_type)
+            InformationType.PRIVATESECURITY, bug.information_type)
         self.assertTrue(IObjectModifiedEvent.providedBy(event))
 
     def test_execute_bug_params_with_rubbish(self):

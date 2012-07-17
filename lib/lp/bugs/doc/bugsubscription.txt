@@ -701,7 +701,7 @@ there is no security contact:
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
+    ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = ubuntu.createBug(params)
 
     >>> getSubscribers(new_bug)
@@ -789,7 +789,7 @@ bugs, because upstream has no security contact, in this case.
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
+    ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = firefox.createBug(params)
 
     >>> getSubscribers(new_bug)
@@ -855,7 +855,7 @@ security bug filed on a package, because Ubuntu has no security contact:
     >>> params = CreateBugParams(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
-    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
+    ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = evolution.createBug(params)
 
     >>> getSubscribers(new_bug)

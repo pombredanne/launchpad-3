@@ -37,14 +37,14 @@ class InformationType(DBEnumeratedType):
         Everyone can see this information.
         """)
 
-    UNEMBARGOEDSECURITY = DBItem(2, """
-        Unembargoed Security
+    PUBLICSECURITY = DBItem(2, """
+        Public Security
 
         Everyone can see this security related information.
         """)
 
-    EMBARGOEDSECURITY = DBItem(3, """
-        Embargoed Security
+    PRIVATESECURITY = DBItem(3, """
+        Private Security
 
        Only the security group can see this information.
         """)
@@ -63,16 +63,16 @@ class InformationType(DBEnumeratedType):
 
 
 PUBLIC_INFORMATION_TYPES = (
-    InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY)
+    InformationType.PUBLIC, InformationType.PUBLICSECURITY)
 
 
 PRIVATE_INFORMATION_TYPES = (
-    InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+    InformationType.PRIVATESECURITY, InformationType.USERDATA,
     InformationType.PROPRIETARY)
 
 
 SECURITY_INFORMATION_TYPES = (
-    InformationType.UNEMBARGOEDSECURITY, InformationType.EMBARGOEDSECURITY)
+    InformationType.PUBLICSECURITY, InformationType.PRIVATESECURITY)
 
 
 class SharingPermission(DBEnumeratedType):

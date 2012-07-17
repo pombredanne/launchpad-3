@@ -96,7 +96,7 @@ class TestSearchByInformationType(TestCaseWithFactory):
             self.product = self.factory.makeProduct()
         self.bug = self.factory.makeBug(
             product=self.product,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
 
@@ -108,7 +108,7 @@ class TestSearchByInformationType(TestCaseWithFactory):
     def test_search_returns_results(self):
         # A matching search returns results.
         response = self.search(
-            "devel", information_type="Embargoed Security")
+            "devel", information_type="Private Security")
         self.assertEqual(response['total_size'], 1)
 
     def test_search_returns_no_results(self):

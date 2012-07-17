@@ -24,7 +24,7 @@ marked the bug private show only a simple message:
 
     >>> browser.open("http://launchpad.dev/bugs/14")
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This report contains Embargoed Security information...
+    This report contains Private Security information...
 
 But newer bugs that are filed private at creation time (like security
 bugs or where the product requests that bugs are private by default)
@@ -36,13 +36,13 @@ have the full message:
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl("Further information").value = "foo"
-    >>> browser.getControl("Embargoed Security").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/...
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This report contains Embargoed Security information...
+    This report contains Private Security information...
 
 XXX 20080708 mpt: Bug 246671 again.
 

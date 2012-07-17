@@ -2526,9 +2526,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             stacked_on=stacked_on, information_type=InformationType.USERDATA)
         branch.transitionToInformationType(
-            InformationType.UNEMBARGOEDSECURITY, branch.owner)
+            InformationType.PUBLICSECURITY, branch.owner)
         self.assertEqual(
-            InformationType.UNEMBARGOEDSECURITY, branch.information_type)
+            InformationType.PUBLICSECURITY, branch.information_type)
 
     def test_transition_reconciles_access(self):
         # transitionToStatus calls _reconcileAccess to make the sharing
@@ -2537,10 +2537,10 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         with admin_logged_in():
             branch.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, branch.owner,
+                InformationType.PRIVATESECURITY, branch.owner,
                 verify_policy=False)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY,
+            InformationType.PRIVATESECURITY,
             get_policies_for_artifact(branch)[0].type)
 
 

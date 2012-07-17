@@ -2248,7 +2248,7 @@ class InformationTypeVocabulary(SimpleVocabulary):
         types = []
         if not public_only:
             types = [
-                InformationType.EMBARGOEDSECURITY,
+                InformationType.PRIVATESECURITY,
                 InformationType.USERDATA]
             # So long as not disabled by the feature flag, Proprietary is
             # allowed for:
@@ -2283,7 +2283,7 @@ class InformationTypeVocabulary(SimpleVocabulary):
             not IProduct.providedBy(context) or
             not context.private_bugs)):
             types = [InformationType.PUBLIC,
-                     InformationType.UNEMBARGOEDSECURITY] + types
+                     InformationType.PUBLICSECURITY] + types
 
         terms = []
         for type in types:

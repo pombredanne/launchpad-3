@@ -414,14 +414,14 @@ class OnceTests:
         # Search results can be filtered by information_type.
         with person_logged_in(self.owner):
             self.bugtasks[2].bug.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, self.owner)
+                InformationType.PRIVATESECURITY, self.owner)
         params = self.getBugTaskSearchParams(
             user=self.owner,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         self.assertSearchFinds(params, [self.bugtasks[2]])
         params = self.getBugTaskSearchParams(
             user=self.owner,
-            information_type=InformationType.UNEMBARGOEDSECURITY)
+            information_type=InformationType.PUBLICSECURITY)
         self.assertSearchFinds(params, [])
 
     def test_omit_duplicate_bugs(self):

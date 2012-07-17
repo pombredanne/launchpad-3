@@ -650,7 +650,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             # If the old UI is enabled, security bugs are always embargoed
             # when filed, but can be disclosed after they've been reported.
             if security_related:
-                information_type = InformationType.EMBARGOEDSECURITY
+                information_type = InformationType.PRIVATESECURITY
             else:
                 information_type = InformationType.PUBLIC
 

@@ -37,7 +37,7 @@ will be subscribed instead.
     >>> browser.getControl(name="packagename_option").value = ["choose"]
     >>> browser.getControl(name="field.packagename").value = "evolution"
     >>> browser.getControl(name="field.comment").value = "secret info"
-    >>> browser.getControl("Embargoed Security").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> bug_id = browser.url.split("/")[-1]
@@ -88,7 +88,7 @@ subscriptions differ.
     >>> browser.getControl(name="packagename_option").value = ["choose"]
     >>> browser.getControl(name="field.packagename").value = "evolution"
     >>> browser.getControl(name="field.comment").value = "secret info"
-    >>> browser.getControl("Embargoed Security").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> other_bug_id = browser.url.split("/")[-1]

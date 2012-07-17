@@ -383,9 +383,9 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
 
     def test_filebug_set_information_type(self):
         # When we specify the bug's information_type, it is set.
-        bug = self.filebug_via_view(information_type='EMBARGOEDSECURITY')
+        bug = self.filebug_via_view(information_type='PRIVATESECURITY')
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug.information_type)
+            InformationType.PRIVATESECURITY, bug.information_type)
 
     def test_filebug_information_type_with_private_bugs(self):
         # If we don't specify the bug's information_type, it is USERDATA for
@@ -486,18 +486,18 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
 
     def test_filebug_security_related(self):
-        # Security related bugs are EMBARGOEDSECURITY for products with
+        # Security related bugs are PRIVATESECURITY for products with
         # private_bugs=False.
         bug = self.filebug_via_view(security_related=True)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug.information_type)
+            InformationType.PRIVATESECURITY, bug.information_type)
 
     def test_filebug_security_related_with_private_bugs(self):
-        # Security related bugs are EMBARGOEDSECURITY for products with
+        # Security related bugs are PRIVATESECURITY for products with
         # private_bugs=True.
         bug = self.filebug_via_view(private_bugs=True, security_related=True)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug.information_type)
+            InformationType.PRIVATESECURITY, bug.information_type)
 
     def test_filebug_with_private_bugs(self):
         # Non security related bugs are USERDATA for products with

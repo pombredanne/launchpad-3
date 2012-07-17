@@ -210,7 +210,7 @@ class TestRunViaCron(TestCaseWithFactory):
                 owner, [bug])
             with person_logged_in(owner):
                 bug.transitionToInformationType(
-                            InformationType.EMBARGOEDSECURITY, owner)
+                            InformationType.PRIVATESECURITY, owner)
             return job, IRemoveArtifactSubscriptionsJobSource.getName()
 
         self._assert_run_cronscript(create_job)
@@ -397,7 +397,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
     def test_change_information_type_branch(self):
         def change_information_type(branch):
             removeSecurityProxy(branch).information_type = (
-                InformationType.EMBARGOEDSECURITY)
+                InformationType.PRIVATESECURITY)
 
         self._assert_branch_change_unsubscribes(change_information_type)
 
@@ -408,7 +408,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
             # Set the info_type attribute directly since
             # transitionToInformationType queues a job.
             removeSecurityProxy(bug).information_type = (
-                InformationType.EMBARGOEDSECURITY)
+                InformationType.PRIVATESECURITY)
 
         self._assert_bug_change_unsubscribes(change_information_type)
 
@@ -454,7 +454,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
 
         bug2, ignored = self._make_subscribed_bug(
             person_grantee, product=pillar,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
 
         # Now run the job, removing access to userdata artifacts.
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(

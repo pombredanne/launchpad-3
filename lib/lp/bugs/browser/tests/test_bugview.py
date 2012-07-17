@@ -71,7 +71,7 @@ class TestBugView(TestCaseWithFactory):
             InformationType.USERDATA, self.bug.owner)
         self.assertEqual('sprite private', self.view.information_type_css)
         self.bug.transitionToInformationType(
-            InformationType.UNEMBARGOEDSECURITY, self.bug.owner)
+            InformationType.PUBLICSECURITY, self.bug.owner)
         self.assertEqual('sprite public', self.view.information_type_css)
 
     def test_proprietary_excluded_for_normal_projects(self):
@@ -85,8 +85,8 @@ class TestBugView(TestCaseWithFactory):
         cache = IJSONRequestCache(view.request)
         expected = [
             InformationType.PUBLIC.name,
-            InformationType.UNEMBARGOEDSECURITY.name,
-            InformationType.EMBARGOEDSECURITY.name,
+            InformationType.PUBLICSECURITY.name,
+            InformationType.PRIVATESECURITY.name,
             InformationType.USERDATA.name]
         self.assertContentEqual(expected, [
             type['value']
@@ -103,8 +103,8 @@ class TestBugView(TestCaseWithFactory):
         cache = IJSONRequestCache(view.request)
         expected = [
             InformationType.PUBLIC.name,
-            InformationType.UNEMBARGOEDSECURITY.name,
-            InformationType.EMBARGOEDSECURITY.name,
+            InformationType.PUBLICSECURITY.name,
+            InformationType.PRIVATESECURITY.name,
             InformationType.USERDATA.name,
             InformationType.PROPRIETARY.name]
         self.assertContentEqual(expected, [
