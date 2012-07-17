@@ -8,9 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicySource,
-    )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.testing import (
     login,
     login_celebrity,
