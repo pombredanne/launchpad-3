@@ -47,15 +47,7 @@ class InformationTypePortletMixin:
 
     @property
     def information_type_description(self):
-        # This can be replaced with just a return when the feature flag is
-        # dropped.
-        description = self.context.information_type.description
-        if (self.context.information_type == InformationType.USERDATA and
-            self.show_userdata_as_private):
-                description = (
-                    'Visible only to users with whom the project has '
-                    'shared private information.')
-        return description
+        return self.context.information_type.description
 
     @property
     def information_type_css(self):

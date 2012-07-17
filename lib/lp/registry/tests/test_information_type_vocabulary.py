@@ -104,19 +104,11 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
             vocab = InformationTypeVocabulary()
             term = vocab.getTermByToken('USERDATA')
             self.assertEqual('Private', term.title)
-            self.assertTextMatchesExpressionIgnoreWhitespace(
-                "Visible only to users with whom the project has "
-                "shared private information.",
-                term.description)
 
     def test_userdata(self):
         vocab = InformationTypeVocabulary()
         term = vocab.getTermByToken('USERDATA')
         self.assertEqual('User Data', term.title)
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            "Visible only to users with whom the project has shared "
-            "information containing user data.",
-            term.description)
 
     def test_multi_pillar_bugs(self):
         # Multi-pillar bugs are forbidden from being PROPRIETARY, no matter

@@ -85,10 +85,6 @@ class TestBugView(TestCaseWithFactory):
         with FeatureFixture(feature_flag):
             view = BugView(self.bug, LaunchpadTestRequest())
             self.assertEqual('Private', view.information_type)
-            self.assertTextMatchesExpressionIgnoreWhitespace(
-                'Visible only to users with whom the project has shared '
-                'private information.',
-                view.information_type_description)
 
     def test_proprietary_excluded_for_normal_projects(self):
         # The Proprietary information type isn't in the JSON request cache for

@@ -40,29 +40,25 @@ class InformationType(DBEnumeratedType):
     UNEMBARGOEDSECURITY = DBItem(2, """
         Unembargoed Security
 
-        Everyone can see this information pertaining to a resolved security
-        related bug.
+        Everyone can see this security related information.
         """)
 
     EMBARGOEDSECURITY = DBItem(3, """
         Embargoed Security
 
-        Visible only to users with whom the project has shared embargoed
-        security information.
+       Only the security group can see this information.
         """)
 
     USERDATA = DBItem(4, """
         User Data
 
-        Visible only to users with whom the project has shared information
-        containing user data.
+        Only shared with users permitted to see confidential information.
         """)
 
     PROPRIETARY = DBItem(5, """
         Proprietary
 
-        Visible only to users with whom the project has shared proprietary
-        information.
+        Only shared with users permitted to see proprietary information.
         """)
 
 
