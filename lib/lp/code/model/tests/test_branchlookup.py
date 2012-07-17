@@ -711,9 +711,9 @@ class TestGetByLPPath(TestCaseWithFactory):
         # between a trailing path and an attempt to load a non-existent series
         # branch.
         product = make_product_with_branch(self.factory)
-        self.assertRaises(
-            NoSuchProductSeries,
-            self.branch_lookup.getByLPPath, '%s/other/bits' % product.name)
+        self.assertEqual(
+            (product.development_focus.branch, 'other/bits'),
+            self.branch_lookup.getByLPPath( '%s/other/bits' % product.name))
 
     def test_product_with_bzr_suffix(self):
         # A '.bzr' suffix is returned correctly.
@@ -737,10 +737,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual('.bzr/extra', suffix)
 
     def test_too_long_product_series(self):
-        # If the provided path points to an existing product series with a
-        # linked branch but is followed by extra path segments, then we return
-        # the linked branch but chop off the extra segments. We might want to
-        # change this behaviour in future.
         branch = self.factory.makeBranch()
         series = self.factory.makeProductSeries(branch=branch)
         result = self.branch_lookup.getByLPPath(
@@ -748,10 +744,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual((branch, u'other/bits'), result)
 
     def test_too_long_sourcepackage(self):
-        # If the provided path points to an existing source package with a
-        # linked branch but is followed by extra path segments, then we return
-        # the linked branch but chop off the extra segments. We might want to
-        # change this behaviour in future.
         package = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=package)
         with person_logged_in(package.distribution.owner):

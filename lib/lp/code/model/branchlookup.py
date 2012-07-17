@@ -399,10 +399,12 @@ class BranchLookup:
         else:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
-            # Ignore anything following /.bzr
-            prefix = re.match('^(.*?)(/?.bzr(/.*)?)?$', path).group(1)
-            object_with_branch_link = getUtility(
-                ILinkedBranchTraverser).traverse(prefix)
+            try:
+                object_with_branch_link = getUtility(
+                    ILinkedBranchTraverser).traverse(path)
+            except NoSuchProductSeries:
+                object_with_branch_link = getUtility(
+                    ILinkedBranchTraverser).traverse(path.split('/')[0])
             branch, bzr_path = self._getLinkedBranchAndPath(
                 object_with_branch_link)
             suffix = path[len(bzr_path) + 1:]
