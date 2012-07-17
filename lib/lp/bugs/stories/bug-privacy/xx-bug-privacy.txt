@@ -8,7 +8,7 @@ Foo Bar, an LP admin, is about to make bug #2 private.
 Foo Bar is not Cc'd on this bug, but is able to set the bug private
 anyway, because he is an admin.
 
-    >>> browser.getControl("Private User").selected = True
+    >>> browser.getControl("Private").selected = True
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
@@ -18,7 +18,7 @@ When we go back to the secrecy form, the previously set value is pre-selected.
     >>> browser.open(
     ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
     ...     "+bug/2/+secrecy")
-    >>> browser.getControl("Private User").selected
+    >>> browser.getControl("Private").selected
     True
 
 Foo Bar files a security (private) bug on Ubuntu Linux. He gets
