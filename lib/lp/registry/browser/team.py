@@ -143,7 +143,7 @@ from lp.registry.interfaces.teammembership import (
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.fields import PublicPersonChoice
+from lp.services.fields import PersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import cachedproperty
@@ -1141,7 +1141,7 @@ class TeamBrandingView(BrandingChangeView):
 class ITeamMember(Interface):
     """The interface used in the form to add a new member to a team."""
 
-    newmember = PublicPersonChoice(
+    newmember = PersonChoice(
         title=_('New member'), required=True,
         vocabulary='ValidTeamMember',
         description=_("The user or team which is going to be "
