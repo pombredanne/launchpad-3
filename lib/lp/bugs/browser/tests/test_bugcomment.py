@@ -252,9 +252,6 @@ class TestBugHideCommentControls(
     def _test_hide_link_visible(self, context, user):
         view = self.getView(context=context, user=user)
         hide_link = find_tag_by_id(view.contents, self.control_text)
-        self.assertIs(None, hide_link)
-        view = self.getView(context=context, user=user)
-        hide_link = find_tag_by_id(view.contents, self.control_text)
         self.assertIsNot(None, hide_link)
 
     def test_comment_owner_sees_hide_control(self):
