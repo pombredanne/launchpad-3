@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,
@@ -46,7 +47,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
     def test_cannot_merge_person_with_ppas(self):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
-        archive = self.dupe.createPPA()
+        self.dupe.createPPA()
         login_celebrity('registry_experts')
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
@@ -54,6 +55,18 @@ class TestValidatingMergeView(TestCaseWithFactory):
             [u"dupe has a PPA that must be deleted before it can be "
               "merged. It may take ten minutes to remove the deleted PPA's "
               "files."],
+            view.errors)
+
+    def test_cannot_merge_person_with_private_branches(self):
+        # A team or user with a private branches cannot be merged.
+        self.factory.makeBranch(
+            owner=self.dupe, information_type=InformationType.USERDATA)
+        login_celebrity('registry_experts')
+        view = create_initialized_view(
+            self.person_set, '+requestmerge', form=self.getForm())
+        self.assertEqual(
+            [u"dupe owns private branches that must be deleted or "
+              "transferred to another owner first."],
             view.errors)
 
     def test_cannot_merge_person_with_itself(self):
@@ -69,7 +82,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
         # A merge cannot be requested for an IPerson if it there is a job
         # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
-        duplicate_job = job_source.create(
+        job_source.create(
             from_person=self.dupe, to_person=self.target)
         login_person(self.target)
         view = create_initialized_view(
@@ -81,7 +94,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
         # A merge cannot be requested for an IPerson if it there is a job
         # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
-        duplicate_job = job_source.create(
+        job_source.create(
             from_person=self.target, to_person=self.dupe)
         login_person(self.target)
         view = create_initialized_view(
@@ -173,7 +186,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
         self.dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
-        archive = self.dupe_team.createPPA()
+        self.dupe_team.createPPA()
         login_celebrity('registry_experts')
         view = self.getView()
         self.assertEqual(
@@ -209,7 +222,7 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
     def test_cannot_merge_person_with_ppa(self):
         # A person with a PPA cannot be merged.
         login_celebrity('admin')
-        archive = self.dupe_person.createPPA()
+        self.dupe_person.createPPA()
         view = self.getView()
         self.assertEqual(
             [u"dupe-person has a PPA that must be deleted before it can be "
