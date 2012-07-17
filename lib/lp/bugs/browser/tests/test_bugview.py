@@ -8,7 +8,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.browser.bug import BugView
 from lp.registry.enums import InformationType
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
@@ -72,23 +71,8 @@ class TestBugView(TestCaseWithFactory):
             InformationType.USERDATA, self.bug.owner)
         self.assertEqual('sprite private', self.view.information_type_css)
         self.bug.transitionToInformationType(
-            InformationType.UNEMBARGOEDSECURITY, self.bug.owner)
+            InformationType.PUBLICSECURITY, self.bug.owner)
         self.assertEqual('sprite public', self.view.information_type_css)
-
-    def test_userdata_shown_as_private(self):
-        # When the display_userdata_as_private feature flag is enabled, the
-        # information_type is shown as 'Private'.
-        self.bug.transitionToInformationType(
-            InformationType.USERDATA, self.bug.owner)
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            view = BugView(self.bug, LaunchpadTestRequest())
-            self.assertEqual('Private', view.information_type)
-            self.assertTextMatchesExpressionIgnoreWhitespace(
-                'Visible only to users with whom the project has shared '
-                'private information.',
-                view.information_type_description)
 
     def test_proprietary_excluded_for_normal_projects(self):
         # The Proprietary information type isn't in the JSON request cache for
@@ -101,8 +85,8 @@ class TestBugView(TestCaseWithFactory):
         cache = IJSONRequestCache(view.request)
         expected = [
             InformationType.PUBLIC.name,
-            InformationType.UNEMBARGOEDSECURITY.name,
-            InformationType.EMBARGOEDSECURITY.name,
+            InformationType.PUBLICSECURITY.name,
+            InformationType.PRIVATESECURITY.name,
             InformationType.USERDATA.name]
         self.assertContentEqual(expected, [
             type['value']
@@ -119,8 +103,8 @@ class TestBugView(TestCaseWithFactory):
         cache = IJSONRequestCache(view.request)
         expected = [
             InformationType.PUBLIC.name,
-            InformationType.UNEMBARGOEDSECURITY.name,
-            InformationType.EMBARGOEDSECURITY.name,
+            InformationType.PUBLICSECURITY.name,
+            InformationType.PRIVATESECURITY.name,
             InformationType.USERDATA.name,
             InformationType.PROPRIETARY.name]
         self.assertContentEqual(expected, [

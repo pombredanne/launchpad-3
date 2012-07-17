@@ -50,7 +50,7 @@ subscribed to the bug, even when it's marked private.
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="a security bug",
     ...     comment="this is an example security bug",
-    ...     information_type=InformationType.EMBARGOEDSECURITY)
+    ...     information_type=InformationType.PRIVATESECURITY)
     >>> bug = ubuntu.createBug(params)
 
     >>> bug.security_related
@@ -93,7 +93,7 @@ security contact, the Ubuntu team, to the bug.
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="another security bug",
     ...     comment="this is another security bug",
-    ...     information_type=InformationType.EMBARGOEDSECURITY)
+    ...     information_type=InformationType.PRIVATESECURITY)
     >>> bug = firefox.createBug(params)
 
     >>> bug.security_related
@@ -129,7 +129,7 @@ registrant get subscribed.
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="another security bug",
     ...     comment="this is another security bug",
-    ...     information_type=InformationType.EMBARGOEDSECURITY)
+    ...     information_type=InformationType.PRIVATESECURITY)
 
     >>> bug = firefox.createBug(params)
 
@@ -185,7 +185,7 @@ subscribed.
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="another security bug",
     ...     comment="this is private security bug",
-    ...     information_type=InformationType.EMBARGOEDSECURITY)
+    ...     information_type=InformationType.PRIVATESECURITY)
     >>> bug = firefox.createBug(params)
 
     >>> bug.security_related
