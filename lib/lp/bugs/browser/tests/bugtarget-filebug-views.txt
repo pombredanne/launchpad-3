@@ -387,7 +387,7 @@ the message.
     >>> filebug_view.added_bug.information_type
     <DBItem InformationType.USERDATA, (4) Private>
 
-he user will be notified that the bug has been marked as private.
+The user will be notified that the bug has been marked as private.
 
     >>> print filebug_view.request.response.notifications[2].message
     This bug report has been marked private...
