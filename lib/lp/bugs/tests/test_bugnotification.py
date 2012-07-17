@@ -106,12 +106,10 @@ class TestNotificationRecipientsOfPrivateBugs(TestCaseWithFactory):
         self.assertEqual(self.subscribers, notified_people)
 
     def test_add_comment_with_access(self):
-        # If product_subscriber's access is removed, they are not notified.
+        # If product_subscriber is given access, they are notified.
         artifact = self.factory.makeAccessArtifact(concrete=self.private_bug)
         getUtility(IAccessArtifactGrantSource).grant(
             [(artifact, self.product_subscriber, self.private_bug.owner)])
-        #getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-        #    [artifact], [self.product_subscriber])
         self.private_bug.newMessage(
             self.reporter, subject='subject', content='content')
         latest_notification = BugNotification.selectFirst(orderBy='-id')
