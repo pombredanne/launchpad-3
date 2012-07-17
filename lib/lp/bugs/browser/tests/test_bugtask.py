@@ -145,7 +145,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(90)))
+        self.assertThat(recorder, HasQueryCount(LessThan(93)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -161,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                92, self.factory.makePerson())
+                95, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -206,7 +206,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(111)))
+        self.assertThat(recorder, HasQueryCount(LessThan(114)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -2187,7 +2187,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
-            '&show_importance=true&show_status=true')
+            '&show_importance=true&show_status=true'
+            '&show_information_type=true')
         with dynamic_listings():
             view = self.makeView(
                 task, memo=1, forwards=False, size=1, cookie=cookie)
@@ -2203,7 +2204,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
-            '&show_importance=true&show_status=true&show_title=true')
+            '&show_importance=true&show_status=true'
+            '&show_information_type=true&show_title=true')
         with dynamic_listings():
             view = self.makeView(
                 task, memo=1, forwards=False, size=1, cookie=cookie)
@@ -2219,7 +2221,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
-            '&show_importance=true&show_title=true')
+            '&show_importance=true&show_title=true'
+            '&show_information_type=true')
         with dynamic_listings():
             view = self.makeView(
                 task, memo=1, forwards=False, size=1, cookie=cookie)
@@ -2295,6 +2298,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'id': '3.14159',
             'importance': 'importance1',
             'importance_class': 'importance_class1',
+            'information_type': 'User Data',
             'last_updated': 'updated1',
             'milestone_name': 'milestone_name1',
             'status': 'status1',
@@ -2332,6 +2336,13 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['items'][0]['show_importance'] = False
         self.assertNotIn('importance1', navigator.mustache)
         self.assertNotIn('importance_class1', navigator.mustache)
+
+    def test_hiding_information_type(self):
+        """Hiding information_type removes the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertIn('User Data', navigator.mustache)
+        mustache_model['items'][0]['show_information_type'] = False
+        self.assertNotIn('User Data', navigator.mustache)
 
     def test_hiding_bugtarget(self):
         """Hiding bugtarget removes the text and CSS."""
@@ -2489,6 +2500,8 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual('importanceUNDECIDED', model['importance_class'])
             self.assertEqual('New', model['status'])
             self.assertEqual('statusNEW', model['status_class'])
+            self.assertEqual(
+                item.bug.information_type.title, model['information_type'])
             self.assertEqual(item.bug.title, model['title'])
             self.assertEqual(item.bug.id, model['id'])
             self.assertEqual(canonical_url(item.bugtask), model['bug_url'])

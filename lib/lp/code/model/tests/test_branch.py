@@ -2543,6 +2543,19 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             InformationType.PRIVATESECURITY,
             get_policies_for_artifact(branch)[0].type)
 
+    def test_can_transition_with_no_subscribers(self):
+        # Ensure that a branch can transition to another private type when
+        # there are no subscribers to the branch.
+        owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            branch.unsubscribe(owner, owner)
+        branch.transitionToInformationType(
+            InformationType.PRIVATESECURITY, owner, verify_policy=False)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, branch.information_type)
+
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
     """Tests for `Branch.commitsForDays`."""
@@ -2896,9 +2909,9 @@ def make_proposal_and_branch_revision(factory, revno, revision_id,
     else:
         information_type = InformationType.PUBLIC
     target_branch = factory.makeAnyBranch(information_type=information_type)
-    revision = factory.makeBranchRevision(revision_id=revision_id,
-                                          branch=target_branch,
-                                          sequence=revno)
+    factory.makeBranchRevision(revision_id=revision_id,
+                               branch=target_branch,
+                               sequence=revno)
     return factory.makeBranchMergeProposal(merged_revno=revno,
                                            target_branch=target_branch)
 

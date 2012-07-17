@@ -74,6 +74,7 @@ page.
     ...
     #7
     Here's a comment for testing, like.
+    ...
     --------
 
     >>> admin_browser.open(

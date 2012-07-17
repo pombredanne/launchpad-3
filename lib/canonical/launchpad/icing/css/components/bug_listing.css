@@ -3,6 +3,7 @@ div#client-listing {
     width: 100%;
     color: #666;
     }
+
 div.buglisting-row {
     float: left;
     margin-top: 5px;
@@ -11,17 +12,21 @@ div.buglisting-row {
     min-width: 585px;
     width: 100%;
     }
+
 div.buglisting-col1 {
     float: left;
     padding-right: 10px;
     }
+
 div.buglisting-col2 {
     float: left;
     margin-top: 2px;
     width: 68%;
     }
+
 div#client-listing .status,
-div#client-listing .importance {
+div#client-listing .importance,
+div#client-listing .information_type {
     float: left;
     height: 1.5em;
     font-size: 0.8em;
@@ -31,18 +36,27 @@ div#client-listing .importance {
     text-align: center;
     margin: 5px 10px 0 0;
     }
+
 div#client-listing .importance {
     width: 65px;
     }
+
 div#client-listing .status {
     width: 90px;
     }
+
+div#client-listing .information_type {
+    height: 1em;
+    width: 160px;
+    }
+
 div#client-listing .field {
     display: inline-block;
     min-width: 13em;
     line-height: 16px;
     margin-right: 5px;
     }
+
 div#client-listing .field a {
     color: #333;
     }

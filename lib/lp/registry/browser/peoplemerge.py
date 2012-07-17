@@ -24,6 +24,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.mailinglist import (
     MailingListStatus,
     PURGE_STATES,
@@ -72,6 +73,12 @@ class ValidatingMergeView(LaunchpadFormView):
                     "${name} has a PPA that must be deleted before it "
                     "can be merged. It may take ten minutes to remove the "
                     "deleted PPA's files.",
+                    mapping=dict(name=dupe_person.name)))
+            all_branches = getUtility(IAllBranches)
+            if all_branches.ownedBy(dupe_person).isPrivate().count() != 0:
+                self.addError(
+                    _("${name} owns private branches that must be "
+                      "deleted or transferred to another owner first.",
                     mapping=dict(name=dupe_person.name)))
             if dupe_person.isMergePending():
                 self.addError(_("${name} is already queued for merging.",

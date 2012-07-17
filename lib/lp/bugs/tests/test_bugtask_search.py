@@ -519,6 +519,26 @@ class OnceTests:
             user=None, orderby='-specification')
         self.assertSearchFinds(params, expected)
 
+    def test_sort_by_information_type(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[0].bug.transitionToInformationType(
+                InformationType.USERDATA, self.owner)
+            self.bugtasks[1].bug.transitionToInformationType(
+                InformationType.PUBLIC, self.owner)
+            self.bugtasks[2].bug.transitionToInformationType(
+                InformationType.USERDATA, self.owner)
+            # Importance is secondary sort key.
+            self.bugtasks[2].importance = BugTaskImportance.MEDIUM
+
+        expected = [self.bugtasks[1], self.bugtasks[0], self.bugtasks[2]]
+        params = self.getBugTaskSearchParams(
+            user=self.owner, orderby='information_type')
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(
+            user=self.owner, orderby='-information_type')
+        self.assertSearchFinds(params, expected)
+
 
 class TargetTests:
     """Tests which are useful for every target."""

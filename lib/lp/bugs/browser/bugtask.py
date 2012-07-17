@@ -2239,6 +2239,7 @@ class BugTaskListingItem:
             'id': self.bug.id,
             'importance': self.importance.title,
             'importance_class': 'importance' + self.importance.name,
+            'information_type': self.bug.information_type.title,
             'last_updated': last_updated,
             'milestone_name': milestone_name,
             'reporter': reporter.displayname,
@@ -2274,6 +2275,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_heat': True,
             'show_id': True,
             'show_importance': True,
+            'show_information_type': True,
             'show_date_last_updated': False,
             'show_milestone_name': False,
             'show_reporter': False,
@@ -2506,6 +2508,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
 SORT_KEYS = [
     ('importance', 'Importance', 'desc'),
     ('status', 'Status', 'asc'),
+    ('information_type', 'Information Type', 'asc'),
     ('id', 'Number', 'desc'),
     ('title', 'Title', 'asc'),
     ('targetname', 'Package/Project/Series name', 'asc'),
