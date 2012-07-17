@@ -37,9 +37,6 @@ CREATE OR REPLACE FUNCTION _ftq(text) RETURNS text
         query = re.sub(r"(?u)%s+" % (punctuation,), " ", query)
         ## plpy.debug('3 query is %s' % repr(query))
 
-        # Strip ! characters inside and at the end of a word
-        query = re.sub(r"(?u)(?<=\w)[\!]+", " ", query)
-
         # Now that we have handle case sensitive booleans, convert to lowercase
         query = query.lower()
 
