@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the Distribution Source Package vocabulary."""
-from zope.security.proxy import removeSecurityProxy
-from lp.testing._login import person_logged_in
 
 __metaclass__ = type
 
@@ -17,7 +15,10 @@ from lp.registry.enums import (
     )
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.features.testing import FeatureFixture
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 

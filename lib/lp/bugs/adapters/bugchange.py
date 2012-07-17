@@ -58,7 +58,6 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.product import IProduct
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias

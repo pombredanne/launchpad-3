@@ -8,7 +8,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.browser.bug import BugView
 from lp.registry.enums import InformationType
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,

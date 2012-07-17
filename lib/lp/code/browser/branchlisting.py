@@ -100,7 +100,6 @@ from lp.registry.browser.product import (
     SortSeriesMixin,
     )
 from lp.registry.enums import (
-    InformationType,
     PRIVATE_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.person import (

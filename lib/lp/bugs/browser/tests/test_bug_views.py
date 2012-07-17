@@ -21,7 +21,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest

@@ -685,7 +685,6 @@ Filing security bugs
 
 The base class allows security bugs to be filed.
 
-    >>> from lp.registry.enums import InformationType
     >>> bug_data = dict(
     ...     title=u'Security bug', comment=u'Test description.',
     ...     security_related=u'on')

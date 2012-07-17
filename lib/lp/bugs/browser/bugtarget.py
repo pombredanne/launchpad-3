@@ -138,7 +138,6 @@ from lp.registry.vocabularies import (
     ValidPersonOrTeamVocabulary,
     )
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty
