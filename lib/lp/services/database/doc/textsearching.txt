@@ -172,23 +172,16 @@ Boolean operations are allowed
     >>> ftq('hi AND mom')
     hi&mom <=> 'hi' & 'mom'
 
-    >>> ftq('hi & mom')
-    hi&mom <=> 'hi' & 'mom'
-
     >>> ftq('hi OR mom')
     hi|mom <=> 'hi' | 'mom'
 
-    >>> ftq('hi | mom')
-    hi|mom <=> 'hi' | 'mom'
-
-    >>> ftq('hi & -dad')
+    >>> ftq('hi AND NOT dad')
     hi&!dad <=> 'hi' & !'dad'
-
 
 
 Brackets are allowed to specify precidence
 
-    >>> ftq('(HI OR HELLO) & mom')
+    >>> ftq('(HI OR HELLO) AND mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
     >>> ftq('Hi(Mom)')
@@ -203,19 +196,16 @@ Brackets are allowed to specify precidence
     >>> ftq('foo(bar OR baz)') # Bug #32071
     foo&(bar|baz) <=> 'foo' & ( 'bar' | 'baz' )
 
-    >>> ftq('foo (bar OR baz)')
-    foo&(bar|baz) <=> 'foo' & ( 'bar' | 'baz' )
-
 
 We also support negation
 
-    >>> ftq('!Hi')
+    >>> ftq('NOT Hi')
     !hi <=> !'hi'
 
-    >>> ftq('-(Hi & Mom)')
+    >>> ftq('-(Hi AND Mom)')
     !(hi&mom) <=> !( 'hi' & 'mom' )
 
-    >>> ftq('Foo & ! Bar')
+    >>> ftq('Foo AND NOT Bar')
     foo&!bar <=> 'foo' & !'bar'
 
 
@@ -243,8 +233,24 @@ The implicit boolean operation is AND
 If a single '-' precedes a word, it is converted into the '!' operator.
 Note also that a trailing '-' is dropped by to_tsquery().
 
+xxxxxxxx this is bad: does not work for numbers. Just add examples
+
+
     >>> ftq('-foo bar-')
     !foo&bar- <=> !'foo' & 'bar'
+
+xxxxxx do we want this? no:
+select to_tsvector('5 ** -1');
+ to_tsvector  
+--------------
+ '-1':2 '5':1
+(1 row)
+
+launchpad_dev=# select ftq('5 ** -1');
+    ftq     
+------------
+ '5' & !'1'
+(1 row)
 
 Repeated '-' are simply ignored by to_tsquery().
 
@@ -342,10 +348,35 @@ Of course, omitting '<' and '>'from the query does not help.
     >>> print search('some text <div>whatever</div>', 'div')
     FTI data: 'text':2 'whatev':3 query: 'div' match: False
 
-Treatment of characters that are used as operators in to_tsquery():
+The symbols '&', '|' and '!' are treated as operators by to_tsquery();
+to_tsvector() treats them as whitespace. ftq() converts the words 'AND',
+'OR', 'NOT' are into these operators expected by to_tsquery(), and it
+replaces the symbols '&', '|' and '!' with spaces. This avoids
+surprising search results when the operator symbols appear accidentally
+in search terms, e.g., by using a plain copy of a source code line as
+the search term.
 
     >>> ftq('cool!')
     cool <=> 'cool'
+
+    >>> print search_same('Shell scripts usually start with #!/bin/sh.')
+    FTI data: '/bin/sh':6 'script':2 'shell':1 'start':4 'usual':3
+    query: 'shell' & 'script' & 'usual' & 'start' & '/bin/sh'
+    match: True
+
+    >>> print search_same('int foo = (bar & ! baz) | bla;')
+    FTI data: 'bar':3 'baz':4 'bla':5 'foo':2 'int':1
+    query: 'int' & 'foo' & 'bar' & 'baz' & 'bla'
+    match: True
+
+Queries containing only punctuation symbols yield an empty ts_query
+object. Note that _ftq() first replaces the '!' with a ' '; later on,
+the _ftq() joins the two remaining terms '?' and '.' with the "AND"
+operator '&'. Finally, to_tsquery() detects the AND combination of
+two symbols that are not indexed and returns null.
+
+    >>> ftq('?!.')
+    ?&. <=> None
 
 Email addresses are retained as a whole, both by to_tsvector() and by
 ftq().
@@ -434,7 +465,7 @@ Words are also stemmed by tsearch2 (using the English stemmer).
 Dud queries are 'repaired', such as doubled operators, trailing operators
 or invalid leading operators
 
-    >>> ftq('hi & OR mom')
+    >>> ftq('hi AND OR mom')
     hi&mom <=> 'hi' & 'mom'
 
     >>> ftq('(hi OR OR hello) AND mom')
@@ -452,13 +483,13 @@ or invalid leading operators
     >>> ftq('hi AND mom AND')
     hi&mom <=> 'hi' & 'mom'
 
-    >>> ftq('& hi & mom')
+    >>> ftq('AND hi AND mom')
     hi&mom <=> 'hi' & 'mom'
 
-    >>> ftq('(& hi | hello) AND mom')
+    >>> ftq('(AND hi OR hello) AND mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
-    >>> ftq('() hi mom ( ) ((! |((&)))) :-)')
+    >>> ftq('() hi mom ( ) ((NOT OR((AND)))) :-)')
     (hi&mom&-) <=> 'hi' & 'mom'
 
     >>> ftq("(hi mom")
@@ -502,10 +533,10 @@ or invalid leading operators
 
     Bug #160236
 
-    >>> ftq("foo&&bar-baz")
+    >>> ftq("foo AND AND bar-baz")
     foo&bar-baz <=> 'foo' & 'bar-baz' & 'bar' & 'baz'
 
-    >>> ftq("foo||bar.baz")
+    >>> ftq("foo OR OR bar.baz")
     foo|bar.baz <=> 'foo' | 'bar.baz'
 
 
