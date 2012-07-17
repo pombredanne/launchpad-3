@@ -131,36 +131,6 @@ Robert Collins (the current bug supervisor) are subscribed to this bug:
     >>> subscriber_names(bugset.get(bug_id))
     [u'Landscape Developers', u'Mark Shuttleworth', u'Robert Collins',
     u'Sample Person']
-
-For a security bug, only the reporter and the registrant gets
-subscribed, because Firefox does not have a security contact.
-
-    >>> from lp.registry.interfaces.product import IProductSet
-
-    >>> login(ANONYMOUS)
-    >>> firefox = getUtility(IProductSet).getByName("firefox")
-    >>> firefox.security_contact is None
-    True
-    >>> logout()
-
-    >>> browser.open("http://launchpad.dev/firefox/+filebug")
-
-    >>> browser.getControl(name="field.title", index=0).value = "bug supervisor test"
-    >>> browser.getControl('Continue').click()
-
-    >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
-    >>> browser.getControl("Embargoed Security").selected = True
-    >>> browser.getControl("Submit Bug Report").click()
-
-    >>> other_bug_id = browser.url.split("/")[-1]
-    >>> print browser.url.replace(other_bug_id, "BUG-ID")
-    http://bugs.launchpad.dev/firefox/+bug/BUG-ID
-
-    >>> login("mark@example.com")
-
-    >>> subscriber_names(bugset.get(other_bug_id))
-    [u'Mark Shuttleworth', u'Sample Person']
-
     >>> logout()
 
 Filing a public bug on a distribution source package subscribes the bug
@@ -203,35 +173,4 @@ subscribed to the distribution.
     >>> bugset = getUtility(IBugSet)
     >>> subscriber_names(bugset.get(bug_id))
     [u'kamion', u'mark', u'name16']
-
-
-When filing a security bug, only the bug reporter and registrant are explicitly
-Cc'd, because the Ubuntu distribution does not have a security contact.
-
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu.security_contact is None
-    True
-    >>> logout()
-
-    >>> browser.open(
-    ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
-    ...     "+filebug")
-    >>> browser.getControl(name="field.title", index=0).value = "a PRIVATE bug"
-    >>> browser.getControl('Continue').click()
-
-    >>> browser.getControl(name="field.comment").value = "top sekrit"
-    >>> browser.getControl("Embargoed Security").selected = True
-    >>> browser.getControl("Submit Bug Report").click()
-
-    >>> other_bug_id = browser.url.split("/")[-1]
-    >>> print browser.url.replace(other_bug_id, "BUG-ID")
-    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
-
-    >>> login("mark@example.com")
-
-    >>> subscriber_names(bugset.get(other_bug_id))
-    [u'mark', u'ubuntu-team']
-
     >>> logout()

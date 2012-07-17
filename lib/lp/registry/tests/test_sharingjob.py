@@ -19,7 +19,6 @@ from lp.code.enums import (
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
-    IAccessArtifactSource,
     IAccessPolicySource,
     )
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
@@ -182,9 +181,9 @@ class TestRunViaCron(TestCaseWithFactory):
         job, job_type = create_job(distro, bug, grantee, owner)
         # Subscribing grantee has created an artifact grant so we need to
         # revoke that to test the job.
+        artifact = self.factory.makeAccessArtifact(concrete=bug)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-            getUtility(IAccessArtifactSource).find(
-                [bug]), [grantee])
+            [artifact], [grantee])
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -295,9 +294,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
             CodeReviewNotificationLevel.NOEMAIL, owner)
         # Subscribing policy_team_grantee has created an artifact grant so we
         # need to revoke that to test the job.
+        artifact = self.factory.makeAccessArtifact(concrete=bug)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-            getUtility(IAccessArtifactSource).find(
-                [bug]), [policy_team_grantee])
+            [artifact], [policy_team_grantee])
 
         # policy grantees are subscribed because the job has not been run yet.
         subscribers = removeSecurityProxy(bug).getDirectSubscribers()
@@ -367,9 +366,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         bug.subscribe(artifact_indirect_grantee, owner)
         # Subscribing policy_team_grantee has created an artifact grant so we
         # need to revoke that to test the job.
+        artifact = self.factory.makeAccessArtifact(concrete=branch)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-            getUtility(IAccessArtifactSource).find(
-                [branch]), [policy_team_grantee])
+            [artifact], [policy_team_grantee])
 
         # policy grantees are subscribed because the job has not been run yet.
         #subscribers = removeSecurityProxy(branch).subscribers
@@ -432,10 +431,9 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
             bug.subscribe(grantee, owner)
         # Subscribing grantee to bug creates an access grant so we need to
         # revoke that for our test.
-        accessartifact_source = getUtility(IAccessArtifactSource)
-        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
-        accessartifact_grant_source.revokeByArtifact(
-            accessartifact_source.find([bug]), [grantee])
+        artifact = self.factory.makeAccessArtifact(concrete=bug)
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            [artifact], [grantee])
 
         return bug, owner
 
