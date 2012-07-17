@@ -3,7 +3,10 @@
 
 from cStringIO import StringIO
 import sys
-from time import sleep
+from time import (
+    sleep,
+    time,
+    )
 from lazr.jobrunner.bin.clear_queues import clear_queues
 from lp.code.model.branchjob import BranchScanJob
 from lp.scripts.helpers import TransactionFreeOperation
@@ -85,8 +88,16 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # ...and that list_queued() calls do not consume messages.
         self.assertEqual(
             1, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
+        # Wait at most 10 seconds for celeryd to start and process
+        # the task.
         with celeryd(job_queue_name):
-            sleep(2)
+            wait_until = time() + 10
+            while (time() < wait_until):
+                queued_tasks = list_queued(
+                    self.RunMissingReady.app, [job_queue_name])
+                if len(queued_tasks) == 0:
+                    break
+                sleep(.2)
         # But now the message has been consumed by celeryd.
         self.assertEqual(
             0, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
