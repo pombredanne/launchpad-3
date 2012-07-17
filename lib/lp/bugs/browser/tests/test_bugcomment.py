@@ -266,7 +266,7 @@ class TestBugHideCommentControls(
         context = self.getContext()
         pillar = context.default_bugtask.product
         policy = getUtility(IAccessPolicySource).find(
-            [(pillar, InformationType.USERDATA)])
+            [(pillar, InformationType.USERDATA)]).one()
         self.factory.makeAccessPolicyGrant(
             policy=policy, grantor=pillar.owner, grantee=person)
         self._test_hide_link_visible(context, person)
