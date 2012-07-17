@@ -9,7 +9,7 @@ First we mark a bug as private:
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/'
     ...         'debian/+source/mozilla-firefox/+bug/8/+secrecy')
-    >>> admin_browser.getControl('User Data').selected = True
+    >>> admin_browser.getControl('Private').selected = True
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8
@@ -18,7 +18,7 @@ First we mark a bug as private:
     Bug #8 ...Printing doesn't work...
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'privacy'))
-    This report contains User Data information...
+    This report contains Private information...
 
 Next we mark another bug as a duplicate of the private bug:
 

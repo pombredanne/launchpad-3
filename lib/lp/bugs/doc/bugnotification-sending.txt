@@ -756,13 +756,13 @@ Predictably, private bugs are sent with a slightly different header:
     ...         InformationType.USERDATA, sample_person)
     True
     >>> print bug_three.information_type.title
-    User Data
+    Private
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print_message_header_details(message)
-    foo.bar@canonical.com ['yes'] ['no'] ['User Data']
-    mark@example.com ['yes'] ['no']  ['User Data']
-    test@canonical.com ['yes'] ['no']  ['User Data']
+    foo.bar@canonical.com ['yes'] ['no'] ['Private']
+    mark@example.com ['yes'] ['no']  ['Private']
+    test@canonical.com ['yes'] ['no']  ['Private']
 
 Now transition the bug to embargoed security:
 

@@ -651,38 +651,6 @@ class TestBugChanges(TestCaseWithFactory):
             expected_notification=information_type_change_notification,
             bug=bug)
 
-    def test_change_information_type_userdata_as_private(self):
-        # Changing the information type of a bug to User Data with the
-        # display_userdata_as_private flag enabled adds the change as
-        # 'Private' to the activity log and notifications.
-        bug = self.factory.makeBug()
-        self.saveOldChanges(bug=bug)
-        feature_flags = {
-            'disclosure.information_type_notifications.enabled': 'on',
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
-        with FeatureFixture(feature_flags):
-            bug.transitionToInformationType(
-                InformationType.USERDATA, self.user)
-            notify(ObjectModifiedEvent(
-                bug, bug_before_modification, ['information_type'],
-                user=self.user))
-
-        information_type_change_activity = {
-            'person': self.user,
-            'whatchanged': 'information type',
-            'oldvalue': 'Public',
-            'newvalue': 'Private',
-            }
-        information_type_change_notification = {
-            'text': '** Information type changed from Public to Private',
-            'person': self.user,
-            }
-        self.assertRecordedChange(
-            expected_activity=information_type_change_activity,
-            expected_notification=information_type_change_notification,
-            bug=bug)
-
     def test_change_information_type_using_api(self):
         # Changing the information type of a bug adds items to the activity
         # log and notifications.

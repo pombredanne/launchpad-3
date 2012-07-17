@@ -1091,7 +1091,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # We only show Embargoed Security and Unembargoed Security
             # if the branch is linked to a bug with one of those types,
             # as they're confusing and not generally useful otherwise.
-            # Once Proprietary is fully deployed, User Data should be
+            # Once Proprietary is fully deployed, Private should be
             # added here.
             hidden_types = (
                 InformationType.UNEMBARGOEDSECURITY,

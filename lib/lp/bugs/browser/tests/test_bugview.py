@@ -75,17 +75,6 @@ class TestBugView(TestCaseWithFactory):
             InformationType.UNEMBARGOEDSECURITY, self.bug.owner)
         self.assertEqual('sprite public', self.view.information_type_css)
 
-    def test_userdata_shown_as_private(self):
-        # When the display_userdata_as_private feature flag is enabled, the
-        # information_type is shown as 'Private'.
-        self.bug.transitionToInformationType(
-            InformationType.USERDATA, self.bug.owner)
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            view = BugView(self.bug, LaunchpadTestRequest())
-            self.assertEqual('Private', view.information_type)
-
     def test_proprietary_excluded_for_normal_projects(self):
         # The Proprietary information type isn't in the JSON request cache for
         # projects without commercial subscriptions.

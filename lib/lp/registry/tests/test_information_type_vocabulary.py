@@ -97,19 +97,6 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
         term = vocab.getTermByToken('PROPRIETARY')
         self.assertEqual('Proprietary', term.title)
 
-    def test_display_userdata_as_private(self):
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            vocab = InformationTypeVocabulary()
-            term = vocab.getTermByToken('USERDATA')
-            self.assertEqual('Private', term.title)
-
-    def test_userdata(self):
-        vocab = InformationTypeVocabulary()
-        term = vocab.getTermByToken('USERDATA')
-        self.assertEqual('User Data', term.title)
-
     def test_multi_pillar_bugs(self):
         # Multi-pillar bugs are forbidden from being PROPRIETARY, no matter
         # the setting of proprietary_information_type.disabled.

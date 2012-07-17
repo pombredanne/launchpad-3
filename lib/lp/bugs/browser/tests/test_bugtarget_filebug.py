@@ -393,25 +393,9 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         bug = self.filebug_via_view(private_bugs=True)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
-    def test_filebug_information_type_vocabulary_userdata_private(self):
-        # The vocabulary for information_type when filing a bug is created
-        # correctly when 'User Data' is to be replaced by 'Private'.
-        feature_flags = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        product = self.factory.makeProduct(official_malone=True)
-        with FeatureFixture(feature_flags):
-            with person_logged_in(product.owner):
-                view = create_initialized_view(
-                    product, '+filebug', principal=product.owner)
-                html = view.render()
-                soup = BeautifulSoup(html)
-        self.assertEqual(u'Private', soup.find('label', text="Private"))
-        self.assertIsNone(soup.find('label', text="User Data"))
-        self.assertIsNone(soup.find('label', text="Proprietary"))
-
     def test_filebug_information_type_commercial_projects(self):
         # The vocabulary for information_type when filing a bug is created
-        # correctly when 'User Data' is to be replaced by 'Private'.
+        # correctly for proprietary projects.
         product = self.factory.makeProduct(official_malone=True)
         self.factory.makeCommercialSubscription(product)
         with person_logged_in(product.owner):
@@ -423,7 +407,7 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
 
     def test_filebug_information_type_normal_projects(self):
         # The vocabulary for information_type when filing a bug is created
-        # correctly when 'User Data' is to be replaced by 'Private'.
+        # correctly for non commercial projects.
         product = self.factory.makeProduct(official_malone=True)
         with person_logged_in(product.owner):
             view = create_initialized_view(

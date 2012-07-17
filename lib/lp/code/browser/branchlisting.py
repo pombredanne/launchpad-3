@@ -770,9 +770,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         information_type = self.default_information_type
         if information_type is None:
             return None
-        if (information_type == InformationType.USERDATA and
-            getFeatureFlag('disclosure.display_userdata_as_private.enabled')):
-            return 'Private'
         return information_type.title
 
     @property

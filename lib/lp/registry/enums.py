@@ -50,9 +50,9 @@ class InformationType(DBEnumeratedType):
         """)
 
     USERDATA = DBItem(4, """
-        User Data
+        Private
 
-        Only shared with users permitted to see confidential information.
+        Only shared with users permitted to see private information.
         """)
 
     PROPRIETARY = DBItem(5, """

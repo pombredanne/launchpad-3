@@ -913,7 +913,7 @@ class TestBranchEditView(TestCaseWithFactory):
         admin = admins.teamowner
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=admin)
-        browser.getControl("User Data").click()
+        browser.getControl("Private").click()
         browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEqual(
@@ -961,7 +961,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
     def test_public_branch_with_security_bug(self):
         # A public branch can be set to Unembargoed Security if it has a
         # linked Unembargoed Security bug. The project policy doesn't
-        # allow private branches, so Embargoed Security and User Data
+        # allow private branches, so Embargoed Security and Private
         # are unavailable.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
@@ -1000,8 +1000,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             branch)
 
     def test_private_branch(self):
-        # Branches on projects with a private policy can be set to
-        # User Data (aka. Private)
+        # Branches on projects with a private policy can be made private.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
         with admin_logged_in():
@@ -1065,20 +1064,7 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
             soup = BeautifulSoup(view.render())
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
-        self.assertEqual('User Data', information_type.renderContents())
-
-    def test_information_type_in_ui_with_display_as_private(self):
-        # With display_userdata_as_private, the information_type is shown
-        # with User Data masked as Private.
-        owner = self.factory.makePerson()
-        branch = self.factory.makeBranch(
-            owner=owner, information_type=InformationType.USERDATA)
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            with person_logged_in(owner):
-                view = create_initialized_view(branch, '+portlet-privacy')
-                soup = BeautifulSoup(view.render())
-        information_type = soup.find('strong')
-        description = soup.find('div', id='information-type-description')
-        self.assertEqual('Private', information_type.renderContents())
+        self.assertEqual(
+            InformationType.USERDATA.title, information_type.renderContents())
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            InformationType.USERDATA.description, description.renderContents())

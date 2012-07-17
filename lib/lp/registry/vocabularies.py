@@ -2246,8 +2246,6 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     def __init__(self, context=None, public_only=False, private_only=False):
         types = []
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
         if not public_only:
             types = [
                 InformationType.EMBARGOEDSECURITY,
@@ -2289,10 +2287,7 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
         terms = []
         for type in types:
-            title = type.title
-            if type == InformationType.USERDATA and show_userdata_as_private:
-                title = 'Private'
-            term = SimpleTerm(type, type.name, title)
+            term = SimpleTerm(type, type.name, type.title)
             term.name = type.name
             term.description = type.description
             terms.append(term)

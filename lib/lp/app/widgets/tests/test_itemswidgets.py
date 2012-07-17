@@ -225,15 +225,12 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
     def test_renderDescription(self):
         # If the vocabulary provides a description property, it is used over
         # the one provided by the enum.
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            vocab = InformationTypeVocabulary()
-            widget = LaunchpadRadioWidgetWithDescription(
-                self.field, vocab, self.request)
-            self.assertRenderItem(
-                "...has shared private information...", widget.renderItem,
-                vocab.getTermByToken('USERDATA'))
+        vocab = InformationTypeVocabulary()
+        widget = LaunchpadRadioWidgetWithDescription(
+            self.field, vocab, self.request)
+        self.assertRenderItem(
+            "...permitted to see private...", widget.renderItem,
+            vocab.getTermByToken('USERDATA'))
 
 
 class TestVocabularyToChoiceEditItems(TestCase):
