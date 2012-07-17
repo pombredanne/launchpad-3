@@ -707,12 +707,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     @property
     def information_type(self):
-        use_private_flag = getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled')
-        value = self.context.bug.information_type.title
-        if (use_private_flag and value == InformationType.USERDATA.title):
-            value = "Private"
-        return value
+        return self.context.bug.information_type.title
 
     def initialize(self):
         """Set up the needed widgets."""

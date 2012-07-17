@@ -263,7 +263,7 @@ the named operation 'setPrivate'.
     ...     branch_url, 'setPrivate', api_version='beta', private=True)
     >>> branch = webservice.get(branch_url).jsonBody()
     >>> print branch['information_type']
-    User Data
+    Private
 
 In subsequent versions, 'setPrivate' is gone; you have to use the
 'transitionToInformationType' method.

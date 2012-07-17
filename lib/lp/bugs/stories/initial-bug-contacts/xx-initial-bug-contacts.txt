@@ -149,7 +149,7 @@ subscribed, because Firefox does not have a security contact.
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"
-    >>> browser.getControl("Embargoed Security").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> other_bug_id = browser.url.split("/")[-1]
@@ -222,7 +222,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "top sekrit"
-    >>> browser.getControl("Embargoed Security").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> other_bug_id = browser.url.split("/")[-1]

@@ -299,12 +299,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.display_userdata_as_private.enabled',
-     'boolean',
-     'If true, displays the USERDATA information_type as Private.',
-     '',
-     '',
-     ''),
     ('disclosure.information_type_notifications.enabled',
      'boolean',
      ('If true, calculate and store bugchange notifications to reference '

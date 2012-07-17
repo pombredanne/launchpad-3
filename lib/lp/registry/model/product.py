@@ -1546,7 +1546,7 @@ class ProductSet:
 
         # Add default AccessPolicies.
         product._ensurePolicies((InformationType.USERDATA,
-                InformationType.EMBARGOEDSECURITY))
+                InformationType.PRIVATESECURITY))
         return product
 
     def forReview(self, search_text=None, active=None,

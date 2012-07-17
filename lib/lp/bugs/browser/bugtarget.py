@@ -138,7 +138,6 @@ from lp.registry.vocabularies import (
     ValidPersonOrTeamVocabulary,
     )
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty
@@ -271,8 +270,6 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         cache = IJSONRequestCache(self.request)
         cache.objects['private_types'] = [
             type.name for type in PRIVATE_INFORMATION_TYPES]
-        cache.objects['show_userdata_as_private'] = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
         cache.objects['bug_private_by_default'] = (
             IProduct.providedBy(self.context) and self.context.private_bugs)
         cache.objects['information_type_data'] = [
@@ -653,7 +650,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             # If the old UI is enabled, security bugs are always embargoed
             # when filed, but can be disclosed after they've been reported.
             if security_related:
-                information_type = InformationType.EMBARGOEDSECURITY
+                information_type = InformationType.PRIVATESECURITY
             else:
                 information_type = InformationType.PUBLIC
 

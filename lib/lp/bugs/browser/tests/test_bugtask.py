@@ -292,7 +292,7 @@ class TestBugTaskView(TestCaseWithFactory):
             'href="/foobar/+bugs?field.tag=depends-on%2B987"',
             browser.contents)
 
-    def test_information_type_with_flags(self):
+    def test_information_type(self):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
             owner=owner,
@@ -300,11 +300,7 @@ class TestBugTaskView(TestCaseWithFactory):
         login_person(owner)
         bugtask = self.factory.makeBugTask(bug=bug)
         view = create_initialized_view(bugtask, name="+index")
-        self.assertEqual('User Data', view.information_type)
-        features = {'disclosure.display_userdata_as_private.enabled': True}
-        with FeatureFixture(features):
-            view = create_initialized_view(bugtask, name="+index")
-            self.assertEqual('Private', view.information_type)
+        self.assertEqual('Private', view.information_type)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
@@ -1944,7 +1940,7 @@ def make_bug_task_listing_item(
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
-            owner=owner, information_type=InformationType.EMBARGOEDSECURITY)
+            owner=owner, information_type=InformationType.PRIVATESECURITY)
         with person_logged_in(owner):
             bugtask = bug.default_bugtask
     else:
