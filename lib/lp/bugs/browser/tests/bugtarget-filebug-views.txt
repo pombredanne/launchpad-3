@@ -385,7 +385,7 @@ the message.
     This bug should be private.
 
     >>> filebug_view.added_bug.information_type
-    <DBItem InformationType.USERDATA, (4) Private>
+    <DBItem InformationType.USERDATA, (4) Private User>
 
 Since the bug was marked private before it was filed, only the bug
 reporter has been subscribed to the bug and there should be no indirect

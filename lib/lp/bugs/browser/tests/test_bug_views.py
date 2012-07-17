@@ -406,7 +406,8 @@ class TestBugSecrecyViews(TestCaseWithFactory):
                 principal=bug.owner)
             html = view.render()
             soup = BeautifulSoup(html)
-        self.assertEqual(u'Private', soup.find('label', text="Private"))
+        self.assertEqual(
+            u'Private User', soup.find('label', text="Private User"))
 
     def test_information_type_vocabulary_commercial_project(self):
         # Test that the view creates the vocabulary correctly for commercial

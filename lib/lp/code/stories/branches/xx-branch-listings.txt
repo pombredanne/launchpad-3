@@ -231,7 +231,7 @@ If the bug is not visible to the user that is looking at the page, then the
 badge is not shown.
 
     >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/4/+secrecy')
-    >>> browser.getControl('Private').click()
+    >>> browser.getControl('Private User').click()
     >>> browser.getControl('Change').click()
 
 Now the badge is still shown for Sample Person...
