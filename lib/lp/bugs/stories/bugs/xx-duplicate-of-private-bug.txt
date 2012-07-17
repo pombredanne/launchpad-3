@@ -9,7 +9,7 @@ First we mark a bug as private:
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/'
     ...         'debian/+source/mozilla-firefox/+bug/8/+secrecy')
-    >>> admin_browser.getControl('Private').selected = True
+    >>> admin_browser.getControl('Private', index=1).selected = True
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8

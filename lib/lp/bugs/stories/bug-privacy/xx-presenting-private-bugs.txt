@@ -12,7 +12,7 @@ But when marked private, it gains the standard Launchpad presentation
 for private things.
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/4/+secrecy")
-    >>> browser.getControl("Private").selected = True
+    >>> browser.getControl("Private", index=1).selected = True
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/4

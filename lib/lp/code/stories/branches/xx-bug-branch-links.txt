@@ -82,7 +82,7 @@ branch page for people that are not able to see it.  Get an admin
 to mark the bug private.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+bug/4/+secrecy')
-    >>> admin_browser.getControl('Private').click()
+    >>> admin_browser.getControl('Private', index=1).click()
     >>> admin_browser.getControl('Change').click()
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'privacy'))
     This report contains Private information...
