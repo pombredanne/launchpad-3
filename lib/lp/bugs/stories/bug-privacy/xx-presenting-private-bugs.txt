@@ -12,12 +12,12 @@ But when marked private, it gains the standard Launchpad presentation
 for private things.
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/4/+secrecy")
-    >>> browser.getControl("Private User").selected = True
+    >>> browser.getControl("Private").selected = True
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/4
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This report contains Private User information...
+    This report contains Private information...
 
 Bugs created before we started recording the date and time and who
 marked the bug private show only a simple message:

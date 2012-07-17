@@ -300,7 +300,7 @@ class TestBugTaskView(TestCaseWithFactory):
         login_person(owner)
         bugtask = self.factory.makeBugTask(bug=bug)
         view = create_initialized_view(bugtask, name="+index")
-        self.assertEqual('Private User', view.information_type)
+        self.assertEqual('Private', view.information_type)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):

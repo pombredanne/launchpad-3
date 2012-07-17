@@ -608,7 +608,7 @@ a private bug:
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+secrecy')
-    >>> admin_browser.getControl('Private User').selected = True
+    >>> admin_browser.getControl('Private').selected = True
     >>> admin_browser.getControl('Change').click()
 
     >>> anon_browser.open(

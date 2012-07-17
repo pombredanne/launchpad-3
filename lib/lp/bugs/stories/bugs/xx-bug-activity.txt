@@ -101,7 +101,7 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
-    >>> admin_browser.getControl("Private User").selected = True
+    >>> admin_browser.getControl("Private").selected = True
     >>> admin_browser.getControl("Change").click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
@@ -319,25 +319,25 @@ Changes to information_type are shown when the feature flag is set.
     >>> with FeatureFixture(feature_flag):
     ...     admin_browser.open(
     ...         "http://bugs.launchpad.dev/evolution/+bug/7/+secrecy")
-    ...     admin_browser.getControl("Private User").selected = True
+    ...     admin_browser.getControl("Private").selected = True
     ...     admin_browser.getControl('Change').click()
     ...     admin_browser.open("http://bugs.launchpad.dev/evolution/+bug/7")
     ...     print_comments(admin_browser.contents)
     Foo Bar (name16)
     ... ago
     information type:
-    Public => Private User
+    Public => Private
     --------
 
     >>> with FeatureFixture(feature_flag):
     ...     admin_browser.open(
     ...         "http://bugs.launchpad.dev/jokosher/+bug/14/+secrecy")
-    ...     admin_browser.getControl("Private User").selected = True
+    ...     admin_browser.getControl("Private").selected = True
     ...     admin_browser.getControl('Change').click()
     ...     admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/14")
     ...     print_comments(admin_browser.contents)
     Foo Bar (name16)
     ... ago
     information type:
-    Embargoed Security => Private User
+    Embargoed Security => Private
     --------

@@ -113,5 +113,5 @@ class TestSearchByInformationType(TestCaseWithFactory):
 
     def test_search_returns_no_results(self):
         # A non-matching search returns no results.
-        response = self.search("devel", information_type="Private User")
+        response = self.search("devel", information_type="Private")
         self.assertEqual(response['total_size'], 0)
