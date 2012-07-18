@@ -27,6 +27,15 @@ Now we can see the added bug watch in the bug watch portlet.
 If we add another bug watch, pointing to the same URL, the previous one
 will be used; i.e., another one won't be added.
 
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('foo.bar@canonical.com')
+    >>> factory.makeSourcePackage(
+    ...     distroseries=getUtility(IDistributionSet)['debian']['sid'],
+    ...     sourcepackagename='pmount',
+    ...     publish=True)
+    <SourcePackage ...>
+    >>> logout()
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.getControl('Distribution').value = ['debian']
     >>> user_browser.getControl('Source Package Name').value = 'pmount'

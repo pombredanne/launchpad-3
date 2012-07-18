@@ -733,6 +733,7 @@ the new 'diff_content' is stored in the restricted librarian instance.
     >>> private_ppa = factory.makeArchive(private=True)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(diff.to_source).upload_archive = private_ppa
+    >>> removeSecurityProxy(biscuit_two_pub).archive = private_ppa
 
     >>> print diff.private
     True

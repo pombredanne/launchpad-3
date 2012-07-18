@@ -18,8 +18,6 @@ from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.config import config
 from lp.services.webapp import canonical_url
 from lp.testing import (
-    ANONYMOUS,
-    login,
     login_person,
     login_team,
     logout,
@@ -37,6 +35,25 @@ from lp.testing.views import create_initialized_view
 
 
 class TestMilestoneViews(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_distroseries_milestone(self):
+        # Distribution milestone with an untargeted blueprint containing
+        # work items targeted to the milestone lists this blueprint
+        # with a special note.
+        distro_series = self.factory.makeDistroSeries()
+        distribution = distro_series.distribution
+        milestone = self.factory.makeMilestone(distroseries=distro_series)
+        specification = self.factory.makeSpecification(
+            distribution=distribution)
+        self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=milestone)
+        view = create_initialized_view(milestone, '+index')
+        self.assertIn('some work for this milestone', view.render())
+
+
+class TestAddMilestoneViews(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 

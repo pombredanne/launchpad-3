@@ -301,6 +301,23 @@ class IPackageUpload(Interface):
             single binary.
         """
 
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        PackageUpload context:
+
+         * Changes files: '.changes';
+         * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc'.
+         * Custom files: '.tar.gz'.
+
+        :param filename: the exact filename to be looked up.
+
+        :raises NotFoundError if no file could be found.
+
+        :return the corresponding `ILibraryFileAlias` if the file was found.
+        """
+
     def setNew():
         """Set queue state to NEW."""
 

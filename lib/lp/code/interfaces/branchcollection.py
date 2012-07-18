@@ -72,6 +72,9 @@ class IBranchCollection(Interface):
             objects in the collection.
         """
 
+    def getBranchIds():
+        """Return a result set of all branch ids in this collection."""
+
     def getMergeProposals(statuses=None, for_branches=None,
                           target_branch=None, eager_load=False):
         """Return a result set of merge proposals for the branches in this
@@ -156,6 +159,9 @@ class IBranchCollection(Interface):
         A junk branch is a branch that's not associated with a product nor
         with a sourcepackage.
         """
+
+    def isPrivate():
+        """Restrict the collection to private branches."""
 
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""

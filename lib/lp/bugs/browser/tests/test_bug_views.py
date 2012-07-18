@@ -21,7 +21,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -401,19 +400,28 @@ class TestBugSecrecyViews(TestCaseWithFactory):
     def test_information_type_vocabulary(self):
         # Test that the view creates the vocabulary correctly.
         bug = self.factory.makeBug()
-        feature_flags = {
-            'disclosure.proprietary_information_type.disabled': 'on',
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flags):
-            with person_logged_in(bug.owner):
-                view = create_initialized_view(
-                    bug.default_bugtask, name='+secrecy',
-                    principal=bug.owner)
-                html = view.render()
-                soup = BeautifulSoup(html)
-        self.assertEqual(u'Private', soup.find('label', text="Private"))
-        self.assertIs(None, soup.find('label', text="User Data"))
-        self.assertIs(None, soup.find('label', text="Proprietary"))
+        with person_logged_in(bug.owner):
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy',
+                principal=bug.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
+        self.assertEqual(
+            u'Private', soup.find('label', text="Private"))
+
+    def test_information_type_vocabulary_commercial_project(self):
+        # Test that the view creates the vocabulary correctly for commercial
+        # projects.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy',
+                principal=bug.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
+        self.assertIsNot(None, soup.find('label', text="Proprietary"))
 
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):

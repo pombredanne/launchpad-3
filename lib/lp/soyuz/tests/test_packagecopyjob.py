@@ -6,7 +6,6 @@
 import operator
 from textwrap import dedent
 
-from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure
@@ -25,10 +24,12 @@ from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner
 from lp.services.job.tests import (
     block_on_job,
     pop_remote_notifications,
     )
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
@@ -162,22 +163,8 @@ class LocalTestHelper:
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
-        # We are basically mimicking the job runner here.
         switch_dbuser(self.dbuser)
-        # Set the state to RUNNING.
-        job.start()
-        # Commit the RUNNING state.
-        self.layer.txn.commit()
-        try:
-            job.run()
-        except SuspendJobException:
-            # Re-raise this one as many tests check for its presence.
-            raise
-        except:
-            transaction.abort()
-            job.fail()
-        else:
-            job.complete()
+        JobRunner([job]).runAll()
 
 
 class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
@@ -198,6 +185,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
     def test_job_source_implements_IPlainPackageCopyJobSource(self):
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertTrue(verifyObject(IPlainPackageCopyJobSource, job_source))
+
+    def test_getErrorRecipients_requester(self):
+        # The job requester is the recipient.
+        job = self.makeJob()
+        email = format_address_for_person(job.requester)
+        self.assertEqual([email], job.getErrorRecipients())
 
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
@@ -325,7 +318,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # exception and posts a DistroSeriesDifferenceComment with the
         # failure message.
         dsd = self.factory.makeDistroSeriesDifference()
-        self.factory.makeArchive(distribution=dsd.derived_series.distribution)
+        self.factory.makeArchive(
+            distribution=dsd.derived_series.distribution,
+            purpose=ArchivePurpose.PRIMARY)
         job = self.makeJob(dsd)
         removeSecurityProxy(job).attemptCopy = FakeMethod(
             failure=CannotCopy("Server meltdown"))
@@ -357,7 +352,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
 
-        job.run()
+        self.assertRaises(CannotCopy, job.run)
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
@@ -397,13 +392,13 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
 
-        job.run()
+        self.assertRaises(CannotCopy, job.run)
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
     def test_target_ppa_message(self):
         # When copying to a PPA archive the error message is stored in the
-        # job's metadatas.
+        # job's metadata and the job fails.
         distroseries = self.factory.makeDistroSeries()
         package = self.factory.makeSourcePackageName()
         archive1 = self.factory.makeArchive(distroseries.distribution)
@@ -415,7 +410,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=False, package_version='1.0',
             requester=self.factory.makePerson())
         transaction.commit()
-        job.run()
+        self.runJob(job)
+        self.assertEqual(JobStatus.FAILED, job.status)
 
         self.assertEqual(
             "Destination pocket must be 'release' for a PPA.",
@@ -745,10 +741,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=False,
             requester=requester)
 
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        # Simulate the job runner suspending after getting a
-        # SuspendJobException
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
 
         # Add some overrides to the job.
@@ -806,7 +800,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set.
-        self.assertRaises(SuspendJobException, self.runJob, job)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         pu = Store.of(target_archive).find(
             PackageUpload,
             PackageUpload.package_copy_job_id == job.id).one()
@@ -854,8 +849,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job = self.createCopyJobForSPPH(spph, source_archive, target_archive)
 
         # Run the job so it gains a PackageUpload.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         if return_job:
             return job
         pcj = removeSecurityProxy(job).context
@@ -916,7 +911,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set in the UNAPPROVED queue.
-        self.assertRaises(SuspendJobException, self.runJob, job)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
 
         pu = Store.of(target_archive).find(
             PackageUpload,
@@ -953,10 +949,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             spph, source_archive, target_archive, requester=requester)
 
         # Run the job so it gains a PackageUpload.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        # Simulate the job runner suspending after getting a
-        # SuspendJobException
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
 
         # Accept the upload to release the job then run it.
@@ -1033,7 +1027,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Now put the same named package in the target archive at the
         # oldest version in the changelog.
-        target_source_pub = self.publisher.getPubSource(
+        self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="libc",
             version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
             archive=target_archive)
@@ -1089,8 +1083,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertTrue(job.unembargo)
 
         # Run the job so it gains a PackageUpload.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
 
         # Accept the upload to release the job then run it.
@@ -1142,8 +1136,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=True)
 
         # Start, accept, and run the job.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [removeSecurityProxy(job).context.id]).one()
@@ -1310,10 +1304,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             source_pub, source_archive, target_archive)
 
         # Run the job so it gains a PackageUpload.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        # Simulate the job runner suspending after getting a
-        # SuspendJobException
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
 
         # Patch the job's attemptCopy() method so it just raises an

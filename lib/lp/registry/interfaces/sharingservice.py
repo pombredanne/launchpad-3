@@ -45,6 +45,13 @@ class ISharingService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
+    def checkPillarAccess(pillar, information_type, person):
+        """Check the person's access to the given pillar and information type.
+
+        :return: True if the user has access to all the pillar's information
+            of that type, False otherwise
+        """
+
     def getSharedArtifacts(pillar, person, user):
         """Return the artifacts shared between the pillar and person.
 
@@ -68,6 +75,20 @@ class ISharingService(IService):
         :param branches: the branches to check for which a person has access.
         :param bugs: the bugs to check for which a person has access.
         :return: a collection of artifacts the person can see.
+        """
+
+    def getInvisibleArtifacts(person, branches=None, bugs=None):
+        """Return the artifacts which are not shared with person.
+
+        Given lists of artifacts, return those a person does not have access to
+        either via a policy grant or artifact grant.
+        * Do not export this method to the API since it could be used to gain
+          access to private information. Internal use only. *
+
+        :param person: the person whose access is being checked.
+        :param branches: the branches to check for which a person has access.
+        :param bugs: the bugs to check for which a person has access.
+        :return: a collection of artifacts the person can not see.
         """
 
     def getPeopleWithoutAccess(concrete_artifact, people):

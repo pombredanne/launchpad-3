@@ -105,7 +105,7 @@ class FileBugAPI(LaunchpadXMLRPCView):
                     subscriber_list.append(subscriber)
 
         if security_related:
-            information_type = InformationType.EMBARGOEDSECURITY
+            information_type = InformationType.PRIVATESECURITY
         else:
             information_type = InformationType.PUBLIC
 

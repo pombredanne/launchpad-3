@@ -84,6 +84,25 @@ class SharingService:
             bool(getFeatureFlag(
             'disclosure.enhanced_sharing.writable')))
 
+    def checkPillarAccess(self, pillar, information_type, person):
+        """See `ISharingService`."""
+        policy = getUtility(IAccessPolicySource).find(
+            [(pillar, information_type)]).one()
+        if policy is None:
+            return False
+        store = IStore(AccessPolicyGrant)
+        tables = [
+            AccessPolicyGrant,
+            Join(
+                TeamParticipation,
+                TeamParticipation.teamID == AccessPolicyGrant.grantee_id),
+            ]
+        result = store.using(*tables).find(
+            AccessPolicyGrant,
+            AccessPolicyGrant.policy_id == policy.id,
+            TeamParticipation.personID == person.id)
+        return not result.is_empty()
+
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
@@ -139,6 +158,38 @@ class SharingService:
 
         return visible_bugs, visible_branches
 
+    def getInvisibleArtifacts(self, person, branches=None, bugs=None):
+        """See `ISharingService`."""
+        bugs_by_id = {}
+        branches_by_id = {}
+        for bug in bugs or []:
+            bugs_by_id[bug.id] = bug
+        for branch in branches or []:
+            branches_by_id[branch.id] = branch
+
+        # Load the bugs.
+        visible_bug_ids = set()
+        if bugs_by_id:
+            param = BugTaskSearchParams(
+                user=person, bug=any(*bugs_by_id.keys()))
+            visible_bug_ids = set(getUtility(IBugTaskSet).searchBugIds(param))
+        invisible_bug_ids = set(bugs_by_id.keys()).difference(visible_bug_ids)
+        invisible_bugs = [bugs_by_id[bug_id] for bug_id in invisible_bug_ids]
+
+        # Load the branches.
+        invisible_branches = []
+        if branches_by_id:
+            all_branches = getUtility(IAllBranches)
+            visible_branch_ids = all_branches.visibleByUser(person).withIds(
+                *branches_by_id.keys()).getBranchIds()
+            invisible_branch_ids = (
+                set(branches_by_id.keys()).difference(visible_branch_ids))
+            invisible_branches = [
+                branches_by_id[branch_id]
+                for branch_id in invisible_branch_ids]
+
+        return invisible_bugs, invisible_branches
+
     def getPeopleWithoutAccess(self, concrete_artifact, people):
         """See `ISharingService`."""
         # Public artifacts allow everyone to have access.
@@ -183,7 +234,7 @@ class SharingService:
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [
-            InformationType.EMBARGOEDSECURITY,
+            InformationType.PRIVATESECURITY,
             InformationType.USERDATA]
         # Products with current commercial subscriptions are also allowed to
         # have a PROPRIETARY information type.

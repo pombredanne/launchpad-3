@@ -280,6 +280,7 @@ He reads his comment that was appended to the bug report's messages.
     wrote
     ...
     I misunderstood.
+    ...
 
 When the remove question page is visited, and there is no question, the
 form is not displayed. This can happened if the URL is hacked or the

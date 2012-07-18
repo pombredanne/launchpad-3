@@ -35,7 +35,7 @@ class TestBranchAccessPolicyTriggers(TestCaseWithFactory):
         owner = self.factory.makePerson()
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA, owner=owner)
-        self.assertAccess(branch, 65, [owner.id])
+        self.assertAccess(branch, 66, [owner.id])
         artifact = self.factory.makeAccessArtifact(concrete=branch)
         grant = self.factory.makeAccessArtifactGrant(artifact=artifact)
-        self.assertAccess(branch, 65, [owner.id, grant.grantee.id])
+        self.assertAccess(branch, 66, [owner.id, grant.grantee.id])

@@ -641,6 +641,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def getStackedBranches():
         """The branches that are stacked on this one."""
 
+    def getStackedOnBranches():
+        """The branches on which this one is stacked."""
+
     def getMainlineBranchRevisions(start_date, end_date=None,
                                    oldest_first=False):
         """Return the matching mainline branch revision objects.
@@ -790,7 +793,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @export_write_operation()
     @operation_for_version('beta')
     def subscribe(person, notification_level, max_diff_lines,
-                  code_review_level, subscribed_by):
+                  code_review_level, subscribed_by,
+                  check_stacked_visibility=True):
         """Subscribe this person to the branch.
 
         :param person: The `Person` to subscribe.
@@ -967,6 +971,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     def visibleByUser(user):
         """Can the specified user see this branch?"""
+
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this branch.
+
+        If the user is a Launchpad admin, any type is acceptable. Otherwise
+        the `IBranchNamespace` is consulted.
+        """
 
 
 class IBranchEditableAttributes(Interface):
@@ -1384,6 +1395,20 @@ class IBranchSet(Interface):
         This API call is provided for use by the client Javascript. It is not
         designed to efficiently scale to handle requests for large numbers of
         branches.
+        """
+
+    @operation_returns_collection_of(Interface)
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_parameters(merged_revision=TextLine())
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(merged_revision, visible_by_user=None):
+        """Return the merge proposals that resulted in this revision.
+
+        :param merged_revision: The revision_id of the revision that resulted
+            from this merge proposal.
+        :param visible_by_user: The user to whom the proposals must be
+            visible.  If None, only public proposals will be returned.
         """
 
 
