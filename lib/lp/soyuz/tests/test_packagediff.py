@@ -119,3 +119,12 @@ class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
         public_spr = self.factory.makeSourcePackageRelease(archive=ppa)
         public_diff = public_spr.requestDiffTo(p3a.owner, orig_spr)
         self.assertFalse(public_diff.private)
+
+    def test_packagediff_public_unpublished(self):
+        # If an SPR has been uploaded to a public archive but not yet
+        # published, diffs to it are public.
+        ppa = self.factory.makeArchive()
+        from_spr = self.factory.makeSourcePackageRelease(archive=ppa)
+        to_spr = self.factory.makeSourcePackageRelease(archive=ppa)
+        diff = from_spr.requestDiffTo(ppa.owner, to_spr)
+        self.assertFalse(diff.private)

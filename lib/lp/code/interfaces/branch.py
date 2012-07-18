@@ -641,6 +641,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def getStackedBranches():
         """The branches that are stacked on this one."""
 
+    def getStackedOnBranches():
+        """The branches on which this one is stacked."""
+
     def getMainlineBranchRevisions(start_date, end_date=None,
                                    oldest_first=False):
         """Return the matching mainline branch revision objects.
@@ -790,7 +793,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @export_write_operation()
     @operation_for_version('beta')
     def subscribe(person, notification_level, max_diff_lines,
-                  code_review_level, subscribed_by):
+                  code_review_level, subscribed_by,
+                  check_stacked_visibility=True):
         """Subscribe this person to the branch.
 
         :param person: The `Person` to subscribe.

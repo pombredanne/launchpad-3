@@ -15,10 +15,7 @@ __all__ = [
     'group_comments_with_activity',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 from itertools import (
     chain,
     groupby,
@@ -27,7 +24,6 @@ from operator import itemgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interfaces import IWebServiceClientRequest
-from pytz import utc
 from zope.component import (
     adapts,
     getMultiAdapter,
@@ -44,7 +40,6 @@ from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.services.comments.browser.comment import download_body
 from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.propertycache import (
@@ -218,10 +213,7 @@ class BugComment(MessageComment):
 
         self.synchronized = False
         # We use a feature flag to control users deleting their own comments.
-        user_owns_comment = False
-        flag = 'disclosure.users_hide_own_bug_comments.enabled'
-        if bool(getFeatureFlag(flag)):
-            user_owns_comment = user is not None and user == self.owner
+        user_owns_comment = user is not None and user == self.owner
         self.show_spam_controls = show_spam_controls or user_owns_comment
         self.hide_text = (display == 'hide')
 

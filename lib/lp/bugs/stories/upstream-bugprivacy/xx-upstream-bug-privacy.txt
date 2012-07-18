@@ -11,7 +11,7 @@ contact, the maintainer will be subscribed to the bug instead.
     ...     "this is a newly created private bug")
     >>> browser.getControl(name="field.comment").value = (
     ...     "very secret info here")
-    >>> browser.getControl("Embargoed Security").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> bug_id = browser.url.split("/")[-1]
@@ -73,7 +73,7 @@ subscribed instead.
 
     >>> browser.getControl(name="field.comment").value = (
     ...     "very secret info here")
-    >>> browser.getControl("Embargoed Security").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> other_bug_id = browser.url.split("/")[-1]

@@ -2248,10 +2248,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
         types = []
         if not public_only:
             types = [
-                InformationType.EMBARGOEDSECURITY,
+                InformationType.PRIVATESECURITY,
                 InformationType.USERDATA]
-            show_userdata_as_private = bool(getFeatureFlag(
-                'disclosure.display_userdata_as_private.enabled'))
             # So long as not disabled by the feature flag, Proprietary is
             # allowed for:
             # - single pillar bugs where the target has a current commercial
@@ -2285,19 +2283,12 @@ class InformationTypeVocabulary(SimpleVocabulary):
             not IProduct.providedBy(context) or
             not context.private_bugs)):
             types = [InformationType.PUBLIC,
-                     InformationType.UNEMBARGOEDSECURITY] + types
+                     InformationType.PUBLICSECURITY] + types
 
         terms = []
         for type in types:
-            title = type.title
-            description = type.description
-            if type == InformationType.USERDATA and show_userdata_as_private:
-                title = 'Private'
-                description = (
-                    'Visible only to users with whom the project has '
-                    'shared private information.')
-            term = SimpleTerm(type, type.name, title)
+            term = SimpleTerm(type, type.name, type.title)
             term.name = type.name
-            term.description = description
+            term.description = type.description
             terms.append(term)
         super(InformationTypeVocabulary, self).__init__(terms)
