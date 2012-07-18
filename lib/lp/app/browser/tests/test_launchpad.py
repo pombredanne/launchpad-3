@@ -271,6 +271,15 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         path = urlappend(branch.unique_name, '+edit')
         self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
 
+    def test_alias_trailing_path_redirect(self):
+        # Redirects also support trailing path segments with aliases.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.product.development_focus.branch = branch
+        non_existent = '+edit'
+        path = '%s/+edit' % branch.product.name
+        self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
+
     def test_product_series_redirect(self):
         # Traversing to /+branch/<product>/<series> redirects to the branch
         # for that series, if there is one.
@@ -278,15 +287,6 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         series = self.factory.makeProductSeries(branch=branch)
         self.assertRedirects(
             ICanHasLinkedBranch(series).bzr_path, canonical_url(branch))
-
-    def test_nonexistent_product_series(self):
-        # /+branch/<product>/<series> displays an error message if there is
-        # no such series.
-        product = self.factory.makeProduct()
-        non_existent = 'nonexistent'
-        requiredMessage = u"No such product series: '%s'." % non_existent
-        path = '%s/%s' % (product.name, non_existent)
-        self.assertDisplaysError(path, requiredMessage)
 
     def test_no_branch_for_series(self):
         # If there's no branch for a product series, display a
