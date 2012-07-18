@@ -2510,8 +2510,8 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual(item.bug_heat_html, model['bug_heat_html'])
             expected = ('<span alt="%s" title="%s" class="sprite private">'
                         '</span>') % (
-                           InformationType.EMBARGOEDSECURITY.title,
-                           InformationType.EMBARGOEDSECURITY.description,
+                           InformationType.PRIVATESECURITY.title,
+                           InformationType.PRIVATESECURITY.description,
                             )
             self.assertTextMatchesExpressionIgnoreWhitespace(
                 expected, model['badges'])
