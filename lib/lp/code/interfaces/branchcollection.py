@@ -157,6 +157,9 @@ class IBranchCollection(Interface):
         with a sourcepackage.
         """
 
+    def isPrivate():
+        """Restrict the collection to private branches."""
+
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 

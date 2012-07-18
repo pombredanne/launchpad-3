@@ -61,7 +61,10 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.revision import Revision
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
+from lp.registry.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
@@ -606,6 +609,11 @@ class GenericBranchCollection:
         return self._filterBy([
             Branch.product == None,
             Branch.sourcepackagename == None])
+
+    def isPrivate(self):
+        """See `IBranchCollection`."""
+        return self._filterBy([
+            Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES)])
 
     def ownedBy(self, person):
         """See `IBranchCollection`."""
