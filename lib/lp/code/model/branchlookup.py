@@ -400,9 +400,11 @@ class BranchLookup:
             try:
                 object_with_branch_link = getUtility(
                     ILinkedBranchTraverser).traverse(path)
-            except NoSuchProductSeries:
-                object_with_branch_link = getUtility(
-                    ILinkedBranchTraverser).traverse(path.split('/')[0])
+            except NoSuchProductSeries as e:
+                # If ProductSeries lookup failed, the segment after product
+                # name referred to a location under a Product development
+                # focus branch.
+                object_with_branch_link = e.product
             branch, bzr_path = self._getLinkedBranchAndPath(
                 object_with_branch_link)
             suffix = path[len(bzr_path) + 1:]
