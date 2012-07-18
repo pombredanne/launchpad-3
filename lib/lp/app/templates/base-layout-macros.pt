@@ -101,7 +101,7 @@
             filter: raw,
             debug: ${yui_console_debug},
             fetchCSS: false,
-            maxURLLength: 2500,
+            maxURLLength: 2000,
             groups: {
                 lp: {
                     combine: true,
