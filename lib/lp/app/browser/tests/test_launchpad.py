@@ -276,7 +276,6 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         with person_logged_in(branch.product.owner):
             branch.product.development_focus.branch = branch
-        non_existent = '+edit'
         path = '%s/+edit' % branch.product.name
         self.assertRedirects(path, canonical_url(branch, view_name='+edit'))
 

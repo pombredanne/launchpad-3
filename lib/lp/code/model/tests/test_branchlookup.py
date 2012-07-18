@@ -713,7 +713,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         product = make_product_with_branch(self.factory)
         self.assertEqual(
             (product.development_focus.branch, 'other/bits'),
-            self.branch_lookup.getByLPPath( '%s/other/bits' % product.name))
+            self.branch_lookup.getByLPPath('%s/other/bits' % product.name))
 
     def test_product_with_bzr_suffix(self):
         # A '.bzr' suffix is returned correctly.

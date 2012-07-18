@@ -9,8 +9,6 @@ __metaclass__ = type
 __all__ = []
 
 
-import re
-
 from bzrlib.urlutils import escape
 from lazr.enum import DBItem
 from lazr.uri import (
