@@ -145,7 +145,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(90)))
+        self.assertThat(recorder, HasQueryCount(LessThan(93)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -161,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                92, self.factory.makePerson())
+                95, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -206,7 +206,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(111)))
+        self.assertThat(recorder, HasQueryCount(LessThan(114)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -292,7 +292,7 @@ class TestBugTaskView(TestCaseWithFactory):
             'href="/foobar/+bugs?field.tag=depends-on%2B987"',
             browser.contents)
 
-    def test_information_type_with_flags(self):
+    def test_information_type(self):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
             owner=owner,
@@ -300,11 +300,7 @@ class TestBugTaskView(TestCaseWithFactory):
         login_person(owner)
         bugtask = self.factory.makeBugTask(bug=bug)
         view = create_initialized_view(bugtask, name="+index")
-        self.assertEqual('User Data', view.information_type)
-        features = {'disclosure.display_userdata_as_private.enabled': True}
-        with FeatureFixture(features):
-            view = create_initialized_view(bugtask, name="+index")
-            self.assertEqual('Private', view.information_type)
+        self.assertEqual('Private', view.information_type)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
@@ -1944,7 +1940,7 @@ def make_bug_task_listing_item(
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
-            owner=owner, information_type=InformationType.EMBARGOEDSECURITY)
+            owner=owner, information_type=InformationType.PRIVATESECURITY)
         with person_logged_in(owner):
             bugtask = bug.default_bugtask
     else:

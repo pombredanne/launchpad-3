@@ -742,6 +742,15 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.assertEqual(
             None, view.widgets['newmember']._getCurrentValue())
 
+    def test_add_private_team_member_success(self):
+        member = self.factory.makeTeam(
+            name="a-member", owner=self.team.teamowner,
+            visibility=PersonVisibility.PRIVATE)
+        form = self.getForm(member)
+        view = create_initialized_view(self.team, "+addmember", form=form)
+        self.assertEqual([], view.errors)
+        self.assertTrue(member.inTeam(self.team))
+
     def test_add_former_member_success(self):
         member = self.factory.makePerson(name="a-member")
         self.team.addMember(member, self.team.teamowner)

@@ -37,46 +37,42 @@ class InformationType(DBEnumeratedType):
         Everyone can see this information.
         """)
 
-    UNEMBARGOEDSECURITY = DBItem(2, """
-        Unembargoed Security
+    PUBLICSECURITY = DBItem(2, """
+        Public Security
 
-        Everyone can see this information pertaining to a resolved security
-        related bug.
+        Everyone can see this security related information.
         """)
 
-    EMBARGOEDSECURITY = DBItem(3, """
-        Embargoed Security
+    PRIVATESECURITY = DBItem(3, """
+        Private Security
 
-        Visible only to users with whom the project has shared embargoed
-        security information.
+       Only the security group can see this information.
         """)
 
     USERDATA = DBItem(4, """
-        User Data
+        Private
 
-        Visible only to users with whom the project has shared information
-        containing user data.
+        Only shared with users permitted to see private user information.
         """)
 
     PROPRIETARY = DBItem(5, """
         Proprietary
 
-        Visible only to users with whom the project has shared proprietary
-        information.
+        Only shared with users permitted to see proprietary information.
         """)
 
 
 PUBLIC_INFORMATION_TYPES = (
-    InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY)
+    InformationType.PUBLIC, InformationType.PUBLICSECURITY)
 
 
 PRIVATE_INFORMATION_TYPES = (
-    InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+    InformationType.PRIVATESECURITY, InformationType.USERDATA,
     InformationType.PROPRIETARY)
 
 
 SECURITY_INFORMATION_TYPES = (
-    InformationType.UNEMBARGOEDSECURITY, InformationType.EMBARGOEDSECURITY)
+    InformationType.PUBLICSECURITY, InformationType.PRIVATESECURITY)
 
 
 class SharingPermission(DBEnumeratedType):

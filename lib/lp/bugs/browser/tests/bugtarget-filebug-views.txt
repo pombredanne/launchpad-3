@@ -385,18 +385,7 @@ the message.
     This bug should be private.
 
     >>> filebug_view.added_bug.information_type
-    <DBItem InformationType.USERDATA, (4) User Data>
-
-Since the bug was marked private before it was filed, only the bug
-reporter has been subscribed to the bug and there should be no indirect
-subscribers.
-
-    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
-    ...     print subscriber.displayname
-    No Privileges Person
-
-    >>> filebug_view.added_bug.getIndirectSubscribers()
-    []
+    <DBItem InformationType.USERDATA, (4) Private>
 
 The user will be notified that the bug has been marked as private.
 
@@ -595,11 +584,6 @@ to the bug.
     Mark Shuttleworth
     No Privileges Person
 
-Since the bug is private, there should be no indirect subscribers.
-
-    >>> filebug_view.added_bug.getIndirectSubscribers()
-    []
-
 The user will be notified that Mark Shuttleworth has been subscribed to
 this bug and that the bug has been marked as private.
 
@@ -685,7 +669,6 @@ Filing security bugs
 
 The base class allows security bugs to be filed.
 
-    >>> from lp.registry.enums import InformationType
     >>> bug_data = dict(
     ...     title=u'Security bug', comment=u'Test description.',
     ...     security_related=u'on')

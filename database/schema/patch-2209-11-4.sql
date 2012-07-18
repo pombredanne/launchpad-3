@@ -18,7 +18,7 @@ DECLARE
 BEGIN
     SELECT * INTO bug_row FROM bug WHERE id = bug_id;
     SELECT id INTO artifact_id FROM AccessArtifact WHERE bug = bug_id;
-    -- 3 == EMBARGOEDSECURITY, 4 == USERDATA, 5 == PROPRIETARY
+    -- 3 == PRIVATESECURITY, 4 == USERDATA, 5 == PROPRIETARY
     IF bug_row.information_type NOT IN (3, 4, 5) THEN
         IF artifact_id IS NOT NULL THEN
             -- Bug is public, but there are access control rows. Destroy them.

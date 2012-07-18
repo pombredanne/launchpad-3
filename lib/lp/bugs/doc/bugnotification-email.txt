@@ -95,7 +95,7 @@ as well.
 New security related bugs are sent with a prominent warning:
 
     >>> changed = bug_four.transitionToInformationType(
-    ...     InformationType.UNEMBARGOEDSECURITY, getUtility(ILaunchBag).user)
+    ...     InformationType.PUBLICSECURITY, getUtility(ILaunchBag).user)
 
     >>> subject, body = generate_bug_add_email(bug_four)
     >>> subject
@@ -111,7 +111,7 @@ New security related bugs are sent with a prominent warning:
 Security related bugs can be embargoed:
 
     >>> bug_four.transitionToInformationType(
-    ...     InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)
+    ...     InformationType.PRIVATESECURITY, getUtility(ILaunchBag).user)
     True
 
     >>> subject, body = generate_bug_add_email(bug_four)
@@ -227,7 +227,7 @@ logins to a user that is explicitly subscribed to this bug):
 
     >>> edited_bug = getUtility(IBugSet).get(6)
     >>> edited_bug.transitionToInformationType(
-    ...     InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)
+    ...     InformationType.PRIVATESECURITY, getUtility(ILaunchBag).user)
     True
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
@@ -531,7 +531,7 @@ the bug so that they are not calculated for every recipient.
     Sender: bounces@canonical.com
     X-Launchpad-Bug: product=firefox; ...; assignee=None;
     X-Launchpad-Bug-Tags: bar foo
-    X-Launchpad-Bug-Information-Type: Embargoed Security
+    X-Launchpad-Bug-Information-Type: Private Security
     X-Launchpad-Bug-Private: yes
     X-Launchpad-Bug-Security-Vulnerability: yes
     X-Launchpad-Bug-Commenters: name12

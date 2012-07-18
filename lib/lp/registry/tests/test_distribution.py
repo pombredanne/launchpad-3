@@ -273,7 +273,7 @@ class TestDistribution(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         ap = getUtility(IAccessPolicySource).findByPillar((distro,))
         expected = [
-            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+            InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in ap])
 
 
