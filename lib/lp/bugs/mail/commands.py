@@ -190,7 +190,7 @@ class PrivateEmailCommand(EmailCommand):
                 context.information_type = InformationType.USERDATA
             elif (
                 context.information_type !=
-                InformationType.EMBARGOEDSECURITY):
+                InformationType.PRIVATESECURITY):
                 context.information_type = InformationType.PUBLIC
             return context, current_event
 
@@ -245,7 +245,7 @@ class SecurityEmailCommand(EmailCommand):
 
         if isinstance(context, CreateBugParams):
             if security_related:
-                context.information_type = InformationType.EMBARGOEDSECURITY
+                context.information_type = InformationType.PRIVATESECURITY
             return context, current_event
 
         # Take a snapshot.

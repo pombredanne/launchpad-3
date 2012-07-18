@@ -39,7 +39,6 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features.testing import FeatureFixture
 from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -913,7 +912,7 @@ class TestBranchEditView(TestCaseWithFactory):
         admin = admins.teamowner
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=admin)
-        browser.getControl("User Data").click()
+        browser.getControl("Private").click()
         browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEqual(
@@ -950,7 +949,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
 
     def test_public_branch(self):
         # A normal public branch on a public project can only be public.
-        # We don't show information types like Unembargoed Security
+        # We don't show information types like Public Security
         # unless there's a linked branch of that type, as they're not
         # useful or unconfusing otherwise.
         # The model doesn't enforce this, so it's just a UI thing.
@@ -959,18 +958,18 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         self.assertShownTypes([InformationType.PUBLIC], branch)
 
     def test_public_branch_with_security_bug(self):
-        # A public branch can be set to Unembargoed Security if it has a
-        # linked Unembargoed Security bug. The project policy doesn't
-        # allow private branches, so Embargoed Security and User Data
+        # A public branch can be set to Public Security if it has a
+        # linked Public Security bug. The project policy doesn't
+        # allow private branches, so Private Security and Private
         # are unavailable.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
         bug = self.factory.makeBug(
-            information_type=InformationType.UNEMBARGOEDSECURITY)
+            information_type=InformationType.PUBLICSECURITY)
         with admin_logged_in():
             branch.linkBug(bug, branch.owner)
         self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY],
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY],
             branch)
 
     def test_branch_with_disallowed_type(self):
@@ -991,17 +990,16 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             product=product, stacked_on=stacked_on_branch,
             owner=product.owner,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         with admin_logged_in():
             branch.product.setBranchVisibilityTeamPolicy(
                 branch.owner, BranchVisibilityRule.PRIVATE)
         self.assertShownTypes(
-            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA],
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA],
             branch)
 
     def test_private_branch(self):
-        # Branches on projects with a private policy can be set to
-        # User Data (aka. Private)
+        # Branches on projects with a private policy can be made private.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
         with admin_logged_in():
@@ -1013,7 +1011,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
 
     def test_private_branch_with_security_bug(self):
         # Branches on projects that allow private branches can use the
-        # Embargoed Security information type if they have a security
+        # Private Security information type if they have a security
         # bug linked.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
@@ -1021,12 +1019,12 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             branch.product.setBranchVisibilityTeamPolicy(
                 branch.owner, BranchVisibilityRule.PRIVATE)
         bug = self.factory.makeBug(
-            information_type=InformationType.UNEMBARGOEDSECURITY)
+            information_type=InformationType.PUBLICSECURITY)
         with admin_logged_in():
             branch.linkBug(bug, branch.owner)
         self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY,
-             InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY, InformationType.USERDATA,
              InformationType.PROPRIETARY],
             branch)
 
@@ -1065,28 +1063,7 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
             soup = BeautifulSoup(view.render())
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
-        self.assertEqual('User Data', information_type.renderContents())
+        self.assertEqual(
+            InformationType.USERDATA.title, information_type.renderContents())
         self.assertTextMatchesExpressionIgnoreWhitespace(
-            'Visible only to users with whom the project has shared '
-            'information containing user data.',
-            description.renderContents())
-
-    def test_information_type_in_ui_with_display_as_private(self):
-        # With display_userdata_as_private, the information_type is shown
-        # with User Data masked as Private.
-        owner = self.factory.makePerson()
-        branch = self.factory.makeBranch(
-            owner=owner, information_type=InformationType.USERDATA)
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            with person_logged_in(owner):
-                view = create_initialized_view(branch, '+portlet-privacy')
-                soup = BeautifulSoup(view.render())
-        information_type = soup.find('strong')
-        description = soup.find('div', id='information-type-description')
-        self.assertEqual('Private', information_type.renderContents())
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            'Visible only to users with whom the project has shared '
-            'private information.',
-            description.renderContents())
+            InformationType.USERDATA.description, description.renderContents())

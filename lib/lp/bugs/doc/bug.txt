@@ -423,13 +423,6 @@ When a private bug is filed:
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
 
-Since it's private, there are no indirect subscribers.
-
-    >>> private_bug.getIndirectSubscribers()
-    []
-
-It's up to the submitter to subscribe the maintainer, if they so choose.
-
 This works similarly for distributions; in this case the
 "maintainer" is considered the person who maintains the applicable
 sourcepackage. E.g.
@@ -449,8 +442,6 @@ sourcepackage. E.g.
     >>> private_bug = bugset.get(added_bug.id)
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
-    >>> private_bug.getIndirectSubscribers()
-    []
 
 
 Prevent reporter from being subscribed to filed bugs

@@ -147,12 +147,20 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             product=product,
             information_type=InformationType.USERDATA)
         someone = self.factory.makePerson()
-        getUtility(IService, 'sharing').ensureAccessGrants(
-            [someone], owner, branches=[branch], ignore_permissions=True)
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [someone], owner, branches=[branch], ignore_permissions=True)
         [branch] = list(collection.visibleByUser(someone).getBranches())
         with StormStatementRecorder() as recorder:
             self.assertTrue(branch.visibleByUser(someone))
             self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+    def test_getBranchIds(self):
+        branch = self.factory.makeProductBranch()
+        self.factory.makeAnyBranch()
+        collection = GenericBranchCollection(
+            self.store, [Branch.product == branch.product])
+        self.assertEqual([branch.id], list(collection.getBranchIds()))
 
     def test_count(self):
         # The 'count' property of a collection is the number of elements in
@@ -303,9 +311,23 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.factory.makeAnyBranch(owner=person)
         self.factory.makeProductBranch(product=product)
         collection = self.all_branches.inProduct(product).ownedBy(person)
-        self.all_branches.inProduct(product).ownedBy(person)
         self.assertEqual([branch], list(collection.getBranches()))
         collection = self.all_branches.ownedBy(person).inProduct(product)
+        self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_ownedBy_and_isPrivate(self):
+        # 'ownedBy' and 'isPrivate' can combine to form a collection that is
+        # restricted to private branches owned by a particular person.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(
+            product=product, owner=person,
+            information_type=InformationType.USERDATA)
+        self.factory.makeAnyBranch(owner=person)
+        self.factory.makeProductBranch(product=product)
+        collection = self.all_branches.isPrivate().ownedBy(person)
+        self.assertEqual([branch], list(collection.getBranches()))
+        collection = self.all_branches.ownedBy(person).isPrivate()
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_ownedByTeamMember_and_inProduct(self):

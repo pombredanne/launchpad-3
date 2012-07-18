@@ -56,7 +56,7 @@ Mark bug 1 as private:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+secrecy')
-  >>> browser.getControl('User Data').selected = True
+  >>> browser.getControl('Private', index=1).selected = True
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
@@ -101,7 +101,7 @@ user logs in):
 Set the bug back to public:
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+secrecy')
-  >>> browser.getControl('Public').selected = True
+  >>> browser.getControl('Public', index=1).selected = True
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'

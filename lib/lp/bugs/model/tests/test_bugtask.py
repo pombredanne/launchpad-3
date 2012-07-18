@@ -3379,7 +3379,7 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
         # longer see the bug.
         def change_information_type(bug, owner):
             bug.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, owner)
+                InformationType.PRIVATESECURITY, owner)
 
         self._assert_bug_change_unsubscribes(change_information_type, True)
 

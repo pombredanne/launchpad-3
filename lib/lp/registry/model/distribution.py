@@ -1754,7 +1754,7 @@ class DistributionSet:
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         policies = itertools.product(
             (distro,), (InformationType.USERDATA,
-                InformationType.EMBARGOEDSECURITY))
+                InformationType.PRIVATESECURITY))
         getUtility(IAccessPolicySource).create(policies)
         return distro
 

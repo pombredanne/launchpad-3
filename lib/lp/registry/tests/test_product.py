@@ -358,7 +358,7 @@ class TestProduct(TestCaseWithFactory):
         product = self.factory.makeProduct()
         ap = getUtility(IAccessPolicySource).findByPillar((product,))
         expected = [
-            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+            InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in ap])
 
     def test_product_creation_grants_maintainer_access(self):
@@ -383,7 +383,7 @@ class TestProduct(TestCaseWithFactory):
 
         ap = getUtility(IAccessPolicySource).findByPillar((product,))
         expected = [
-            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY,
+            InformationType.USERDATA, InformationType.PRIVATESECURITY,
             InformationType.PROPRIETARY]
         self.assertContentEqual(expected, [policy.type for policy in ap])
 

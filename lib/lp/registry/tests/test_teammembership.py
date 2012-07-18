@@ -1029,7 +1029,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
             members=[person_grantee])
         bug2, bug2_owner = self._make_subscribed_bug(
             team_grantee, product=product,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         # Add a subscription for the person_grantee.
         with person_logged_in(bug2_owner):
             bug2.subscribe(person_grantee, bug2_owner)
