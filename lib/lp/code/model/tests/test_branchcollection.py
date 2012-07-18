@@ -147,12 +147,20 @@ class TestGenericBranchCollection(TestCaseWithFactory):
             product=product,
             information_type=InformationType.USERDATA)
         someone = self.factory.makePerson()
-        getUtility(IService, 'sharing').ensureAccessGrants(
-            [someone], owner, branches=[branch], ignore_permissions=True)
+        with person_logged_in(owner):
+            getUtility(IService, 'sharing').ensureAccessGrants(
+                [someone], owner, branches=[branch], ignore_permissions=True)
         [branch] = list(collection.visibleByUser(someone).getBranches())
         with StormStatementRecorder() as recorder:
             self.assertTrue(branch.visibleByUser(someone))
             self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+    def test_getBranchIds(self):
+        branch = self.factory.makeProductBranch()
+        self.factory.makeAnyBranch()
+        collection = GenericBranchCollection(
+            self.store, [Branch.product == branch.product])
+        self.assertEqual([branch.id], list(collection.getBranchIds()))
 
     def test_count(self):
         # The 'count' property of a collection is the number of elements in
