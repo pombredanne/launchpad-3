@@ -672,14 +672,12 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         self.assertEqual([self.public_branch], list(branches.getBranches()))
 
     def test_owner_sees_own_branches(self):
-        # Users can always see the branches that they own, those their own
-        # branches are stacked on, as well as public branches.
+        # Users can always see the branches that they own, as well as public
+        # branches.
         owner = removeSecurityProxy(self.private_branch1).owner
         branches = self.all_branches.visibleByUser(owner)
         self.assertEqual(
-            sorted([self.public_branch, self.private_branch1,
-                    self.public_stacked_on_branch,
-                    self.private_stacked_on_branch]),
+            sorted([self.public_branch, self.private_branch1]),
             sorted(branches.getBranches()))
 
     def test_launchpad_services_sees_all(self):
@@ -701,8 +699,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             sorted(branches.getBranches()))
 
     def test_subscribers_can_see_branches(self):
-        # A person subscribed to a branch can see it, as well as any it is
-        # stacked on, even if it's private.
+        # A person subscribed to a branch can see it, even if it's private.
         subscriber = self.factory.makePerson()
         removeSecurityProxy(self.private_branch1).subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
@@ -711,9 +708,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             subscriber)
         branches = self.all_branches.visibleByUser(subscriber)
         self.assertEqual(
-            sorted([self.public_branch, self.private_branch1,
-                    self.public_stacked_on_branch,
-                    self.private_stacked_on_branch]),
+            sorted([self.public_branch, self.private_branch1]),
             sorted(branches.getBranches()))
 
     def test_subscribed_team_members_can_see_branches(self):
