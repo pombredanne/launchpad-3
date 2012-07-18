@@ -712,7 +712,7 @@ class BugTrackerCreationStep(AlsoAffectsStep):
         bug_url = data.get('bug_url').strip()
         try:
             getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
-        except NoBugTrackerFound, error:
+        except NoBugTrackerFound as error:
             getUtility(IBugTrackerSet).ensureBugTracker(
                 error.base_url, self.user, error.bugtracker_type)
         self.next_step = self._next_step

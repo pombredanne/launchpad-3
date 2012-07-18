@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'PackageCopier',
-    'UnembargoSecurityPackage',
     'CopyChecker',
     'check_copy_permissions',
     'do_copy',
@@ -17,6 +16,8 @@ __all__ = [
     'update_files_privacy',
     ]
 
+from itertools import repeat
+from operator import attrgetter
 import os
 import tempfile
 
@@ -27,6 +28,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.services.database.bulk import load_related
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.adapters.notification import notify
@@ -54,7 +56,6 @@ from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
     )
-from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
 
 def re_upload_file(libraryfile, restricted=False):
@@ -205,35 +206,62 @@ class CheckedCopy:
             return {'status': BuildSetStatus.NEEDSBUILD}
 
 
-def check_copy_permissions(person, archive, series, pocket,
-                           sourcepackagenames):
+def check_copy_permissions(person, archive, series, pocket, sources):
     """Check that `person` has permission to copy a package.
 
     :param person: User attempting the upload.
     :param archive: Destination `Archive`.
     :param series: Destination `DistroSeries`.
     :param pocket: Destination `Pocket`.
-    :param sourcepackagenames: Sequence of `SourcePackageName`s for the
+    :param sources: Sequence of `SourcePackagePublishingHistory`s for the
         packages to be copied.
     :raises CannotCopy: If the copy is not allowed.
     """
+    # Circular import.
+    from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
     if person is None:
         raise CannotCopy("Cannot check copy permissions (no requester).")
+
+    if len(sources) > 1:
+        # Bulk-load the data we'll need from each source publication.
+        load_related(SourcePackageRelease, sources, ["sourcepackagereleaseID"])
 
     # If there is a requester, check that he has upload permission into
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.
-    for spn in set(sourcepackagenames):
-        package = series.getSourcePackage(spn)
-        destination_component = package.latest_published_component
+    sourcepackagenames = [
+        source.sourcepackagerelease.sourcepackagename for source in sources]
+    if series is None:
+        # Use each source's series as the destination for that source.
+        series_iter = map(attrgetter("distroseries"), sources)
+    else:
+        series_iter = repeat(series)
+    for spn, dest_series in set(zip(sourcepackagenames, series_iter)):
+        # XXX cjwatson 20120630: We should do a proper ancestry check
+        # instead of simply querying for publications in any pocket.
+        # Unfortunately there are currently at least three different
+        # implementations of ancestry lookup:
+        # NascentUpload.getSourceAncestry,
+        # PackageUploadSource.getSourceAncestryForDiffs, and
+        # PublishingSet.getNearestAncestor, none of which is obviously
+        # correct here.  Instead of adding a fourth, we should consolidate
+        # these.
+        ancestries = archive.getPublishedSources(
+            name=spn.name, exact_match=True, status=active_publishing_status,
+            distroseries=dest_series)
+        try:
+            destination_component = ancestries[0].component
+        except IndexError:
+            destination_component = None
 
         # If destination_component is not None, make sure the person
         # has upload permission for this component.  Otherwise, any
         # upload permission on this archive will do.
         strict_component = destination_component is not None
         reason = archive.checkUpload(
-            person, series, spn, destination_component, pocket,
+            person, dest_series, spn, destination_component, pocket,
             strict_component=strict_component)
 
         if reason is not None:
@@ -464,8 +492,7 @@ class CopyChecker:
         """
         if check_permissions:
             check_copy_permissions(
-                person, self.archive, series, pocket,
-                [source.sourcepackagerelease.sourcepackagename])
+                person, self.archive, series, pocket, [source])
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(
@@ -619,7 +646,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         try:
             copy_checker.checkCopy(
                 source, destination_series, pocket, person, check_permissions)
-        except CannotCopy, reason:
+        except CannotCopy as reason:
             errors.append("%s (%s)" % (source.displayname, reason))
             continue
 
@@ -700,7 +727,6 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                                 "Re-uploaded %s to librarian" %
                                 new_file.filename)
 
-
         overrides_index += 1
         copies.extend(sub_copies)
 
@@ -745,6 +771,9 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
     """
+    from lp.soyuz.scripts.processaccepted import (
+        close_bugs_for_sourcepublication)
+
     copies = []
     custom_files = []
 
@@ -804,7 +833,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # we have to send these through the upload queue.
         custom_copier = CustomUploadsCopier(series, target_pocket=pocket)
         for custom in custom_files:
-            custom_copier.copyUpload(custom)
+            if custom_copier.isCopyable(custom):
+                custom_copier.copyUpload(custom)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
@@ -1037,7 +1067,7 @@ class PackageCopier(SoyuzScript):
                 self.options.include_binaries, allow_delayed_copies=False,
                 check_permissions=False, unembargo=self.options.unembargo,
                 logger=self.logger)
-        except CannotCopy, error:
+        except CannotCopy as error:
             self.logger.error(str(error))
             return []
 
@@ -1080,74 +1110,3 @@ class PackageCopier(SoyuzScript):
             raise SoyuzScriptError(
                 "Can not sync between the same locations: '%s' to '%s'" % (
                 self.location, self.destination))
-
-
-class UnembargoSecurityPackage(PackageCopier):
-    """`SoyuzScript` that unembargoes security packages and their builds.
-
-    Security builds are done in the ubuntu-security private PPA.
-    When they are ready to be unembargoed, this script will copy
-    them from the PPA to the Ubuntu archive and re-upload any files
-    from the restricted librarian into the non-restricted one.
-
-    This script simply wraps up PackageCopier with some nicer options.
-
-    An assumption is made, to reduce the number of command line options,
-    that packages are always copied between the same distroseries.  The user
-    can, however, select which target pocket to unembargo into.  This is
-    useful to the security team when there are major version upgrades
-    and they want to stage it through -proposed first for testing.
-    """
-
-    usage = ("%prog [-d <distribution>] [-s <suite>] [--ppa <private ppa>] "
-             "<package(s)>")
-    description = ("Unembargo packages in a private PPA by copying to the "
-                   "specified location and re-uploading any files to the "
-                   "unrestricted librarian.")
-
-    def add_my_options(self):
-        """Add -d, -s, dry-run and confirmation options."""
-        SoyuzScript.add_distro_options(self)
-        SoyuzScript.add_transaction_options(self)
-
-        self.parser.add_option(
-            "-p", "--ppa", dest="archive_owner_name",
-            default="ubuntu-security", action="store",
-            help="Private PPA owner's name.")
-
-        self.parser.add_option(
-            "--ppa-name", dest="archive_name",
-            default="ppa", action="store",
-            help="Private PPA name.")
-
-    def setUpCopierOptions(self):
-        """Set up options needed by PackageCopier."""
-        # Set up the options for PackageCopier that are needed in addition
-        # to the ones that this class sets up.
-        self.options.to_partner = False
-        self.options.to_ppa = False
-        self.options.partner_archive = None
-        self.options.include_binaries = True
-        self.options.unembargo = True
-        self.options.to_distribution = self.options.distribution_name
-        # The PackageCopier parent class uses options.suite as the source
-        # suite, so we need to override it to remove the pocket since PPAs
-        # are pocket-less.
-        self.options.to_suite = self.options.suite
-        self.options.suite = self.options.suite.split("-")[0]
-        self.options.version = None
-        self.options.component = None
-
-    def mainTask(self):
-        """Invoke PackageCopier to copy the package(s) and re-upload files."""
-        self.setUpCopierOptions()
-
-        # Generate the location for PackageCopier after overriding the
-        # options.
-        self.setupLocation()
-
-        # Invoke the package copy operation.
-        copies = PackageCopier.mainTask(self)
-
-        # Return this for the benefit of the test suite.
-        return copies

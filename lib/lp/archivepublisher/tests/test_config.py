@@ -48,6 +48,7 @@ class TestGetPubConfig(TestCaseWithFactory):
             archiveroot + "-germinate", primary_config.germinateroot)
         self.assertEqual(
             self.root + "/ubuntutest-temp", primary_config.temproot)
+        self.assertEqual(archiveroot + "-uefi", primary_config.uefiroot)
 
     def test_partner_config(self):
         # Partner archive configuration is correct.
@@ -69,6 +70,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertIsNone(partner_config.germinateroot)
         self.assertEqual(
             self.root + "/ubuntutest-temp", partner_config.temproot)
+        self.assertEqual(archiveroot + "-uefi", partner_config.uefiroot)
 
     def test_debug_config(self):
         # The publisher configuration for DEBUG archives points to
@@ -88,6 +90,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertIsNone(debug_config.miscroot)
         self.assertIsNone(debug_config.germinateroot)
         self.assertEqual(self.root + "/ubuntutest-temp", debug_config.temproot)
+        self.assertEqual(archiveroot + "-uefi", debug_config.uefiroot)
 
     def test_copy_config(self):
         # In the case of copy archives (used for rebuild testing) the
@@ -109,6 +112,7 @@ class TestGetPubConfig(TestCaseWithFactory):
         self.assertEqual(
             archiveroot + "-germinate", copy_config.germinateroot)
         self.assertEqual(archiveroot + "-temp", copy_config.temproot)
+        self.assertIsNone(copy_config.uefiroot)
 
 
 class TestGetPubConfigPPA(TestCaseWithFactory):
@@ -144,6 +148,7 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         self.assertIsNone(self.ppa_config.germinateroot)
         self.assertEqual(
             "/var/tmp/archive/ubuntutest-temp", self.ppa_config.temproot)
+        self.assertIsNone(self.ppa_config.uefiroot)
 
     def test_private_ppa_separate_root(self):
         # Private PPAs are published to a different location.
@@ -172,3 +177,4 @@ class TestGetPubConfigPPA(TestCaseWithFactory):
         self.assertIsNone(p3a_config.germinateroot)
         self.assertEqual(
             "/var/tmp/archive/ubuntutest-temp", p3a_config.temproot)
+        self.assertIsNone(p3a_config.uefiroot)

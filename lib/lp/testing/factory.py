@@ -1441,9 +1441,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 product=None, initial_comment=None,
                                 source_branch=None, preview_diff=None,
                                 date_created=None, description=None,
-                                reviewer=None):
+                                reviewer=None, merged_revno=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
+            target_branch = removeSecurityProxy(target_branch)
             target = target_branch.target
         elif source_branch is not None:
             target = source_branch.target
@@ -1475,6 +1476,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
+        unsafe_proposal.merged_revno = merged_revno
         if preview_diff is not None:
             unsafe_proposal.preview_diff = preview_diff
         if (set_state is None or
@@ -1638,8 +1640,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id=None, sequence=None,
+    def makeBranchRevision(self, branch=None, revision_id=None, sequence=None,
                            parent_ids=None, revision_date=None):
+        if branch is None:
+            branch = self.makeBranch()
+        else:
+            branch = removeSecurityProxy(branch)
         revision = self.makeRevision(
             rev_id=revision_id, parent_ids=parent_ids,
             revision_date=revision_date)
@@ -3495,7 +3501,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBuildPackageUpload(self, distroseries=None, pocket=None,
                                binarypackagename=None,
-                               source_package_release=None):
+                               source_package_release=None, component=None):
         """Make a `PackageUpload` with a `PackageUploadBuild` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
@@ -3506,7 +3512,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_package_release=source_package_release, pocket=pocket)
         upload.addBuild(build)
         self.makeBinaryPackageRelease(
-            binarypackagename=binarypackagename, build=build)
+            binarypackagename=binarypackagename, build=build,
+            component=component)
         return upload
 
     def makeCustomPackageUpload(self, distroseries=None, pocket=None,

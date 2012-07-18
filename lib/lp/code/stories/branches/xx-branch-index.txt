@@ -407,7 +407,7 @@ The stacked branch is initially public:
     >>> browser.open(url)
     >>> content = find_tag_by_id(browser.contents, 'document')
     >>> print extract_text(find_tag_by_id(content, 'privacy'))
-    This branch is public
+    This branch contains Public information...
 
 Navigation Context
 ..................

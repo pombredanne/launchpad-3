@@ -8,7 +8,7 @@ __metaclass__ = type
 
 
 __all__ = [
-    'RemoveBugSubscriptionsJob',
+    'RemoveArtifactSubscriptionsJob',
     ]
 
 import contextlib
@@ -41,18 +41,26 @@ from zope.interface import (
     implements,
     )
 
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IBugSet,
+    )
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtaskflat import BugTaskFlat
-from lp.bugs.model.bugtasksearch import (
-    get_bug_privacy_filter_terms,
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.model.branch import (
+    Branch,
+    get_branch_privacy_filter,
     )
+from lp.code.model.branchsubscription import BranchSubscription
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sharingjob import (
-    IRemoveBugSubscriptionsJob,
-    IRemoveBugSubscriptionsJobSource,
+    IRemoveArtifactSubscriptionsJob,
+    IRemoveArtifactSubscriptionsJobSource,
     ISharingJob,
     ISharingJobSource,
     )
@@ -84,17 +92,18 @@ class SharingJobType(DBEnumeratedType):
         grant (either direct or indirect via team membership).
         """)
 
-    REMOVE_BUG_SUBSCRIPTIONS = DBItem(1, """
-        Remove subscriptions for users who can no longer access bugs.
+    REMOVE_ARTIFACT_SUBSCRIPTIONS = DBItem(1, """
+        Remove subscriptions for users who can no longer access artifacts.
 
-        This job removes subscriptions to a bug when access is
-        no longer possible because the subscriber no longer has an access
-        grant (either direct or indirect via team membership).
+        This job removes subscriptions to an artifact (such as a bug or
+        branch) when access is no longer possible because the subscriber
+        no longer has an access grant (either direct or indirect via team
+        membership).
         """)
 
 
 class SharingJob(StormBase):
-    """Base class for jobs related to branch merge proposals."""
+    """Base class for jobs related to sharing."""
 
     implements(ISharingJob)
 
@@ -240,30 +249,38 @@ class SharingJobDerived(BaseRunnableJob):
         return vars
 
 
-class RemoveBugSubscriptionsJob(SharingJobDerived):
-    """See `IRemoveBugSubscriptionsJob`."""
+class RemoveArtifactSubscriptionsJob(SharingJobDerived):
+    """See `IRemoveArtifactSubscriptionsJob`."""
 
-    implements(IRemoveBugSubscriptionsJob)
-    classProvides(IRemoveBugSubscriptionsJobSource)
-    class_job_type = SharingJobType.REMOVE_BUG_SUBSCRIPTIONS
+    implements(IRemoveArtifactSubscriptionsJob)
+    classProvides(IRemoveArtifactSubscriptionsJobSource)
+    class_job_type = SharingJobType.REMOVE_ARTIFACT_SUBSCRIPTIONS
 
-    config = config.IRemoveBugSubscriptionsJobSource
+    config = config.IRemoveArtifactSubscriptionsJobSource
 
     @classmethod
-    def create(cls, requestor, bugs=None, grantee=None, pillar=None,
+    def create(cls, requestor, artifacts=None, grantee=None, pillar=None,
                information_types=None):
-        """See `IRemoveBugSubscriptionsJob`."""
+        """See `IRemoveArtifactSubscriptionsJob`."""
 
-        bug_ids = [bug.id for bug in bugs or []]
+        bug_ids = []
+        branch_ids = []
+        if artifacts:
+            for artifact in artifacts:
+                if IBug.providedBy(artifact):
+                    bug_ids.append(artifact.id)
+                elif IBranch.providedBy(artifact):
+                    branch_ids.append(artifact.id)
         information_types = [
             info_type.value for info_type in information_types or []
         ]
         metadata = {
             'bug_ids': bug_ids,
+            'branch_ids': branch_ids,
             'information_types': information_types,
             'requestor.id': requestor.id
         }
-        return super(RemoveBugSubscriptionsJob, cls).create(
+        return super(RemoveArtifactSubscriptionsJob, cls).create(
             pillar, grantee, metadata)
 
     @property
@@ -276,13 +293,19 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
 
     @property
     def bug_ids(self):
-        if not 'bug_ids' in self.metadata:
-            return []
-        return self.metadata['bug_ids']
+        return self.metadata.get('bug_ids', [])
 
     @property
     def bugs(self):
         return getUtility(IBugSet).getByNumbers(self.bug_ids)
+
+    @property
+    def branch_ids(self):
+        return self.metadata.get('branch_ids', [])
+
+    @property
+    def branches(self):
+        return [getUtility(IBranchLookup).get(id) for id in self.branch_ids]
 
     @property
     def information_types(self):
@@ -308,6 +331,7 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
             'information_types': [t.name for t in self.information_types],
             'requestor': self.requestor.name,
             'bug_ids': self.bug_ids,
+            'branch_ids': self.branch_ids,
             'pillar': getattr(self.pillar, 'name', None),
             'grantee': getattr(self.grantee, 'name', None)
             }
@@ -316,40 +340,65 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
                 '%s=%s' % (k, v) for (k, v) in sorted(info.items()) if v))
 
     def run(self):
-        """See `IRemoveBugSubscriptionsJob`."""
-
+        """See `IRemoveArtifactSubscriptionsJob`."""
         logger = logging.getLogger()
         logger.info(self.getOperationDescription())
 
-        # Find all bug subscriptions for which the subscriber cannot see the
-        # bug.
-        invisible_filter = (
-            Not(Or(*get_bug_privacy_filter_terms(BugSubscription.person_id))))
-        filters = [invisible_filter]
+        bug_filters = []
+        branch_filters = []
 
+        if self.branch_ids:
+            branch_filters.append(Branch.id.is_in(self.branch_ids))
         if self.bug_ids:
-            filters.append(BugTaskFlat.bug_id.is_in(self.bug_ids))
+            bug_filters.append(BugTaskFlat.bug_id.is_in(self.bug_ids))
         else:
             if self.information_types:
-                filters.append(
-                    BugTaskFlat.information_type.is_in(self.information_types))
+                bug_filters.append(
+                    BugTaskFlat.information_type.is_in(
+                        self.information_types))
+                branch_filters.append(
+                    Branch.information_type.is_in(self.information_types))
             if self.product:
-                filters.append(
+                bug_filters.append(
                     BugTaskFlat.product == self.product)
+                branch_filters.append(Branch.product == self.product)
             if self.distro:
-                filters.append(
+                bug_filters.append(
                     BugTaskFlat.distribution == self.distro)
+                branch_filters.append(Branch.distribution == self.distro)
 
         if self.grantee:
-            filters.append(
+            bug_filters.append(
                 In(BugSubscription.person_id,
                     Select(
                         TeamParticipation.personID,
                         where=TeamParticipation.team == self.grantee)))
-        subscriptions = IStore(BugSubscription).using(
-            BugSubscription,
-            Join(BugTaskFlat, BugTaskFlat.bug_id == BugSubscription.bug_id)
-            ).find(BugSubscription, *filters).config(distinct=True)
-        for sub in subscriptions:
-            sub.bug.unsubscribe(
-                sub.person, self.requestor, ignore_permissions=True)
+            branch_filters.append(
+                In(BranchSubscription.personID,
+                    Select(
+                        TeamParticipation.personID,
+                        where=TeamParticipation.team == self.grantee)))
+
+        if bug_filters:
+            bug_filters.append(Not(
+                Or(*get_bug_privacy_filter_terms(
+                    BugSubscription.person_id))))
+            bug_subscriptions = IStore(BugSubscription).using(
+                BugSubscription,
+                Join(BugTaskFlat,
+                    BugTaskFlat.bug_id == BugSubscription.bug_id)
+                ).find(BugSubscription, *bug_filters).config(distinct=True)
+            for sub in bug_subscriptions:
+                sub.bug.unsubscribe(
+                    sub.person, self.requestor, ignore_permissions=True)
+        if branch_filters:
+            branch_filters.append(Not(
+                Or(*get_branch_privacy_filter(BranchSubscription.personID))))
+            branch_subscriptions = IStore(BranchSubscription).using(
+                BranchSubscription,
+                Join(Branch, Branch.id == BranchSubscription.branchID)
+                ).find(BranchSubscription, *branch_filters).config(
+                    distinct=True)
+            for sub in branch_subscriptions:
+                sub.branch.unsubscribe(
+                    sub.person, self.requestor, ignore_permissions=True)

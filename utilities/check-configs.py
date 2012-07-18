@@ -77,7 +77,7 @@ zconfig_overrides are passed directly to ZConfig.loadConfig().
             try:
                 root, handlers = ZConfig.loadConfig(
                     zconfig_schema, config, arguments)
-            except ZConfig.ConfigurationSyntaxError, error:
+            except ZConfig.ConfigurationSyntaxError as error:
                 if options.verbosity > 2:
                     traceback.print_exc()
                 elif options.verbosity > 1:
@@ -90,7 +90,7 @@ zconfig_overrides are passed directly to ZConfig.loadConfig().
             lazr_config = lazr_schema.load(config)
             try:
                 lazr_config.validate()
-            except ConfigErrors, error:
+            except ConfigErrors as error:
                 if options.verbosity > 2:
                     messages = '\n'.join([str(er) for er in error.errors])
                     print messages

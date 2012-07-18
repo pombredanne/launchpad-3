@@ -128,7 +128,6 @@ from lp.testing.dbuser import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import (
     AppServerLayer,
     CeleryJobLayer,
@@ -238,13 +237,10 @@ class TestBugTaskCreation(TestCaseWithFactory):
         bug = self.factory.makeBug(
             information_type=InformationType.USERDATA)
 
-        # There are also transitional triggers that do this. Disable
-        # them temporarily so we can be sure the application side works.
-        with disable_trigger_fixture():
-            with admin_logged_in():
-                old_product = bug.default_bugtask.product
-                getUtility(IBugTaskSet).createManyTasks(
-                    bug, bug.owner, [new_product])
+        with admin_logged_in():
+            old_product = bug.default_bugtask.product
+            getUtility(IBugTaskSet).createManyTasks(
+                bug, bug.owner, [new_product])
 
         expected_policies = getUtility(IAccessPolicySource).find([
             (new_product, InformationType.USERDATA),
@@ -2205,11 +2201,8 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         self.assertContentEqual(
             expected_policies, get_policies_for_artifact(bug))
 
-        # There are also transitional triggers that do this. Disable
-        # them temporarily so we can be sure the application side works.
-        with disable_trigger_fixture():
-            with admin_logged_in():
-                task.delete()
+        with admin_logged_in():
+            task.delete()
 
         expected_policies = getUtility(IAccessPolicySource).find([
             (old_product, InformationType.USERDATA),
@@ -3286,12 +3279,9 @@ class TestTransitionToTarget(TestCaseWithFactory):
         new_product = self.factory.makeProduct()
         bug = self.factory.makeBug(information_type=InformationType.USERDATA)
 
-        # There are also transitional triggers that do this. Disable
-        # them temporarily so we can be sure the application side works.
-        with disable_trigger_fixture():
-            with admin_logged_in():
-                bug.default_bugtask.transitionToTarget(
-                    new_product, new_product.owner)
+        with admin_logged_in():
+            bug.default_bugtask.transitionToTarget(
+                new_product, new_product.owner)
 
         [expected_policy] = getUtility(IAccessPolicySource).find(
             [(new_product, InformationType.USERDATA)])
@@ -3322,29 +3312,17 @@ class TestTransitionToTarget(TestCaseWithFactory):
             [sp, sp.distribution_sourcepackage, other_distro])
 
 
-def disable_trigger_fixture():
-    # XXX 2012-05-22 wallyworld bug=1002596
-    # No need to use this fixture when triggers are removed.
-    return DisableTriggerFixture(
-            {'bugsubscription':
-                 'bugsubscription_mirror_legacy_access_t',
-             'bug': 'bug_mirror_legacy_access_t',
-             'bugtask': 'bugtask_mirror_legacy_access_t',
-        })
-
-
 class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
-    """Test that various bug transitions invoke RemoveBugSubscribers job."""
+    """Test that various bug transitions invoke RemoveArtifactSubscribers
+    job."""
 
     layer = CeleryJobLayer
 
     def setUp(self):
         self.useFixture(FeatureFixture({
             'disclosure.unsubscribe_jobs.enabled': 'true',
-            'jobs.celery.enabled_classes':
-                'RemoveBugSubscriptionsJob',
+            'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
-        self.useFixture(disable_trigger_fixture())
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
 
     def _assert_bug_change_unsubscribes(self, change_callback,
@@ -3401,7 +3379,7 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
         # longer see the bug.
         def change_information_type(bug, owner):
             bug.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, owner)
+                InformationType.PRIVATESECURITY, owner)
 
         self._assert_bug_change_unsubscribes(change_information_type, True)
 

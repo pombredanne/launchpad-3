@@ -62,7 +62,7 @@ def make_config_test(config_file, description):
             config = schema.load(config_file)
             try:
                 config.validate()
-            except ConfigErrors, error:
+            except ConfigErrors as error:
                 message = '\n'.join([str(e) for e in error.errors])
                 self.fail(message)
     # Hack the config file name into the class name.

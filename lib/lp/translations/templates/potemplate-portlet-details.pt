@@ -7,9 +7,6 @@
 <div class="portlet" id="portlet-details">
 
     <h2>Template details</h2>
-
-    <div class="portletBody">
-        <div class="portletContent">
             <span tal:replace="view/num_messages" /><br />
             <img alt="" src="/@@/language" />
             <span tal:replace="context/language_count">421</span>
@@ -46,7 +43,5 @@
               POTemplate Description
             </span>
             <i tal:condition="not: context/description">None given</i><br/>
-        </div>
-    </div>
 </div>
 </tal:root>

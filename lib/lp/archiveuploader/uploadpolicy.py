@@ -317,6 +317,14 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
             raise AssertionError(
                 "Upload is not sourceful, binaryful or mixed.")
 
+    def autoApprove(self, upload):
+        """Check that all custom files in this upload can be auto-approved."""
+        if upload.binaryful:
+            for custom_file in upload.changes.custom_files:
+                if not custom_file.autoApprove():
+                    return False
+        return True
+
 
 class SyncUploadPolicy(AbstractUploadPolicy):
     """This policy is invoked when processing sync uploads."""

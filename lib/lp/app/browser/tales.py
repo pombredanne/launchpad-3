@@ -322,7 +322,7 @@ class MenuAPI:
             except NoCanonicalUrl:
                 menu = None
             return self._getMenuLinksAndAttributes(menu)
-        except AttributeError, e:
+        except AttributeError as e:
             # If this method gets an AttributeError, we rethrow it as a
             # AssertionError. Otherwise, zope will hide the root cause
             # of the error and just say that "navigation" can't be traversed.
@@ -2721,8 +2721,8 @@ class CSSFormatter:
     """A tales path adapter used for CSS rules.
 
     Using an expression like this:
-        value/css:select/visible/unseen
-    You will get "visible" if value evaluates to true, and "unseen" if the
+        value/css:select/visible/hidden
+    You will get "visible" if value evaluates to true, and "hidden" if the
     value evaluates to false.
     """
 

@@ -156,7 +156,7 @@ class Provides(Matcher):
             if not verifyObject(self.interface, matchee):
                 passed = False
         except (BrokenImplementation, BrokenMethodImplementation,
-                DoesNotImplement), e:
+                DoesNotImplement) as e:
             passed = False
             extra = str(e)
         if not passed:

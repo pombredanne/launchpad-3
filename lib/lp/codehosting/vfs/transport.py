@@ -135,7 +135,7 @@ class AsyncVirtualTransport(Transport):
             method = getattr(transport, method_name)
             try:
                 return method(path, *args, **kwargs)
-            except BaseException, e:
+            except BaseException as e:
                 # It's much cheaper to explicitly construct a Failure than to
                 # let Deferred build automatically, because the automatic one
                 # will capture the traceback and perform an expensive

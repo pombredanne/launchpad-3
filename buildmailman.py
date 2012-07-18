@@ -79,7 +79,7 @@ def build_mailman():
     # I think Linux does not ignore it -- better safe than sorry).
     try:
         os.makedirs(var_dir)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
     os.chown(var_dir, uid, gid)
@@ -190,7 +190,7 @@ def build_mailman():
     # deactivated lists.
     try:
         os.mkdir(os.path.join(Mailman.mm_cfg.VAR_PREFIX, 'backups'))
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 

@@ -43,7 +43,7 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sharingjob import (
-    IRemoveBugSubscriptionsJobSource,
+    IRemoveArtifactSubscriptionsJobSource,
     )
 from lp.registry.interfaces.teammembership import (
     ACTIVE_STATES,
@@ -393,7 +393,7 @@ class TeamMembership(SQLBase):
                 # A person has left the team so they may no longer have access
                 # to some artifacts shared with the team. We need to run a job
                 # to remove any subscriptions to such artifacts.
-                getUtility(IRemoveBugSubscriptionsJobSource).create(
+                getUtility(IRemoveArtifactSubscriptionsJobSource).create(
                     user, grantee=self.person)
         else:
             # Changed from an inactive state to another inactive one, so no

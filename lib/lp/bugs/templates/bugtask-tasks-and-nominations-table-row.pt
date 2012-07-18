@@ -187,7 +187,7 @@
     <tr
       tal:attributes="id data/form_row_id"
       tal:condition="data/expandable"
-      class="bugtask-collapsible-content unseen"
+      class="bugtask-collapsible-content hidden"
     >
      <td colspan="7" tal:content="structure view/edit_view" />
     </tr>

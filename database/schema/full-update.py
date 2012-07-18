@@ -52,6 +52,7 @@ def run_upgrade(options, log):
     # Fake expected command line arguments and global log
     options.commit = True
     options.partial = False
+    options.ignore_slony = False
     upgrade.options = options
     upgrade.log = log
     # Invoke the database schema upgrade process.
@@ -60,7 +61,7 @@ def run_upgrade(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
-    except SystemExit, x:
+    except SystemExit as x:
         log.fatal("upgrade.py failed [%s]", x)
 
 
@@ -83,12 +84,19 @@ def run_security(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
-    except SystemExit, x:
+    except SystemExit as x:
         log.fatal("security.py failed [%s]", x)
 
 
 def main():
     parser = OptionParser()
+
+    # Unfortunatly, we can't reliably detect streaming replicas so
+    # we pass them in on the command line.
+    parser.add_option(
+        '--standby', dest='standbys', default=[], action="append",
+        metavar='CONN_STR',
+        help="libpq connection string to a hot standby database")
 
     # Add all the command command line arguments.
     db_options(parser)
@@ -112,7 +120,7 @@ def main():
 
     # We initially ignore open connections, as they will shortly be
     # killed.
-    if not NoConnectionCheckPreflight(log).check_all():
+    if not NoConnectionCheckPreflight(log, options.standbys).check_all():
         return 99
 
     #
@@ -136,7 +144,7 @@ def main():
             return pgbouncer_rc
         pgbouncer_down = True
 
-        if not KillConnectionsPreflight(log).check_all():
+        if not KillConnectionsPreflight(log, options.standbys).check_all():
             return 100
 
         log.info("Preflight check succeeded. Starting upgrade.")
@@ -163,7 +171,7 @@ def main():
 
         # We will start seeing connections as soon as pgbouncer is
         # reenabled, so ignore them here.
-        if not NoConnectionCheckPreflight(log).check_all():
+        if not NoConnectionCheckPreflight(log, options.standbys).check_all():
             return 101
 
         log.info("All good. All done.")

@@ -72,7 +72,6 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -176,7 +175,6 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivedependency import ArchiveDependency
-from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -1641,11 +1639,12 @@ class Archive(SQLBase):
         series = self._text_to_series(to_series)
         # Upload permission checks, this will raise CannotCopy as
         # necessary.
-        sourcepackagename = getUtility(ISourcePackageNameSet)[source_name]
-        check_copy_permissions(
-            person, self, series, pocket, [sourcepackagename])
+        source = self._validateAndFindSource(
+            from_archive, source_name, version)
+        if series is None:
+            series = source.distroseries
+        check_copy_permissions(person, self, series, pocket, [source])
 
-        self._validateAndFindSource(from_archive, source_name, version)
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.create(
             package_name=source_name, source_archive=from_archive,
@@ -1667,20 +1666,10 @@ class Archive(SQLBase):
             raise CannotCopy(
                 "None of the supplied package names are published")
 
-        # Bulk-load the sourcepackagereleases so that the list
-        # comprehension doesn't generate additional queries. The
-        # sourcepackagenames themselves will already have been loaded when
-        # generating the list of source publications in "sources".
-        load_related(
-            SourcePackageRelease, sources, ["sourcepackagereleaseID"])
-        sourcepackagenames = [source.sourcepackagerelease.sourcepackagename
-                              for source in sources]
-
         # Now do a mass check of permissions.
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
-        check_copy_permissions(
-            person, self, series, pocket, sourcepackagenames)
+        check_copy_permissions(person, self, series, pocket, sources)
 
         # If we get this far then we can create the PackageCopyJob.
         copy_tasks = []
@@ -1690,14 +1679,14 @@ class Archive(SQLBase):
                 source.sourcepackagerelease.version,
                 from_archive,
                 self,
+                series if series is not None else source.distroseries,
                 PackagePublishingPocket.RELEASE
                 )
             copy_tasks.append(task)
 
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.createMultiple(
-            series, copy_tasks, person,
-            copy_policy=PackageCopyPolicy.MASS_SYNC,
+            copy_tasks, person, copy_policy=PackageCopyPolicy.MASS_SYNC,
             include_binaries=include_binaries, sponsored=sponsored,
             unembargo=unembargo)
 
@@ -1823,6 +1812,7 @@ class Archive(SQLBase):
     def newSubscription(self, subscriber, registrant, date_expires=None,
                         description=None):
         """See `IArchive`."""
+        from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 
         # We do not currently allow subscriptions for non-private archives:
         if self.private is False:

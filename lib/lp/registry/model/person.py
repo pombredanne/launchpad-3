@@ -141,7 +141,10 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.code.interfaces.branchcollection import IBranchCollection
+from lp.code.interfaces.branchcollection import (
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -2273,8 +2276,7 @@ class Person(
         else:
             return True
 
-    @property
-    def is_merge_pending(self):
+    def isMergePending(self):
         """See `IPublicPerson`."""
         return not getUtility(
             IPersonMergeJobSource).find(from_person=self).is_empty()
@@ -3381,7 +3383,6 @@ class PersonSet:
         person = getUtility(IPersonSet).getByEmail(
                     email,
                     filter_status=False)
-        
         if person is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
@@ -4188,6 +4189,9 @@ class PersonSet:
                                    ArchiveStatus.DELETING]) is not None:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
+        from_person_branches = getUtility(IAllBranches).ownedBy(from_person)
+        if from_person_branches.isPrivate().count() != 0:
+            raise AssertionError('from_person has private branches.')
         if from_person.is_team:
             self._purgeUnmergableTeamArtifacts(
                 from_person, to_person, reviewer)

@@ -8,11 +8,7 @@ Foo Bar, an LP admin, is about to make bug #2 private.
 Foo Bar is not Cc'd on this bug, but is able to set the bug private
 anyway, because he is an admin.
 
-    >>> browser.open(
-    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
-    ...     "+bug/2/+secrecy")
-    >>> browser.getControl("This bug report should be private").selected = (
-    ...     True)
+    >>> browser.getControl("Private", index=1).selected = True
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
@@ -22,7 +18,7 @@ When we go back to the secrecy form, the previously set value is pre-selected.
     >>> browser.open(
     ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
     ...     "+bug/2/+secrecy")
-    >>> browser.getControl("This bug report should be private").selected
+    >>> browser.getControl("Private", index=1).selected
     True
 
 Foo Bar files a security (private) bug on Ubuntu Linux. He gets
@@ -38,16 +34,10 @@ will be subscribed instead.
     ...     "a private bug")
     >>> browser.getControl('Continue').click()
 
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...The maintainer of...Ubuntu...Ubuntu Team...will be notified...
-    ...
-
     >>> browser.getControl(name="packagename_option").value = ["choose"]
     >>> browser.getControl(name="field.packagename").value = "evolution"
     >>> browser.getControl(name="field.comment").value = "secret info"
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> bug_id = browser.url.split("/")[-1]
@@ -95,16 +85,10 @@ subscriptions differ.
     ...     "a private bug")
     >>> browser.getControl('Continue').click()
 
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...The security contact for...Ubuntu...Sample Person...will be notified...
-    ...
-
     >>> browser.getControl(name="packagename_option").value = ["choose"]
     >>> browser.getControl(name="field.packagename").value = "evolution"
     >>> browser.getControl(name="field.comment").value = "secret info"
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> other_bug_id = browser.url.split("/")[-1]

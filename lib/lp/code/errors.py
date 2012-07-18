@@ -8,8 +8,6 @@ __all__ = [
     'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
-    'BranchCannotBePrivate',
-    'BranchCannotBePublic',
     'BranchCannotChangeInformationType',
     'BranchCreationException',
     'BranchCreationForbidden',
@@ -146,14 +144,6 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
-
-
-class BranchCannotBePublic(Exception):
-    """The branch cannot be made public."""
-
-
-class BranchCannotBePrivate(Exception):
-    """The branch cannot be made private."""
 
 
 class BranchCannotChangeInformationType(Exception):

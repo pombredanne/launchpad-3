@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -145,7 +145,9 @@ class PackageDiff(SQLBase):
     @property
     def private(self):
         """See `IPackageDiff`."""
-        return self.to_source.upload_archive.private
+        to_source = self.to_source
+        archives = [to_source.upload_archive] + to_source.published_archives
+        return all(archive.private for archive in archives)
 
     def _countDeletedLFAs(self):
         """How many files associated with either source package have been

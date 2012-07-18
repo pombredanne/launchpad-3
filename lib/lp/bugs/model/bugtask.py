@@ -96,6 +96,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
@@ -119,7 +120,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
+from lp.registry.interfaces.sharingjob import (
+    IRemoveArtifactSubscriptionsJobSource,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
@@ -381,7 +384,7 @@ def validate_target(bug, target, retarget_existing=True):
             try:
                 target.distribution.guessPublishedSourcePackageName(
                     target.sourcepackagename.name)
-            except NotFoundError, e:
+            except NotFoundError as e:
                 raise IllegalTarget(e[0])
 
     if bug.information_type == InformationType.PROPRIETARY:
@@ -1192,7 +1195,7 @@ class BugTask(SQLBase):
             # As a result of the transition, some subscribers may no longer
             # have access to the parent bug. We need to run a job to remove any
             # such subscriptions.
-            getUtility(IRemoveBugSubscriptionsJobSource).create(
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
                 user, [self.bug], pillar=target_before_change)
 
     def updateTargetNameCache(self, newtarget=None):
@@ -1327,8 +1330,11 @@ class BugTask(SQLBase):
             return True
 
         # If you're the owner or a driver, you can change bug details.
+        owner_context = context
+        if IBugTarget.providedBy(context):
+            owner_context = context.pillar
         return (
-            role.isOwner(context.pillar) or role.isOneOfDrivers(context))
+            role.isOwner(owner_context) or role.isOneOfDrivers(context))
 
     @classmethod
     def userHasBugSupervisorPrivilegesContext(cls, context, user):
@@ -1342,9 +1348,12 @@ class BugTask(SQLBase):
         role = IPersonRoles(user)
         # If you have driver privileges, or are the bug supervisor, you can
         # change bug details.
+        supervisor_context = context
+        if IBugTarget.providedBy(context):
+            supervisor_context = context.pillar
         return (
             cls.userHasDriverPrivilegesContext(context, user) or
-            role.isBugSupervisor(context.pillar))
+            role.isBugSupervisor(supervisor_context))
 
     def userHasDriverPrivileges(self, user):
         """See `IBugTask`."""
@@ -1635,7 +1644,7 @@ class BugTaskSet:
             validate_new_target(bug, target)
             pillars.add(target.pillar)
             target_keys.append(bug_target_to_key(target))
-        if bug.information_type == InformationType.UNEMBARGOEDSECURITY:
+        if bug.information_type == InformationType.PUBLICSECURITY:
             for pillar in pillars:
                 if pillar.security_contact:
                     bug.subscribe(pillar.security_contact, owner)

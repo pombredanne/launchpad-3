@@ -193,7 +193,7 @@ description or the commit message.  This uses links when there is no content.
 Ideally the interaction with the links would be encoded as part of the widget
 itself, but that is an exercise left for another yak shaver.
 
-Hiding the widget is done by appending the "unseen" CSS class to the outer
+Hiding the widget is done by appending the "hidden" CSS class to the outer
 tag.
 
     >>> archive.description = None
@@ -201,7 +201,7 @@ tag.
     >>> clear_property_cache(widget)
     >>> print widget()
     <div>
-    <div id="edit-description" class="lazr-multiline-edit unseen">
+    <div id="edit-description" class="lazr-multiline-edit hidden">
     ...
 
 This behaviour can be overridden by setting the "hide_empty" parameter to

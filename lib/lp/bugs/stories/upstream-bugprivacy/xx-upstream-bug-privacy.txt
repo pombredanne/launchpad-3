@@ -7,18 +7,11 @@ contact, the maintainer will be subscribed to the bug instead.
     ...     "this is a newly created private bug")
     >>> browser.getControl("Continue").click()
 
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...The maintainer of...Mozilla Firefox...Sample Person...will be notified...
-    ...
-
     >>> browser.getControl(name="field.title").value = (
     ...     "this is a newly created private bug")
     >>> browser.getControl(name="field.comment").value = (
     ...     "very secret info here")
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
-
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> bug_id = browser.url.split("/")[-1]
@@ -78,16 +71,9 @@ subscribed instead.
     ...     "this is a newly created private bug")
     >>> browser.getControl("Continue").click()
 
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...The security contact for...Mozilla Firefox...Mark Shuttleworth...will be notified...
-    ...
-
     >>> browser.getControl(name="field.comment").value = (
     ...     "very secret info here")
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
-
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> other_bug_id = browser.url.split("/")[-1]

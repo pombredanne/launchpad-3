@@ -47,6 +47,7 @@ __all__ = [
     'valid_remote_bug_url',
     ]
 
+import collections
 import httplib
 
 from lazr.enum import (
@@ -110,6 +111,7 @@ from lp.bugs.interfaces.bugwatch import (
     UnrecognizedBugTrackerURL,
     )
 from lp.bugs.interfaces.hasbug import IHasBug
+from lp.registry.enums import InformationType
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -141,6 +143,12 @@ class BugTaskImportance(DBEnumeratedType):
         The importance of this bug is not known.
         """)
 
+    UNDECIDED = DBItem(5, """
+        Undecided
+
+        Not decided yet. Maybe needs more discussion.
+        """)
+
     CRITICAL = DBItem(50, """
         Critical
 
@@ -169,12 +177,6 @@ class BugTaskImportance(DBEnumeratedType):
         Wishlist
 
         Not a bug. It's an enhancement/new feature.
-        """)
-
-    UNDECIDED = DBItem(5, """
-        Undecided
-
-        Not decided yet. Maybe needs more discussion.
         """)
 
 
@@ -942,6 +944,14 @@ class IBugTaskSearchBase(Interface):
                       'or list of importances.'),
         value_type=IBugTask['importance'],
         required=False)
+    information_type = List(
+        title=_('Information Type'),
+        description=_('Show only bugs with the given information type '
+                      'or list of information types.'),
+        value_type=Choice(
+            title=_('Information Type'),
+            vocabulary=InformationType),
+        required=False)
     assignee = Choice(
         title=_('Assignee'),
         description=_('Person entity assigned for this bug.'),
@@ -1178,7 +1188,8 @@ class BugTaskSearchParams:
                  structural_subscriber=None, modified_since=None,
                  created_since=None, exclude_conjoined_tasks=False, cve=None,
                  upstream_target=None, milestone_dateexpected_before=None,
-                 milestone_dateexpected_after=None, created_before=None):
+                 milestone_dateexpected_after=None, created_before=None,
+                 information_type=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1232,6 +1243,12 @@ class BugTaskSearchParams:
         self.upstream_target = upstream_target
         self.milestone_dateexpected_before = milestone_dateexpected_before
         self.milestone_dateexpected_after = milestone_dateexpected_after
+        if isinstance(information_type, collections.Iterable):
+            self.information_type = set(information_type)
+        elif information_type:
+            self.information_type = set((information_type,))
+        else:
+            self.information_type = None
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1377,7 +1394,7 @@ class BugTaskSearchParams:
                        hardware_is_linked_to_bug=False, linked_branches=None,
                        linked_blueprints=None, structural_subscriber=None,
                        modified_since=None, created_since=None,
-                       created_before=None):
+                       created_before=None, information_type=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1449,6 +1466,7 @@ class BugTaskSearchParams:
         search_params.modified_since = modified_since
         search_params.created_since = created_since
         search_params.created_before = created_before
+        search_params.information_type = information_type
 
         return search_params
 

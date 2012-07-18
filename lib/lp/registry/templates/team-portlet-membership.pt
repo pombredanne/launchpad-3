@@ -13,7 +13,7 @@
     </span>
   </h2>
 
-  <div id="membership-summary" class="portletBody portletContent"
+  <div id="membership-summary"
     style="margin-bottom: 1.5em;">
     <div>
       <div id="membership-counts"
@@ -115,7 +115,7 @@
           });
         "></script>
         <span id="add-member-spinner"
-              class="unseen update-in-progress-message">
+              class="hidden update-in-progress-message">
           Saving...
         </span>
         <tal:add-member replace="structure link/fmt:link-icon" />

@@ -190,7 +190,7 @@ class PrivateEmailCommand(EmailCommand):
                 context.information_type = InformationType.USERDATA
             elif (
                 context.information_type !=
-                InformationType.EMBARGOEDSECURITY):
+                InformationType.PRIVATESECURITY):
                 context.information_type = InformationType.PUBLIC
             return context, current_event
 
@@ -245,7 +245,7 @@ class SecurityEmailCommand(EmailCommand):
 
         if isinstance(context, CreateBugParams):
             if security_related:
-                context.information_type = InformationType.EMBARGOEDSECURITY
+                context.information_type = InformationType.PRIVATESECURITY
             return context, current_event
 
         # Take a snapshot.
@@ -433,7 +433,7 @@ class DuplicateEmailCommand(EmailCommand):
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
-        except ValidationError, error:
+        except ValidationError as error:
             raise EmailProcessingError(error.doc())
 
         context_snapshot = Snapshot(
@@ -592,7 +592,7 @@ class AffectsEmailCommand(EmailCommand):
                 stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
-        except BugTargetNotFound, error:
+        except BugTargetNotFound as error:
             raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
 
