@@ -120,7 +120,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=owner)
         private_stacked_on_branch = self.factory.makeBranch(
             product=product, owner=owner,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         branch = self.factory.makeBranch(
             product=product, owner=owner, stacked_on=private_stacked_on_branch,
             information_type=InformationType.USERDATA)
@@ -147,7 +147,7 @@ class TestBranchSubscriptions(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=owner)
         private_stacked_on_branch = self.factory.makeBranch(
             product=product,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         branch = self.factory.makeBranch(
             product=product, owner=owner,
             stacked_on=private_stacked_on_branch,
