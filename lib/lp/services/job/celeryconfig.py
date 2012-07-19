@@ -36,9 +36,7 @@ def configure(argv):
     """
     result = {}
     CELERY_BEAT_QUEUE = 'celerybeat'
-    celery_queues = {
-        CELERY_BEAT_QUEUE: {'binding_key': CELERY_BEAT_QUEUE}
-        }
+    celery_queues = {}
     queue_names = config.job_runner_queues.queues
     queue_names = queue_names.split(' ')
     for queue_name in queue_names:

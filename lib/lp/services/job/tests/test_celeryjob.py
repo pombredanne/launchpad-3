@@ -74,7 +74,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         """The celerybeat task run_missing_ready does not create a
         result queue."""
         from lazr.jobrunner.celerytask import list_queued
-        job_queue_name = 'job'
+        job_queue_name = 'celerybeat'
         request = self.RunMissingReady().apply_async(
             kwargs={'_no_init': True}, queue=job_queue_name)
         self.assertTrue(request.task_id.startswith('RunMissingReady_'))
@@ -88,7 +88,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # ...and that list_queued() calls do not consume messages.
         self.assertEqual(
             1, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
-        # Wait at most 10 seconds for celeryd to start and process
+        # Wait at most 60 seconds for celeryd to start and process
         # the task.
         with celeryd(job_queue_name):
             wait_until = time() + 60
