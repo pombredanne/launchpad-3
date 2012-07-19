@@ -1053,8 +1053,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(BugTaskStatus.NEW, bugtask280.status)
 
     def test_copying_unembargoes_files(self):
-        # The unembargo flag causes the job to re-upload restricted files to
-        # the public librarian.
+        # The unembargo flag causes the job to unrestrict files.
         self.distroseries.status = SeriesStatus.CURRENT
         target_archive = self.factory.makeArchive(
             self.distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
