@@ -408,10 +408,18 @@ class SharingService:
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         grant_permissions = list(ap_grant_flat.findGranteePermissionsByPolicy(
             all_pillar_policies, [sharee]))
-        if not grant_permissions:
-            return None
-        [sharee] = self.jsonShareeData(grant_permissions)
-        return sharee
+
+        grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
+        invisible_types = [
+            count_info[0].title for count_info in grant_counts
+            if count_info[1] == 0]
+        sharee_entry = None
+        if grant_permissions:
+            [sharee_entry] = self.jsonShareeData(grant_permissions)
+        result = {
+            'sharee_entry': sharee_entry,
+            'invisible_information_types': invisible_types}
+        return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def deletePillarSharee(self, pillar, sharee, user,
@@ -455,6 +463,12 @@ class SharingService:
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             user, artifacts=None, grantee=sharee, pillar=pillar,
             information_types=information_types)
+
+        grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
+        invisible_types = [
+            count_info[0].title for count_info in grant_counts
+            if count_info[1] == 0]
+        return invisible_types
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def revokeAccessGrants(self, pillar, sharee, user, branches=None,
