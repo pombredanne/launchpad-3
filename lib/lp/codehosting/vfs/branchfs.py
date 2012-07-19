@@ -463,16 +463,16 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
         This implementation connects to the database directly.
         """
         deferred = defer.succeed(
-            getUtility(IBranchLookup).getIdAndTrailingPath(
-                virtual_url_fragment))
+            getUtility(IBranchLookup).getByHostingPath(
+                virtual_url_fragment.lstrip('/')))
 
         @no_traceback_failures
-        def process_result((branch_id, trailing)):
-            if branch_id is None:
+        def process_result((branch, trailing)):
+            if branch is None:
                 raise NoSuchFile(virtual_url_fragment)
             else:
                 return self._transport_dispatch.makeTransport(
-                    (BRANCH_TRANSPORT, dict(id=branch_id), trailing[1:]))
+                    (BRANCH_TRANSPORT, dict(id=branch.id), trailing[1:]))
 
         deferred.addCallback(process_result)
         return deferred

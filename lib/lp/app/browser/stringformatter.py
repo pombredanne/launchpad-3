@@ -347,7 +347,6 @@ class FormattersAPI:
             'irc',
             'jabber',
             'apt',
-            'data',
             ]
 
         for base in protocol_bases:
@@ -509,7 +508,7 @@ class FormattersAPI:
     _re_linkify = re.compile(r'''
       (?P<url>
         \b
-        (?:about|gopher|http|https|sftp|news|ftp|mailto|irc|jabber|apt|data)
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|irc|jabber|apt)
         :
         (?:
           (?:

@@ -9,8 +9,6 @@
   <h2>Statistics for template
       "<span tal:replace="context/name">templatename</span>"</h2>
 
-  <div class="portletBody portletContent">
-
     <tal:block repeat="pofile view/requestPoFiles">
       <span tal:replace="pofile/language/englishname">Latin</span>:<br />
       <a tal:attributes="href pofile/fmt:url"
@@ -26,8 +24,6 @@
       </a>
       </li>
     </ul>
-
-  </div>
 
 </div>
 </tal:root>

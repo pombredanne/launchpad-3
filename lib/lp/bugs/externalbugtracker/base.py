@@ -245,7 +245,7 @@ class ExternalBugTracker:
         """
         try:
             return self.urlopen(page, data)
-        except (urllib2.HTTPError, urllib2.URLError), val:
+        except (urllib2.HTTPError, urllib2.URLError) as val:
             raise BugTrackerConnectError(self.baseurl, val)
 
     def _getPage(self, page):

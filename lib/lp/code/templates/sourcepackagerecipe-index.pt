@@ -84,7 +84,7 @@
           <dl id="build_daily">
             <dt>Build schedule:
               <a href="/+help-code/recipe-build-frequency.html" target="help"
-                 class="sprite maybe actionicon"><span class="invisible-link">Tag help</span></a>
+                 class="sprite maybe action-icon">(?)</a>
             </dt>
             <dd tal:content="structure view/daily_build_widget"/>
             <dd
@@ -98,7 +98,7 @@
                       id="field.actions.build" value="Build now" />
               </form>
               <a id="request-daily-build"
-                 class="sprite source-package-recipe js-action unseen"
+                 class="sprite source-package-recipe js-action hidden"
                  tal:attributes="href link/url"
                  tal:content="link/text"/>
             </dd>

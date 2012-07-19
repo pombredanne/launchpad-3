@@ -45,6 +45,13 @@ class ISharingService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
+    def checkPillarAccess(pillar, information_type, person):
+        """Check the person's access to the given pillar and information type.
+
+        :return: True if the user has access to all the pillar's information
+            of that type, False otherwise
+        """
+
     def getSharedArtifacts(pillar, person, user):
         """Return the artifacts shared between the pillar and person.
 
@@ -68,6 +75,32 @@ class ISharingService(IService):
         :param branches: the branches to check for which a person has access.
         :param bugs: the bugs to check for which a person has access.
         :return: a collection of artifacts the person can see.
+        """
+
+    def getInvisibleArtifacts(person, branches=None, bugs=None):
+        """Return the artifacts which are not shared with person.
+
+        Given lists of artifacts, return those a person does not have access to
+        either via a policy grant or artifact grant.
+        * Do not export this method to the API since it could be used to gain
+          access to private information. Internal use only. *
+
+        :param person: the person whose access is being checked.
+        :param branches: the branches to check for which a person has access.
+        :param bugs: the bugs to check for which a person has access.
+        :return: a collection of artifacts the person can not see.
+        """
+
+    def getPeopleWithoutAccess(concrete_artifact, people):
+        """Return the people who cannot access an artifact.
+
+        Given a list of people, return those who do not have access to the
+        specified bug or branch.
+
+        :param concrete_artifact: the bug or branch whose access is being
+            checked.
+        :param people: the people whose access is being checked.
+        :return: a collection of people without access to the artifact.
         """
 
     def getInformationTypes(pillar):
@@ -111,17 +144,17 @@ class ISharingService(IService):
             key_type=Choice(vocabulary=InformationType),
             value_type=Choice(vocabulary=SharingPermission)))
     @operation_for_version('devel')
-    def sharePillarInformation(pillar, sharee, permissions, user):
+    def sharePillarInformation(pillar, sharee, user, permissions):
         """Ensure sharee has the grants for information types on a pillar.
 
         :param pillar: the pillar for which to grant access
         :param sharee: the person or team to grant
+        :param user: the user making the request
         :param permissions: a dict of {InformationType: SharingPermission}
             if SharingPermission is ALL, then create an access policy grant
             if SharingPermission is SOME, then remove any access policy grants
             if SharingPermission is NONE, then remove all grants for the access
             policy
-        :param user: the user making the request
         """
 
     @export_write_operation()
@@ -136,8 +169,8 @@ class ISharingService(IService):
         """Remove a sharee from a pillar.
 
         :param pillar: the pillar from which to remove access
-        :param user: the user making the request
         :param sharee: the person or team to remove
+        :param user: the user making the request
         :param information_types: if None, remove all access, otherwise just
                                    remove the specified access_policies
         """
@@ -152,12 +185,12 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def revokeAccessGrants(pillar, user, sharee, branches=None, bugs=None):
+    def revokeAccessGrants(pillar, sharee, user, branches=None, bugs=None):
         """Remove a sharee's access to the specified artifacts.
 
         :param pillar: the pillar from which to remove access
-        :param user: the user making the request
         :param sharee: the person or team for whom to revoke access
+        :param user: the user making the request
         :param bugs: the bugs for which to revoke access
         :param branches: the branches for which to revoke access
         """
@@ -165,17 +198,18 @@ class ISharingService(IService):
     @export_write_operation()
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        sharee=Reference(IPerson, title=_('Sharee'), required=True),
+        sharees=List(
+            Reference(IPerson, title=_('Sharee'), required=True)),
         bugs=List(
             Reference(schema=IBug), title=_('Bugs'), required=False),
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def ensureAccessGrants(user, sharee, branches=None, bugs=None):
+    def ensureAccessGrants(sharees, user, branches=None, bugs=None):
         """Ensure a sharee has an access grant to the specified artifacts.
 
+        :param sharees: the people or teams for whom to grant access
         :param user: the user making the request
-        :param sharee: the person or team for whom to grant access
         :param bugs: the bugs for which to grant access
         :param branches: the branches for which to grant access
         """

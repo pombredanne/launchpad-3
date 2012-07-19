@@ -71,7 +71,7 @@ a.help {
     border-bottom: 1px dotted #03a;
     cursor: help;
     }
-a.help:hover, a.actionicon:hover {
+a.help:hover, a.action-icon:hover {
     text-decoration: none;
     }
 a.help.icon, a.sprite.maybe.help {
@@ -86,11 +86,6 @@ a.invalid-link {
 img, a img {
     /* No border on images that are links. */
     border: none;
-    }
-body.old-webkit a.sprite:before,
-body.old-webkit a.expander:before {
-    /* Old webkit browsers require a nbsp so sprites render. */
-    content: "\00A0";
     }
 abbr[title], acronym[title] {
     border-bottom: 1px dotted black;

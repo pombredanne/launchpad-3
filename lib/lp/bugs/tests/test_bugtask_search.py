@@ -24,6 +24,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtasksearch import _process_order_by
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -323,6 +324,17 @@ class OnceTests:
             user=None, created_since=one_day_ago)
         self.assertSearchFinds(params, self.bugtasks[1:])
 
+    def test_created_before(self):
+        # Search results can be limited to bugtasks created before a
+        # given time.
+        one_day_ago = self.bugtasks[0].datecreated - timedelta(days=1)
+        two_days_ago = self.bugtasks[0].datecreated - timedelta(days=2)
+        with person_logged_in(self.owner):
+            self.bugtasks[0].datecreated = two_days_ago
+        params = self.getBugTaskSearchParams(
+            user=None, created_before=one_day_ago)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+
     def test_modified_since(self):
         # Search results can be limited to bugs modified after a
         # given time.
@@ -396,6 +408,20 @@ class OnceTests:
         self.assertSearchFinds(params, self.bugtasks[:2])
         params = self.getBugTaskSearchParams(
             user=None, importance=BugTaskImportance.MEDIUM)
+        self.assertSearchFinds(params, [])
+
+    def test_filter_by_information_types(self):
+        # Search results can be filtered by information_type.
+        with person_logged_in(self.owner):
+            self.bugtasks[2].bug.transitionToInformationType(
+                InformationType.PRIVATESECURITY, self.owner)
+        params = self.getBugTaskSearchParams(
+            user=self.owner,
+            information_type=InformationType.PRIVATESECURITY)
+        self.assertSearchFinds(params, [self.bugtasks[2]])
+        params = self.getBugTaskSearchParams(
+            user=self.owner,
+            information_type=InformationType.PUBLICSECURITY)
         self.assertSearchFinds(params, [])
 
     def test_omit_duplicate_bugs(self):
@@ -491,6 +517,26 @@ class OnceTests:
         expected.reverse()
         params = self.getBugTaskSearchParams(
             user=None, orderby='-specification')
+        self.assertSearchFinds(params, expected)
+
+    def test_sort_by_information_type(self):
+        with person_logged_in(self.owner):
+            self.bugtasks[0].bug.transitionToInformationType(
+                InformationType.USERDATA, self.owner)
+            self.bugtasks[1].bug.transitionToInformationType(
+                InformationType.PUBLIC, self.owner)
+            self.bugtasks[2].bug.transitionToInformationType(
+                InformationType.USERDATA, self.owner)
+            # Importance is secondary sort key.
+            self.bugtasks[2].importance = BugTaskImportance.MEDIUM
+
+        expected = [self.bugtasks[1], self.bugtasks[0], self.bugtasks[2]]
+        params = self.getBugTaskSearchParams(
+            user=self.owner, orderby='information_type')
+        self.assertSearchFinds(params, expected)
+        expected.reverse()
+        params = self.getBugTaskSearchParams(
+            user=self.owner, orderby='-information_type')
         self.assertSearchFinds(params, expected)
 
 

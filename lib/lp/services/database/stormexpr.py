@@ -20,8 +20,8 @@ from storm.exceptions import ClassInfoError
 from storm.expr import (
     BinaryOper,
     ComparableExpr,
-    CompoundOper,
     compile,
+    CompoundOper,
     EXPR,
     Expr,
     In,

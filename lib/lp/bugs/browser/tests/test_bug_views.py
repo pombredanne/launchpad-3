@@ -21,7 +21,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -298,7 +297,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def createInitializedSecrecyView(self, person=None, bug=None,
-                                     request=None, security_related=False):
+                                     request=None):
         """Create and return an initialized BugSecrecyView."""
         if person is None:
             person = self.factory.makePerson()
@@ -307,12 +306,9 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         with person_logged_in(person):
             view = create_initialized_view(
                 bug.default_bugtask, name='+secrecy', form={
-                    'field.private': 'on',
-                    'field.security_related':
-                        'on' if security_related else 'off',
+                    'field.information_type': 'USERDATA',
                     'field.actions.change': 'Change',
-                    },
-                request=request)
+                    }, request=request)
             return view
 
     def test_notification_shown_if_marking_private_and_not_subscribed(self):
@@ -366,8 +362,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         request = LaunchpadTestRequest(
             method='POST', form={
                 'field.actions.change': 'Change',
-                'field.private': 'on',
-                'field.security_related': 'off'},
+                'field.information_type': 'USERDATA'},
             **extra)
         view = self.createInitializedSecrecyView(person, bug, request)
         result_data = simplejson.loads(view.render())
@@ -390,47 +385,43 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             subscriber.name, subscriber_data['subscriber']['name'])
         self.assertEqual('Discussion', subscriber_data['subscription_level'])
 
-    def test_set_security_related(self):
-        # Test that the bug attribute 'security_related' can be updated
-        # using the view.
-        owner = self.factory.makePerson()
-        bug = self.factory.makeBug(owner=owner)
-        self.createInitializedSecrecyView(bug=bug, security_related=True)
-        with person_logged_in(owner):
-            self.assertTrue(bug.security_related)
-
     def test_set_information_type(self):
         # Test that the bug's information_type can be updated using the
         # view with the feature flag on.
         bug = self.factory.makeBug()
-        feature_flag = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            with person_logged_in(bug.owner):
-                view = create_initialized_view(
-                    bug.default_bugtask, name='+secrecy', form={
-                        'field.information_type': 'USERDATA',
-                        'field.actions.change': 'Change'})
+        with person_logged_in(bug.owner):
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy', form={
+                    'field.information_type': 'USERDATA',
+                    'field.actions.change': 'Change'})
         self.assertEqual([], view.errors)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
     def test_information_type_vocabulary(self):
         # Test that the view creates the vocabulary correctly.
         bug = self.factory.makeBug()
-        feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on',
-            'disclosure.proprietary_information_type.disabled': 'on',
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flags):
-            with person_logged_in(bug.owner):
-                view = create_initialized_view(
-                    bug.default_bugtask, name='+secrecy',
-                    principal=bug.owner)
-                html = view.render()
-                soup = BeautifulSoup(html)
-        self.assertEqual(u'Private', soup.find('label', text="Private"))
-        self.assertIs(None, soup.find('label', text="User Data"))
-        self.assertIs(None, soup.find('label', text="Proprietary"))
+        with person_logged_in(bug.owner):
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy',
+                principal=bug.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
+        self.assertEqual(
+            u'Private', soup.find('label', text="Private"))
+
+    def test_information_type_vocabulary_commercial_project(self):
+        # Test that the view creates the vocabulary correctly for commercial
+        # projects.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        bug = self.factory.makeBug(product=product)
+        with person_logged_in(bug.owner):
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy',
+                principal=bug.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
+        self.assertIsNot(None, soup.find('label', text="Proprietary"))
 
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):

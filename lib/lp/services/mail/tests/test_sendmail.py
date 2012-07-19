@@ -51,6 +51,18 @@ class TestMailController(TestCase):
         self.assertEqual('body', ctrl.body)
         self.assertEqual([], ctrl.attachments)
 
+    def test_long_subject_wrapping(self):
+        # Python2.6 prefixes continuation lines with '\t', 2.7 uses a single
+        # space instead. Catch any change in this behaviour to avoid having to
+        # redo the full diagnosis in the future.
+        before = '0123456789' * 6 + 'before'
+        after = 'after' + '0123456789'
+        hdr = email.header.Header(before + ' ' + after, header_name='Subject')
+        encoded = hdr.encode()
+        self.assertTrue(('before\n after' in encoded)
+                        or ('before\n\t after' in encoded),
+                        'Header.encode() changed continuation lines again')
+
     def test_addAttachment(self):
         """addAttachment should add a part to the list of attachments."""
         ctrl = MailController(

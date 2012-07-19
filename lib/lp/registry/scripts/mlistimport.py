@@ -64,7 +64,7 @@ class Importer:
             # address could be empty or None.
             if not address:
                 continue
-            person = person_set.getByEmail(address)
+            person = person_set.getByEmail(address, filter_status=False)
             if person is None or person.is_team:
                 self.log.error('No person for address: %s', address)
                 continue
@@ -85,7 +85,7 @@ class Importer:
                                  may_subscribe_to_list=False)
             try:
                 self.mailing_list.subscribe(person, email)
-            except CannotSubscribe, error:
+            except CannotSubscribe as error:
                 self.log.error('%s', error)
             # It's okay to str()-ify these because addresses and person names
             # are guaranteed to be in the ASCII range.

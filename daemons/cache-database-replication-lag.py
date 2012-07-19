@@ -50,7 +50,7 @@ def main(args=None):
                 else:
                     log.error("update_replication_lag_cache() failed.")
                 time.sleep(options.sleep)
-        except psycopg2.Error, x:
+        except psycopg2.Error as x:
             log.error("%s. Retrying.", str(x).strip())
             time.sleep(options.sleep)
 

@@ -93,7 +93,6 @@ caused the entry to be created.
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
     ...     hide_email_addresses=True)
-    >>> import transaction
     >>> transaction.commit()
     >>> p.teamowner is None
     True
@@ -1194,16 +1193,15 @@ him:
     ...     SpecificationFilter.COMPLETE]).count()
     0
 
-Next, Carlos has three incomplete specs *related* to him:
+Next, Carlos has two incomplete specs *related* to him:
 
     >>> filter = []
     >>> for spec in carlos.specifications(filter=filter):
     ...     print spec.name, spec.is_complete, spec.informational
     svg-support False False
     extension-manager-upgrades False True
-    media-integrity-check False False
 
-Carlos has 2 specifications assigned to him:
+These 2 specifications are assigned to Carlos:
 
     >>> for spec in carlos.assigned_specs:
     ...     print spec.name
@@ -1224,13 +1222,6 @@ is the approver.
     >>> for spec in mark.specifications(filter=filter):
     ...     print spec.name
     extension-manager-upgrades
-
-The Foo Bar person has a single spec which has feedback requested:
-
-    >>> filter = [SpecificationFilter.FEEDBACK]
-    >>> for spec in foobar.specifications(filter=filter):
-    ...     print spec.name
-    e4x
 
 But has registered 5 of them:
 
@@ -1375,7 +1366,7 @@ bugtracker.
 The method createPersonWithoutEmail() is used in these situations. This
 takes some parameters similar to those taken by createPersonAndEmail()
 but, since an emailless Person cannot be considered to be valid, it
-takes no parameters regarding to emails or passwords.
+takes no parameters regarding to emails.
 
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> new_person = person_set.createPersonWithoutEmail(

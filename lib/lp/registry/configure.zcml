@@ -110,6 +110,37 @@
       <allow interface=".interfaces.persontransferjob.IPersonMergeJob"/>
     </class>
 
+    <!-- IProductNotificationJob -->
+    <securedutility
+        component=".model.productjob.CommercialExpiredJob"
+        provides=".interfaces.productjob.ICommercialExpiredJobSource">
+      <allow interface=".interfaces.productjob.ICommercialExpiredJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.CommercialExpiredJob">
+      <allow interface=".interfaces.productjob.ICommercialExpiredJob"/>
+    </class>
+
+    <securedutility
+        component=".model.productjob.SevenDayCommercialExpirationJob"
+        provides=".interfaces.productjob.ISevenDayCommercialExpirationJobSource">
+      <allow interface=".interfaces.productjob.ISevenDayCommercialExpirationJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.SevenDayCommercialExpirationJob">
+      <allow interface=".interfaces.productjob.ISevenDayCommercialExpirationJob"/>
+    </class>
+
+    <securedutility
+        component=".model.productjob.ThirtyDayCommercialExpirationJob"
+        provides=".interfaces.productjob.IThirtyDayCommercialExpirationJobSource">
+      <allow interface=".interfaces.productjob.IThirtyDayCommercialExpirationJobSource"/>
+    </securedutility>
+
+    <class class=".model.productjob.ThirtyDayCommercialExpirationJob">
+      <allow interface=".interfaces.productjob.IThirtyDayCommercialExpirationJob"/>
+    </class>
+
     <!-- INameBlacklist -->
     <securedutility
         class="lp.registry.model.nameblacklist.NameBlacklistSet"
@@ -1293,7 +1324,7 @@
                 project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
-            set_attributes="active"/>
+            set_attributes="active branch_sharing_policy"/>
 
         <!-- IHasAliases -->
 
@@ -1985,30 +2016,17 @@
     </securedutility>
 
     <!-- Sharing jobs -->
-    <class class=".model.sharingjob.RemoveGranteeSubscriptionsJob">
-      <allow interface=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJob"/>
+    <class class=".model.sharingjob.RemoveArtifactSubscriptionsJob">
+      <allow interface=".interfaces.sharingjob.IRemoveArtifactSubscriptionsJob"/>
       <allow attributes="
          context
          log_name"/>
     </class>
 
     <securedutility
-        component=".model.sharingjob.RemoveGranteeSubscriptionsJob"
-        provides=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJobSource">
-      <allow interface=".interfaces.sharingjob.IRemoveGranteeSubscriptionsJobSource"/>
-    </securedutility>
-
-    <class class=".model.sharingjob.RemoveBugSubscriptionsJob">
-      <allow interface=".interfaces.sharingjob.IRemoveBugSubscriptionsJob"/>
-      <allow attributes="
-         context
-         log_name"/>
-    </class>
-
-    <securedutility
-        component=".model.sharingjob.RemoveBugSubscriptionsJob"
-        provides=".interfaces.sharingjob.IRemoveBugSubscriptionsJobSource">
-      <allow interface=".interfaces.sharingjob.IRemoveBugSubscriptionsJobSource"/>
+        component=".model.sharingjob.RemoveArtifactSubscriptionsJob"
+        provides=".interfaces.sharingjob.IRemoveArtifactSubscriptionsJobSource">
+      <allow interface=".interfaces.sharingjob.IRemoveArtifactSubscriptionsJobSource"/>
     </securedutility>
 
 </configure>

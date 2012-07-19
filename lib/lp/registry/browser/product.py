@@ -114,6 +114,7 @@ from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.product import (
@@ -149,8 +150,9 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
+    PillarInvolvementView,
     PillarNavigationMixin,
-    PillarView,
+    PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -277,10 +279,7 @@ class ProductLicenseMixin:
         """
         licenses = data.get('licenses', [])
         license_widget = self.widgets.get('licenses')
-        if (len(licenses) == 0 and
-            license_widget is not None and
-            not license_widget.allow_pending_license):
-            # Licence is optional on +edit page if not already set.
+        if (len(licenses) == 0 and license_widget is not None):
             self.setFieldError(
                 'licenses',
                 'You must select at least one licence.  If you select '
@@ -339,7 +338,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class ProductInvolvementView(PillarView):
+class ProductInvolvementView(PillarInvolvementView):
     """Encourage configuration of involvement links for projects."""
 
     has_involvement = True
@@ -927,8 +926,8 @@ class ProductDownloadFileMixin:
         return None
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin):
+class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
+                  FeedsMixin, ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
 
@@ -938,7 +937,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, IProduct['owner'],
             format_link(self.context.owner),
             header='Change maintainer', edit_view='+edit-people',
-            step_title='Select a new maintainer')
+            step_title='Select a new maintainer', show_create_team=True)
 
     @property
     def driver_widget(self):
@@ -946,7 +945,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, IProduct['driver'],
             format_link(self.context.driver, empty_value="Not yet selected"),
             header='Change driver', edit_view='+edit-people',
-            step_title='Select a new driver',
+            step_title='Select a new driver', show_create_team=True,
             null_display_value="Not yet selected",
             help_link="/+help-registry/driver.html")
 
@@ -1057,12 +1056,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
-
-    @property
-    def requires_commercial_subscription(self):
-        """Whether to display notice to purchase a commercial subscription."""
-        return (len(self.context.licenses) > 0
-                and self.context.commercial_subscription_is_due)
 
     @property
     def can_purchase_subscription(self):
@@ -1527,16 +1520,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         """The HTML page title."""
         return "Change %s's details" % self.context.title
 
-    def setUpWidgets(self):
-        """See `LaunchpadFormView`."""
-        super(ProductEditView, self).setUpWidgets()
-        # Licenses are optional on +edit page if they have not already
-        # been set. Subclasses may not have 'licenses' widget.
-        # ('licenses' in self.widgets) is broken.
-        if (len(self.context.licenses) == 0 and
-            self.widgets.get('licenses') is not None):
-            self.widgets['licenses'].allow_pending_license = True
-
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
         # This has the effect of suppressing the ": (Optional)" stuff for the
@@ -1591,6 +1574,9 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         "private_bugs",
         ]
 
+    custom_widget(
+        'branch_sharing_policy', LaunchpadRadioWidgetWithDescription)
+
     @property
     def page_title(self):
         """The HTML page title."""
@@ -1608,6 +1594,8 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         if not admin:
             self.field_names.remove('owner')
             self.field_names.remove('autoupdate')
+        if getFeatureFlag('disclosure.branch_sharing_policy.show_to_admin'):
+            self.field_names.append('branch_sharing_policy')
         super(ProductAdminView, self).setUpFields()
         self.form_fields = self._createAliasesField() + self.form_fields
         if admin:
@@ -2269,11 +2257,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     initial_values = {'transfer_to_registry': False}
 
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
-                  include_create_team_link=True)
+                  show_create_team_link=True)
     custom_widget('transfer_to_registry', CheckBoxWidget,
                   widget_class='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
-                  include_create_team_link=True)
+                  show_create_team_link=True)
 
     @property
     def page_title(self):

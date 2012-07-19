@@ -183,7 +183,9 @@ class BugImporter:
             person = None
 
         if person is None:
-            person = getUtility(IPersonSet).getByEmail(email)
+            person = getUtility(IPersonSet).getByEmail(
+                    email,
+                    filter_status=False)
 
             if person is None:
                 self.logger.debug('creating person for %s' % email)
@@ -349,7 +351,7 @@ class BugImporter:
             try:
                 bugtracker, remotebug = bugwatchset.extractBugTrackerAndBug(
                     watchnode.get('href'))
-            except NoBugTrackerFound, exc:
+            except NoBugTrackerFound as exc:
                 self.logger.debug(
                     'Registering bug tracker for %s', exc.base_url)
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(

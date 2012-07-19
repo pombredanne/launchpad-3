@@ -57,7 +57,6 @@ from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.blueprints.model.specificationdependency import (
     SpecificationDependency,
     )
-from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
@@ -191,8 +190,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription',
         orderBy=['displayname', 'name'])
-    feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
-        joinColumn='specification', orderBy='id')
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
@@ -292,9 +289,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
         Also set the sequence of those deleted work items to -1.
         """
+        title_counts = self._list_to_dict_of_frequency(titles)
+
         for work_item in self.work_items:
-            if work_item.title not in titles:
+            if (work_item.title not in title_counts or
+                title_counts[work_item.title] == 0):
                 work_item.deleted = True
+
+            elif title_counts[work_item.title] > 0:
+                title_counts[work_item.title] -= 1
+
+    def _list_to_dict_of_frequency(self, list):
+        dictionary = {}
+        for item in list:
+            if not item in dictionary:
+                dictionary[item] = 1
+            else:
+                dictionary[item] += 1
+        return dictionary
 
     def updateWorkItems(self, new_work_items):
         """See ISpecification."""
@@ -311,18 +323,20 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # ones.
         to_insert = []
         existing_titles = [wi.title for wi in work_items]
-        for i in range(len(new_work_items)):
-            new_wi = new_work_items[i]
-            if new_wi['title'] not in existing_titles:
-                # This is a new work item, so we insert it with 'i' as its
-                # sequence because that's the position it is on the list
-                # entered by the user.
+        existing_title_count = self._list_to_dict_of_frequency(existing_titles)
+
+        for i, new_wi in enumerate(new_work_items):
+            if (new_wi['title'] not in existing_titles or
+                existing_title_count[new_wi['title']] == 0):
                 to_insert.append((i, new_wi))
             else:
-                # Get the existing work item with the same title and update
+                existing_title_count[new_wi['title']] -= 1
+                # Get an existing work item with the same title and update
                 # it to match what we have now.
-                existing_wi = work_items[
-                    existing_titles.index(new_wi['title'])]
+                existing_wi_index = existing_titles.index(new_wi['title'])
+                existing_wi = work_items[existing_wi_index]
+                # Mark a work item as dirty - don't use it again this update.
+                existing_titles[existing_wi_index] = None
                 # Update the sequence to match its current position on the
                 # list entered by the user.
                 existing_wi.sequence = i
@@ -434,12 +448,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
             if sprintspecification.sprint.name == sprintname:
                 return sprintspecification
         return None
-
-    def getFeedbackRequests(self, person):
-        """See ISpecification."""
-        fb = SpecificationFeedback.selectBy(
-            specification=self, reviewer=person)
-        return fb.prejoin(['requester'])
 
     def notificationRecipientAddresses(self):
         """See ISpecification."""
@@ -698,32 +706,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
             return False
 
         return bool(self.subscription(person))
-
-    # queueing
-    def queue(self, reviewer, requester, queuemsg=None):
-        """See ISpecification."""
-        for fbreq in self.feedbackrequests:
-            if (fbreq.reviewer.id == reviewer.id and
-                fbreq.requester == requester.id):
-                # we have a relevant request already, update it
-                fbreq.queuemsg = queuemsg
-                return fbreq
-        # since no previous feedback request existed for this person,
-        # create a new one
-        return SpecificationFeedback(
-            specification=self,
-            reviewer=reviewer,
-            requester=requester,
-            queuemsg=queuemsg)
-
-    def unqueue(self, reviewer, requester):
-        """See ISpecification."""
-        # see if a relevant queue entry exists, and if so, delete it
-        for fbreq in self.feedbackrequests:
-            if (fbreq.reviewer.id == reviewer.id and
-                fbreq.requester.id == requester.id):
-                SpecificationFeedback.delete(fbreq.id)
-                return
 
     # Template methods for BugLinkTargetMixin
     buglinkClass = SpecificationBug

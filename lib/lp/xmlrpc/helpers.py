@@ -19,7 +19,7 @@ def return_fault(function):
     def decorated(*args, **kwargs):
         try:
             return function(*args, **kwargs)
-        except Fault, fault:
+        except Fault as fault:
             return fault
 
     return mergeFunctionMetadata(function, decorated)

@@ -11,6 +11,17 @@ __all__ = [
     'ModerateByRegistryExpertsOrAdmins',
     ]
 
+from operator import methodcaller
+
+from storm.expr import (
+    And,
+    Exists,
+    Or,
+    Select,
+    SQL,
+    Union,
+    With,
+    )
 from zope.component import (
     getUtility,
     queryAdapter,
@@ -41,8 +52,13 @@ from lp.blueprints.interfaces.specificationsubscription import (
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
+from lp.blueprints.model.specificationsubscription import (
+    SpecificationSubscription,
+    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
+from lp.bugs.model.bugsubscription import BugSubscription
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
@@ -159,9 +175,9 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import quote
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
@@ -960,40 +976,35 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
 
             store = IStore(Person)
             user_bugs_visible_filter = get_bug_privacy_filter(user.person)
+            teams_select = Select(SQL('team'), tables="teams")
+            blueprint_subscription_sql = Select(
+                1,
+                tables=SpecificationSubscription,
+                where=SpecificationSubscription.personID.is_in(teams_select))
+            visible_bug_sql = Select(
+                1,
+                tables=(BugTaskFlat,),
+                where=And(
+                    user_bugs_visible_filter,
+                    Or(
+                        BugTaskFlat.bug_id.is_in(
+                            Select(
+                                BugSubscription.bug_id,
+                                tables=(BugSubscription,),
+                                where=BugSubscription.person_id.is_in(
+                                    teams_select))),
+                        BugTaskFlat.assignee_id.is_in(teams_select))))
+            bugs = Union(blueprint_subscription_sql, visible_bug_sql, all=True)
+            with_teams = With('teams',
+                    Select(
+                        TeamParticipation.teamID,
+                        where=TeamParticipation.personID == self.obj.id)),
 
-            # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY
-            query = """
-                SELECT TRUE WHERE
-                EXISTS (
-                    WITH teams AS (
-                        SELECT team from TeamParticipation
-                        WHERE person = %(personid)s
-                    )
-                    -- The team blueprint subscriptions
-                    SELECT 1
-                    FROM SpecificationSubscription
-                    WHERE SpecificationSubscription.person IN
-                        (SELECT team FROM teams)
-                    UNION ALL
-                    -- Find the bugs associated with the team and filter by
-                    -- those that are visible to the user.
-                    SELECT 1
-                    FROM BugTaskFlat
-                    WHERE
-                        %(user_bug_filter)s
-                        AND (
-                            bug IN (
-                                SELECT bug FROM bugsubscription
-                                WHERE person IN (SELECT team FROM teams))
-                            OR assignee IN (SELECT team FROM teams)
-                            )
-                )
-                """ % dict(
-                        personid=quote(self.obj.id),
-                        user_bug_filter=user_bugs_visible_filter)
-
-            rs = store.execute(query)
-            if rs.rowcount > 0:
+            rs = store.with_(with_teams).using(Person).find(
+                SQL("1"),
+                Exists(bugs)
+            )
+            if rs.any():
                 return True
         return False
 
@@ -1669,6 +1680,39 @@ class EditPlainPackageCopyJob(AuthorizationBase):
         return not permissions.is_empty()
 
 
+class ViewPackageUpload(AuthorizationBase):
+    """Restrict viewing of package uploads.
+
+    Anyone who can see the archive or the sourcepackagerelease can see the
+    upload.  The SPR may be visible without the archive being visible if the
+    source package has been copied from a private archive.
+    """
+    permission = 'launchpad.View'
+    usedfor = IPackageUpload
+
+    def iter_adapters(self):
+        yield ViewArchive(self.obj.archive)
+        # We cannot use self.obj.sourcepackagerelease, as that causes
+        # interference with the property cache if we are called in the
+        # process of adding a source or a build.
+        if not self.obj._sources.is_empty():
+            spr = self.obj._sources[0].sourcepackagerelease
+        elif not self.obj._builds.is_empty():
+            spr = self.obj._builds[0].build.source_package_release
+        else:
+            spr = None
+        if spr is not None:
+            yield ViewSourcePackageRelease(spr)
+
+    def checkAuthenticated(self, user):
+        return any(map(
+            methodcaller("checkAuthenticated", user), self.iter_adapters()))
+
+    def checkUnauthenticated(self):
+        return any(map(
+            methodcaller("checkUnauthenticated"), self.iter_adapters()))
+
+
 class EditPackageUpload(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload
@@ -2013,8 +2057,8 @@ class AccessBranch(AuthorizationBase):
     """Controls visibility of branches.
 
     A person can see the branch if the branch is public, they are the owner
-    of the branch, they are in the team that owns the branch, subscribed to
-    the branch, or a launchpad administrator.
+    of the branch, they are in the team that owns the branch, they have an
+    access grant to the branch, or a launchpad administrator.
     """
     permission = 'launchpad.View'
     usedfor = IBranch

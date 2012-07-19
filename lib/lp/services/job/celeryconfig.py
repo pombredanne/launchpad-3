@@ -1,9 +1,10 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import argparse
 from datetime import timedelta
 import sys
+
+import argparse
 
 from lp.services.config import config
 
@@ -99,6 +100,6 @@ def configure(argv):
 
 try:
     globals().update(configure(getattr(sys, 'argv', [''])))
-except ConfigurationError, error:
+except ConfigurationError as error:
     print >>sys.stderr, error
     sys.exit(1)

@@ -12,7 +12,6 @@ from datetime import (
     )
 import logging
 from StringIO import StringIO
-from textwrap import dedent
 import time
 
 from pytz import UTC
@@ -30,19 +29,16 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
-    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
-from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -55,7 +51,6 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -77,7 +72,6 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.lpstorm import IMasterStore
-from lp.services.features import getFeatureFlag
 from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -103,15 +97,15 @@ from lp.services.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.enums import ArchivePermissionType
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import (
-    dbuser,
-    switch_dbuser,
-    )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -1025,184 +1019,81 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertNotEqual(old_update, naked_bug.heat_last_updated)
 
-    def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):
-        self.assertFalse(getFeatureFlag('garbo.workitem_migrator.enabled'))
+    def test_DuplicateArchivePermissionPruner_removes_duplicate_rows(self):
+        # DuplicateArchivePermissionPruner removes duplicated packageset
+        # permissions.
         switch_dbuser('testadmin')
-        whiteboard = dedent("""
-            Work items:
-            A single work item: TODO
-            """)
-        spec = self.factory.makeSpecification(whiteboard=whiteboard)
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
-    def test_SpecificationWorkitemMigrator(self):
-        # When the migration is successful we remove all work-items from the
-        # whiteboard.
-        switch_dbuser('testadmin')
-        product = self.factory.makeProduct(name='linaro')
-        milestone = self.factory.makeMilestone(product=product)
+        archive = self.factory.makeArchive()
         person = self.factory.makePerson()
-        whiteboard = dedent("""
-            Work items for %s:
-            [%s] A single work item: TODO
+        packageset = self.factory.makePackageset()
+        for _ in range(3):
+            ArchivePermission(
+                archive=archive, person=person, packageset=packageset,
+                permission=ArchivePermissionType.UPLOAD)
+        ap_set = getUtility(IArchivePermissionSet)
+        self.assertEqual(
+            3, ap_set.uploadersForPackageset(archive, packageset).count())
+        self.runDaily()
+        self.assertEqual(
+            1, ap_set.uploadersForPackageset(archive, packageset).count())
 
-            Work items:
-            Another work item: DONE
-            """ % (milestone.name, person.name))
-        spec = self.factory.makeSpecification(
-            product=product, whiteboard=whiteboard)
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual('', spec.whiteboard.strip())
-        self.assertEqual(2, spec.work_items.count())
-        self.assertThat(spec.work_items[0], MatchesStructure.byEquality(
-            assignee=person, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            milestone=milestone, specification=spec))
-        self.assertThat(spec.work_items[1], MatchesStructure.byEquality(
-            assignee=None, title="Another work item",
-            status=SpecificationWorkItemStatus.DONE,
-            milestone=None, specification=spec))
-
-    def test_SpecificationWorkitemMigrator_skips_ubuntu_blueprints(self):
+    def test_DuplicateArchivePermissionPruner_skips_unique_rows(self):
+        # DuplicateArchivePermissionPruner leaves unique packageset
+        # permissions alone.
         switch_dbuser('testadmin')
-        whiteboard = "Work items:\nA work item: TODO"
-        spec = self.factory.makeSpecification(
-            whiteboard=whiteboard,
-            distribution=getUtility(IDistributionSet)['ubuntu'])
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-        self.runFrequently()
+        archive_one = self.factory.makeArchive()
+        archive_two = self.factory.makeArchive()
+        person_one = self.factory.makePerson()
+        person_two = self.factory.makePerson()
+        packageset_one = self.factory.makePackageset()
+        packageset_two = self.factory.makePackageset()
+        for archive, person, packageset in (
+            (archive_one, person_one, packageset_one),
+            (archive_two, person_one, packageset_one),
+            (archive_one, person_two, packageset_one),
+            (archive_one, person_one, packageset_two),
+            ):
+            ArchivePermission(
+                archive=archive, person=person, packageset=packageset,
+                permission=ArchivePermissionType.UPLOAD)
+        ap_set = getUtility(IArchivePermissionSet)
+        self.assertEqual(
+            2,
+            ap_set.uploadersForPackageset(archive_one, packageset_one).count())
+        self.assertEqual(
+            1,
+            ap_set.uploadersForPackageset(archive_two, packageset_one).count())
+        self.assertEqual(
+            1,
+            ap_set.uploadersForPackageset(archive_one, packageset_two).count())
+        self.runDaily()
+        self.assertEqual(
+            2,
+            ap_set.uploadersForPackageset(archive_one, packageset_one).count())
+        self.assertEqual(
+            1,
+            ap_set.uploadersForPackageset(archive_two, packageset_one).count())
+        self.assertEqual(
+            1,
+            ap_set.uploadersForPackageset(archive_one, packageset_two).count())
 
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
-    def test_SpecificationWorkitemMigrator_parse_error(self):
-        # When we fail to parse any work items in the whiteboard we leave it
-        # untouched and don't create any SpecificationWorkItem entries.
+    def test_DuplicateArchivePermissionPruner_skips_non_packagesets(self):
+        # DuplicateArchivePermissionPruner leaves non-packageset permissions
+        # alone.
         switch_dbuser('testadmin')
-        whiteboard = dedent("""
-            Work items:
-            A work item: TODO
-            Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
-            """)
-        product = self.factory.makeProduct(name='linaro')
-        spec = self.factory.makeSpecification(
-            product=product, whiteboard=whiteboard)
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
-    def test_BugTaskFlattener(self):
-        # Bugs without a record in BugTaskFlat get mirrored.
-        # Remove the existing mirrored data.
-        with dbuser('testadmin'):
-            task = self.factory.makeBugTask()
-            IMasterStore(BugTask).execute(
-                'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
-
-        def get_flat():
-            return IMasterStore(BugTask).execute(
-                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
-                (task.id,)).get_one()
-
-        # Nothing is done until the feature flag is set.
-        self.runHourly()
-        self.assertIs(None, get_flat())
-
-        # If we set the generation flag, the bug will be mirrored.
-        with dbuser('testadmin'):
-            IMasterStore(FeatureFlag).add(FeatureFlag(
-                u'default', 0, u'bugs.bugtaskflattener.generation', u'1'))
-        self.runHourly()
-        self.assertEqual((task.id,), get_flat())
-
-        # A watermark is kept in memcache, so a second run doesn't
-        # consider the same task.
-        with dbuser('testadmin'):
-            IMasterStore(BugTask).execute(
-                'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
-        self.runHourly()
-        self.assertIs(None, get_flat())
-
-        # Incrementing the generation feature flag causes a fresh pass.
-        with dbuser('testadmin'):
-            IMasterStore(FeatureFlag).find(
-                FeatureFlag, flag=u'bugs.bugtaskflattener.generation').remove()
-            IMasterStore(FeatureFlag).add(FeatureFlag(
-                u'default', 1, u'bugs.bugtaskflattener.generation', u'2'))
-        self.runHourly()
-        self.assertEqual((task.id,), get_flat())
-
-    def test_PopulateSPPHPU_no_pu(self):
-        # PopulateSourcePackagePublishingHistoryPackageUpload correctly
-        # handles a SPPH with no packageupload.
-        with dbuser('testadmin'):
-            spph = self.factory.makeSourcePackagePublishingHistory()
-        self.runHourly()
-        with dbuser('testadmin'):
-            self.assertIs(None, spph.packageupload)
-
-    def createSPPHwithPU(self):
-        distroseries = self.factory.makeDistroSeries()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=distroseries.main_archive,
-            pocket=self.factory.getAnyPocket())
-        pu = self.factory.makePackageUpload(
-            distroseries=distroseries, archive=distroseries.main_archive,
-            pocket=self.factory.getAnyPocket())
-        pu.addSource(spph.sourcepackagerelease)
-        self.assertIs(None, spph.packageupload)
-        return (spph, pu)
-
-    def test_PopulateSourcePackagePublishingHistoryPackageUpload(self):
-        # PopulateSourcePackagePublishingHistoryPackageUpload handles a
-        # SPPH with a matching packageupload.
-        with dbuser('testadmin'):
-            (spph, pu) = self.createSPPHwithPU()
-        self.runHourly()
-        with dbuser('testadmin'):
-            self.assertEqual(pu, spph.packageupload)
-
-    def test_PopulateSPPHPU_no_changesfile(self):
-        # PopulateSourcePackagePublishingHistoryPackageUpload will not
-        # set a SPPH's packageupload to a PU that is not the original upload.
-        with dbuser('testadmin'):
-            (spph, pu) = self.createSPPHwithPU()
-            pu.changesfile = None
-        self.runHourly()
-        with dbuser('testadmin'):
-            self.assertIs(None, spph.packageupload)
-
-    def test_PopulateSPPHPU_multiple_publications(self):
-        # If there are multiple publications (due to overrides changing),
-        # PopulateSourcePackagePublishingHistoryPackageUpload will set the
-        # correct publication's packageupload.
-        with dbuser('testadmin'):
-            (spph, pu) = self.createSPPHwithPU()
-            cs = self.factory.makeComponentSelection(
-                distroseries=spph.distroseries)
-            overridden_spph = spph.changeOverride(cs.component)
-            self.assertIs(None, overridden_spph.packageupload)
-        self.runHourly()
-        with dbuser('testadmin'):
-            self.assertEqual(pu, spph.packageupload)
-            self.assertIs(None, overridden_spph.packageupload)
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        component = self.factory.makeComponent()
+        for _ in range(3):
+            ArchivePermission(
+                archive=archive, person=person, component=component,
+                permission=ArchivePermissionType.UPLOAD)
+        ap_set = getUtility(IArchivePermissionSet)
+        self.assertEqual(
+            3, ap_set.uploadersForComponent(archive, component).count())
+        self.runDaily()
+        self.assertEqual(
+            3, ap_set.uploadersForComponent(archive, component).count())
 
 
 class TestGarboTasks(TestCaseWithFactory):

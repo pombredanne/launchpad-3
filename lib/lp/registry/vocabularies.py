@@ -103,7 +103,9 @@ from zope.security.proxy import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
@@ -181,7 +183,10 @@ from lp.services.helpers import (
     shortlist,
     )
 from lp.services.identity.interfaces.account import AccountStatus
-from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    VALID_EMAIL_STATUSES,
+    )
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
@@ -234,6 +239,7 @@ class BasePersonVocabulary:
             # lookup based on that.
             email = IStore(EmailAddress).find(
                 EmailAddress,
+                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
                 EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
                 raise LookupError(token)
@@ -839,6 +845,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
             email_storm_query = self.store.find(
                 EmailAddress.personID,
+                EmailAddress.status.is_in(VALID_EMAIL_STATUSES),
                 EmailAddress.email.lower().startswith(text))
             email_subquery = Alias(email_storm_query._get_select(),
                                    'EmailAddress')
@@ -2237,33 +2244,51 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self, context=None):
-        types = [
-            InformationType.EMBARGOEDSECURITY,
-            InformationType.USERDATA]
-        proprietary_disabled = bool(getFeatureFlag(
-            'disclosure.proprietary_information_type.disabled'))
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
-        if not proprietary_disabled:
-            types.append(InformationType.PROPRIETARY)
-        if (context is None or
+    def __init__(self, context=None, public_only=False, private_only=False):
+        types = []
+        if not public_only:
+            types = [
+                InformationType.PRIVATESECURITY,
+                InformationType.USERDATA]
+            # So long as not disabled by the feature flag, Proprietary is
+            # allowed for:
+            # - single pillar bugs where the target has a current commercial
+            #   subscription
+            # - branches for a project with a current commercial subscription
+            # - projects with current commercial subscriptions
+            # - contexts which already have an information type set to
+            #   proprietary
+            proprietary_disabled = bool(getFeatureFlag(
+                'disclosure.proprietary_information_type.disabled'))
+            if not proprietary_disabled:
+                subscription_context = context
+                if (IBug.providedBy(context)
+                    and len(context.affected_pillars) == 1):
+                    subscription_context = context.affected_pillars[0]
+                elif (IBugTask.providedBy(context)
+                    and len(context.bug.affected_pillars) == 1):
+                    subscription_context = context.pillar
+                elif IBranch.providedBy(context):
+                    subscription_context = context.target.context
+                has_commercial_subscription = (
+                    IProduct.providedBy(subscription_context) and
+                    subscription_context.has_current_commercial_subscription)
+                already_proprietary = (
+                    safe_hasattr(context, 'information_type') and
+                    context.information_type == InformationType.PROPRIETARY)
+                if has_commercial_subscription or already_proprietary:
+                    types.append(InformationType.PROPRIETARY)
+        # Disallow public items for projects with private bugs.
+        if (not private_only and (context is None or
             not IProduct.providedBy(context) or
-            not context.private_bugs):
+            not context.private_bugs)):
             types = [InformationType.PUBLIC,
-                     InformationType.UNEMBARGOEDSECURITY] + types
+                     InformationType.PUBLICSECURITY] + types
 
         terms = []
         for type in types:
-            title = type.title
-            description = type.description
-            if type == InformationType.USERDATA and show_userdata_as_private:
-                title = 'Private'
-                description = (
-                    'Visible only to users with whom the project has '
-                    'shared private information.')
-            term = SimpleTerm(type, type.name, title)
+            term = SimpleTerm(type, type.name, type.title)
             term.name = type.name
-            term.description = description
+            term.description = type.description
             terms.append(term)
         super(InformationTypeVocabulary, self).__init__(terms)

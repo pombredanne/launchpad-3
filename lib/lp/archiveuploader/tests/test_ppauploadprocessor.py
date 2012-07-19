@@ -660,12 +660,17 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         :return: The queue items that were uploaded.
         """
-        test_files_dir = os.path.join(config.root,
-            "lib/lp/archiveuploader/tests/data/")
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        [build] = self.name16.archive.getBuildRecords(name="bar")
+
+        test_files_dir = os.path.join(
+            config.root, "lib/lp/archiveuploader/tests/data/")
+        self.options.context = "buildd"
         upload_dir = self.queueUpload(
             "debian-installer", "~name16/ubuntu/breezy",
             test_files_dir=test_files_dir)
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(self.build_uploadprocessor, upload_dir, build=build)
 
         queue_items = self.breezy.getPackageUploads(
             name=u"debian-installer",

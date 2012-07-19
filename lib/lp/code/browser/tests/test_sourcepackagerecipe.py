@@ -39,6 +39,7 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
@@ -311,9 +312,10 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual('daily', extract_text(content.h1))
+        self.assertEqual('daily\nEdit', extract_text(content.h1))
         self.assertThat(
-            'Make some food!', MatchesTagText(content, 'edit-description'))
+            'Edit Make some food!',
+            MatchesTagText(content, 'edit-description'))
         self.assertThat(
             'Master Chef', MatchesPickerText(content, 'edit-owner'))
         self.assertThat(
@@ -670,7 +672,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # name specifed an error is shown.
         self.user = self.factory.makePerson(name='eric')
         # Make a PPA called 'ppa' using the default.
-        self.user.createPPA(name='foo')
+        with person_logged_in(self.user):
+            self.user.createPPA(name='foo')
         branch = self.factory.makeAnyBranch()
 
         # A new recipe can be created from the branch page.
@@ -710,6 +713,9 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         team = self.factory.makeTeam(
             name='vikings', members=[self.user],
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        with person_logged_in(team.teamowner):
+            team.setMembershipData(
+                self.user, TeamMembershipStatus.ADMIN, team.teamowner)
         branch = self.factory.makeAnyBranch(owner=team)
 
         # A new recipe can be created from the branch page.
@@ -769,8 +775,9 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
         content = find_main_content(browser.contents)
         self.assertThat(
-            'This is stuff', MatchesTagText(content, 'edit-description'))
+            'Edit This is stuff', MatchesTagText(content, 'edit-description'))
         self.assertThat(
+            'Edit '
             '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
             'lp://dev/~chef/ratatouille/meat',
             MatchesTagText(content, 'edit-recipe_text'))
@@ -833,10 +840,11 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl('Update Recipe').click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual('fings', extract_text(content.h1))
+        self.assertEqual('fings\nEdit', extract_text(content.h1))
         self.assertThat(
-            'This is stuff', MatchesTagText(content, 'edit-description'))
+            'Edit This is stuff', MatchesTagText(content, 'edit-description'))
         self.assertThat(
+            'Edit '
             '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
             'lp://dev/~chef/ratatouille/meat',
             MatchesTagText(content, 'edit-recipe_text'))
@@ -1069,11 +1077,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
             .*
-            Description
+            Description Edit
             This recipe .*changes.
 
             Recipe information
-            Build schedule: Tag help Built on request
+            Build schedule: .* Built on request Edit
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
@@ -1085,7 +1093,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
 
-            Recipe contents
+            Recipe contents Edit
             # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 

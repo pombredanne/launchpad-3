@@ -154,6 +154,15 @@ watches in order to get automatic status updates. So if we try to add a
 Debian task without linking it to a bug watch, we have to confirm that
 we really want to do this.
 
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login("foo.bar@canonical.com")
+    >>> factory.makeSourcePackage(
+    ...     distroseries=getUtility(IDistributionSet)['debian']['sid'],
+    ...     sourcepackagename='pmount',
+    ...     publish=True)
+    <SourcePackage ...>
+    >>> logout()
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.getControl('Distribution').value = ['debian']
     >>> browser.getControl('Source Package Name').value = 'pmount'
@@ -194,7 +203,6 @@ redirected to the bug page.
 
 We cannot allow private bugs to affect more than one pillar.
 
-    >>> from zope.component import getUtility
     >>> from lp.services.webapp import canonical_url
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
@@ -284,20 +292,22 @@ URLs and suchlike:
         [          ]
     ( ) I have already emailed an upstream bug contact:
         [          ]
-    ( ) I just want to register that it is upstream right now; I
-        don't have any way to link it.
+    ( ) I want to add this upstream project to the bug report, but
+        someone must find or report this bug in the upstream bug
+        tracker.
 
 We can just link upstream without a URL to say that this has been dealt
 with, but we can't reference it.
 
-    >>> user_browser.getControl('I just want to register').selected = True
+    >>> user_browser.getControl('I want to add this upstream').selected = True
     >>> print_upstream_linking_form(user_browser)
     ( ) I have the URL for the upstream bug:
         [          ]
     ( ) I have already emailed an upstream bug contact:
         [          ]
-    (*) I just want to register that it is upstream right now; I
-        don't have any way to link it.
+    (*) I want to add this upstream project to the bug report, but
+        someone must find or report this bug in the upstream bug
+        tracker.
 
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> print user_browser.url
@@ -638,8 +648,9 @@ Similar things happen when the upstream link is an email address:
         [          ]
     (*) I have already emailed an upstream bug contact:
         [dark-master-o-bugs@mylittlepony.com]
-    ( ) I just want to register that it is upstream right now; I
-        don't have any way to link it.
+    ( ) I want to add this upstream project to the bug report, but
+        someone must find or report this bug in the upstream bug
+        tracker.
 
 The bug tracker is automatically created without asking for
 confirmation.

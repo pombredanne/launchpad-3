@@ -47,7 +47,7 @@ related bug.
     >>> security_bug_params = CreateBugParams(
     ...     owner=no_priv, title='Security bug',
     ...     comment='A monkey took my GPG keys.',
-    ...     information_type=InformationType.EMBARGOEDSECURITY)
+    ...     information_type=InformationType.PRIVATESECURITY)
     >>> security_bug = landscape.createBug(security_bug_params)
     >>> [security_bug_task] = security_bug.bugtasks
     >>> security_bug_task.bug.private

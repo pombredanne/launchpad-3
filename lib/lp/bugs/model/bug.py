@@ -166,6 +166,8 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -178,7 +180,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
+from lp.registry.interfaces.sharingjob import (
+    IRemoveArtifactSubscriptionsJobSource,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import (
@@ -842,15 +846,14 @@ class Bug(SQLBase):
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
-        # Grant the subscriber access if they can't see the bug (if the
-        # database triggers aren't going to do it for us).
-        trigger_flag = 'disclosure.access_mirror_triggers.removed'
-        if bool(getFeatureFlag(trigger_flag)):
+        # Grant the subscriber access if they can't see the bug but only if
+        # there is at least one bugtask for which access can be checked.
+        if self.default_bugtask:
             service = getUtility(IService, 'sharing')
             bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
             if not bugs:
                 service.ensureAccessGrants(
-                    subscribed_by, person, bugs=[self],
+                    [person], subscribed_by, bugs=[self],
                     ignore_permissions=True)
 
         # In some cases, a subscription should be created without
@@ -896,13 +899,11 @@ class Bug(SQLBase):
                 self.updateHeat()
                 del get_property_cache(self)._known_viewers
 
-                # Revoke access to bug if feature flag is on.
-                flag = 'disclosure.legacy_subscription_visibility.enabled'
-                if bool(getFeatureFlag(flag)):
-                    artifacts_to_delete = getUtility(
-                        IAccessArtifactSource).find([self])
-                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-                        artifacts_to_delete, [person])
+                # Revoke access to bug
+                artifacts_to_delete = getUtility(
+                    IAccessArtifactSource).find([self])
+                getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                    artifacts_to_delete, [person])
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1807,14 +1808,34 @@ class Bug(SQLBase):
 
         self.information_type = information_type
         self._reconcileAccess()
+
+        # If the transition makes the bug private, then we need to ensure all
+        # subscribers can see the bug. For any who can't, we create an access
+        # artifact grant. Note that the previous value of information_type may
+        # also have been private but we still need to perform the access check
+        # since any access policy grants will not confer access with the new
+        # information type value.
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            # Grant the subscriber access if they can't see the bug.
+            subscribers = self.getDirectSubscribers()
+            if subscribers:
+                service = getUtility(IService, 'sharing')
+                blind_subscribers = service.getPeopleWithoutAccess(
+                    self, subscribers)
+                if len(blind_subscribers):
+                    service.ensureAccessGrants(
+                        blind_subscribers, who, bugs=[self],
+                        ignore_permissions=True)
+
         self.updateHeat()
 
-        flag = 'disclosure.enhanced_sharing.writable'
+        flag = 'disclosure.unsubscribe_jobs.enabled'
         if bool(getFeatureFlag(flag)):
             # As a result of the transition, some subscribers may no longer
             # have access to the bug. We need to run a job to remove any such
             # subscriptions.
-            getUtility(IRemoveBugSubscriptionsJobSource).create([self], who)
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                who, [self])
 
         return True
 
@@ -1960,7 +1981,7 @@ class Bug(SQLBase):
                         change, empty_recipients, deferred=True)
 
             self.duplicateof = duplicate_of
-        except LaunchpadValidationError, validation_error:
+        except LaunchpadValidationError as validation_error:
             raise InvalidDuplicateValue(validation_error)
         if duplicate_of is not None:
             # Maybe confirm bug tasks, now that more people might be affected
@@ -1984,10 +2005,7 @@ class Bug(SQLBase):
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
 
-        user_owns_comment = False
-        flag = 'disclosure.users_hide_own_bug_comments.enabled'
-        if bool(getFeatureFlag(flag)):
-            user_owns_comment = bug_message.owner == user
+        user_owns_comment = (bug_message.owner == user)
         if (not self.userCanSetCommentVisibility(user)
             and not user_owns_comment):
             raise Unauthorized(
@@ -2043,26 +2061,34 @@ class Bug(SQLBase):
 
     def userCanSetCommentVisibility(self, user):
         """See `IBug`"""
-
         if user is None:
             return False
+        # Admins and registry experts always have permission.
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        flag = 'disclosure.users_hide_own_bug_comments.enabled'
-        return bool(getFeatureFlag(flag)) and self.userInProjectRole(roles)
+        return self.userCanAccessUserData(user)
 
-    def userInProjectRole(self, user):
-        """ Return True if user has a project role for any affected pillar."""
-        roles = IPersonRoles(user)
-        if roles is None:
+    def userCanAccessUserData(self, user):
+        """ Return True if the user has access to USER_DATA data."""
+        # Check if the user has access via the pillar.
+        pillars = list(self.affected_pillars)
+        pillars_and_types = [(p, InformationType.USERDATA) for p in pillars]
+        access_policies = getUtility(IAccessPolicySource).find(
+            pillars_and_types)
+        access_grants = [(a, user) for a in access_policies]
+        access_grants = getUtility(IAccessPolicyGrantSource).find(
+            access_grants)
+        if not access_grants.is_empty():
+            return True
+        # User has no access via the pillars, check the bug itself.
+        artifact = getUtility(IAccessArtifactSource).find([self]).one()
+        if  artifact is None:
             return False
-        for pillar in self.affected_pillars:
-            if (roles.isOwner(pillar)
-                or roles.isOneOfDrivers(pillar)
-                or roles.isBugSupervisor(pillar)
-                or roles.isSecurityContact(pillar)):
-                return True
+        artifact_access_grant = getUtility(IAccessArtifactGrantSource).find(
+            [(artifact, user)]).one()
+        if artifact_access_grant is not None:
+            return True
         return False
 
     def linkHWSubmission(self, submission):
@@ -2674,7 +2700,20 @@ class BugSet:
             if params.information_type == InformationType.PUBLIC:
                 params.information_type = InformationType.USERDATA
 
-        bug, event = self.createBugWithoutTarget(params)
+        bug, event = self._makeBug(params)
+
+        # Create the task on a product if one was passed.
+        if params.product:
+            getUtility(IBugTaskSet).createTask(
+                bug, params.owner, params.product, status=params.status)
+
+        # Create the task on a source package name if one was passed.
+        if params.distribution:
+            target = params.distribution
+            if params.sourcepackagename:
+                target = target.getSourcePackage(params.sourcepackagename)
+            getUtility(IBugTaskSet).createTask(
+                bug, params.owner, target, status=params.status)
 
         if params.information_type in SECURITY_INFORMATION_TYPES:
             if params.product:
@@ -2698,18 +2737,11 @@ class BugSet:
             else:
                 bug.subscribe(params.product.owner, params.owner)
 
-        # Create the task on a product if one was passed.
-        if params.product:
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, params.product, status=params.status)
-
-        # Create the task on a source package name if one was passed.
-        if params.distribution:
-            target = params.distribution
-            if params.sourcepackagename:
-                target = target.getSourcePackage(params.sourcepackagename)
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, target, status=params.status)
+        if params.subscribe_owner:
+            bug.subscribe(params.owner, params.owner)
+        # Subscribe other users.
+        for subscriber in params.subscribers:
+            bug.subscribe(subscriber, params.owner)
 
         bug_task = bug.default_bugtask
         if params.assignee:
@@ -2732,8 +2764,9 @@ class BugSet:
             return bug, event
         return bug
 
-    def createBugWithoutTarget(self, bug_params):
-        """See `IBugSet`."""
+    def _makeBug(self, bug_params):
+        """Construct a bew bug object using the specified parameters."""
+
         # Make a copy of the parameter object, because we might modify some
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
@@ -2782,14 +2815,8 @@ class BugSet:
             _private=private, _security_related=security_related,
             **extra_params)
 
-        if params.subscribe_owner:
-            bug.subscribe(params.owner, params.owner)
         if params.tags:
             bug.tags = params.tags
-
-        # Subscribe other users.
-        for subscriber in params.subscribers:
-            bug.subscribe(subscriber, params.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg, index=0)

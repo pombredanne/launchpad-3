@@ -58,7 +58,7 @@
         (<a href="https://help.launchpad.net/Packaging/SourceBuilds">Learn more about recipes</a>)
       </p>
 
-      <div id="project-cloud-preview" tal:content="cache:public,6 hours">
+      <div id="project-cloud-preview">
         <h2>Most active projects in the last month</h2>
         <a tal:repeat="product view/short_product_tag_cloud"
            tal:attributes="href product/url;
@@ -69,8 +69,7 @@
       </div>
 
       <div class="columns">
-        <div class="three column left" id="recent-imports"
-              tal:content="cache:private,15 minutes">
+        <div class="three column left" id="recent-imports">
           <h2>Recent imports</h2>
           <ul>
             <li tal:repeat="branch view/recently_imported_branches">
@@ -84,8 +83,7 @@
           </ul>
           <p><a href="/+recently-imported-branches">more&#8230;</a></p>
         </div>
-        <div class="three column middle" id="recently-registered"
-            tal:content="cache:private,3 minutes">
+        <div class="three column middle" id="recently-registered">
           <h2>Recently registered</h2>
           <ul>
             <li tal:repeat="branch view/recently_registered_branches">
@@ -99,8 +97,7 @@
           </ul>
           <p><a href="/+recently-registered-branches">more&#8230;</a></p>
         </div>
-        <div class="three column right" id="recently-changed"
-            tal:content="cache:private,5 minutes">
+        <div class="three column right" id="recently-changed">
           <h2>Recently changed</h2>
           <ul>
             <li tal:repeat="branch view/recently_changed_branches">
@@ -116,7 +113,7 @@
         </div>
       </div>
       <div class="clear"></div>
-      <div id="application-footer" tal:content="cache:public,30 minutes">
+      <div id="application-footer">
         <div>
           <strong tal:content="view/branch_count">123</strong>
           branches registered in

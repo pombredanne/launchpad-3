@@ -46,6 +46,6 @@ def validate_translation(original_singular, original_plural,
     # Check the msg.
     try:
         msg.check_format()
-    except gettextpo.error, e:
+    except gettextpo.error as e:
         # Wrap gettextpo.error in GettextValidationError.
         raise GettextValidationError(unicode(e))
