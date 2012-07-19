@@ -34,21 +34,25 @@ def build_mailman():
     mailman_bin = os.path.join(mailman_path, 'bin')
     var_dir = os.path.abspath(config.mailman.build_var_dir)
 
-    # If we can import the package, we assume Mailman is properly built and
-    # installed.  This does not catch re-installs that might be necessary
+    # If we can import the package, we assume Mailman is properly built at
+    # the least.  This does not catch re-installs that might be necessary
     # should our copy in sourcecode be updated.  Do that manually.
     sys.path.append(mailman_path)
     try:
         import Mailman
+    except ImportError:
+        need_build = need_install = True
+    else:
+        need_build = need_install = False
         # Also check for Launchpad-specific bits stuck into the source tree by
         # monkey_patch(), in case this is half-installed.  See
         # <https://bugs.launchpad.net/launchpad-registry/+bug/683486>.
-        from Mailman.Queue import XMLRPCRunner
-        from Mailman.Handlers import LPModerate
-    except ImportError:
-        pass
-    else:
-        return 0
+        try:
+            from Mailman.Queue import XMLRPCRunner
+            from Mailman.Handlers import LPModerate
+        except ImportError:
+            # Monkey patches not present, redo install and patch steps.
+            need_install = True
 
     # sys.path_importer_cache is a mapping of elements of sys.path to importer
     # objects used to handle them. In Python2.5+ when an element of sys.path
@@ -82,8 +86,15 @@ def build_mailman():
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+    else:
+        # Just created the var directory, will need to install mailmain bits.
+        need_install = True
     os.chown(var_dir, uid, gid)
     os.chmod(var_dir, 02775)
+
+    # Skip mailman setup if nothing so far has shown a reinstall needed.
+    if not need_install:
+        return 0
 
     mailman_source = os.path.join('sourcecode', 'mailman')
     if config.mailman.build_host_name:
@@ -105,16 +116,17 @@ def build_mailman():
         '--with-mailhost=' + build_host_name,
         '--with-urlhost=' + build_host_name,
         )
-    # Configure.
-    retcode = subprocess.call(configure_args, cwd=mailman_source)
-    if retcode:
-        print >> sys.stderr, 'Could not configure Mailman:'
-        sys.exit(retcode)
-    # Make.
-    retcode = subprocess.call(('make', ), cwd=mailman_source)
-    if retcode:
-        print >> sys.stderr, 'Could not make Mailman.'
-        sys.exit(retcode)
+    if need_build:
+        # Configure.
+        retcode = subprocess.call(configure_args, cwd=mailman_source)
+        if retcode:
+            print >> sys.stderr, 'Could not configure Mailman:'
+            sys.exit(retcode)
+        # Make.
+        retcode = subprocess.call(('make', ), cwd=mailman_source)
+        if retcode:
+            print >> sys.stderr, 'Could not make Mailman.'
+            sys.exit(retcode)
     retcode = subprocess.call(('make', 'install'), cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not install Mailman.'
