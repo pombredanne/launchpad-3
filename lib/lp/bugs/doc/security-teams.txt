@@ -67,6 +67,9 @@ Shuttleworth are both subscribed to the bug.
     ...         bug.getIndirectSubscribers())
     ...     return sorted(subscriber.name for subscriber in subscribers)
 
+    >>> subscriber_names(bug)
+    [u'mark', u'name16']
+
 If the bug were not reported as security-related, only Foo Bar would
 have been subscribed:
 
@@ -100,6 +103,9 @@ security contact, the Ubuntu team, to the bug.
     True
     >>> bug.private
     True
+
+    >>> subscriber_names(bug)
+    [u'name16', u'ubuntu-team']
 
 Again, if the bug were not reported as security-related, the security
 contact, the Ubuntu Team, would not have been subscribed:
