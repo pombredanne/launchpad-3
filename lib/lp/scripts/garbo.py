@@ -93,6 +93,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -990,6 +991,23 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
+class DuplicateArchivePermissionPruner(BulkPruner):
+    """Cleans up duplicate ArchivePermission rows created by bug 887185."""
+    target_table_class = ArchivePermission
+    ids_to_prune_query = """
+        SELECT id FROM (
+            SELECT id, rank() OVER w AS rank
+            FROM ArchivePermission
+            WHERE packageset IS NOT NULL
+            WINDOW w AS (
+                PARTITION BY person, archive, packageset, permission
+                ORDER BY id
+                )
+            ) AS whatever
+        WHERE rank > 1
+        """
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1267,6 +1285,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugWatchActivityPruner,
         CodeImportEventPruner,
         CodeImportResultPruner,
+        DuplicateArchivePermissionPruner,
         HWSubmissionEmailLinker,
         LoginTokenPruner,
         ObsoleteBugAttachmentPruner,

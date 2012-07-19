@@ -64,6 +64,10 @@ from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
 from lp.layers import LaunchpadLayer
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -71,6 +75,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features import getFeatureFlag
 from lp.services.utils import total_seconds
 from lp.services.webapp import (
     canonical_url,
@@ -956,9 +961,18 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def badges(self):
         badges = []
-        if self._context.bug.private:
-            badges.append(self.icon_template % (
-                "private", "Private", "sprite private"))
+        information_type = self._context.bug.information_type
+        flag = bool(
+            getFeatureFlag('disclosure.display_userdata_as_private.enabled'))
+        if information_type in PRIVATE_INFORMATION_TYPES:
+            if flag and information_type == InformationType.USERDATA:
+                badges.append(self.icon_template % (
+                    "private", "Private", "sprite private"))
+            else:
+                badges.append(self.icon_template % (
+                   information_type.title,
+                   information_type.description,
+                   "sprite private"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (
