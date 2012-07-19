@@ -23,8 +23,7 @@ CREATE OR REPLACE FUNCTION _ftq(text) RETURNS text
         # Normalize whitespace
         query = re.sub("(?u)\s+"," ", query)
 
-        # Convert AND, OR, NOT and - to tsearch2 punctuation
-        query = re.sub(r"(?u)(?:^|\s)-([\w\(])", r" !\1", query)
+        # Convert AND, OR, NOT to tsearch2 punctuation
         query = re.sub(r"(?u)\bAND\b", "&", query)
         query = re.sub(r"(?u)\bOR\b", "|", query)
         query = re.sub(r"(?u)\bNOT\b", " !", query)

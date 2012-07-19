@@ -202,7 +202,7 @@ We also support negation
     >>> ftq('NOT Hi')
     !hi <=> !'hi'
 
-    >>> ftq('-(Hi AND Mom)')
+    >>> ftq('NOT(Hi AND Mom)')
     !(hi&mom) <=> !( 'hi' & 'mom' )
 
     >>> ftq('Foo AND NOT Bar')
@@ -214,7 +214,7 @@ The implicit boolean operation is AND
     >>> ftq('Hi Mom')
     hi&mom <=> 'hi' & 'mom'
 
-    >>> ftq('Hi -mom')
+    >>> ftq('Hi NOT mom')
     hi&!mom <=> 'hi' & !'mom'
 
     >>> ftq('hi (mom OR mum)')
@@ -223,34 +223,34 @@ The implicit boolean operation is AND
     >>> ftq('(hi OR hello) mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
-    >>> ftq('(hi OR hello) -mom')
+    >>> ftq('(hi OR hello) NOT mom')
     (hi|hello)&!mom <=> ( 'hi' | 'hello' ) & !'mom'
 
     >>> ftq('(hi ho OR hoe) work go')
     (hi&ho|hoe)&work&go <=> ( 'hi' & 'ho' | 'hoe' ) & 'work' & 'go'
 
 
-If a single '-' precedes a word, it is converted into the '!' operator.
-Note also that a trailing '-' is dropped by to_tsquery().
+'-' symbols are treated by the Postgres FTI parser context sensitive.
+If they precede a word, they are removed.
 
-xxxxxxxx this is bad: does not work for numbers. Just add examples
+    >>> print search_same('foo -bar')
+    FTI data: 'bar':2 'foo':1
+    query: 'foo' & 'bar'
+    match: True
 
+If a '-' precedes a number, it is retained.
 
-    >>> ftq('-foo bar-')
-    !foo&bar- <=> !'foo' & 'bar'
+    >>> print search_same('123 -456')
+    FTI data: '-456':2 '123':1
+    query: '123' & '-456'
+    match: True
 
-xxxxxx do we want this? no:
-select to_tsvector('5 ** -1');
- to_tsvector  
---------------
- '-1':2 '5':1
-(1 row)
+Trailing '-' are always ignored.
 
-launchpad_dev=# select ftq('5 ** -1');
-    ftq     
-------------
- '5' & !'1'
-(1 row)
+    >>> print search_same('bar- 123-')
+    FTI data: '123':2 'bar':1
+    query: 'bar' & '123'
+    match: True
 
 Repeated '-' are simply ignored by to_tsquery().
 
@@ -265,6 +265,12 @@ how to_tsquery() and to_tsvector() handle such strings.
     query: 'foo-bar' & 'foo' & 'bar'
     match: True
 
+A '-' surrounded by numbers is treated as the sign of the right-hand number.
+
+    >>> print search_same('123-456')
+    FTI data: '-456':2 '123':1
+    query: '123' & '-456'
+    match: True
 
 Punctuation is handled consistently. If a string containing punctuation
 appears in an FTI, it can also be passed to ftq(),and a search for this
@@ -371,11 +377,11 @@ the search term.
 
 Queries containing only punctuation symbols yield an empty ts_query
 object. Note that _ftq() first replaces the '!' with a ' '; later on,
-the _ftq() joins the two remaining terms '?' and '.' with the "AND"
+_ftq() joins the two remaining terms '?' and '.' with the "AND"
 operator '&'. Finally, to_tsquery() detects the AND combination of
-two symbols that are not indexed and returns null.
+two symbols that are not tokenized and returns null.
 
-    >>> ftq('?!.')
+    >>> ftq('?!.') # Bug 1020443
     ?&. <=> None
 
 Email addresses are retained as a whole, both by to_tsvector() and by
@@ -474,7 +480,7 @@ or invalid leading operators
     >>> ftq('(hi OR AND hello) AND mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
-    >>> ftq('(hi OR -AND hello) AND mom')
+    >>> ftq('(hi OR NOT AND hello) AND mom')
     (hi|!hello)&mom <=> ( 'hi' | !'hello' ) & 'mom'
 
     >>> ftq('(hi OR - AND hello) AND mom')
