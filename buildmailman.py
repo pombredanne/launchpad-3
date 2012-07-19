@@ -115,30 +115,6 @@ def build_mailman():
     if retcode:
         print >> sys.stderr, 'Could not make Mailman.'
         sys.exit(retcode)
-    # We have a brief interlude before we install.  Hardy will not
-    # accept a script as the executable for the shebang line--it will
-    # treat the file as a shell script instead. The ``bin/by``
-    # executable that we specified in '--with-python' above is a script
-    # so this behavior causes problems for us. Our work around is to
-    # prefix the ``bin/py`` script with ``/usr/bin/env``, which makes
-    # Hardy happy.  We need to do this before we install because the
-    # installation will call Mailman's ``bin/update``, which is a script
-    # that needs this fix.
-    build_dir = os.path.join(mailman_source, 'build')
-    original = '#! %s\n' % (executable, )
-    modified = '#! /usr/bin/env %s\n' % (executable, )
-    for (dirpath, dirnames, filenames) in os.walk(build_dir):
-        for filename in filenames:
-            filename = os.path.join(dirpath, filename)
-            f = open(filename, 'r')
-            if f.readline() == original:
-                rest = f.read()
-                f.close()
-                f = open(filename, 'w')
-                f.write(modified)
-                f.write(rest)
-            f.close()
-    # Now we actually install.
     retcode = subprocess.call(('make', 'install'), cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not install Mailman.'
