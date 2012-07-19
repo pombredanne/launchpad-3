@@ -2337,12 +2337,12 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertNotIn('importance1', navigator.mustache)
         self.assertNotIn('importance_class1', navigator.mustache)
 
-    def test_hiding_information_type(self):
-        """Hiding information_type removes the text."""
+    def test_show_information_type(self):
+        """Showing information_type adds the text."""
         navigator, mustache_model = self.getNavigator()
-        self.assertIn('User Data', navigator.mustache)
-        mustache_model['items'][0]['show_information_type'] = False
         self.assertNotIn('User Data', navigator.mustache)
+        mustache_model['items'][0]['show_information_type'] = True
+        self.assertIn('User Data', navigator.mustache)
 
     def test_hiding_bugtarget(self):
         """Hiding bugtarget removes the text and CSS."""
