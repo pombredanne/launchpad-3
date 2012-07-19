@@ -142,8 +142,6 @@ class IBranchLookup(Interface):
             component of the path.
         :raises NoSuchProduct: If we can't find a product that matches the
             product component of the path.
-        :raises NoSuchProductSeries: If the product series component doesn't
-            match an existing series.
         :raises NoSuchDistroSeries: If the distro series component doesn't
             match an existing series.
         :raises NoSuchSourcePackageName: If the source packagae referred to

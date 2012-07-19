@@ -56,7 +56,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
         duplicateof parameter above and the addDupeSubscriber method.
         Don't confuse them!
         """
-        super(BugNotificationRecipients, self).__init__()
+        NotificationRecipientSet.__init__(self)
         self.duplicateof = duplicateof
         self.subscription_filters = set()
 
