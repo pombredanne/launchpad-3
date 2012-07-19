@@ -8,7 +8,6 @@ __all__ = [
     'DatabasePreflight',
     'KillConnectionsPreflight',
     'NoConnectionCheckPreflight',
-    'streaming_sync',
     ]
 
 import _pythonpath
@@ -328,22 +327,34 @@ class DatabasePreflight:
             slony_success = replication.helpers.sync(30, exit_on_fail=False)
             if slony_success:
                 self.log.info(
-                    "Slony replication events are being propagated.")
+                    "Replication events are being propagated.")
             else:
                 self.log.fatal(
-                    "Slony replication events are not being propagated.")
+                    "Replication events are not being propagated.")
                 self.log.fatal(
-                    "One or more slony replication daemons may be down.")
+                    "One or more replication daemons may be down.")
                 self.log.fatal(
-                    "Bounce the slony replication daemons and check logs.")
+                    "Bounce the replication daemons and check the logs.")
 
+        streaming_success = False
         # PG 9.1 streaming replication, or no replication.
-        streaming_success = streaming_sync(self.lpmain_master_node.con, 30)
-        if streaming_success:
-            self.log.info("Streaming replicas syncing.")
-        else:
-            self.log.fatal("Streaming replicas not syncing.")
-
+        #
+        cur = self.lpmain_master_node.con.cursor()
+        # Force a WAL switch, returning the current position.
+        cur.execute('SELECT pg_switch_xlog()')
+        wal_point = cur.fetchone()[0]
+        self.log.debug('WAL at %s', wal_point)
+        start_time = time.time()
+        while time.time() < start_time + 30:
+            cur.execute("""
+                SELECT FALSE FROM pg_stat_replication
+                WHERE replay_location < %s LIMIT 1
+                """, (wal_point,))
+            if cur.fetchone() is None:
+                # All slaves, possibly 0, are in sync.
+                streaming_success = True
+                break
+            time.sleep(0.2)
         return slony_success and streaming_success
 
     def report_patches(self):
@@ -435,32 +446,6 @@ class KillConnectionsPreflight(DatabasePreflight):
             # terminate.
             time.sleep(seconds_to_pause)
         return all_clear
-
-
-def streaming_sync(con, timeout=None):
-    """Wait for streaming replicas to synchronize with master as of now.
-
-    :param timeout: seconds to wait, None for no timeout.
-
-    :returns: True if sync happened or no streaming replicas
-              False if the timeout was passed.
-    """
-    cur = con.cursor()
-
-    # Force a WAL switch, returning the current position.
-    cur.execute('SELECT pg_switch_xlog()')
-    wal_point = cur.fetchone()[0]
-    start_time = time.time()
-    while timeout is None or time.time() < start_time + timeout:
-        cur.execute("""
-            SELECT FALSE FROM pg_stat_replication
-            WHERE replay_location < %s LIMIT 1
-            """, (wal_point,))
-        if cur.fetchone() is None:
-            # All slaves, possibly 0, are in sync.
-            return True
-        time.sleep(0.2)
-    return False
 
 
 def main():
