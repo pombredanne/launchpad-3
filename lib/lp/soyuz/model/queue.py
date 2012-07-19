@@ -877,12 +877,11 @@ class PackageUpload(SQLBase):
                     changes_file = release.package_upload.changesfile
 
                 for new_file in update_files_privacy(pub_record):
-                    debug(logger,
-                          "Re-uploaded %s to librarian" % new_file.filename)
+                    debug(logger, "Made %s public" % new_file.filename)
                 for custom_file in self.customfiles:
                     update_files_privacy(custom_file)
                     debug(logger,
-                          "Re-uploaded custom file %s to librarian" %
+                          "Made custom file %s public" %
                           custom_file.libraryfilealias.filename)
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
                     pas_verify = BuildDaemonPackagesArchSpecific(

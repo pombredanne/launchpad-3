@@ -12,14 +12,11 @@ __all__ = [
     'do_copy',
     '_do_delayed_copy',
     '_do_direct_copy',
-    're_upload_file',
     'update_files_privacy',
     ]
 
 from itertools import repeat
 from operator import attrgetter
-import os
-import tempfile
 
 import apt_pkg
 from lazr.delegates import delegates
@@ -29,8 +26,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.services.database.bulk import load_related
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
@@ -58,41 +53,6 @@ from lp.soyuz.scripts.ftpmasterbase import (
     )
 
 
-def re_upload_file(libraryfile, restricted=False):
-    """Re-upload a librarian file to the public server.
-
-    :param libraryfile: a `LibraryFileAlias`.
-    :param restricted: whether or not the new file should be restricted.
-
-    :return: A new `LibraryFileAlias`.
-    """
-    # XXX cprov 2009-06-12: This function could be incorporated in ILFA.
-    # I just don't see a clear benefit in doing that right now.
-
-    # Open the libraryfile for reading.
-    libraryfile.open()
-
-    # Make a temporary file to hold the download.  It's annoying
-    # having to download to a temp file but there are no guarantees
-    # how large the files are, so using StringIO would be dangerous.
-    fd, filepath = tempfile.mkstemp()
-    temp_file = os.fdopen(fd, 'wb')
-
-    # Read the old library file into the temp file.
-    copy_and_close(libraryfile, temp_file)
-
-    # Upload the file to the unrestricted librarian and make
-    # sure the publishing record points to it.
-    new_lfa = getUtility(ILibraryFileAliasSet).create(
-        libraryfile.filename, libraryfile.content.filesize,
-        open(filepath, "rb"), libraryfile.mimetype, restricted=restricted)
-
-    # Junk the temporary file.
-    os.remove(filepath)
-
-    return new_lfa
-
-
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):
@@ -101,40 +61,40 @@ def update_files_privacy(pub_record):
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
 
-    :return: a list of re-uploaded `LibraryFileAlias` objects.
+    :return: a list of changed `LibraryFileAlias` objects.
     """
     package_files = []
     archive = None
     if ISourcePackagePublishingHistory.providedBy(pub_record):
         archive = pub_record.archive
-        # Re-upload the package files files if necessary.
+        # Unrestrict the package files files if necessary.
         sourcepackagerelease = pub_record.sourcepackagerelease
         package_files.extend(
             [(source_file, 'libraryfile')
              for source_file in sourcepackagerelease.files])
-        # Re-upload the package diff files if necessary.
+        # Unrestrict the package diff files if necessary.
         package_files.extend(
             [(diff, 'diff_content')
              for diff in sourcepackagerelease.package_diffs])
-        # Re-upload the source upload changesfile if necessary.
+        # Unrestrict the source upload changesfile if necessary.
         package_upload = sourcepackagerelease.package_upload
         package_files.append((package_upload, 'changesfile'))
         package_files.append((sourcepackagerelease, 'changelog'))
     elif IBinaryPackagePublishingHistory.providedBy(pub_record):
         archive = pub_record.archive
-        # Re-upload the binary files if necessary.
+        # Unrestrict the binary files if necessary.
         binarypackagerelease = pub_record.binarypackagerelease
         package_files.extend(
             [(binary_file, 'libraryfile')
              for binary_file in binarypackagerelease.files])
-        # Re-upload the upload changesfile file as necessary.
+        # Unrestrict the upload changesfile file as necessary.
         build = binarypackagerelease.build
         package_upload = build.package_upload
         package_files.append((package_upload, 'changesfile'))
-        # Re-upload the buildlog file as necessary.
+        # Unrestrict the buildlog file as necessary.
         package_files.append((build, 'log'))
     elif IPackageUploadCustom.providedBy(pub_record):
-        # Re-upload the custom files included
+        # Unrestrict the custom files included
         package_files.append((pub_record, 'libraryfilealias'))
         # And set archive to the right attribute for PUCs
         archive = pub_record.packageupload.archive
@@ -143,26 +103,22 @@ def update_files_privacy(pub_record):
             "pub_record is not one of SourcePackagePublishingHistory, "
             "BinaryPackagePublishingHistory or PackageUploadCustom.")
 
-    re_uploaded_files = []
+    changed_files = []
     for obj, attr_name in package_files:
-        old_lfa = getattr(obj, attr_name, None)
+        lfa = getattr(obj, attr_name, None)
         # Only reupload restricted files published in public archives,
         # not the opposite. We don't have a use-case for privatizing
         # files yet.
-        if (old_lfa is None or
-            old_lfa.restricted == archive.private or
-            old_lfa.restricted == False):
+        if (lfa is None or
+            lfa.restricted == archive.private or
+            lfa.restricted == False):
             continue
-        new_lfa = re_upload_file(old_lfa, restricted=archive.private)
-        # Most of the attributes set here are not normally editable.
-        # However, since we've just created all the publication records
-        # here, and since we know that the calling user must have access to
-        # the private source archive, we can get away with removing the
-        # security proxy.
-        setattr(removeSecurityProxy(obj), attr_name, new_lfa)
-        re_uploaded_files.append(new_lfa)
+        # LibraryFileAlias.restricted is normally read-only, but we have a
+        # good excuse here.
+        removeSecurityProxy(lfa).restricted = archive.private
+        changed_files.append(lfa)
 
-    return re_uploaded_files
+    return changed_files
 
 
 # XXX cprov 2009-07-01: should be part of `ISourcePackagePublishingHistory`.
@@ -721,11 +677,10 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 # safe here.
                 for pub_record in sub_copies:
                     pub_record.overrideFromAncestry()
-                    for new_file in update_files_privacy(pub_record):
+                    for changed_file in update_files_privacy(pub_record):
                         if logger is not None:
                             logger.info(
-                                "Re-uploaded %s to librarian" %
-                                new_file.filename)
+                                "Made %s public" % changed_file.filename)
 
         overrides_index += 1
         copies.extend(sub_copies)

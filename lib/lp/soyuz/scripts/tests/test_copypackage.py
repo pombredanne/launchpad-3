@@ -73,7 +73,6 @@ from lp.soyuz.scripts.packagecopier import (
     CopyChecker,
     do_copy,
     PackageCopier,
-    re_upload_file,
     update_files_privacy,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -85,110 +84,10 @@ from lp.testing import (
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
-    LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
-
-
-class ReUploadFileTestCase(TestCaseWithFactory):
-    """Test `ILibraryFileAlias` reupload helper.
-
-    A `ILibraryFileAlias` object can be reupload to a different or
-    the same privacy context.
-
-    In both cases it will result in a new `ILibraryFileAlias` with
-    the same contents than the original, but with usage attributes,
-    like 'last_accessed' and 'hits', and expiration date reset.
-    """
-
-    layer = LaunchpadFunctionalLayer
-
-    def assertSameContent(self, old, new):
-        """Assert both given `ILibraryFileAlias` object are the same.
-
-        Their filename, mimetype and file contents should be the same.
-        """
-        self.assertEqual(old.filename, new.filename, 'Filename mismatch.')
-        self.assertEqual(old.mimetype, new.mimetype, 'MIME type mismatch.')
-        self.assertEqual(old.read(), new.read(), 'Content mismatch.')
-
-    def assertFileIsReset(self, reuploaded_file):
-        """Assert the given `ILibraryFileAlias` attributes were reset.
-
-        The expiration date and the hits counter are reset and the
-        last access records was on file creation.
-        """
-        self.assertIsNone(reuploaded_file.expires)
-        self.assertEqual(
-            reuploaded_file.last_accessed, reuploaded_file.date_created)
-        self.assertEqual(reuploaded_file.hits, 0)
-
-    def testReUploadFileToTheSameContext(self):
-        # Re-uploading a librarian file to the same privacy/server
-        # context results in a new `LibraryFileAlias` object with
-        # the same content and empty expiration date and usage counter.
-        old = self.factory.makeLibraryFileAlias()
-        transaction.commit()
-
-        new = re_upload_file(old)
-        transaction.commit()
-
-        self.assertIsNot(old, new)
-        self.assertEqual(
-            old.restricted, new.restricted, 'New file still private.')
-        self.assertSameContent(old, new)
-        self.assertFileIsReset(new)
-
-    def testReUploadFileToPublic(self):
-        # Re-uploading a private librarian file to the public context
-        # results in a new restricted `LibraryFileAlias` object with
-        # the same content and empty expiration date and usage counter.
-        private_file = self.factory.makeLibraryFileAlias(restricted=True)
-        transaction.commit()
-
-        public_file = re_upload_file(private_file)
-        transaction.commit()
-
-        self.assertIsNot(private_file, public_file)
-        self.assertFalse(
-            public_file.restricted, 'New file still private.')
-        self.assertSameContent(private_file, public_file)
-        self.assertFileIsReset(public_file)
-
-    def testReUploadFileToPrivate(self):
-        # Re-uploading a public librarian file to the private context
-        # results in a new restricted `LibraryFileAlias` object with
-        # the same content and empty expiration date and usage counter.
-        public_file = self.factory.makeLibraryFileAlias()
-        transaction.commit()
-
-        private_file = re_upload_file(public_file, restricted=True)
-        transaction.commit()
-
-        self.assertIsNot(public_file, private_file)
-        self.assertTrue(
-            private_file.restricted, 'New file still public')
-        self.assertSameContent(public_file, private_file)
-        self.assertFileIsReset(private_file)
-
-    def test_re_upload_file_does_not_leak_file_descriptors(self):
-        # Reuploading a library file doesn't leak file descriptors.
-        private_file = self.factory.makeLibraryFileAlias(restricted=True)
-        transaction.commit()
-
-        def number_of_open_files():
-            return len(os.listdir('/proc/%d/fd/' % os.getpid()))
-        previously_open_files = number_of_open_files()
-
-        public_file = re_upload_file(private_file)
-        # The above call would've raised an error if the upload failed, but
-        # better safe than sorry.
-        self.assertIsNot(None, public_file)
-
-        open_files = number_of_open_files() - previously_open_files
-        self.assertEqual(0, open_files)
 
 
 class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
@@ -218,10 +117,11 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
             'BinaryPackagePublishingHistory or PackageUploadCustom.',
             update_files_privacy, None)
 
-    def assertNewFiles(self, new_files, result):
-        """Check new files created during update_files_privacy."""
+    def assertChangedFiles(self, expected, changed_files):
+        """Check files changed during update_files_privacy."""
         self.assertEqual(
-            sorted([new_file.filename for new_file in new_files]), result)
+            expected,
+            sorted(changed_file.filename for changed_file in changed_files))
 
     def _checkSourceFilesPrivacy(self, pub_record, restricted,
                                  expected_n_files):
@@ -295,9 +195,9 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
 
         # In this scenario update_files_privacy does nothing. The 3 testing
         # source files are still private.
-        new_files = update_files_privacy(private_source)
+        changed_files = update_files_privacy(private_source)
         self.layer.commit()
-        self.assertNewFiles(new_files, [])
+        self.assertChangedFiles([], changed_files)
         self.assertSourceFilesArePrivate(private_source, 3)
 
         # Copy The original source to a public PPA, at this point all
@@ -310,15 +210,15 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
             public_archive)
         self.assertSourceFilesArePrivate(public_source, 3)
 
-        # update_files_privacy on the copied source moves all files from
-        # the restricted librarian to the public one.
-        new_files = update_files_privacy(public_source)
+        # update_files_privacy on the copied source makes all files
+        # unrestricted.
+        changed_files = update_files_privacy(public_source)
         self.layer.commit()
-        self.assertNewFiles(new_files, [
+        self.assertChangedFiles([
             'foo.diff.gz',
             'foo_666.dsc',
             'foo_666_source.changes',
-            ])
+            ], changed_files)
         self.assertSourceFilesArePublic(public_source, 3)
 
         # Note that the files from the original source are now also public,
@@ -370,9 +270,9 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
 
         # In this scenario update_files_privacy does nothing. The 3 testing
         # binary files are still private.
-        new_files = update_files_privacy(private_binary)
+        changed_files = update_files_privacy(private_binary)
         self.layer.commit()
-        self.assertNewFiles(new_files, [])
+        self.assertChangedFiles([], changed_files)
         self.assertBinaryFilesArePrivate(private_binary, 3)
 
         # Copy The original binary to a public PPA, at this point all
@@ -385,17 +285,16 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
             public_archive)[0]
         self.assertBinaryFilesArePrivate(public_binary, 3)
 
-        # update_files_privacy on the copied binary moves all files from
-        # the restricted librarian to the public one.
-        new_files = update_files_privacy(public_binary)
+        # update_files_privacy on the copied binary makes all files
+        # unrestricted.
+        changed_files = update_files_privacy(public_binary)
         self.layer.commit()
-        self.assertNewFiles(
-            new_files, [
-                'buildlog_ubuntutest-breezy-autotest-i386.'
-                    'foo_666_FULLYBUILT.txt.gz',
-                'foo-bin_666_all.deb',
-                'foo-bin_666_i386.changes',
-                ])
+        self.assertChangedFiles([
+            'buildlog_ubuntutest-breezy-autotest-i386.'
+                'foo_666_FULLYBUILT.txt.gz',
+            'foo-bin_666_all.deb',
+            'foo-bin_666_i386.changes',
+            ], changed_files)
         self.assertBinaryFilesArePublic(public_binary, 3)
 
         # Note that the files from the original binary are now also public,
@@ -432,12 +331,12 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         self.assertSourceFilesArePublic(copied_source, 3)
         self.assertBinaryFilesArePublic(copied_binary, 3)
 
-        new_source_files = update_files_privacy(copied_source)
-        new_binary_files = update_files_privacy(copied_binary)
+        changed_source_files = update_files_privacy(copied_source)
+        changed_binary_files = update_files_privacy(copied_binary)
         self.layer.commit()
-        self.assertNewFiles(new_source_files, [])
+        self.assertChangedFiles([], changed_source_files)
         self.assertSourceFilesArePublic(copied_source, 3)
-        self.assertNewFiles(new_binary_files, [])
+        self.assertChangedFiles([], changed_binary_files)
         self.assertBinaryFilesArePublic(copied_binary, 3)
 
 
@@ -2938,15 +2837,14 @@ class CopyPackageTestCase(TestCaseWithFactory):
              'INFO \tfoo 1.1 in warty',
              'INFO \tfoo-bin 1.1 in warty hppa',
              'INFO \tfoo-bin 1.1 in warty i386',
-             'INFO Re-uploaded foo_1.1.dsc to librarian',
-             'INFO Re-uploaded diff_file to librarian',
-             'INFO Re-uploaded foo_1.1_source.changes to librarian',
-             'INFO Re-uploaded changelog to librarian',
-             'INFO Re-uploaded foo-bin_1.1_all.deb to librarian',
-             'INFO Re-uploaded foo-bin_1.1_i386.changes to librarian',
-             'INFO Re-uploaded '
-                 'buildlog_ubuntu-warty-i386.foo_1.1_FULLYBUILT.txt.gz to '
-                 'librarian',
+             'INFO Made foo_1.1.dsc public',
+             'INFO Made diff_file public',
+             'INFO Made foo_1.1_source.changes public',
+             'INFO Made changelog public',
+             'INFO Made foo-bin_1.1_all.deb public',
+             'INFO Made foo-bin_1.1_i386.changes public',
+             'INFO Made '
+                 'buildlog_ubuntu-warty-i386.foo_1.1_FULLYBUILT.txt.gz public',
              'INFO Copied:',
              'INFO \tfoo 1.1 in warty',
              'INFO \tfoo-bin 1.1 in warty hppa',
