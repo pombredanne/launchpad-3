@@ -121,4 +121,4 @@ CREATE OR REPLACE FUNCTION ftq(text) RETURNS pg_catalog.tsquery
         return query or None
         $_$;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 24, 2);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 24, 3);
