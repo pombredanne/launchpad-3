@@ -172,9 +172,10 @@ def main():
         streaming_sync_timeout = 60
 
         sync = streaming_sync(
-            connect(ISOLATION_LEVEL_AUTOCOMMIT), streaming_sync_timeout)
+            connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT),
+            streaming_sync_timeout)
         if sync:
-            log.debug('Streaming replicas in sync')
+            log.debug('Streaming replicas in sync.')
         else:
             log.error(
                 'Streaming replicas failed to sync after %d seconds.',
