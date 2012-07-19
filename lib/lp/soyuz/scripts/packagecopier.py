@@ -577,8 +577,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
     :param unembargo: If True, allow copying restricted files from a private
-        archive to a public archive, and re-upload them to the public
-        librarian when doing so.
+        archive to a public archive, and unrestrict their library files when
+        doing so.
     :param logger: An optional logger.
 
     :raise CannotCopy when one or more copies were not allowed. The error
@@ -670,7 +670,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                     previous_version=old_version)
             if not archive.private and has_restricted_files(source):
                 # Fix copies by overriding them according to the current
-                # ancestry and re-upload files with privacy mismatch.  We
+                # ancestry and unrestrict files with privacy mismatch.  We
                 # must do this *after* calling notify (which only actually
                 # sends mail on commit), because otherwise the new changelog
                 # LFA won't be visible without a commit, which may not be
