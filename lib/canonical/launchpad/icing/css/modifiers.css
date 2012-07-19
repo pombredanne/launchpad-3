@@ -201,6 +201,10 @@ table.diff,
     margin-left: 0px;
     }
 
+th .action-icon {
+    height: 12px;
+}
+
 h1 a.sprite,
 h2 a.sprite,
 h3 a.sprite {
