@@ -106,7 +106,7 @@ def update_files_privacy(pub_record):
     changed_files = []
     for obj, attr_name in package_files:
         lfa = getattr(obj, attr_name, None)
-        # Only reupload restricted files published in public archives,
+        # Only unrestrict restricted files published in public archives,
         # not the opposite. We don't have a use-case for privatizing
         # files yet.
         if (lfa is None or
