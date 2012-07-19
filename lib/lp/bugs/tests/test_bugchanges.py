@@ -31,6 +31,7 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     api_url,
+    celebrity_logged_in,
     launchpadlib_for,
     login_person,
     person_logged_in,
@@ -1045,6 +1046,83 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=expected_activity,
             expected_notification=expected_notification)
 
+    def _test_retarget_private_security_bug_to_product(self,
+                                                       bug, maintainer,
+                                                       bug_supervisor=None):
+        # When a private security related bug has a bugtask retargetted to a
+        # different product, a notification is sent to the new bug supervisor
+        # and maintainer. If they are the same person, only one notification
+        # is sent. They only get notifications if they can see the bug.
+
+        # Create the private bug.
+        bug_task = bug.bugtasks[0]
+        new_target = self.factory.makeProduct(
+            owner=maintainer, bug_supervisor=bug_supervisor)
+        self.saveOldChanges(bug)
+
+        bug_task_before_modification = Snapshot(
+            bug_task, providing=providedBy(bug_task))
+        bug_task.transitionToTarget(new_target, self.user)
+        notify(ObjectModifiedEvent(
+            bug_task, bug_task_before_modification,
+            ['target', 'product'], user=self.user))
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'affects',
+            'oldvalue': bug_task_before_modification.bugtargetname,
+            'newvalue': bug_task.bugtargetname,
+            }
+
+        expected_recipients = [self.user]
+        expected_reasons = ['Subscriber']
+        if bug.userCanView(maintainer):
+            expected_recipients.append(maintainer)
+            expected_reasons.append('Maintainer')
+        if (bug_supervisor and not bug_supervisor.inTeam(maintainer)
+                and bug.userCanView(bug_supervisor)):
+            expected_recipients.append(bug_supervisor)
+            expected_reasons.append('Bug Supervisor')
+        expected_notification = {
+            'text': u"** Project changed: %s => %s" % (
+                bug_task_before_modification.bugtargetname,
+                bug_task.bugtargetname),
+            'person': self.user,
+            'recipients': expected_recipients,
+            'recipient_reasons': expected_reasons
+            }
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification, bug=bug)
+
+    def test_retarget_private_security_bug_to_product(self):
+        # A series of tests for re-targetting a private bug task.
+        bug = self.factory.makeBug(
+            product=self.product, owner=self.user,
+            information_type=InformationType.USERDATA)
+        maintainer = self.factory.makePerson()
+        bug_supervisor = self.factory.makePerson()
+
+        # Test with no bug supervisor
+        self._test_retarget_private_security_bug_to_product(bug, maintainer)
+        # Test with bug supervisor = maintainer.
+        self._test_retarget_private_security_bug_to_product(
+            bug, maintainer, maintainer)
+        # Test with different bug supervisor
+        self._test_retarget_private_security_bug_to_product(
+            bug, maintainer, bug_supervisor)
+
+        # Now make the bug visible to the bug supervisor and re-test.
+        with celebrity_logged_in('admin'):
+            bug.default_bugtask.transitionToAssignee(bug_supervisor)
+
+        # Test with bug supervisor = maintainer.
+        self._test_retarget_private_security_bug_to_product(
+            bug, maintainer, maintainer)
+        # Test with different bug supervisor
+        self._test_retarget_private_security_bug_to_product(
+            bug, maintainer, bug_supervisor)
+
     def test_target_bugtask_to_sourcepackage(self):
         # When a bugtask's target is changed, BugActivity and
         # BugNotification get updated.
@@ -1095,6 +1173,21 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=source_package_bug)
+
+    def test_private_bug_target_change_doesnt_add_everyone(self):
+        # Retargeting a private bug doesn't add all subscribers for the
+        # target.
+        old_product = self.factory.makeProduct()
+        new_product = self.factory.makeProduct()
+        subscriber = self.factory.makePerson()
+        new_product.addBugSubscription(subscriber, subscriber)
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            product=old_product, owner=owner,
+            information_type=InformationType.USERDATA)
+        bug.default_bugtask.transitionToTarget(new_product, owner)
+        self.assertNotIn(subscriber, bug.getDirectSubscribers())
+        self.assertNotIn(subscriber, bug.getIndirectSubscribers())
 
     def test_add_bugwatch_to_bugtask(self):
         # Adding a BugWatch to a bug task records an entry in

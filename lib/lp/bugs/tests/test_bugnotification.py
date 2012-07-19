@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 from itertools import chain
+import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -32,7 +33,6 @@ from lp.bugs.model.bugnotification import (
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.accesspolicy import IAccessArtifactGrantSource
 from lp.services.config import config
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.messages.model.message import MessageSet
@@ -42,6 +42,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import switch_dbuser
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -50,34 +51,33 @@ from lp.testing.layers import (
 from lp.testing.matchers import Contains
 
 
-class TestNotificationRecipientsOfPrivateBugs(TestCaseWithFactory):
+class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
     """Test who get notified of changes to private bugs."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestNotificationRecipientsOfPrivateBugs, self).setUp()
         login('foo.bar@canonical.com')
-        self.product_owner = self.factory.makePerson(name="product-owner")
-        self.product = self.factory.makeProduct(owner=self.product_owner)
-        self.product_subscriber = self.factory.makePerson(
+        factory = LaunchpadObjectFactory()
+        self.product_owner = factory.makePerson(name="product-owner")
+        self.product = factory.makeProduct(owner=self.product_owner)
+        self.product_subscriber = factory.makePerson(
             name="product-subscriber")
         self.product.addBugSubscription(
             self.product_subscriber, self.product_subscriber)
-        self.bug_subscriber = self.factory.makePerson(name="bug-subscriber")
-        self.bug_owner = self.factory.makePerson(name="bug-owner")
-        self.private_bug = self.factory.makeBug(
+        self.bug_subscriber = factory.makePerson(name="bug-subscriber")
+        self.bug_owner = factory.makePerson(name="bug-owner")
+        self.private_bug = factory.makeBug(
             product=self.product, owner=self.bug_owner,
             information_type=InformationType.USERDATA)
         self.reporter = self.private_bug.owner
         self.private_bug.subscribe(self.bug_subscriber, self.reporter)
         [self.product_bugtask] = self.private_bug.bugtasks
-        self.subscribers = set(
+        self.direct_subscribers = set(
             person.name for person in [self.bug_subscriber, self.reporter])
 
     def test_status_change(self):
-        # Status changes are sent to direct and indirect subscribers if they
-        # have access to the bug.
+        # Status changes are sent to the direct subscribers only.
         bugtask_before_modification = Snapshot(
             self.product_bugtask, providing=providedBy(self.product_bugtask))
         self.product_bugtask.transitionToStatus(
@@ -89,41 +89,20 @@ class TestNotificationRecipientsOfPrivateBugs(TestCaseWithFactory):
         notified_people = set(
             recipient.person.name
             for recipient in latest_notification.recipients)
-        expected_subscribers = set(
-            person.name for person in [self.bug_subscriber, self.reporter,
-            self.product_subscriber])
-        self.assertEqual(expected_subscribers, notified_people)
+        self.assertEqual(self.direct_subscribers, notified_people)
 
     def test_add_comment(self):
-        # Comment additions are sent to direct and indirect subscribers if
-        # they have access to the bug.
+        # Comment additions are sent to the direct subscribers only.
         self.private_bug.newMessage(
             self.reporter, subject='subject', content='content')
         latest_notification = BugNotification.selectFirst(orderBy='-id')
         notified_people = set(
             recipient.person.name
             for recipient in latest_notification.recipients)
-        self.assertEqual(self.subscribers, notified_people)
-
-    def test_add_comment_with_access(self):
-        # If product_subscriber is given access, they are notified.
-        artifact = self.factory.makeAccessArtifact(concrete=self.private_bug)
-        getUtility(IAccessArtifactGrantSource).grant(
-            [(artifact, self.product_subscriber, self.private_bug.owner)])
-        self.private_bug.newMessage(
-            self.reporter, subject='subject', content='content')
-        latest_notification = BugNotification.selectFirst(orderBy='-id')
-        notified_people = set(
-            recipient.person.name
-            for recipient in latest_notification.recipients)
-        expected_subscribers = set(
-            person.name for person in [self.bug_subscriber, self.reporter,
-            self.product_subscriber])
-        self.assertEqual(expected_subscribers, notified_people)
+        self.assertEqual(self.direct_subscribers, notified_people)
 
     def test_bug_edit(self):
-        # Bug edits are sent to direct and indirect subscribers if they have
-        # access to the bug.
+        # Bug edits are sent to direct the subscribers only.
         bug_before_modification = Snapshot(
             self.private_bug, providing=providedBy(self.private_bug))
         self.private_bug.description = 'description'
@@ -134,7 +113,7 @@ class TestNotificationRecipientsOfPrivateBugs(TestCaseWithFactory):
         notified_people = set(
             recipient.person.name
             for recipient in latest_notification.recipients)
-        self.assertEqual(self.subscribers, notified_people)
+        self.assertEqual(self.direct_subscribers, notified_people)
 
 
 class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
