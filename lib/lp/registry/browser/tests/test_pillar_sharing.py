@@ -373,7 +373,7 @@ class PillarSharingViewTestMixin:
             view = create_view(self.pillar, name='+sharing')
             with StormStatementRecorder() as recorder:
                 view.initialize()
-            self.assertThat(recorder, HasQueryCount(LessThan(7)))
+            self.assertThat(recorder, HasQueryCount(LessThan(9)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
