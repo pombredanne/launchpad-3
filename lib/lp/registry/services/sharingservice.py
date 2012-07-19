@@ -14,6 +14,7 @@ from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
 from storm.expr import (
     And,
+    Count,
     In,
     Join,
     Or,
@@ -51,11 +52,13 @@ from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.accesspolicy import (
     AccessArtifactGrant,
     AccessPolicyArtifact,
+    AccessPolicy,
     AccessPolicyGrant,
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.lpstorm import IStore
+from lp.services.database.stormexpr import ColumnSelect
 from lp.services.features import getFeatureFlag
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
@@ -102,6 +105,19 @@ class SharingService:
             AccessPolicyGrant.policy_id == policy.id,
             TeamParticipation.personID == person.id)
         return not result.is_empty()
+
+    def getAccessPolicyGrantCounts(self, pillar):
+        """See `ISharingService`."""
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+        ids = [policy.id for policy in policies]
+        store = IStore(AccessPolicyGrant)
+        count_select = Select((Count(),), tables=(AccessPolicyGrant,),
+            where=AccessPolicyGrant.policy == AccessPolicy.id)
+        return store.find(
+            (AccessPolicy.type,
+            ColumnSelect(count_select)),
+            AccessPolicy.id.is_in(ids)
+        )
 
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""

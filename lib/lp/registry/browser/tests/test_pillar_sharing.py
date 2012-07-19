@@ -394,6 +394,19 @@ class PillarSharingViewTestMixin:
             cache = IJSONRequestCache(view.request)
             self.assertTrue(cache.objects.get('sharing_write_enabled'))
 
+    def test_view_invisible_information_types(self):
+        # Test the expected invisible information type  data is in the
+        # json request cache.
+        with FeatureFixture(WRITE_FLAG):
+            with person_logged_in(self.pillar.owner):
+                getUtility(IService, 'sharing').deletePillarSharee(
+                    self.pillar, self.pillar.owner, self.pillar.owner)
+            view = create_initialized_view(self.pillar, name='+sharing')
+            cache = IJSONRequestCache(view.request)
+            self.assertContentEqual(
+                ['Private Security', 'Private'],
+                cache.objects.get('invisible_information_types'))
+
 
 class TestProductSharingView(PillarSharingViewTestMixin,
                                  SharingBaseTestCase):

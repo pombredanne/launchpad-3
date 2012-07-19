@@ -24,10 +24,12 @@
 </head>
 <body>
   <div metal:fill-slot="main">
-    <p>
-      Proprietary, embargoed security, or user-data information is
-      shared with these users and teams.
-    </p>
+    <div id="sharing-header">
+        <p>
+          Proprietary, private security, or private information is
+          shared with these users and teams.
+        </p>
+    </div>
     <ul class="horizontal">
       <li><a id='add-sharee-link' class='sprite add js-action' href="#">Share
         with someone</a></li>

@@ -1289,6 +1289,36 @@ class TestSharingService(TestCaseWithFactory):
                 self.factory.makeProduct(), InformationType.PUBLIC,
                 self.factory.makePerson()))
 
+    def test_getAccessPolicyGrantCounts(self):
+        # checkPillarAccess checks whether the user has full access to
+        # an information type.
+        product = self.factory.makeProduct()
+        grantee = self.factory.makePerson()
+        with FeatureFixture(WRITE_FLAG):
+            with admin_logged_in():
+                self.service.sharePillarInformation(
+                    product, grantee, product.owner,
+                    {InformationType.USERDATA: SharingPermission.ALL})
+        # The owner is granted access on product creation. So we need to allow
+        # for that in the check below.
+        self.assertContentEqual(
+            [(InformationType.PRIVATESECURITY, 1),
+             (InformationType.USERDATA, 2)],
+            self.service.getAccessPolicyGrantCounts(product))
+
+    def test_getAccessPolicyGrantCountsZero(self):
+        # checkPillarAccess checks whether the user has full access to
+        # an information type.
+        product = self.factory.makeProduct()
+        with FeatureFixture(WRITE_FLAG):
+            with admin_logged_in():
+                self.service.deletePillarSharee(
+                    product, product.owner, product.owner)
+        self.assertContentEqual(
+            [(InformationType.PRIVATESECURITY, 0),
+             (InformationType.USERDATA, 0)],
+            self.service.getAccessPolicyGrantCounts(product))
+
 
 class ApiTestMixin:
     """Common tests for launchpadlib and webservice."""
