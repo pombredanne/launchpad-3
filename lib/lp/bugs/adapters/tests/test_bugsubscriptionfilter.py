@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from lp.bugs.adapters.structuralsubscription import (
+from lp.bugs.adapters.bugsubscriptionfilter import (
     subscription_to_distribution,
     subscription_to_product,
     )

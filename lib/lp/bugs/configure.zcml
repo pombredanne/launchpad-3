@@ -1044,11 +1044,11 @@
     <adapter
         for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
         provides="lp.registry.interfaces.distribution.IDistribution"
-        factory=".adapters.structuralsubscription.subscription_to_distribution"/>
+        factory=".adapters.bugsubscriptionfilter.subscription_to_distribution"/>
     <adapter
         for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
         provides="lp.registry.interfaces.product.IProduct"
-        factory=".adapters.structuralsubscription.subscription_to_product"/>
+        factory=".adapters.bugsubscriptionfilter.subscription_to_product"/>
 
   <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />
