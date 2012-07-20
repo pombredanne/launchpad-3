@@ -27,3 +27,12 @@ class StructuralSubscriptionTestCase(TestCaseWithFactory):
         subscription = product.addBugSubscription(subscriber, subscriber)
         self.assertEqual(product, subscription_to_product(subscription))
         self.assertEqual(product, IProduct(subscription))
+
+    def test_subscription_to_product_with_productseries(self):
+        product = self.factory.makeProduct()
+        series = product.development_focus
+        subscriber = product.owner
+        login_person(subscriber)
+        subscription = series.addBugSubscription(subscriber, subscriber)
+        self.assertEqual(product, subscription_to_product(subscription))
+        self.assertEqual(product, IProduct(subscription))

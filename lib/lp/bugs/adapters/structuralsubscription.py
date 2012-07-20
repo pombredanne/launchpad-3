@@ -11,4 +11,6 @@ __all__ = [
 
 def subscription_to_product(subscription):
     """Adapt the `IStructuralSubscription` to an `IProduct`."""
+    if subscription.productseries is not None:
+        return subscription.productseries.product
     return subscription.product
