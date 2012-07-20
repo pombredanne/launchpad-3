@@ -45,7 +45,7 @@
 <facet facet="overview">
     <browser:page
         for="lp.services.webapp.interfaces.IBatchNavigator"
-        name="+sharee-table-view"
+        name="+grantee-table-view"
         template="../templates/pillar-sharing-table.pt"
         permission="zope.Public" />
 

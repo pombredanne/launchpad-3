@@ -29,12 +29,12 @@
       shared with these users and teams.
     </p>
     <ul class="horizontal">
-      <li><a id='add-sharee-link' class='sprite add js-action' href="#">Share
+      <li><a id='add-grantee-link' class='sprite add js-action' href="#">Share
         with someone</a></li>
     </ul>
 
-    <div tal:define="batch_navigator view/sharees">
-      <tal:shareelisting content="structure batch_navigator/@@+sharee-table-view" />
+    <div tal:define="batch_navigator view/grantees">
+      <tal:granteelisting content="structure batch_navigator/@@+grantee-table-view" />
     </div>
 
   </div>

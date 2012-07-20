@@ -29,7 +29,7 @@
       <tal:bugs replace="view/shared_bugs_count">0</tal:bugs> bugs and
       <tal:branches replace="view/shared_branches_count">0</tal:branches>
       branches shared with <tal:name replace="view/person/displayname">
-      sharee</tal:name>.<br />
+      grantee</tal:name>.<br />
 
       <tal:is-team condition="view/person/is_team">
         <tal:members>3</tal:members> team members can view these bugs and
