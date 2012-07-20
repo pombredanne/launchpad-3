@@ -5,12 +5,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'subscription_to_distribution',
-    'subscription_to_product',
+    'bugsubscriptionfilter_to_distribution',
+    'bugsubscriptionfilter_to_product',
     ]
 
 
-def subscription_to_distribution(bug_subscription_filter):
+def bugsubscriptionfilter_to_distribution(bug_subscription_filter):
     """Adapt the `IBugSubscriptionFilter` to an `IDistribution`."""
     subscription = bug_subscription_filter.structuralsubscription
     if subscription.distroseries is not None:
@@ -18,7 +18,7 @@ def subscription_to_distribution(bug_subscription_filter):
     return subscription.distribution
 
 
-def subscription_to_product(bug_subscription_filter):
+def bugsubscriptionfilter_to_product(bug_subscription_filter):
     """Adapt the `IBugSubscriptionFilter` to an `IProduct`."""
     subscription = bug_subscription_filter.structuralsubscription
     if subscription.productseries is not None:
