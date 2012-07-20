@@ -10,15 +10,17 @@ __all__ = [
     ]
 
 
-def subscription_to_distribution(subscription):
-    """Adapt the `IStructuralSubscription` to an `IDistribution`."""
+def subscription_to_distribution(bug_subscription_filter):
+    """Adapt the `IBugSubscriptionFilter` to an `IDistribution`."""
+    subscription = bug_subscription_filter.structuralsubscription
     if subscription.distroseries is not None:
         return subscription.distroseries.distribution
     return subscription.distribution
 
 
-def subscription_to_product(subscription):
-    """Adapt the `IStructuralSubscription` to an `IProduct`."""
+def subscription_to_product(bug_subscription_filter):
+    """Adapt the `IBugSubscriptionFilter` to an `IProduct`."""
+    subscription = bug_subscription_filter.structuralsubscription
     if subscription.productseries is not None:
         return subscription.productseries.product
     return subscription.product
