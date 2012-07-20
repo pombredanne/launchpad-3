@@ -1,4 +1,6 @@
-= Archive View Classes and Pages =
+==============================
+Archive View Classes and Pages
+==============================
 
 Let's use Celso's PPA for the tests.
 
@@ -6,7 +8,8 @@ Let's use Celso's PPA for the tests.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
-== ArchiveView ==
+ArchiveView
+===========
 
 The ArchiveView includes a few helper methods that make it easier to
 display different types of archives (copy archives, ppas).
@@ -482,7 +485,8 @@ The PPA description is linked when the user has made a contribution.
     <p><a rel="nofollow" href="http://example.dom/">http://...example...
 
 
-== ArchivePackageView ==
+ArchivePackageView
+==================
 
 This view displays detailed information about the archive packages that
 is not so relevant for the PPA index page, such as a summary of build
@@ -525,7 +529,8 @@ is a copy archive.
     True
 
 
-== ArchivePackageDeletionView ==
+ArchivePackageDeletionView
+==========================
 
 We use ArchivePackageDeletionView to provide the mechnisms used to
 delete packages from a PPA via the UI.
@@ -652,7 +657,8 @@ situation and ignore it. See bug #185922 for reference.
     2
 
 
-== ArchiveEditDependenciesView ==
+ArchiveEditDependenciesView
+===========================
 
 We use ArchiveEditDependenciesView to provide the mechnisms used to
 add and/or remove archive dependencies for a PPA via the UI.
@@ -1036,7 +1042,8 @@ affect the following tests.
     >>> cprov_private_ppa.disable()
 
 
-== ArchivePackageCopyingView ==
+ArchivePackageCopyingView
+=========================
 
 This class extends ArchiveSourceSelectionFormView, and thus uses the
 same mechanisms for presenting and filtering available sources for
@@ -1313,7 +1320,8 @@ value is submitted.
                        RequiredMissing())
 
 
-=== Copy private files to public archives ===
+Copy private files to public archives
+-------------------------------------
 
 Users are allowed to copy private sources into private PPAs, however
 it happens via 'delayed-copies' not the usual direct copying method.
@@ -1381,7 +1389,9 @@ upload queue.
 The action may also be performed asynchronously.
 
     >>> from lp.services.features.testing import FeatureFixture
-    >>> from lp.soyuz.browser.archive import FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS
+    >>> from lp.soyuz.browser.archive import (
+    ...     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS,
+    ...     )
     >>> fixture = FeatureFixture({
     ...     'soyuz.copypackageppa.enabled': 'on',
     ...     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS: '0',
@@ -1474,7 +1484,8 @@ The job failure is shown in the UI.
     >>> fixture.cleanUp()
 
 
-== External dependencies validation ==
+External dependencies validation
+================================
 
 The ArchiveAdminView checks the external_dependencies form data to see if
 it's a valid sources.list entry.
