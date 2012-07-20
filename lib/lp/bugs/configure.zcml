@@ -1041,6 +1041,10 @@
     <adapter
         factory=".model.structuralsubscription.DistributionTargetHelper"
         permission="zope.Public"/>
+    <adapter
+        for=".interfaces.structuralsubscription.IStructuralSubscription"
+        provides="lp.registry.interfaces.product.IProduct"
+        factory=".adapters.structuralsubscription.subscription_to_product"/>
 
   <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />

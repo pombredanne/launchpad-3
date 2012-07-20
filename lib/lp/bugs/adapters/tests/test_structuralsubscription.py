@@ -8,6 +8,7 @@ __metaclass__ = type
 from lp.bugs.adapters.structuralsubscription import (
     subscription_to_product,
     )
+from lp.registry.interfaces.product import IProduct
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -25,4 +26,4 @@ class StructuralSubscriptionTestCase(TestCaseWithFactory):
         login_person(subscriber)
         subscription = product.addBugSubscription(subscriber, subscriber)
         self.assertEqual(product, subscription_to_product(subscription))
-        #this.assertEqual(product, IProduct(bug_subscription_filter))
+        self.assertEqual(product, IProduct(subscription))
