@@ -15,7 +15,6 @@ from zope.traversing.browser.absoluteurl import absoluteURL
 from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import (
-    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
@@ -845,9 +844,10 @@ class TestSharingService(TestCaseWithFactory):
         self.assertEqual(0, permission_info.count())
 
         # Check that the grantee's subscriptions have been removed.
-        # Branches will be done once they have the information_type attribute.
         for bug in bugs or []:
             self.assertNotIn(grantee, bug.getDirectSubscribers())
+        for branch in branches or []:
+            self.assertNotIn(grantee, branch.subscribers)
 
         # Someone else still has access to the bugs and branches.
         grants = accessartifact_grant_source.findByArtifact(
@@ -868,6 +868,15 @@ class TestSharingService(TestCaseWithFactory):
             distribution=distro, owner=owner,
             information_type=InformationType.USERDATA)
         self._assert_revokeAccessGrants(distro, [bug], None)
+
+    def test_revokeAccessGrantsBranches(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        self._assert_revokeAccessGrants(product, None, [branch])
 
     def _assert_revokeTeamAccessGrants(self, pillar, bugs, branches):
         artifacts = []
@@ -895,9 +904,9 @@ class TestSharingService(TestCaseWithFactory):
                     getUtility(IAccessArtifactGrantSource).revokeByArtifact(
                         accessartifact_source.find([bug]), [person_grantee])
             for branch in branches or []:
-                branch.subscribe(person,
-                    BranchSubscriptionNotificationLevel.NOEMAIL, None,
-                    CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
+                branch.subscribe(
+                    person, BranchSubscriptionNotificationLevel.NOEMAIL,
+                    None, CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
 
         # Check that grantees have expected access grants and subscriptions.
         for person in [team_grantee, person_grantee]:
@@ -941,6 +950,15 @@ class TestSharingService(TestCaseWithFactory):
             distribution=distro, owner=owner,
             information_type=InformationType.USERDATA)
         self._assert_revokeTeamAccessGrants(distro, [bug], None)
+
+    def test_revokeTeamAccessGrantsBranches(self):
+        # Users with launchpad.Edit can delete all access for a sharee.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        self._assert_revokeTeamAccessGrants(product, None, [branch])
 
     def _assert_revokeAccessGrantsUnauthorized(self):
         # revokeAccessGrants raises an Unauthorized exception if the user
@@ -1123,17 +1141,6 @@ class TestSharingService(TestCaseWithFactory):
             grant_access(bug, i == 9)
         for i, branch in enumerate(branches):
             grant_access(branch, i == 9)
-            # XXX bug=1001042 wallyworld 2012-05-18
-            # for now we need to subscribe users to the branch in order
-            # for the underlying BranchCollection to allow access. This will
-            # no longer be the case when BranchCollection supports the new
-            # access policy framework.
-            if i < 9:
-                branch.subscribe(
-                    user, BranchSubscriptionNotificationLevel.NOEMAIL,
-                    BranchSubscriptionDiffSize.NODIFF,
-                    CodeReviewNotificationLevel.NOEMAIL,
-                    owner)
 
         # Check the results.
         shared_bugtasks, shared_branches = self.service.getSharedArtifacts(
@@ -1141,12 +1148,28 @@ class TestSharingService(TestCaseWithFactory):
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
         self.assertContentEqual(branches[:9], shared_branches)
 
-    def test_getPeopleWithoutAccess_bugs(self):
-        # Test the getPeopleWithoutAccess method.
+    def test_getPeopleWithAccessBugs(self):
+        # Test the getPeopleWithoutAccess method with bugs.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
+        bug = self.factory.makeBug(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
         login_person(owner)
+        self._assert_getPeopleWithoutAccess(product, bug)
 
+    def test_getPeopleWithAccessBranches(self):
+        # Test the getPeopleWithoutAccess method with branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        login_person(owner)
+        self._assert_getPeopleWithoutAccess(product, branch)
+
+    def _assert_getPeopleWithoutAccess(self, product, artifact):
+        access_artifact = self.factory.makeAccessArtifact(concrete=artifact)
         # Make some people to check. people[:5] will not have access.
         people = []
         # Make a team with access.
@@ -1162,26 +1185,20 @@ class TestSharingService(TestCaseWithFactory):
         people.append(team_with_access)
         people.append(member_with_access)
 
-        # Make the bug to use.
-        bug = self.factory.makeBug(
-            product=product, owner=owner,
-            information_type=InformationType.USERDATA)
-        access_artifact = self.factory.makeAccessArtifact(concrete=bug)
-
-        # Grant access to some of the people.
-        # Some access policy grants.
+        # Create some access policy grants.
         [policy] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)])
         for person in people[5:7]:
             self.factory.makeAccessPolicyGrant(
-                policy=policy, grantee=person, grantor=owner)
-        # Some access artifact grants.
+                policy=policy, grantee=person, grantor=product.owner)
+        # And some access artifact grants.
         for person in people[7:]:
             self.factory.makeAccessArtifactGrant(
-                artifact=access_artifact, grantee=person, grantor=owner)
+                artifact=access_artifact, grantee=person,
+                grantor=product.owner)
 
         # Check the results.
-        without_access = self.service.getPeopleWithoutAccess(bug, people)
+        without_access = self.service.getPeopleWithoutAccess(artifact, people)
         self.assertContentEqual(people[:5], without_access)
 
     def _make_Artifacts(self):
