@@ -47,3 +47,13 @@ class StructuralSubscriptionTestCase(TestCaseWithFactory):
         self.assertEqual(
             distribution, subscription_to_distribution(subscription))
         self.assertEqual(distribution, IDistribution(subscription))
+
+    def test_subscription_to_distroseries_with_distribution(self):
+        distribution = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distribution)
+        subscriber = distribution.owner
+        login_person(subscriber)
+        subscription = series.addBugSubscription(subscriber, subscriber)
+        self.assertEqual(
+            distribution, subscription_to_distribution(subscription))
+        self.assertEqual(distribution, IDistribution(subscription))
