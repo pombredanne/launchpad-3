@@ -1119,12 +1119,28 @@ class TestSharingService(TestCaseWithFactory):
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
         self.assertContentEqual(branches[:9], shared_branches)
 
-    def test_getPeopleWithoutAccess(self):
-        # Test the getPeopleWithoutAccess method.
+    def test_getPeopleWithAccessBugs(self):
+        # Test the getPeopleWithoutAccess method with bugs.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
+        bug = self.factory.makeBug(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
         login_person(owner)
+        self._assert_getPeopleWithoutAccess(product, bug)
 
+    def test_getPeopleWithAccessBranches(self):
+        # Test the getPeopleWithoutAccess method with branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        login_person(owner)
+        self._assert_getPeopleWithoutAccess(product, branch)
+
+    def _assert_getPeopleWithoutAccess(self, product, artifact):
+        access_artifact = self.factory.makeAccessArtifact(concrete=artifact)
         # Make some people to check. people[:5] will not have access.
         people = []
         # Make a team with access.
@@ -1140,34 +1156,20 @@ class TestSharingService(TestCaseWithFactory):
         people.append(team_with_access)
         people.append(member_with_access)
 
-        # Make the bug to use.
-        bug = self.factory.makeBug(
-            product=product, owner=owner,
-            information_type=InformationType.USERDATA)
-        branch = self.factory.makeBranch(
-            product=product, owner=owner,
-            information_type=InformationType.USERDATA)
-        bug_artifact = self.factory.makeAccessArtifact(concrete=bug)
-        branch_artifact = self.factory.makeAccessArtifact(concrete=branch)
-
-        # Grant access to some of the people.
-        # Some access policy grants.
+        # Create some access policy grants.
         [policy] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)])
         for person in people[5:7]:
             self.factory.makeAccessPolicyGrant(
-                policy=policy, grantee=person, grantor=owner)
-        # Some access artifact grants.
+                policy=policy, grantee=person, grantor=product.owner)
+        # And some access artifact grants.
         for person in people[7:]:
             self.factory.makeAccessArtifactGrant(
-                artifact=bug_artifact, grantee=person, grantor=owner)
-            self.factory.makeAccessArtifactGrant(
-                artifact=branch_artifact, grantee=person, grantor=owner)
+                artifact=access_artifact, grantee=person,
+                grantor=product.owner)
 
         # Check the results.
-        without_access = self.service.getPeopleWithoutAccess(bug, people)
-        self.assertContentEqual(people[:5], without_access)
-        without_access = self.service.getPeopleWithoutAccess(branch, people)
+        without_access = self.service.getPeopleWithoutAccess(artifact, people)
         self.assertContentEqual(people[:5], without_access)
 
     def _make_Artifacts(self):
