@@ -14,6 +14,7 @@ from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
 from storm.expr import (
     And,
+    Count,
     In,
     Join,
     Or,
@@ -51,11 +52,13 @@ from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.accesspolicy import (
     AccessArtifactGrant,
     AccessPolicyArtifact,
+    AccessPolicy,
     AccessPolicyGrant,
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.lpstorm import IStore
+from lp.services.database.stormexpr import ColumnSelect
 from lp.services.features import getFeatureFlag
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
@@ -102,6 +105,19 @@ class SharingService:
             AccessPolicyGrant.policy_id == policy.id,
             TeamParticipation.personID == person.id)
         return not result.is_empty()
+
+    def getAccessPolicyGrantCounts(self, pillar):
+        """See `ISharingService`."""
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+        ids = [policy.id for policy in policies]
+        store = IStore(AccessPolicyGrant)
+        count_select = Select((Count(),), tables=(AccessPolicyGrant,),
+            where=AccessPolicyGrant.policy == AccessPolicy.id)
+        return store.find(
+            (AccessPolicy.type,
+            ColumnSelect(count_select)),
+            AccessPolicy.id.is_in(ids)
+        )
 
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
@@ -392,10 +408,18 @@ class SharingService:
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         grant_permissions = list(ap_grant_flat.findGranteePermissionsByPolicy(
             all_pillar_policies, [sharee]))
-        if not grant_permissions:
-            return None
-        [sharee] = self.jsonShareeData(grant_permissions)
-        return sharee
+
+        grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
+        invisible_types = [
+            count_info[0].title for count_info in grant_counts
+            if count_info[1] == 0]
+        sharee_entry = None
+        if grant_permissions:
+            [sharee_entry] = self.jsonShareeData(grant_permissions)
+        result = {
+            'sharee_entry': sharee_entry,
+            'invisible_information_types': invisible_types}
+        return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def deletePillarSharee(self, pillar, sharee, user,
@@ -439,6 +463,12 @@ class SharingService:
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             user, artifacts=None, grantee=sharee, pillar=pillar,
             information_types=information_types)
+
+        grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
+        invisible_types = [
+            count_info[0].title for count_info in grant_counts
+            if count_info[1] == 0]
+        return invisible_types
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def revokeAccessGrants(self, pillar, sharee, user, branches=None,

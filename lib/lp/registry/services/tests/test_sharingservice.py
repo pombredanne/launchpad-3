@@ -484,7 +484,8 @@ class TestSharingService(TestCaseWithFactory):
         expected_sharee_data = self._makeShareeData(
             sharee, expected_permissions,
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
-        self.assertContentEqual(expected_sharee_data, sharee_data)
+        self.assertContentEqual(
+            expected_sharee_data, sharee_data['sharee_entry'])
         # Check that getPillarSharees returns what we expect.
         if pillar_type == 'product':
             expected_sharee_grants = [
@@ -547,7 +548,25 @@ class TestSharingService(TestCaseWithFactory):
         with FeatureFixture(WRITE_FLAG):
             sharee_data = self.service.sharePillarInformation(
                 pillar, sharee, self.factory.makePerson(), permissions)
-        self.assertIsNone(sharee_data)
+        self.assertIsNone(sharee_data['sharee_entry'])
+
+    def test_shareePillarInformationInvisibleInformationTypes(self):
+        # Sharing with a user returns data containing the resulting invisible
+        # information types.
+        product = self.factory.makeProduct()
+        grantee = self.factory.makePerson()
+        with FeatureFixture(WRITE_FLAG):
+            with admin_logged_in():
+                self.service.deletePillarSharee(
+                    product, product.owner, product.owner)
+                result_data = self.service.sharePillarInformation(
+                    product, grantee, product.owner,
+                    {InformationType.USERDATA: SharingPermission.ALL})
+        # The owner is granted access on product creation. So we need to allow
+        # for that in the check below.
+        self.assertContentEqual(
+            ['Private Security'],
+            result_data['invisible_information_types'])
 
     def _assert_sharePillarInformationUnauthorized(self, pillar):
         # sharePillarInformation raises an Unauthorized exception if the user
@@ -671,6 +690,16 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
         self._assert_deletePillarSharee(distro, [InformationType.USERDATA])
+
+    def test_deletePillarShareeInvisibleInformationTypes(self):
+        # Deleting a pillar sharee returns the resulting invisible info types.
+        product = self.factory.makeProduct()
+        with FeatureFixture(WRITE_FLAG):
+            with admin_logged_in():
+                invisible_information_types = self.service.deletePillarSharee(
+                    product, product.owner, product.owner)
+        self.assertContentEqual(
+            ['Private', 'Private Security'], invisible_information_types)
 
     def _assert_deletePillarShareeUnauthorized(self, pillar):
         # deletePillarSharee raises an Unauthorized exception if the user
@@ -1288,6 +1317,36 @@ class TestSharingService(TestCaseWithFactory):
             self.service.checkPillarAccess(
                 self.factory.makeProduct(), InformationType.PUBLIC,
                 self.factory.makePerson()))
+
+    def test_getAccessPolicyGrantCounts(self):
+        # checkPillarAccess checks whether the user has full access to
+        # an information type.
+        product = self.factory.makeProduct()
+        grantee = self.factory.makePerson()
+        with FeatureFixture(WRITE_FLAG):
+            with admin_logged_in():
+                self.service.sharePillarInformation(
+                    product, grantee, product.owner,
+                    {InformationType.USERDATA: SharingPermission.ALL})
+        # The owner is granted access on product creation. So we need to allow
+        # for that in the check below.
+        self.assertContentEqual(
+            [(InformationType.PRIVATESECURITY, 1),
+             (InformationType.USERDATA, 2)],
+            self.service.getAccessPolicyGrantCounts(product))
+
+    def test_getAccessPolicyGrantCountsZero(self):
+        # checkPillarAccess checks whether the user has full access to
+        # an information type.
+        product = self.factory.makeProduct()
+        with FeatureFixture(WRITE_FLAG):
+            with admin_logged_in():
+                self.service.deletePillarSharee(
+                    product, product.owner, product.owner)
+        self.assertContentEqual(
+            [(InformationType.PRIVATESECURITY, 0),
+             (InformationType.USERDATA, 0)],
+            self.service.getAccessPolicyGrantCounts(product))
 
 
 class ApiTestMixin:
