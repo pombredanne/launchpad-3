@@ -5,8 +5,16 @@
 
 __metaclass__ = type
 __all__ = [
+    'subscription_to_distribution',
     'subscription_to_product',
     ]
+
+
+def subscription_to_distribution(subscription):
+    """Adapt the `IStructuralSubscription` to an `IDistribution`."""
+    if subscription.distroseries is not None:
+        return subscription.distroseries.distribution
+    return subscription.distribution
 
 
 def subscription_to_product(subscription):

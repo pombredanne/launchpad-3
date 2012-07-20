@@ -6,8 +6,10 @@
 __metaclass__ = type
 
 from lp.bugs.adapters.structuralsubscription import (
+    subscription_to_distribution,
     subscription_to_product,
     )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.testing import (
     login_person,
@@ -36,3 +38,12 @@ class StructuralSubscriptionTestCase(TestCaseWithFactory):
         subscription = series.addBugSubscription(subscriber, subscriber)
         self.assertEqual(product, subscription_to_product(subscription))
         self.assertEqual(product, IProduct(subscription))
+
+    def test_subscription_to_distribution_with_distribution(self):
+        distribution = self.factory.makeDistribution()
+        subscriber = distribution.owner
+        login_person(subscriber)
+        subscription = distribution.addBugSubscription(subscriber, subscriber)
+        self.assertEqual(
+            distribution, subscription_to_distribution(subscription))
+        self.assertEqual(distribution, IDistribution(subscription))
