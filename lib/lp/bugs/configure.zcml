@@ -623,6 +623,14 @@
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsProtected"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
+    <adapter
+        for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        factory=".adapters.bugsubscriptionfilter.bugsubscriptionfilter_to_distribution"/>
+    <adapter
+        for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+        provides="lp.registry.interfaces.product.IProduct"
+        factory=".adapters.bugsubscriptionfilter.bugsubscriptionfilter_to_product"/>
 
     <!-- BugMute -->
     <class
@@ -1041,14 +1049,6 @@
     <adapter
         factory=".model.structuralsubscription.DistributionTargetHelper"
         permission="zope.Public"/>
-    <adapter
-        for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
-        provides="lp.registry.interfaces.distribution.IDistribution"
-        factory=".adapters.bugsubscriptionfilter.bugsubscriptionfilter_to_distribution"/>
-    <adapter
-        for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
-        provides="lp.registry.interfaces.product.IProduct"
-        factory=".adapters.bugsubscriptionfilter.bugsubscriptionfilter_to_product"/>
 
   <webservice:register module="lp.bugs.errors" />
   <webservice:register module="lp.bugs.interfaces.webservice" />

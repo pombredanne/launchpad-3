@@ -28,7 +28,7 @@ class BugSubscriptionFilterTestCase(TestCaseWithFactory):
         login_person(subscriber)
         subscription = target.addBugSubscription(subscriber, subscriber)
         subscription_filter = BugSubscriptionFilter()
-        subscription_filter.structuralsubscription = subscription
+        subscription_filter.structural_subscription = subscription
         return subscription_filter
 
     def test_bugsubscriptionfilter_to_product_with_product(self):
