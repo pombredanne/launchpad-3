@@ -366,6 +366,12 @@ class PillarSharingView(LaunchpadView):
         cache.objects['grantee_data'] = (
             self._getSharingService().jsonGranteeData(batch_navigator.batch))
 
+        grant_counts = (
+            self._getSharingService().getAccessPolicyGrantCounts(self.context))
+        cache.objects['invisible_information_types'] = [
+            count_info[0].title for count_info in grant_counts
+            if count_info[1] == 0]
+
         def _getBatchInfo(batch):
             if batch is None:
                 return None

@@ -373,7 +373,7 @@ class PillarSharingViewTestMixin:
             view = create_view(self.pillar, name='+sharing')
             with StormStatementRecorder() as recorder:
                 view.initialize()
-            self.assertThat(recorder, HasQueryCount(LessThan(7)))
+            self.assertThat(recorder, HasQueryCount(LessThan(9)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
@@ -393,6 +393,19 @@ class PillarSharingViewTestMixin:
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)
             self.assertTrue(cache.objects.get('sharing_write_enabled'))
+
+    def test_view_invisible_information_types(self):
+        # Test the expected invisible information type  data is in the
+        # json request cache.
+        with FeatureFixture(WRITE_FLAG):
+            with person_logged_in(self.pillar.owner):
+                getUtility(IService, 'sharing').deletePillarGrantee(
+                    self.pillar, self.pillar.owner, self.pillar.owner)
+            view = create_initialized_view(self.pillar, name='+sharing')
+            cache = IJSONRequestCache(view.request)
+            self.assertContentEqual(
+                ['Private Security', 'Private'],
+                cache.objects.get('invisible_information_types'))
 
 
 class TestProductSharingView(PillarSharingViewTestMixin,

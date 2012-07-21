@@ -52,6 +52,14 @@ class ISharingService(IService):
             of that type, False otherwise
         """
 
+    def getAccessPolicyGrantCounts(pillar):
+        """Return the number of grantees who have policy grants of each type.
+
+        Returns a resultset of (InformationType, count) tuples, where count is
+        the number of grantees who have an access policy grant for the
+        information type.
+        """
+
     def getSharedArtifacts(pillar, person, user):
         """Return the artifacts shared between the pillar and person.
 
