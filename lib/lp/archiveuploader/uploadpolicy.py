@@ -245,9 +245,20 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             pass
 
     def policySpecificChecks(self, upload):
-        """Check that PPA uploads are within the allowed quota."""
+        """The insecure policy does not allow SECURITY uploads for now.
+
+        If the upload is targeted to any PPA, checks if the upload is within
+        the allowed quota.
+        """
         if upload.is_ppa:
             self.checkArchiveSizeQuota(upload)
+        else:
+            # XXX cjwatson 2012-07-20 bug=1026665: For now, direct uploads
+            # to SECURITY will not be built.  See
+            # BuildPackageJob.postprocessCandidate.
+            if self.pocket == PackagePublishingPocket.SECURITY:
+                upload.reject(
+                    "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
         """The insecure policy auto-approves RELEASE/PROPOSED pocket stuff.
