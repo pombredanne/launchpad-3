@@ -819,8 +819,7 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         spr = self.source.sourcepackagerelease
         prev_source = self.test_publisher.getPubSource(
             sourcename=spr.name, version='%s~' % spr.version,
-            archive=self.archive, pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED, section='misc')
+            archive=self.archive)
         orig_tarball = 'test-source_1.0.orig.tar.gz'
         prev_tar = self.test_publisher.addMockFile(
             orig_tarball, filecontent='aaabbbccc')
@@ -830,7 +829,6 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         spr.addFile(new_tar)
         # Commit to ensure librarian files are written.
         self.layer.txn.commit()
-
         self.assertCannotCopySourceOnly(
             "test-source_1.0.orig.tar.gz already exists in destination "
             "archive with different contents.")
@@ -841,8 +839,7 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         spr = self.source.sourcepackagerelease
         prev_source = self.test_publisher.getPubSource(
             sourcename=spr.name, version='%s~' % spr.version,
-            archive=self.archive, pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED, section='misc')
+            archive=self.archive)
         orig_tarball = 'test-source_1.0.orig.tar.gz'
         prev_tar = self.test_publisher.addMockFile(
             orig_tarball, filecontent='aaabbbccc')
@@ -852,7 +849,6 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         spr.addFile(new_tar)
         # Commit to ensure librarian files are written.
         self.layer.txn.commit()
-
         self.assertCanCopySourceOnly()
 
     def test_can_copy_expired_sources_in_destination(self):
@@ -861,8 +857,7 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         spr = self.source.sourcepackagerelease
         prev_source = self.test_publisher.getPubSource(
             sourcename=spr.name, version='%s~' % spr.version,
-            archive=self.archive, pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED, section='misc')
+            archive=self.archive)
         orig_tarball = 'test-source_1.0.orig.tar.gz'
         prev_tar = self.test_publisher.addMockFile(
             orig_tarball, filecontent='aaabbbccc')
@@ -874,7 +869,6 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         with dbuser('librarian'):
             naked_prev_tar = removeSecurityProxy(prev_tar)
             naked_prev_tar.content = None
-
         self.assertCanCopySourceOnly()
 
 
