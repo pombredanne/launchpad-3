@@ -30,7 +30,7 @@ class AuditorClient:
             ('object', object_to_enterpriseid(obj)),
             ('operation', operation),
             ('actor', object_to_enterpriseid(actorobj)),
-            ('date', datetime.now()))
+            ('date', datetime.utcnow()))
         if comment:
             unencoded_data.append(('comment', comment))
         if details:
