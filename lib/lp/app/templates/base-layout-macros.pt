@@ -191,7 +191,7 @@
 
             });
 
-            Y.on('lp:resource:changed', function(e) {
+            Y.on('lp:context:web_link:changed', function(e) {
                   window.location = e.new_value;
             });
         });
