@@ -1065,7 +1065,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             distroseries=self.distroseries, sourcename="copyme",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             component='multiverse', section='web', archive=source_archive)
-        bpphs = self.publisher.getPubBinaries(
+        self.publisher.getPubBinaries(
             binaryname="copyme", pub_source=spph,
             distroseries=self.distroseries,
             status=PackagePublishingStatus.PUBLISHED)

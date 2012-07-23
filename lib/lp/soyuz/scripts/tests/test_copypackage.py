@@ -52,9 +52,7 @@ from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
-    IBinaryPackagePublishingHistory,
     IPublishingSet,
-    ISourcePackagePublishingHistory,
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackageformat import (
@@ -2054,8 +2052,8 @@ class TestCopyClosesBugs(TestCaseWithFactory):
         # Create a dummy first package version so we can file bugs on it.
         dummy_changesfile = "Format: 1.7\n"
         self.createSource(
-            '666', self.hoary_test.main_archive, PackagePublishingPocket.PROPOSED,
-            dummy_changesfile)
+            '666', self.hoary_test.main_archive,
+            PackagePublishingPocket.PROPOSED, dummy_changesfile)
 
     def createSource(self, version, archive, pocket, bug_id):
         changes_template = (
@@ -2083,8 +2081,8 @@ class TestCopyClosesBugs(TestCaseWithFactory):
     def test_copies_to_updates_close_bugs(self):
         updates_bug_id = self.createBug('buggy-source', 'bug in -proposed')
         spph = self.createSource(
-            '667', self.hoary_test.main_archive, PackagePublishingPocket.PROPOSED,
-            updates_bug_id)
+            '667', self.hoary_test.main_archive,
+            PackagePublishingPocket.PROPOSED, updates_bug_id)
 
         [copied_source] = do_copy(
             [spph], self.hoary_test.main_archive, self.hoary_test,
@@ -2098,8 +2096,8 @@ class TestCopyClosesBugs(TestCaseWithFactory):
     def test_copies_to_development_close_bugs(self):
         dev_bug_id = self.createBug('buggy-source', 'bug in development')
         spph = self.createSource(
-            '668', self.hoary_test.main_archive, PackagePublishingPocket.UPDATES,
-            dev_bug_id)
+            '668', self.hoary_test.main_archive,
+            PackagePublishingPocket.UPDATES, dev_bug_id)
 
         [copied_source] = do_copy(
             [spph], self.hoary_test.main_archive, self.breezy_autotest,
@@ -2127,8 +2125,8 @@ class TestCopyClosesBugs(TestCaseWithFactory):
     def test_copies_to_ppa_do_not_close_bugs(self):
         proposed_bug_id = self.createBug('buggy-source', 'bug in PPA')
         spph = self.createSource(
-            '670', self.hoary_test.main_archive, PackagePublishingPocket.RELEASE,
-            proposed_bug_id)
+            '670', self.hoary_test.main_archive,
+            PackagePublishingPocket.RELEASE, proposed_bug_id)
 
         [copied_source] = do_copy(
             [spph], self.ppa, self.hoary_test, PackagePublishingPocket.RELEASE,
