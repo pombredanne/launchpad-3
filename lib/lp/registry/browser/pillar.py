@@ -280,7 +280,7 @@ class PillarSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
-    sharing_vocabulary_name = 'NewPillarSharee'
+    sharing_vocabulary_name = 'NewPillarGrantee'
 
     related_features = (
         'disclosure.enhanced_sharing.enabled',
@@ -323,24 +323,24 @@ class PillarSharingView(LaunchpadView):
         return simplejson.dumps(
             self.sharing_picker_config, cls=ResourceJSONEncoder)
 
-    def _getBatchNavigator(self, sharees):
-        """Return the batch navigator to be used to batch the sharees."""
+    def _getBatchNavigator(self, grantees):
+        """Return the batch navigator to be used to batch the grantees."""
         return BatchNavigator(
-            sharees, self.request,
+            grantees, self.request,
             hide_counts=True,
             size=config.launchpad.default_batch_size,
-            range_factory=StormRangeFactory(sharees))
+            range_factory=StormRangeFactory(grantees))
 
-    def sharees(self):
-        """An `IBatchNavigator` for sharees."""
+    def grantees(self):
+        """An `IBatchNavigator` for grantees."""
         if self._batch_navigator is None:
-            unbatchedSharees = self.unbatched_sharees()
-            self._batch_navigator = self._getBatchNavigator(unbatchedSharees)
+            unbatchedGrantees = self.unbatched_grantees()
+            self._batch_navigator = self._getBatchNavigator(unbatchedGrantees)
         return self._batch_navigator
 
-    def unbatched_sharees(self):
-        """All the sharees for a pillar."""
-        return self._getSharingService().getPillarSharees(self.context)
+    def unbatched_grantees(self):
+        """All the grantees for a pillar."""
+        return self._getSharingService().getPillarGrantees(self.context)
 
     def initialize(self):
         super(PillarSharingView, self).initialize()
@@ -362,9 +362,9 @@ class PillarSharingView(LaunchpadView):
         if len(view_names) != 1:
             raise AssertionError("Ambiguous view name.")
         cache.objects['view_name'] = view_names.pop()
-        batch_navigator = self.sharees()
-        cache.objects['sharee_data'] = (
-            self._getSharingService().jsonShareeData(batch_navigator.batch))
+        batch_navigator = self.grantees()
+        cache.objects['grantee_data'] = (
+            self._getSharingService().jsonGranteeData(batch_navigator.batch))
 
         grant_counts = (
             self._getSharingService().getAccessPolicyGrantCounts(self.context))
@@ -413,14 +413,14 @@ class PillarPersonSharingView(LaunchpadView):
         request = get_current_web_service_request()
         branch_data = self._build_branch_template_data(self.branches, request)
         bug_data = self._build_bug_template_data(self.bugtasks, request)
-        sharee_data = {
+        grantee_data = {
             'displayname': self.person.displayname,
             'self_link': absoluteURL(self.person, request)
         }
         pillar_data = {
             'self_link': absoluteURL(self.pillar, request)
         }
-        cache.objects['sharee'] = sharee_data
+        cache.objects['grantee'] = grantee_data
         cache.objects['pillar'] = pillar_data
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
