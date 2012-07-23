@@ -43,14 +43,14 @@ class AuditorClient:
             raise AttributeError
         params = []
         if obj:
-            params.append('object=%s' % object_to_enterpriseid(obj))
+            params.append(('object', object_to_enterpriseid(obj)))
         if operation:
-            params.append('operation=%s' % operation)
+            params.append(('operation', operation))
         if actorobj:
-            params.append('actor=%s' % object_to_enterpriseid(actorobj))
+            params.append(('actor', object_to_enterpriseid(actorobj)))
         if limit:
-            params.append('limit=%s' % limit)
-        f = urlopen('%s/fetch/?%s' % (self.auditor, '&'.join(params)))
+            params.append(('limit', limit))
+        f = urlopen('%s/fetch/?%s' % (self.auditor, urlencode(params)))
         logs = json.loads(f.read())
         # Process the actors and objects back from enterprise ids.
         for entry in logs['log-entries']:
