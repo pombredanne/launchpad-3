@@ -358,8 +358,9 @@ class IPackageUpload(Interface):
         """
 
     @export_write_operation()
+    @call_with(user=REQUEST_USER)
     @operation_for_version("devel")
-    def acceptFromQueue(logger=None, dry_run=False):
+    def acceptFromQueue(logger=None, dry_run=False, user=None):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.

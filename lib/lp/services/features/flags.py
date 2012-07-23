@@ -313,6 +313,12 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('auditor.enabled',
+     'boolean',
+     'If true, send audit data to an auditor instance.',
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.
