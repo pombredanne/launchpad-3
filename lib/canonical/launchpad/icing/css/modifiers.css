@@ -185,6 +185,10 @@ table.diff,
     padding: 0 0 6px 18px;
     line-height: 18px;
     }
+.block-sprite {
+    padding: 2px 2px 15px 36px;
+    margin-bottom: 0;
+    }
 
 .action-icon {
     /* Textual browsers read the text, graphical browsers see the sprite. */

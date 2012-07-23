@@ -764,7 +764,7 @@ Predictably, private bugs are sent with a slightly different header:
     mark@example.com ['yes'] ['no']  ['Private']
     test@canonical.com ['yes'] ['no']  ['Private']
 
-Now transition the bug to embargoed security:
+Now transition the bug to private security:
 
     >>> with lp_dbuser():
     ...     bug_three.transitionToInformationType(
