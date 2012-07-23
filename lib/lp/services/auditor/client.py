@@ -8,10 +8,7 @@ __all__ = [
     'AuditorClient',
     ]
 
-from datetime import datetime
-import json
-from urllib import urlencode
-from urllib2 import urlopen
+from auditorclient.client import Client
 
 from lp.services.config import config
 from lp.services.enterpriseid import (
@@ -20,42 +17,26 @@ from lp.services.enterpriseid import (
     )
 
 
-class AuditorClient:
+class AuditorClient(Client):
+
     def __init__(self):
-        self.auditor = "http://%s:%s" % (
+        super(AuditorClient, self).__init__(
             config.auditor.host, config.auditor.port)
 
     def send(self, obj, operation, actorobj, comment=None, details=None):
-        unencoded_data = (
-            ('object', object_to_enterpriseid(obj)),
-            ('operation', operation),
-            ('actor', object_to_enterpriseid(actorobj)),
-            ('date', datetime.utcnow()))
-        if comment:
-            unencoded_data.append(('comment', comment))
-        if details:
-            unencoded_data.append(('details', details))
-        f = urlopen('%s/log/' % self.auditor, urlencode(unencoded_data))
-        return f.read()
+        return super(AuditorClient, self).send(
+            object_to_enterpriseid(obj), operation,
+            object_to_enterpriseid(actorobj), comment, details)
 
     def recieve(self, obj=None, operation=None, actorobj=None, limit=None):
-        if not obj and not operation and not actorobj:
-            raise AttributeError
-        params = []
         if obj:
-            params.append(('object', object_to_enterpriseid(obj)))
-        if operation:
-            params.append(('operation', operation))
+            obj = object_to_enterpriseid(obj)
         if actorobj:
-            params.append(('actor', object_to_enterpriseid(actorobj)))
-        if limit:
-            params.append(('limit', limit))
-        f = urlopen('%s/fetch/?%s' % (self.auditor, urlencode(params)))
-        logs = json.loads(f.read())
+            actorobj = object_to_enterpriseid(actorobj)
+        logs = super(AuditorClient, self).recieve(
+            obj, operation, actorobj, limit)
         # Process the actors and objects back from enterprise ids.
         for entry in logs['log-entries']:
-            actorstr = entry['actor']
-            objstr = entry['object']
-            entry['actor'] = enterpriseid_to_object(actorstr)
-            entry['object'] = enterpriseid_to_object(objstr)
+            entry['actor'] = enterpriseid_to_object(entry['actor'])
+            entry['object'] = enterpriseid_to_object(entry['object'])
         return logs['log-entries']
