@@ -2030,6 +2030,116 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
             [build_i386], [pub.build for pub in delayed_copy.builds])
 
 
+class TestCopyClosesBugs(TestCaseWithFactory):
+    """Copying packages closes bugs.
+
+    Package copies to the primary archive automatically close referenced
+    bugs when targeted to release, updates, and security pockets.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCopyClosesBugs, self).setUp()
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+        self.ubuntutest = self.test_publisher.ubuntutest
+        self.hoary_test = self.ubuntutest.getSeries('hoary-test')
+        self.test_publisher.addFakeChroots(self.hoary_test)
+        self.breezy_autotest = self.test_publisher.breezy_autotest
+        self.person = self.factory.makePerson()
+        self.ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, owner=self.person)
+
+        # Create a dummy first package version so we can file bugs on it.
+        dummy_changesfile = "Format: 1.7\n"
+        self.createSource(
+            '666', self.hoary_test.main_archive, PackagePublishingPocket.PROPOSED,
+            dummy_changesfile)
+
+    def createSource(self, version, archive, pocket, bug_id):
+        changes_template = (
+            "Format: 1.7\n"
+            "Launchpad-bugs-fixed: %s\n")
+        changes_file_content = changes_template % bug_id
+        source = self.test_publisher.getPubSource(
+            sourcename='buggy-source', version=version,
+            distroseries=self.hoary_test, archive=archive, pocket=pocket,
+            changes_file_content=changes_file_content,
+            status=PackagePublishingStatus.PUBLISHED)
+        source.sourcepackagerelease.changelog_entry = (
+            "Required for close_bugs_for_sourcepublication")
+        self.layer.txn.commit()
+        return source
+
+    def createBug(self, source_name, summary):
+        sourcepackage = self.ubuntutest.getSourcePackage(source_name)
+        bug_params = CreateBugParams(self.person, summary, "booo")
+        bug = sourcepackage.createBug(bug_params)
+        [bug_task] = bug.bugtasks
+        self.assertEqual(bug_task.status, BugTaskStatus.NEW)
+        return bug.id
+
+    def test_copies_to_updates_close_bugs(self):
+        updates_bug_id = self.createBug('buggy-source', 'bug in -proposed')
+        spph = self.createSource(
+            '667', self.hoary_test.main_archive, PackagePublishingPocket.PROPOSED,
+            updates_bug_id)
+
+        [copied_source] = do_copy(
+            [spph], self.hoary_test.main_archive, self.hoary_test,
+            PackagePublishingPocket.UPDATES, check_permissions=False)
+        self.assertEqual(PackagePublishingStatus.PENDING, copied_source.status)
+
+        updates_bug = getUtility(IBugSet).get(updates_bug_id)
+        [updates_bug_task] = updates_bug.bugtasks
+        self.assertEqual(updates_bug_task.status, BugTaskStatus.FIXRELEASED)
+
+    def test_copies_to_development_close_bugs(self):
+        dev_bug_id = self.createBug('buggy-source', 'bug in development')
+        spph = self.createSource(
+            '668', self.hoary_test.main_archive, PackagePublishingPocket.UPDATES,
+            dev_bug_id)
+
+        [copied_source] = do_copy(
+            [spph], self.hoary_test.main_archive, self.breezy_autotest,
+            PackagePublishingPocket.RELEASE, check_permissions=False)
+        self.assertEqual(PackagePublishingStatus.PENDING, copied_source.status)
+
+        dev_bug = getUtility(IBugSet).get(dev_bug_id)
+        [dev_bug_task] = dev_bug.bugtasks
+        self.assertEqual(dev_bug_task.status, BugTaskStatus.FIXRELEASED)
+
+    def test_copies_to_proposed_do_not_close_bugs(self):
+        ppa_bug_id = self.createBug('buggy-source', 'bug in PPA')
+        spph = self.createSource(
+            '669', self.ppa, PackagePublishingPocket.RELEASE, ppa_bug_id)
+
+        [copied_source] = do_copy(
+            [spph], self.hoary_test.main_archive, self.hoary_test,
+            PackagePublishingPocket.PROPOSED, check_permissions=False)
+        self.assertEqual(PackagePublishingStatus.PENDING, copied_source.status)
+
+        ppa_bug = getUtility(IBugSet).get(ppa_bug_id)
+        [ppa_bug_task] = ppa_bug.bugtasks
+        self.assertEqual(ppa_bug_task.status, BugTaskStatus.NEW)
+
+    def test_copies_to_ppa_do_not_close_bugs(self):
+        proposed_bug_id = self.createBug('buggy-source', 'bug in PPA')
+        spph = self.createSource(
+            '670', self.hoary_test.main_archive, PackagePublishingPocket.RELEASE,
+            proposed_bug_id)
+
+        [copied_source] = do_copy(
+            [spph], self.ppa, self.hoary_test, PackagePublishingPocket.RELEASE,
+            check_permissions=False)
+        self.assertEqual(PackagePublishingStatus.PENDING, copied_source.status)
+
+        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
+        [proposed_bug_task] = proposed_bug.bugtasks
+        self.assertEqual(proposed_bug_task.status, BugTaskStatus.NEW)
+
+
 class CopyPackageScriptTestCase(unittest.TestCase):
     """Test the copy-package.py script."""
     layer = LaunchpadZopelessLayer
@@ -3142,136 +3252,3 @@ class CopyPackageTestCase(TestCaseWithFactory):
             SoyuzScriptError,
             "Can't unembargo into suite 'warty' of a distribution.",
             copy_helper.mainTask)
-
-    def testCopyClosesBugs(self):
-        """Copying packages closes bugs.
-
-        Package copies to primary archive automatically closes
-        bugs referenced bugs when target to release, updates
-        and security pockets.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        cprov = getUtility(IPersonSet).getByName("cprov")
-
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        test_publisher.addFakeChroots(warty)
-
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher.addFakeChroots(hoary)
-
-        def create_source(version, archive, pocket, changes_file_content):
-            source = test_publisher.getPubSource(
-                sourcename='buggy-source', version=version,
-                distroseries=warty, archive=archive, pocket=pocket,
-                changes_file_content=changes_file_content,
-                status=PackagePublishingStatus.PUBLISHED)
-            source.sourcepackagerelease.changelog_entry = (
-                "Required for close_bugs_for_sourcepublication")
-            test_publisher.getPubBinaries(
-                pub_source=source, distroseries=warty, archive=archive,
-                pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
-            self.layer.txn.commit()
-            return source
-
-        def create_bug(summary):
-            buggy_in_ubuntu = ubuntu.getSourcePackage('buggy-source')
-            bug_params = CreateBugParams(cprov, summary, "booo")
-            bug = buggy_in_ubuntu.createBug(bug_params)
-            [bug_task] = bug.bugtasks
-            self.assertEqual(bug_task.status, BugTaskStatus.NEW)
-            return bug.id
-
-        def publish_copies(copies):
-            for pub in copies:
-                pub.status = PackagePublishingStatus.PUBLISHED
-
-        changes_template = (
-            "Format: 1.7\n"
-            "Launchpad-bugs-fixed: %s\n")
-
-        # Create a dummy first package version so we can file bugs on it.
-        dummy_changesfile = "Format: 1.7\n"
-        create_source(
-            '666', warty.main_archive, PackagePublishingPocket.PROPOSED,
-            dummy_changesfile)
-
-        # Copies to -updates close bugs when they exist.
-        updates_bug_id = create_bug('bug in -proposed')
-        closing_bug_changesfile = changes_template % updates_bug_id
-        create_source(
-            '667', warty.main_archive, PackagePublishingPocket.PROPOSED,
-            closing_bug_changesfile)
-
-        copy_helper = self.getCopier(
-            sourcename='buggy-source', include_binaries=True,
-            from_suite='warty-proposed', to_suite='warty-updates')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        updates_bug = getUtility(IBugSet).get(updates_bug_id)
-        [updates_bug_task] = updates_bug.bugtasks
-        self.assertEqual(updates_bug_task.status, BugTaskStatus.FIXRELEASED)
-
-        publish_copies(copied)
-
-        # Copies to the development distroseries close bugs.
-        dev_bug_id = create_bug('bug in development')
-        closing_bug_changesfile = changes_template % dev_bug_id
-        create_source(
-            '668', warty.main_archive, PackagePublishingPocket.UPDATES,
-            closing_bug_changesfile)
-
-        copy_helper = self.getCopier(
-            sourcename='buggy-source', include_binaries=True,
-            from_suite='warty-updates', to_suite='hoary')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        dev_bug = getUtility(IBugSet).get(dev_bug_id)
-        [dev_bug_task] = dev_bug.bugtasks
-        self.assertEqual(dev_bug_task.status, BugTaskStatus.FIXRELEASED)
-
-        publish_copies(copied)
-
-        # Copies to -proposed do not close bugs
-        ppa_bug_id = create_bug('bug in PPA')
-        closing_bug_changesfile = changes_template % ppa_bug_id
-        create_source(
-            '669', cprov.archive, PackagePublishingPocket.RELEASE,
-            closing_bug_changesfile)
-
-        copy_helper = self.getCopier(
-            sourcename='buggy-source', include_binaries=True,
-            from_ppa='cprov', from_suite='warty', to_suite='warty-proposed')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        ppa_bug = getUtility(IBugSet).get(ppa_bug_id)
-        [ppa_bug_task] = ppa_bug.bugtasks
-        self.assertEqual(ppa_bug_task.status, BugTaskStatus.NEW)
-
-        publish_copies(copied)
-
-        # Copies to PPA do not close bugs.
-        proposed_bug_id = create_bug('bug in PPA')
-        closing_bug_changesfile = changes_template % proposed_bug_id
-        create_source(
-            '670', warty.main_archive, PackagePublishingPocket.RELEASE,
-            closing_bug_changesfile)
-
-        copy_helper = self.getCopier(
-            sourcename='buggy-source', include_binaries=True,
-            to_ppa='cprov', from_suite='warty', to_suite='warty')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
-        [proposed_bug_task] = proposed_bug.bugtasks
-        self.assertEqual(proposed_bug_task.status, BugTaskStatus.NEW)
-
-        publish_copies(copied)
