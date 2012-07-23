@@ -724,6 +724,20 @@ class CopyCheckerSameArchiveHarness(TestCaseWithFactory,
             'same version already has published binaries in the '
             'destination archive')
 
+    def test_can_copy_same_source(self):
+        # checkCopy allows copying a new version of the same source.
+        self.source = self.test_publisher.getPubSource(
+            sourcename='test-source', version='1.0-2',
+            pocket=PackagePublishingPocket.PROPOSED,
+            status=PackagePublishingStatus.PUBLISHED,
+            section='net')
+        self.test_publisher.getPubSource(
+            sourcename='test-source', version='1.0-1',
+            pocket=PackagePublishingPocket.UPDATES,
+            status=PackagePublishingStatus.PUBLISHED,
+            section='misc')
+        self.assertCanCopySourceOnly()
+
 
 class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
                                          CopyCheckerHarness):
@@ -798,6 +812,70 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
             pub_source=self.source, with_debug=True)
         self.assertCannotCopyBinaries(
             'Cannot copy DDEBs to a primary archive')
+
+    def test_cannot_copy_conflicting_files_in_PPAs(self):
+        # checkCopy refuses to copy a source package if there are files on
+        # either side with the same name but different contents.
+        spr = self.source.sourcepackagerelease
+        prev_source = self.test_publisher.getPubSource(
+            sourcename=spr.name, version='%s~' % spr.version,
+            archive=self.archive, pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED, section='misc')
+        orig_tarball = 'test-source_1.0.orig.tar.gz'
+        prev_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        prev_source.sourcepackagerelease.addFile(prev_tar)
+        new_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='zzzyyyxxx')
+        spr.addFile(new_tar)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
+
+        self.assertCannotCopySourceOnly(
+            "test-source_1.0.orig.tar.gz already exists in destination "
+            "archive with different contents.")
+
+    def test_can_copy_source_with_same_filenames(self):
+        # checkCopy allows copying a source package if there are files on
+        # either side with the same name and the same contents.
+        spr = self.source.sourcepackagerelease
+        prev_source = self.test_publisher.getPubSource(
+            sourcename=spr.name, version='%s~' % spr.version,
+            archive=self.archive, pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED, section='misc')
+        orig_tarball = 'test-source_1.0.orig.tar.gz'
+        prev_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        prev_source.sourcepackagerelease.addFile(prev_tar)
+        new_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        spr.addFile(new_tar)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
+
+        self.assertCanCopySourceOnly()
+
+    def test_can_copy_expired_sources_in_destination(self):
+        # checkCopy allows copying a source package if the destination
+        # archive has expired files with the same name.
+        spr = self.source.sourcepackagerelease
+        prev_source = self.test_publisher.getPubSource(
+            sourcename=spr.name, version='%s~' % spr.version,
+            archive=self.archive, pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED, section='misc')
+        orig_tarball = 'test-source_1.0.orig.tar.gz'
+        prev_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        prev_source.sourcepackagerelease.addFile(prev_tar)
+        new_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        spr.addFile(new_tar)
+        # Set previous source tarball to be expired.
+        with dbuser('librarian'):
+            naked_prev_tar = removeSecurityProxy(prev_tar)
+            naked_prev_tar.content = None
+
+        self.assertCanCopySourceOnly()
 
 
 class CopyCheckerTestCase(TestCaseWithFactory):
@@ -1068,141 +1146,6 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             source, series, pocket, check_permissions=False)
         [checked_copy] = list(copy_checker.getCheckedCopies())
         self.assertFalse(checked_copy.delayed)
-
-    def test_checkCopy_allows_same_source(self):
-        # checkCopy allows copying a new version of the same source.
-        proposed_source = self.test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-2',
-            pocket=PackagePublishingPocket.PROPOSED,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='net')
-        self.test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-1',
-            pocket=PackagePublishingPocket.UPDATES,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-
-        series = self.test_publisher.distroseries
-        checker = CopyChecker(series.main_archive, include_binaries=False)
-        self.assertIsNone(
-            checker.checkCopy(
-                proposed_source, series, PackagePublishingPocket.UPDATES,
-                check_permissions=False))
-
-    def test_checkCopy_forbids_conflicting_files_in_PPAs(self):
-        # checkCopy refuses to copy a source package if there are files on
-        # either side with the same name but different contents.
-        joe = self.factory.makePerson(email='joe@example.com')
-        ubuntutest = self.test_publisher.ubuntutest
-        dest_ppa = self.factory.makeArchive(
-            distribution=ubuntutest, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test1')
-        src_ppa = self.factory.makeArchive(
-            distribution=ubuntutest, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test2')
-        test1_source = self.test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-1', archive=dest_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        orig_tarball = 'test-source_1.0.orig.tar.gz'
-        test1_tar = self.test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test1_source.sourcepackagerelease.addFile(test1_tar)
-        test2_source = self.test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-2', archive=src_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        test2_tar = self.test_publisher.addMockFile(
-            orig_tarball, filecontent='zzzyyyxxx')
-        test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-
-        checker = CopyChecker(dest_ppa, include_binaries=False)
-        self.assertRaisesWithContent(
-            CannotCopy,
-            "test-source_1.0.orig.tar.gz already exists in destination "
-            "archive with different contents.",
-            checker.checkCopy, test2_source, self.test_publisher.distroseries,
-            PackagePublishingPocket.RELEASE, None, False)
-
-    def test_checkCopy_allows_source_with_same_filenames(self):
-        # checkCopy allows copying a source package if there are files on
-        # either side with the same name and the same contents.
-        joe = self.factory.makePerson(email='joe@example.com')
-        ubuntutest = self.test_publisher.ubuntutest
-        dest_ppa = self.factory.makeArchive(
-            distribution=ubuntutest, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test1')
-        src_ppa = self.factory.makeArchive(
-            distribution=ubuntutest, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test2')
-        test1_source = self.test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-1', archive=dest_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        orig_tarball = 'test-source_1.0.orig.tar.gz'
-        test1_tar = self.test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test1_source.sourcepackagerelease.addFile(test1_tar)
-        test2_source = self.test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-2', archive=src_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        test2_tar = self.test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-
-        checker = CopyChecker(dest_ppa, include_binaries=False)
-        self.assertIsNone(
-            checker.checkCopy(
-                test2_source, self.test_publisher.distroseries,
-                PackagePublishingPocket.RELEASE, check_permissions=False))
-
-    def test_checkCopy_allows_expired_sources_in_destination(self):
-        # checkCopy allows copying a source package if the destination
-        # archive has expired files with the same name.
-        joe = self.factory.makePerson(email='joe@example.com')
-        ubuntutest = self.test_publisher.ubuntutest
-        dest_ppa = self.factory.makeArchive(
-            distribution=ubuntutest, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test1')
-        src_ppa = self.factory.makeArchive(
-            distribution=ubuntutest, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test2')
-        test1_source = self.test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-1', archive=dest_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        orig_tarball = 'test-source_1.0.orig.tar.gz'
-        test1_tar = self.test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test1_source.sourcepackagerelease.addFile(test1_tar)
-        test2_source = self.test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-2', archive=src_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        test2_tar = self.test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Set test1 source tarball to be expired.
-        with dbuser('librarian'):
-            naked_test1 = removeSecurityProxy(test1_tar)
-            naked_test1.content = None
-
-        checker = CopyChecker(dest_ppa, include_binaries=False)
-        self.assertIsNone(
-            checker.checkCopy(
-                test2_source, self.test_publisher.distroseries,
-                PackagePublishingPocket.RELEASE, check_permissions=False))
 
 
 class BaseDoCopyTests:
