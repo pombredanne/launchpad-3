@@ -12,9 +12,7 @@ __all__ = []
 import unittest
 
 from lp.testing import BrowserTestCase
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,

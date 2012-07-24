@@ -6,12 +6,12 @@
 __metaclass__ = type
 
 from fixtures import FakeLogger
+from lazr.restful.interfaces import IJSONRequestCache
 from testtools.matchers import Not
 from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
 
-from lazr.restful.interfaces import IJSONRequestCache
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,

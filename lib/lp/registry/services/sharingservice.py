@@ -51,8 +51,8 @@ from lp.registry.interfaces.sharingjob import (
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.accesspolicy import (
     AccessArtifactGrant,
-    AccessPolicyArtifact,
     AccessPolicy,
+    AccessPolicyArtifact,
     AccessPolicyGrant,
     )
 from lp.registry.model.person import Person
