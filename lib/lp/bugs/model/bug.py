@@ -2075,29 +2075,6 @@ class Bug(SQLBase):
                 return True
         return False
 
-    def userCanAccessUserData(self, user):
-        """ Return True if the user has access to USER_DATA data."""
-        # Check if the user has access via the pillar.
-
-        pillars = list(self.affected_pillars)
-        pillars_and_types = [(p, InformationType.USERDATA) for p in pillars]
-        access_policies = getUtility(IAccessPolicySource).find(
-            pillars_and_types)
-        access_grants = [(a, user) for a in access_policies]
-        access_grants = getUtility(IAccessPolicyGrantSource).find(
-            access_grants)
-        if not access_grants.is_empty():
-            return True
-        # User has no access via the pillars, check the bug itself.
-        artifact = getUtility(IAccessArtifactSource).find([self]).one()
-        if  artifact is None:
-            return False
-        artifact_access_grant = getUtility(IAccessArtifactGrantSource).find(
-            [(artifact, user)]).one()
-        if artifact_access_grant is not None:
-            return True
-        return False
-
     def linkHWSubmission(self, submission):
         """See `IBug`."""
         getUtility(IHWSubmissionBugSet).create(submission, self)
