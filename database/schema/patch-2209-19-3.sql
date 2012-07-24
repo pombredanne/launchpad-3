@@ -68,7 +68,7 @@ BEGIN
             bug_viewers.viewed_by, bug_tags.tag, btf_row.status,
             btf_row.milestone, btf_row.importance,
             btf_row.latest_patch_uploaded IS NOT NULL AS has_patch,
-            NULL::integer AS access_policy
+            bug_viewers.access_policy
         FROM
             bugsummary_targets(btf_row) as bug_targets,
             bugsummary_tags(btf_row) AS bug_tags,
@@ -76,14 +76,19 @@ BEGIN
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.bugsummary_viewers(btf_row bugtaskflat)
- RETURNS TABLE(viewed_by integer)
+-- Changing the return type requires a DROP + CREATE.
+DROP FUNCTION public.bugsummary_viewers(btf_row bugtaskflat);
+CREATE FUNCTION public.bugsummary_viewers(btf_row bugtaskflat)
+ RETURNS TABLE(viewed_by integer, access_policy integer)
  LANGUAGE sql
  IMMUTABLE
 AS $function$
-    SELECT NULL WHERE $1.information_type IN (1, 2)
+    SELECT NULL::integer, NULL::integer WHERE $1.information_type IN (1, 2)
     UNION ALL
-    SELECT unnest($1.access_grants)
+    SELECT unnest($1.access_grants), NULL::integer
+    WHERE $1.information_type IN (3, 4, 5)
+    UNION ALL
+    SELECT NULL::integer, unnest($1.access_policies)
     WHERE $1.information_type IN (3, 4, 5);
 $function$;
 
