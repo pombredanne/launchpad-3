@@ -623,6 +623,14 @@
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsProtected"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
+    <adapter
+        for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        factory=".adapters.bugsubscriptionfilter.bugsubscriptionfilter_to_distribution"/>
+    <adapter
+        for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+        provides="lp.registry.interfaces.product.IProduct"
+        factory=".adapters.bugsubscriptionfilter.bugsubscriptionfilter_to_product"/>
 
     <!-- BugMute -->
     <class

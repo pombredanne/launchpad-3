@@ -33,8 +33,8 @@ from lp.registry.errors import (
     OpenTeamLinkageError,
     )
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicySource,
     IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (

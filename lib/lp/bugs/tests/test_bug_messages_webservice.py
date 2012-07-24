@@ -5,14 +5,12 @@
 
 __metaclass__ = type
 
-import transaction
-
 from lazr.restfulclient.errors import HTTPError
+import transaction
 from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -24,6 +22,7 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestMessageTraversal(WebServiceTestCase):
