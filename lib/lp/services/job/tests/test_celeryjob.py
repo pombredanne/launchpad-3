@@ -3,10 +3,7 @@
 
 from cStringIO import StringIO
 import sys
-from time import (
-    sleep,
-    time,
-    )
+from time import sleep
 from lazr.jobrunner.bin.clear_queues import clear_queues
 from lp.code.model.branchjob import BranchScanJob
 from lp.scripts.helpers import TransactionFreeOperation
