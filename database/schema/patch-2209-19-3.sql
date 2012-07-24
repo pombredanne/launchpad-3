@@ -10,7 +10,7 @@ CREATE OR REPLACE VIEW combinedbugsummary AS
         bugsummary.distroseries, bugsummary.sourcepackagename,
         bugsummary.viewed_by, bugsummary.tag, bugsummary.status,
         bugsummary.milestone, bugsummary.importance, bugsummary.has_patch,
-        bugsummary.fixed_upstream, bugsummary.access_policy
+        bugsummary.access_policy
     FROM bugsummary
     UNION ALL 
     SELECT
@@ -20,8 +20,7 @@ CREATE OR REPLACE VIEW combinedbugsummary AS
         bugsummaryjournal.sourcepackagename, bugsummaryjournal.viewed_by,
         bugsummaryjournal.tag, bugsummaryjournal.status,
         bugsummaryjournal.milestone, bugsummaryjournal.importance,
-        bugsummaryjournal.has_patch, bugsummaryjournal.fixed_upstream,
-        bugsummaryjournal.access_policy
+        bugsummaryjournal.has_patch, bugsummaryjournal.access_policy
     FROM bugsummaryjournal;
 
 DROP INDEX bugsummary__distribution__unique;
