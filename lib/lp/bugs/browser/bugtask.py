@@ -2378,14 +2378,13 @@ class BugListingBatchNavigator(TableBatchNavigator):
         objects = IJSONRequestCache(self.request).objects
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             objects = obfuscate_structure(objects)
-        return pystache.render(self.mustache_template,
-                               objects['mustache_model'])
+        model = dict(objects['mustache_model'])
+        model.update(self.field_visibility)
+        return pystache.render(self.mustache_template, model)
 
     @property
     def model(self):
         items = [bugtask.model for bugtask in self.getBugListingItems()]
-        for item in items:
-            item.update(self.field_visibility)
         return {'items': items}
 
 
