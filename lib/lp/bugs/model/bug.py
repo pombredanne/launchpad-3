@@ -2067,11 +2067,18 @@ class Bug(SQLBase):
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        return self.userCanAccessUserData(user)
+        pillars = list(self.affected_pillars)
+        service = getUtility(IService, 'sharing')
+        for pillar in pillars:
+            if service.checkPillarAccess(
+                    pillar, InformationType.USERDATA, user):
+                return True
+        return False
 
     def userCanAccessUserData(self, user):
         """ Return True if the user has access to USER_DATA data."""
         # Check if the user has access via the pillar.
+
         pillars = list(self.affected_pillars)
         pillars_and_types = [(p, InformationType.USERDATA) for p in pillars]
         access_policies = getUtility(IAccessPolicySource).find(
