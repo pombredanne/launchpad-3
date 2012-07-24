@@ -874,7 +874,8 @@ class PackageUpload(SQLBase):
                 changes_file = None
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
                     release = pub_record.sourcepackagerelease
-                    changes_file = release.package_upload.changesfile
+                    changes_file = StringIO.StringIO(
+                        release.package_upload.changesfile.read())
 
                 for new_file in update_files_privacy(pub_record):
                     debug(logger, "Made %s public" % new_file.filename)
@@ -893,11 +894,8 @@ class PackageUpload(SQLBase):
                     debug(
                         logger,
                         "sending email to %s" % self.distroseries.changeslist)
-                    changes_file_object = StringIO.StringIO(
-                        changes_file.read())
                     self.notify(
-                        changes_file_object=changes_file_object,
-                        logger=logger)
+                        changes_file_object=changes_file, logger=logger)
                     self.syncUpdate()
 
         self.setDone()
