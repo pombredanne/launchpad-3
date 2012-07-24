@@ -1322,7 +1322,7 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
             copy_policy=PackageCopyPolicy.INSECURE,
-            requester=person, sponsored=sponsored)
+            requester=person, sponsored=sponsored, unembargo=True)
 
     return copy_asynchronously_message(len(source_pubs))
 
