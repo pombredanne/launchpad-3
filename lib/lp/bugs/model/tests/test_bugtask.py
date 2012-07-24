@@ -13,6 +13,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restfulclient.errors import Unauthorized
 from storm.store import Store
+from testtools.matchers import Equals
 from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
@@ -97,6 +98,7 @@ from lp.testing import (
     logout,
     person_logged_in,
     set_feature_flag,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     ws_object,
@@ -108,6 +110,7 @@ from lp.testing.layers import (
     CeleryJobLayer,
     DatabaseFunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 BugData = namedtuple("BugData", ['owner', 'distro', 'distro_release',
@@ -1507,6 +1510,18 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bugtask = bug.default_bugtask
         login_person(bugtask.owner)
         self.assertRaises(CannotDeleteBugtask, bugtask.delete)
+
+    def test_canBeDeleted_is_free(self):
+        # BugTask.canBeDeleted uses cached data, so repeated execution
+        # on a single bug is free.
+        bug = self.factory.makeBug()
+        task1 = self.factory.makeBugTask(bug=bug)
+        task2 = self.factory.makeBugTask(bug=bug)
+        self.assertEqual(True, bug.default_bugtask.canBeDeleted())
+        with StormStatementRecorder() as recorder:
+            self.assertEqual(True, task1.canBeDeleted())
+            self.assertEqual(True, task2.canBeDeleted())
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_delete_bugtask(self):
         # A bugtask can be deleted and after deletion, re-nominated.
