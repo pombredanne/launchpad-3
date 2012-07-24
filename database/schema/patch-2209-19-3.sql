@@ -76,6 +76,17 @@ BEGIN
 END;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.bugsummary_viewers(btf_row bugtaskflat)
+ RETURNS TABLE(viewed_by integer)
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$
+    SELECT NULL WHERE $1.information_type IN (1, 2)
+    UNION ALL
+    SELECT unnest($1.access_grants)
+    WHERE $1.information_type IN (3, 4, 5);
+$function$;
+
 CREATE OR REPLACE FUNCTION public.bugsummary_rollup_journal(batchsize integer DEFAULT NULL::integer)
  RETURNS void
  LANGUAGE plpgsql
