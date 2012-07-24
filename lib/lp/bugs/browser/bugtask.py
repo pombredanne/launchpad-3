@@ -2385,8 +2385,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
     @property
     def model(self):
         items = [bugtask.model for bugtask in self.getBugListingItems()]
-        result = {'items': items}
-        return result
+        return {'items': items}
 
 
 class NominatedBugReviewAction(EnumeratedType):
