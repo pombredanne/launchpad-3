@@ -47,7 +47,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         self.assertContentEqual(
             [bug.owner, assignee], bug.getBugNotificationRecipients())
 
-    def test_public_bug_with_duplicate_different_pillar_subscriber(self):
+    def test_public_bug_with_duplicate_subscriber(self):
         subscriber = self.factory.makePerson()
         bug = self.factory.makeBug()
         dupe = self.factory.makeBug()
@@ -57,18 +57,6 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         self.assertContentEqual(
             [bug.owner, dupe.owner, subscriber],
             bug.getBugNotificationRecipients())
-
-    def test_public_bug_with_duplicate_same_pillar_subscriber(self):
-        owner = self.factory.makePerson()
-        subscriber = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, owner=owner)
-        dupe = self.factory.makeBug(product=product, owner=owner)
-        with person_logged_in(owner):
-            dupe.subscribe(subscriber, owner)
-            dupe.markAsDuplicate(bug)
-        self.assertContentEqual(
-            [owner, subscriber], bug.getBugNotificationRecipients())
 
     def test_public_bug_linked_to_question(self):
         question = self.factory.makeQuestion()
@@ -119,26 +107,12 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             self.assertContentEqual(
                 [owner], bug.getBugNotificationRecipients())
 
-    def test_private_bug_with_duplicate_different_pillar_subscriber(self):
+    def test_private_bug_with_duplicate_subscriber(self):
         owner = self.factory.makePerson()
         subscriber = self.factory.makePerson()
         bug = self.factory.makeBug(
             owner=owner, information_type=InformationType.USERDATA)
         dupe = self.factory.makeBug(owner=owner)
-        with person_logged_in(owner):
-            dupe.subscribe(subscriber, owner)
-            dupe.markAsDuplicate(bug)
-            self.assertContentEqual(
-                [owner], bug.getBugNotificationRecipients())
-
-    def test_private_bug_with_duplicate_same_pillar_subscriber(self):
-        owner = self.factory.makePerson()
-        subscriber = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(
-            product=product, owner=owner,
-            information_type=InformationType.USERDATA)
-        dupe = self.factory.makeBug(owner=owner, product=product)
         with person_logged_in(owner):
             dupe.subscribe(subscriber, owner)
             dupe.markAsDuplicate(bug)
