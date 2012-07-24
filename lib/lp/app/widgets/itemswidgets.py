@@ -159,10 +159,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
         """Render the table row for the widget depending on description."""
         if form_value != self._missing:
             vocab_term = self.vocabulary.getTermByToken(form_value)
-            # This is not needed when display_userdata_as_private is removed.
-            description = getattr(vocab_term, 'description', None)
-            if description is None:
-                description = vocab_term.value.description
+            description = vocab_term.value.description
         else:
             description = None
 
