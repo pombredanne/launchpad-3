@@ -58,14 +58,6 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             [bug.owner, dupe.owner, subscriber],
             bug.getBugNotificationRecipients())
 
-    def test_public_bug_linked_to_question(self):
-        question = self.factory.makeQuestion()
-        bug = self.factory.makeBug()
-        with person_logged_in(question.owner):
-            question.linkBug(bug)
-        self.assertContentEqual(
-            [bug.owner, question.owner], bug.getBugNotificationRecipients())
-
     def test_private_bug(self):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
@@ -116,15 +108,5 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         with person_logged_in(owner):
             dupe.subscribe(subscriber, owner)
             dupe.markAsDuplicate(bug)
-            self.assertContentEqual(
-                [owner], bug.getBugNotificationRecipients())
-
-    def test_private_bug_linked_to_question(self):
-        owner = self.factory.makePerson()
-        question = self.factory.makeQuestion(owner=owner)
-        bug = self.factory.makeBug(
-            owner=owner, information_type=InformationType.USERDATA)
-        with person_logged_in(owner):
-            question.linkBug(bug)
             self.assertContentEqual(
                 [owner], bug.getBugNotificationRecipients())
