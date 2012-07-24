@@ -204,7 +204,7 @@ from lp.translations.browser.customlanguagecode import (
     )
 
 
-OR = '|'
+OR = ' OR '
 SPACE = ' '
 
 
