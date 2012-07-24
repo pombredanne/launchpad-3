@@ -2,6 +2,28 @@
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 SET client_min_messages=ERROR;
 
+DROP VIEW combinedbugsummary;
+CREATE OR REPLACE VIEW combinedbugsummary AS
+    SELECT
+        bugsummary.id, bugsummary.count, bugsummary.product,
+        bugsummary.productseries, bugsummary.distribution,
+        bugsummary.distroseries, bugsummary.sourcepackagename,
+        bugsummary.viewed_by, bugsummary.tag, bugsummary.status,
+        bugsummary.milestone, bugsummary.importance, bugsummary.has_patch,
+        bugsummary.fixed_upstream, bugsummary.access_policy
+    FROM bugsummary
+    UNION ALL 
+    SELECT
+        -bugsummaryjournal.id AS id, bugsummaryjournal.count,
+        bugsummaryjournal.product, bugsummaryjournal.productseries,
+        bugsummaryjournal.distribution, bugsummaryjournal.distroseries,
+        bugsummaryjournal.sourcepackagename, bugsummaryjournal.viewed_by,
+        bugsummaryjournal.tag, bugsummaryjournal.status,
+        bugsummaryjournal.milestone, bugsummaryjournal.importance,
+        bugsummaryjournal.has_patch, bugsummaryjournal.fixed_upstream,
+        bugsummaryjournal.access_policy
+    FROM bugsummaryjournal;
+
 DROP INDEX bugsummary__distribution__unique;
 DROP INDEX bugsummary__distroseries__unique;
 DROP INDEX bugsummary__product__unique;
