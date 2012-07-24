@@ -622,10 +622,9 @@ class BugTask(SQLBase):
         return True
 
     def checkCanBeDeleted(self):
-        num_bugtasks = Store.of(self).find(
-            BugTask, bug=self.bug).count()
-
-        if num_bugtasks < 2:
+        # Bug.bugtasks is a cachedproperty, so this is pretty much free
+        # to call. Better than a manual count query, at any rate.
+        if len(self.bug.bugtasks) < 2:
             raise CannotDeleteBugtask(
                 "Cannot delete only bugtask affecting: %s."
                 % self.target.bugtargetdisplayname)
