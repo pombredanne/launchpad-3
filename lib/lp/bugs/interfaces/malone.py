@@ -14,7 +14,7 @@ from lazr.restful.declarations import (
     export_factory_operation,
     operation_parameters,
     REQUEST_USER,
-    )
+    operation_returns_collection_of, export_read_operation, operation_for_version)
 from lazr.restful.fields import Reference
 from zope.interface import Attribute
 
@@ -34,6 +34,13 @@ class IMaloneApplication(ILaunchpadApplication):
     export_as_webservice_collection(IBug)
 
     def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(IBug)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def search(user=None, *args, **kwargs):
         """Search IBugTasks with the given search parameters."""
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")

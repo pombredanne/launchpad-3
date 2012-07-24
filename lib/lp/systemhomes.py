@@ -126,6 +126,11 @@ class MaloneApplication:
         """See `IMaloneApplication`."""
         return getUtility(IBugTaskSet).search(search_params)
 
+    def search(self, user=None, *args, **kwargs):
+        """See `IMaloneApplication`."""
+        search_params = BugTaskSearchParams.fromSearchForm(user, *args, **kwargs)
+        return getUtility(IBugTaskSet).search(search_params)
+
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
         """See `IMaloneApplication`."""
