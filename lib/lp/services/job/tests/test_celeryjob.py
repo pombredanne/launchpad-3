@@ -70,9 +70,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
                     self.RunMissingReady().run(_no_init=True)
         self.assertEqual(1, len(responses))
 
-    # XXX: deryck 20-07-2012 bug=1027103
-    # Test fails spuriously in buildbot.
-    def disabled_test_run_missing_ready_does_not_return_results(self):
+    def test_run_missing_ready_does_not_return_results(self):
         """The celerybeat task run_missing_ready does not create a
         result queue."""
         from lazr.jobrunner.celerytask import list_queued
