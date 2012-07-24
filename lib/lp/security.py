@@ -1730,19 +1730,8 @@ class EditPackageUpload(AdminByAdminsTeam):
             archive_append = AppendArchive(self.obj.archive)
             return archive_append.checkAuthenticated(user)
 
-        permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
-            self.obj.archive, user.person)
-        if permissions.count() == 0:
-            return False
-        allowed_components = set(
-            permission.component for permission in permissions)
-        existing_components = self.obj.components
-        # The intersection of allowed_components and
-        # existing_components must be equal to existing_components
-        # to allow the operation to go ahead.
-        return (allowed_components.intersection(existing_components)
-                == existing_components)
+        return self.obj.archive.canAdministerQueue(
+            user.person, self.obj.components)
 
 
 class AdminByBuilddAdmin(AuthorizationBase):

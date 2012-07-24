@@ -256,16 +256,22 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         except IndexError:
             destination_component = None
 
+        # Is the destination pocket open at all?
+        reason = archive.checkUploadToPocket(dest_series, pocket)
+        if reason is not None:
+            raise CannotCopy(reason)
+
         # If destination_component is not None, make sure the person
         # has upload permission for this component.  Otherwise, any
         # upload permission on this archive will do.
         strict_component = destination_component is not None
-        reason = archive.checkUpload(
-            person, dest_series, spn, destination_component, pocket,
-            strict_component=strict_component)
-
+        reason = archive.verifyUpload(
+            person, spn, destination_component, dest_series,
+            strict_component=strict_component, pocket=pocket)
         if reason is not None:
-            raise CannotCopy(reason)
+            # Queue admins are allowed to copy even if they can't upload.
+            if not archive.canAdministerQueue(person, destination_component):
+                raise CannotCopy(reason)
 
 
 class CopyChecker:
