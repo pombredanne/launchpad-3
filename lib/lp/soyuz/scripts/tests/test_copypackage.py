@@ -7,7 +7,10 @@ import datetime
 import os
 import subprocess
 import sys
-from textwrap import dedent
+from textwrap import (
+    dedent,
+    fill,
+    )
 import unittest
 
 import pytz
@@ -1591,7 +1594,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertEqual(
             get_ppa_reference(target_archive), notification['X-Launchpad-PPA'])
         body = notification.get_payload()[0].get_payload()
-        expected = dedent("""\
+        expected = (dedent("""\
             Accepted:
              OK: foo_1.0-2.dsc
                  -> Component: main Section: base
@@ -1602,9 +1605,12 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
             --
             http://launchpad.dev/~archiver/+archive/ppa
-            You are receiving this email because you are the uploader of the above
-            PPA package.
-            """)
+            """) +
+            # Slight contortion to avoid a long line.
+            fill(dedent("""\
+            You are receiving this email because you are the uploader of the
+            above PPA package.
+            """), 72) + "\n")
         self.assertEqual(expected, body)
 
     def test_copy_generates_notification(self):
