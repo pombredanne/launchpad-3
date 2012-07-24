@@ -813,6 +813,87 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         self.assertCannotCopyBinaries(
             'Cannot copy DDEBs to a primary archive')
 
+    def test_cannot_copy_source_twice(self):
+        # checkCopy refuses to copy the same source twice.  Duplicates are
+        # generally cruft and may cause problems when they include
+        # architecture-independent binaries, so the copier refuses to copy
+        # publications with versions older than or equal to the ones already
+        # present in the destination.
+        [copied_source] = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=False, check_permissions=False)
+        self.assertCannotCopySourceOnly(
+            "same version already building in the destination archive for %s" %
+            self.series.displayname)
+
+    def test_cannot_copy_unpublished_binaries_twice(self):
+        # checkCopy refuses to copy over matching but unpublished binaries.
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+        self.layer.txn.commit()
+        copied = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=True, check_permissions=False)
+        self.assertEqual(3, len(copied))
+        self.assertCannotCopyBinaries(
+            "same version has unpublished binaries in the destination "
+            "archive for %s, please wait for them to be published before "
+            "copying" % self.series.displayname)
+
+    def test_can_copy_published_binaries_twice(self):
+        # If there are matching published binaries in the destination
+        # archive, checkCopy passes, and do_copy will simply not copy
+        # anything.
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+        self.layer.txn.commit()
+        copied = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=True, check_permissions=False)
+        self.assertEqual(3, len(copied))
+        for binary in copied[1:]:
+            binary.setPublished()
+        self.assertCanCopyBinaries()
+        nothing_copied = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=True, check_permissions=False)
+        self.assertEqual(0, len(nothing_copied))
+
+    def test_cannot_copy_conflicting_sprs(self):
+        # checkCopy refuses to copy an SPR if a different SPR with the same
+        # version is already in the target archive (before any more detailed
+        # checks for conflicting files).
+        spr = self.source.sourcepackagerelease
+        self.test_publisher.getPubSource(
+            sourcename=spr.name, version=spr.version, archive=self.archive)
+        self.assertCannotCopySourceOnly(
+            "a different source with the same version is published in the "
+            "destination archive")
+
+    def test_cannot_copy_conflicting_binaries_over_deleted_binaries(self):
+        # checkCopy refuses to copy conflicting binaries even if the
+        # previous ones were deleted; since they were once published,
+        # somebody may have installed them.
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+        self.layer.txn.commit()
+        [copied_source] = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=False, check_permissions=False)
+
+        # Build binaries for the copied source in the destination archive.
+        for build in copied_source.getBuilds():
+            binary = self.test_publisher.uploadBinaryForBuild(build, "foo-bin")
+            self.test_publisher.publishBinaryInArchive(binary, build.archive)
+
+        # Delete the copied source and its local binaries in the destination
+        # archive.
+        copied_source.requestDeletion(self.archive.owner)
+        for binary in copied_source.getPublishedBinaries():
+            binary.requestDeletion(self.archive.owner)
+
+        # The binaries in the source archive conflict with those we just
+        # deleted.
+        self.assertCannotCopyBinaries(
+            "binaries conflicting with the existing ones")
+
     def test_cannot_copy_conflicting_files_in_PPAs(self):
         # checkCopy refuses to copy a source package if there are files on
         # either side with the same name but different contents.
@@ -2356,69 +2437,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertEqual(updates.pocket, PackagePublishingPocket.UPDATES)
         self.assertEqual(len(updates.getBuilds()), 1)
 
-    def testWillNotCopyTwice(self):
-        """When invoked twice, the script doesn't repeat the copy.
-
-        As reported in bug #237353, duplicates are generally cruft and may
-        cause problems when they include architecture-independent binaries.
-
-        That's why PackageCopier refuses to copy publications with versions
-        older or equal the ones already present in the destination.
-
-        The script output informs the user that no packages were copied,
-        and for repeated source-only copies, the second attempt is actually
-        an error since the source previously copied is already building and
-        if the copy worked conflicting binaries would have been generated.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher = self.getTestPublisher(hoary)
-        test_publisher.getPubBinaries()
-
-        # Repeating the copy of source and it's binaries.
-        copy_helper = self.getCopier(
-            sourcename='foo', from_suite='hoary', to_suite='hoary',
-            to_ppa='mark')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        # The second copy will fail explicitly because the new BPPH
-        # records are not yet published.
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'ERROR foo 666 in hoary (same version has unpublished binaries '
-            'in the destination archive for Hoary, please wait for them to '
-            'be published before copying)')
-
-        # If we ensure that the copied binaries are published, the
-        # copy won't fail but will simply not copy anything.
-        for bin_pub in copied[1:3]:
-            bin_pub.setPublished()
-
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'INFO No packages copied.')
-
-        # Repeating the copy of source only.
-        copy_helper = self.getCopier(
-            sourcename='foo', from_suite='hoary', to_suite='hoary',
-            include_binaries=False, to_ppa='cprov')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 1)
-
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'ERROR foo 666 in hoary (same version already building in '
-            'the destination archive for Hoary)')
-
     def testCopyAcrossPartner(self):
         """Check the copy operation across PARTNER archive.
 
@@ -2654,49 +2672,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertEqual(
             new_build.title, 'hppa build of boing 1.0 in ubuntu hoary RELEASE')
 
-    def testVersionConflictInDifferentPockets(self):
-        """Copy-package stops copies conflicting in different pocket.
-
-        Copy candidates are checks against all occurrences of the same
-        name and version in the destination archive, regardless the series
-        and pocket. In practical terms, it denies copies that will end up
-        'unpublishable' due to conflicts in the repository filesystem.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-
-        # Create a 'probe - 1.1' with a binary in warty-proposed suite
-        # in the ubuntu primary archive.
-        proposed_source = test_publisher.getPubSource(
-            sourcename='probe', version='1.1',
-            pocket=PackagePublishingPocket.PROPOSED)
-        test_publisher.getPubBinaries(
-            pub_source=proposed_source,
-            pocket=PackagePublishingPocket.PROPOSED)
-
-        # Create a different 'probe - 1.1' in Celso's PPA.
-        cprov = getUtility(IPersonSet).getByName("cprov")
-        candidate_source = test_publisher.getPubSource(
-            sourcename='probe', version='1.1', archive=cprov.archive)
-        test_publisher.getPubBinaries(
-            pub_source=candidate_source, archive=cprov.archive)
-
-        # Perform the copy from the 'probe - 1.1' version from Celso's PPA
-        # to the warty-updates in the ubuntu primary archive.
-        copy_helper = self.getCopier(
-            sourcename='probe', from_ppa='cprov', include_binaries=True,
-            from_suite='warty', to_suite='warty-updates')
-        copied = copy_helper.mainTask()
-
-        # The copy request was denied and the error message is clear about
-        # why it happened.
-        self.assertEqual(0, len(copied))
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'ERROR probe 1.1 in warty (a different source with the '
-            'same version is published in the destination archive)')
-
     def _setupSecurityPropagationContext(self, sourcename):
         """Setup a security propagation publishing context.
 
@@ -2889,49 +2864,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
-
-    def testCopyAvoidsBinaryConflicts(self):
-        # Creating a source and 2 binary publications in the primary
-        # archive for ubuntu/hoary (default name, 'foo').
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher = self.getTestPublisher(hoary)
-        test_publisher.getPubBinaries()
-
-        # Successfully copy the source from PRIMARY archive to Celso's PPA
-        copy_helper = self.getCopier(
-            sourcename='foo', to_ppa='cprov', include_binaries=False,
-            from_suite='hoary', to_suite='hoary')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 1)
-
-        # Build binaries for the copied source in Celso's PPA domain.
-        [copied_source] = copied
-        for build in copied_source.getBuilds():
-            binary = test_publisher.uploadBinaryForBuild(build, 'foo-bin')
-            test_publisher.publishBinaryInArchive(binary, build.archive)
-
-        # Delete the copied source and its local binaries in Celso's PPA.
-        copied_source.requestDeletion(target_archive.owner)
-        for binary in copied_source.getPublishedBinaries():
-            binary.requestDeletion(target_archive.owner)
-        self.layer.txn.commit()
-
-        # Refuse to copy new binaries which conflicts with the ones we
-        # just deleted. Since the deleted binaries were once published
-        # there is a chance that someone has installed them and if we let
-        # other files to be published under the same name APT client would
-        # be confused.
-        copy_helper = self.getCopier(
-            sourcename='foo', to_ppa='cprov', include_binaries=True,
-            from_suite='hoary', to_suite='hoary')
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'ERROR foo 666 in hoary (binaries conflicting with the '
-            'existing ones)')
 
     def testSourceLookupFailure(self):
         """Check if it raises when the target source can't be found.
