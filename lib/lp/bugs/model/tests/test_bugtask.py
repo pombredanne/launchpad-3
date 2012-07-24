@@ -1476,7 +1476,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bug = self.factory.makeBug()
         login_celebrity('admin')
         self.assertTrue(
-            check_permission('launchpad.Admin', bug.default_bugtask))
+            check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_pillar_owner_can_delete(self):
         # With the feature flag on, the pillar owner can delete a bug task.
