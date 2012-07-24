@@ -232,7 +232,7 @@ The searchFAQs() method can be used to find FAQs by keywords or owner.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> for faq in faqset.searchFAQs(
-    ...     search_text='java | flash', owner=foo_bar):
+    ...     search_text='java OR flash', owner=foo_bar):
     ...     print '%s (%s)' % (faq.title, faq.target.displayname)
     How do I install plugins (Shockwave, QuickTime, etc.)? (Mozilla Firefox)
     How can I play MP3/Divx/DVDs/Quicktime/Realmedia files
