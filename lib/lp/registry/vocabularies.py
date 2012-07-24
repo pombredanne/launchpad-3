@@ -470,7 +470,7 @@ class PersonAccountToMergeVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        text = ensure_unicode(text).lower()
+        text = ensure_unicode(text)
         return self._select(text)
 
 

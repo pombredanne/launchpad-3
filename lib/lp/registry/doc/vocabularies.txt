@@ -684,6 +684,11 @@ INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
     >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
     True
 
+It is possible to search for alternative names.
+
+    >>> [person.name for person in vocab.search('matsubara OR salgado')]
+    [u'matsubara', u'salgado']
+
 
 AdminMergeablePerson
 --------------------
