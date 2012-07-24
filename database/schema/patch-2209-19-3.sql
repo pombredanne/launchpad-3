@@ -17,19 +17,16 @@ BEGIN
     INSERT INTO BugSummaryJournal(
         count, product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream,
-        access_policy)
+        status, milestone, importance, has_patch, access_policy)
     SELECT
         SUM(count), product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream,
-        access_policy
+        status, milestone, importance, has_patch, access_policy
     FROM bugsummary_temp_journal
     GROUP BY
         product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream,
-        access_policy
+        status, milestone, importance, has_patch, access_policy
     HAVING SUM(count) != 0;
     TRUNCATE bugsummary_temp_journal;
 END;
@@ -44,13 +41,11 @@ BEGIN
     INSERT INTO BugSummary_Temp_Journal(
         count, product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream,
-        access_policy)
+        status, milestone, importance, has_patch, access_policy)
     SELECT
         _count, product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream,
-        access_policy
+        status, milestone, importance, has_patch, access_policy
         FROM bugsummary_locations(btf_row);
 END;
 $function$;
@@ -73,7 +68,7 @@ BEGIN
             bug_viewers.viewed_by, bug_tags.tag, btf_row.status,
             btf_row.milestone, btf_row.importance,
             btf_row.latest_patch_uploaded IS NOT NULL AS has_patch,
-            false AS fixed_upstream, NULL::integer AS access_policy
+            NULL::integer AS access_policy
         FROM
             bugsummary_targets(btf_row) as bug_targets,
             bugsummary_tags(btf_row) AS bug_tags,
@@ -120,14 +115,13 @@ BEGIN
             milestone,
             importance,
             has_patch,
-            fixed_upstream,
             access_policy
         FROM BugSummaryJournal
         WHERE id <= max_id
         GROUP BY
             product, productseries, distribution, distroseries,
             sourcepackagename, viewed_by, tag, status, milestone,
-            importance, has_patch, fixed_upstream, access_policy
+            importance, has_patch, access_policy
         HAVING sum(count) <> 0
     LOOP
         IF d.count < 0 THEN
@@ -173,7 +167,6 @@ BEGIN
                 OR milestone = $1.milestone)
             AND importance = $1.importance
             AND has_patch = $1.has_patch
-            AND fixed_upstream = $1.fixed_upstream
             AND access_policy IS NOT DISTINCT FROM $1.access_policy;
         IF found THEN
             RETURN;
@@ -185,13 +178,12 @@ BEGIN
             INSERT INTO BugSummary(
                 count, product, productseries, distribution,
                 distroseries, sourcepackagename, viewed_by, tag,
-                status, milestone, importance, has_patch, fixed_upstream,
-                access_policy)
+                status, milestone, importance, has_patch, access_policy)
             VALUES (
                 d.count, d.product, d.productseries, d.distribution,
                 d.distroseries, d.sourcepackagename, d.viewed_by, d.tag,
                 d.status, d.milestone, d.importance, d.has_patch,
-                d.fixed_upstream, d.access_policy);
+                d.access_policy);
             RETURN;
         EXCEPTION WHEN unique_violation THEN
             -- do nothing, and loop to try the UPDATE again
@@ -227,7 +219,6 @@ AS $function$
             OR milestone = $1.milestone)
         AND importance = $1.importance
         AND has_patch = $1.has_patch
-        AND fixed_upstream = $1.fixed_upstream
         AND access_policy IS NOT DISTINCT FROM access_policy;
 $function$;
 
@@ -269,5 +260,8 @@ ALTER INDEX bugsummary__distroseries_count__idx2 RENAME TO bugsummary__distroser
 ALTER INDEX bugsummary__distribution_tag_count__idx2 RENAME TO bugsummary__distribution_tag_count__idx;
 ALTER INDEX bugsummary__distroseries_tag_count__idx2 RENAME TO bugsummary__distroseries_tag_count__idx;
 ALTER INDEX bugsummary__full__idx2 RENAME TO bugsummary__full__idx;
+
+ALTER TABLE bugsummary DROP COLUMN fixed_upstream;
+ALTER TABLE bugsummaryjournal DROP COLUMN fixed_upstream;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 19, 3);
