@@ -269,16 +269,6 @@ class TestBugHideCommentControls(
             policy=policy, grantor=pillar.owner, grantee=person)
         self._test_hide_link_visible(context, person)
 
-    def test_artifact_grant_sees_hide_control(self):
-        # The pillar owner sees the hide control.
-        person = self.factory.makePerson()
-        context = self.getContext()
-        pillar = context.default_bugtask.product
-        artifact = self.factory.makeAccessArtifact(concrete=context)
-        self.factory.makeAccessArtifactGrant(
-            artifact=artifact, grantor=pillar.owner, grantee=person)
-        self._test_hide_link_visible(context, person)
-
 
 class TestBugCommentMicroformats(BrowserTestCase):
 
