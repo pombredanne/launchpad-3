@@ -25,6 +25,7 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.webapp.vocabulary import FilteredVocabularyBase
 from lp.testing import (
     login_person,
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -187,6 +188,22 @@ class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
         team = self.factory.makeTeam(
             name="fredteam", email="fredteam@foo.com")
         self._team_filter_tests([team])
+
+    def test_search_accepts_or_expressions(self):
+        person = self.factory.makePerson(name='baz')
+        team = self.factory.makeTeam(name='blah')
+        result = list(self.searchVocabulary(None, 'baz OR blah'))
+        self.assertEqual([person, team], result)
+        private_team_one = self.factory.makeTeam(
+            name='private-eye', visibility=PersonVisibility.PRIVATE,
+            owner=person)
+        private_team_two = self.factory.makeTeam(
+            name='paranoid', visibility=PersonVisibility.PRIVATE,
+            owner=person)
+        with person_logged_in(person):
+            result = list(
+                self.searchVocabulary(None, 'paranoid OR private-eye'))
+        self.assertEqual([private_team_one, private_team_two], result)
 
 
 class TestValidPersonOrTeamPreloading(VocabularyTestBase,
@@ -373,12 +390,13 @@ class TestValidTeamVocabulary(VocabularyTestBase,
 
     def test_unvalidated_emails_ignored(self):
         person = self.factory.makePerson()
-        unvalidated_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             'fnord@example.com',
             person,
             email_status=EmailAddressStatus.NEW)
         search = self.searchVocabulary(None, 'fnord@example.com')
         self.assertEqual([], [s for s in search])
+
 
 class TestNewPillarShareeVocabulary(VocabularyTestBase,
                                         TestCaseWithFactory):
