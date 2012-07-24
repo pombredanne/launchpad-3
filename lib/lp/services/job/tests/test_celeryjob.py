@@ -74,6 +74,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         """The celerybeat task run_missing_ready does not create a
         result queue."""
         from lazr.jobrunner.celerytask import list_queued
+        from lp.services.job.tests.celery_helpers import noop
         job_queue_name = 'celerybeat'
         request = self.RunMissingReady().apply_async(
             kwargs={'_no_init': True}, queue=job_queue_name)
@@ -82,22 +83,20 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # Paranoia check: This test intends to prove that a Celery
         # result queue for the task created above will _not_ be created.
         # This would also happen when "with celeryd()" would do nothing.
-        # So let's be sure that right now a task is queued...
-        self.assertEqual(
-            1, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
-        # ...and that list_queued() calls do not consume messages.
+        # So let's be sure that a task is queued...
+        # Give the system some time to deliver the message
+        for x in range(10):
+            if list_queued(self.RunMissingReady.app, [job_queue_name]) > 0:
+                break
+            sleep(1)
         self.assertEqual(
             1, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
         # Wait at most 60 seconds for celeryd to start and process
         # the task.
         with celeryd(job_queue_name):
-            wait_until = time() + 60
-            while (time() < wait_until):
-                queued_tasks = list_queued(
-                    self.RunMissingReady.app, [job_queue_name])
-                if len(queued_tasks) == 0:
-                    break
-                sleep(.2)
+            # Due to FIFO ordering, this will only return after
+            # RunMissingReady has finished.
+            noop.apply_async(queue=job_queue_name).wait(60)
         # But now the message has been consumed by celeryd.
         self.assertEqual(
             0, len(list_queued(self.RunMissingReady.app, [job_queue_name])))

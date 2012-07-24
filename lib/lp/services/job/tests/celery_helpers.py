@@ -18,3 +18,13 @@ from celery.task import task
 def pop_notifications():
     from lp.testing.mail_helpers import pop_notifications
     return pop_notifications()
+
+from lp.services.job.celeryjob import RunMissingReady
+
+
+@task
+def noop():
+    """Task that does nothing.
+
+    Used to ensure that other tasks have completed.
+    """
