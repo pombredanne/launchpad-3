@@ -9,14 +9,13 @@ import xmlrpclib
 from zope.component import getUtility
 
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-
 from lp.testing import (
     anonymous_logged_in,
     person_logged_in,
+    TestCase,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.xmlrpc import XMLRPCTestTransport
-from lp.testing import TestCase
 
 
 class TestPrivateXMLRPC(TestCase):

@@ -2164,27 +2164,8 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_copyPackage_requires_feature_flag(self):
-        # Ensure feature is off.
-        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertRaises(
-            ForbiddenByFeatureFlag,
-            archive.copyPackage,
-            None, None, None, None, None)
-
-    def test_copyPackages_requires_feature_flag(self):
-        # Ensure feature is off.
-        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertRaises(
-            ForbiddenByFeatureFlag,
-            archive.copyPackages,
-            None, None, None, None, None)
-
     def test_copyPackage_to_ppa_requires_feature_flag(self):
         # Ensure feature is off.
-        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
         self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertRaises(
@@ -2194,7 +2175,6 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
 
     def test_copyPackages_to_ppa_requires_feature_flag(self):
         # Ensure feature is off.
-        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
         self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertRaises(
@@ -2210,7 +2190,6 @@ class TestSyncSource(TestCaseWithFactory):
     def setUp(self):
         super(TestSyncSource, self).setUp()
         self.useFixture(FeatureFixture({
-            u"soyuz.copypackage.enabled": 'on',
             u"soyuz.copypackageppa.enabled": 'on',
             }))
 

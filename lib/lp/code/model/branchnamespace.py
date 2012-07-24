@@ -81,6 +81,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 
+
 POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY:

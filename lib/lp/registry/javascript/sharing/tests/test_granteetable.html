@@ -6,7 +6,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
-      <title>Sharee Picker Tests</title>
+      <title>Grantee Table Widget Tests</title>
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
@@ -28,17 +28,27 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/client.js"></script>
       <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/errors.js"></script>
+      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/lp.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/mustache.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/activator/activator.js"></script>
       <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/indicator/indicator.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
+      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/overlay/overlay.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/picker/picker.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/picker/person_picker.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/registry/sharing/granteepicker.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/registry/sharing/granteelisting_navigator.js"></script>
        <script type="text/javascript"
                src="../../../../../../build/js/lp/app/picker/picker_patcher.js"></script>
       <script type="text/javascript"
@@ -51,17 +61,27 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           src="../../../../../../build/js/lp/app/lazr/lazr.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/extras/extras.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/listing_navigator.js"></script>
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../shareepicker.js"></script>
+      <script type="text/javascript" src="../granteetable.js"></script>
 
       <!-- The test suite -->
-      <script type="text/javascript" src="test_shareepicker.js"></script>
+      <script type="text/javascript" src="test_granteetable.js"></script>
 
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <li>lp.registry.sharing.shareepicker.test</li>
+            <li>lp.registry.sharing.granteetable.test</li>
         </ul>
+        <div id="fixture"></div>
+        <script type="text/x-template" id="grantee-table-template">
+            <table id='grantee-table'>
+                <tr id='grantee-table-not-shared'><td>
+                    Loading...
+                </td></tr>
+            </table>
+        </script>
     </body>
 </html>

@@ -153,8 +153,8 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     time_counter,
-    ws_object,
     WebServiceTestCase,
+    ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (

@@ -8,6 +8,7 @@ __all__ = [
     'ArrayAgg',
     'ArrayContains',
     'ArrayIntersects',
+    'ColumnSelect',
     'Concatenate',
     'CountDistinct',
     'Greatest',
@@ -29,6 +30,23 @@ from storm.expr import (
     Or,
     )
 from storm.info import get_obj_info
+
+
+class ColumnSelect(Expr):
+    # Wrap a select statement in braces so that it can be used as a column
+    # expression in another query.
+    __slots__ = ("select")
+
+    def __init__(self, select):
+        self.select = select
+
+
+@compile.when(ColumnSelect)
+def compile_columnselect(compile, expr, state):
+    state.push("context", EXPR)
+    select = compile(expr.select)
+    state.pop()
+    return "(%s)" % select
 
 
 class Greatest(NamedFunc):

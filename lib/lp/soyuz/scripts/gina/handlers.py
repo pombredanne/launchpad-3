@@ -40,9 +40,9 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
-from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import (
     quote,
