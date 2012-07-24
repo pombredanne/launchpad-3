@@ -80,7 +80,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.assertTrue(request.task_id.startswith('RunMissingReady_'))
         result_queue_name = request.task_id.replace('-', '')
         # Paranoia check: This test intends to prove that a Celery
-        # result queue fot the task created above will _not_ be created.
+        # result queue for the task created above will _not_ be created.
         # This would also happen when "with celeryd()" would do nothing.
         # So let's be sure that right now a task is queued...
         self.assertEqual(
