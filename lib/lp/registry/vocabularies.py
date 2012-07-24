@@ -436,7 +436,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        return self._select(ensure_unicode(text).lower())
+        return self._select(ensure_unicode(text))
 
 
 class PersonAccountToMergeVocabulary(
