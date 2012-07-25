@@ -25,9 +25,11 @@ class TestRunMissingJobs(TestCaseWithFactory):
     def setUp(self):
         super(TestRunMissingJobs, self).setUp()
         from lp.services.job.celeryjob import (
+            CeleryRunJob,
             find_missing_ready,
             RunMissingReady,
         )
+        self.CeleryRunJob = CeleryRunJob
         self.find_missing_ready = find_missing_ready
         self.RunMissingReady = RunMissingReady
 
@@ -36,15 +38,16 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.addCleanup(drain_celery_queues)
         return job
 
-    # XXX wgrant 2012-06-27 bug=1018235: Disabled due to intermittent
-    # failure on buildbot.
-    def disabled_test_find_missing_ready(self):
+    def test_find_missing_ready(self):
         """A job which is ready but not queued is "missing"."""
         job = self.createMissingJob()
+        wait_for_queue(self.CeleryRunJob.app, [BranchScanJob.task_queue], 0)
         self.assertEqual([job], self.find_missing_ready(BranchScanJob))
         job.runViaCelery()
+        wait_for_queue(self.CeleryRunJob.app, [BranchScanJob.task_queue], 1)
         self.assertEqual([], self.find_missing_ready(BranchScanJob))
         drain_celery_queues()
+        wait_for_queue(self.CeleryRunJob.app, [BranchScanJob.task_queue], 0)
         self.assertEqual([job], self.find_missing_ready(BranchScanJob))
 
     def test_run_missing_ready_not_enabled(self):
@@ -82,10 +85,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # This would also happen when "with celeryd()" would do nothing.
         # So let's be sure that a task is queued...
         # Give the system some time to deliver the message
-        for x in range(10):
-            if list_queued(self.RunMissingReady.app, [job_queue_name]) > 0:
-                break
-            sleep(1)
+        wait_for_queue(self.RunMissingReady.app, [job_queue_name], 1)
         self.assertEqual(
             1, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
         # Wait at most 60 seconds for celeryd to start and process
@@ -122,3 +122,15 @@ class TestRunMissingJobs(TestCaseWithFactory):
             "Unexpected output from clear_queues:\n"
             "stdout: %r\n"
             "stderr: %r" % (fake_stdout, fake_stderr))
+
+
+def wait_for_queue(app, queues, count):
+    """Wait until there are a specified number of items in the queue.
+
+    This can be used to avoid race conditions with RabbitMQ's message delivery.
+    """
+    from lazr.jobrunner.celerytask import list_queued
+    for x in range(10):
+        if len(list_queued(app, queues)) != count:
+            break
+        sleep(1)
