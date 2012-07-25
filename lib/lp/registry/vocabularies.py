@@ -841,8 +841,8 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             result = self.store.using(*tables).find(Person, query)
         else:
             name_match_query = SQL("""
-                Person.name LIKE ? || '%%'
-                OR lower(Person.displayname) LIKE ? || '%%'
+                Person.name LIKE lower(?) || '%%'
+                OR lower(Person.displayname) LIKE lower(?) || '%%'
                 OR Person.fti @@ ftq(?)
                 """, [text, text, text]),
 

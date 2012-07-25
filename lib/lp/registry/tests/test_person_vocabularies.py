@@ -397,6 +397,12 @@ class TestValidTeamVocabulary(VocabularyTestBase,
         search = self.searchVocabulary(None, 'fnord@example.com')
         self.assertEqual([], [s for s in search])
 
+    def test_search_accepts_or_expressions(self):
+        team_one = self.factory.makeTeam(name='baz')
+        team_two = self.factory.makeTeam(name='blah')
+        result = list(self.searchVocabulary(None, 'baz OR blah'))
+        self.assertEqual([team_one, team_two], result)
+
 
 class TestNewPillarShareeVocabulary(VocabularyTestBase,
                                         TestCaseWithFactory):
