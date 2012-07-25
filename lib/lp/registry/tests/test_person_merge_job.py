@@ -46,8 +46,9 @@ def create_job(factory):
     """
     from_person = factory.makePerson(name='void')
     to_person = factory.makePerson(name='gestalt')
+    requester = factory.makePerson(name='requester')
     return getUtility(IPersonMergeJobSource).create(
-        from_person=from_person, to_person=to_person)
+        from_person=from_person, to_person=to_person, requester=requester)
 
 
 def transfer_email(job):
@@ -72,6 +73,7 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.job = create_job(self.factory)
         self.from_person = self.job.from_person
         self.to_person = self.job.to_person
+        self.requester = self.job.requester
 
     def test_interface(self):
         # PersonMergeJob implements IPersonMergeJob.
@@ -96,7 +98,8 @@ class TestPersonMergeJob(TestCaseWithFactory):
         from_team = self.factory.makeTeam()
         job = self.job_source.create(
             from_person=from_team, to_person=to_team,
-            reviewer=to_team.teamowner)
+            reviewer=to_team.teamowner,
+            requester=self.factory.makePerson())
         self.assertEqual(
             to_team.getTeamAdminsEmailAddresses(), job.getErrorRecipients())
 
@@ -108,9 +111,11 @@ class TestPersonMergeJob(TestCaseWithFactory):
         # create returns None if either of the persons are already
         # in a pending merge job.
         duplicate_job = self.job_source.create(
-            from_person=self.from_person, to_person=self.to_person)
+            from_person=self.from_person, to_person=self.to_person,
+            requester=self.requester)
         inverted_job = self.job_source.create(
-            from_person=self.to_person, to_person=self.from_person)
+            from_person=self.to_person, to_person=self.from_person,
+            requester=self.requester)
         self.assertEqual(None, duplicate_job)
         self.assertEqual(None, inverted_job)
 
@@ -144,7 +149,7 @@ class TestPersonMergeJob(TestCaseWithFactory):
             from_team.teamowner.leave(from_team)
         self.job_source.create(
             from_person=from_team, to_person=to_team,
-            reviewer=from_team.teamowner)
+            reviewer=from_team.teamowner, requester=self.factory.makePerson())
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -166,9 +171,8 @@ class TestPersonMergeJob(TestCaseWithFactory):
             repr(self.job))
 
     def test_getOperationDescription(self):
-        expected = ('merging ~%s into ~%s' %
-                    (self.from_person.name, self.to_person.name))
-        self.assertEqual(expected, self.job.getOperationDescription())
+        self.assertEqual('merging ~void into ~gestalt',
+                         self.job.getOperationDescription())
 
     def find(self, **kwargs):
         return list(self.job_source.find(**kwargs))
@@ -207,6 +211,14 @@ class TestPersonMergeJob(TestCaseWithFactory):
                 self.assertEqual([self.job], self.find())
             else:
                 self.assertEqual([], self.find())
+
+    def test_create_requester(self):
+        requester = self.factory.makePerson()
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        job = getUtility(IPersonMergeJobSource).create(
+            from_person, to_person, requester)
+        self.assertEqual(requester, job.requester)
 
 
 class TestViaCelery(TestCaseWithFactory):
