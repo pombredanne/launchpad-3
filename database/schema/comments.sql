@@ -2081,6 +2081,7 @@ COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this up
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 COMMENT ON COLUMN ArchivePermission.packageset IS 'The package set to which this permission applies.';
 COMMENT ON COLUMN ArchivePermission.explicit IS 'This flag is set for package sets containing high-profile packages that must not break and/or require specialist skills for proper handling e.g. the kernel.';
+COMMENT ON COLUMN ArchivePermission.distroseries IS 'An optional distroseries to which this permission applies.';
 
 -- ArchiveSubscriber
 

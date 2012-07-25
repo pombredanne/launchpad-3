@@ -52,9 +52,7 @@ from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
-    IBinaryPackagePublishingHistory,
     IPublishingSet,
-    ISourcePackagePublishingHistory,
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackageformat import (
@@ -81,7 +79,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadZopelessLayer,
@@ -622,6 +623,20 @@ class CopyCheckerSameArchiveHarness(TestCaseWithFactory,
             'same version already has published binaries in the '
             'destination archive')
 
+    def test_can_copy_same_source(self):
+        # checkCopy allows copying a new version of the same source.
+        self.source = self.test_publisher.getPubSource(
+            sourcename='test-source', version='1.0-2',
+            pocket=PackagePublishingPocket.PROPOSED,
+            status=PackagePublishingStatus.PUBLISHED,
+            section='net')
+        self.test_publisher.getPubSource(
+            sourcename='test-source', version='1.0-1',
+            pocket=PackagePublishingPocket.UPDATES,
+            status=PackagePublishingStatus.PUBLISHED,
+            section='misc')
+        self.assertCanCopySourceOnly()
+
 
 class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
                                          CopyCheckerHarness):
@@ -696,6 +711,64 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
             pub_source=self.source, with_debug=True)
         self.assertCannotCopyBinaries(
             'Cannot copy DDEBs to a primary archive')
+
+    def test_cannot_copy_conflicting_files_in_PPAs(self):
+        # checkCopy refuses to copy a source package if there are files on
+        # either side with the same name but different contents.
+        spr = self.source.sourcepackagerelease
+        prev_source = self.test_publisher.getPubSource(
+            sourcename=spr.name, version='%s~' % spr.version,
+            archive=self.archive)
+        orig_tarball = 'test-source_1.0.orig.tar.gz'
+        prev_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        prev_source.sourcepackagerelease.addFile(prev_tar)
+        new_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='zzzyyyxxx')
+        spr.addFile(new_tar)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
+        self.assertCannotCopySourceOnly(
+            "test-source_1.0.orig.tar.gz already exists in destination "
+            "archive with different contents.")
+
+    def test_can_copy_source_with_same_filenames(self):
+        # checkCopy allows copying a source package if there are files on
+        # either side with the same name and the same contents.
+        spr = self.source.sourcepackagerelease
+        prev_source = self.test_publisher.getPubSource(
+            sourcename=spr.name, version='%s~' % spr.version,
+            archive=self.archive)
+        orig_tarball = 'test-source_1.0.orig.tar.gz'
+        prev_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        prev_source.sourcepackagerelease.addFile(prev_tar)
+        new_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        spr.addFile(new_tar)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
+        self.assertCanCopySourceOnly()
+
+    def test_can_copy_expired_sources_in_destination(self):
+        # checkCopy allows copying a source package if the destination
+        # archive has expired files with the same name.
+        spr = self.source.sourcepackagerelease
+        prev_source = self.test_publisher.getPubSource(
+            sourcename=spr.name, version='%s~' % spr.version,
+            archive=self.archive)
+        orig_tarball = 'test-source_1.0.orig.tar.gz'
+        prev_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        prev_source.sourcepackagerelease.addFile(prev_tar)
+        new_tar = self.test_publisher.addMockFile(
+            orig_tarball, filecontent='aaabbbccc')
+        spr.addFile(new_tar)
+        # Set previous source tarball to be expired.
+        with dbuser('librarian'):
+            naked_prev_tar = removeSecurityProxy(prev_tar)
+            naked_prev_tar.content = None
+        self.assertCanCopySourceOnly()
 
 
 class CopyCheckerTestCase(TestCaseWithFactory):
@@ -1791,6 +1864,116 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
             [build_i386], [pub.build for pub in delayed_copy.builds])
 
 
+class TestCopyClosesBugs(TestCaseWithFactory):
+    """Copying packages closes bugs.
+
+    Package copies to the primary archive automatically close referenced
+    bugs when targeted to release, updates, and security pockets.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCopyClosesBugs, self).setUp()
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+        self.ubuntutest = self.test_publisher.ubuntutest
+        self.hoary_test = self.ubuntutest.getSeries('hoary-test')
+        self.test_publisher.addFakeChroots(self.hoary_test)
+        self.breezy_autotest = self.test_publisher.breezy_autotest
+        self.person = self.factory.makePerson()
+        self.ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, owner=self.person)
+
+        # Create a dummy first package version so we can file bugs on it.
+        dummy_changesfile = "Format: 1.7\n"
+        self.createSource(
+            '666', self.hoary_test.main_archive,
+            PackagePublishingPocket.PROPOSED, dummy_changesfile)
+
+    def createSource(self, version, archive, pocket, bug_id):
+        changes_template = (
+            "Format: 1.7\n"
+            "Launchpad-bugs-fixed: %s\n")
+        changes_file_content = changes_template % bug_id
+        source = self.test_publisher.getPubSource(
+            sourcename='buggy-source', version=version,
+            distroseries=self.hoary_test, archive=archive, pocket=pocket,
+            changes_file_content=changes_file_content,
+            status=PackagePublishingStatus.PUBLISHED)
+        source.sourcepackagerelease.changelog_entry = (
+            "Required for close_bugs_for_sourcepublication")
+        self.layer.txn.commit()
+        return source
+
+    def createBug(self, source_name, summary):
+        sourcepackage = self.ubuntutest.getSourcePackage(source_name)
+        bug_params = CreateBugParams(self.person, summary, "booo")
+        bug = sourcepackage.createBug(bug_params)
+        [bug_task] = bug.bugtasks
+        self.assertEqual(bug_task.status, BugTaskStatus.NEW)
+        return bug.id
+
+    def test_copies_to_updates_close_bugs(self):
+        updates_bug_id = self.createBug('buggy-source', 'bug in -proposed')
+        spph = self.createSource(
+            '667', self.hoary_test.main_archive,
+            PackagePublishingPocket.PROPOSED, updates_bug_id)
+
+        [copied_source] = do_copy(
+            [spph], self.hoary_test.main_archive, self.hoary_test,
+            PackagePublishingPocket.UPDATES, check_permissions=False)
+        self.assertEqual(PackagePublishingStatus.PENDING, copied_source.status)
+
+        updates_bug = getUtility(IBugSet).get(updates_bug_id)
+        [updates_bug_task] = updates_bug.bugtasks
+        self.assertEqual(updates_bug_task.status, BugTaskStatus.FIXRELEASED)
+
+    def test_copies_to_development_close_bugs(self):
+        dev_bug_id = self.createBug('buggy-source', 'bug in development')
+        spph = self.createSource(
+            '668', self.hoary_test.main_archive,
+            PackagePublishingPocket.UPDATES, dev_bug_id)
+
+        [copied_source] = do_copy(
+            [spph], self.hoary_test.main_archive, self.breezy_autotest,
+            PackagePublishingPocket.RELEASE, check_permissions=False)
+        self.assertEqual(PackagePublishingStatus.PENDING, copied_source.status)
+
+        dev_bug = getUtility(IBugSet).get(dev_bug_id)
+        [dev_bug_task] = dev_bug.bugtasks
+        self.assertEqual(dev_bug_task.status, BugTaskStatus.FIXRELEASED)
+
+    def test_copies_to_proposed_do_not_close_bugs(self):
+        ppa_bug_id = self.createBug('buggy-source', 'bug in PPA')
+        spph = self.createSource(
+            '669', self.ppa, PackagePublishingPocket.RELEASE, ppa_bug_id)
+
+        [copied_source] = do_copy(
+            [spph], self.hoary_test.main_archive, self.hoary_test,
+            PackagePublishingPocket.PROPOSED, check_permissions=False)
+        self.assertEqual(PackagePublishingStatus.PENDING, copied_source.status)
+
+        ppa_bug = getUtility(IBugSet).get(ppa_bug_id)
+        [ppa_bug_task] = ppa_bug.bugtasks
+        self.assertEqual(ppa_bug_task.status, BugTaskStatus.NEW)
+
+    def test_copies_to_ppa_do_not_close_bugs(self):
+        proposed_bug_id = self.createBug('buggy-source', 'bug in PPA')
+        spph = self.createSource(
+            '670', self.hoary_test.main_archive,
+            PackagePublishingPocket.RELEASE, proposed_bug_id)
+
+        [copied_source] = do_copy(
+            [spph], self.ppa, self.hoary_test, PackagePublishingPocket.RELEASE,
+            check_permissions=False)
+        self.assertEqual(PackagePublishingStatus.PENDING, copied_source.status)
+
+        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
+        [proposed_bug_task] = proposed_bug.bugtasks
+        self.assertEqual(proposed_bug_task.status, BugTaskStatus.NEW)
+
+
 class CopyPackageScriptTestCase(unittest.TestCase):
     """Test the copy-package.py script."""
     layer = LaunchpadZopelessLayer
@@ -2768,124 +2951,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
 
-    def testCopyFromPrivateToPublicPPAs(self):
-        """Copies from private to public archives are allowed."""
-        # Set up a private PPA.
-        joe = self.factory.makePerson(name="joe")
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        joe_private_ppa = self.factory.makeArchive(
-            owner=joe, name='ppa', private=True,
-            distribution=ubuntu)
-
-        # Create a source and binary private publication.
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        ppa_source = test_publisher.getPubSource(
-            archive=joe_private_ppa, version='1.1', distroseries=warty,
-            status=PackagePublishingStatus.PUBLISHED)
-        other_source = test_publisher.getPubSource(
-            archive=joe_private_ppa, version='1.1',
-            sourcename="sourcefordiff", distroseries=warty,
-            status=PackagePublishingStatus.PUBLISHED)
-        ppa_binaries = test_publisher.getPubBinaries(
-            pub_source=ppa_source, distroseries=warty,
-            status=PackagePublishingStatus.PUBLISHED)
-        self.layer.txn.commit()
-
-        # Give the new source a private package diff.
-        spr = other_source.sourcepackagerelease
-        diff_file = test_publisher.addMockFile("diff_file", restricted=True)
-        package_diff = spr.requestDiffTo(joe, ppa_source.sourcepackagerelease)
-        package_diff.diff_content = diff_file
-
-        # Add a restricted changelog file.
-        changelog = test_publisher.addMockFile("changelog", restricted=True)
-        ppa_source.sourcepackagerelease.changelog = changelog
-
-        # Create ancestry environment in the primary archive, so we can test
-        # unembargoed overrides.
-        ancestry_source = test_publisher.getPubSource(
-            version='1.0', distroseries=warty,
-            status=PackagePublishingStatus.PUBLISHED)
-        test_publisher.getPubBinaries(
-            pub_source=ancestry_source, distroseries=warty,
-            status=PackagePublishingStatus.SUPERSEDED)
-
-        # Override the published ancestry source to 'universe'.
-        universe = getUtility(IComponentSet)['universe']
-        ancestry_source.component = universe
-
-        # Override the copied binarypackagerelease to 'universe'.
-        for binary in ppa_binaries:
-            binary.binarypackagerelease.component = universe
-
-        self.layer.txn.commit()
-
-        # Run the copy package script storing the logged information.
-        copy_helper = self.getCopier(
-            sourcename='foo', from_ppa='joe',
-            include_binaries=True, from_suite='warty',
-            to_suite='warty-security', unembargo=True)
-        copied = copy_helper.mainTask()
-
-        # The private files are copied via a direct-copy request.
-        self.checkCopies(copied, copy_helper.destination.archive, 3)
-        self.assertEqual(
-            ['INFO FROM: joe: warty-RELEASE',
-             'INFO TO: Primary Archive for Ubuntu Linux: warty-SECURITY',
-             'INFO Copy candidates:',
-             'INFO \tfoo 1.1 in warty',
-             'INFO \tfoo-bin 1.1 in warty hppa',
-             'INFO \tfoo-bin 1.1 in warty i386',
-             'INFO Made foo_1.1.dsc public',
-             'INFO Made diff_file public',
-             'INFO Made foo_1.1_source.changes public',
-             'INFO Made changelog public',
-             'INFO Made foo-bin_1.1_all.deb public',
-             'INFO Made foo-bin_1.1_i386.changes public',
-             'INFO Made '
-                 'buildlog_ubuntu-warty-i386.foo_1.1_FULLYBUILT.txt.gz public',
-             'INFO Copied:',
-             'INFO \tfoo 1.1 in warty',
-             'INFO \tfoo-bin 1.1 in warty hppa',
-             'INFO \tfoo-bin 1.1 in warty i386',
-             'INFO 3 packages successfully copied.',
-             ],
-            copy_helper.logger.getLogBuffer().splitlines())
-
-        # Check that the librarian files are all unrestricted now.
-        # We must commit the txn for SQL object to see the change.
-        # Also check that the published records are in universe, which
-        # shows that the ancestry override worked.
-        self.layer.txn.commit()
-        for published in copied:
-            self.assertEqual(
-                published.component.name, universe.name,
-                "%s is in %s" % (published.displayname,
-                                 published.component.name))
-            for published_file in published.files:
-                self.assertFalse(published_file.libraryfilealias.restricted)
-            # Also check the sources' changesfiles.
-            if ISourcePackagePublishingHistory.providedBy(published):
-                source = published.sourcepackagerelease
-                self.assertFalse(source.upload_changesfile.restricted)
-                self.assertFalse(source.changelog.restricted)
-                # Check the source's package diff.
-                [diff] = source.package_diffs
-                self.assertFalse(diff.diff_content.restricted)
-            # Check the binary changesfile and the buildlog.
-            if IBinaryPackagePublishingHistory.providedBy(published):
-                build = published.binarypackagerelease.build
-                # Check build's upload changesfile
-                self.assertFalse(build.upload_changesfile.restricted)
-                # Check build's buildlog.
-                self.assertFalse(build.log.restricted)
-            # Check that the pocket is -security as specified in the
-            # script parameters.
-            self.assertEqual(
-                published.pocket.title, "Security",
-                "Expected Security pocket, got %s" % published.pocket.title)
-
     def testUnembargoStableReleasePocketForbidden(self):
         """Unembargoing into release pocket of stable series is forbidden."""
         # Set up a private PPA.
@@ -2902,298 +2967,3 @@ class CopyPackageTestCase(TestCaseWithFactory):
             SoyuzScriptError,
             "Can't unembargo into suite 'warty' of a distribution.",
             copy_helper.mainTask)
-
-    def testCopyClosesBugs(self):
-        """Copying packages closes bugs.
-
-        Package copies to primary archive automatically closes
-        bugs referenced bugs when target to release, updates
-        and security pockets.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        cprov = getUtility(IPersonSet).getByName("cprov")
-
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        test_publisher.addFakeChroots(warty)
-
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher.addFakeChroots(hoary)
-
-        def create_source(version, archive, pocket, changes_file_content):
-            source = test_publisher.getPubSource(
-                sourcename='buggy-source', version=version,
-                distroseries=warty, archive=archive, pocket=pocket,
-                changes_file_content=changes_file_content,
-                status=PackagePublishingStatus.PUBLISHED)
-            source.sourcepackagerelease.changelog_entry = (
-                "Required for close_bugs_for_sourcepublication")
-            test_publisher.getPubBinaries(
-                pub_source=source, distroseries=warty, archive=archive,
-                pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
-            self.layer.txn.commit()
-            return source
-
-        def create_bug(summary):
-            buggy_in_ubuntu = ubuntu.getSourcePackage('buggy-source')
-            bug_params = CreateBugParams(cprov, summary, "booo")
-            bug = buggy_in_ubuntu.createBug(bug_params)
-            [bug_task] = bug.bugtasks
-            self.assertEqual(bug_task.status, BugTaskStatus.NEW)
-            return bug.id
-
-        def publish_copies(copies):
-            for pub in copies:
-                pub.status = PackagePublishingStatus.PUBLISHED
-
-        changes_template = (
-            "Format: 1.7\n"
-            "Launchpad-bugs-fixed: %s\n")
-
-        # Create a dummy first package version so we can file bugs on it.
-        dummy_changesfile = "Format: 1.7\n"
-        create_source(
-            '666', warty.main_archive, PackagePublishingPocket.PROPOSED,
-            dummy_changesfile)
-
-        # Copies to -updates close bugs when they exist.
-        updates_bug_id = create_bug('bug in -proposed')
-        closing_bug_changesfile = changes_template % updates_bug_id
-        create_source(
-            '667', warty.main_archive, PackagePublishingPocket.PROPOSED,
-            closing_bug_changesfile)
-
-        copy_helper = self.getCopier(
-            sourcename='buggy-source', include_binaries=True,
-            from_suite='warty-proposed', to_suite='warty-updates')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        updates_bug = getUtility(IBugSet).get(updates_bug_id)
-        [updates_bug_task] = updates_bug.bugtasks
-        self.assertEqual(updates_bug_task.status, BugTaskStatus.FIXRELEASED)
-
-        publish_copies(copied)
-
-        # Copies to the development distroseries close bugs.
-        dev_bug_id = create_bug('bug in development')
-        closing_bug_changesfile = changes_template % dev_bug_id
-        create_source(
-            '668', warty.main_archive, PackagePublishingPocket.UPDATES,
-            closing_bug_changesfile)
-
-        copy_helper = self.getCopier(
-            sourcename='buggy-source', include_binaries=True,
-            from_suite='warty-updates', to_suite='hoary')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        dev_bug = getUtility(IBugSet).get(dev_bug_id)
-        [dev_bug_task] = dev_bug.bugtasks
-        self.assertEqual(dev_bug_task.status, BugTaskStatus.FIXRELEASED)
-
-        publish_copies(copied)
-
-        # Copies to -proposed do not close bugs
-        ppa_bug_id = create_bug('bug in PPA')
-        closing_bug_changesfile = changes_template % ppa_bug_id
-        create_source(
-            '669', cprov.archive, PackagePublishingPocket.RELEASE,
-            closing_bug_changesfile)
-
-        copy_helper = self.getCopier(
-            sourcename='buggy-source', include_binaries=True,
-            from_ppa='cprov', from_suite='warty', to_suite='warty-proposed')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        ppa_bug = getUtility(IBugSet).get(ppa_bug_id)
-        [ppa_bug_task] = ppa_bug.bugtasks
-        self.assertEqual(ppa_bug_task.status, BugTaskStatus.NEW)
-
-        publish_copies(copied)
-
-        # Copies to PPA do not close bugs.
-        proposed_bug_id = create_bug('bug in PPA')
-        closing_bug_changesfile = changes_template % proposed_bug_id
-        create_source(
-            '670', warty.main_archive, PackagePublishingPocket.RELEASE,
-            closing_bug_changesfile)
-
-        copy_helper = self.getCopier(
-            sourcename='buggy-source', include_binaries=True,
-            to_ppa='cprov', from_suite='warty', to_suite='warty')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
-        [proposed_bug_task] = proposed_bug.bugtasks
-        self.assertEqual(proposed_bug_task.status, BugTaskStatus.NEW)
-
-        publish_copies(copied)
-
-    def testCopySourceShortCircuit(self):
-        """We can copy source if the source files match, both in name and
-        contents. We can't if they don't.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        test_publisher.addFakeChroots(warty)
-
-        proposed_source = test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-2',
-            distroseries=warty, archive=warty.main_archive,
-            pocket=PackagePublishingPocket.PROPOSED,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='net')
-        test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-1',
-            distroseries=warty, archive=warty.main_archive,
-            pocket=PackagePublishingPocket.UPDATES,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-
-        checker = CopyChecker(warty.main_archive, include_binaries=False)
-        self.assertIsNone(
-            checker.checkCopy(
-                proposed_source, warty, PackagePublishingPocket.UPDATES,
-                check_permissions=False))
-
-    def testCopySourceWithConflictingFilesInPPAs(self):
-        """We can copy source if the source files match, both in name and
-        contents. We can't if they don't.
-        """
-        joe = self.factory.makePerson(email='joe@example.com')
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        test_publisher.addFakeChroots(warty)
-        dest_ppa = self.factory.makeArchive(
-            distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test1')
-        src_ppa = self.factory.makeArchive(
-            distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test2')
-        test1_source = test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-1',
-            distroseries=warty, archive=dest_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        orig_tarball = 'test-source_1.0.orig.tar.gz'
-        test1_tar = test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test1_source.sourcepackagerelease.addFile(test1_tar)
-        test2_source = test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-2',
-            distroseries=warty, archive=src_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        test2_tar = test_publisher.addMockFile(
-            orig_tarball, filecontent='zzzyyyxxx')
-        test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-
-        checker = CopyChecker(dest_ppa, include_binaries=False)
-        self.assertRaisesWithContent(
-            CannotCopy,
-            "test-source_1.0.orig.tar.gz already exists in destination "
-            "archive with different contents.",
-            checker.checkCopy, test2_source, warty,
-            PackagePublishingPocket.RELEASE, None, False)
-
-    def testCopySourceWithSameFilenames(self):
-        """We can copy source if the source files match, both in name and
-        contents. We can't if they don't.
-        """
-        joe = self.factory.makePerson(email='joe@example.com')
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        test_publisher.addFakeChroots(warty)
-        dest_ppa = self.factory.makeArchive(
-            distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test1')
-        src_ppa = self.factory.makeArchive(
-            distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test2')
-        test1_source = test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-1',
-            distroseries=warty, archive=dest_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        orig_tarball = 'test-source_1.0.orig.tar.gz'
-        test1_tar = test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test1_source.sourcepackagerelease.addFile(test1_tar)
-        test2_source = test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-2',
-            distroseries=warty, archive=src_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        test2_tar = test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-
-        checker = CopyChecker(dest_ppa, include_binaries=False)
-        self.assertIsNone(
-            checker.checkCopy(
-                test2_source, warty, PackagePublishingPocket.RELEASE,
-                check_permissions=False))
-
-    def testCopySourceWithExpiredSourcesInDestination(self):
-        """We can also copy sources if the destination archive has expired
-        sources with the same name.
-        """
-        joe = self.factory.makePerson(email='joe@example.com')
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        test_publisher.addFakeChroots(warty)
-        dest_ppa = self.factory.makeArchive(
-            distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test1')
-        src_ppa = self.factory.makeArchive(
-            distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
-            name='test2')
-        test1_source = test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-1',
-            distroseries=warty, archive=dest_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        orig_tarball = 'test-source_1.0.orig.tar.gz'
-        test1_tar = test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test1_source.sourcepackagerelease.addFile(test1_tar)
-        test2_source = test_publisher.getPubSource(
-            sourcename='test-source', version='1.0-2',
-            distroseries=warty, archive=src_ppa,
-            pocket=PackagePublishingPocket.RELEASE,
-            status=PackagePublishingStatus.PUBLISHED,
-            section='misc')
-        test2_tar = test_publisher.addMockFile(
-            orig_tarball, filecontent='aaabbbccc')
-        test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Set test1 source tarball to be expired.
-        switch_dbuser('librarian')
-        naked_test1 = removeSecurityProxy(test1_tar)
-        naked_test1.content = None
-        switch_dbuser(self.dbuser)
-
-        checker = CopyChecker(dest_ppa, include_binaries=False)
-        self.assertIsNone(
-            checker.checkCopy(
-                test2_source, warty, PackagePublishingPocket.RELEASE,
-                check_permissions=False))

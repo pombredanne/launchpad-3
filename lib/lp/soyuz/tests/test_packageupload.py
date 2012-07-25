@@ -19,9 +19,9 @@ from lazr.restfulclient.errors import (
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
+from zope.schema import getFields
 from zope.security.interfaces import Unauthorized as ZopeUnauthorized
 from zope.security.proxy import removeSecurityProxy
-from zope.schema import getFields
 from zope.testbrowser.browser import Browser
 from zope.testbrowser.testing import PublisherMechanizeBrowser
 

@@ -6,14 +6,14 @@
 __metaclass__ = type
 
 from fixtures import FakeLogger
+from lazr.restful.interfaces import IJSONRequestCache
 import soupmatchers
 from testtools.matchers import (
     MatchesAny,
     Not,
     )
-
 from zope.schema.vocabulary import SimpleVocabulary
-from lazr.restful.interfaces import IJSONRequestCache
+
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.registry.interfaces.person import CLOSED_TEAM_POLICY
 from lp.registry.interfaces.series import SeriesStatus

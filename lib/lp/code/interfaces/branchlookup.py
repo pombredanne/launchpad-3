@@ -15,10 +15,11 @@ __all__ = [
 
 from itertools import (
     ifilter,
-    imap
+    imap,
     )
 
 from zope.interface import Interface
+
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
     BRANCH_ID_ALIAS_PREFIX,
@@ -142,8 +143,6 @@ class IBranchLookup(Interface):
             component of the path.
         :raises NoSuchProduct: If we can't find a product that matches the
             product component of the path.
-        :raises NoSuchProductSeries: If the product series component doesn't
-            match an existing series.
         :raises NoSuchDistroSeries: If the distro series component doesn't
             match an existing series.
         :raises NoSuchSourcePackageName: If the source packagae referred to

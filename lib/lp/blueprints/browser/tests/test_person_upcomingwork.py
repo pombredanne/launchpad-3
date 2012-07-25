@@ -11,14 +11,14 @@ from operator import attrgetter
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.blueprints.enums import (
-    SpecificationPriority,
-    SpecificationWorkItemStatus,
-    )
 from lp.blueprints.browser.person_upcomingwork import (
     GenericWorkItem,
     getWorkItemsDueBefore,
     WorkItemContainer,
+    )
+from lp.blueprints.enums import (
+    SpecificationPriority,
+    SpecificationWorkItemStatus,
     )
 from lp.testing import (
     anonymous_logged_in,
