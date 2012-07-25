@@ -1060,7 +1060,7 @@ teams back.
     [(u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
 
     >>> sorted((team.displayname, team.teamowner.displayname)
-    ...        for team in vocab.search('spanish | ubuntu'))
+    ...        for team in vocab.search('spanish OR ubuntu'))
     [(u'Mirror Administrators', u'Mark Shuttleworth'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Security Team', u'Colin Watson'),
