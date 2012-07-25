@@ -31,7 +31,6 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
-    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -839,7 +838,6 @@ class IBugEdit(Interface):
 
     @call_with(user=REQUEST_USER, returncve=False)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
-    @export_operation_as('linkCVE')
     @export_write_operation()
     def linkCVE(cve, user, returncve=True):
         """Ensure that this CVE is linked to this bug."""
