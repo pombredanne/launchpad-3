@@ -56,7 +56,6 @@ from storm.expr import (
     Select,
     SQL,
     Sum,
-    With,
     )
 from storm.info import ClassAlias
 from storm.store import (

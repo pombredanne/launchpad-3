@@ -57,7 +57,6 @@ from storm.expr import (
     SQL,
     Sum,
     Union,
-    With,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -185,10 +184,7 @@ from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.accesspolicy import (
-    AccessPolicyGrant,
-    reconcile_access_for_artifact,
-    )
+from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import (
     Person,
     person_sort_key,
@@ -231,12 +227,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 _bug_tag_query_template = """
