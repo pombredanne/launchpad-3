@@ -1378,19 +1378,13 @@ class Bug(SQLBase):
         """See `IBug`."""
         return bool(self.cves)
 
-    def linkCVE(self, cve, user):
+    def linkCVE(self, cve, user, returncve=True):
         """See `IBug`."""
         if cve not in self.cves:
             bugcve = BugCve(bug=self, cve=cve)
             notify(ObjectCreatedEvent(bugcve, user=user))
-            return bugcve
-
-    # XXX intellectronica 2008-11-06 Bug #294858:
-    # See lp.bugs.interfaces.bug
-    def linkCVEAndReturnNothing(self, cve, user):
-        """See `IBug`."""
-        self.linkCVE(cve, user)
-        return None
+            if returncve:
+                return bugcve
 
     def unlinkCVE(self, cve, user):
         """See `IBug`."""
