@@ -25,7 +25,6 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from storm.locals import Store
 from storm.expr import (
     And,
     Desc,
@@ -33,6 +32,7 @@ from storm.expr import (
     LeftJoin,
     Or,
     )
+from storm.locals import Store
 from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements

@@ -15,6 +15,7 @@ __all__ = [
     'get_where_for_reference',
     'NullCount',
     'TryAdvisoryLock',
+    'Unnest',
     ]
 
 from storm.exceptions import ClassInfoError
@@ -117,19 +118,25 @@ def compile_array(compile, array, state):
 
 
 class ArrayAgg(NamedFunc):
-    "Aggregate values (within a GROUP BY) into an array."
+    """Aggregate values (within a GROUP BY) into an array."""
     __slots__ = ()
     name = "ARRAY_AGG"
 
 
+class Unnest(NamedFunc):
+    """Expand an array to a set of rows."""
+    __slots__ = ()
+    name = "unnest"
+
+
 class ArrayContains(CompoundOper):
-    "True iff the left side is a superset of the right side."
+    """True iff the left side is a superset of the right side."""
     __slots__ = ()
     oper = "@>"
 
 
 class ArrayIntersects(CompoundOper):
-    "True iff the left side shares at least one element with the right side."
+    """True iff the arrays have at least one element in common."""
     __slots__ = ()
     oper = "&&"
 
