@@ -633,6 +633,16 @@ class TestBugSummary(TestCaseWithFactory):
         self.assertCount(0, product=product, has_patch=True)
         self.assertCount(1, product=product, has_patch=False)
 
+    def test_duplicate(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+
+        self.assertCount(1, product=product)
+
+        bug.markAsDuplicate(self.factory.makeBug())
+
+        self.assertCount(0, product=product)
+
 
 class TestBugSummaryRolledUp(TestBugSummary):
 
