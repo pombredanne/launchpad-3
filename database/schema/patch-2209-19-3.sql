@@ -118,6 +118,7 @@ BEGIN
         OR NEW.information_type IS DISTINCT FROM OLD.information_type
         OR NEW.access_grants IS DISTINCT FROM OLD.access_grants
         OR NEW.access_policies IS DISTINCT FROM OLD.access_policies
+        OR NEW.duplicateof IS DISTINCT FROM OLD.duplicateof
     THEN
         PERFORM bugsummary_journal_bugtaskflat(OLD, -1);
         PERFORM bugsummary_journal_bugtaskflat(NEW, 1);
