@@ -15,10 +15,11 @@ __all__ = [
 
 from itertools import (
     ifilter,
-    imap
+    imap,
     )
 
 from zope.interface import Interface
+
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
     BRANCH_ID_ALIAS_PREFIX,
