@@ -456,3 +456,7 @@ class PersonMergeJob(PersonTransferJobDerived):
             "<{self.__class__.__name__} to merge "
             "~{self.from_person.name} into ~{self.to_person.name}; "
             "status={self.job.status}>").format(self=self)
+
+    def getOperationDescription(self):
+        return ('merging ~%s into ~%s' %
+                (self.from_person.name, self.to_person.name))

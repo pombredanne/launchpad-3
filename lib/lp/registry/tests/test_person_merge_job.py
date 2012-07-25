@@ -165,6 +165,11 @@ class TestPersonMergeJob(TestCaseWithFactory):
             "<PersonMergeJob to merge ~void into ~gestalt; status=Waiting>",
             repr(self.job))
 
+    def test_getOperationDescription(self):
+        expected = ('merging ~%s into ~%s' %
+                    (self.from_person.name, self.to_person.name))
+        self.assertEqual(expected, self.job.getOperationDescription())
+
     def find(self, **kwargs):
         return list(self.job_source.find(**kwargs))
 
