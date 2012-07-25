@@ -117,7 +117,7 @@ class CombineBugSummaryConstraint:
 
 
 def get_bugsummary_filter_for_user(user):
-    """Build a Storm expression to filter BugSummary views by visibility.
+    """Build a Storm expression to filter BugSummary by visibility.
 
     :param user: The user for which visible rows should be calculated.
     :return: (with_clauses, where_clauses)
