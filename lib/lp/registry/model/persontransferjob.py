@@ -421,10 +421,7 @@ class PersonMergeJob(PersonTransferJobDerived):
 
     def getErrorRecipients(self):
         """See `IPersonMergeJob`."""
-        if self.to_person.is_team:
-            return self.to_person.getTeamAdminsEmailAddresses()
-        else:
-            return [format_address_for_person(self.to_person)]
+        return [format_address_for_person(self.requester)]
 
     def run(self):
         """Perform the merge."""

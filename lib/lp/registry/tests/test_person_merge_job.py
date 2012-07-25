@@ -87,21 +87,10 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.assertEqual(self.to_person, self.job.major_person)
         self.assertEqual({'delete': False}, self.job.metadata)
 
-    def test_getErrorRecipients_user(self):
+    def test_getErrorRecipients(self):
         # The to_person is the recipient.
-        email_id = format_address_for_person(self.to_person)
+        email_id = format_address_for_person(self.requester)
         self.assertEqual([email_id], self.job.getErrorRecipients())
-
-    def test_getErrorRecipients_team(self):
-        # The to_person admins are the recipients.
-        to_team = self.factory.makeTeam()
-        from_team = self.factory.makeTeam()
-        job = self.job_source.create(
-            from_person=from_team, to_person=to_team,
-            reviewer=to_team.teamowner,
-            requester=self.factory.makePerson())
-        self.assertEqual(
-            to_team.getTeamAdminsEmailAddresses(), job.getErrorRecipients())
 
     def test_enqueue(self):
         # Newly created jobs are enqueued.
