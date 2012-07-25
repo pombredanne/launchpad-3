@@ -295,46 +295,26 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
         (and {} returned).
     """
     # Circular fail.
-    from lp.bugs.model.bugsummary import BugSummary
+    from lp.bugs.model.bugsummary import (
+        BugSummary,
+        get_bugsummary_filter_for_user,
+        )
     tags = {}
     if include_tags:
         tags = dict((tag, 0) for tag in include_tags)
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    admin_team = getUtility(ILaunchpadCelebrities).admin
-    if user is not None and not user.inTeam(admin_team):
-        store = store.with_((
-            With(
-                'teams',
-                Select(
-                    TeamParticipation.teamID, tables=[TeamParticipation],
-                    where=(TeamParticipation.personID == user.id))),
-            With(
-                'policies',
-                Select(
-                    AccessPolicyGrant.policy_id, tables=[AccessPolicyGrant],
-                    where=(
-                        AccessPolicyGrant.grantee_id.is_in(
-                            SQL("SELECT team FROM teams"))))),
-            ))
     where_conditions = [
         BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         BugSummary.tag != None,
         context_condition,
         ]
-    if user is None:
-        where_conditions.extend([
-            BugSummary.viewed_by_id == None,
-            BugSummary.access_policy_id == None,
-            ])
-    elif not user.inTeam(admin_team):
-        where_conditions.append(
-            Or(
-                And(BugSummary.viewed_by_id == None,
-                    BugSummary.access_policy_id == None),
-                BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams")),
-                BugSummary.access_policy_id.is_in(
-                    SQL("SELECT policy FROM policies")),
-                ))
+
+    # Apply the privacy filter.
+    store = IStore(BugSummary)
+    user_with, user_where = get_bugsummary_filter_for_user(user)
+    if user_with:
+        store = store.with_(user_with)
+    where_conditions.extend(user_where)
+
     sum_count = Sum(BugSummary.count)
     tag_count_columns = (BugSummary.tag, sum_count)
 
