@@ -3,7 +3,6 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portletBody"
   tal:define="
 	blueprint context;
 	subscriptions view/sorted_subscriptions">

@@ -59,7 +59,10 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branch import (
+    IBranch,
+    IBranchSet,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -262,6 +265,9 @@ patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
 patch_collection_return_type(
     IBranch, 'getMergeProposals', IBranchMergeProposal)
+
+patch_collection_return_type(
+    IBranchSet, 'getMergeProposals', IBranchMergeProposal)
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment

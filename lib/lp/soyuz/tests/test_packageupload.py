@@ -7,6 +7,10 @@ from datetime import timedelta
 from email import message_from_string
 import os
 import shutil
+from urllib2 import (
+    HTTPError,
+    urlopen,
+    )
 
 from lazr.restfulclient.errors import (
     BadRequest,
@@ -15,8 +19,11 @@ from lazr.restfulclient.errors import (
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 from zope.schema import getFields
+from zope.security.interfaces import Unauthorized as ZopeUnauthorized
+from zope.security.proxy import removeSecurityProxy
+from zope.testbrowser.browser import Browser
+from zope.testbrowser.testing import PublisherMechanizeBrowser
 
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.tests import datadir
@@ -393,6 +400,36 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.setAccepted()
         [spph] = upload.realiseUpload()
         self.assertEqual(spph.packageupload, upload)
+
+    def test_overrideSource_ignores_None_component_change(self):
+        # overrideSource accepts None as a component; it will not object
+        # based on permissions for the new component.
+        upload = self.factory.makeSourcePackageUpload()
+        spr = upload.sourcepackagerelease
+        current_component = spr.component
+        new_section = self.factory.makeSection()
+        upload.overrideSource(None, new_section, [current_component])
+        self.assertEqual(current_component, spr.component)
+        self.assertEqual(new_section, spr.section)
+
+
+class TestPackageUploadPrivacy(TestCaseWithFactory):
+    """Test PackageUpload security."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_private_archives_have_private_uploads(self):
+        # Only users with access to a private archive can see uploads to it.
+        owner = self.factory.makePerson()
+        archive = self.factory.makeArchive(owner=owner, private=True)
+        upload = self.factory.makePackageUpload(archive=archive)
+        # The private archive owner can see this upload.
+        with person_logged_in(owner):
+            self.assertFalse(upload.contains_source)
+        # But other users cannot.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(
+                ZopeUnauthorized, getattr, upload, "contains_source")
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
@@ -889,6 +926,14 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
+class NonRedirectingMechanizeBrowser(PublisherMechanizeBrowser):
+    """A `mechanize.Browser` that does not handle redirects."""
+
+    default_features = [
+        feature for feature in PublisherMechanizeBrowser.default_features
+        if feature != "_redirect"]
+
+
 class TestPackageUploadWebservice(TestCaseWithFactory):
     """Test the exposure of queue methods to the web service."""
 
@@ -918,7 +963,9 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 person = self.factory.makePerson()
         if self.webservice is None:
             self.webservice = launchpadlib_for("testing", person)
-        return self.webservice.load(api_url(obj))
+        with person_logged_in(person):
+            url = api_url(obj)
+        return self.webservice.load(url)
 
     def makeSourcePackageUpload(self, person, **kwargs):
         with person_logged_in(person):
@@ -957,6 +1004,22 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 distroseries=self.distroseries, **kwargs)
         transaction.commit()
         return upload, self.load(upload, person)
+
+    def makeNonRedirectingBrowser(self, person):
+        # The test browser can only work with the appserver, not the
+        # librarian, so follow one layer of redirection through the
+        # appserver and then ask the librarian for the real file.
+        browser = Browser(mech_browser=NonRedirectingMechanizeBrowser())
+        browser.handleErrors = False
+        with person_logged_in(person):
+            browser.addHeader(
+                "Authorization", "Basic %s:test" % person.preferredemail.email)
+        return browser
+
+    def assertCanOpenRedirectedUrl(self, browser, url):
+        redirection = self.assertRaises(HTTPError, browser.open, url)
+        self.assertEqual(303, redirection.code)
+        urlopen(redirection.hdrs["Location"]).close()
 
     def assertRequiresEdit(self, method_name, **kwargs):
         """Test that a web service queue method requires launchpad.Edit."""
@@ -1015,26 +1078,32 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertFalse(ws_upload.contains_build)
         self.assertFalse(ws_upload.contains_copy)
         self.assertEqual("hello", ws_upload.display_name)
-        self.assertEqual(upload.package_version, ws_upload.display_version)
         self.assertEqual("source", ws_upload.display_arches)
         self.assertEqual("hello", ws_upload.package_name)
-        self.assertEqual(upload.package_version, ws_upload.package_version)
         self.assertEqual("universe", ws_upload.component_name)
-        self.assertEqual(upload.section_name, ws_upload.section_name)
+        with person_logged_in(person):
+            self.assertEqual(upload.package_version, ws_upload.display_version)
+            self.assertEqual(upload.package_version, ws_upload.package_version)
+            self.assertEqual(upload.section_name, ws_upload.section_name)
 
     def test_source_fetch(self):
         # API clients can fetch files attached to source uploads.
         person = self.makeQueueAdmin([self.universe])
         upload, ws_upload = self.makeSourcePackageUpload(
             person, component=self.universe)
+
         ws_source_file_urls = ws_upload.sourceFileUrls()
         self.assertNotEqual(0, len(ws_source_file_urls))
         with person_logged_in(person):
             source_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfile, upload.archive).http_url
+                ProxiedLibraryFileAlias(file.libraryfile, upload).http_url
                 for file in upload.sourcepackagerelease.files]
         self.assertContentEqual(source_file_urls, ws_source_file_urls)
+
+        browser = self.makeNonRedirectingBrowser(person)
+        for ws_source_file_url in ws_source_file_urls:
+            self.assertCanOpenRedirectedUrl(browser, ws_source_file_url)
+        self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
 
     def test_overrideSource_limited_component_permissions(self):
         # Overriding between two components requires queue admin of both.
@@ -1052,7 +1121,8 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 new_component=self.main,
                 allowed_components=[self.main, self.universe])
         transaction.commit()
-        self.assertEqual("main", upload.component_name)
+        with person_logged_in(person):
+            self.assertEqual("main", upload.component_name)
         self.assertRaises(Unauthorized, ws_upload.overrideSource,
                           new_component="universe")
 
@@ -1113,11 +1183,16 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         self.assertNotEqual(0, len(ws_binary_file_urls))
         with person_logged_in(person):
             binary_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfile, upload.archive).http_url
-                for bpr in upload.builds[0].build.binarypackages
+                ProxiedLibraryFileAlias(file.libraryfile, build.build).http_url
+                for build in upload.builds
+                for bpr in build.build.binarypackages
                 for file in bpr.files]
         self.assertContentEqual(binary_file_urls, ws_binary_file_urls)
+
+        browser = self.makeNonRedirectingBrowser(person)
+        for ws_binary_file_url in ws_binary_file_urls:
+            self.assertCanOpenRedirectedUrl(browser, ws_binary_file_url)
+        self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
 
     def test_overrideBinaries_limited_component_permissions(self):
         # Overriding between two components requires queue admin of both.
@@ -1253,14 +1328,19 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         upload, ws_upload = self.makeCustomPackageUpload(
             person, custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
             filename="debian-installer-images_1.tar.gz")
+
         ws_custom_file_urls = ws_upload.customFileUrls()
         self.assertNotEqual(0, len(ws_custom_file_urls))
         with person_logged_in(person):
             custom_file_urls = [
-                ProxiedLibraryFileAlias(
-                    file.libraryfilealias, upload.archive).http_url
+                ProxiedLibraryFileAlias(file.libraryfilealias, upload).http_url
                 for file in upload.customfiles]
         self.assertContentEqual(custom_file_urls, ws_custom_file_urls)
+
+        browser = self.makeNonRedirectingBrowser(person)
+        for ws_custom_file_url in ws_custom_file_urls:
+            self.assertCanOpenRedirectedUrl(browser, ws_custom_file_url)
+        self.assertCanOpenRedirectedUrl(browser, ws_upload.changes_file_url)
 
     def test_binary_and_custom_info(self):
         # API clients can inspect properties of uploads containing both

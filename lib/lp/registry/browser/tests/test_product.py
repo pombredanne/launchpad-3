@@ -5,10 +5,10 @@
 
 __metaclass__ = type
 
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary
 
-from lazr.restful.interfaces import IJSONRequestCache
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import CLOSED_TEAM_POLICY

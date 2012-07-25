@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Disable pylint 'should have "self" as first argument' warnings.
@@ -325,10 +325,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # Reverse engineer the actual lp_path that is used, so we need to
         # remove any suffix that may be there from the strip_path.
         lp_path = strip_path
-        if suffix is not None:
+        if suffix != '':
             # E.g. 'project/trunk/filename.txt' the suffix is 'filename.txt'
             # we want lp_path to be 'project/trunk'.
-            lp_path = lp_path[:-(len(suffix)+1)]
+            lp_path = lp_path[:-(len(suffix) + 1)]
         return self._getUrlsForBranch(
             branch, lp_path, suffix, supported_schemes)
 

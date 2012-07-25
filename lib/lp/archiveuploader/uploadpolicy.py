@@ -253,6 +253,9 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         if upload.is_ppa:
             self.checkArchiveSizeQuota(upload)
         else:
+            # XXX cjwatson 2012-07-20 bug=1026665: For now, direct uploads
+            # to SECURITY will not be built.  See
+            # BuildPackageJob.postprocessCandidate.
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
                     "This upload queue does not permit SECURITY uploads.")

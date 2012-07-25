@@ -48,9 +48,7 @@ from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 import simplejson
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import (
     getUtility,
     queryAdapter,
@@ -91,7 +89,11 @@ from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
-from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -116,13 +118,11 @@ from lp.code.errors import (
 from lp.code.interfaces.branch import (
     IBranch,
     IBranchSet,
-    user_has_special_branch_access,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import (
@@ -738,7 +738,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                 ])
             information_type = copy_field(
                 IBranch['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary())
+                vocabulary=InformationTypeVocabulary(self.context))
             reviewer = copy_field(IBranch['reviewer'], required=True)
             owner = copy_field(IBranch['owner'], readonly=False)
         return BranchEditSchema
@@ -1027,46 +1027,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     def setUpFields(self):
         super(BranchEditView, self).setUpFields()
-        # This is to prevent users from converting push/import
-        # branches to pull branches.
         branch = self.context
-        if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
-            self.form_fields = self.form_fields.omit('url')
-
-        policy = IBranchNamespacePolicy(branch.namespace)
-        if branch.private:
-            # If the branch is private, and can be public, show the field.
-            show_private_field = policy.canBranchesBePublic()
-
-            # If this branch is stacked on a private branch, disable the
-            # field.
-            if (branch.stacked_on and branch.stacked_on.information_type in
-                PRIVATE_INFORMATION_TYPES):
-                show_private_field = False
-                private_info = Bool(
-                    __name__="private",
-                    title=_("Branch is confidential"),
-                    description=_(
-                        "This branch is confidential because it is stacked "
-                        "on a private branch."))
-                private_info_field = form.Fields(
-                    private_info, render_context=self.render_context)
-                self.form_fields = self.form_fields.omit('private')
-                self.form_fields = private_info_field + self.form_fields
-                self.form_fields['private'].custom_widget = (
-                    CustomWidgetFactory(
-                        CheckBoxWidget, extra='disabled="disabled"'))
-        else:
-            # If the branch is public, and can be made private, show the
-            # field.  Users with special access rights to branches can set
-            # public branches as private.
-            show_private_field = (
-                policy.canBranchesBePrivate() or
-                user_has_special_branch_access(self.user))
-
-        if not show_private_field:
-            self.form_fields = self.form_fields.omit('information_type')
-
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
         if check_permission('launchpad.Admin', branch):
@@ -1102,6 +1063,65 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 # Replace the normal owner field with a more permissive vocab.
                 self.form_fields = self.form_fields.omit('owner')
                 self.form_fields = new_owner_field + self.form_fields
+
+        if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
+            self.form_fields = self.form_fields.omit('url')
+
+    def getInformationTypesToShow(self):
+        """Get the information types to display on the edit form.
+
+        We display a highly customised set of information types:
+        anything allowed by the namespace, plus the current type,
+        except some of the obscure types unless there's a linked
+        bug with an obscure type.
+        """
+        allowed_types = self.context.getAllowedInformationTypes(self.user)
+
+        # If we're stacked on a private branch, only show that
+        # information type.
+        if self.context.stacked_on and self.context.stacked_on.private:
+            shown_types = set([self.context.stacked_on.information_type])
+        else:
+            shown_types = (
+                InformationType.PUBLIC,
+                InformationType.USERDATA,
+                InformationType.PROPRIETARY,
+                )
+
+            # We only show Private Security and Public Security
+            # if the branch is linked to a bug with one of those types,
+            # as they're confusing and not generally useful otherwise.
+            # Once Proprietary is fully deployed, it should be added here.
+            hidden_types = (
+                InformationType.PUBLICSECURITY,
+                InformationType.PRIVATESECURITY,
+                )
+            if set(allowed_types).intersection(hidden_types):
+                params = BugTaskSearchParams(
+                    user=self.user, linked_branches=self.context.id,
+                    information_type=hidden_types)
+                if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
+                    shown_types += hidden_types
+
+        # Now take the intersection of the allowed and shown types.
+        combined_types = set(allowed_types).intersection(shown_types)
+        combined_types.add(self.context.information_type)
+        return combined_types
+
+    def setUpWidgets(self, context=None):
+        super(BranchEditView, self).setUpWidgets()
+        if self.form_fields.get('information_type') is not None:
+            # Customise the set of shown types.
+            types_to_show = self.getInformationTypesToShow()
+            # Grab the types from the vocab if they exist.
+            # The vocab uses feature flags to control what is displayed so we
+            # need to pull info_types from the vocab to use to make the subset
+            # of what we show the user. This is mostly to hide Proprietary
+            # while it's disabled.
+            info_type_vocab = self.widgets['information_type'].vocabulary
+            self.widgets['information_type'].vocabulary = SimpleVocabulary(
+                [info_type for info_type in info_type_vocab
+                 if info_type.value in types_to_show])
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk

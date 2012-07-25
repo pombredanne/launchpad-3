@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'PackageUploadNavigation',
     'QueueItemsView',
     ]
 
@@ -26,7 +27,11 @@ from lp.services.database.bulk import (
     load_related,
     )
 from lp.services.job.model.job import Job
-from lp.services.webapp import LaunchpadView
+from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.webapp import (
+    GetitemNavigation,
+    LaunchpadView,
+    )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.soyuz.enums import (
@@ -456,6 +461,10 @@ class QueueItemsView(LaunchpadView):
     def priorities(self):
         """An iterable of priorities from PackagePublishingPriority."""
         return (priority for priority in PackagePublishingPriority)
+
+
+class PackageUploadNavigation(GetitemNavigation, FileNavigationMixin):
+    usedfor = IPackageUpload
 
 
 class CompletePackageUpload:

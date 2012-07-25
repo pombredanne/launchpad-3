@@ -123,7 +123,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     ITeamContactAddressForm,
-    ITeamCreation,
     ITeamReassignment,
     OPEN_TEAM_POLICY,
     PersonVisibility,
@@ -144,7 +143,7 @@ from lp.registry.interfaces.teammembership import (
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.fields import PublicPersonChoice
+from lp.services.fields import PersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import cachedproperty
@@ -228,7 +227,7 @@ class TeamFormMixin:
     * The user has a current commercial subscription.
     """
     field_names = [
-        "name", "visibility", "displayname", "contactemail",
+        "name", "visibility", "displayname",
         "teamdescription", "subscriptionpolicy",
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod", "teamowner",
@@ -302,14 +301,10 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
-        """See `LaunchpadViewForm`.
-
-        When editing a team the contactemail field is not displayed.
-        """
+        """See `LaunchpadViewForm`."""
         # Make an instance copy of field_names so as to not modify the single
         # class list.
         self.field_names = list(self.field_names)
-        self.field_names.remove('contactemail')
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.setUpVisibilityField(render_context=True)
@@ -994,7 +989,7 @@ class TeamMailingListArchiveView(LaunchpadView):
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
 
-    schema = ITeamCreation
+    schema = ITeam
     page_title = 'Register a new team in Launchpad'
     label = page_title
 
@@ -1031,16 +1026,6 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         if visibility:
             team.transitionVisibility(visibility, self.user)
             del data['visibility']
-        email = data.get('contactemail')
-        if email is not None:
-            generateTokenAndValidationEmail(email, team)
-            self.request.response.addNotification(
-                "A confirmation message has been sent to '%s'. Follow the "
-                "instructions in that message to confirm the new "
-                "contact address for this team. "
-                "(If the message doesn't arrive in a few minutes, your mail "
-                "provider might use 'greylisting', which could delay the "
-                "message for up to an hour or two.)" % email)
 
         if self.request.is_ajax:
             return ''
@@ -1156,7 +1141,7 @@ class TeamBrandingView(BrandingChangeView):
 class ITeamMember(Interface):
     """The interface used in the form to add a new member to a team."""
 
-    newmember = PublicPersonChoice(
+    newmember = PersonChoice(
         title=_('New member'), required=True,
         vocabulary='ValidTeamMember',
         description=_("The user or team which is going to be "

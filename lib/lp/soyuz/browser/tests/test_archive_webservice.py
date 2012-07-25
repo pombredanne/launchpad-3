@@ -17,7 +17,6 @@ from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -316,10 +315,6 @@ class TestProcessorFamilies(WebServiceTestCase):
 
 class TestCopyPackage(WebServiceTestCase):
     """Webservice test cases for the copyPackage/copyPackages methods"""
-
-    def setUp(self):
-        super(TestCopyPackage, self).setUp()
-        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled":  'on'}))
 
     def setup_data(self):
         self.ws_version = "devel"

@@ -4,10 +4,7 @@
 __metaclass__ = type
 
 from collections import namedtuple
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 from operator import attrgetter
 import subprocess
 import unittest
@@ -33,7 +30,6 @@ from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
@@ -55,18 +51,10 @@ from lp.bugs.model.bugtask import (
     validate_new_target,
     validate_target,
     )
-from lp.bugs.model.bugtasksearch import (
-    _build_status_clause,
-    _build_tag_search_clause,
-    )
 from lp.bugs.scripts.bugtasktargetnamecaches import (
     BugTaskTargetNameCacheUpdater,
     )
 from lp.bugs.tests.bug import create_old_bug
-from lp.hardwaredb.interfaces.hwdb import (
-    HWBus,
-    IHWDeviceSet,
-    )
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -80,7 +68,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
-    IPerson,
     IPersonSet,
     TeamSubscriptionPolicy,
     )
@@ -90,18 +77,13 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.sqlbase import (
-    convert_storm_clause_to_string,
     flush_database_caches,
     flush_database_updates,
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
 from lp.services.log.logger import FakeLogger
-from lp.services.searchbuilder import (
-    all,
-    any,
-    not_equals,
-    )
+from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -114,7 +96,6 @@ from lp.testing import (
     login_celebrity,
     login_person,
     logout,
-    normalize_whitespace,
     person_logged_in,
     set_feature_flag,
     StormStatementRecorder,
@@ -122,18 +103,12 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
-from lp.testing.dbuser import (
-    dbuser,
-    switch_dbuser,
-    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import (
     AppServerLayer,
     CeleryJobLayer,
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import HasQueryCount
 
@@ -238,13 +213,10 @@ class TestBugTaskCreation(TestCaseWithFactory):
         bug = self.factory.makeBug(
             information_type=InformationType.USERDATA)
 
-        # There are also transitional triggers that do this. Disable
-        # them temporarily so we can be sure the application side works.
-        with disable_trigger_fixture():
-            with admin_logged_in():
-                old_product = bug.default_bugtask.product
-                getUtility(IBugTaskSet).createManyTasks(
-                    bug, bug.owner, [new_product])
+        with admin_logged_in():
+            old_product = bug.default_bugtask.product
+            getUtility(IBugTaskSet).createManyTasks(
+                bug, bug.owner, [new_product])
 
         expected_policies = getUtility(IAccessPolicySource).find([
             (new_product, InformationType.USERDATA),
@@ -808,465 +780,6 @@ class TestBugTaskDelta(TestCaseWithFactory):
                             new=bug_task.importance))
 
 
-class TestBugTaskSetStatusSearchClauses(TestCase):
-    # BugTaskSets contain a utility function that generates SQL WHERE clauses
-    # used to find sets of bugs.  These tests exercise that utility function.
-
-    def searchClause(self, status_spec):
-        return convert_storm_clause_to_string(
-            _build_status_clause(BugTask._status, status_spec))
-
-    def test_simple_queries(self):
-        # WHERE clauses for simple status values are straightforward.
-        self.assertEqual(
-            'BugTask.status = 10',
-            self.searchClause(BugTaskStatus.NEW))
-        self.assertEqual(
-            'BugTask.status = 16',
-            self.searchClause(BugTaskStatus.OPINION))
-        self.assertEqual(
-            'BugTask.status = 22',
-            self.searchClause(BugTaskStatus.INPROGRESS))
-
-    def test_INCOMPLETE_query(self):
-        # Since we don't really store INCOMPLETE in the DB but instead store
-        # values with finer shades of meaning, asking for INCOMPLETE will
-        # result in a clause that actually matches multiple statuses.
-        self.assertEqual(
-            'BugTask.status IN (13, 14)',
-            self.searchClause(BugTaskStatus.INCOMPLETE))
-
-    def test_negative_query(self):
-        # If a negative is requested then the WHERE clause is simply wrapped
-        # in a "NOT".
-        status = BugTaskStatus.INCOMPLETE
-        base_query = self.searchClause(status)
-        expected_negative_query = 'NOT ({0})'.format(base_query)
-        self.assertEqual(
-            expected_negative_query,
-            self.searchClause(not_equals(status)))
-
-    def test_any_query(self):
-        # An "any" object may be passed in containing a set of statuses to
-        # return.  The resulting SQL uses IN in an effort to be optimal.
-        self.assertEqual(
-            'BugTask.status IN (10, 16)',
-            self.searchClause(any(BugTaskStatus.NEW, BugTaskStatus.OPINION)))
-
-    def test_any_query_with_INCOMPLETE(self):
-        # Since INCOMPLETE is not a single-value status (see above) an "any"
-        # query that includes INCOMPLETE will cause more enum values to be
-        # included in the IN clause than were given.  Note that we go to a bit
-        # of effort to generate an IN expression instead of a series of
-        # ORed-together equality checks.
-        self.assertEqual(
-            'BugTask.status IN (10, 13, 14)',
-            self.searchClause(
-                any(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)))
-
-    def test_all_query(self):
-        # Since status is single-valued, asking for "all" statuses in a set
-        # doesn't make any sense.
-        with ExpectedException(ValueError):
-            self.searchClause(
-                all(BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE))
-
-    def test_bad_value(self):
-        # If an unrecognized status is provided then an error is raised.
-        with ExpectedException(ValueError):
-            self.searchClause('this-is-not-a-status')
-
-
-class TestBugTaskTagSearchClauses(TestCase):
-
-    def searchClause(self, tag_spec):
-        return convert_storm_clause_to_string(
-            _build_tag_search_clause(tag_spec))
-
-    def assertEqualIgnoringWhitespace(self, expected, observed):
-        return self.assertEqual(
-            normalize_whitespace(expected),
-            normalize_whitespace(observed))
-
-    def test_empty(self):
-        # Specifying no tags is valid. _build_tag_search_clause will
-        # return None, which compiles to 'NULL' here but will be ignored
-        # by bugtasksearch.
-        self.assertEqual(self.searchClause(any()), 'NULL')
-        self.assertEqual(self.searchClause(all()), 'NULL')
-
-    def test_single_tag_presence_any(self):
-        # The WHERE clause to test for the presence of a single
-        # tag where at least one tag is desired.
-        expected_query = (
-            """EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag IN ('fred'))""")
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
-            self.searchClause(any(u'fred')))
-
-    def test_single_tag_presence_all(self):
-        # The WHERE clause to test for the presence of a single
-        # tag where all tags are desired.
-        expected_query = (
-            """EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'fred')""")
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
-            self.searchClause(all(u'fred')))
-
-    def test_single_tag_absence_any(self):
-        # The WHERE clause to test for the absence of a single
-        # tag where at least one tag is desired.
-        expected_query = (
-            """NOT EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'fred')""")
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
-            self.searchClause(any(u'-fred')))
-
-    def test_single_tag_absence_all(self):
-        # The WHERE clause to test for the absence of a single
-        # tag where all tags are desired.
-        expected_query = (
-            """NOT EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag IN ('fred'))""")
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
-            self.searchClause(all(u'-fred')))
-
-    def test_tag_presence(self):
-        # The WHERE clause to test for the presence of tags. Should be
-        # the same for an `any` query or an `all` query.
-        expected_query = (
-            """EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug)""")
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
-            self.searchClause(any(u'*')))
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
-            self.searchClause(all(u'*')))
-
-    def test_tag_absence(self):
-        # The WHERE clause to test for the absence of tags. Should be
-        # the same for an `any` query or an `all` query.
-        expected_query = (
-            """NOT EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug)""")
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
-            self.searchClause(any(u'-*')))
-        self.assertEqualIgnoringWhitespace(
-            expected_query,
-            self.searchClause(all(u'-*')))
-
-    def test_multiple_tag_presence_any(self):
-        # The WHERE clause to test for the presence of *any* of
-        # several tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag IN ('bob', 'fred'))""",
-            self.searchClause(any(u'fred', u'bob')))
-        # In an `any` query, a positive wildcard is dominant over
-        # other positive tags because "bugs with one or more tags" is
-        # a superset of "bugs with a specific tag".
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug)""",
-            self.searchClause(any(u'fred', u'*')))
-
-    def test_multiple_tag_absence_any(self):
-        # The WHERE clause to test for the absence of *any* of several
-        # tags.
-        self.assertEqualIgnoringWhitespace(
-            """NOT
-                 (EXISTS
-                  (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'bob')
-                  AND EXISTS
-                  (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'fred'))""",
-            self.searchClause(any(u'-fred', u'-bob')))
-        # In an `any` query, a negative wildcard is superfluous in the
-        # presence of other negative tags because "bugs without a
-        # specific tag" is a superset of "bugs without any tags".
-        self.assertEqualIgnoringWhitespace(
-            """NOT EXISTS
-                 (SELECT 1 FROM BugTag
-                  WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'fred')""",
-            self.searchClause(any(u'-fred', u'-*')))
-
-    def test_multiple_tag_presence_all(self):
-        # The WHERE clause to test for the presence of *all* specified
-        # tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-               (SELECT 1 FROM BugTag
-                WHERE BugTag.bug = BugTaskFlat.bug
-                  AND BugTag.tag = 'bob')
-               AND EXISTS
-               (SELECT 1 FROM BugTag
-                WHERE BugTag.bug = BugTaskFlat.bug
-                  AND BugTag.tag = 'fred')""",
-            self.searchClause(all(u'fred', u'bob')))
-        # In an `all` query, a positive wildcard is superfluous in the
-        # presence of other positive tags because "bugs with a
-        # specific tag" is a subset of (i.e. more specific than) "bugs
-        # with one or more tags".
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag = 'fred')""",
-            self.searchClause(all(u'fred', u'*')))
-
-    def test_multiple_tag_absence_all(self):
-        # The WHERE clause to test for the absence of all specified
-        # tags.
-        self.assertEqualIgnoringWhitespace(
-            """NOT EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug
-                     AND BugTag.tag IN ('bob', 'fred'))""",
-            self.searchClause(all(u'-fred', u'-bob')))
-        # In an `all` query, a negative wildcard is dominant over
-        # other negative tags because "bugs without any tags" is a
-        # subset of (i.e. more specific than) "bugs without a specific
-        # tag".
-        self.assertEqualIgnoringWhitespace(
-            """NOT EXISTS
-                 (SELECT 1 FROM BugTag
-                   WHERE BugTag.bug = BugTaskFlat.bug)""",
-            self.searchClause(all(u'-fred', u'-*')))
-
-    def test_mixed_tags_any(self):
-        # The WHERE clause to test for the presence of one or more
-        # specific tags or the absence of one or more other specific
-        # tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('fred'))
-                OR NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'bob')""",
-            self.searchClause(any(u'fred', u'-bob')))
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('eric', 'fred'))
-                OR NOT
-                  (EXISTS
-                    (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'bob')
-                   AND EXISTS
-                   (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'harry'))""",
-            self.searchClause(any(u'fred', u'-bob', u'eric', u'-harry')))
-        # The positive wildcard is dominant over other positive tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)
-                OR NOT
-                  (EXISTS
-                   (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'bob')
-                   AND EXISTS
-                   (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'harry'))""",
-            self.searchClause(any(u'fred', u'-bob', u'*', u'-harry')))
-        # The negative wildcard is superfluous in the presence of
-        # other negative tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('eric', 'fred'))
-                OR NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'bob')""",
-            self.searchClause(any(u'fred', u'-bob', u'eric', u'-*')))
-        # The negative wildcard is not superfluous in the absence of
-        # other negative tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('eric', 'fred'))
-                OR NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)""",
-            self.searchClause(any(u'fred', u'-*', u'eric')))
-        # The positive wildcard is dominant over other positive tags,
-        # and the negative wildcard is superfluous in the presence of
-        # other negative tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)
-                OR NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'harry')""",
-            self.searchClause(any(u'fred', u'-*', u'*', u'-harry')))
-
-    def test_mixed_tags_all(self):
-        # The WHERE clause to test for the presence of one or more
-        # specific tags and the absence of one or more other specific
-        # tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'fred')
-                AND NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('bob'))""",
-            self.searchClause(all(u'fred', u'-bob')))
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                 (SELECT 1 FROM BugTag
-                  WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'eric')
-                AND EXISTS
-                 (SELECT 1 FROM BugTag
-                  WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'fred')
-                AND NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('bob', 'harry'))""",
-            self.searchClause(all(u'fred', u'-bob', u'eric', u'-harry')))
-        # The positive wildcard is superfluous in the presence of
-        # other positive tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'fred')
-                AND NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('bob', 'harry'))""",
-            self.searchClause(all(u'fred', u'-bob', u'*', u'-harry')))
-        # The positive wildcard is not superfluous in the absence of
-        # other positive tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)
-                AND NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag IN ('bob', 'harry'))""",
-            self.searchClause(all(u'-bob', u'*', u'-harry')))
-        # The negative wildcard is dominant over other negative tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                 (SELECT 1 FROM BugTag
-                  WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'eric')
-               AND EXISTS
-                 (SELECT 1 FROM BugTag
-                  WHERE BugTag.bug = BugTaskFlat.bug
-                    AND BugTag.tag = 'fred')
-               AND NOT EXISTS
-                 (SELECT 1 FROM BugTag
-                  WHERE BugTag.bug = BugTaskFlat.bug)""",
-            self.searchClause(all(u'fred', u'-bob', u'eric', u'-*')))
-        # The positive wildcard is superfluous in the presence of
-        # other positive tags, and the negative wildcard is dominant
-        # over other negative tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug
-                      AND BugTag.tag = 'fred')
-                AND NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)""",
-            self.searchClause(all(u'fred', u'-*', u'*', u'-harry')))
-
-    def test_mixed_wildcards(self):
-        # The WHERE clause to test for the presence of tags or the
-        # absence of tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)
-                OR NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)""",
-            self.searchClause(any(u'*', u'-*')))
-        # The WHERE clause to test for the presence of tags and the
-        # absence of tags.
-        self.assertEqualIgnoringWhitespace(
-            """EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)
-                AND NOT EXISTS
-                  (SELECT 1 FROM BugTag
-                    WHERE BugTag.bug = BugTaskFlat.bug)""",
-            self.searchClause(all(u'*', u'-*')))
-
-
-class TestBugTaskHardwareSearch(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestBugTaskHardwareSearch, self).setUp()
-        switch_dbuser('launchpad')
-
-    def test_search_results_without_duplicates(self):
-        # Searching for hardware related bugtasks returns each
-        # matching task exactly once, even if devices from more than
-        # one HWDB submission match the given criteria.
-        new_submission = self.factory.makeHWSubmission(
-            emailaddress=u'test@canonical.com')
-        self.layer.txn.commit()
-        device = getUtility(IHWDeviceSet).getByDeviceID(
-            HWBus.PCI, '0x10de', '0x0455')
-        with dbuser('hwdb-submission-processor'):
-            self.factory.makeHWSubmissionDevice(
-                new_submission, device, None, None, 1)
-        search_params = BugTaskSearchParams(
-            user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
-            hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        bugtasks = ubuntu.searchTasks(search_params)
-        self.assertEqual(
-            [1, 2],
-            [bugtask.bug.id for bugtask in bugtasks])
-
-
 class TestSimilarBugs(TestCaseWithFactory):
     """It's possible to get a list of similar bugs."""
 
@@ -1588,170 +1101,6 @@ class TestDistributionNoBugSupervisorBugTaskPermissionsToSetAssignee(
     def setBugSupervisor(self):
         """Establish a bug supervisor for this target."""
         self._setBugSupervisorDataNone()
-
-
-class TestBugTaskSearch(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def login(self):
-        # Log in as an arbitrary person.
-        person = self.factory.makePerson()
-        login_person(person)
-        self.addCleanup(logout)
-        return person
-
-    def makeBugTarget(self):
-        """Make an arbitrary bug target with no tasks on it."""
-        return IBugTarget(self.factory.makeProduct())
-
-    def test_no_tasks(self):
-        # A brand new bug target has no tasks.
-        target = self.makeBugTarget()
-        self.assertEqual([], list(target.searchTasks(None)))
-
-    def test_new_task_shows_up(self):
-        # When we create a new bugtask on the target, it shows up in
-        # searchTasks.
-        target = self.makeBugTarget()
-        self.login()
-        task = self.factory.makeBugTask(target=target)
-        self.assertEqual([task], list(target.searchTasks(None)))
-
-    def test_modified_since_excludes_earlier_bugtasks(self):
-        # When we search for bug tasks that have been modified since a certain
-        # time, tasks for bugs that have not been modified since then are
-        # excluded.
-        target = self.makeBugTarget()
-        self.login()
-        task = self.factory.makeBugTask(target=target)
-        date = task.bug.date_last_updated + timedelta(days=1)
-        result = target.searchTasks(None, modified_since=date)
-        self.assertEqual([], list(result))
-
-    def test_modified_since_includes_later_bugtasks(self):
-        # When we search for bug tasks that have been modified since a certain
-        # time, tasks for bugs that have been modified since then are
-        # included.
-        target = self.makeBugTarget()
-        self.login()
-        task = self.factory.makeBugTask(target=target)
-        date = task.bug.date_last_updated - timedelta(days=1)
-        result = target.searchTasks(None, modified_since=date)
-        self.assertEqual([task], list(result))
-
-    def test_modified_since_includes_later_bugtasks_excludes_earlier(self):
-        # When we search for bugs that have been modified since a certain
-        # time, tasks for bugs that have been modified since then are
-        # included, tasks that have not are excluded.
-        target = self.makeBugTarget()
-        self.login()
-        task1 = self.factory.makeBugTask(target=target)
-        date = task1.bug.date_last_updated
-        bug1 = removeSecurityProxy(task1.bug)
-        bug1.date_last_updated -= timedelta(days=1)
-        task2 = self.factory.makeBugTask(target=target)
-        bug2 = removeSecurityProxy(task2.bug)
-        bug2.date_last_updated += timedelta(days=1)
-        result = target.searchTasks(None, modified_since=date)
-        self.assertEqual([task2], list(result))
-
-    def test_private_bug_view_permissions_cached(self):
-        """Private bugs from a search know the user can see the bugs."""
-        target = self.makeBugTarget()
-        person = self.login()
-        self.factory.makeBug(product=target, owner=person,
-            information_type=InformationType.USERDATA)
-        self.factory.makeBug(product=target, owner=person,
-            information_type=InformationType.USERDATA)
-        self.factory.makeBug(product=target, owner=person,
-            information_type=InformationType.USERDATA)
-        # Search style and parameters taken from the milestone index view
-        # where the issue was discovered.
-        login_person(person)
-        tasks = target.searchTasks(BugTaskSearchParams(
-            person, omit_dupes=True, orderby=['status', '-importance', 'id']))
-        # We must have found the bugs.
-        self.assertEqual(3, tasks.count())
-        # Cache in the storm cache the account->person lookup so its not
-        # distorting what we're testing.
-        IPerson(person.account, None)
-        # The should take 2 queries - one for the tasks, one for the related
-        # products (eager loaded targets).
-        has_expected_queries = HasQueryCount(Equals(4))
-        # No extra queries should be issued to access a regular attribute
-        # on the bug that would normally trigger lazy evaluation for security
-        # checking.  Note that the 'id' attribute does not trigger a check.
-        with StormStatementRecorder() as recorder:
-            [task.getConjoinedMaster for task in tasks]
-            self.assertThat(recorder, has_expected_queries)
-
-    def test_omit_targeted_default_is_false(self):
-        # The default value of omit_targeted is false so bugs targeted
-        # to a series are not hidden.
-        target = self.factory.makeDistroSeries()
-        self.login()
-        task1 = self.factory.makeBugTask(target=target)
-        default_result = target.searchTasks(None)
-        self.assertEqual([task1], list(default_result))
-
-    def test_created_since_excludes_earlier_bugtasks(self):
-        # When we search for bug tasks that have been created since a certain
-        # time, tasks for bugs that have not been created since then are
-        # excluded.
-        target = self.makeBugTarget()
-        self.login()
-        task = self.factory.makeBugTask(target=target)
-        date = task.datecreated + timedelta(days=1)
-        result = target.searchTasks(None, created_since=date)
-        self.assertEqual([], list(result))
-
-    def test_created_since_includes_later_bugtasks(self):
-        # When we search for bug tasks that have been created since a certain
-        # time, tasks for bugs that have been created since then are
-        # included.
-        target = self.makeBugTarget()
-        self.login()
-        task = self.factory.makeBugTask(target=target)
-        date = task.datecreated - timedelta(days=1)
-        result = target.searchTasks(None, created_since=date)
-        self.assertEqual([task], list(result))
-
-    def test_created_since_includes_later_bugtasks_excludes_earlier(self):
-        # When we search for bugs that have been created since a certain
-        # time, tasks for bugs that have been created since then are
-        # included, tasks that have not are excluded.
-        target = self.makeBugTarget()
-        self.login()
-        task1 = self.factory.makeBugTask(target=target)
-        date = task1.datecreated
-        task1.datecreated -= timedelta(days=1)
-        task2 = self.factory.makeBugTask(target=target)
-        task2.datecreated += timedelta(days=1)
-        result = target.searchTasks(None, created_since=date)
-        self.assertEqual([task2], list(result))
-
-
-class BugTaskSetSearchTest(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_explicit_blueprint_specified(self):
-        # If the linked_blueprints is an integer id, then only bugtasks for
-        # bugs that are linked to that blueprint are returned.
-        bug1 = self.factory.makeBug()
-        blueprint1 = self.factory.makeBlueprint()
-        with person_logged_in(blueprint1.owner):
-            blueprint1.linkBug(bug1)
-        bug2 = self.factory.makeBug()
-        blueprint2 = self.factory.makeBlueprint()
-        with person_logged_in(blueprint2.owner):
-            blueprint2.linkBug(bug2)
-        self.factory.makeBug()
-        params = BugTaskSearchParams(
-            user=None, linked_blueprints=blueprint1.id)
-        tasks = set(getUtility(IBugTaskSet).search(params))
-        self.assertThat(set(bug1.bugtasks), Equals(tasks))
 
 
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
@@ -2130,7 +1479,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bug = self.factory.makeBug()
         login_celebrity('admin')
         self.assertTrue(
-            check_permission('launchpad.Admin', bug.default_bugtask))
+            check_permission('launchpad.Delete', bug.default_bugtask))
 
     def test_pillar_owner_can_delete(self):
         # With the feature flag on, the pillar owner can delete a bug task.
@@ -2161,6 +1510,18 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bugtask = bug.default_bugtask
         login_person(bugtask.owner)
         self.assertRaises(CannotDeleteBugtask, bugtask.delete)
+
+    def test_canBeDeleted_is_free(self):
+        # BugTask.canBeDeleted uses cached data, so repeated execution
+        # on a single bug is free.
+        bug = self.factory.makeBug()
+        task1 = self.factory.makeBugTask(bug=bug)
+        task2 = self.factory.makeBugTask(bug=bug)
+        self.assertEqual(True, bug.default_bugtask.canBeDeleted())
+        with StormStatementRecorder() as recorder:
+            self.assertEqual(True, task1.canBeDeleted())
+            self.assertEqual(True, task2.canBeDeleted())
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_delete_bugtask(self):
         # A bugtask can be deleted and after deletion, re-nominated.
@@ -2205,11 +1566,8 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         self.assertContentEqual(
             expected_policies, get_policies_for_artifact(bug))
 
-        # There are also transitional triggers that do this. Disable
-        # them temporarily so we can be sure the application side works.
-        with disable_trigger_fixture():
-            with admin_logged_in():
-                task.delete()
+        with admin_logged_in():
+            task.delete()
 
         expected_policies = getUtility(IAccessPolicySource).find([
             (old_product, InformationType.USERDATA),
@@ -3286,12 +2644,9 @@ class TestTransitionToTarget(TestCaseWithFactory):
         new_product = self.factory.makeProduct()
         bug = self.factory.makeBug(information_type=InformationType.USERDATA)
 
-        # There are also transitional triggers that do this. Disable
-        # them temporarily so we can be sure the application side works.
-        with disable_trigger_fixture():
-            with admin_logged_in():
-                bug.default_bugtask.transitionToTarget(
-                    new_product, new_product.owner)
+        with admin_logged_in():
+            bug.default_bugtask.transitionToTarget(
+                new_product, new_product.owner)
 
         [expected_policy] = getUtility(IAccessPolicySource).find(
             [(new_product, InformationType.USERDATA)])
@@ -3322,17 +2677,6 @@ class TestTransitionToTarget(TestCaseWithFactory):
             [sp, sp.distribution_sourcepackage, other_distro])
 
 
-def disable_trigger_fixture():
-    # XXX 2012-05-22 wallyworld bug=1002596
-    # No need to use this fixture when triggers are removed.
-    return DisableTriggerFixture(
-            {'bugsubscription':
-                 'bugsubscription_mirror_legacy_access_t',
-             'bug': 'bug_mirror_legacy_access_t',
-             'bugtask': 'bugtask_mirror_legacy_access_t',
-        })
-
-
 class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
     """Test that various bug transitions invoke RemoveArtifactSubscribers
     job."""
@@ -3344,7 +2688,6 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
             'disclosure.unsubscribe_jobs.enabled': 'true',
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
-        self.useFixture(disable_trigger_fixture())
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
 
     def _assert_bug_change_unsubscribes(self, change_callback,
@@ -3401,7 +2744,7 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
         # longer see the bug.
         def change_information_type(bug, owner):
             bug.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, owner)
+                InformationType.PRIVATESECURITY, owner)
 
         self._assert_bug_change_unsubscribes(change_information_type, True)
 

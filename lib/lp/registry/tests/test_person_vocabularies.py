@@ -404,29 +404,29 @@ class TestValidTeamVocabulary(VocabularyTestBase,
         self.assertEqual([team_one, team_two], result)
 
 
-class TestNewPillarShareeVocabulary(VocabularyTestBase,
+class TestNewPillarGranteeVocabulary(VocabularyTestBase,
                                         TestCaseWithFactory):
-    """Test that the NewPillarShareeVocabulary behaves as expected."""
+    """Test that the NewPillarGranteeVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer
-    vocabulary_name = 'NewPillarSharee'
+    vocabulary_name = 'NewPillarGrantee'
 
     def test_existing_grantees_excluded(self):
         # Existing grantees should be excluded from the results.
         product = self.factory.makeProduct()
-        person1 = self.factory.makePerson(name='sharee1')
-        person2 = self.factory.makePerson(name='sharee2')
+        person1 = self.factory.makePerson(name='grantee1')
+        person2 = self.factory.makePerson(name='grantee2')
         policy = self.factory.makeAccessPolicy(pillar=product)
         self.factory.makeAccessPolicyGrant(policy=policy, grantee=person1)
-        [newsharee] = self.searchVocabulary(product, 'sharee')
-        self.assertEqual(newsharee, person2)
+        [newgrantee] = self.searchVocabulary(product, 'grantee')
+        self.assertEqual(newgrantee, person2)
 
     def test_open_teams_excluded(self):
         # Only closed teams should be available for selection.
         product = self.factory.makeProduct()
-        self.factory.makeTeam(name='sharee1')
+        self.factory.makeTeam(name='grantee1')
         closed_team = self.factory.makeTeam(
-            name='sharee2',
+            name='grantee2',
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        [newsharee] = self.searchVocabulary(product, 'sharee')
-        self.assertEqual(newsharee, closed_team)
+        [newgrantee] = self.searchVocabulary(product, 'grantee')
+        self.assertEqual(newgrantee, closed_team)

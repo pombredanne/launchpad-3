@@ -42,7 +42,7 @@ __all__ = [
     'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
-    'NewPillarShareeVocabulary',
+    'NewPillarGranteeVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
@@ -105,6 +105,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
@@ -1062,11 +1063,11 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
+class NewPillarGranteeVocabulary(ValidPersonOrClosedTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an
-    existing sharee for the pillar.
+    existing grantee for the pillar.
     """
 
     displayname = 'Share project information'
@@ -1074,7 +1075,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
 
     def __init__(self, context):
         assert IPillar.providedBy(context)
-        super(NewPillarShareeVocabulary, self).__init__(context)
+        super(NewPillarGranteeVocabulary, self).__init__(context)
         aps = getUtility(IAccessPolicySource)
         access_policies = aps.findByPillar([self.context])
         self.policy_ids = [policy.id for policy in access_policies]
@@ -1089,7 +1090,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
             """ % sqlvalues(self.policy_ids))
         return And(
             clause,
-            super(NewPillarShareeVocabulary, self).extra_clause)
+            super(NewPillarGranteeVocabulary, self).extra_clause)
 
 
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
@@ -2247,34 +2248,51 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self, context=None):
-        types = [
-            InformationType.EMBARGOEDSECURITY,
-            InformationType.USERDATA]
-        proprietary_disabled = bool(getFeatureFlag(
-            'disclosure.proprietary_information_type.disabled'))
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
-        if not proprietary_disabled and not (IBug.providedBy(context) and
-            len(context.affected_pillars) > 1):
-            types.append(InformationType.PROPRIETARY)
-        if (context is None or
+    def __init__(self, context=None, public_only=False, private_only=False):
+        types = []
+        if not public_only:
+            types = [
+                InformationType.PRIVATESECURITY,
+                InformationType.USERDATA]
+            # So long as not disabled by the feature flag, Proprietary is
+            # allowed for:
+            # - single pillar bugs where the target has a current commercial
+            #   subscription
+            # - branches for a project with a current commercial subscription
+            # - projects with current commercial subscriptions
+            # - contexts which already have an information type set to
+            #   proprietary
+            proprietary_disabled = bool(getFeatureFlag(
+                'disclosure.proprietary_information_type.disabled'))
+            if not proprietary_disabled:
+                subscription_context = context
+                if (IBug.providedBy(context)
+                    and len(context.affected_pillars) == 1):
+                    subscription_context = context.affected_pillars[0]
+                elif (IBugTask.providedBy(context)
+                    and len(context.bug.affected_pillars) == 1):
+                    subscription_context = context.pillar
+                elif IBranch.providedBy(context):
+                    subscription_context = context.target.context
+                has_commercial_subscription = (
+                    IProduct.providedBy(subscription_context) and
+                    subscription_context.has_current_commercial_subscription)
+                already_proprietary = (
+                    safe_hasattr(context, 'information_type') and
+                    context.information_type == InformationType.PROPRIETARY)
+                if has_commercial_subscription or already_proprietary:
+                    types.append(InformationType.PROPRIETARY)
+        # Disallow public items for projects with private bugs.
+        if (not private_only and (context is None or
             not IProduct.providedBy(context) or
-            not context.private_bugs):
+            not context.private_bugs)):
             types = [InformationType.PUBLIC,
-                     InformationType.UNEMBARGOEDSECURITY] + types
+                     InformationType.PUBLICSECURITY] + types
 
         terms = []
         for type in types:
-            title = type.title
-            description = type.description
-            if type == InformationType.USERDATA and show_userdata_as_private:
-                title = 'Private'
-                description = (
-                    'Visible only to users with whom the project has '
-                    'shared private information.')
-            term = SimpleTerm(type, type.name, title)
+            term = SimpleTerm(type, type.name, type.title)
             term.name = type.name
-            term.description = description
+            term.description = type.description
             terms.append(term)
         super(InformationTypeVocabulary, self).__init__(terms)

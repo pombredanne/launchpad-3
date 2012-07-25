@@ -252,6 +252,16 @@
                          title spec/summary/fmt:shorten/400">Foo Bar Baz</a>
                   <img src="/@@/info" alt="Informational"
                        tal:condition="spec/informational" />
+                  <tal:comment condition="nothing">
+                    Compare milestone names to see if a blueprint is only
+                    partially targeted to this milestone.
+
+                    If a blueprint is untargeted, then it's partial as well.
+                  </tal:comment>
+                  <span tal:condition="
+                      python:(not spec.milestone or
+                              spec.milestone.name != context.name)">
+                    (some work for this milestone)</span>
                 </td>
                 <td tal:condition="view/is_project_milestone">
                     <span class="sortkey" tal:content="spec/product/displayname" />

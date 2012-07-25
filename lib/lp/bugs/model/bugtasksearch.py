@@ -118,6 +118,7 @@ orderby_expression = {
             ]),
     "targetname": (BugTask.targetnamecache, [bugtask_join]),
     "status": (BugTaskFlat.status, []),
+    "information_type": (BugTaskFlat.information_type, []),
     "title": (Bug.title, [bug_join]),
     "milestone": (BugTaskFlat.milestone_id, []),
     "dateassigned": (BugTask.date_assigned, [bugtask_join]),
@@ -182,6 +183,8 @@ orderby_expression = {
 
 def search_value_to_storm_where_condition(comp, search_value):
     """Convert a search value to a Storm WHERE condition."""
+    if zope_isinstance(search_value, (set, list, tuple)):
+        search_value = any(*search_value)
     if zope_isinstance(search_value, any):
         # When an any() clause is provided, the argument value
         # is a list of acceptable filter values.
@@ -734,6 +737,11 @@ def _build_query(params):
         extra_clauses.append(
             BugTaskFlat.datecreated < params.created_before)
 
+    if params.information_type:
+        extra_clauses.append(
+            search_value_to_storm_where_condition(
+                BugTaskFlat.information_type, params.information_type))
+
     query = And(extra_clauses)
 
     if not decorators:
@@ -796,15 +804,15 @@ def _process_order_by(params):
     # strings.
     extra_joins = []
     ambiguous = True
-    # Sorting by milestone only is a very "coarse" sort order.
-    # If no additional sort order is specified, add the bug task
+    # Sorting by milestone or information type only is a very "coarse"
+    # sort order. If no additional sort order is specified, add the bug task
     # importance as a secondary sort order.
     if len(orderby) == 1:
-        if orderby[0] == 'milestone_name':
+        if orderby[0] in ('milestone_name', 'information_type'):
             # We want the most important bugtasks first; these have
             # larger integer values.
             orderby.append('-importance')
-        elif orderby[0] == '-milestone_name':
+        elif orderby[0] in ('-milestone_name', '-information_type'):
             orderby.append('importance')
         else:
             # Other sort orders don't need tweaking.

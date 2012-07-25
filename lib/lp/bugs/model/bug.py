@@ -166,6 +166,8 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -897,13 +899,11 @@ class Bug(SQLBase):
                 self.updateHeat()
                 del get_property_cache(self)._known_viewers
 
-                # Revoke access to bug if feature flag is on.
-                flag = 'disclosure.legacy_subscription_visibility.enabled'
-                if bool(getFeatureFlag(flag)):
-                    artifacts_to_delete = getUtility(
-                        IAccessArtifactSource).find([self])
-                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-                        artifacts_to_delete, [person])
+                # Revoke access to bug
+                artifacts_to_delete = getUtility(
+                    IAccessArtifactSource).find([self])
+                getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                    artifacts_to_delete, [person])
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1817,14 +1817,15 @@ class Bug(SQLBase):
         # information type value.
         if information_type in PRIVATE_INFORMATION_TYPES:
             # Grant the subscriber access if they can't see the bug.
-            service = getUtility(IService, 'sharing')
             subscribers = self.getDirectSubscribers()
-            blind_subscribers = service.getPeopleWithoutAccess(
-                self, subscribers)
-            if len(blind_subscribers):
-                service.ensureAccessGrants(
-                    blind_subscribers, who, bugs=[self],
-                    ignore_permissions=True)
+            if subscribers:
+                service = getUtility(IService, 'sharing')
+                blind_subscribers = service.getPeopleWithoutAccess(
+                    self, subscribers)
+                if len(blind_subscribers):
+                    service.ensureAccessGrants(
+                        blind_subscribers, who, bugs=[self],
+                        ignore_permissions=True)
 
         self.updateHeat()
 
@@ -2004,10 +2005,7 @@ class Bug(SQLBase):
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
 
-        user_owns_comment = False
-        flag = 'disclosure.users_hide_own_bug_comments.enabled'
-        if bool(getFeatureFlag(flag)):
-            user_owns_comment = bug_message.owner == user
+        user_owns_comment = (bug_message.owner == user)
         if (not self.userCanSetCommentVisibility(user)
             and not user_owns_comment):
             raise Unauthorized(
@@ -2063,26 +2061,34 @@ class Bug(SQLBase):
 
     def userCanSetCommentVisibility(self, user):
         """See `IBug`"""
-
         if user is None:
             return False
+        # Admins and registry experts always have permission.
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        flag = 'disclosure.users_hide_own_bug_comments.enabled'
-        return bool(getFeatureFlag(flag)) and self.userInProjectRole(roles)
+        return self.userCanAccessUserData(user)
 
-    def userInProjectRole(self, user):
-        """ Return True if user has a project role for any affected pillar."""
-        roles = IPersonRoles(user)
-        if roles is None:
+    def userCanAccessUserData(self, user):
+        """ Return True if the user has access to USER_DATA data."""
+        # Check if the user has access via the pillar.
+        pillars = list(self.affected_pillars)
+        pillars_and_types = [(p, InformationType.USERDATA) for p in pillars]
+        access_policies = getUtility(IAccessPolicySource).find(
+            pillars_and_types)
+        access_grants = [(a, user) for a in access_policies]
+        access_grants = getUtility(IAccessPolicyGrantSource).find(
+            access_grants)
+        if not access_grants.is_empty():
+            return True
+        # User has no access via the pillars, check the bug itself.
+        artifact = getUtility(IAccessArtifactSource).find([self]).one()
+        if  artifact is None:
             return False
-        for pillar in self.affected_pillars:
-            if (roles.isOwner(pillar)
-                or roles.isOneOfDrivers(pillar)
-                or roles.isBugSupervisor(pillar)
-                or roles.isSecurityContact(pillar)):
-                return True
+        artifact_access_grant = getUtility(IAccessArtifactGrantSource).find(
+            [(artifact, user)]).one()
+        if artifact_access_grant is not None:
+            return True
         return False
 
     def linkHWSubmission(self, submission):
