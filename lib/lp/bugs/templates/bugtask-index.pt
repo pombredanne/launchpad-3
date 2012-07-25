@@ -12,12 +12,14 @@
       <script type="text/javascript">
         LPJS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.bugs.subscribers', 'lp.code.branchmergeproposal.diff',
-                  function(Y) {
+                  'lp.app.comment', function(Y) {
             Y.on('domready', function() {
                 Y.lp.code.branchmergeproposal.diff.connect_diff_links();
                 Y.lp.bugs.bugtask_index.setup_bugtask_index();
                 Y.lp.bugs.bugtask_index.setup_bugtask_table();
                 LP.cache.comment_context = LP.cache.bug;
+                var cl = new Y.lp.app.comment.CommentList();
+                cl.render();
                 var sl = new Y.lp.bugs.subscribers.createBugSubscribersLoader({
                     container_box: '#other-bug-subscribers',
                     subscribers_details_view:
