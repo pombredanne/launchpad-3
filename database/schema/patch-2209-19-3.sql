@@ -88,6 +88,41 @@ AS $function$
     WHERE $1.information_type IN (3, 4, 5);
 $function$;
 
+CREATE OR REPLACE FUNCTION public.bugtaskflat_maintain_bug_summary()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO public
+AS $function$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        PERFORM bugsummary_journal_bugtaskflat(NEW, 1);
+        PERFORM bug_summary_flush_temp_journal();
+    ELSIF TG_OP = 'DELETE' THEN
+        PERFORM bugsummary_journal_bugtaskflat(OLD, -1);
+        PERFORM bug_summary_flush_temp_journal();
+    ELSIF
+        NEW.product IS DISTINCT FROM OLD.product
+        OR NEW.productseries IS DISTINCT FROM OLD.productseries
+        OR NEW.distribution IS DISTINCT FROM OLD.distribution
+        OR NEW.distroseries IS DISTINCT FROM OLD.distroseries
+        OR NEW.sourcepackagename IS DISTINCT FROM OLD.sourcepackagename
+        OR NEW.status IS DISTINCT FROM OLD.status
+        OR NEW.milestone IS DISTINCT FROM OLD.milestone
+        OR NEW.importance IS DISTINCT FROM OLD.importance
+        OR NEW.latest_patch_uploaded IS DISTINCT FROM OLD.latest_patch_uploaded
+        OR NEW.information_type IS DISTINCT FROM OLD.information_type
+        OR NEW.access_grants IS DISTINCT FROM OLD.access_grants
+        OR NEW.access_policies IS DISTINCT FROM OLD.access_policies
+    THEN
+        PERFORM bugsummary_journal_bugtaskflat(OLD, -1);
+        PERFORM bugsummary_journal_bugtaskflat(NEW, 1);
+        PERFORM bug_summary_flush_temp_journal();
+    END IF;
+    RETURN NULL;
+END;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.bugsummary_rollup_journal(batchsize integer DEFAULT NULL::integer)
  RETURNS void
  LANGUAGE plpgsql
