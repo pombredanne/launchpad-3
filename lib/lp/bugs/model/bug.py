@@ -57,6 +57,7 @@ from storm.expr import (
     SQL,
     Sum,
     Union,
+    With,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -298,9 +299,13 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user is not None and not user.inTeam(admin_team):
-        store = store.with_(SQL(
-            "teams AS ("
-            "SELECT team from TeamParticipation WHERE person=?)", (user.id,)))
+        store = store.with_(
+            With(
+                'teams',
+                Select(
+                    TeamParticipation.teamID, tables=[TeamParticipation],
+                    where=(TeamParticipation.personID == user.id))),
+            )
     where_conditions = [
         BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         BugSummary.tag != None,
