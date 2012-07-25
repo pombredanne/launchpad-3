@@ -29,6 +29,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     )
+from lp.registry.model.accesspolicy import AccessPolicy
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.milestone import Milestone
@@ -76,6 +77,8 @@ class BugSummary(Storm):
 
     viewed_by_id = Int(name='viewed_by')
     viewed_by = Reference(viewed_by_id, Person.id)
+    access_policy_id = Int(name='access_policy')
+    access_policy = Reference(access_policy_id, AccessPolicy.id)
 
     has_patch = Bool()
 
