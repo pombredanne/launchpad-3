@@ -56,6 +56,7 @@ from storm.expr import (
     Select,
     SQL,
     Sum,
+    With,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -127,6 +128,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services import features
 from lp.services.database.bulk import (
     create,
@@ -1550,6 +1552,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
+        from lp.registry.model.accesspolicy import AccessPolicyGrant
         conditions = []
         # Open bug statuses
         conditions.append(
@@ -1582,21 +1585,38 @@ class BugTaskSet:
         if user is not None and not user.inTeam(admin_team):
             # admins get to see every bug, everyone else only sees bugs
             # viewable by them-or-their-teams.
-            store = store.with_(SQL(
-                "teams AS ("
-                "SELECT team from TeamParticipation WHERE person=?)",
-                (user.id,)))
+            store = store.with_((
+                With(
+                    'teams',
+                    Select(
+                        TeamParticipation.teamID, tables=[TeamParticipation],
+                        where=(TeamParticipation.personID == user.id))),
+                With(
+                    'policies',
+                    Select(
+                        AccessPolicyGrant.policy_id,
+                        tables=[AccessPolicyGrant],
+                        where=(
+                            AccessPolicyGrant.grantee_id.is_in(
+                                SQL("SELECT team FROM teams"))))),
+                ))
         # Note that because admins can see every bug regardless of
         # subscription they will see rather inflated counts. Admins get to
         # deal.
         if user is None:
-            conditions.append(BugSummary.viewed_by_id == None)
+            conditions.extend([
+                BugSummary.viewed_by_id == None,
+                BugSummary.access_policy_id == None,
+                ])
         elif not user.inTeam(admin_team):
             conditions.append(
                 Or(
-                    BugSummary.viewed_by_id == None,
+                    And(BugSummary.viewed_by_id == None,
+                        BugSummary.access_policy_id == None),
                     BugSummary.viewed_by_id.is_in(
-                        SQL("SELECT team FROM teams"))
+                        SQL("SELECT team FROM teams")),
+                    BugSummary.access_policy_id.is_in(
+                        SQL("SELECT policy FROM policies")),
                     ))
         sum_count = Sum(BugSummary.count)
         resultset = store.find(group_on + (sum_count,), *conditions)

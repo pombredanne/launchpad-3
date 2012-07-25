@@ -185,7 +185,10 @@ from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.accesspolicy import reconcile_access_for_artifact
+from lp.registry.model.accesspolicy import (
+    AccessPolicyGrant,
+    reconcile_access_for_artifact,
+    )
 from lp.registry.model.person import (
     Person,
     person_sort_key,
@@ -299,25 +302,38 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user is not None and not user.inTeam(admin_team):
-        store = store.with_(
+        store = store.with_((
             With(
                 'teams',
                 Select(
                     TeamParticipation.teamID, tables=[TeamParticipation],
                     where=(TeamParticipation.personID == user.id))),
-            )
+            With(
+                'policies',
+                Select(
+                    AccessPolicyGrant.policy_id, tables=[AccessPolicyGrant],
+                    where=(
+                        AccessPolicyGrant.grantee_id.is_in(
+                            SQL("SELECT team FROM teams"))))),
+            ))
     where_conditions = [
         BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         BugSummary.tag != None,
         context_condition,
         ]
     if user is None:
-        where_conditions.append(BugSummary.viewed_by_id == None)
+        where_conditions.extend([
+            BugSummary.viewed_by_id == None,
+            BugSummary.access_policy_id == None,
+            ])
     elif not user.inTeam(admin_team):
         where_conditions.append(
             Or(
-                BugSummary.viewed_by_id == None,
-                BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
+                And(BugSummary.viewed_by_id == None,
+                    BugSummary.access_policy_id == None),
+                BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams")),
+                BugSummary.access_policy_id.is_in(
+                    SQL("SELECT policy FROM policies")),
                 ))
     sum_count = Sum(BugSummary.count)
     tag_count_columns = (BugSummary.tag, sum_count)
