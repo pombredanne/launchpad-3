@@ -707,12 +707,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     @property
     def information_type(self):
-        use_private_flag = getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled')
-        value = self.context.bug.information_type.title
-        if (use_private_flag and value == InformationType.USERDATA.title):
-            value = "Private"
-        return value
+        return self.context.bug.information_type.title
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -2244,6 +2239,7 @@ class BugTaskListingItem:
             'id': self.bug.id,
             'importance': self.importance.title,
             'importance_class': 'importance' + self.importance.name,
+            'information_type': self.bug.information_type.title,
             'last_updated': last_updated,
             'milestone_name': milestone_name,
             'reporter': reporter.displayname,
@@ -2279,6 +2275,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_heat': True,
             'show_id': True,
             'show_importance': True,
+            'show_information_type': False,
             'show_date_last_updated': False,
             'show_milestone_name': False,
             'show_reporter': False,
@@ -2381,14 +2378,13 @@ class BugListingBatchNavigator(TableBatchNavigator):
         objects = IJSONRequestCache(self.request).objects
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             objects = obfuscate_structure(objects)
-        return pystache.render(self.mustache_template,
-                               objects['mustache_model'])
+        model = dict(objects['mustache_model'])
+        model.update(self.field_visibility)
+        return pystache.render(self.mustache_template, model)
 
     @property
     def model(self):
         items = [bugtask.model for bugtask in self.getBugListingItems()]
-        for item in items:
-            item.update(self.field_visibility)
         return {'items': items}
 
 
@@ -2511,6 +2507,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
 SORT_KEYS = [
     ('importance', 'Importance', 'desc'),
     ('status', 'Status', 'asc'),
+    ('information_type', 'Information Type', 'asc'),
     ('id', 'Number', 'desc'),
     ('title', 'Title', 'asc'),
     ('targetname', 'Package/Project/Series name', 'asc'),

@@ -116,11 +116,15 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    InformationType,
+    )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicySource,
     IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
@@ -469,6 +473,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
+    bug_sharing_policy = EnumCol(
+        enum=BugSharingPolicy, notNull=False, default=None)
+    branch_sharing_policy = EnumCol(
+        enum=BranchSharingPolicy, notNull=False, default=None)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
@@ -1538,7 +1546,7 @@ class ProductSet:
 
         # Add default AccessPolicies.
         product._ensurePolicies((InformationType.USERDATA,
-                InformationType.EMBARGOEDSECURITY))
+                InformationType.PRIVATESECURITY))
         return product
 
     def forReview(self, search_text=None, active=None,

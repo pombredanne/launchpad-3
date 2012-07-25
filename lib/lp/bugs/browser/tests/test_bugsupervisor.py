@@ -6,15 +6,22 @@
 __metaclass__ = type
 
 from zope.app.form.interfaces import ConversionError
+from zope.component import getUtility
 
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    BrowserTestCase,
     login,
     login_person,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -180,3 +187,27 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(private_team, self.product.bug_supervisor)
+
+
+class TestBugSupervisorLink(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_with_no_access(self):
+        product = self.factory.makeProduct(official_malone=True)
+        url = canonical_url(product, rootsite="bugs", view_name='+bugs')
+        browser = self.getUserBrowser(url, user=self.factory.makePerson())
+        self.assertNotIn('Change bug supervisor', browser.contents)
+
+    def test_with_access(self):
+        product = self.factory.makeProduct(official_malone=True)
+        url = canonical_url(product, rootsite="bugs", view_name='+bugs')
+        browser = self.getUserBrowser(url, user=product.owner)
+        self.assertIn('Change bug supervisor', browser.contents)
+
+    def test_as_admin(self):
+        product = self.factory.makeProduct(official_malone=True)
+        url = canonical_url(product, rootsite="bugs", view_name='+bugs')
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        browser = self.getUserBrowser(url, user=admin)
+        self.assertIn('Change bug supervisor', browser.contents)

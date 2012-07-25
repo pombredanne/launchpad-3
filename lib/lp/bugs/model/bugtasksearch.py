@@ -118,6 +118,7 @@ orderby_expression = {
             ]),
     "targetname": (BugTask.targetnamecache, [bugtask_join]),
     "status": (BugTaskFlat.status, []),
+    "information_type": (BugTaskFlat.information_type, []),
     "title": (Bug.title, [bug_join]),
     "milestone": (BugTaskFlat.milestone_id, []),
     "dateassigned": (BugTask.date_assigned, [bugtask_join]),
@@ -803,15 +804,15 @@ def _process_order_by(params):
     # strings.
     extra_joins = []
     ambiguous = True
-    # Sorting by milestone only is a very "coarse" sort order.
-    # If no additional sort order is specified, add the bug task
+    # Sorting by milestone or information type only is a very "coarse"
+    # sort order. If no additional sort order is specified, add the bug task
     # importance as a secondary sort order.
     if len(orderby) == 1:
-        if orderby[0] == 'milestone_name':
+        if orderby[0] in ('milestone_name', 'information_type'):
             # We want the most important bugtasks first; these have
             # larger integer values.
             orderby.append('-importance')
-        elif orderby[0] == '-milestone_name':
+        elif orderby[0] in ('-milestone_name', '-information_type'):
             orderby.append('importance')
         else:
             # Other sort orders don't need tweaking.

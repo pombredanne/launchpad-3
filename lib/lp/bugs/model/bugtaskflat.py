@@ -7,6 +7,7 @@ from storm.locals import (
     Bool,
     DateTime,
     Int,
+    List,
     Reference,
     Storm,
     )
@@ -58,3 +59,5 @@ class BugTaskFlat(Storm):
     owner_id = Int(name='owner')
     owner = Reference(owner_id, 'Person.id')
     active = Bool()
+    access_grants = List(type=Int())
+    access_policies = List(type=Int())

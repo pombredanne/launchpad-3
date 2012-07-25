@@ -18,7 +18,6 @@ from storm.properties import Bool
 import transaction
 
 from lp.bugs.model.bug import BugTag
-from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
@@ -40,6 +39,7 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import create
 from lp.services.database.lpstorm import IStore
+from lp.services.database.stormexpr import Unnest
 from lp.services.looptuner import TunableLoop
 
 
@@ -252,7 +252,8 @@ def calculate_bugsummary_rows(target):
             (BugTaskFlat.bug_id, BugTaskFlat.information_type,
              BugTaskFlat.status, BugTaskFlat.milestone_id,
              BugTaskFlat.importance,
-             Alias(BugTaskFlat.latest_patch_uploaded != None, 'has_patch')),
+             Alias(BugTaskFlat.latest_patch_uploaded != None, 'has_patch'),
+             BugTaskFlat.access_grants),
             tables=[BugTaskFlat],
             where=And(
                 BugTaskFlat.duplicateof_id == None,
@@ -278,9 +279,6 @@ def calculate_bugsummary_rows(target):
     null_viewed_by = Alias(Cast(None, 'integer'), 'viewed_by')
 
     tag_join = Join(BugTag, BugTag.bugID == RelevantTask.bug_id)
-    sub_join = Join(
-        BugSubscription,
-        BugSubscription.bug_id == RelevantTask.bug_id)
 
     public_constraint = RelevantTask.information_type.is_in(
         PUBLIC_INFORMATION_TYPES)
@@ -298,13 +296,12 @@ def calculate_bugsummary_rows(target):
             tables=[RelevantTask, tag_join], where=public_constraint),
         # Private, tagless
         Select(
-            common_cols + (null_tag, BugSubscription.person_id),
-            tables=[RelevantTask, sub_join], where=private_constraint),
+            common_cols + (null_tag, Unnest(RelevantTask.access_grants)),
+            tables=[RelevantTask], where=private_constraint),
         # Private, tagged
         Select(
-            common_cols + (BugTag.tag, BugSubscription.person_id),
-            tables=[RelevantTask, sub_join, tag_join],
-            where=private_constraint),
+            common_cols + (BugTag.tag, Unnest(RelevantTask.access_grants)),
+            tables=[RelevantTask, tag_join], where=private_constraint),
         all=True)
 
     # Select the relevant bits of the prototype rows and aggregate them.

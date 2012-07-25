@@ -6,7 +6,6 @@
 import operator
 from textwrap import dedent
 
-from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure
@@ -25,6 +24,7 @@ from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner
 from lp.services.job.tests import (
     block_on_job,
     pop_remote_notifications,
@@ -163,22 +163,8 @@ class LocalTestHelper:
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
-        # We are basically mimicking the job runner here.
         switch_dbuser(self.dbuser)
-        # Set the state to RUNNING.
-        job.start()
-        # Commit the RUNNING state.
-        self.layer.txn.commit()
-        try:
-            job.run()
-        except SuspendJobException:
-            # Re-raise this one as many tests check for its presence.
-            raise
-        except:
-            transaction.abort()
-            job.fail()
-        else:
-            job.complete()
+        JobRunner([job]).runAll()
 
 
 class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
@@ -755,10 +741,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=False,
             requester=requester)
 
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        # Simulate the job runner suspending after getting a
-        # SuspendJobException
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
 
         # Add some overrides to the job.
@@ -816,7 +800,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set.
-        self.assertRaises(SuspendJobException, self.runJob, job)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         pu = Store.of(target_archive).find(
             PackageUpload,
             PackageUpload.package_copy_job_id == job.id).one()
@@ -864,8 +849,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job = self.createCopyJobForSPPH(spph, source_archive, target_archive)
 
         # Run the job so it gains a PackageUpload.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         if return_job:
             return job
         pcj = removeSecurityProxy(job).context
@@ -926,7 +911,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set in the UNAPPROVED queue.
-        self.assertRaises(SuspendJobException, self.runJob, job)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
 
         pu = Store.of(target_archive).find(
             PackageUpload,
@@ -963,10 +949,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             spph, source_archive, target_archive, requester=requester)
 
         # Run the job so it gains a PackageUpload.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        # Simulate the job runner suspending after getting a
-        # SuspendJobException
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
 
         # Accept the upload to release the job then run it.
@@ -1080,12 +1064,26 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         spph = self.publisher.getPubSource(
             distroseries=self.distroseries, sourcename="copyme",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
-            component='multiverse', section='web',
-            archive=source_archive)
+            component='multiverse', section='web', archive=source_archive)
+        self.publisher.getPubBinaries(
+            binaryname="copyme", pub_source=spph,
+            distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED)
         spr = spph.sourcepackagerelease
         for source_file in spr.files:
             self.assertTrue(source_file.libraryfile.restricted)
         spr.changelog = self.factory.makeLibraryFileAlias(restricted=True)
+
+        # Publish a package in the target archive and request a private diff
+        # against it.
+        old_spph = self.publisher.getPubSource(
+            distroseries=self.distroseries, sourcename="copyme",
+            version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
+            component='multiverse', section='web', archive=target_archive)
+        old_spr = old_spph.sourcepackagerelease
+        diff_file = self.publisher.addMockFile("diff_file", restricted=True)
+        package_diff = old_spr.requestDiffTo(target_archive.owner, spr)
+        package_diff.diff_content = diff_file
 
         # Now, run the copy job.
         requester = self.factory.makePerson()
@@ -1095,18 +1093,18 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job = self.createCopyJobForSPPH(
             spph, source_archive, target_archive,
             target_pocket=PackagePublishingPocket.SECURITY,
-            requester=requester, unembargo=True)
+            include_binaries=True, requester=requester, unembargo=True)
         self.assertTrue(job.unembargo)
 
         # Run the job so it gains a PackageUpload.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
 
         # Accept the upload to release the job then run it.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [removeSecurityProxy(job).context.id]).one()
-        self.assertEqual(PackageUploadStatus.NEW, pu.status)
+        self.assertEqual(PackageUploadStatus.UNAPPROVED, pu.status)
         pu.acceptFromQueue()
         self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
         self.runJob(job)
@@ -1115,13 +1113,27 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(PackageUploadStatus.DONE, pu.status)
 
         # Make sure packages were actually copied.
-        copied_sources = target_archive.getPublishedSources(name="copyme")
-        self.assertIsNot(None, copied_sources.any())
+        copied_sources = target_archive.getPublishedSources(
+            name="copyme", version="2.8-1")
+        self.assertNotEqual(0, copied_sources.count())
+        copied_binaries = target_archive.getAllPublishedBinaries(name="copyme")
+        self.assertNotEqual(0, copied_binaries.count())
 
         # Check that files were unembargoed.
         for copied_source in copied_sources:
             for source_file in copied_source.sourcepackagerelease.files:
                 self.assertFalse(source_file.libraryfile.restricted)
+            copied_spr = copied_source.sourcepackagerelease
+            self.assertFalse(copied_spr.upload_changesfile.restricted)
+            self.assertFalse(copied_spr.changelog.restricted)
+            [diff] = copied_spr.package_diffs
+            self.assertFalse(diff.diff_content.restricted)
+        for copied_binary in copied_binaries:
+            for binary_file in copied_binary.binarypackagerelease.files:
+                self.assertFalse(binary_file.libraryfile.restricted)
+            copied_build = copied_binary.binarypackagerelease.build
+            self.assertFalse(copied_build.upload_changesfile.restricted)
+            self.assertFalse(copied_build.log.restricted)
 
     def test_copy_custom_upload_files(self):
         # Copyable custom upload files are queued for republication when
@@ -1152,8 +1164,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             include_binaries=True)
 
         # Start, accept, and run the job.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [removeSecurityProxy(job).context.id]).one()
@@ -1320,10 +1332,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             source_pub, source_archive, target_archive)
 
         # Run the job so it gains a PackageUpload.
-        self.assertRaises(SuspendJobException, self.runJob, job)
-        # Simulate the job runner suspending after getting a
-        # SuspendJobException
-        job.suspend()
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
 
         # Patch the job's attemptCopy() method so it just raises an

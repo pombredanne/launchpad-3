@@ -74,6 +74,7 @@ from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugTaskImportance,
@@ -96,7 +97,6 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
@@ -622,10 +622,9 @@ class BugTask(SQLBase):
         return True
 
     def checkCanBeDeleted(self):
-        num_bugtasks = Store.of(self).find(
-            BugTask, bug=self.bug).count()
-
-        if num_bugtasks < 2:
+        # Bug.bugtasks is a cachedproperty, so this is pretty much free
+        # to call. Better than a manual count query, at any rate.
+        if len(self.bug.bugtasks) < 2:
             raise CannotDeleteBugtask(
                 "Cannot delete only bugtask affecting: %s."
                 % self.target.bugtargetdisplayname)
@@ -1644,7 +1643,7 @@ class BugTaskSet:
             validate_new_target(bug, target)
             pillars.add(target.pillar)
             target_keys.append(bug_target_to_key(target))
-        if bug.information_type == InformationType.UNEMBARGOEDSECURITY:
+        if bug.information_type == InformationType.PUBLICSECURITY:
             for pillar in pillars:
                 if pillar.security_contact:
                     bug.subscribe(pillar.security_contact, owner)

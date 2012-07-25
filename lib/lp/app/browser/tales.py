@@ -64,6 +64,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
 from lp.layers import LaunchpadLayer
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -956,9 +957,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def badges(self):
         badges = []
-        if self._context.bug.private:
+        information_type = self._context.bug.information_type
+        if information_type in PRIVATE_INFORMATION_TYPES:
             badges.append(self.icon_template % (
-                "private", "Private", "sprite private"))
+                information_type.title, information_type.description,
+                "sprite private"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (

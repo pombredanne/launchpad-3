@@ -9,8 +9,6 @@ __metaclass__ = type
 __all__ = []
 
 
-import re
-
 from bzrlib.urlutils import escape
 from lazr.enum import DBItem
 from lazr.uri import (
@@ -70,9 +68,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
-from lp.services.database.lpstorm import (
-    IStore,
-    )
+from lp.services.database.lpstorm import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -399,10 +395,14 @@ class BranchLookup:
         else:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
-            # Ignore anything following /.bzr
-            prefix = re.match('^(.*?)(/?.bzr(/.*)?)?$', path).group(1)
-            object_with_branch_link = getUtility(
-                ILinkedBranchTraverser).traverse(prefix)
+            try:
+                object_with_branch_link = getUtility(
+                    ILinkedBranchTraverser).traverse(path)
+            except NoSuchProductSeries as e:
+                # If ProductSeries lookup failed, the segment after product
+                # name referred to a location under a Product development
+                # focus branch.
+                object_with_branch_link = e.product
             branch, bzr_path = self._getLinkedBranchAndPath(
                 object_with_branch_link)
             suffix = path[len(bzr_path) + 1:]

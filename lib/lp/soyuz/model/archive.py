@@ -1639,8 +1639,6 @@ class Archive(SQLBase):
 
     def _checkCopyPackageFeatureFlags(self):
         """Prevent copyPackage(s) if these conditions are not met."""
-        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
-            raise ForbiddenByFeatureFlag
         if (self.is_ppa and
             not getFeatureFlag(u"soyuz.copypackageppa.enabled")):
             # We have no way of giving feedback about failed jobs yet,

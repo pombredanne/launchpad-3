@@ -42,7 +42,7 @@ __all__ = [
     'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
-    'NewPillarShareeVocabulary',
+    'NewPillarGranteeVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
@@ -1059,11 +1059,11 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
+class NewPillarGranteeVocabulary(ValidPersonOrClosedTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an
-    existing sharee for the pillar.
+    existing grantee for the pillar.
     """
 
     displayname = 'Share project information'
@@ -1071,7 +1071,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
 
     def __init__(self, context):
         assert IPillar.providedBy(context)
-        super(NewPillarShareeVocabulary, self).__init__(context)
+        super(NewPillarGranteeVocabulary, self).__init__(context)
         aps = getUtility(IAccessPolicySource)
         access_policies = aps.findByPillar([self.context])
         self.policy_ids = [policy.id for policy in access_policies]
@@ -1086,7 +1086,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
             """ % sqlvalues(self.policy_ids))
         return And(
             clause,
-            super(NewPillarShareeVocabulary, self).extra_clause)
+            super(NewPillarGranteeVocabulary, self).extra_clause)
 
 
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
@@ -2248,10 +2248,8 @@ class InformationTypeVocabulary(SimpleVocabulary):
         types = []
         if not public_only:
             types = [
-                InformationType.EMBARGOEDSECURITY,
+                InformationType.PRIVATESECURITY,
                 InformationType.USERDATA]
-            show_userdata_as_private = bool(getFeatureFlag(
-                'disclosure.display_userdata_as_private.enabled'))
             # So long as not disabled by the feature flag, Proprietary is
             # allowed for:
             # - single pillar bugs where the target has a current commercial
@@ -2285,19 +2283,12 @@ class InformationTypeVocabulary(SimpleVocabulary):
             not IProduct.providedBy(context) or
             not context.private_bugs)):
             types = [InformationType.PUBLIC,
-                     InformationType.UNEMBARGOEDSECURITY] + types
+                     InformationType.PUBLICSECURITY] + types
 
         terms = []
         for type in types:
-            title = type.title
-            description = type.description
-            if type == InformationType.USERDATA and show_userdata_as_private:
-                title = 'Private'
-                description = (
-                    'Visible only to users with whom the project has '
-                    'shared private information.')
-            term = SimpleTerm(type, type.name, title)
+            term = SimpleTerm(type, type.name, type.title)
             term.name = type.name
-            term.description = description
+            term.description = type.description
             terms.append(term)
         super(InformationTypeVocabulary, self).__init__(terms)
