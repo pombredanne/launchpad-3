@@ -130,7 +130,7 @@ def wait_for_queue(app, queues, count):
     This can be used to avoid race conditions with RabbitMQ's message delivery.
     """
     from lazr.jobrunner.celerytask import list_queued
-    for x in range(10):
+    for x in range(100):
         if len(list_queued(app, queues)) != count:
             break
-        sleep(1)
+        sleep(0.1)
