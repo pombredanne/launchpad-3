@@ -304,8 +304,9 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = ensure_unicode(query).lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            query = ensure_unicode(query)
+            like_query = query.lower()
+            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
@@ -354,8 +355,9 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = ensure_unicode(query).lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            query = ensure_unicode(query)
+            like_query = query.lower()
+            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
@@ -435,7 +437,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        return self._select(ensure_unicode(text).lower())
+        return self._select(ensure_unicode(text))
 
 
 class PersonAccountToMergeVocabulary(
@@ -469,7 +471,7 @@ class PersonAccountToMergeVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        text = ensure_unicode(text).lower()
+        text = ensure_unicode(text)
         return self._select(text)
 
 
@@ -649,14 +651,15 @@ class ValidPersonOrTeamVocabulary(
                 FROM (
                     SELECT Person.id,
                     (case
-                        when person.name=? then 100
-                        when person.name like ? || '%%' then 0.6
-                        when lower(person.displayname) like ? || '%%' then 0.5
+                        when person.name=lower(?) then 100
+                        when person.name like lower(?) || '%%' then 0.6
+                        when lower(person.displayname) like lower(?)
+                            || '%%' then 0.5
                         else rank(fti, ftq(?))
                     end) as rank
                     FROM Person
-                    WHERE Person.name LIKE ? || '%%'
-                    or lower(Person.displayname) LIKE ? || '%%'
+                    WHERE Person.name LIKE lower(?) || '%%'
+                    or lower(Person.displayname) LIKE lower(?) || '%%'
                     or Person.fti @@ ftq(?)
                     UNION ALL
                     SELECT Person.id, 0.8 AS rank
@@ -667,7 +670,7 @@ class ValidPersonOrTeamVocabulary(
                     SELECT Person.id, 0.4 AS rank
                     FROM Person, EmailAddress
                     WHERE Person.id = EmailAddress.person
-                        AND LOWER(EmailAddress.email) LIKE ? || '%%'
+                        AND LOWER(EmailAddress.email) LIKE lower(?) || '%%'
                         AND status IN (?, ?)
                 ) AS person_match
                 GROUP BY id, is_private_team
@@ -680,9 +683,10 @@ class ValidPersonOrTeamVocabulary(
                 private_tables = [Person] + private_tables
                 private_ranking_sql = SQL("""
                     (case
-                        when person.name=? then 100
-                        when person.name like ? || '%%' then 0.6
-                        when lower(person.displayname) like ? || '%%' then 0.5
+                        when person.name=lower(?) then 100
+                        when person.name like lower(?) || '%%' then 0.6
+                        when lower(person.displayname) like lower(?)
+                            || '%%' then 0.5
                         else rank(fti, ftq(?))
                     end) as rank
                 """, (text, text, text, text))
@@ -696,8 +700,8 @@ class ValidPersonOrTeamVocabulary(
                                 SQL("true as is_private_team")),
                     where=And(
                         SQL("""
-                            Person.name LIKE ? || '%%'
-                            OR lower(Person.displayname) LIKE ? || '%%'
+                            Person.name LIKE lower(?) || '%%'
+                            OR lower(Person.displayname) LIKE lower(?) || '%%'
                             OR Person.fti @@ ftq(?)
                             """, [text, text, text]),
                         private_query))
@@ -792,7 +796,7 @@ class ValidPersonOrTeamVocabulary(
             else:
                 return self.emptySelectResults()
 
-        text = ensure_unicode(text).lower()
+        text = ensure_unicode(text)
         return self._doSearch(text=text, vocab_filter=vocab_filter)
 
     def searchForTerms(self, query=None, vocab_filter=None):
@@ -838,8 +842,8 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             result = self.store.using(*tables).find(Person, query)
         else:
             name_match_query = SQL("""
-                Person.name LIKE ? || '%%'
-                OR lower(Person.displayname) LIKE ? || '%%'
+                Person.name LIKE lower(?) || '%%'
+                OR lower(Person.displayname) LIKE lower(?) || '%%'
                 OR Person.fti @@ ftq(?)
                 """, [text, text, text]),
 
