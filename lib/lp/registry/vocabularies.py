@@ -306,7 +306,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if query:
             query = ensure_unicode(query)
             like_query = query.lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
@@ -357,7 +357,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
         if query:
             query = ensure_unicode(query)
             like_query = query.lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
