@@ -703,8 +703,9 @@ Privileged users are offered several extra options when filing bugs.
     >>> product.setBugSupervisor(owner, owner)
     >>> supervisor_fields = set(filebug_view.field_names)
 
-Privileged users get most of the same fields as normal users, plus a few extra.
-The security_related checkbox is replaced by an information_type radio group.
+Privileged users get most of the same fields as normal users, plus a few
+extra.  The security_related checkbox is replaced by an information_type
+radio group.
 
     >>> normal_fields.remove('security_related')
     >>> owner_fields == supervisor_fields
