@@ -21,10 +21,18 @@
     text-align: right;
     }
 
+.yui3-lazr-formoverlay-form div.yui3-lazr-formoverlay-actions button {
+    margin-right: 0.7em;
+    }
+
 .yui3-lazr-formoverlay-form .yui3-lazr-formoverlay-errors {
     padding-top: 0;
     padding-bottom: 0;
     color: red;
+    }
+
+.yui3-lazr-formoverlay-form .yui3-lazr-formoverlay-errors:not(:empty) {
+    min-width: 250px;
     }
 
 .yui3-lazr-formoverlay-form table {

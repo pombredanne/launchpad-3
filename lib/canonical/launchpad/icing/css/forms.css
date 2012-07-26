@@ -139,7 +139,7 @@ table.listing div.actions {
 table.form, table.extra-options {
     /* Many forms are laid out using tables, with appropriate spacing: */
     /* http://launchpad.dev/firefox/+edit */
-    margin: 1em 0;
+    margin: 1em 0 inherit inherit;
     width: 100%;
     }
 table.form th {
