@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import doctest
 import os
 import pdb
@@ -37,6 +38,7 @@ from zope.app.testing.functional import (
     SimpleCookie,
     )
 from zope.component import getUtility
+from zope.session.interfaces import ISession
 from zope.security.proxy import removeSecurityProxy
 from zope.testbrowser.testing import Browser
 
@@ -49,6 +51,7 @@ from lp.services.oauth.interfaces import (
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.url import urlsplit
 from lp.testing import (
     ANONYMOUS,
@@ -682,6 +685,15 @@ def setupBrowserForUser(user):
     email = naked_user.preferredemail.email
     logout()
     return setupBrowser(auth="Basic %s:test" % str(email))
+
+
+def setupBrowserFreshLogin(user):
+    request = LaunchpadTestRequest()
+    session = ISession(request)
+    authdata = session['launchpad.authenticateduser']
+    authdata['logintime'] = datetime.utcnow()
+    transaction.commit()
+    return setupBrowserForUser(user)
 
 
 def safe_canonical_url(*args, **kwargs):
