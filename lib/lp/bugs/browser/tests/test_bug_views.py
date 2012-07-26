@@ -409,20 +409,6 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.assertEqual(
             u'Private', soup.find('label', text="Private"))
 
-    def test_information_type_vocabulary_commercial_project(self):
-        # Test that the view creates the vocabulary correctly for commercial
-        # projects.
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        bug = self.factory.makeBug(product=product)
-        with person_logged_in(bug.owner):
-            view = create_initialized_view(
-                bug.default_bugtask, name='+secrecy',
-                principal=bug.owner)
-            html = view.render()
-            soup = BeautifulSoup(html)
-        self.assertIsNot(None, soup.find('label', text="Proprietary"))
-
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
     """ Test for rendering BugTextView with private team artifacts.
