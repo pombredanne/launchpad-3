@@ -1597,6 +1597,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             self.addBugSubscription(bug_supervisor, user)
 
+    def getAllowedBugInformationTypes(self):
+        """See `IDistribution.`"""
+        types = set(InformationType.items)
+        types.discard(InformationType.PROPRIETARY)
+        return types
+
     def userCanEdit(self, user):
         """See `IDistribution`."""
         if user is None:

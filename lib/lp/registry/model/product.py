@@ -565,6 +565,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
+    def getAllowedBugInformationTypes(self):
+        """See `IProduct.`"""
+        types = set(InformationType.items)
+        types.discard(InformationType.PROPRIETARY)
+        return types
+
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
         # information types.
