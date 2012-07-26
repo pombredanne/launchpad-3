@@ -27,6 +27,7 @@ def object_to_enterpriseid(obj):
 
 def enterpriseid_to_object(eid):
     """Given an SOA Enterprise ID, return the object that it references."""
+    # Circular imports.
     from lp.registry.model.person import Person
     from lp.soyuz.model.queue import PackageUpload
     scheme = eid.split(':')
