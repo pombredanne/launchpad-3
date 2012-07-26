@@ -720,6 +720,8 @@ class BranchEditFormView(LaunchpadEditFormView):
 
     @cachedproperty
     def schema(self):
+        info_types = self.getInformationTypesToShow()
+
         class BranchEditSchema(Interface):
             """Defines the fields for the edit form.
 
@@ -738,7 +740,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                 ])
             information_type = copy_field(
                 IBranch['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary(self.context))
+                vocabulary=InformationTypeVocabulary(types=info_types))
             reviewer = copy_field(IBranch['reviewer'], required=True)
             owner = copy_field(IBranch['owner'], readonly=False)
         return BranchEditSchema
@@ -1107,21 +1109,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         combined_types = set(allowed_types).intersection(shown_types)
         combined_types.add(self.context.information_type)
         return combined_types
-
-    def setUpWidgets(self, context=None):
-        super(BranchEditView, self).setUpWidgets()
-        if self.form_fields.get('information_type') is not None:
-            # Customise the set of shown types.
-            types_to_show = self.getInformationTypesToShow()
-            # Grab the types from the vocab if they exist.
-            # The vocab uses feature flags to control what is displayed so we
-            # need to pull info_types from the vocab to use to make the subset
-            # of what we show the user. This is mostly to hide Proprietary
-            # while it's disabled.
-            info_type_vocab = self.widgets['information_type'].vocabulary
-            self.widgets['information_type'].vocabulary = SimpleVocabulary(
-                [info_type for info_type in info_type_vocab
-                 if info_type.value in types_to_show])
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
