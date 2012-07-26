@@ -45,6 +45,7 @@ from zope.testbrowser.testing import Browser
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NameAlreadyTaken
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.config import config
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
     OAUTH_REALM,
@@ -688,12 +689,21 @@ def setupBrowserForUser(user):
 
 
 def setupBrowserFreshLogin(user):
+    """Create a test browser with a recently logged in user.
+
+    The request is not shared by the browser, so we create
+    a session of the test request and set a cookie to reference
+    the session in the test browser.
+    """
     request = LaunchpadTestRequest()
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     authdata['logintime'] = datetime.utcnow()
-    transaction.commit()
-    return setupBrowserForUser(user)
+    namespace = config.launchpad_session.cookie
+    cookie = '%s=%s' % (namespace, session.client_id)
+    browser = setupBrowserForUser(user)
+    browser.addHeader('Cookie', cookie)
+    return browser
 
 
 def safe_canonical_url(*args, **kwargs):
