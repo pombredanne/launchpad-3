@@ -33,6 +33,7 @@
 
 .yui3-lazr-formoverlay-form .yui3-lazr-formoverlay-errors:not(:empty) {
     min-width: 250px;
+    text-align: center;
     }
 
 .yui3-lazr-formoverlay-form table {
