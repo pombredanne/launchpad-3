@@ -16,10 +16,12 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.model.bug import BugTag
-from lp.bugs.model.bugsummary import BugSummary
+from lp.bugs.model.bugsummary import (
+    BugSummary,
+    get_bugsummary_filter_for_user,
+    )
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.enums import InformationType
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.lpstorm import IMasterStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -41,21 +43,14 @@ class TestBugSummary(TestCaseWithFactory):
 
     def getCount(self, person, **kw_find_expr):
         self._maybe_rollup()
-
-        public_summaries = self.store.find(
-            BugSummary,
-            BugSummary.viewed_by == None,
-            **kw_find_expr)
-        private_summaries = self.store.find(
-            BugSummary,
-            BugSummary.viewed_by_id == TeamParticipation.teamID,
-            TeamParticipation.person == person,
-            **kw_find_expr)
-        all_summaries = public_summaries.union(private_summaries, all=True)
-
+        store = self.store
+        user_with, user_where = get_bugsummary_filter_for_user(person)
+        if user_with:
+            store = store.with_(user_with)
+        summaries = store.find(BugSummary, *user_where, **kw_find_expr)
         # Note that if there a 0 records found, sum() returns None, but
         # we prefer to return 0 here.
-        return all_summaries.sum(BugSummary.count) or 0
+        return summaries.sum(BugSummary.count) or 0
 
     def assertCount(self, count, user=None, **kw_find_expr):
         self.assertEqual(count, self.getCount(user, **kw_find_expr))
