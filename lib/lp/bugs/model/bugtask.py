@@ -74,6 +74,7 @@ from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugTaskImportance,
@@ -96,7 +97,6 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
@@ -622,10 +622,9 @@ class BugTask(SQLBase):
         return True
 
     def checkCanBeDeleted(self):
-        num_bugtasks = Store.of(self).find(
-            BugTask, bug=self.bug).count()
-
-        if num_bugtasks < 2:
+        # Bug.bugtasks is a cachedproperty, so this is pretty much free
+        # to call. Better than a manual count query, at any rate.
+        if len(self.bug.bugtasks) < 2:
             raise CannotDeleteBugtask(
                 "Cannot delete only bugtask affecting: %s."
                 % self.target.bugtargetdisplayname)
@@ -1550,7 +1549,10 @@ class BugTaskSet:
     def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
         # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
+        from lp.bugs.model.bugsummary import (
+            BugSummary,
+            get_bugsummary_filter_for_user,
+            )
         conditions = []
         # Open bug statuses
         conditions.append(
@@ -1578,27 +1580,14 @@ class BugTaskSet:
             conditions.append(BugSummary.tag == None)
         else:
             conditions.append(BugSummary.tag != None)
+
+        # Apply the privacy filter.
         store = IStore(BugSummary)
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        if user is not None and not user.inTeam(admin_team):
-            # admins get to see every bug, everyone else only sees bugs
-            # viewable by them-or-their-teams.
-            store = store.with_(SQL(
-                "teams AS ("
-                "SELECT team from TeamParticipation WHERE person=?)",
-                (user.id,)))
-        # Note that because admins can see every bug regardless of
-        # subscription they will see rather inflated counts. Admins get to
-        # deal.
-        if user is None:
-            conditions.append(BugSummary.viewed_by_id == None)
-        elif not user.inTeam(admin_team):
-            conditions.append(
-                Or(
-                    BugSummary.viewed_by_id == None,
-                    BugSummary.viewed_by_id.is_in(
-                        SQL("SELECT team FROM teams"))
-                    ))
+        user_with, user_where = get_bugsummary_filter_for_user(user)
+        if user_with:
+            store = store.with_(user_with)
+        conditions.extend(user_where)
+
         sum_count = Sum(BugSummary.count)
         resultset = store.find(group_on + (sum_count,), *conditions)
         resultset.group_by(*group_on)

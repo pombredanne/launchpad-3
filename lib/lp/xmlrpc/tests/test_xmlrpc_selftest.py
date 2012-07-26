@@ -9,15 +9,18 @@ import xmlrpclib
 from zope.component import getUtility
 
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.xmlrpc.application import SelfTest, ISelfTest
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     anonymous_logged_in,
-    TestCaseWithFactory,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.xmlrpc import XMLRPCTestTransport
+from lp.xmlrpc.application import (
+    ISelfTest,
+    SelfTest,
+    )
 
 
 class TestXMLRPCSelfTest(TestCaseWithFactory):

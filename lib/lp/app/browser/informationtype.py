@@ -8,9 +8,7 @@ __all__ = [
 
 from lazr.restful.interfaces import IJSONRequestCache
 
-from lp.registry.enums import (
-    PRIVATE_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.vocabularies import InformationTypeVocabulary
 
 
