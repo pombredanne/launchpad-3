@@ -138,7 +138,7 @@ class FAQ(SQLBase):
         return FAQ.select(
             '%s AND FAQ.fti @@ %s' % (target_constraint, quote(fti_search)),
             orderBy=[
-                SQLConstant("-rank(FAQ.fti, ftq(%s))" % quote(fti_search)),
+                SQLConstant("-rank(FAQ.fti, %s::tsquery)" % quote(fti_search)),
                 "-FAQ.date_created"])
 
     @staticmethod
