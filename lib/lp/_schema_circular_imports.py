@@ -795,7 +795,7 @@ patch_operations_explicit_version(
     IBug, 'beta', "addAttachment", "addNomination", "addTask", "addWatch",
     "canBeNominatedFor", "getHWSubmissions", "getNominationFor",
     "getNominations", "isExpirable", "isUserAffected",
-    "linkCVEAndReturnNothing", "linkHWSubmission", "markAsDuplicate",
+    "linkCVE", "linkHWSubmission", "markAsDuplicate",
     "markUserAffected", "newMessage", "setCommentVisibility", "setPrivate",
     "setSecurityRelated", "subscribe", "unlinkCVE", "unlinkHWSubmission",
     "unsubscribe", "unsubscribeFromDupes")
