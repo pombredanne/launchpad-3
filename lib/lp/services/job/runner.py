@@ -217,7 +217,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
             'result': SoftTimeLimitExceeded(1,),
             'task_id': 'cba7d07b-37fe-4f1d-a5f6-79ad7c30222f'}
         """
-        return '%s_%s_%s' % (
+        return '%s-%s-%s' % (
             self.__class__.__name__, self.job_id, uuid4())
 
     def runViaCelery(self, ignore_result=False):
