@@ -117,13 +117,13 @@ class TestPersonSet(TestCaseWithFactory):
 
     def test_getByEmail_ignores_unvalidated_emails(self):
         person = self.factory.makePerson()
-        unvalidated_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             'fnord@example.com',
             person,
             email_status=EmailAddressStatus.NEW)
         found = self.person_set.getByEmail('fnord@example.com')
         self.assertTrue(found is None)
-        
+
     def test_getPrecachedPersonsFromIDs(self):
         # The getPrecachedPersonsFromIDs() method should only make one
         # query to load all the extraneous data. Accessing the
