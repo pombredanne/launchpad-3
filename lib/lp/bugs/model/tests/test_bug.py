@@ -9,7 +9,6 @@ from datetime import (
     )
 
 from pytz import UTC
-from storm.expr import Join
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -30,7 +29,6 @@ from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
-from lp.bugs.model.bugnotification import BugNotificationRecipient
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
@@ -787,23 +785,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
 
-    def test_structural_bug_supervisor_becomes_direct_on_private(self):
-        # If a bug supervisor has a structural subscription to the bug, and
-        # the bug is marked as private, the supervisor should get a direct
-        # subscription. Otherwise they should be removed, per other tests.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        bug_owner = self.factory.makePerson()
-        bug = self.factory.makeBug(owner=bug_owner, product=product)
-        with person_logged_in(product.owner):
-            product.addSubscription(bug_supervisor, bug_supervisor)
-
-        self.assertFalse(bug_supervisor in bug.getDirectSubscribers())
-        with person_logged_in(bug_owner):
-            who = self.factory.makePerson(name="who")
-            bug.transitionToInformationType(InformationType.USERDATA, who)
-        self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
-
 
 class TestBugPrivacy(TestCaseWithFactory):
 
@@ -890,25 +871,6 @@ class TestBugPrivacy(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
-
-    def test_information_type_does_not_leak(self):
-        # Make sure that bug notifications for private bugs do not leak to
-        # people with a subscription on the product.
-        product = self.factory.makeProduct()
-        with person_logged_in(product.owner):
-            product.addSubscription(product.owner, product.owner)
-        reporter = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            information_type=InformationType.USERDATA, product=product,
-            owner=reporter)
-        recipients = Store.of(bug).using(
-            BugNotificationRecipient,
-            Join(BugNotification, BugNotification.bugID == bug.id)).find(
-            BugNotificationRecipient,
-            BugNotificationRecipient.bug_notificationID ==
-                BugNotification.id)
-        self.assertEqual(
-            [reporter], [recipient.person for recipient in recipients])
 
     def test__reconcileAccess_handles_all_targets(self):
         # _reconcileAccess gets the pillar from any task
