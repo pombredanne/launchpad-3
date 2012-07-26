@@ -285,9 +285,11 @@ class OnceTests:
 
     def test_fast_fulltext_search(self):
         # Fast full text searches find text indexed by Bug.fti...
+        # Note that a valid tsquery expression with stemmed words must
+        # be specified.
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
-            user=None, fast_searchtext=u'one title')
+            user=None, fast_searchtext=u'one&titl')
         self.assertSearchFinds(params, self.bugtasks[:1])
 
     def test_tags(self):
@@ -750,7 +752,7 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
         # Someone without permission to see deactiveated projects does
         # not see bugtasks for deactivated projects.
         bugtask_set = getUtility(IBugTaskSet)
-        param = BugTaskSearchParams(user=None, fast_searchtext=u'Monkeys')
+        param = BugTaskSearchParams(user=None, searchtext=u'Monkeys')
         results = bugtask_set.search(param, _noprejoins=True)
         self.assertEqual([self.active_bugtask], list(results))
 
