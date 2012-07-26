@@ -90,7 +90,6 @@ img[src$=spinner] + button  {
 .extra-form-buttons {
     text-align: center;
     padding-top: 1em;
-    white-space: nowrap;
     }
 .extra-form-buttons button {
     margin-right: 0.7em;
