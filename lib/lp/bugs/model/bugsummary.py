@@ -7,16 +7,23 @@ __metaclass__ = type
 __all__ = [
     'BugSummary',
     'CombineBugSummaryConstraint',
+    'get_bugsummary_filter_for_user',
     ]
 
-from storm.locals import (
+from storm.base import Storm
+from storm.expr import (
     And,
+    Or,
+    Select,
+    SQL,
+    With,
+    )
+from storm.properties import (
     Bool,
     Int,
-    Reference,
-    Storm,
     Unicode,
     )
+from storm.references import Reference
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
@@ -29,6 +36,11 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     )
+from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.model.accesspolicy import (
+    AccessPolicy,
+    AccessPolicyGrant,
+    )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.milestone import Milestone
@@ -36,6 +48,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.enumcol import EnumCol
 
 
@@ -76,6 +89,8 @@ class BugSummary(Storm):
 
     viewed_by_id = Int(name='viewed_by')
     viewed_by = Reference(viewed_by_id, Person.id)
+    access_policy_id = Int(name='access_policy')
+    access_policy = Reference(access_policy_id, AccessPolicy.id)
 
     has_patch = Bool()
 
@@ -99,3 +114,46 @@ class CombineBugSummaryConstraint:
     def getBugSummaryContextWhereClause(self):
         """See `IBugSummaryDimension`."""
         return And(*self.dimensions)
+
+
+def get_bugsummary_filter_for_user(user):
+    """Build a Storm expression to filter BugSummary by visibility.
+
+    :param user: The user for which visible rows should be calculated.
+    :return: (with_clauses, where_clauses)
+    """
+    # Admins get to see every bug, everyone else only sees bugs
+    # viewable by them-or-their-teams.
+    # Note that because admins can see every bug regardless of
+    # subscription they will see rather inflated counts. Admins get to
+    # deal.
+    public_filter = And(
+        BugSummary.viewed_by_id == None,
+        BugSummary.access_policy_id == None)
+    if user is None:
+        return [], [public_filter]
+    elif IPersonRoles(user).in_admin:
+        return [], []
+    else:
+        with_clauses = [
+            With(
+                'teams',
+                Select(
+                    TeamParticipation.teamID, tables=[TeamParticipation],
+                    where=(TeamParticipation.personID == user.id))),
+            With(
+                'policies',
+                Select(
+                    AccessPolicyGrant.policy_id,
+                    tables=[AccessPolicyGrant],
+                    where=(
+                        AccessPolicyGrant.grantee_id.is_in(
+                            SQL("SELECT team FROM teams"))))),
+            ]
+        where_clauses = [Or(
+            public_filter,
+            BugSummary.viewed_by_id.is_in(
+                SQL("SELECT team FROM teams")),
+            BugSummary.access_policy_id.is_in(
+                SQL("SELECT policy FROM policies")))]
+        return with_clauses, where_clauses
