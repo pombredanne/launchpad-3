@@ -272,11 +272,15 @@ class FileBugReportingGuidelines(LaunchpadFormView):
             type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['bug_private_by_default'] = (
             IProduct.providedBy(self.context) and self.context.private_bugs)
-        cache.objects['information_type_data'] = [
-            {'value': term.name, 'description': term.description,
-            'name': term.title,
-            'description_css_class': 'choice-description'}
-            for term in self.context.pillar.getAllowedBugInformationTypes()]
+        # Project groups are special. The Next button sends you to
+        # Product:+filebug, so we need none of the usual stuff.
+        if not IProjectGroup.providedBy(self.context):
+            cache.objects['information_type_data'] = [
+                {'value': term.name, 'description': term.description,
+                'name': term.title,
+                'description_css_class': 'choice-description'}
+                for term in
+                self.context.pillar.getAllowedBugInformationTypes()]
         bugtask_status_data = vocabulary_to_choice_edit_items(
             BugTaskStatus, include_description=True, css_class_prefix='status',
             excluded_items=[
@@ -296,6 +300,11 @@ class FileBugReportingGuidelines(LaunchpadFormView):
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugReportingGuidelines, self).setUpFields()
+
+        # Project groups are special. The Next button sends you to
+        # Product:+filebug, so we need none of the usual stuff.
+        if IProjectGroup.providedBy(self.context):
+            return
 
         if self.is_bug_supervisor:
             info_type_vocab = InformationTypeVocabulary(
