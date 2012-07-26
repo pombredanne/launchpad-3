@@ -2487,7 +2487,7 @@ class BugSubscriptionInfo:
             BugSubscription.bug_notification_level >= self.level,
             BugSubscription.bug == self.bug,
             Not(In(BugSubscription.person_id,
-               Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
+                   Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
 
     @property
     def direct_subscribers(self):
@@ -2522,7 +2522,8 @@ class BugSubscriptionInfo:
         Excludes muted subscriptions, and subscribers who can not see the
         master bug.
         """
-        filters = [BugSubscription.bug_notification_level >= self.level,
+        filters = [
+            BugSubscription.bug_notification_level >= self.level,
             BugSubscription.bug_id == Bug.id,
             Bug.duplicateof == self.bug,
             Not(In(
