@@ -3105,8 +3105,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     def getInformationTypeWidgetValues(self):
         """Return data used to render the Information Type checkboxes."""
-        return self.getWidgetValues(
-            vocabulary=InformationTypeVocabulary(self.context))
+        if (IProduct.providedBy(self.context)
+            or IDistribution.providedBy(self.context)):
+            vocab = InformationTypeVocabulary(
+                types=self.context.getAllowedBugInformationTypes())
+        else:
+            vocab = InformationType
+        return self.getWidgetValues(vocabulary=vocab)
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""

@@ -823,10 +823,12 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     @property
     def schema(self):
         """Schema for editing the information type of a `IBug`."""
+        info_types = self.context.bug.getAllowedInformationTypes(self.user)
+
         class information_type_schema(Interface):
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary(self.context))
+                vocabulary=InformationTypeVocabulary(types=info_types))
         return information_type_schema
 
     @property

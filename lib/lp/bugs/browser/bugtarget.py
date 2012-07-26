@@ -276,7 +276,7 @@ class FileBugReportingGuidelines(LaunchpadFormView):
             {'value': term.name, 'description': term.description,
             'name': term.title,
             'description_css_class': 'choice-description'}
-            for term in InformationTypeVocabulary(self.context)]
+            for term in self.context.pillar.getAllowedBugInformationTypes()]
         bugtask_status_data = vocabulary_to_choice_edit_items(
             BugTaskStatus, include_description=True, css_class_prefix='status',
             excluded_items=[
@@ -298,9 +298,11 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         super(FileBugReportingGuidelines, self).setUpFields()
 
         if self.is_bug_supervisor:
+            info_type_vocab = InformationTypeVocabulary(
+                types=self.context.pillar.getAllowedBugInformationTypes())
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary(self.context))
+                vocabulary=info_type_vocab)
             self.form_fields = self.form_fields.omit('information_type')
             self.form_fields += Fields(information_type_field)
         else:
