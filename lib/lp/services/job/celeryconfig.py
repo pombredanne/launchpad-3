@@ -35,7 +35,6 @@ def configure(argv):
     Doing this in a function is convenient for testing.
     """
     result = {}
-    CELERY_BEAT_QUEUE = 'celerybeat'
     celery_queues = {}
     queue_names = config.job_runner_queues.queues
     queue_names = queue_names.split(' ')
@@ -86,10 +85,7 @@ def configure(argv):
     result['CELERYBEAT_SCHEDULE'] = {
         'schedule-missing': {
             'task': 'lp.services.job.celeryjob.run_missing_ready',
-            'schedule': timedelta(seconds=600),
-            'options': {
-                'routing_key': CELERY_BEAT_QUEUE,
-                },
+            'schedule': timedelta(seconds=600)
         }
     }
     # See http://ask.github.com/celery/userguide/optimizing.html:
