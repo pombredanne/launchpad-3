@@ -126,7 +126,7 @@
         Y.on('domready', function(){
             var comment = new Y.lp.app.comment.Comment();
             comment.render();
-            }, window);
+        });
     });
   </script>
 </div>
