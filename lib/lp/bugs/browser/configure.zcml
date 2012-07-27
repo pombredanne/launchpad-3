@@ -979,13 +979,16 @@
             name="+listing-detailed"
             template="../templates/bug-listing-detailed.pt"
             permission="zope.Public"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            name="+portlet-privacy"
+            class="lp.bugs.browser.bug.BugInformationTypePortletView"
+            template="../templates/bug-portlet-privacy.pt"
+            permission="launchpad.View"/>
         <browser:pages
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bug.BugView"
             permission="zope.Public">
-            <browser:page
-                name="+portlet-privacy"
-                template="../templates/bug-portlet-privacy.pt"/>
             <browser:page
                 name="+portlet-watch"
                 template="../templates/bug-portlet-watch.pt"/>

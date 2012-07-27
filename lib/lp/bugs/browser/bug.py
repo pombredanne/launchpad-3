@@ -10,6 +10,7 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
+    'BugInformationTypePortletView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
@@ -514,7 +515,12 @@ class BugViewMixin:
         return getUtility(ILaunchBag).bugtask
 
 
-class BugView(InformationTypePortletMixin, LaunchpadView, BugViewMixin):
+class BugInformationTypePortletView(InformationTypePortletMixin,
+                                    LaunchpadView):
+    """View class for the information type portlet."""
+
+
+class BugView(LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
