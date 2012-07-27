@@ -2244,7 +2244,7 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self, context=None, public_only=False, private_only=False):
+    def _calculateTypes(self, context, public_only, private_only):
         types = []
         if not public_only:
             types = [
@@ -2284,6 +2284,12 @@ class InformationTypeVocabulary(SimpleVocabulary):
             not context.private_bugs)):
             types = [InformationType.PUBLIC,
                      InformationType.PUBLICSECURITY] + types
+        return types
+
+    def __init__(self, context=None, public_only=False, private_only=False,
+                 types=None):
+        if types is None:
+            types = self._calculateTypes(context, public_only, private_only)
 
         terms = []
         for type in types:

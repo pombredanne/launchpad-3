@@ -31,7 +31,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           src="../../../../../build/js/lp/app/lp.js"></script>
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../hide_comment.js"></script>
+      <script type="text/javascript" src="../comment.js"></script>
 
       <!-- Placeholder for any css asset for this module. -->
       <!-- <link rel="stylesheet" href="../assets/hide_comment-core.css" /> -->
@@ -42,27 +42,28 @@ GNU Affero General Public License version 3 (see the file LICENSE).
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <!-- <li>lp.large_indicator.test</li> -->
-            <li>lp.hide_comment.test</li>
+            <li>lp.app.comment.hide.test</li>
         </ul>
         <!-- The example markup required by the script to run -->
-        <div class="boardComment">
-            <div class="boardCommentDetails">Details</div>
-            <div class="boardCommentBody"><p>Foo bar baz.</p></div>
-            <div class="boardCommentFooter">
-                <a id="mark-spam-0" class="js-action sprite edit" href="#"
-                >Hide comment</a>
-            </div>
-        </div>
+        <div id="maincontentsub">
+          <div class="boardComment">
+              <div class="boardCommentDetails">Details</div>
+              <div class="boardCommentBody"><p>Foo bar baz.</p></div>
+              <div class="boardCommentFooter">
+                <a id="mark-spam-0" class="mark-spam js-action sprite edit"
+                  href="#">Hide comment</a>
+              </div>
+          </div>
 
-        <div id="hidden-comment" class="boardComment adminHiddenComment">
-            <div class="boardCommentDetails">Details</div>
-            <div class="boardCommentBody"><p>Click here for a diploma!</p></div>
-            <div class="boardCommentFooter">
-              <a id="mark-spam-1" class="js-action sprite edit" href="#">
-                  Unhide comment
-              </a>
-            </div>
+          <div id="hidden-comment" class="boardComment adminHiddenComment">
+              <div class="boardCommentDetails">Details</div>
+              <div class="boardCommentBody"><p>Click here for a diploma!</p></div>
+              <div class="boardCommentFooter">
+                <a id="mark-spam-1" class="mark-spam js-action sprite edit"
+                  href="#">Unhide comment
+                </a>
+              </div>
+          </div>
         </div>
     </body>
 </html>

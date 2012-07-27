@@ -51,6 +51,13 @@ class TestInformationTypeVocabulary(TestCaseWithFactory):
         for info_type in PUBLIC_INFORMATION_TYPES:
             self.assertNotIn(info_type, vocab)
 
+    def test_vocabulary_items_custom(self):
+        # The vocab can be given a custom set of types to include.
+        vocab = InformationTypeVocabulary(
+            types=[InformationType.PUBLICSECURITY, InformationType.USERDATA])
+        self.assertIn(InformationType.USERDATA, vocab)
+        self.assertNotIn(InformationType.PUBLIC, vocab)
+
     def test_getTermByToken(self):
         vocab = InformationTypeVocabulary()
         self.assertThat(
