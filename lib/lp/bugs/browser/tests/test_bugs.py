@@ -2,9 +2,6 @@
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for bug set and bug application views."""
-from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.registry.enums import InformationType
-from lp.testing._login import person_logged_in
 
 __metaclass__ = type
 
@@ -12,12 +9,15 @@ from contextlib import contextmanager
 
 from zope.component import getUtility
 
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.publisher import BugsLayer
+from lp.registry.enums import InformationType
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     celebrity_logged_in,
     feature_flags,
+    person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )

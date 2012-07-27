@@ -4,7 +4,6 @@
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces pertaining to the launchpad Malone application."""
-from lazr.restful.interface import copy_field
 
 __metaclass__ = type
 
@@ -19,6 +18,7 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
 from zope.interface import Attribute
 
 from lp.bugs.interfaces.bug import IBug
@@ -46,7 +46,10 @@ class IMaloneApplication(ILaunchpadApplication):
     @export_read_operation()
     @operation_for_version('devel')
     def getBugData(user, bug_id):
-        """Search IBugTasks for bugs matching the specified criteria.
+        """Search bugtasks matching the specified criteria.
+
+        The only criteria currently supported is to search for a bugtask with
+        the specified bug id.
 
         :return: a list of matching bugs represented as json data
         """

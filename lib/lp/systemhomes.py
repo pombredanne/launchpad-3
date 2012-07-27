@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
-from lp.services.webapp.publisher import canonical_url
 
 __all__ = [
     'BazaarApplication',
@@ -79,6 +78,7 @@ from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
