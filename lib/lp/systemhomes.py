@@ -59,6 +59,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorIDSet,
     ParameterError,
     )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -140,6 +141,8 @@ class MaloneApplication:
             data.append({
                 'id': bug_id,
                 'information_type': bug.information_type.title,
+                'is_private':
+                    bug.information_type in PRIVATE_INFORMATION_TYPES,
                 'importance': bugtask.importance.title,
                 'importance_class': 'importance' + bugtask.importance.name,
                 'status': bugtask.status.title,

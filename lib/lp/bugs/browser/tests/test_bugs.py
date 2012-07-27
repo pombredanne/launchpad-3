@@ -2,6 +2,9 @@
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for bug set and bug application views."""
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.registry.enums import InformationType
+from lp.testing._login import person_logged_in
 
 __metaclass__ = type
 
@@ -113,3 +116,27 @@ class TestMaloneView(TestCaseWithFactory):
 
         # we should get some valid content out of this
         self.assertIn('Search all bugs', content)
+
+    def test_getBugData(self):
+        # The getBugData method works as expected.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner,
+            status=BugTaskStatus.INPROGRESS,
+            title='title', description='description',
+            information_type=InformationType.PRIVATESECURITY)
+        with person_logged_in(owner):
+            bug_data = getUtility(IMaloneApplication).getBugData(owner, bug.id)
+            expected_bug_data = {
+                    'id': bug.id,
+                    'information_type': 'Private Security',
+                    'is_private': True,
+                    'importance': 'Undecided',
+                    'importance_class': 'importanceUNDECIDED',
+                    'status': 'In Progress',
+                    'status_class': 'statusINPROGRESS',
+                    'bug_summary': 'title',
+                    'description': 'description',
+                    'bug_url': canonical_url(bug.default_bugtask)
+        }
+        self.assertEqual([expected_bug_data], bug_data)
