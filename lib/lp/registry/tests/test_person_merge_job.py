@@ -88,7 +88,7 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.assertEqual({'delete': False}, self.job.metadata)
 
     def test_getErrorRecipients(self):
-        # The to_person is the recipient.
+        # The requester is the recipient.
         email_id = format_address_for_person(self.requester)
         self.assertEqual([email_id], self.job.getErrorRecipients())
 
