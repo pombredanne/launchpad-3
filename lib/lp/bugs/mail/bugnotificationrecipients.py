@@ -118,17 +118,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug supervisor"
         self._addReason(person, text, reason)
 
-    def addSecurityContact(self, person):
-        """Registers a security contact of a bugtask's pillar of this bug."""
-        reason = "Security Contact"
-        if person.is_team:
-            text = ("are a member of %s, which is a security contact"
-                    % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a security contact"
-        self._addReason(person, text, reason)
-
     def addMaintainer(self, person):
         """Registers a maintainer of a bugtask's pillar of this bug."""
         reason = "Maintainer"
