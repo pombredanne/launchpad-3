@@ -2591,34 +2591,13 @@ class BugSubscriptionInfo:
             return load_people(Person.id == self.bugtask.assigneeID)
 
     @cachedproperty
-    @freeze(BugSubscriberSet)
-    def all_pillar_owners_without_bug_supervisors(self):
-        """Owners of pillars for which there is no bug supervisor.
-
-        The pillars must also use Launchpad for bug tracking.
-
-        *Does not* exclude muted subscribers.
-        """
-        if self.bugtask is None:
-            bugtasks = self.bug.bugtasks
-        else:
-            bugtasks = [self.bugtask]
-        for bugtask in bugtasks:
-            pillar = bugtask.pillar
-            if pillar.official_malone:
-                if pillar.bug_supervisor is None:
-                    yield pillar.owner
-
-    @cachedproperty
     def also_notified_subscribers(self):
         """All subscribers except direct, dupe, and muted subscribers."""
         if self.bug.private:
             return BugSubscriberSet()
         else:
             subscribers = BugSubscriberSet().union(
-                self.structural_subscribers,
-                self.all_pillar_owners_without_bug_supervisors,
-                self.all_assignees)
+                self.structural_subscribers, self.all_assignees)
             return subscribers.difference(
                 self.direct_subscribers_at_all_levels,
                 self.muted_subscribers)

@@ -47,10 +47,6 @@ appropriate for an email footer.
     mark@example.com
         Assignee
         You received this bug notification because you are a bug assignee.
-    support@ubuntu.com
-        Registrant (Ubuntu) @ubuntu-team
-        You received this bug notification because you are a member of
-        Ubuntu Team, which is the registrant for Ubuntu.
     test@canonical.com
         Subscriber
         You received this bug notification because you are subscribed
