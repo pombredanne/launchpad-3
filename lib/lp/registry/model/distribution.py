@@ -192,7 +192,6 @@ from lp.soyuz.model.publishing import (
     get_current_source_releases,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
