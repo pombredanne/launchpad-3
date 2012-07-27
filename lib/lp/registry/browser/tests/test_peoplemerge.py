@@ -34,6 +34,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
         self.person_set = getUtility(IPersonSet)
         self.dupe = self.factory.makePerson(name='dupe')
         self.target = self.factory.makePerson(name='target')
+        self.requester = self.factory.makePerson(name='requester')
 
     def getForm(self, dupe_name=None):
         if dupe_name is None:
@@ -83,7 +84,8 @@ class TestValidatingMergeView(TestCaseWithFactory):
         # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(
-            from_person=self.dupe, to_person=self.target)
+            from_person=self.dupe, to_person=self.target,
+            requester=self.requester)
         login_person(self.target)
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
@@ -95,7 +97,8 @@ class TestValidatingMergeView(TestCaseWithFactory):
         # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(
-            from_person=self.target, to_person=self.dupe)
+            from_person=self.target, to_person=self.dupe,
+            requester=self.requester)
         login_person(self.target)
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
