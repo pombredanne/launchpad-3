@@ -8,8 +8,10 @@ __metaclass__ = type
 from datetime import datetime
 
 from pytz import utc
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummary
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -21,8 +23,12 @@ from lp.bugs.model.bugsummary import (
     get_bugsummary_filter_for_user,
     )
 from lp.bugs.model.bugtask import BugTask
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    SharingPermission,
+    )
 from lp.services.database.lpstorm import IMasterStore
+from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -179,9 +185,18 @@ class TestBugSummary(TestCaseWithFactory):
                 3 - count, product=product, importance=new_importance)
 
     def test_makePrivate(self):
+        # The bug owner and two other people are subscribed directly to
+        # the bug, and another has a grant for the whole project. All of
+        # them see the bug once.
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
+        person_c = self.factory.makePerson()
         product = self.factory.makeProduct()
+        with FeatureFixture(
+                {'disclosure.enhanced_sharing.writable': 'true'}):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                product, person_c, product.owner,
+                {InformationType.USERDATA: SharingPermission.ALL})
         bug = self.factory.makeBug(product=product, owner=person_b)
 
         bug.subscribe(person=person_a, subscribed_by=person_a)
@@ -189,13 +204,13 @@ class TestBugSummary(TestCaseWithFactory):
         # Make the bug private. We have to use the Python API to ensure
         # BugSubscription records get created for implicit
         # subscriptions.
-        bug.setPrivate(True, bug.owner)
+        bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
 
         # Confirm counts.
         self.assertCount(0, product=product)
         self.assertCount(1, user=person_a, product=product)
         self.assertCount(1, user=person_b, product=product)
-        # Confirm implicit subscriptions work too.
+        self.assertCount(1, user=person_c, product=product)
         self.assertCount(1, user=bug.owner, product=product)
 
     def test_makePublic(self):
@@ -617,6 +632,16 @@ class TestBugSummary(TestCaseWithFactory):
 
         self.assertCount(0, product=product, has_patch=True)
         self.assertCount(1, product=product, has_patch=False)
+
+    def test_duplicate(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+
+        self.assertCount(1, product=product)
+
+        bug.markAsDuplicate(self.factory.makeBug())
+
+        self.assertCount(0, product=product)
 
 
 class TestBugSummaryRolledUp(TestBugSummary):
