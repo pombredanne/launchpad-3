@@ -1006,8 +1006,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             branch.product.setBranchVisibilityTeamPolicy(
                 branch.owner, BranchVisibilityRule.PRIVATE)
         self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.USERDATA,
-             InformationType.PROPRIETARY], branch)
+            [InformationType.PUBLIC, InformationType.USERDATA], branch)
 
     def test_private_branch_with_security_bug(self):
         # Branches on projects that allow private branches can use the
@@ -1024,8 +1023,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             branch.linkBug(bug, branch.owner)
         self.assertShownTypes(
             [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY, InformationType.USERDATA,
-             InformationType.PROPRIETARY],
+             InformationType.PRIVATESECURITY, InformationType.USERDATA],
             branch)
 
 

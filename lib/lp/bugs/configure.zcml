@@ -666,7 +666,6 @@
           permission="launchpad.View"
           attributes="
               all_assignees
-              all_pillar_owners_without_bug_supervisors
               also_notified_subscribers
               direct_subscribers
               direct_subscribers_at_all_levels
