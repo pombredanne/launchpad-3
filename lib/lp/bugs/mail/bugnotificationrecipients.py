@@ -151,20 +151,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
 
-    def addRegistrant(self, person, upstream):
-        """Registers an upstream product registrant for this bug."""
-        reason = "Registrant (%s)" % upstream.displayname
-        try:
-            if person.is_team:
-                text = ("are a member of %s, which is the registrant for %s" %
-                    (person.displayname, upstream.displayname))
-                reason += " @%s" % person.name
-            else:
-                text = "are the registrant for %s" % upstream.displayname
-        except AttributeError:
-            import pdb; pdb.set_trace()
-        self._addReason(person, text, reason)
-
     def update(self, recipient_set):
         """See `INotificationRecipientSet`."""
         super(BugNotificationRecipients, self).update(recipient_set)

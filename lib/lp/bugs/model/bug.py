@@ -2264,12 +2264,6 @@ def get_also_notified_subscribers(
             if assignee in also_notified_subscribers:
                 # We have an assignee that is not a direct subscriber.
                 recipients.addAssignee(bugtask.assignee)
-            # If the target's bug supervisor isn't set...
-            pillar = bugtask.pillar
-            if pillar.official_malone and pillar.bug_supervisor is None:
-                if pillar.owner in also_notified_subscribers:
-                    # ...we add the owner as a subscriber.
-                    recipients.addRegistrant(pillar.owner, pillar)
 
     # This structural subscribers code omits direct subscribers itself.
     # TODO: Pass the info object into get_structural_subscribers for
