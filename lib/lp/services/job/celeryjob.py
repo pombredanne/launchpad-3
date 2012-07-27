@@ -16,11 +16,10 @@ __all__ = [
 
 from logging import info
 import os
-from uuid import uuid4
 
 
 os.environ.setdefault('CELERY_CONFIG_MODULE', 'lp.services.job.celeryconfig')
-from celery.task import Task
+from celery.task import task
 from lazr.jobrunner.celerytask import RunJob
 from storm.zope.interfaces import IZStorm
 import transaction
@@ -81,41 +80,24 @@ def find_missing_ready(job_source):
             queued_job_ids]
 
 
-class RunMissingReady(Task):
+@task
+def run_missing_ready(_no_init=False):
     """Task to run any jobs that are ready but not scheduled.
 
     Currently supports only BranchScanJob.
     :param _no_init: For tests.  If True, do not perform the initialization.
     """
-    ignore_result = True
-
-    def run(self, _no_init=False):
-        if not _no_init:
-            task_init('run_missing_ready')
-        with TransactionFreeOperation():
-            count = 0
-            for job in find_missing_ready(BranchScanJob):
-                if not celery_enabled(job.__class__.__name__):
-                    continue
-                job.celeryCommitHook(True)
-                count += 1
-            info('Scheduled %d missing jobs.', count)
-            transaction.commit()
-
-    def apply_async(self, args=None, kwargs=None, task_id=None, publisher=None,
-                    connection=None, router=None, queues=None, **options):
-        """Create a task_id if none is specified.
-
-        Override the quite generic default task_id with one containing
-        the class name.
-
-        See also `celery.task.Task.apply_async()`.
-        """
-        if task_id is None:
-            task_id = '%s_%s' % (self.__class__.__name__, uuid4())
-        return super(RunMissingReady, self).apply_async(
-            args, kwargs, task_id, publisher, connection, router, queues,
-            **options)
+    if not _no_init:
+        task_init('run_missing_ready')
+    with TransactionFreeOperation():
+        count = 0
+        for job in find_missing_ready(BranchScanJob):
+            if not celery_enabled(job.__class__.__name__):
+                continue
+            job.celeryCommitHook(True)
+            count += 1
+        info('Scheduled %d missing jobs.', count)
+        transaction.commit()
 
 
 needs_zcml = True
