@@ -864,7 +864,6 @@ class QuestionSearch:
                  product=None, distribution=None, sourcepackagename=None,
                  project=None):
         self.search_text = search_text
-        self.nl_phrase_used = False
 
         if zope_isinstance(status, DBItem):
             self.status = [status]
@@ -945,12 +944,8 @@ class QuestionSearch:
         constraints = self.getTargetConstraints()
 
         if self.search_text is not None:
-            if self.nl_phrase_used:
-                constraints.append(
-                    'Question.fti @@ %s' % quote(self.search_text))
-            else:
-                constraints.append(
-                    'Question.fti @@ ftq(%s)' % quote(self.search_text))
+            constraints.append(
+                'Question.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
             constraints.append('Question.status IN %s' % sqlvalues(
@@ -1014,16 +1009,10 @@ class QuestionSearch:
         elif sort is QuestionSort.RELEVANCY:
             if self.search_text:
                 # SQLConstant is a workaround for bug 53455
-                if self.nl_phrase_used:
-                    return [SQLConstant(
-                                "-rank(Question.fti, %s::tsquery)" % quote(
-                                    self.search_text)),
-                            "-Question.datecreated"]
-                else:
-                    return [SQLConstant(
-                                "-rank(Question.fti, ftq(%s))" % quote(
-                                    self.search_text)),
-                            "-Question.datecreated"]
+                return [SQLConstant(
+                            "-rank(Question.fti, ftq(%s))" % quote(
+                                self.search_text)),
+                        "-Question.datecreated"]
             else:
                 return "-Question.datecreated"
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
@@ -1124,7 +1113,6 @@ class SimilarQuestionsSearch(QuestionSearch):
         # similarity search algorithm.
         self.search_text = nl_phrase_search(
             title, Question, " AND ".join(self.getTargetConstraints()))
-        self.nl_phrase_used = True
 
 
 class QuestionPersonSearch(QuestionSearch):
