@@ -293,12 +293,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.proprietary_information_type.disabled',
-     'boolean',
-     'If true, disables the PROPRIETARY information_type for bugs.',
-     '',
-     '',
-     ''),
     ('disclosure.information_type_notifications.enabled',
      'boolean',
      ('If true, calculate and store bugchange notifications to reference '
