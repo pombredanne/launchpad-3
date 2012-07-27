@@ -4,6 +4,7 @@
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces pertaining to the launchpad Malone application."""
+from lazr.restful.interface import copy_field
 
 __metaclass__ = type
 
@@ -12,6 +13,8 @@ from lazr.restful.declarations import (
     collection_default_content,
     export_as_webservice_collection,
     export_factory_operation,
+    export_read_operation,
+    operation_for_version,
     operation_parameters,
     REQUEST_USER,
     )
@@ -35,6 +38,18 @@ class IMaloneApplication(ILaunchpadApplication):
 
     def searchTasks(search_params):
         """Search IBugTasks with the given search parameters."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        bug_id=copy_field(IBug['id'])
+    )
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBugData(user, bug_id):
+        """Search IBugTasks for bugs matching the specified criteria.
+
+        :return: a list of matching bugs represented as json data
+        """
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")
     bugwatch_count = Attribute("The number of links to external bug trackers")
