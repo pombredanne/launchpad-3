@@ -1378,12 +1378,12 @@ class Bug(SQLBase):
         """See `IBug`."""
         return bool(self.cves)
 
-    def linkCVE(self, cve, user, returncve=True):
+    def linkCVE(self, cve, user, return_cve=True):
         """See `IBug`."""
         if cve not in self.cves:
             bugcve = BugCve(bug=self, cve=cve)
             notify(ObjectCreatedEvent(bugcve, user=user))
-            if returncve:
+            if return_cve:
                 return bugcve
 
     def unlinkCVE(self, cve, user):
