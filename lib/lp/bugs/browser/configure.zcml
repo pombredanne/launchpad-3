@@ -954,7 +954,7 @@
             for="lp.bugs.interfaces.bug.IBug"
             name="+index"
             class="lp.bugs.browser.bug.BugWithoutContextView"
-            permission="launchpad.View"
+            permission="zope.Public"
             attribute="__call__"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
