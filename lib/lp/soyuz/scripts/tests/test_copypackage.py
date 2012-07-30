@@ -7,7 +7,10 @@ import datetime
 import os
 import subprocess
 import sys
-from textwrap import dedent
+from textwrap import (
+    dedent,
+    fill,
+    )
 import unittest
 
 import pytz
@@ -59,7 +62,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
-from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -711,6 +713,87 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
             pub_source=self.source, with_debug=True)
         self.assertCannotCopyBinaries(
             'Cannot copy DDEBs to a primary archive')
+
+    def test_cannot_copy_source_twice(self):
+        # checkCopy refuses to copy the same source twice.  Duplicates are
+        # generally cruft and may cause problems when they include
+        # architecture-independent binaries, so the copier refuses to copy
+        # publications with versions older than or equal to the ones already
+        # present in the destination.
+        [copied_source] = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=False, check_permissions=False)
+        self.assertCannotCopySourceOnly(
+            "same version already building in the destination archive for %s" %
+            self.series.displayname)
+
+    def test_cannot_copy_unpublished_binaries_twice(self):
+        # checkCopy refuses to copy over matching but unpublished binaries.
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+        self.layer.txn.commit()
+        copied = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=True, check_permissions=False)
+        self.assertEqual(3, len(copied))
+        self.assertCannotCopyBinaries(
+            "same version has unpublished binaries in the destination "
+            "archive for %s, please wait for them to be published before "
+            "copying" % self.series.displayname)
+
+    def test_can_copy_published_binaries_twice(self):
+        # If there are matching published binaries in the destination
+        # archive, checkCopy passes, and do_copy will simply not copy
+        # anything.
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+        self.layer.txn.commit()
+        copied = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=True, check_permissions=False)
+        self.assertEqual(3, len(copied))
+        for binary in copied[1:]:
+            binary.setPublished()
+        self.assertCanCopyBinaries()
+        nothing_copied = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=True, check_permissions=False)
+        self.assertEqual(0, len(nothing_copied))
+
+    def test_cannot_copy_conflicting_sprs(self):
+        # checkCopy refuses to copy an SPR if a different SPR with the same
+        # version is already in the target archive (before any more detailed
+        # checks for conflicting files).
+        spr = self.source.sourcepackagerelease
+        self.test_publisher.getPubSource(
+            sourcename=spr.name, version=spr.version, archive=self.archive)
+        self.assertCannotCopySourceOnly(
+            "a different source with the same version is published in the "
+            "destination archive")
+
+    def test_cannot_copy_conflicting_binaries_over_deleted_binaries(self):
+        # checkCopy refuses to copy conflicting binaries even if the
+        # previous ones were deleted; since they were once published,
+        # somebody may have installed them.
+        self.test_publisher.getPubBinaries(pub_source=self.source)
+        self.layer.txn.commit()
+        [copied_source] = do_copy(
+            [self.source], self.archive, self.series, self.pocket,
+            include_binaries=False, check_permissions=False)
+
+        # Build binaries for the copied source in the destination archive.
+        for build in copied_source.getBuilds():
+            binary = self.test_publisher.uploadBinaryForBuild(build, "foo-bin")
+            self.test_publisher.publishBinaryInArchive(binary, build.archive)
+
+        # Delete the copied source and its local binaries in the destination
+        # archive.
+        copied_source.requestDeletion(self.archive.owner)
+        for binary in copied_source.getPublishedBinaries():
+            binary.requestDeletion(self.archive.owner)
+
+        # The binaries in the source archive conflict with those we just
+        # deleted.
+        self.assertCannotCopyBinaries(
+            "binaries conflicting with the existing ones")
 
     def test_cannot_copy_conflicting_files_in_PPAs(self):
         # checkCopy refuses to copy a source package if there are files on
@@ -1409,7 +1492,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertEqual(
             get_ppa_reference(target_archive), notification['X-Launchpad-PPA'])
         body = notification.get_payload()[0].get_payload()
-        expected = dedent("""\
+        expected = (dedent("""\
             Accepted:
              OK: foo_1.0-2.dsc
                  -> Component: main Section: base
@@ -1420,9 +1503,12 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
             --
             http://launchpad.dev/~archiver/+archive/ppa
-            You are receiving this email because you are the uploader of the above
-            PPA package.
-            """)
+            """) +
+            # Slight contortion to avoid a long line.
+            fill(dedent("""\
+            You are receiving this email because you are the uploader of the
+            above PPA package.
+            """), 72) + "\n")
         self.assertEqual(expected, body)
 
     def test_copy_generates_notification(self):
@@ -1864,6 +1950,263 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
             [build_i386], [pub.build for pub in delayed_copy.builds])
 
 
+class TestCopyBuildRecords(TestCaseWithFactory):
+    """Test handling of binaries and their build records when copying."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCopyBuildRecords, self).setUp()
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+        self.primary = self.test_publisher.ubuntutest.main_archive
+        self.ppa = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        self.series = self.test_publisher.distroseries
+
+    def checkCopies(self, copied, target_archive, size):
+        """Check the copied records.
+
+        Ensure that the correct number of copies happened, and that each
+        copy is PENDING and in the correct archive.
+        """
+        self.assertEqual(size, len(copied))
+        for copy in copied:
+            self.assertEqual(PackagePublishingStatus.PENDING, copy.status)
+            self.assertEqual(target_archive, copy.archive)
+
+    def test_copy_source_from_ppa_creates_builds(self):
+        # Copying a source package from a PPA to the primary archive creates
+        # a build record in the destination archive.
+        source = self.test_publisher.getPubSource(archive=self.ppa)
+        self.test_publisher.getPubBinaries(pub_source=source)
+        self.layer.txn.commit()
+        copied = do_copy(
+            [source], self.primary, self.series,
+            PackagePublishingPocket.RELEASE, include_binaries=False,
+            check_permissions=False)
+        self.checkCopies(copied, self.primary, 1)
+        spr = source.sourcepackagerelease
+        self.assertEqual(
+            "%s %s in %s" % (spr.name, spr.version, self.series.name),
+            copied[0].displayname)
+        self.assertEqual(0, len(copied[0].getPublishedBinaries()))
+        self.assertEqual(1, len(copied[0].getBuilds()))
+
+    def test_copy_source_and_binaries_from_ppa_does_not_create_builds(self):
+        # Copying a source package and its binaries from a PPA to the
+        # primary archive copies the binaries and does not create any new
+        # build records.
+        source = self.test_publisher.getPubSource(archive=self.ppa)
+        self.test_publisher.getPubBinaries(pub_source=source)
+        self.layer.txn.commit()
+        initial_builds = source.getBuilds()
+        self.assertEqual(1, len(initial_builds))
+        copied = do_copy(
+            [source], self.primary, self.series,
+            PackagePublishingPocket.RELEASE, include_binaries=True,
+            check_permissions=False)
+        self.checkCopies(copied, self.primary, 3)
+        spr = source.sourcepackagerelease
+        self.assertEqual(
+            "%s %s in %s" % (spr.name, spr.version, self.series.name),
+            copied[0].displayname)
+        self.assertEqual(2, len(copied[0].getPublishedBinaries()))
+        self.assertEqual(initial_builds, copied[0].getBuilds())
+
+    def makeSeriesWithExtraArchitecture(self):
+        """Make a new distroseries with an additional architecture."""
+        new_series = self.factory.makeDistroSeries(
+            distribution=self.test_publisher.ubuntutest,
+            previous_series=self.series)
+        for das in self.series.architectures:
+            self.factory.makeDistroArchSeries(
+                distroseries=new_series, architecturetag=das.architecturetag,
+                processorfamily=das.processorfamily)
+        new_series.nominatedarchindep = new_series[
+            self.series.nominatedarchindep.architecturetag]
+        new_das = self.factory.makeDistroArchSeries(distroseries=new_series)
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            new_series, SourcePackageFormat.FORMAT_1_0)
+        self.test_publisher.addFakeChroots(new_series)
+        return new_series, new_das
+
+    def test_copy_architecture_independent_binaries(self):
+        # If the destination distroseries supports more architectures than
+        # the source distroseries, then the copier propagates
+        # architecture-independent binaries to the new architectures.
+        new_series, _ = self.makeSeriesWithExtraArchitecture()
+        source = self.test_publisher.getPubSource(
+            archive=self.primary, status=PackagePublishingStatus.PUBLISHED,
+            architecturehintlist="all")
+        self.test_publisher.getPubBinaries(
+            pub_source=source, status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
+        copied = do_copy(
+            [source], self.primary, new_series,
+            PackagePublishingPocket.RELEASE, include_binaries=True,
+            check_permissions=False)
+
+        # The source and the only existing binary were correctly copied.  No
+        # build was created, but the architecture-independent binary was
+        # propagated to the new architecture.
+        self.checkCopies(copied, self.primary, 4)
+        spr = source.sourcepackagerelease
+        self.assertEqual(
+            "%s %s in %s" % (spr.name, spr.version, new_series.name),
+            copied[0].displayname)
+        self.assertEqual(0, len(copied[0].getBuilds()))
+        architectures = [
+            binary.distroarchseries
+            for binary in copied[0].getPublishedBinaries()]
+        self.assertContentEqual(new_series.architectures, architectures)
+
+    def test_copy_creates_missing_builds(self):
+        # When source and (architecture-dependent) binaries are copied to a
+        # distroseries that supports more architectures than the one where
+        # they were built, the copier creates builds for the new
+        # architectures.
+        new_series, new_das = self.makeSeriesWithExtraArchitecture()
+        source = self.test_publisher.getPubSource(
+            archive=self.primary, status=PackagePublishingStatus.PUBLISHED,
+            architecturehintlist="any")
+        binaries = self.test_publisher.getPubBinaries(
+            pub_source=source, status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
+        copied = do_copy(
+            [source], self.primary, new_series,
+            PackagePublishingPocket.RELEASE, include_binaries=True,
+            check_permissions=False)
+
+        # The source and the existing binaries were copied.
+        self.checkCopies(copied, self.primary, 3)
+        spr = source.sourcepackagerelease
+        self.assertEqual(
+            "%s %s in %s" % (spr.name, spr.version, new_series.name),
+            copied[0].displayname)
+        expected_binaries = []
+        for binary in binaries:
+            bpr = binary.binarypackagerelease
+            expected_binaries.append(
+                "%s %s in %s %s" % (
+                    bpr.name, bpr.version, new_series.name,
+                    binary.distroarchseries.architecturetag))
+        self.assertContentEqual(
+            expected_binaries, [copy.displayname for copy in copied[1:]])
+
+        # The copier created a build in the new series for the extra
+        # architecture.
+        [new_build] = copied[0].getBuilds()
+        self.assertEqual(
+            "%s build of %s %s in ubuntutest %s RELEASE" %
+            (new_das.architecturetag, spr.name, spr.version, new_series.name),
+            new_build.title)
+
+    def checkSecurityPropagationContext(self, archive, source_name):
+        """Verify publishing context after propagating a security update.
+
+        Check if both publications remain active, the newest in UPDATES and
+        the oldest in SECURITY.
+
+        Assert that no build was created during the copy, since the copy
+        included binaries.
+
+        Check that no builds will be created in future runs of
+        `buildd-queue-builder`, because a source version can only be built
+        once in a distroarchseries, independent of its targeted pocket.
+        """
+        [copied, original] = archive.getPublishedSources(
+            name=source_name, exact_match=True,
+            status=active_publishing_status)
+
+        self.assertEqual(PackagePublishingPocket.UPDATES, copied.pocket)
+        self.assertEqual(PackagePublishingPocket.SECURITY, original.pocket)
+
+        self.assertEqual(original.getBuilds(), copied.getBuilds())
+
+        new_builds = copied.createMissingBuilds()
+        self.assertEqual(0, len(new_builds))
+
+    def test_incremental_binary_copies(self):
+        # Within a series, the copier supports incrementally copying new
+        # binaries: that is, if new binaries have been built since the last
+        # time the package was copied, the missing binary publications will
+        # be copied.  In particular, this allows the Ubuntu team to copy
+        # packages from SECURITY to UPDATES (the latter being much better
+        # mirrored, and thus cheaper to distribute) before all binaries have
+        # built.
+        security_source = self.test_publisher.getPubSource(
+            archive=self.primary, architecturehintlist="any",
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.PUBLISHED)
+        builds = security_source.createMissingBuilds()
+        self.assertEqual(2, len(builds))
+
+        # Upload and publish a binary package for only one of the builds.
+        # This leaves the first build completed and the second pending.
+        binary_one = self.test_publisher.uploadBinaryForBuild(builds[0], "foo")
+        self.test_publisher.publishBinaryInArchive(
+            binary_one, self.primary, pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(BuildStatus.FULLYBUILT, builds[0].status)
+        self.assertEqual(BuildStatus.NEEDSBUILD, builds[1].status)
+        self.layer.txn.commit()
+
+        # Copy the source and the first binary to UPDATES.
+        copied = do_copy(
+            [security_source], self.primary, self.series,
+            PackagePublishingPocket.UPDATES, include_binaries=True,
+            check_permissions=False)
+        self.checkCopies(copied, self.primary, 2)
+        spr = security_source.sourcepackagerelease
+        self.assertEqual(
+            "%s %s in %s" % (spr.name, spr.version, self.series.name),
+            copied[0].displayname)
+        self.assertEqual(
+            "foo %s in %s %s" % (
+                spr.version, self.series.name, builds[0].arch_tag),
+            copied[1].displayname)
+
+        self.checkSecurityPropagationContext(security_source.archive, spr.name)
+
+        # Upload a binary for the second build but keep it unpublished.
+        # When attempting to repeat the copy to UPDATES, the copy succeeds
+        # but nothing is copied.  Everything built and published from this
+        # source is already copied.
+        binary_two = self.test_publisher.uploadBinaryForBuild(builds[1], "foo")
+        nothing_copied = do_copy(
+            [security_source], self.primary, self.series,
+            PackagePublishingPocket.UPDATES, include_binaries=True,
+            check_permissions=False)
+        self.assertEqual(0, len(nothing_copied))
+
+        # Publish the second binary and repeat the copy.  This copies only
+        # the new binary.
+        self.test_publisher.publishBinaryInArchive(
+            binary_two, self.primary, pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.PUBLISHED)
+        copied_incremental = do_copy(
+            [security_source], self.primary, self.series,
+            PackagePublishingPocket.UPDATES, include_binaries=True,
+            check_permissions=False)
+        self.assertEqual(
+            "foo %s in %s %s" % (
+                spr.version, self.series.name, builds[1].arch_tag),
+            copied_incremental[0].displayname)
+
+        # The source and its two binaries are now available in both the
+        # -security and -updates suites.
+        self.checkCopies(copied + copied_incremental, self.primary, 3)
+        self.checkSecurityPropagationContext(security_source.archive, spr.name)
+
+        # A further attempted copy is a no-op.
+        nothing_copied = do_copy(
+            [security_source], self.primary, self.series,
+            PackagePublishingPocket.UPDATES, include_binaries=True,
+            check_permissions=False)
+        self.assertEqual(0, len(nothing_copied))
+
+
 class TestCopyClosesBugs(TestCaseWithFactory):
     """Copying packages closes bugs.
 
@@ -2255,69 +2598,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertEqual(updates.pocket, PackagePublishingPocket.UPDATES)
         self.assertEqual(len(updates.getBuilds()), 1)
 
-    def testWillNotCopyTwice(self):
-        """When invoked twice, the script doesn't repeat the copy.
-
-        As reported in bug #237353, duplicates are generally cruft and may
-        cause problems when they include architecture-independent binaries.
-
-        That's why PackageCopier refuses to copy publications with versions
-        older or equal the ones already present in the destination.
-
-        The script output informs the user that no packages were copied,
-        and for repeated source-only copies, the second attempt is actually
-        an error since the source previously copied is already building and
-        if the copy worked conflicting binaries would have been generated.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher = self.getTestPublisher(hoary)
-        test_publisher.getPubBinaries()
-
-        # Repeating the copy of source and it's binaries.
-        copy_helper = self.getCopier(
-            sourcename='foo', from_suite='hoary', to_suite='hoary',
-            to_ppa='mark')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        # The second copy will fail explicitly because the new BPPH
-        # records are not yet published.
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'ERROR foo 666 in hoary (same version has unpublished binaries '
-            'in the destination archive for Hoary, please wait for them to '
-            'be published before copying)')
-
-        # If we ensure that the copied binaries are published, the
-        # copy won't fail but will simply not copy anything.
-        for bin_pub in copied[1:3]:
-            bin_pub.setPublished()
-
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'INFO No packages copied.')
-
-        # Repeating the copy of source only.
-        copy_helper = self.getCopier(
-            sourcename='foo', from_suite='hoary', to_suite='hoary',
-            include_binaries=False, to_ppa='cprov')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 1)
-
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'ERROR foo 666 in hoary (same version already building in '
-            'the destination archive for Hoary)')
-
     def testCopyAcrossPartner(self):
         """Check the copy operation across PARTNER archive.
 
@@ -2356,422 +2636,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test_publisher.person = getUtility(IPersonSet).getByName("name16")
         return test_publisher
 
-    def testCopySourceFromPPA(self):
-        """Check the copy source operation from PPA to PRIMARY Archive.
-
-        A source package can get copied from PPA to the PRIMARY archive,
-        which will immediately result in a build record in the destination
-        context.
-
-        That's the preliminary workflow for 'syncing' sources from PPA to
-        the ubuntu PRIMARY archive.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher = self.getTestPublisher(hoary)
-
-        cprov = getUtility(IPersonSet).getByName("cprov")
-        ppa_source = test_publisher.getPubSource(
-            archive=cprov.archive, version='1.0', distroseries=hoary,
-            status=PackagePublishingStatus.PUBLISHED)
-        test_publisher.getPubBinaries(
-            pub_source=ppa_source, distroseries=hoary,
-            status=PackagePublishingStatus.PUBLISHED)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-
-        copy_helper = self.getCopier(
-            sourcename='foo', from_ppa='cprov', include_binaries=False,
-            from_suite='hoary', to_suite='hoary')
-        copied = copy_helper.mainTask()
-
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 1)
-
-        [copy] = copied
-        self.assertEqual(copy.displayname, 'foo 1.0 in hoary')
-        self.assertEqual(len(copy.getPublishedBinaries()), 0)
-        self.assertEqual(len(copy.getBuilds()), 1)
-
-    def testCopySourceAndBinariesFromPPA(self):
-        """Check the copy operation from PPA to PRIMARY Archive.
-
-        Source and binaries can be copied from PPA to the PRIMARY archive.
-
-        This action is typically used to copy invariant/harmless packages
-        built in PPA context, as language-packs.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher = self.getTestPublisher(hoary)
-
-        # There are no sources named 'boing' in ubuntu primary archive.
-        existing_sources = ubuntu.main_archive.getPublishedSources(
-            name='boing')
-        self.assertEqual(existing_sources.count(), 0)
-
-        cprov = getUtility(IPersonSet).getByName("cprov")
-        ppa_source = test_publisher.getPubSource(
-            sourcename='boing', version='1.0',
-            archive=cprov.archive, distroseries=hoary,
-            status=PackagePublishingStatus.PENDING)
-        test_publisher.getPubBinaries(
-            pub_source=ppa_source, distroseries=hoary,
-            status=PackagePublishingStatus.PENDING)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-
-        copy_helper = self.getCopier(
-            sourcename='boing', from_ppa='cprov', include_binaries=True,
-            from_suite='hoary', to_suite='hoary')
-        copied = copy_helper.mainTask()
-
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 3)
-
-        copied_source = ubuntu.main_archive.getPublishedSources(
-            name='boing').one()
-        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
-        self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
-        self.assertEqual(len(copied_source.getBuilds()), 1)
-
-    def _setupArchitectureGrowingScenario(self, architecturehintlist="all"):
-        """Prepare distroseries with different sets of architectures.
-
-        Ubuntu/warty has i386 and hppa, but only i386 is supported.
-        Ubuntu/hoary has i386 and hppa and both are supported.
-
-        Also create source and binary(ies) publication set called 'boing'
-        according to the given 'architecturehintlist'.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-
-        # Ubuntu/warty only supports i386.
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-        active_warty_architectures = [
-            arch.architecturetag for arch in warty.architectures
-            if arch.getChroot()]
-        self.assertEqual(active_warty_architectures, ['i386'])
-
-        # Setup ubuntu/hoary supporting i386 and hppa architetures.
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher.addFakeChroots(hoary)
-        active_hoary_architectures = [
-            arch.architecturetag for arch in hoary.architectures]
-        self.assertEqual(sorted(active_hoary_architectures), ['hppa', 'i386'])
-
-        # We will create an architecture-specific source and its binaries
-        # for i386 in ubuntu/warty. They will be copied over.
-        ppa_source = test_publisher.getPubSource(
-            sourcename='boing', version='1.0', distroseries=warty,
-            architecturehintlist=architecturehintlist,
-            status=PackagePublishingStatus.PUBLISHED)
-        test_publisher.getPubBinaries(
-            pub_source=ppa_source, distroseries=warty,
-            status=PackagePublishingStatus.PUBLISHED)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-
-    def testCopyArchitectureIndependentBinaries(self):
-        """Architecture independent binaries are propagated in the detination.
-
-        In the case when the destination distroseries supports more
-        architectures than the source (distroseries), `copy-package`
-        correctly identifies it and propagates architecture independent
-        binaries to the new architectures.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-
-        self._setupArchitectureGrowingScenario()
-
-        # In terms of supported architectures, both warty & hoary supports
-        # i386 and hppa. We will create hoary/amd64 so we can verify if
-        # architecture independent binaries copied from warty will also
-        # end up in the new architecture.
-        amd64_family = ProcessorFamily.selectOneBy(name='amd64')
-        hoary = ubuntu.getSeries('hoary')
-        hoary.newArch('amd64', amd64_family, True, hoary.owner)
-
-        # Copy the source and binaries from warty to hoary.
-        copy_helper = self.getCopier(
-            sourcename='boing', include_binaries=True,
-            from_suite='warty', to_suite='hoary')
-        copied = copy_helper.mainTask()
-
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 4)
-
-        # The source and the only existing binary were correctly copied.
-        # No build was created, but the architecture independent binary
-        # was propagated to the new architecture (hoary/amd64).
-        copied_source = ubuntu.main_archive.getPublishedSources(
-            name='boing', distroseries=hoary).one()
-        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
-
-        self.assertEqual(len(copied_source.getBuilds()), 0)
-
-        architectures_with_binaries = [
-            binary.distroarchseries.architecturetag
-            for binary in copied_source.getPublishedBinaries()]
-        self.assertEqual(
-            architectures_with_binaries, ['amd64', 'hppa', 'i386'])
-
-    def testCopyCreatesMissingBuilds(self):
-        """Copying source and binaries also create missing builds.
-
-        When source and binaries are copied to a distroseries which supports
-        more architectures than the one where they were built, copy-package
-        should create builds for the new architectures.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-
-        self._setupArchitectureGrowingScenario(architecturehintlist="any")
-
-        copy_helper = self.getCopier(
-            sourcename='boing', include_binaries=True,
-            from_suite='warty', to_suite='hoary')
-        copied = copy_helper.mainTask()
-
-        # Copy the source and the i386 binary from warty to hoary.
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 2)
-
-        # The source and the only existing binary were correctly copied.
-        hoary = ubuntu.getSeries('hoary')
-        copied_source = ubuntu.main_archive.getPublishedSources(
-            name='boing', distroseries=hoary).one()
-        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
-
-        [copied_binary] = copied_source.getPublishedBinaries()
-        self.assertEqual(
-            copied_binary.displayname, 'foo-bin 1.0 in hoary i386')
-
-        # A new build was created in the hoary context for the *extra*
-        # architecture (hppa).
-        [new_build] = copied_source.getBuilds()
-        self.assertEqual(
-            new_build.title, 'hppa build of boing 1.0 in ubuntu hoary RELEASE')
-
-    def testVersionConflictInDifferentPockets(self):
-        """Copy-package stops copies conflicting in different pocket.
-
-        Copy candidates are checks against all occurrences of the same
-        name and version in the destination archive, regardless the series
-        and pocket. In practical terms, it denies copies that will end up
-        'unpublishable' due to conflicts in the repository filesystem.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        test_publisher = self.getTestPublisher(warty)
-
-        # Create a 'probe - 1.1' with a binary in warty-proposed suite
-        # in the ubuntu primary archive.
-        proposed_source = test_publisher.getPubSource(
-            sourcename='probe', version='1.1',
-            pocket=PackagePublishingPocket.PROPOSED)
-        test_publisher.getPubBinaries(
-            pub_source=proposed_source,
-            pocket=PackagePublishingPocket.PROPOSED)
-
-        # Create a different 'probe - 1.1' in Celso's PPA.
-        cprov = getUtility(IPersonSet).getByName("cprov")
-        candidate_source = test_publisher.getPubSource(
-            sourcename='probe', version='1.1', archive=cprov.archive)
-        test_publisher.getPubBinaries(
-            pub_source=candidate_source, archive=cprov.archive)
-
-        # Perform the copy from the 'probe - 1.1' version from Celso's PPA
-        # to the warty-updates in the ubuntu primary archive.
-        copy_helper = self.getCopier(
-            sourcename='probe', from_ppa='cprov', include_binaries=True,
-            from_suite='warty', to_suite='warty-updates')
-        copied = copy_helper.mainTask()
-
-        # The copy request was denied and the error message is clear about
-        # why it happened.
-        self.assertEqual(0, len(copied))
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'ERROR probe 1.1 in warty (a different source with the '
-            'same version is published in the destination archive)')
-
-    def _setupSecurityPropagationContext(self, sourcename):
-        """Setup a security propagation publishing context.
-
-        Assert there is no previous publication with the given sourcename
-        in the Ubuntu archive.
-
-        Publish a corresponding source in hoary-security context with
-        builds for i386 and hppa. Only one i386 binary is published, so the
-        hppa build will remain NEEDSBUILD.
-
-        Return the initialized instance of `SoyuzTestPublisher` and the
-        security source publication.
-        """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-
-        # There are no previous source publications for the given
-        # sourcename.
-        existing_sources = ubuntu.main_archive.getPublishedSources(
-            name=sourcename, exact_match=True)
-        self.assertEqual(existing_sources.count(), 0)
-
-        # Build a SoyuzTestPublisher for ubuntu/hoary and also enable
-        # it to build hppa binaries.
-        hoary = ubuntu.getSeries('hoary')
-        fake_chroot = getUtility(ILibraryFileAliasSet)[1]
-        hoary['hppa'].addOrUpdateChroot(fake_chroot)
-        test_publisher = self.getTestPublisher(hoary)
-
-        # Ensure hoary/i386 is official and hoary/hppa unofficial before
-        # continuing with the test.
-        self.assertTrue(hoary['i386'].official)
-        self.assertFalse(hoary['hppa'].official)
-
-        # Publish the requested architecture-specific source in
-        # ubuntu/hoary-security.
-        security_source = test_publisher.getPubSource(
-            sourcename=sourcename, version='1.0',
-            architecturehintlist="any",
-            archive=ubuntu.main_archive, distroseries=hoary,
-            pocket=PackagePublishingPocket.SECURITY,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Create builds and upload and publish one binary package
-        # in the i386 architecture.
-        [build_hppa, build_i386] = security_source.createMissingBuilds()
-        lazy_bin = test_publisher.uploadBinaryForBuild(
-            build_i386, 'lazy-bin')
-        test_publisher.publishBinaryInArchive(
-            lazy_bin, ubuntu.main_archive,
-            pocket=PackagePublishingPocket.SECURITY,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # The i386 build is completed and the hppa one pending.
-        self.assertEqual(build_hppa.status, BuildStatus.NEEDSBUILD)
-        self.assertEqual(build_i386.status, BuildStatus.FULLYBUILT)
-
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-
-        return test_publisher, security_source
-
-    def _checkSecurityPropagationContext(self, archive, sourcename):
-        """Verify publishing context after propagating a security update.
-
-        Check if both publications remain active, the newest in UPDATES and
-        the oldest in SECURITY.
-
-        Assert that no build was created during the copy, first because
-        the copy was 'including binaries'.
-
-        Additionally, check that no builds will be created in future runs of
-        `buildd-queue-builder`, because a source version can only be built
-        once in a distroarchseries, independent of its targeted pocket.
-        """
-        sources = archive.getPublishedSources(
-            name=sourcename, exact_match=True,
-            status=active_publishing_status)
-
-        [copied_source, original_source] = sources
-
-        self.assertEqual(copied_source.pocket, PackagePublishingPocket.UPDATES)
-        self.assertEqual(
-            original_source.pocket, PackagePublishingPocket.SECURITY)
-
-        self.assertEqual(
-            copied_source.getBuilds(), original_source.getBuilds())
-
-        new_builds = copied_source.createMissingBuilds()
-        self.assertEqual(len(new_builds), 0)
-
-    def testPropagatingSecurityToUpdates(self):
-        """Check if copy-packages copes with the ubuntu workflow.
-
-        As mentioned in bug #251492, ubuntu distro-team uses copy-package
-        to propagate security updates across the mirrors via the updates
-        pocket and reduce the bottle-neck in the only security repository
-        we have.
-
-        This procedure should be executed as soon as the security updates are
-        published; the sooner the copy happens, the lower will be the impact
-        on the security repository.
-
-        Having to wait for the unofficial builds (which are  usually slower
-        than official architectures) before propagating security updates
-        causes a severe and unaffordable load on the security repository.
-
-        The copy-backend was modified to support 'incremental' copies, i.e.
-        when copying a source (and its binaries) only the missing
-        publications will be copied across. That fixes the symptoms of bad
-        copies (publishing duplications) and avoid reaching the bug we have
-        in the 'domination' component when operating on duplicated arch-indep
-        binary publications.
-        """
-        sourcename = 'lazy-building'
-
-        (test_publisher,
-         security_source) = self._setupSecurityPropagationContext(sourcename)
-
-        # Source and i386 binary(ies) can be propagated from security to
-        # updates pocket.
-        copy_helper = self.getCopier(
-            sourcename=sourcename, include_binaries=True,
-            from_suite='hoary-security', to_suite='hoary-updates')
-        copied = copy_helper.mainTask()
-
-        [source_copy, i386_copy] = copied
-        self.assertEqual(source_copy.displayname, 'lazy-building 1.0 in hoary')
-        self.assertEqual(i386_copy.displayname, 'lazy-bin 1.0 in hoary i386')
-
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 2)
-
-        self._checkSecurityPropagationContext(
-            security_source.archive, sourcename)
-
-        # Upload a hppa binary but keep it unpublished. When attempting
-        # to repeat the copy of 'lazy-building' to -updates the copy
-        # succeeds but nothing gets copied. Everything built and published
-        # from this source is already copied.
-        [build_hppa, build_i386] = security_source.getBuilds()
-        lazy_bin_hppa = test_publisher.uploadBinaryForBuild(
-            build_hppa, 'lazy-bin')
-
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'INFO No packages copied.')
-
-        # Publishing the hppa binary and re-issuing the full copy procedure
-        # will copy only the new binary.
-        test_publisher.publishBinaryInArchive(
-            lazy_bin_hppa, security_source.archive,
-            pocket=PackagePublishingPocket.SECURITY,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        copied_increment = copy_helper.mainTask()
-        [hppa_copy] = copied_increment
-        self.assertEqual(hppa_copy.displayname, 'lazy-bin 1.0 in hoary hppa')
-
-        # The source and its 2 binaries are now available in both
-        # hoary-security and hoary-updates suites.
-        currently_copied = copied + copied_increment
-        self.checkCopies(currently_copied, target_archive, 3)
-
-        self._checkSecurityPropagationContext(
-            security_source.archive, sourcename)
-
-        # At this point, trying to copy stuff from -security to -updates will
-        # not copy anything again.
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'INFO No packages copied.')
-
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
 
@@ -2788,49 +2652,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
-
-    def testCopyAvoidsBinaryConflicts(self):
-        # Creating a source and 2 binary publications in the primary
-        # archive for ubuntu/hoary (default name, 'foo').
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        test_publisher = self.getTestPublisher(hoary)
-        test_publisher.getPubBinaries()
-
-        # Successfully copy the source from PRIMARY archive to Celso's PPA
-        copy_helper = self.getCopier(
-            sourcename='foo', to_ppa='cprov', include_binaries=False,
-            from_suite='hoary', to_suite='hoary')
-        copied = copy_helper.mainTask()
-        target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 1)
-
-        # Build binaries for the copied source in Celso's PPA domain.
-        [copied_source] = copied
-        for build in copied_source.getBuilds():
-            binary = test_publisher.uploadBinaryForBuild(build, 'foo-bin')
-            test_publisher.publishBinaryInArchive(binary, build.archive)
-
-        # Delete the copied source and its local binaries in Celso's PPA.
-        copied_source.requestDeletion(target_archive.owner)
-        for binary in copied_source.getPublishedBinaries():
-            binary.requestDeletion(target_archive.owner)
-        self.layer.txn.commit()
-
-        # Refuse to copy new binaries which conflicts with the ones we
-        # just deleted. Since the deleted binaries were once published
-        # there is a chance that someone has installed them and if we let
-        # other files to be published under the same name APT client would
-        # be confused.
-        copy_helper = self.getCopier(
-            sourcename='foo', to_ppa='cprov', include_binaries=True,
-            from_suite='hoary', to_suite='hoary')
-        nothing_copied = copy_helper.mainTask()
-        self.assertEqual(len(nothing_copied), 0)
-        self.assertEqual(
-            copy_helper.logger.getLogBuffer().splitlines()[-1],
-            'ERROR foo 666 in hoary (binaries conflicting with the '
-            'existing ones)')
 
     def testSourceLookupFailure(self):
         """Check if it raises when the target source can't be found.
