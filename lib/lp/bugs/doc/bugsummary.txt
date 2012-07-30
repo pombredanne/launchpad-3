@@ -474,11 +474,13 @@ Whew! Check out what the BugSummary records now look like:
     x    x    di-p x    x     x   x    New    Undeci F  own  x         3
     x    x    di-p x    x     x   x    New    Undeci F  t-a  x         1
     x    x    di-p x    x     x   x    New    Undeci F  t-c  x         1
+    x    x    di-p x    x     x   x    New    Undeci F  x    di-p/pr   3
     x    x    di-p x    x     x   x    New    Undeci F  x    x         1
     x    x    x    ds-p x     x   x    New    Undeci F  own  x         1
     x    x    x    ds-p x     x   x    New    Undeci F  t-c  x         1
+    x    x    x    ds-p x     x   x    New    Undeci F  x    di-p/pr   1
                                                                      ===
-                                                                       9
+                                                                      13
 
 So how many public bugs are there on the distro?
 
