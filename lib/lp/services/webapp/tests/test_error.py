@@ -5,6 +5,7 @@
 
 
 import httplib
+import socket
 import time
 import urllib2
 
@@ -12,6 +13,8 @@ from storm.exceptions import (
     DisconnectionError,
     OperationalError,
     )
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
 
 from lp.services.webapp.error import (
@@ -67,13 +70,42 @@ class TestDatabaseErrorViews(TestCase):
         else:
             self.fail("We should have gotten an HTTP error")
 
-    def retryConnection(self, url, retries=60):
+    def add_retry_failure_details(self, bouncer):
+        # This method (and its invocations) are to be removed when we have
+        # figured out what is causing bug 974617.
+
+        # First we figure out if pgbouncer is listening on the port it is
+        # supposed to be listening on.  connect_ex returns 0 on success or an
+        # errno otherwise.
+#        self.addDetail('socket.connect_ex result',
+#            socket.socket().connect_ex(('localhost', 5432)))
+#        self.addDetail('socket.connect_ex result',
+#            socket.socket().connect_ex(('localhost', bouncer.port)))
+
+        # We are only going to read the last part of the file, in case it is
+        # huge.
+        log = open(bouncer.logpath, 'rb')
+        try:
+            log.seek(-10240)
+        except IOError as e:
+            if e.errno == 22: # errno 22 is "Invalid argument"
+                # The seek would be before the beginning of the file, so no
+                # seeking is needed.
+                pass
+            else:
+                # Something else happened.
+                raise
+        self.addDetail('pgbouncer log (last 10k)',
+            Content(UTF8_TEXT, log.read))
+
+    def retryConnection(self, url, bouncer, retries=60):
         """Retry to connect to *url* for *retries* times.
 
         Return the file-like object returned by *urllib2.urlopen(url)*.
         Raise a TimeoutException if the connection can not be established.
         """
-        for i in xrange(retries):
+#        for i in xrange(retries):
+        if False:
             try:
                 return urllib2.urlopen(url)
             except urllib2.HTTPError as e:
@@ -81,6 +113,7 @@ class TestDatabaseErrorViews(TestCase):
                     raise
             time.sleep(1)
         else:
+            self.add_retry_failure_details(bouncer)
             raise TimeoutException(
                 "Launchpad did not come up after {0} attempts."
                     .format(retries))
@@ -102,7 +135,7 @@ class TestDatabaseErrorViews(TestCase):
         transaction.abort()
         # Verify things are working initially.
         url = 'http://launchpad.dev/'
-        self.retryConnection(url)
+        self.retryConnection(url, bouncer)
         # Now break the database, and we get an exception, along with
         # our view.
         bouncer.stop()
@@ -123,7 +156,7 @@ class TestDatabaseErrorViews(TestCase):
         self.assertEqual(503, self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
         bouncer.start()
-        self.retryConnection(url)
+        self.retryConnection(url, bouncer)
 
     def test_disconnectionerror_view(self):
         request = LaunchpadTestRequest()
@@ -157,7 +190,7 @@ class TestDatabaseErrorViews(TestCase):
                          self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
         bouncer.start()
-        self.retryConnection(url)
+        self.retryConnection(url, bouncer)
 
     def test_operationalerror_view(self):
         request = LaunchpadTestRequest()
