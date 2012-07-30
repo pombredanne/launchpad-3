@@ -62,10 +62,12 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         </div>
         <script type="text/x-template" id="no-existing-duplicate">
             <div><ul id="duplicate-actions">
-                <li class="sprite bug-dupe" id="mark-duplicate-text">
+                <li class="sprite bug-dupe">
+                    <span id="mark-duplicate-text">
                     <a href="http://foo/+duplicate"
                        class="menu-link-mark-dupe js-action">
                         Mark as duplicate</a>
+                    </span>
                 </li>
             </ul></div>
             <div id="duplicate-form-container"></div>
@@ -74,13 +76,15 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         </script>
         <script type="text/x-template" id="existing-duplicate">
             <div><ul id="duplicate-actions">
-                <li class="" id="mark-duplicate-text">
+                <li>
+                    <span id="mark-duplicate-text">
                     <a class="sprite edit action-icon"
                        title="Edit or remove linked duplicate bug"
                        id="change_duplicate_bug"
                        href="http://foo/+duplicate">Edit</a>
                     Duplicate of <a href="http://foo/bugs/1234">bug #1234
                     </a>
+                    </span>
                 </li>
             </ul></div>
             <div id="duplicate-form-container"></div>

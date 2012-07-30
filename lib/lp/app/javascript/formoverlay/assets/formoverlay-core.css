@@ -21,6 +21,10 @@
     text-align: right;
     }
 
+.yui3-lazr-formoverlay-form div.yui3-lazr-formoverlay-actions:not(lazr-btn) {
+    text-align: left;
+    }
+
 .yui3-lazr-formoverlay-form div.yui3-lazr-formoverlay-actions button {
     margin-right: 0.7em;
     }
