@@ -48,7 +48,6 @@ from lp.code.model.branch import Branch
 from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
-    PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
@@ -82,13 +81,16 @@ from lp.services.webapp.interfaces import (
     )
 
 
+FREE_PRIVATE_INFORMATION_TYPES = (
+    InformationType.PRIVATESECURITY, InformationType.USERDATA)
+FREE_INFORMATION_TYPES = (
+    PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
+
 POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
-    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY:
-        PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC:
-        PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-    BranchSharingPolicy.PROPRIETARY: PRIVATE_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: FREE_INFORMATION_TYPES,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: FREE_INFORMATION_TYPES,
+    BranchSharingPolicy.PROPRIETARY: FREE_PRIVATE_INFORMATION_TYPES,
     }
 
 POLICY_DEFAULT_TYPES = {
@@ -326,7 +328,7 @@ class PersonalNamespace(_BaseNamespace):
         # Private teams get private branches, everyone else gets public ones.
         if (self.owner.is_team
             and self.owner.visibility == PersonVisibility.PRIVATE):
-            return PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES
+            return FREE_INFORMATION_TYPES
         else:
             return PUBLIC_INFORMATION_TYPES
 
@@ -454,7 +456,7 @@ class ProductNamespace(_BaseNamespace):
         if public:
             types.extend(PUBLIC_INFORMATION_TYPES)
         if private:
-            types.extend(PRIVATE_INFORMATION_TYPES)
+            types.extend(FREE_PRIVATE_INFORMATION_TYPES)
         return types
 
     def getDefaultInformationType(self):

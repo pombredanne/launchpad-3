@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `BugSubscriptionInfo`."""
@@ -363,67 +363,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             [bugtask2.owner],
             self.getInfo().forTask(bugtask2).all_assignees)
 
-    def test_all_pillar_owners_without_bug_supervisors(self):
-        # The set of owners of pillars for which no bug supervisor is
-        # configured and which use Launchpad for bug tracking.
-        [bugtask] = self.bug.bugtasks
-        found_owners = (
-            self.getInfo().all_pillar_owners_without_bug_supervisors)
-        self.assertContentEqual([], found_owners)
-        # Clear the supervisor for the bugtask's target and ensure that the
-        # project uses Launchpad Bugs.
-        with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(None, bugtask.owner)
-            bugtask.pillar.official_malone = True
-        # The collection includes the pillar's owner.
-        found_owners = (
-            self.getInfo().all_pillar_owners_without_bug_supervisors)
-        self.assertContentEqual([bugtask.pillar.owner], found_owners)
-        # Add another bugtask for a pillar that uses Launchpad but does not
-        # have a bug supervisor.
-        target2 = self.factory.makeProduct(
-            bug_supervisor=None, official_malone=True)
-        bugtask2 = self.factory.makeBugTask(bug=self.bug, target=target2)
-        found_owners = (
-            self.getInfo().all_pillar_owners_without_bug_supervisors)
-        self.assertContentEqual(
-            [bugtask.pillar.owner, bugtask2.pillar.owner],
-            found_owners)
-
-    def test_all_pillar_owners_without_bug_supervisors_not_using_malone(self):
-        # The set of owners of pillars for which no bug supervisor is
-        # configured and which do not use Launchpad for bug tracking is empty.
-        [bugtask] = self.bug.bugtasks
-        # Clear the supervisor for the first bugtask's target and ensure the
-        # project does not use Launchpad Bugs.
-        with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(None, bugtask.owner)
-            bugtask.pillar.official_malone = False
-        found_owners = (
-            self.getInfo().all_pillar_owners_without_bug_supervisors)
-        self.assertContentEqual([], found_owners)
-
-    def test_all_pillar_owners_without_bug_supervisors_for_bugtask(self):
-        # The set of the owner of the chosen bugtask's pillar when no bug
-        # supervisor is configured and which uses Launchpad for bug tracking.
-        [bugtask] = self.bug.bugtasks
-        # Clear the supervisor for the bugtask's target and ensure that the
-        # project uses Launchpad Bugs.
-        with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(None, bugtask.owner)
-            bugtask.pillar.official_malone = True
-        # Add another bugtask for a pillar that uses Launchpad but does not
-        # have a bug supervisor.
-        target2 = self.factory.makeProduct(
-            bug_supervisor=None, official_malone=True)
-        bugtask2 = self.factory.makeBugTask(bug=self.bug, target=target2)
-        # Getting subscription info for just a specific bugtask will yield
-        # owners for only the pillar associated with that bugtask.
-        info_for_bugtask2 = self.getInfo().forTask(bugtask2)
-        self.assertContentEqual(
-            [bugtask2.pillar.owner],
-            info_for_bugtask2.all_pillar_owners_without_bug_supervisors)
-
     def _create_also_notified_subscribers(self):
         # Add an assignee, a bug supervisor and a structural subscriber.
         bugtask = self.bug.default_bugtask
@@ -630,14 +569,6 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         with self.exactly_x_queries(1):
             self.info.all_assignees
 
-    def test_all_pillar_owners_without_bug_supervisors(self):
-        # Getting all bug supervisors and pillar owners can take several
-        # queries. However, there are typically few tasks so the trade for
-        # simplicity of implementation is acceptable. Only the simplest case
-        # is tested here (everything is already cached).
-        with self.exactly_x_queries(0):
-            self.info.all_pillar_owners_without_bug_supervisors
-
     def test_also_notified_subscribers(self):
         with self.exactly_x_queries(5):
             self.info.also_notified_subscribers
@@ -646,7 +577,6 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         # When also_notified_subscribers is referenced after some other sets
         # in BugSubscriptionInfo are referenced, everything comes from cache.
         self.info.all_assignees
-        self.info.all_pillar_owners_without_bug_supervisors
         self.info.direct_subscriptions.subscribers
         self.info.structural_subscribers
         with self.exactly_x_queries(1):

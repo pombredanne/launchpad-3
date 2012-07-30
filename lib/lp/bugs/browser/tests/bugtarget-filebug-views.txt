@@ -447,7 +447,6 @@ been subscribed.
     >>> for subscriber in filebug_view.added_bug.getIndirectSubscribers():
     ...     print subscriber.displayname
     Foo Bar
-    Ubuntu Team
 
 
 Subscriptions

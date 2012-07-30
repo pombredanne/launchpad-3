@@ -84,7 +84,7 @@ have been subscribed:
     False
 
     >>> subscriber_names(bug)
-    [u'name16', u'ubuntu-team']
+    [u'name16']
 
 Likewise, filing a security-related bug on Firefox will subscribe the
 security contact, the Ubuntu team, to the bug.
@@ -115,7 +115,7 @@ contact, the Ubuntu Team, would not have been subscribed:
     False
 
     >>> subscriber_names(bug)
-    [u'name12', u'name16']
+    [u'name16']
 
 When no security contact exists, only the reporter and product
 registrant get subscribed.

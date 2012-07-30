@@ -29,7 +29,6 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     PlainMultiCheckBoxWidget,
     )
-from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.menu import structured
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -221,16 +220,6 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
             '<div class="hint_class">Hello World</div>')
         hint_html = self.widget.renderExtraHint()
         self.assertEqual(expected, hint_html)
-
-    def test_renderDescription(self):
-        # If the vocabulary provides a description property, it is used over
-        # the one provided by the enum.
-        vocab = InformationTypeVocabulary()
-        widget = LaunchpadRadioWidgetWithDescription(
-            self.field, vocab, self.request)
-        self.assertRenderItem(
-            "...permitted to see private...", widget.renderItem,
-            vocab.getTermByToken('USERDATA'))
 
 
 class TestVocabularyToChoiceEditItems(TestCase):
