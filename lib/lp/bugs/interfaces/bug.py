@@ -713,6 +713,12 @@ class IBugView(Interface):
         Otherwise, return False.
         """
 
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this bug.
+
+        The intersection of the affected pillars' allowed types is permitted.
+        """
+
 
 class IBugEdit(Interface):
     """IBug attributes that require launchpad.Edit permission."""
@@ -836,10 +842,10 @@ class IBugEdit(Interface):
         file_alias.restricted.
         """
 
-    @call_with(user=REQUEST_USER, returncve=False)
+    @call_with(user=REQUEST_USER, return_cve=False)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
     @export_write_operation()
-    def linkCVE(cve, user, returncve=True):
+    def linkCVE(cve, user, return_cve=True):
         """Ensure that this CVE is linked to this bug."""
 
     @call_with(user=REQUEST_USER)

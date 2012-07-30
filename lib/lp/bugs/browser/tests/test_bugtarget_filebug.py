@@ -27,9 +27,8 @@ from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     )
-from lp.registry.vocabularies import InformationTypeVocabulary
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -393,18 +392,6 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         bug = self.filebug_via_view(private_bugs=True)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
-    def test_filebug_information_type_commercial_projects(self):
-        # The vocabulary for information_type when filing a bug is created
-        # correctly for proprietary projects.
-        product = self.factory.makeProduct(official_malone=True)
-        self.factory.makeCommercialSubscription(product)
-        with person_logged_in(product.owner):
-            view = create_initialized_view(
-                product, '+filebug', principal=product.owner)
-            html = view.render()
-            soup = BeautifulSoup(html)
-        self.assertIsNotNone(soup.find('label', text="Proprietary"))
-
     def test_filebug_information_type_normal_projects(self):
         # The vocabulary for information_type when filing a bug is created
         # correctly for non commercial projects.
@@ -425,7 +412,7 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
                 product, '+filebug', principal=product.owner)
             html = view.render()
             soup = BeautifulSoup(html)
-        for info_type in InformationTypeVocabulary(product):
+        for info_type in product.getAllowedBugInformationTypes():
             self.assertIsNotNone(soup.find('label', text=info_type.title))
 
     def test_filebug_view_renders_info_type_widget(self):
@@ -440,21 +427,6 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
             soup.find('input', attrs={'name': 'field.security_related'}))
         self.assertIsNotNone(
             soup.find('input', attrs={'name': 'field.information_type'}))
-
-    def test_filebug_information_type_vocabulary_private_projects(self):
-        # The vocabulary for information_type when filing a bug only has
-        # private info types for private bug projects.
-        product = self.factory.makeProduct(
-            official_malone=True, private_bugs=True)
-        with person_logged_in(product.owner):
-            view = create_initialized_view(
-                product, '+filebug', principal=product.owner)
-            html = view.render()
-            soup = BeautifulSoup(html)
-        for info_type in InformationTypeVocabulary(private_only=True):
-            self.assertIsNotNone(soup.find('label', text=info_type.title))
-        for info_type in PUBLIC_INFORMATION_TYPES:
-            self.assertIsNone(soup.find('label', text=info_type.title))
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
@@ -657,13 +629,14 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         self.assertEqual(
             bugtask_importance_data, cache['bugtask_importance_data'])
         bugtask_info_type_data = []
-        for item in InformationTypeVocabulary(private_only=private_only):
-            new_item = {'name': item.title, 'value': item.name,
-                        'description': item.description,
-                        'description_css_class': 'choice-description'}
-            bugtask_info_type_data.append(new_item)
-        self.assertContentEqual(
-            bugtask_info_type_data, cache['information_type_data'])
+        if not IProjectGroup.providedBy(view.context):
+            for item in view.context.getAllowedBugInformationTypes():
+                new_item = {'name': item.title, 'value': item.name,
+                            'description': item.description,
+                            'description_css_class': 'choice-description'}
+                bugtask_info_type_data.append(new_item)
+            self.assertContentEqual(
+                bugtask_info_type_data, cache['information_type_data'])
 
     def test_product(self):
         project = self.factory.makeProduct(official_malone=True)

@@ -1378,12 +1378,12 @@ class Bug(SQLBase):
         """See `IBug`."""
         return bool(self.cves)
 
-    def linkCVE(self, cve, user, returncve=True):
+    def linkCVE(self, cve, user, return_cve=True):
         """See `IBug`."""
         if cve not in self.cves:
             bugcve = BugCve(bug=self, cve=cve)
             notify(ObjectCreatedEvent(bugcve, user=user))
-            if returncve:
+            if return_cve:
                 return bugcve
 
     def unlinkCVE(self, cve, user):
@@ -1733,6 +1733,14 @@ class Bug(SQLBase):
         return self.transitionToInformationType(
             convert_to_information_type(self.private, security_related), who)
 
+    def getAllowedInformationTypes(self, who):
+        """See `IBug`."""
+        types = set(InformationType.items)
+        for pillar in self.affected_pillars:
+            types.intersection_update(
+                set(pillar.getAllowedBugInformationTypes()))
+        return types
+
     def transitionToInformationType(self, information_type, who,
                                     from_api=False):
         """See `IBug`."""
@@ -2053,28 +2061,12 @@ class Bug(SQLBase):
         roles = IPersonRoles(user)
         if roles.in_admin or roles.in_registry_experts:
             return True
-        return self.userCanAccessUserData(user)
-
-    def userCanAccessUserData(self, user):
-        """ Return True if the user has access to USER_DATA data."""
-        # Check if the user has access via the pillar.
         pillars = list(self.affected_pillars)
-        pillars_and_types = [(p, InformationType.USERDATA) for p in pillars]
-        access_policies = getUtility(IAccessPolicySource).find(
-            pillars_and_types)
-        access_grants = [(a, user) for a in access_policies]
-        access_grants = getUtility(IAccessPolicyGrantSource).find(
-            access_grants)
-        if not access_grants.is_empty():
-            return True
-        # User has no access via the pillars, check the bug itself.
-        artifact = getUtility(IAccessArtifactSource).find([self]).one()
-        if  artifact is None:
-            return False
-        artifact_access_grant = getUtility(IAccessArtifactGrantSource).find(
-            [(artifact, user)]).one()
-        if artifact_access_grant is not None:
-            return True
+        service = getUtility(IService, 'sharing')
+        for pillar in pillars:
+            if service.checkPillarAccess(
+                    pillar, InformationType.USERDATA, user):
+                return True
         return False
 
     def linkHWSubmission(self, submission):
@@ -2264,12 +2256,6 @@ def get_also_notified_subscribers(
             if assignee in also_notified_subscribers:
                 # We have an assignee that is not a direct subscriber.
                 recipients.addAssignee(bugtask.assignee)
-            # If the target's bug supervisor isn't set...
-            pillar = bugtask.pillar
-            if pillar.official_malone and pillar.bug_supervisor is None:
-                if pillar.owner in also_notified_subscribers:
-                    # ...we add the owner as a subscriber.
-                    recipients.addRegistrant(pillar.owner, pillar)
 
     # This structural subscribers code omits direct subscribers itself.
     # TODO: Pass the info object into get_structural_subscribers for
@@ -2591,34 +2577,13 @@ class BugSubscriptionInfo:
             return load_people(Person.id == self.bugtask.assigneeID)
 
     @cachedproperty
-    @freeze(BugSubscriberSet)
-    def all_pillar_owners_without_bug_supervisors(self):
-        """Owners of pillars for which there is no bug supervisor.
-
-        The pillars must also use Launchpad for bug tracking.
-
-        *Does not* exclude muted subscribers.
-        """
-        if self.bugtask is None:
-            bugtasks = self.bug.bugtasks
-        else:
-            bugtasks = [self.bugtask]
-        for bugtask in bugtasks:
-            pillar = bugtask.pillar
-            if pillar.official_malone:
-                if pillar.bug_supervisor is None:
-                    yield pillar.owner
-
-    @cachedproperty
     def also_notified_subscribers(self):
         """All subscribers except direct, dupe, and muted subscribers."""
         if self.bug.private:
             return BugSubscriberSet()
         else:
             subscribers = BugSubscriberSet().union(
-                self.structural_subscribers,
-                self.all_pillar_owners_without_bug_supervisors,
-                self.all_assignees)
+                self.structural_subscribers, self.all_assignees)
             return subscribers.difference(
                 self.direct_subscribers_at_all_levels,
                 self.muted_subscribers)
