@@ -2462,18 +2462,16 @@ class BugSubscriptionInfo:
         muted_people = Select(BugMute.person_id, BugMute.bug == self.bug)
         return load_people(Person.id.is_in(muted_people))
 
-    def forbidden_recipients_filter(self, column=None):
+    def visible_recipients_filter(self, column):
         # Circular fail :(
         from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
 
-        if not column:
-            column = BugSubscription.person_id
         if self.bug.private:
             return [Or(*get_bug_privacy_filter_terms(column)),
                 BugTaskFlat.bug_id == self.bug.id]
         else:
-            return []
+            return True
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2522,7 +2520,8 @@ class BugSubscriptionInfo:
         Excludes muted subscriptions, and subscribers who can not see the
         master bug.
         """
-        filters = [
+        return IStore(BugSubscription).find(
+            BugSubscription,
             BugSubscription.bug_notification_level >= self.level,
             BugSubscription.bug_id == Bug.id,
             Bug.duplicateof == self.bug,
@@ -2530,9 +2529,9 @@ class BugSubscriptionInfo:
                 BugSubscription.person_id,
                 Select(
                     BugMute.person_id, BugMute.bug_id == Bug.id,
-                    tables=[BugMute])))]
-        filters.extend(self.forbidden_recipients_filter())
-        return IStore(BugSubscription).find(BugSubscription, *filters)
+                    tables=[BugMute]))),
+            self.visible_recipients_filter(BugSubscription.person_id))
+
 
     @property
     def duplicate_subscribers(self):
@@ -2593,14 +2592,15 @@ class BugSubscriptionInfo:
         *Does not* exclude muted subscribers.
         """
         if self.bugtask is None:
-            all = Select(BugTask.assigneeID, BugTask.bug == self.bug)
-            assignees = load_people(Person.id.is_in(all))
+            assignees = load_people(
+                Person.id.is_in(Select(BugTask.assigneeID,
+                    BugTask.bug == self.bug)))
         else:
             assignees = load_people(Person.id == self.bugtask.assigneeID)
         if self.bug.private:
             return IStore(Person).find(Person,
                 Person.id.is_in([a.id for a in assignees]),
-                self.forbidden_recipients_filter(column=Person.id))
+                self.visible_recipients_filter(Person.id))
         else:
             return assignees
 
