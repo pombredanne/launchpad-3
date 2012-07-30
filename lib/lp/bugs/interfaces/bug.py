@@ -713,6 +713,12 @@ class IBugView(Interface):
         Otherwise, return False.
         """
 
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this bug.
+
+        The intersection of the affected pillars' allowed types is permitted.
+        """
+
 
 class IBugEdit(Interface):
     """IBug attributes that require launchpad.Edit permission."""

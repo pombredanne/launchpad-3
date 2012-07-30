@@ -1733,6 +1733,14 @@ class Bug(SQLBase):
         return self.transitionToInformationType(
             convert_to_information_type(self.private, security_related), who)
 
+    def getAllowedInformationTypes(self, who):
+        """See `IBug`."""
+        types = set(InformationType.items)
+        for pillar in self.affected_pillars:
+            types.intersection_update(
+                set(pillar.getAllowedBugInformationTypes()))
+        return types
+
     def transitionToInformationType(self, information_type, who,
                                     from_api=False):
         """See `IBug`."""
