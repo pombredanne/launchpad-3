@@ -77,26 +77,13 @@ class TestDatabaseErrorViews(TestCase):
         # First we figure out if pgbouncer is listening on the port it is
         # supposed to be listening on.  connect_ex returns 0 on success or an
         # errno otherwise.
-#        self.addDetail('socket.connect_ex result',
-#            socket.socket().connect_ex(('localhost', 5432)))
-#        self.addDetail('socket.connect_ex result',
-#            socket.socket().connect_ex(('localhost', bouncer.port)))
-
-        # We are only going to read the last part of the file, in case it is
-        # huge.
-        log = open(bouncer.logpath, 'rb')
-        try:
-            log.seek(-10240)
-        except IOError as e:
-            if e.errno == 22: # errno 22 is "Invalid argument"
-                # The seek would be before the beginning of the file, so no
-                # seeking is needed.
-                pass
-            else:
-                # Something else happened.
-                raise
-        self.addDetail('pgbouncer log (last 10k)',
-            Content(UTF8_TEXT, log.read))
+        pg_port_status = str(socket.socket().connect_ex(('localhost', 5432)))
+        self.addDetail('postgres socket.connect_ex result',
+            Content(UTF8_TEXT, lambda: pg_port_status))
+        bouncer_port_status = str(
+            socket.socket().connect_ex(('localhost', bouncer.port)))
+        self.addDetail('pgbouncer socket.connect_ex result',
+            Content(UTF8_TEXT, lambda: bouncer_port_status))
 
     def retryConnection(self, url, bouncer, retries=60):
         """Retry to connect to *url* for *retries* times.
@@ -104,8 +91,7 @@ class TestDatabaseErrorViews(TestCase):
         Return the file-like object returned by *urllib2.urlopen(url)*.
         Raise a TimeoutException if the connection can not be established.
         """
-#        for i in xrange(retries):
-        if False:
+        for i in xrange(retries):
             try:
                 return urllib2.urlopen(url)
             except urllib2.HTTPError as e:
