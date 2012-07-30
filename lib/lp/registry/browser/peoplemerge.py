@@ -148,7 +148,7 @@ class AdminMergeBaseView(ValidatingMergeView):
                 naked_email.status = EmailAddressStatus.NEW
         getUtility(IPersonSet).mergeAsync(
             self.dupe_person, self.target_person, reviewer=self.user,
-            delete=self.delete)
+            delete=self.delete, requester=self.user)
         self.request.response.addInfoNotification(self.merge_message)
         self.next_url = self.success_url
 
