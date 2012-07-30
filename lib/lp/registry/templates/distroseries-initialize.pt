@@ -39,16 +39,6 @@
       </p>
       </tal:enabled>
 
-      <tal:disabled condition="view/show_derivation_not_yet_available">
-      <p class="error message">
-        The Derivative Distributions feature is under development
-        and is not yet generally available. You can read more about
-        this feature on its <a
-        href="https://dev.launchpad.net/LEP/DerivativeDistributions">proposal
-        page</a>.
-      </p>
-      </tal:disabled>
-
       <tal:previous_series_none
         condition="view/show_previous_series_empty_message">
       <p class="error message">
