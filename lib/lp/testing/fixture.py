@@ -82,13 +82,13 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
 
         # Known databases
         from lp.testing.layers import DatabaseLayer
-        self.dbnames = [
+        dbnames = [
             DatabaseLayer._db_fixture.dbname,
             DatabaseLayer._db_template_fixture.dbname,
             'session_ftest',
             'launchpad_empty',
             ]
-        for dbname in self.dbnames:
+        for dbname in dbnames:
             self.databases[dbname] = 'dbname=%s port=5432 host=localhost' % (
                 dbname,)
 
