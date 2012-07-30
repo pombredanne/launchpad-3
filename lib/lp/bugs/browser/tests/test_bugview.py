@@ -6,14 +6,20 @@ __metaclass__ = type
 from lazr.restful.interfaces import IJSONRequestCache
 from zope.security.proxy import removeSecurityProxy
 
-from lp.bugs.browser.bug import BugView
+from lp.bugs.browser.bug import (
+    BugInformationTypePortletView,
+    BugView,
+    )
 from lp.registry.enums import InformationType
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    DatabaseFunctionalLayer,
+    )
 
 
 class TestBugView(TestCaseWithFactory):
@@ -57,6 +63,18 @@ class TestBugView(TestCaseWithFactory):
             [attachment['attachment'].title
              for attachment in self.view.patches])
 
+
+class TestBugInformationTypePortletView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugInformationTypePortletView, self).setUp()
+        login('test@canonical.com')
+        self.bug = self.factory.makeBug()
+        self.view = BugInformationTypePortletView(
+            self.bug, LaunchpadTestRequest())
+
     def test_information_type(self):
         self.bug.transitionToInformationType(
             InformationType.USERDATA, self.bug.owner)
@@ -77,11 +95,8 @@ class TestBugView(TestCaseWithFactory):
     def test_proprietary_excluded_for_normal_projects(self):
         # The Proprietary information type isn't in the JSON request cache for
         # normal projects without proprietary bugs configured.
-        product = self.factory.makeProduct(official_malone=True)
-        bug = self.factory.makeBug(product=product)
-        view = BugView(bug, LaunchpadTestRequest())
-        view.initialize()
-        cache = IJSONRequestCache(view.request)
+        self.view.initialize()
+        cache = IJSONRequestCache(self.view.request)
         expected = [
             InformationType.PUBLIC.name,
             InformationType.PUBLICSECURITY.name,
