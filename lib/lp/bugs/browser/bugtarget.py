@@ -273,7 +273,10 @@ class FileBugViewBase(LaunchpadFormView):
         # either. It makes for better diagnosis of failing tests.
         if self.redirect_ubuntu_filebug:
             pass
-        super(FileBugViewBase, self).initialize()
+
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invokved.
         cache = IJSONRequestCache(self.request)
         cache.objects['private_types'] = [
             type.name for type in PRIVATE_INFORMATION_TYPES]
@@ -306,6 +309,9 @@ class FileBugViewBase(LaunchpadFormView):
         cache.objects['enable_bugfiling_duplicate_search'] = (
             IProjectGroup.providedBy(self.context)
             or self.context.enable_bugfiling_duplicate_search)
+
+        super(FileBugViewBase, self).initialize()
+
         if (self.extra_data_token is not None and
             not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
