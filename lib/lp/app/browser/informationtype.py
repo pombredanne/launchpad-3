@@ -9,7 +9,6 @@ __all__ = [
 from lazr.restful.interfaces import IJSONRequestCache
 
 from lp.registry.enums import PRIVATE_INFORMATION_TYPES
-from lp.registry.vocabularies import InformationTypeVocabulary
 
 
 class InformationTypePortletMixin:
@@ -20,7 +19,7 @@ class InformationTypePortletMixin:
             {'value': term.name, 'description': term.description,
             'name': term.title,
             'description_css_class': 'choice-description'}
-            for term in InformationTypeVocabulary(self.context)]
+            for term in self.context.getAllowedInformationTypes(self.user)]
         cache.objects['private_types'] = [
             type.name for type in PRIVATE_INFORMATION_TYPES]
 

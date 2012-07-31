@@ -45,7 +45,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         delivery.
         """
         from lazr.jobrunner.celerytask import list_queued
-        for x in range(100):
+        for x in range(600):
             actual_len = len(list_queued(app, queues))
             if actual_len == expected_len:
                 return

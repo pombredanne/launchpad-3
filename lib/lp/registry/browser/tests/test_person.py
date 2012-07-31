@@ -122,8 +122,10 @@ class TestPersonIndexView(TestCaseWithFactory):
     def test_isMergePending(self):
         dupe_person = self.factory.makePerson(name='finch')
         target_person = self.factory.makePerson()
+        requester = self.factory.makePerson()
         job_source = getUtility(IPersonMergeJobSource)
-        job_source.create(from_person=dupe_person, to_person=target_person)
+        job_source.create(from_person=dupe_person, to_person=target_person,
+                          requester=requester)
         view = create_initialized_view(dupe_person, name="+index")
         notifications = view.request.response.notifications
         message = 'Finch is queued to be merged in a few minutes.'

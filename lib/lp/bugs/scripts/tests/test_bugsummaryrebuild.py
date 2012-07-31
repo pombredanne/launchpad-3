@@ -26,6 +26,7 @@ from lp.bugs.scripts.bugsummaryrebuild import (
     rebuild_bugsummary_for_target,
     )
 from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.services.database.lpstorm import IStore
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
@@ -107,22 +108,22 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         with dbuser('bugsummaryrebuild'):
             apply_bugsummary_changes(
                 product,
-                {(NEW, None, HIGH, False, None, None): 2,
-                (TRIAGED, None, LOW, False, None, None): 4},
+                {(NEW, None, HIGH, False, None, None, None): 2,
+                (TRIAGED, None, LOW, False, None, None, None): 4},
                 {}, [])
         self.assertContentEqual(
-            [(NEW, None, HIGH, False, None, None, 2),
-             (TRIAGED, None, LOW, False, None, None, 4)],
+            [(NEW, None, HIGH, False, None, None, None, 2),
+             (TRIAGED, None, LOW, False, None, None, None, 4)],
             get_bugsummary_rows(product))
 
         # Delete one, mutate the other.
         with dbuser('bugsummaryrebuild'):
             apply_bugsummary_changes(
                 product,
-                {}, {(NEW, None, HIGH, False, None, None): 3},
-                [(TRIAGED, None, LOW, False, None, None)])
+                {}, {(NEW, None, HIGH, False, None, None, None): 3},
+                [(TRIAGED, None, LOW, False, None, None, None)])
         self.assertContentEqual(
-            [(NEW, None, HIGH, False, None, None, 3)],
+            [(NEW, None, HIGH, False, None, None, None, 3)],
             get_bugsummary_rows(product))
 
     def test_rebuild_bugsummary_for_target(self):
@@ -172,7 +173,7 @@ class TestGetBugSummaryRows(TestCaseWithFactory):
         rollup_journal()
         new_rows = set(get_bugsummary_rows(product))
         self.assertContentEqual(
-            [(task.status, None, task.importance, False, None, None, 1)],
+            [(task.status, None, task.importance, False, None, None, None, 1)],
             new_rows - orig_rows)
 
 
@@ -186,7 +187,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product).default_bugtask
         self.assertContentEqual(
-            [(bug.status, None, bug.importance, False, None, None, 1)],
+            [(bug.status, None, bug.importance, False, None, None, None, 1)],
             calculate_bugsummary_rows(product))
 
     def test_public_tagged(self):
@@ -196,35 +197,46 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         bug = self.factory.makeBug(
             product=product, tags=[u'foo', u'bar']).default_bugtask
         self.assertContentEqual(
-            [(bug.status, None, bug.importance, False, None, None, 1),
-             (bug.status, None, bug.importance, False, u'foo', None, 1),
-             (bug.status, None, bug.importance, False, u'bar', None, 1),
+            [(bug.status, None, bug.importance, False, None, None, None, 1),
+             (bug.status, None, bug.importance, False, u'foo', None, None, 1),
+             (bug.status, None, bug.importance, False, u'bar', None, None, 1),
             ], calculate_bugsummary_rows(product))
 
     def test_private_untagged(self):
         # Private untagged bugs show up with tag = None, viewed_by =
-        # subscriber. There's no viewed_by = None row.
+        # subscriber; and tag = None, access_policy = ap. There's no
+        # viewed_by = None, access_policy = None row.
         product = self.factory.makeProduct()
-        owner = self.factory.makePerson()
+        o = self.factory.makePerson()
         bug = self.factory.makeBug(
-            product=product, owner=owner,
+            product=product, owner=o,
             information_type=InformationType.USERDATA).default_bugtask
+        [ap] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
         self.assertContentEqual(
-            [(bug.status, None, bug.importance, False, None, owner.id, 1)],
+            [(bug.status, None, bug.importance, False, None, o.id, None, 1),
+             (bug.status, None, bug.importance, False, None, None, ap.id, 1)],
             calculate_bugsummary_rows(product))
 
     def test_private_tagged(self):
-        # Private tagged bugs show up with viewed_by = subscriber, with a
-        # row for each tag plus an untagged row.
+        # Private tagged bugs show up with viewed_by = subscriber and
+        # access_policy = ap rows, each with a row for each tag plus an
+        # untagged row.
         product = self.factory.makeProduct()
-        owner = self.factory.makePerson()
+        o = self.factory.makePerson()
         bug = self.factory.makeBug(
-            product=product, owner=owner, tags=[u'foo', u'bar'],
+            product=product, owner=o, tags=[u'foo', u'bar'],
             information_type=InformationType.USERDATA).default_bugtask
+        [ap] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
         self.assertContentEqual(
-            [(bug.status, None, bug.importance, False, None, owner.id, 1),
-             (bug.status, None, bug.importance, False, u'foo', owner.id, 1),
-             (bug.status, None, bug.importance, False, u'bar', owner.id, 1)],
+            [(bug.status, None, bug.importance, False, None, o.id, None, 1),
+             (bug.status, None, bug.importance, False, u'foo', o.id, None, 1),
+             (bug.status, None, bug.importance, False, u'bar', o.id, None, 1),
+             (bug.status, None, bug.importance, False, None, None, ap.id, 1),
+             (bug.status, None, bug.importance, False, u'foo', None, ap.id, 1),
+             (bug.status, None, bug.importance, False, u'bar', None, ap.id, 1),
+            ],
             calculate_bugsummary_rows(product))
 
     def test_aggregation(self):
@@ -236,8 +248,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         bug3 = self.factory.makeBug(
             product=product, status=BugTaskStatus.TRIAGED).default_bugtask
         self.assertContentEqual(
-            [(bug1.status, None, bug1.importance, False, None, None, 2),
-             (bug3.status, None, bug3.importance, False, None, None, 1)],
+            [(bug1.status, None, bug1.importance, False, None, None, None, 2),
+             (bug3.status, None, bug3.importance, False, None, None, None, 1)],
             calculate_bugsummary_rows(product))
 
     def test_has_patch(self):
@@ -249,8 +261,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         bug2 = self.factory.makeBug(
             product=product, status=BugTaskStatus.TRIAGED).default_bugtask
         self.assertContentEqual(
-            [(bug1.status, None, bug1.importance, True, None, None, 1),
-             (bug2.status, None, bug2.importance, False, None, None, 1)],
+            [(bug1.status, None, bug1.importance, True, None, None, None, 1),
+             (bug2.status, None, bug2.importance, False, None, None, None, 1)],
             calculate_bugsummary_rows(product))
 
     def test_milestone(self):
@@ -264,8 +276,10 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
             product=product, milestone=mile2,
             status=BugTaskStatus.TRIAGED).default_bugtask
         self.assertContentEqual(
-            [(bug1.status, mile1.id, bug1.importance, False, None, None, 1),
-             (bug2.status, mile2.id, bug2.importance, False, None, None, 1)],
+            [(bug1.status, mile1.id, bug1.importance, False, None, None, None,
+              1),
+             (bug2.status, mile2.id, bug2.importance, False, None, None, None,
+              1)],
             calculate_bugsummary_rows(product))
 
     def test_distribution_includes_packages(self):
@@ -282,7 +296,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         # The DistributionSourcePackage task shows up in the
         # Distribution's rows.
         self.assertContentEqual(
-            [(bug1.status, None, bug1.importance, False, None, None, 1)],
+            [(bug1.status, None, bug1.importance, False, None, None, None, 1)],
             calculate_bugsummary_rows(dsp.distribution))
         self.assertContentEqual(
             calculate_bugsummary_rows(dsp.distribution),
@@ -290,7 +304,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
 
         # The SourcePackage task shows up in the DistroSeries' rows.
         self.assertContentEqual(
-            [(bug2.status, None, bug2.importance, False, None, None, 1)],
+            [(bug2.status, None, bug2.importance, False, None, None, None, 1)],
             calculate_bugsummary_rows(sp.distroseries))
         self.assertContentEqual(
             calculate_bugsummary_rows(sp.distroseries),
