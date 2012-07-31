@@ -9,6 +9,7 @@ from datetime import (
     )
 
 from pytz import UTC
+from storm.expr import Join
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -29,6 +30,7 @@ from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
+from lp.bugs.model.bugnotification import BugNotificationRecipient
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
@@ -784,6 +786,23 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         self.assertContentEqual(
             set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
+
+    def test_structural_bug_supervisor_becomes_direct_on_private(self):
+        # If a bug supervisor has a structural subscription to the bug, and
+        # the bug is marked as private, the supervisor should get a direct
+        # subscription. Otherwise they should be removed, per other tests.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        bug_owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=bug_owner, product=product)
+        with person_logged_in(product.owner):
+            product.addSubscription(bug_supervisor, bug_supervisor)
+
+        self.assertFalse(bug_supervisor in bug.getDirectSubscribers())
+        with person_logged_in(bug_owner):
+            who = self.factory.makePerson(name="who")
+            bug.transitionToInformationType(InformationType.USERDATA, who)
+        self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
 
 
 class TestBugPrivacy(TestCaseWithFactory):

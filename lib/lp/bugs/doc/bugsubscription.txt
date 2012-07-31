@@ -761,6 +761,23 @@ recipient list:
     mark@example.com
     robertc@robertcollins.net
 
+The upstream maintainer will be subscribed to security-related private
+bugs, because upstream has no security contact, in this case.
+
+    >>> firefox.security_contact is None
+    True
+
+    >>> params = CreateBugParams(
+    ... title="a test bug", comment="a test description",
+    ... owner=foobar, information_type=InformationType.PRIVATESECURITY)
+    >>> new_bug = firefox.createBug(params)
+
+    >>> print '\n'.join(getSubscribers(new_bug))
+    foo.bar@canonical.com
+    mark@example.com
+    robertc@robertcollins.net
+    test@canonical.com
+
 Now let's create a bug on a specific package, which has no package bug
 contacts:
 
