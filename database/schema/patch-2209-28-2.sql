@@ -3,6 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX specification__information_type__idx ON Specification(information_type);
+CREATE INDEX CONCURRENTLY specification__information_type__idx ON Specification(information_type);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 28, 2);
