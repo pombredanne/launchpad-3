@@ -1292,12 +1292,17 @@ class IArchiveView(IHasBuildRecords):
             title=_("Sponsored Person"),
             description=_("The person who is being sponsored for this copy.")),
         unembargo=Bool(title=_("Unembargo restricted files")),
+        auto_approve=Bool(
+            title=_("Automatic approval"),
+            description=_("Automatically approve this copy (queue admins "
+                          "only)."),
+            required=False),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None, unembargo=False):
+                    sponsored=None, unembargo=False, auto_approve=False):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1321,6 +1326,9 @@ class IArchiveView(IHasBuildRecords):
         :param unembargo: if True, allow copying restricted files from a
             private archive to a public archive, and re-upload them to the
             public librarian when doing so.
+        :param auto_approve: if True and the `IPerson` requesting the sync
+            has queue admin permissions on the target, accept the copy
+            immediately rather than setting it to unapproved.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -1354,12 +1362,17 @@ class IArchiveView(IHasBuildRecords):
             title=_("Sponsored Person"),
             description=_("The person who is being sponsored for this copy.")),
         unembargo=Bool(title=_("Unembargo restricted files")),
+        auto_approve=Bool(
+            title=_("Automatic approval"),
+            description=_("Automatically approve this copy (queue admins "
+                          "only)."),
+            required=False),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
                      to_series=None, from_series=None, include_binaries=False,
-                     sponsored=None, unembargo=False):
+                     sponsored=None, unembargo=False, auto_approve=False):
         """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
@@ -1386,6 +1399,9 @@ class IArchiveView(IHasBuildRecords):
         :param unembargo: if True, allow copying restricted files from a
             private archive to a public archive, and re-upload them to the
             public librarian when doing so.
+        :param auto_approve: if True and the `IPerson` requesting the sync
+            has queue admin permissions on the target, accept the copies
+            immediately rather than setting it to unapproved.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
