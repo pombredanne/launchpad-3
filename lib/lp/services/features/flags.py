@@ -274,13 +274,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('garbo.workitem_migrator.enabled',
-     'boolean',
-     ('If true, garbo will try to migrate work items from the whiteboard of '
-      'specifications.'),
-     '',
-     '',
-     ''),
     ('registry.upcoming_work_view.enabled',
      'boolean',
      ('If true, the new upcoming work view of teams is available.'),
