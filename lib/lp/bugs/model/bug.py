@@ -2653,12 +2653,6 @@ class BugSet:
             else:
                 params.information_type = InformationType.PUBLIC
 
-        if (params.product and params.product.private_bugs
-            and params.information_type == InformationType.PUBLIC):
-            raise AssertionError(
-                "Public bug where private_bugs is set. "
-                "Manual override or leak?")
-
         bug, event = self._makeBug(params)
 
         # Create the task on a product if one was passed.
