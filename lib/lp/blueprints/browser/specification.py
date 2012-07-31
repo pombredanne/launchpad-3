@@ -530,7 +530,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         return Link('+linkbranch', text, icon='add')
 
 
-class SpecificationSimpleView(LaunchpadView):
+class SpecificationSimpleView(LaunchpadView, InformationTypePortletMixin):
     """Used to render portlets and listing items that need browser code."""
 
     @cachedproperty
@@ -547,7 +547,7 @@ class SpecificationSimpleView(LaunchpadView):
         return self.context.getLinkedBugTasks(self.user)
 
 
-class SpecificationView(SpecificationSimpleView, InformationTypePortletMixin):
+class SpecificationView(SpecificationSimpleView):
     """Used to render the main view of a specification."""
 
     @property

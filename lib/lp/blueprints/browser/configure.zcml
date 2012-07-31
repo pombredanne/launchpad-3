@@ -277,12 +277,6 @@
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
-            name="+portlet-privacy"
-            class="lp.blueprints.browser.specification.SpecificationView"
-            template="../templates/branch-portlet-privacy.pt"
-            permission="zope.Public"/>
-        <browser:page
-            for="lp.blueprints.interfaces.specification.ISpecification"
             name="+portlet-subscribers"
             class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersContents"
             template="../templates/specification-portlet-subscribers.pt"
@@ -317,6 +311,9 @@
             <browser:page
                 name="+listing-detailed"
                 template="../templates/specification-listing-detailed.pt"/>
+            <browser:page
+                name="+portlet-privacy"
+                template="../templates/branch-portlet-privacy.pt"/>
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
