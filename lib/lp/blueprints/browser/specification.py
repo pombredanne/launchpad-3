@@ -112,6 +112,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.services.config import config
@@ -545,6 +546,17 @@ class SpecificationSimpleView(LaunchpadView, InformationTypePortletMixin):
     @cachedproperty
     def bug_links(self):
         return self.context.getLinkedBugTasks(self.user)
+
+    @cachedproperty
+    def privacy_portlet_css(self):
+        if self.private:
+            return 'portlet private'
+        else:
+            return 'portlet public'
+
+    @cachedproperty
+    def private(self):
+        return self.context.information_type in PRIVATE_INFORMATION_TYPES
 
 
 class SpecificationView(SpecificationSimpleView):
