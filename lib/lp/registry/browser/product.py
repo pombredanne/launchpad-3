@@ -2008,6 +2008,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     _field_names = ['displayname', 'name', 'title', 'summary',
                     'description', 'homepageurl', 'licenses', 'license_info',
+                    'owner',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2021,6 +2022,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget(
+        'owner', PersonPickerWidget, header="Select the maintainer",
+        show_create_team_link=True)
+    custom_widget(
+        'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
 
     @property
     def main_action_label(self):
@@ -2048,12 +2054,20 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             return 'Check for duplicate projects'
         return 'Registration details'
 
+    @property
+    def initial_values(self):
+        return {'owner': self.user.name}
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
-        self.form_fields = (self.form_fields +
+        hidden_names = ('__visited_steps__', 'license_info')
+        hidden_fields = self.form_fields.select(*hidden_names)
+        visible_fields = self.form_fields.omit(*hidden_names)
+        self.form_fields = (visible_fields +
                             self._createDisclaimMaintainerField() +
-                            create_source_package_fields())
+                            create_source_package_fields() +
+                            hidden_fields)
 
     def _createDisclaimMaintainerField(self):
         """Return a Bool field for disclaiming maintainer.
@@ -2150,6 +2164,11 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def validateStep(self, data):
         """See `MultiStepView`."""
         ProductLicenseMixin.validate(self, data)
+        if data.get('disclaim_maintainer') and self.errors:
+            # The checkbox supersedes the owner text input.
+            errors = [error for error in self.errors if error[0] == 'owner']
+            for error in errors:
+                self.errors.remove(error)
 
     @property
     def label(self):
@@ -2167,7 +2186,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         if disclaim_maintainer:
             owner = getUtility(ILaunchpadCelebrities).registry_experts
         else:
-            owner = self.user
+            owner = data.get('owner')
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
             owner=owner,

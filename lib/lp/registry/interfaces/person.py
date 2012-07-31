@@ -2317,7 +2317,8 @@ class IPersonSet(Interface):
         address.
         """
 
-    def mergeAsync(from_person, to_person, reviewer=None, delete=False):
+    def mergeAsync(from_person, to_person, requester, reviewer=None,
+                   delete=False):
         """Merge a person/team into another asynchronously.
 
         This schedules a call to `merge()` to happen outside of the current
@@ -2328,6 +2329,8 @@ class IPersonSet(Interface):
 
         :param from_person: An IPerson or ITeam that is a duplicate.
         :param to_person: An IPerson or ITeam that is a master.
+        :param requester: The IPerson who requested the merge.  Should not be
+            an ITeam.
         :param reviewer: An IPerson who approved the ITeam merger.
         :param delete: The merge is really a deletion.
         :return: A `PersonMergeJob` or None.
