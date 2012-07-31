@@ -377,9 +377,8 @@
 
   <tal:side metal:fill-slot="side">
     <tal:menu replace="structure context/@@+global-actions" />
-
+    <tal:privacy replace="structure context/@@+portlet-privacy" />
     <div tal:replace="structure context/@@+portlet-subscribers" />
-    <div tal:replace="structure context/@@+portlet-privacy" />
   </tal:side>
 </body>
 </html>
