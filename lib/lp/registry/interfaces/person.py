@@ -1952,9 +1952,9 @@ class ITeamPublic(Interface):
         exported_as='default_membership_period')
 
     defaultrenewalperiod = exported(
-        Int(title=_('Renewal period'), required=False,
+        Int(title=_('Self renewal period'), required=False,
             description=_(
-                "Number of days a subscription lasts after being renewed. "
+                "Number of days members can renew their own membership. "
                 "The number can be from 1 to 3650 (10 years).")),
         exported_as='default_renewal_period')
 

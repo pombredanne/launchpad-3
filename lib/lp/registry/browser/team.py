@@ -296,6 +296,8 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
 
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget('defaultrenewalperiod', StrippedTextWidget,
+        widget_class='field subordinate')
     custom_widget(
         'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
