@@ -782,6 +782,11 @@ class BugMarkAsDuplicateView(BugEditViewBase):
     label = "Mark bug report as a duplicate"
     page_title = label
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
     def setUpFields(self):
         """Make the readonly version of duplicateof available."""
         super(BugMarkAsDuplicateView, self).setUpFields()
@@ -797,7 +802,12 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         """See `LaunchpadFormView.`"""
         return {'duplicateof': self.context.bug.duplicateof}
 
-    @action('Change', name='change')
+    def _validate(self, action, data):
+        if action.name != 'remove':
+            return super(BugMarkAsDuplicateView, self)._validate(action, data)
+        return []
+
+    @action('Set Duplicate', name='change')
     def change_action(self, action, data):
         """Update the bug."""
         data = dict(data)
@@ -811,6 +821,19 @@ class BugMarkAsDuplicateView(BugEditViewBase):
             ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
         # Apply other changes.
         self.updateBugFromData(data)
+
+    def shouldShowRemoveButton(self, action):
+        return self.context.bug.duplicateof is not None
+
+    @action('Remove Duplicate', name='remove',
+        condition=shouldShowRemoveButton)
+    def remove_action(self, action, data):
+        """Update the bug."""
+        bug = self.context.bug
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
+        bug.markAsDuplicate(None)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
 
 
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
