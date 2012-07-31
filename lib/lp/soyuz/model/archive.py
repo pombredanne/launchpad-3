@@ -1347,10 +1347,20 @@ class Archive(SQLBase):
 
         return None
 
-    def canAdministerQueue(self, user, component):
+    def canAdministerQueue(self, user, components):
         """See `IArchive`."""
-        return self._authenticate(
-            user, component, ArchivePermissionType.QUEUE_ADMIN)
+        if components is None:
+            components = []
+        elif IComponent.providedBy(components):
+            components = [components]
+        permissions = self.getComponentsForQueueAdmin(user)
+        if permissions.count() == 0:
+            return False
+        allowed_components = set(
+            permission.component for permission in permissions)
+        # The intersection of allowed_components and components must be
+        # equal to components to allow the operation to go ahead.
+        return allowed_components.intersection(components) == set(components)
 
     def _authenticate(self, user, item, permission):
         """Private helper method to check permissions."""

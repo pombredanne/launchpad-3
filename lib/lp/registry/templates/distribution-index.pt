@@ -60,7 +60,7 @@
         <div class="yui-u">
           <tal:series replace="structure context/@@+series-and-milestones" />
         </div>
-        <div class="yui-u" tal:condition="features/soyuz.derived_series_ui.enabled">
+        <div class="yui-u">
           <tal:series replace="structure context/@@+derivatives-slot" />
         </div>
        </div>
