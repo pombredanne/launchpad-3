@@ -1652,10 +1652,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                information_type=InformationType.PUBLIC, date_closed=None,
-                title=None, date_created=None, description=None,
-                comment=None, status=None, distribution=None, milestone=None,
-                series=None, tags=None, sourcepackagename=None):
+                information_type=None, date_closed=None, title=None,
+                date_created=None, description=None, comment=None,
+                status=None, distribution=None, milestone=None, series=None,
+                tags=None, sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See

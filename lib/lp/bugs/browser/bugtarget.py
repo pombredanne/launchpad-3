@@ -636,11 +636,14 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
-        information_type = data.get(
-            "information_type", InformationType.PUBLIC)
-        security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
+
+        information_type = data.get("information_type")
+        # If the old UI is enabled, security bugs are always embargoed
+        # when filed, but can be disclosed after they've been reported.
+        if information_type is None and data.get("security_related"):
+            information_type = InformationType.PRIVATESECURITY
 
         context = self.context
         if distribution is not None:
@@ -656,14 +659,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # enters a package name but then selects "I don't know".
         if self.request.form.get("packagename_option") == "none":
             packagename = None
-
-        if not self.is_bug_supervisor:
-            # If the old UI is enabled, security bugs are always embargoed
-            # when filed, but can be disclosed after they've been reported.
-            if security_related:
-                information_type = InformationType.PRIVATESECURITY
-            else:
-                information_type = InformationType.PUBLIC
 
         linkified_ack = structured(FormattersAPI(
             self.getAcknowledgementMessage(self.context)).text_to_html(
@@ -701,7 +696,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                 'Additional information was added to the bug description.')
 
         if not self.is_bug_supervisor and extra_data.private:
-            if params.information_type == InformationType.PUBLIC:
+            if params.information_type in (None, InformationType.PUBLIC):
                 params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.

@@ -101,9 +101,9 @@ class CreateBugParams:
 
     def __init__(self, owner, title, comment=None, description=None,
                  msg=None, status=None, datecreated=None,
-                 information_type=InformationType.PUBLIC, subscribers=(),
-                 tags=None, subscribe_owner=True, filed_by=None,
-                 importance=None, milestone=None, assignee=None, cve=None):
+                 information_type=None, subscribers=(), tags=None,
+                 subscribe_owner=True, filed_by=None, importance=None,
+                 milestone=None, assignee=None, cve=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -213,7 +213,7 @@ class IBugPublic(IPrivacy):
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,
-            required=True, readonly=True, default=InformationType.PUBLIC,
+            required=True, readonly=True,
             description=_(
                 'The type of information contained in this bug report.')))
 
@@ -518,8 +518,7 @@ class IBugView(Interface):
             `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None,
-                                     include_master_dupe_subscribers=False):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -527,8 +526,6 @@ class IBugView(Interface):
         includes email addresses and textual and header-ready
         rationales. See `BugNotificationRecipients` for
         details of this implementation.
-        If this bug is a dupe, set include_master_dupe_subscribers to
-        True to include the master bug's subscribers as recipients.
         """
 
     def canBeAQuestion():
