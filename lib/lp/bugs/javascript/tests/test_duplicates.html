@@ -6,7 +6,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
-      <title>lp.bugs.duplicates Tests</title>
+      <title>lp.bugs.bug_picker Tests</title>
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
@@ -27,6 +27,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
 
       <!-- Dependencies -->
+      <script type="text/javascript" src="../../../../../build/js/lp/app/mustache.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/anim/anim.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/client.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/errors.js"></script>
@@ -44,10 +45,10 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript" src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../duplicates.js"></script>
+      <script type="text/javascript" src="../bug_picker.js"></script>
 
       <!-- Placeholder for any css asset for this module. -->
-      <!-- <link rel="stylesheet" href="../assets/lp.bugs.duplicates-core.css" /> -->
+      <!-- <link rel="stylesheet" href="../assets/lp.bugs.bug_picker-core.css" /> -->
 
       <!-- The test suite -->
       <script type="text/javascript" src="test_duplicates.js"></script>
@@ -55,16 +56,18 @@ GNU Affero General Public License version 3 (see the file LICENSE).
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <li>lp.bugs.duplicates.test</li>
+            <li>lp.bugs.bug_picker.test</li>
         </ul>
         <div id="fixture">
         </div>
         <script type="text/x-template" id="no-existing-duplicate">
             <div><ul id="duplicate-actions">
-                <li class="sprite bug-dupe" id="mark-duplicate-text">
+                <li class="sprite bug-dupe">
+                    <span id="mark-duplicate-text">
                     <a href="http://foo/+duplicate"
                        class="menu-link-mark-dupe js-action">
                         Mark as duplicate</a>
+                    </span>
                 </li>
             </ul></div>
             <div id="duplicate-form-container"></div>
@@ -73,13 +76,15 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         </script>
         <script type="text/x-template" id="existing-duplicate">
             <div><ul id="duplicate-actions">
-                <li class="" id="mark-duplicate-text">
+                <li>
+                    <span id="mark-duplicate-text">
                     <a class="sprite edit action-icon"
                        title="Edit or remove linked duplicate bug"
                        id="change_duplicate_bug"
                        href="http://foo/+duplicate">Edit</a>
                     Duplicate of <a href="http://foo/bugs/1234">bug #1234
                     </a>
+                    </span>
                 </li>
             </ul></div>
             <div id="duplicate-form-container"></div>

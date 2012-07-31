@@ -58,6 +58,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorIDSet,
     ParameterError,
     )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -77,6 +78,7 @@ from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -125,6 +127,30 @@ class MaloneApplication:
     def searchTasks(self, search_params):
         """See `IMaloneApplication`."""
         return getUtility(IBugTaskSet).search(search_params)
+
+    def getBugData(self, user, bug_id):
+        """See `IMaloneApplication`."""
+        search_params = BugTaskSearchParams(user, bug=bug_id)
+        bugtasks = getUtility(IBugTaskSet).search(search_params)
+        if not bugtasks:
+            return []
+        bugs = [task.bug for task in bugtasks]
+        data = []
+        for bug in bugs:
+            bugtask = bug.default_bugtask
+            data.append({
+                'id': bug_id,
+                'information_type': bug.information_type.title,
+                'is_private':
+                    bug.information_type in PRIVATE_INFORMATION_TYPES,
+                'importance': bugtask.importance.title,
+                'importance_class': 'importance' + bugtask.importance.name,
+                'status': bugtask.status.title,
+                'status_class': 'status' + bugtask.status.name,
+                'bug_summary': bug.title,
+                'description': bug.description,
+                'bug_url': canonical_url(bugtask)})
+        return data
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
