@@ -1955,10 +1955,7 @@ class ITeamPublic(Interface):
         Int(title=_('Renewal period'), required=False,
             description=_(
                 "Number of days a subscription lasts after being renewed. "
-                "The number can be from 1 to 3650 (10 years). "
-                "You can customize the lengths of individual renewals, but "
-                "this is what's used for auto-renewed and user-renewed "
-                "memberships.")),
+                "The number can be from 1 to 3650 (10 years).")),
         exported_as='default_renewal_period')
 
     defaultexpirationdate = Attribute(
