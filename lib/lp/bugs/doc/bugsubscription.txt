@@ -768,8 +768,8 @@ bugs, because upstream has no security contact, in this case.
     True
 
     >>> params = CreateBugParams(
-    ... title="a test bug", comment="a test description",
-    ... owner=foobar, information_type=InformationType.PRIVATESECURITY)
+    ...     title="a test bug", comment="a test description",
+    ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = firefox.createBug(params)
 
     >>> print '\n'.join(getSubscribers(new_bug))
