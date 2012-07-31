@@ -71,8 +71,9 @@ class TestDatabaseErrorViews(TestCase):
             self.fail("We should have gotten an HTTP error")
 
     def add_retry_failure_details(self, bouncer):
+        # XXX benji bug=974617, bug=1011847, bug=504291 2011-07-31:
         # This method (and its invocations) are to be removed when we have
-        # figured out what is causing bug 974617.
+        # figured out what is causing bug 974617 and friends.
 
         # First we figure out if pgbouncer is listening on the port it is
         # supposed to be listening on.  connect_ex returns 0 on success or an
