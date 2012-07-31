@@ -423,13 +423,6 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
         workflow for joining the team.
         """)
 
-    AUTOMATIC = DBItem(30, """
-        renew their membership automatically, also notifying the admins
-
-        Memberships are automatically renewed when they expire and a note is
-        sent to the member and to team admins.
-        """)
-
 
 class TeamSubscriptionPolicy(DBEnumeratedType):
     """Team Subscription Policies
