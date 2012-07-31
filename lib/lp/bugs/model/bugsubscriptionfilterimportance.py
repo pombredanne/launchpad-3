@@ -20,7 +20,7 @@ class BugSubscriptionFilterImportance(StormBase):
     """Importances to filter."""
 
     __storm_table__ = "BugSubscriptionFilterImportance"
-    __storm_primary__ = ('filter', 'importance')
+    __storm_primary__ = ('filter_id', 'importance')
 
     filter_id = Int("filter", allow_none=False)
     filter = Reference(filter_id, "BugSubscriptionFilter.id")
