@@ -256,7 +256,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
-                      include_binaries, sponsored=None, unembargo=False):
+                      include_binaries, sponsored=None, unembargo=False,
+                      auto_approve=False):
         """Produce a metadata dict for this job."""
         if sponsored:
             sponsored_name = sponsored.name
@@ -268,6 +269,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             'include_binaries': bool(include_binaries),
             'sponsored': sponsored_name,
             'unembargo': unembargo,
+            'auto_approve': auto_approve,
         }
 
     @classmethod
@@ -275,13 +277,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
-               sponsored=None, unembargo=False):
+               sponsored=None, unembargo=False, auto_approve=False):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries, sponsored,
-            unembargo)
+            unembargo, auto_approve)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -298,7 +300,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _composeJobInsertionTuple(cls, copy_policy, include_binaries, job_id,
-                                  copy_task, sponsored, unembargo):
+                                  copy_task, sponsored, unembargo,
+                                  auto_approve):
         """Create an SQL fragment for inserting a job into the database.
 
         :return: A string representing an SQL tuple containing initializers
@@ -315,7 +318,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         ) = copy_task
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries, sponsored,
-            unembargo)
+            unembargo, auto_approve)
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
@@ -326,14 +329,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def createMultiple(cls, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
                        include_binaries=False, sponsored=None,
-                       unembargo=False):
+                       unembargo=False, auto_approve=False):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
         job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
                 copy_policy, include_binaries, job_id, task, sponsored,
-                unembargo)
+                unembargo, auto_approve)
             for job_id, task in zip(job_ids, copy_tasks)]
         return bulk.create(
                 (PackageCopyJob.job_type, PackageCopyJob.target_distroseries,
@@ -415,6 +418,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def unembargo(self):
         return self.metadata.get('unembargo', False)
 
+    @property
+    def auto_approve(self):
+        return self.metadata.get('auto_approve', False)
+
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
             pocket=self.target_pocket, archive=self.target_archive,
@@ -452,7 +459,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
         return SourceOverride(source_package_name, component, section)
 
-    def _checkPolicies(self, source_name, source_component=None):
+    def _checkPolicies(self, source_name, source_component=None,
+                       auto_approve=False):
         # This helper will only return if it's safe to carry on with the
         # copy, otherwise it raises SuspendJobException to tell the job
         # runner to suspend the job.
@@ -470,8 +478,11 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 self.target_archive, self.target_distroseries,
                 self.target_pocket, [source_name], source_component)
             self.addSourceOverride(defaults[0])
+            if auto_approve:
+                auto_approve = self.target_archive.canAdministerQueue(
+                    self.requester, self.getSourceOverride().component)
 
-            approve_new = copy_policy.autoApproveNew(
+            approve_new = auto_approve or copy_policy.autoApproveNew(
                 self.target_archive, self.target_distroseries,
                 self.target_pocket)
 
@@ -483,10 +494,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         else:
             # Put the existing override in the metadata.
             self.addSourceOverride(ancestry[0])
+            if auto_approve:
+                auto_approve = self.target_archive.canAdministerQueue(
+                    self.requester, self.getSourceOverride().component)
 
         # The package is not new (it has ancestry) so check the copy
         # policy for existing packages.
-        approve_existing = copy_policy.autoApprove(
+        approve_existing = auto_approve or copy_policy.autoApprove(
             self.target_archive, self.target_distroseries, self.target_pocket)
         if not approve_existing:
             self._createPackageUpload(unapproved=True)
@@ -565,7 +579,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             [self.context.id]).any()
         if pu is None:
             self._checkPolicies(
-                source_name, source_package.sourcepackagerelease.component)
+                source_name, source_package.sourcepackagerelease.component,
+                self.auto_approve)
 
         # The package is free to go right in, so just copy it now.
         ancestry = self.target_archive.getPublishedSources(
