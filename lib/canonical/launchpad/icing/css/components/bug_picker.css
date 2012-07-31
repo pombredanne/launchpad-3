@@ -1,4 +1,4 @@
 /* The bug picker form should be left aligned, not centred. */
 .yui3-lazr-formoverlay-form {
-    margin-left: 0
+    margin-left: 0;
     }
