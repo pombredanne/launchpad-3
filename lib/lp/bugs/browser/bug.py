@@ -787,7 +787,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         super(BugMarkAsDuplicateView, self).setUpFields()
 
         duplicateof_field = DuplicateBug(
-            __name__='duplicateof', title=_('Duplicate Of'), required=False)
+            __name__='duplicateof', title=_('Duplicate Of'), required=True)
 
         self.form_fields = self.form_fields.omit('duplicateof')
         self.form_fields = formlib.form.Fields(duplicateof_field)
