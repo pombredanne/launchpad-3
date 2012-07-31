@@ -125,6 +125,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     # db field names
 
+    private = False
+
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
     name = StringCol(unique=True, notNull=True)

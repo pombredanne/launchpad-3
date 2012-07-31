@@ -160,6 +160,8 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             description=_(
                 'The type of information contained in this specification.')))
 
+    private = Bool(title=_('Basic direction approved?'))
+
     name = exported(
         SpecNameField(
             title=_('Name'), required=True, readonly=False,

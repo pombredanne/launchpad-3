@@ -379,6 +379,7 @@
     <tal:menu replace="structure context/@@+global-actions" />
 
     <div tal:replace="structure context/@@+portlet-subscribers" />
+    <div tal:replace="structure context/@@+portlet-privacy" />
   </tal:side>
 </body>
 </html>

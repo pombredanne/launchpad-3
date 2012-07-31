@@ -78,6 +78,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
@@ -546,7 +547,7 @@ class SpecificationSimpleView(LaunchpadView):
         return self.context.getLinkedBugTasks(self.user)
 
 
-class SpecificationView(SpecificationSimpleView):
+class SpecificationView(SpecificationSimpleView, InformationTypePortletMixin):
     """Used to render the main view of a specification."""
 
     @property
