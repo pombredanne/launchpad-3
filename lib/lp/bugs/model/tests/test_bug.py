@@ -687,7 +687,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             default_bugtask.pillar.bug_supervisor,
             default_bugtask.pillar.driver,
             bug_owner, who))
-        expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
 
     def test_transition_to_PUBLICSECURITY_information_type(self):
