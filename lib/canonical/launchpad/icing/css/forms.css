@@ -88,7 +88,7 @@ img[src$=spinner] + button  {
     display: block;
     }
 .extra-form-buttons {
-    text-align: left;
+    text-align: center;
     padding-top: 1em;
     }
 .extra-form-buttons button {
