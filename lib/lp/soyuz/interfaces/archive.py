@@ -680,14 +680,15 @@ class IArchiveView(IHasBuildRecords):
             None otherwise.
         """
 
-    def canAdministerQueue(person, component):
+    def canAdministerQueue(person, components):
         """Check to see if person is allowed to administer queue items.
 
-        :param person: An `IPerson` whom should be checked for authenticate.
-        :param component: The context `IComponent` for the check.
+        :param person: An `IPerson` who should be checked for authentication.
+        :param components: The context `IComponent`(s) for the check.
 
         :return: True if 'person' is allowed to administer the package upload
-        queue for items with 'component'.
+        queue for all given 'components'.  If 'components' is empty or None,
+        check if 'person' has any queue admin permissions for this archive.
         """
 
     def getFileByName(filename):

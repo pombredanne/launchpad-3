@@ -793,6 +793,12 @@ class IProductPublic(
     def setPrivateBugs(private_bugs, user):
         """Mutator for private_bugs that checks entitlement."""
 
+    def getAllowedBugInformationTypes():
+        """Get the information types that a bug in this distribution can have.
+
+        :return: A sequence of `InformationType`s.
+        """
+
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
 

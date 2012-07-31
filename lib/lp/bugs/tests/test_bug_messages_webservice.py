@@ -135,10 +135,3 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(
             policy=policy, grantor=pillar.owner, grantee=person)
         self._test_hide_comment(person)
-
-    def test_artifact_grantee_can_set_visible(self):
-        person = self.factory.makePerson()
-        artifact = self.factory.makeAccessArtifact(concrete=self.bug)
-        pillar = removeSecurityProxy(self.bug.default_bugtask).pillar
-        self.factory.makeAccessArtifactGrant(
-            artifact=artifact, grantor=pillar.owner, grantee=person)

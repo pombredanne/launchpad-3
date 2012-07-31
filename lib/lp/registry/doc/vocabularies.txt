@@ -684,6 +684,11 @@ INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
     >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
     True
 
+It is possible to search for alternative names.
+
+    >>> [person.name for person in vocab.search('matsubara OR salgado')]
+    [u'matsubara', u'salgado']
+
 
 AdminMergeablePerson
 --------------------
@@ -737,6 +742,11 @@ But it doesn't include merged accounts:
 
     >>> fooperson in vocab
     False
+
+It is possible to search for alternative names.
+
+    >>> [(p.name) for p in vocab.search('matsubara OR salgado')]
+    [u'matsubara', u'salgado']
 
 
 ValidPersonOrTeam
@@ -1050,7 +1060,7 @@ teams back.
     [(u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
 
     >>> sorted((team.displayname, team.teamowner.displayname)
-    ...        for team in vocab.search('spanish | ubuntu'))
+    ...        for team in vocab.search('spanish OR ubuntu'))
     [(u'Mirror Administrators', u'Mark Shuttleworth'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Security Team', u'Colin Watson'),

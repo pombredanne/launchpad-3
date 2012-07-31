@@ -2378,14 +2378,13 @@ class BugListingBatchNavigator(TableBatchNavigator):
         objects = IJSONRequestCache(self.request).objects
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             objects = obfuscate_structure(objects)
-        return pystache.render(self.mustache_template,
-                               objects['mustache_model'])
+        model = dict(objects['mustache_model'])
+        model.update(self.field_visibility)
+        return pystache.render(self.mustache_template, model)
 
     @property
     def model(self):
         items = [bugtask.model for bugtask in self.getBugListingItems()]
-        for item in items:
-            item.update(self.field_visibility)
         return {'items': items}
 
 
@@ -3106,8 +3105,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     def getInformationTypeWidgetValues(self):
         """Return data used to render the Information Type checkboxes."""
-        return self.getWidgetValues(
-            vocabulary=InformationTypeVocabulary(self.context))
+        if (IProduct.providedBy(self.context)
+            or IDistribution.providedBy(self.context)):
+            vocab = InformationTypeVocabulary(
+                types=self.context.getAllowedBugInformationTypes())
+        else:
+            vocab = InformationType
+        return self.getWidgetValues(vocabulary=vocab)
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""

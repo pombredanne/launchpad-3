@@ -42,11 +42,8 @@ class TestBugSubscriptionFilterStatus(TestCaseWithFactory):
         IStore(bug_sub_filter_status).flush()
         IStore(bug_sub_filter_status).reload(bug_sub_filter_status)
         # Check.
-        self.assertIsNot(None, bug_sub_filter_status.id)
         self.assertEqual(
-            self.subscription_filter.id,
-            bug_sub_filter_status.filter_id)
+            self.subscription_filter.id, bug_sub_filter_status.filter_id)
         self.assertEqual(
-            self.subscription_filter,
-            bug_sub_filter_status.filter)
+            self.subscription_filter, bug_sub_filter_status.filter)
         self.assertEqual(BugTaskStatus.NEW, bug_sub_filter_status.status)

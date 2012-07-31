@@ -20,8 +20,7 @@ class BugSubscriptionFilterStatus(StormBase):
     """Statuses to filter."""
 
     __storm_table__ = "BugSubscriptionFilterStatus"
-
-    id = Int(primary=True)
+    __storm_primary__ = ('filter_id', 'status')
 
     filter_id = Int("filter", allow_none=False)
     filter = Reference(filter_id, "BugSubscriptionFilter.id")

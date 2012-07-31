@@ -161,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                95, self.factory.makePerson())
+                96, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -2059,9 +2059,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             cache = IJSONRequestCache(view.request)
             items = cache.objects['mustache_model']['items']
             self.assertEqual(1, len(items))
-            combined = dict(item.model)
-            combined.update(view.search().field_visibility)
-        self.assertEqual(combined, items[0])
+            self.assertEqual(item.model, items[0])
 
     def test_no_next_prev_for_single_batch(self):
         """The IJSONRequestCache should contain data about ajacent batches.

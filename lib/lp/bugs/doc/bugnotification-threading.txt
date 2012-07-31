@@ -40,11 +40,11 @@ Let's add add change notification and see how it works:
     >>> len(messages)
     1
 
-There are four recipients for this message, so we get:
+There are three recipients for this message, so we get:
 
     >>> emails = messages[0]
     >>> len(emails)
-    4
+    3
 
 The three emails have identical headers for our purposes, so:
 
@@ -79,7 +79,7 @@ id:
     1
     >>> emails = messages[0]
     >>> len(emails)
-    4
+    3
     >>> notification = emails[0]
 
     >>> notification['Message-Id'] == comment.rfc822msgid
@@ -112,7 +112,7 @@ Grab the notifications:
     1
     >>> emails = messages[0]
     >>> len(emails)
-    4
+    3
     >>> notification = emails[0]
     >>> notification['Message-Id'] == reply.rfc822msgid
     True

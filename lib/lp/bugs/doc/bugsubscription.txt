@@ -94,13 +94,13 @@ The list of indirect subscribers is accessed via
 IBug.getIndirectSubscribers().
 
     >>> linux_source_bug.getIndirectSubscribers()
-    [<Person at ...>]
+    []
 
 Finer-grained access to indirect subscribers is provided by
 getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 
     >>> list(linux_source_bug.getAlsoNotifiedSubscribers())
-    [<Person at ...>]
+    []
     >>> list(linux_source_bug.getSubscribersFromDuplicates())
     []
 
@@ -110,7 +110,7 @@ individual bug task.
     >>> from lp.bugs.model.bug import get_also_notified_subscribers
     >>> res = get_also_notified_subscribers(linux_source_bug.bugtasks[0])
     >>> list(res)
-    [<Person at ...>]
+    []
 
 These are security proxied.
 
@@ -130,7 +130,6 @@ need it for changes made only to IBug.
     >>> print_displayname(task.bug_subscribers)
     Foo Bar
     Mark Shuttleworth
-    Ubuntu Team
 
 Here are some examples of the three types of indirect subscribers:
 
@@ -142,14 +141,12 @@ Here are some examples of the three types of indirect subscribers:
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     Sample Person
-    Ubuntu Team
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
     ()
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Sample Person
-    Ubuntu Team
 
 2. Structural subscribers
 
@@ -166,14 +163,12 @@ Here are some examples of the three types of indirect subscribers:
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
     Sample Person
-    Ubuntu Team
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
     ()
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
     Sample Person
-    Ubuntu Team
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
 
@@ -405,18 +400,6 @@ will be automatically subscribed.
     Mark Shuttleworth
     Robert Collins
 
-A private bug never has indirect subscribers. Let's add an indirect subscriber
-to show that they still aren't included in the indirect subscriptions.
-
-    >>> linux_source_bug.bugtasks[0].transitionToAssignee(
-    ...     personset.getByName("martin-pitt"))
-
-    >>> linux_source_bug.getIndirectSubscribers()
-    []
-
-    >>> linux_source_bug.getSubscribersFromDuplicates()
-    ()
-
 Direct subscriptions always take precedence over indirect subscriptions.
 So, if we unmark the above bug as private, indirect_subscribers will include
 any subscribers not converted to direct subscribers.
@@ -430,14 +413,12 @@ any subscribers not converted to direct subscribers.
     Robert Collins
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
-    Martin Pitt
     No Privileges Person
     Sample Person
     Scott James Remnant
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
-    Martin Pitt
     No Privileges Person
     Sample Person
     Scott James Remnant
@@ -779,7 +760,6 @@ recipient list:
     foo.bar@canonical.com
     mark@example.com
     robertc@robertcollins.net
-    test@canonical.com
 
 The upstream maintainer will be subscribed to security-related private
 bugs, because upstream has no security contact, in this case.
@@ -792,8 +772,11 @@ bugs, because upstream has no security contact, in this case.
     ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = firefox.createBug(params)
 
-    >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'test@canonical.com']
+    >>> print '\n'.join(getSubscribers(new_bug))
+    foo.bar@canonical.com
+    mark@example.com
+    robertc@robertcollins.net
+    test@canonical.com
 
 Now let's create a bug on a specific package, which has no package bug
 contacts:
