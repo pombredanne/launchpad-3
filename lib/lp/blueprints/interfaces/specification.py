@@ -70,6 +70,7 @@ from lp.blueprints.interfaces.specificationworkitem import (
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -151,6 +152,13 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     """Specification's public attributes and methods."""
 
     id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True, default=InformationType.PUBLIC,
+            description=_(
+                'The type of information contained in this specification.')))
 
     name = exported(
         SpecNameField(

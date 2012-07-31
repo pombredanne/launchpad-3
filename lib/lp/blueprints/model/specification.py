@@ -70,6 +70,7 @@ from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -123,6 +124,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
     _defaultOrder = ['-priority', 'definition_status', 'name', 'id']
 
     # db field names
+
+    information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC)
     name = StringCol(unique=True, notNull=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
