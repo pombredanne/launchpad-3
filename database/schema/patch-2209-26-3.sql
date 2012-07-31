@@ -4,11 +4,8 @@
 SET client_min_messages=ERROR;
 
 CREATE TABLE BugSubscriptionFilterInformationType (
-    id serial PRIMARY KEY,
     filter integer REFERENCES BugSubscriptionFilter(id) NOT NULL,
-    information_type integer NOT NULL);
+    information_type integer NOT NULL,
+    CONSTRAINT bugsubscriptioninformationtype_pkey PRIMARY KEY (filter, information_type));
 
-CREATE INDEX bugsubscriptionfilterinformationtype__filter__information_type__idx
-    ON BugSubscriptionFilterInformationType(filter, information_type);
-
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 26, 2);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 26, 3);
