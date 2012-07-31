@@ -1759,6 +1759,7 @@ class Bug(SQLBase):
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
 
+        self.information_type = information_type
         # There are several people we need to ensure are subscribed.
         # If the information type is userdata, we need to check for bug
         # supervisors who aren't subscribed and should be. If there is no
@@ -1792,7 +1793,6 @@ class Bug(SQLBase):
             if already_subscribed_teams.is_empty():
                 self.subscribe(s, who)
 
-        self.information_type = information_type
         self._reconcileAccess()
 
         # If the transition makes the bug private, then we need to ensure all
