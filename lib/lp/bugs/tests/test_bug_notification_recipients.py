@@ -8,7 +8,10 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessPolicySource,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -80,6 +83,20 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             bug.subscribe(subscriber, owner)
             self.assertContentEqual(
                 [owner, subscriber], bug.getBugNotificationRecipients())
+
+    def test_private_bug_with_subscriber_without_access(self):
+        # A subscriber without access to a private bug isn't notified.
+        owner = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner, information_type=InformationType.USERDATA)
+        artifact = self.factory.makeAccessArtifact(concrete=bug)
+        with person_logged_in(owner):
+            bug.subscribe(subscriber, owner)
+            getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                [artifact], [subscriber])
+            self.assertContentEqual(
+                [owner], bug.getBugNotificationRecipients())
 
     def test_private_bug_with_structural_subscriber(self):
         # A structural subscriber without access does not get notified about

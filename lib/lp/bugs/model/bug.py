@@ -166,8 +166,6 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
-    IAccessPolicyGrantSource,
-    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -979,7 +977,8 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.getSubscriptionInfo().direct_subscriptions
 
-    def getDirectSubscribers(self, recipients=None, level=None):
+    def getDirectSubscribers(self, recipients=None, level=None,
+                             filter_visible=False):
         """See `IBug`.
 
         The recipients argument is private and not exposed in the
@@ -991,6 +990,13 @@ class Bug(SQLBase):
             level = BugNotificationLevel.LIFECYCLE
         direct_subscribers = (
             self.getSubscriptionInfo(level).direct_subscribers)
+        if filter_visible:
+            filtered_subscribers = IStore(Person).find(Person,
+                Person.id.is_in([s.id for s in direct_subscribers]),
+                self.getSubscriptionInfo().visible_recipients_filter(
+                    Person.id))
+            direct_subscribers = BugSubscriberSet(
+                direct_subscribers.intersection(filtered_subscribers))
         if recipients is not None:
             for subscriber in direct_subscribers:
                 recipients.addDirectSubscriber(subscriber)
@@ -1126,7 +1132,8 @@ class Bug(SQLBase):
                                      level=None):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
-        self.getDirectSubscribers(recipients, level=level)
+        self.getDirectSubscribers(
+            recipients, level=level, filter_visible=True)
         self.getIndirectSubscribers(recipients, level=level)
 
         # XXX Tom Berger 2008-03-18:
@@ -2503,7 +2510,6 @@ class BugSubscriptionInfo:
                     BugMute.person_id, BugMute.bug_id == Bug.id,
                     tables=[BugMute]))),
             self.visible_recipients_filter(BugSubscription.person_id))
-
 
     @property
     def duplicate_subscribers(self):
