@@ -1918,9 +1918,7 @@ class ITeamPublic(Interface):
         renewal_period = person.defaultrenewalperiod
         is_required_value_missing = (
             renewal_period is None
-            and renewal_policy in [
-                TeamMembershipRenewalPolicy.AUTOMATIC,
-                TeamMembershipRenewalPolicy.ONDEMAND])
+            and renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND)
         out_of_range = (
             renewal_period is not None
             and (renewal_period <= 0 or renewal_period > 3650))

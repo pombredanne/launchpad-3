@@ -223,14 +223,6 @@ class ITeamMembership(Interface):
         ONDEMAND.
         """
 
-    def sendAutoRenewalNotification():
-        """Send an email to the member and to team admins notifying that this
-        membership has been automatically renewed.
-
-        This method must not be called if the team's renewal policy is not
-        AUTOMATIC.
-        """
-
     def sendExpirationWarningEmail():
         """Send the member an email warning that the membership will expire.
 
