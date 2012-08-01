@@ -1831,8 +1831,8 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         # If the permission check on the sourcepackagerelease for this
         # build passes then it means the build can be released from
         # privacy since the source package is published publicly.
-        # This happens when copy-package is used to re-publish a private
-        # package in the primary archive.
+        # This happens when Archive.copyPackage is used to re-publish a
+        # private package in the primary archive.
         auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         if auth_spr.checkAuthenticated(user):
             return True
