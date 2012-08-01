@@ -657,13 +657,11 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.transitionToInformationType(
                 InformationType.PRIVATESECURITY, who=who)
             subscribers = bug.getDirectSubscribers()
-            initial_subscribers.update(bug.getDirectSubscribers())
         expected_subscribers = set((
-            bugtask_a.owner,
             default_bugtask.pillar.driver,
             default_bugtask.pillar.security_contact,
-            bug_owner, who))
-        expected_subscribers.update(initial_subscribers)
+            bug_owner,
+            who))
         self.assertContentEqual(expected_subscribers, subscribers)
 
     def test_transition_to_USERDATA_information_type(self):
@@ -741,23 +739,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         self.assertContentEqual(
             subscribers_before_public,
             subscribers_after_public)
-
-    def test_transition_to_private_grants_subscribers_access(self):
-        # When a bug is made private, any direct subscribers should be granted
-        # access.
-        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers())
-        some_person = self.factory.makePerson()
-        with person_logged_in(bug_owner):
-            bug.subscribe(some_person, bug_owner)
-            subscribers = bug.getDirectSubscribers()
-            who = self.factory.makePerson(name='who')
-            bug.transitionToInformationType(
-                InformationType.USERDATA, who)
-
-        service = getUtility(IService, 'sharing')
-        peopleWithoutAccess = service.getPeopleWithoutAccess(bug, subscribers)
-        self.assertContentEqual([], peopleWithoutAccess)
 
     def test_setPillarOwnerSubscribedIfNoBugSupervisor(self):
         # The pillar owner is subscribed if the bug supervisor is not set and
