@@ -252,12 +252,9 @@ class FileBugViewBase(LaunchpadFormView):
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     extra_data_token = None
-    advanced_form = False
-    frontpage_form = False
-    data_parser = None
 
     def __init__(self, context, request):
-        LaunchpadFormView.__init__(self, context, request)
+        super(FileBugViewBase, self).__init__(context, request)
         self.extra_data = FileBugData()
 
     def initialize(self):
