@@ -612,7 +612,7 @@ class FileBugViewBase(LaunchpadFormView):
                 'Additional information was added to the bug description.')
 
         if not self.is_bug_supervisor and extra_data.private:
-            if params.information_type == InformationType.PUBLIC:
+            if params.information_type in (None, InformationType.PUBLIC):
                 params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
