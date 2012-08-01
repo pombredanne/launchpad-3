@@ -693,7 +693,8 @@ distroseries queues in a particular pocket.
 
     >>> response = ubuntu_owner_webservice.named_post(
     ...     ubuntu_devel['main_archive_link'], 'newPocketQueueAdmin', {},
-    ...     api_version='devel', person=name12['self_link'], pocket='Security')
+    ...     api_version='devel', person=name12['self_link'],
+    ...     pocket='Security')
     >>> print response
     HTTP/1.1 201 Created
     ...
@@ -730,7 +731,8 @@ deletePocketQueueAdmin removes these permissions.
 
     >>> print ubuntu_owner_webservice.named_post(
     ...     ubuntu_devel['main_archive_link'], 'deletePocketQueueAdmin', {},
-    ...     api_version='devel', person=name12['self_link'], pocket='Security')
+    ...     api_version='devel', person=name12['self_link'],
+    ...     pocket='Security')
     HTTP/1.1 200 Ok
     ...
     >>> print ubuntu_owner_webservice.named_post(
