@@ -1748,11 +1748,11 @@ class Bug(SQLBase):
         if information_type in PRIVATE_INFORMATION_TYPES:
             self.who_made_private = who
             self.date_made_private = UTC_NOW
-            missing_subscribers = set([who, self.owner])
+            required_subscribers = set([who, self.owner])
         else:
             self.who_made_private = None
             self.date_made_private = None
-            missing_subscribers = set()
+            required_subscribers = set()
         # XXX: This should be a bulk update. RBC 20100827
         # bug=https://bugs.launchpad.net/storm/+bug/625071
         for attachment in self.attachments_unpopulated:
@@ -1760,21 +1760,22 @@ class Bug(SQLBase):
                 information_type in PRIVATE_INFORMATION_TYPES)
 
         self.information_type = information_type
+
         # There are several people we need to ensure are subscribed.
         # If the information type is userdata, we need to check for bug
         # supervisors who aren't subscribed and should be. If there is no
         # bug supervisor, we need to subscribe the maintainer.
         pillars = self.affected_pillars
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if information_type == InformationType.USERDATA:
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
             for pillar in pillars:
                 # Ubuntu is special cased; no one else should be added in the
                 # USERDATA case.
                 if pillar != ubuntu:
                     if pillar.bug_supervisor is not None:
-                        missing_subscribers.add(pillar.bug_supervisor)
+                        required_subscribers.add(pillar.bug_supervisor)
                     else:
-                        missing_subscribers.add(pillar.owner)
+                        required_subscribers.add(pillar.owner)
 
         # If the information type is security related, we need to ensure
         # the security contacts are subscribed. If there is no security
@@ -1782,18 +1783,17 @@ class Bug(SQLBase):
         if information_type in SECURITY_INFORMATION_TYPES:
             for pillar in pillars:
                 if pillar.security_contact is not None:
-                    missing_subscribers.add(pillar.security_contact)
+                    required_subscribers.add(pillar.security_contact)
                 else:
-                    missing_subscribers.add(pillar.owner)
+                    required_subscribers.add(pillar.owner)
 
-        for s in missing_subscribers:
+        for s in required_subscribers:
             # Don't subscribe someone if they're already subscribed via a
             # team.
             already_subscribed_teams = self.getSubscribersForPerson(s)
             if already_subscribed_teams.is_empty():
                 self.subscribe(s, who)
 
-        self._reconcileAccess()
 
         # If the transition makes the bug private, then we need to ensure all
         # subscribers can see the bug. For any who can't, we create an access
@@ -1806,13 +1806,14 @@ class Bug(SQLBase):
             subscribers = self.getDirectSubscribers()
             if subscribers:
                 service = getUtility(IService, 'sharing')
-                blind_subscribers = service.getPeopleWithoutAccess(
-                    self, subscribers)
-                if len(blind_subscribers):
+                subscribers_to_remove = set(service.getPeopleWithoutAccess(
+                    self, subscribers)).difference(required_subscribers)
+                if len(required_subscribers):
                     service.ensureAccessGrants(
-                        blind_subscribers, who, bugs=[self],
+                        required_subscribers, who, bugs=[self],
                         ignore_permissions=True)
 
+        self._reconcileAccess()
         self.updateHeat()
 
         flag = 'disclosure.unsubscribe_jobs.enabled'
