@@ -409,6 +409,18 @@ class TestProduct(TestCaseWithFactory):
              InformationType.PRIVATESECURITY, InformationType.USERDATA],
             self.factory.makeProduct().getAllowedBugInformationTypes())
 
+    def test_getDefaultBugInformationType_public(self):
+        # The default information type for normal projects is PUBLIC.
+        product = self.factory.makeProduct()
+        self.assertEqual(
+            InformationType.PUBLIC, product.getDefaultBugInformationType())
+
+    def test_getDefaultBugInformationType_private(self):
+        # private_bugs overrides the default information type to USERDATA.
+        product = self.factory.makeProduct(private_bugs=True)
+        self.assertEqual(
+            InformationType.USERDATA, product.getDefaultBugInformationType())
+
 
 class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
