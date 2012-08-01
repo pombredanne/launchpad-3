@@ -1821,7 +1821,7 @@ class Bug(SQLBase):
             already_subscribed_teams = self.getSubscribersForPerson(s)
             if already_subscribed_teams.is_empty():
                 self.subscribe(s, who)
-        
+
         self.updateHeat()
 
         flag = 'disclosure.unsubscribe_jobs.enabled'
