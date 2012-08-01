@@ -483,18 +483,18 @@ page.
 
     # A convenient helper for setting and submitting a new
     # auto-subscribe policy.
-    >>> def set_autosubscribe_policy_and_submit(newvalue):
-    ...     control = carlos_browser.getControl(
+    >>> def set_autosubscribe_policy_and_submit(newvalue, current_browser):
+    ...     control = current_browser.getControl(
     ...         name='field.mailing_list_auto_subscribe_policy')
     ...     control.value = [newvalue]
-    ...     carlos_browser.getControl('Update Policy').click()
-    ...     print_radio_button_field(carlos_browser.contents,
+    ...     current_browser.getControl('Update Policy').click()
+    ...     print_radio_button_field(current_browser.contents,
     ...         'mailing_list_auto_subscribe_policy')
 
     >>> original_value = carlos_browser.getControl(
     ...     name='field.mailing_list_auto_subscribe_policy').value.pop()
 
-    >>> set_autosubscribe_policy_and_submit('ALWAYS')
+    >>> set_autosubscribe_policy_and_submit('ALWAYS', carlos_browser)
     ( ) Never subscribe to mailing lists
     ( ) Ask me when I join a team
     (*) Always subscribe me to mailing lists
@@ -503,12 +503,12 @@ page.
     >>> get_feedback_messages(carlos_browser.contents)
     [u'Your auto-subscription policy has been updated.']
 
-    >>> set_autosubscribe_policy_and_submit('NEVER')
+    >>> set_autosubscribe_policy_and_submit('NEVER', carlos_browser)
     (*) Never subscribe to mailing lists
     ( ) Ask me when I join a team
     ( ) Always subscribe me to mailing lists
 
-    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
+    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION', carlos_browser)
     ( ) Never subscribe to mailing lists
     (*) Ask me when I join a team
     ( ) Always subscribe me to mailing lists
@@ -517,7 +517,7 @@ Updating the value twice has no adverse affect.
 
     # Restores the original value while performing the test.
     >>> assert original_value == 'ON_REGISTRATION'
-    >>> set_autosubscribe_policy_and_submit(original_value)
+    >>> set_autosubscribe_policy_and_submit(original_value, carlos_browser)
     ( ) Never subscribe to mailing lists
     (*) Ask me when I join a team
     ( ) Always subscribe me to mailing lists
@@ -564,7 +564,7 @@ subscription settings will see the box checked by default.
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink(url="+editemails").click()
-    >>> set_autosubscribe_policy_and_submit('ALWAYS')
+    >>> set_autosubscribe_policy_and_submit('ALWAYS', browser)
     ( ) Never subscribe to mailing lists
     ( ) Ask me when I join a team
     (*) Always subscribe me to mailing lists
@@ -580,7 +580,7 @@ lists will not have the box checked.
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink(url="+editemails").click()
-    >>> set_autosubscribe_policy_and_submit('NEVER')
+    >>> set_autosubscribe_policy_and_submit('NEVER', browser)
     (*) Never subscribe to mailing lists
     ( ) Ask me when I join a team
     ( ) Always subscribe me to mailing lists
@@ -593,7 +593,7 @@ lists will not have the box checked.
     # Restore James' setting.
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink(url="+editemails").click()
-    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
+    >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION', browser)
     ( ) Never subscribe to mailing lists
     (*) Ask me when I join a team
     ( ) Always subscribe me to mailing lists
