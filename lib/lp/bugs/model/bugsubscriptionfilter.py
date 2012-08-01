@@ -1,12 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
     'BugSubscriptionFilter',
+    'BugSubscriptionFilterImportance',
     'BugSubscriptionFilterMute',
+    'BugSubscriptionFilterStatus',
+    'BugSubscriptionFilterTag',
     ]
 
 from itertools import chain
@@ -32,13 +33,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.model.bugsubscriptionfilterimportance import (
-    BugSubscriptionFilterImportance,
-    )
-from lp.bugs.model.bugsubscriptionfilterstatus import (
-    BugSubscriptionFilterStatus,
-    )
-from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 from lp.registry.interfaces.person import validate_person
 from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
@@ -324,3 +318,49 @@ class BugSubscriptionFilterMute(StormBase):
     date_created = DateTime(
         "date_created", allow_none=False, default=UTC_NOW,
         tzinfo=pytz.UTC)
+
+
+class BugSubscriptionFilterStatus(StormBase):
+    """Statuses to filter."""
+
+    __storm_table__ = "BugSubscriptionFilterStatus"
+    __storm_primary__ = ('filter_id', 'status')
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    status = DBEnum(enum=BugTaskStatus, allow_none=False)
+
+
+class BugSubscriptionFilterImportance(StormBase):
+    """Importances to filter."""
+
+    __storm_table__ = "BugSubscriptionFilterImportance"
+    __storm_primary__ = ('filter_id', 'importance')
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    importance = DBEnum(enum=BugTaskImportance, allow_none=False)
+
+
+class BugSubscriptionFilterTag(StormBase):
+    """Tags to filter."""
+
+    __storm_table__ = "BugSubscriptionFilterTag"
+
+    id = Int(primary=True)
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    include = Bool(allow_none=False)
+    tag = Unicode(allow_none=False)
+
+    @property
+    def qualified_tag(self):
+        """The tag qualified with a hyphen if it is to be omitted."""
+        if self.include:
+            return self.tag
+        else:
+            return u"-" + self.tag
