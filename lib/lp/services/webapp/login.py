@@ -252,7 +252,7 @@ class OpenIDLogin(LaunchpadView):
     def starting_url(self):
         starting_url = self.request.getURL(1)
         query_string = "&".join([arg for arg in self.form_args])
-        if query_string:
+        if query_string and query_string != 'reauth=1':
             starting_url += "?%s" % query_string
         return starting_url
 
