@@ -955,7 +955,7 @@ class FileBugViewBase(LaunchpadFormView):
             context, self.user)
 
 
-class FileBugAdvancedView(FileBugViewBase):
+class FileBugAdvancedView(LaunchpadView):
     """Browser view for filing a bug.
 
     This view exists only to redirect from +filebug-advanced to +filebug.
