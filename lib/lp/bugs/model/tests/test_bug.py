@@ -586,10 +586,13 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
     def test_setPrivate_does_not_subscribe_member_of_subscribed_team(self):
         # When setPrivate(True) is called on a bug, the person who is
         # marking the bug private will not be subscribed if they're
-        # already a member of a team which is a direct subscriber.
+        # already a member of a team which is a direct subscriber and
+        # maintains access after transition.
         bug = self.factory.makeBug()
         person = self.factory.makePerson(name='teamowner')
         team = self.factory.makeTeam(owner=person, name='team')
+        artifact = self.factory.makeAccessArtifact(bug)
+        self.factory.makeAccessArtifactGrant(artifact, team)
         with person_logged_in(person):
             bug.subscribe(team, person)
             bug.setPrivate(True, person)
@@ -686,7 +689,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         expected_subscribers = set((
             default_bugtask.pillar.bug_supervisor,
             default_bugtask.pillar.driver,
-            bug_owner, who))
+            bug_owner,
+            who))
         self.assertContentEqual(expected_subscribers, subscribers)
 
     def test_transition_to_PUBLICSECURITY_information_type(self):
