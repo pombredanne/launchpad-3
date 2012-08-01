@@ -1808,7 +1808,10 @@ class Bug(SQLBase):
                     service.ensureAccessGrants(
                         required_subscribers, who, bugs=[self],
                         ignore_permissions=True)
-                if len(subscribers_to_remove):
+                # There is a job to do the unsubscribe, but it's behind a
+                # flag. If that flag is not set, do it manually.
+                if len(subscribers_to_remove) and not bool(
+                    getFeatureFlag('disclosure.unsubscribe_jobs.enabled')):
                     for s in subscribers_to_remove:
                         self.unsubscribe(s, who, ignore_permissions=True)
 
