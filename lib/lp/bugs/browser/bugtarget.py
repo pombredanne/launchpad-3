@@ -16,7 +16,7 @@ __all__ = [
     "IProductBugConfiguration",
     "OfficialBugTagsManageView",
     "ProductConfigureBugTrackerView",
-    "ProjectFileBugGuidedView",
+    "ProjectGroupFileBugGuidedView",
     "product_to_productbugconfiguration",
     ]
 
@@ -1143,7 +1143,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         return self._FILEBUG_FORM()
 
 
-class ProjectFileBugGuidedView(FileBugGuidedView):
+class ProjectGroupFileBugGuidedView(FileBugGuidedView):
     """Guided filebug pages for IProjectGroup."""
 
     # Make inheriting the base class' actions work.
