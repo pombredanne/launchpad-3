@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -53,14 +53,12 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTargetHelper,
     )
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
-from lp.bugs.model.bugsubscriptionfilterimportance import (
+from lp.bugs.model.bugsubscriptionfilter import (
+    BugSubscriptionFilter,
     BugSubscriptionFilterImportance,
-    )
-from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
+    BugSubscriptionFilterTag,
     )
-from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 from lp.registry.errors import (
     DeleteSubscriptionError,
     UserCannotSubscribePerson,
