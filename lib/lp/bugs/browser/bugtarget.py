@@ -389,10 +389,17 @@ class FileBugViewBase(LaunchpadFormView):
     @property
     def initial_values(self):
         """Give packagename a default value, if applicable."""
-        if not IDistributionSourcePackage.providedBy(self.context):
-            return {}
+        if (self.context and IProduct.providedBy(self.context)
+            and self.context.private_bugs):
+            type = InformationType.USERDATA
+        else:
+            type = InformationType.PUBLIC
+        values = {'information_type': type}
 
-        return {'packagename': self.context.name}
+        if IDistributionSourcePackage.providedBy(self.context):
+            values['packagename'] = self.context.name
+
+        return values
 
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
