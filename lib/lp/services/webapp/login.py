@@ -197,7 +197,10 @@ class OpenIDLogin(LaunchpadView):
         return Consumer(session, openid_store)
 
     def render(self):
-        if self.account is not None:
+        # Reauthentication is called for by a query string parameter.
+        reauth_qs = self.request.query_string_params.get('reauth', ['0'])
+        do_reauth = int(reauth_qs[0])
+        if self.account is not None and not do_reauth:
             return AlreadyLoggedInView(self.context, self.request)()
 
         # Allow unauthenticated users to have sessions for the OpenID
@@ -220,8 +223,6 @@ class OpenIDLogin(LaunchpadView):
 
         # Force the Open ID handshake to re-authenticate, using
         # pape extension's max_auth_age, if the URL indicates it.
-        reauth_qs = self.request.query_string_params.get('reauth', ['0'])
-        do_reauth = int(reauth_qs[0])
         if do_reauth:
             self.openid_request.addExtension(pape.Request(max_auth_age=0))
 
