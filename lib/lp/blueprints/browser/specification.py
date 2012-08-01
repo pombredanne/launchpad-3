@@ -78,7 +78,6 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
-from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
@@ -112,7 +111,6 @@ from lp.blueprints.interfaces.specification import (
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.services.config import config
@@ -531,7 +529,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         return Link('+linkbranch', text, icon='add')
 
 
-class SpecificationSimpleView(LaunchpadView, InformationTypePortletMixin):
+class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     @cachedproperty
@@ -546,17 +544,6 @@ class SpecificationSimpleView(LaunchpadView, InformationTypePortletMixin):
     @cachedproperty
     def bug_links(self):
         return self.context.getLinkedBugTasks(self.user)
-
-    @cachedproperty
-    def privacy_portlet_css(self):
-        if self.private:
-            return 'portlet private'
-        else:
-            return 'portlet public'
-
-    @cachedproperty
-    def private(self):
-        return self.context.information_type in PRIVATE_INFORMATION_TYPES
 
 
 class SpecificationView(SpecificationSimpleView):

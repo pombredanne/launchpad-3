@@ -311,9 +311,6 @@
             <browser:page
                 name="+listing-detailed"
                 template="../templates/specification-listing-detailed.pt"/>
-            <browser:page
-                name="+portlet-privacy"
-                template="../templates/blueprint-portlet-privacy.pt"/>
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
