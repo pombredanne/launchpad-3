@@ -16,7 +16,10 @@ from openid.consumer.consumer import (
     FAILURE,
     SUCCESS,
     )
-from openid.extensions import sreg
+from openid.extensions import (
+    pape,
+    sreg,
+    )
 from openid.fetchers import (
     setDefaultFetcher,
     Urllib2Fetcher,
@@ -214,6 +217,13 @@ class OpenIDLogin(LaunchpadView):
             timeline_action.finish()
         self.openid_request.addExtension(
             sreg.SRegRequest(required=['email', 'fullname']))
+
+        # Force the Open ID handshake to re-authenticate, using
+        # pape extension's max_auth_age, if the URL indicates it.
+        reauth_qs = self.request.query_string_params.get('reauth', ['0'])
+        do_reauth = int(reauth_qs[0])
+        if do_reauth:
+            self.openid_request.addExtension(pape.Request(max_auth_age=0))
 
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
