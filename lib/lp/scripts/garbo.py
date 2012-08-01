@@ -26,7 +26,11 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    In,
+    Select,
+    Update,
+    )
 from storm.locals import (
     Max,
     Min,
@@ -944,14 +948,12 @@ class SpecificationInformationTypeDefault(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
-        result = self.store.execute("""
-            UPDATE Specification SET information_type = 1 WHERE
-            Specification.id IN (
-                SELECT id FROM Specification WHERE
-                    Specification.information_type IS NULL
-                LIMIT %d
-            )
-        """ % chunk_size)
+        subselect = Select(
+            Specification.id, Specification.information_type==None,
+            limit=chunk_size)
+        result = self.store.execute(
+            Update({Specification.information_type: 1},
+                   Specification.id.is_in(subselect)))
         transaction.commit()
         self.rows_updated = result.rowcount
 
