@@ -2648,13 +2648,10 @@ class BugSet:
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
 
+        context = params.product or params.distribution
+
         if params.information_type is None:
-            # If the private_bugs flag is set on a product, then
-            # force the new bug report to be private.
-            if params.product and params.product.private_bugs:
-                params.information_type = InformationType.USERDATA
-            else:
-                params.information_type = InformationType.PUBLIC
+            params.information_type = context.getDefaultBugInformationType()
 
         bug, event = self._makeBug(params)
 
@@ -2672,11 +2669,6 @@ class BugSet:
                 bug, params.owner, target, status=params.status)
 
         if params.information_type in SECURITY_INFORMATION_TYPES:
-            if params.product:
-                context = params.product
-            else:
-                context = params.distribution
-
             if context.security_contact:
                 bug.subscribe(context.security_contact, params.owner)
             else:

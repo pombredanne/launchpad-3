@@ -121,6 +121,7 @@ from lp.registry.browser.product import (
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
@@ -281,7 +282,8 @@ class FileBugViewBase(LaunchpadFormView):
         cache.objects['private_types'] = [
             type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['bug_private_by_default'] = (
-            IProduct.providedBy(self.context) and self.context.private_bugs)
+            self.context.pillar.getDefaultBugInformationType() in
+            PRIVATE_INFORMATION_TYPES)
         # Project groups are special. The Next button sends you to
         # Product:+filebug, so we need none of the usual stuff.
         if not IProjectGroup.providedBy(self.context):
@@ -388,10 +390,10 @@ class FileBugViewBase(LaunchpadFormView):
 
     @property
     def default_information_type(self):
-        value = InformationType.PUBLIC
-        if ((self.extra_data and self.extra_data.private) or
-            (self.context and IProduct.providedBy(self.context) and
-             self.context.private_bugs)):
+        value = self.context.pillar.getDefaultBugInformationType()
+        if (self.extra_data
+            and self.extra_data.private
+            and value in PUBLIC_INFORMATION_TYPES):
             value = InformationType.USERDATA
         return value
 
