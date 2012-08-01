@@ -38,6 +38,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -927,6 +928,34 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
+class SpecificationInformationTypeDefault(TunableLoop):
+    """Set all Specification.information_type to Public (default)."""
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(SpecificationInformationTypeDefault, self).__init__(log,
+                                                                  abort_time)
+        self.rows_updated = None
+        self.store = IMasterStore(Specification)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.rows_updated == 0
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        result = self.store.execute("""
+            UPDATE Specification SET information_type = 1 WHERE
+            Specification.id IN (
+                SELECT id FROM Specification WHERE
+                    Specification.information_type IS NULL
+                LIMIT %d
+            )
+        """ % chunk_size)
+        transaction.commit()
+        self.rows_updated = result.rowcount
+
+
 class UnusedPOTMsgSetPruner(TunableLoop):
     """Cleans up unused POTMsgSets."""
 
@@ -1273,6 +1302,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
+        SpecificationInformationTypeDefault,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
