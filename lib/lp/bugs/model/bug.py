@@ -1760,6 +1760,7 @@ class Bug(SQLBase):
                 information_type in PRIVATE_INFORMATION_TYPES)
 
         self.information_type = information_type
+        self._reconcileAccess()
 
         # There are several people we need to ensure are subscribed.
         # If the information type is userdata, we need to check for bug
@@ -1787,12 +1788,6 @@ class Bug(SQLBase):
                 else:
                     required_subscribers.add(pillar.owner)
 
-        for s in required_subscribers:
-            # Don't subscribe someone if they're already subscribed via a
-            # team.
-            already_subscribed_teams = self.getSubscribersForPerson(s)
-            if already_subscribed_teams.is_empty():
-                self.subscribe(s, who)
 
 
         # If the transition makes the bug private, then we need to ensure all
@@ -1812,8 +1807,17 @@ class Bug(SQLBase):
                     service.ensureAccessGrants(
                         required_subscribers, who, bugs=[self],
                         ignore_permissions=True)
+                if len(subscribers_to_remove):
+                    for s in subscribers_to_remove:
+                        self.unsubscribe(s, who, ignore_permissions=True)
 
-        self._reconcileAccess()
+        for s in required_subscribers:
+            # Don't subscribe someone if they're already subscribed via a
+            # team.
+            already_subscribed_teams = self.getSubscribersForPerson(s)
+            if already_subscribed_teams.is_empty():
+                self.subscribe(s, who)
+        
         self.updateHeat()
 
         flag = 'disclosure.unsubscribe_jobs.enabled'
