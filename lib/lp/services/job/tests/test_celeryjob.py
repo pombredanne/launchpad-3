@@ -38,16 +38,34 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.addCleanup(drain_celery_queues)
         return job
 
+    def assertQueueSize(self, app, queues, expected_len):
+        """Assert the message queue (eventually) reaches the specified size.
+
+        This can be used to avoid race conditions with RabbitMQ's message
+        delivery.
+        """
+        from lazr.jobrunner.celerytask import list_queued
+        for x in range(600):
+            actual_len = len(list_queued(app, queues))
+            if actual_len == expected_len:
+                return
+            sleep(0.1)
+        self.fail('Queue size did not reach %d; still at %d' %
+                  (expected_len, actual_len))
+
     def test_find_missing_ready(self):
         """A job which is ready but not queued is "missing"."""
         job = self.createMissingJob()
-        wait_for_queue(self.CeleryRunJob.app, [BranchScanJob.task_queue], 0)
+        self.assertQueueSize(self.CeleryRunJob.app,
+                             [BranchScanJob.task_queue], 0)
         self.assertEqual([job], self.find_missing_ready(BranchScanJob))
         job.runViaCelery()
-        wait_for_queue(self.CeleryRunJob.app, [BranchScanJob.task_queue], 1)
+        self.assertQueueSize(self.CeleryRunJob.app,
+                             [BranchScanJob.task_queue], 1)
         self.assertEqual([], self.find_missing_ready(BranchScanJob))
         drain_celery_queues()
-        wait_for_queue(self.CeleryRunJob.app, [BranchScanJob.task_queue], 0)
+        self.assertQueueSize(self.CeleryRunJob.app,
+                             [BranchScanJob.task_queue], 0)
         self.assertEqual([job], self.find_missing_ready(BranchScanJob))
 
     def test_run_missing_ready_not_enabled(self):
@@ -73,7 +91,6 @@ class TestRunMissingJobs(TestCaseWithFactory):
     def test_run_missing_ready_does_not_return_results(self):
         """The celerybeat task run_missing_ready does not create a
         result queue."""
-        from lazr.jobrunner.celerytask import list_queued
         from lp.services.job.tests.celery_helpers import noop
         job_queue_name = 'celerybeat'
         request = self.RunMissingReady().apply_async(
@@ -85,9 +102,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # This would also happen when "with celeryd()" would do nothing.
         # So let's be sure that a task is queued...
         # Give the system some time to deliver the message
-        wait_for_queue(self.RunMissingReady.app, [job_queue_name], 1)
-        self.assertEqual(
-            1, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
+        self.assertQueueSize(self.RunMissingReady.app, [job_queue_name], 1)
         # Wait at most 60 seconds for celeryd to start and process
         # the task.
         with celeryd(job_queue_name):
@@ -95,8 +110,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
             # RunMissingReady has finished.
             noop.apply_async(queue=job_queue_name).wait(60)
         # But now the message has been consumed by celeryd.
-        self.assertEqual(
-            0, len(list_queued(self.RunMissingReady.app, [job_queue_name])))
+        self.assertQueueSize(self.RunMissingReady.app, [job_queue_name], 0)
         # No result queue was created for the task.
         try:
             real_stdout = sys.stdout
@@ -122,15 +136,3 @@ class TestRunMissingJobs(TestCaseWithFactory):
             "Unexpected output from clear_queues:\n"
             "stdout: %r\n"
             "stderr: %r" % (fake_stdout, fake_stderr))
-
-
-def wait_for_queue(app, queues, count):
-    """Wait until there are a specified number of items in the queue.
-
-    This can be used to avoid race conditions with RabbitMQ's message delivery.
-    """
-    from lazr.jobrunner.celerytask import list_queued
-    for x in range(100):
-        if len(list_queued(app, queues)) != count:
-            break
-        sleep(0.1)

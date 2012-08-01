@@ -619,6 +619,12 @@ class IDistributionPublic(
               bug watches or to products that use_malone.
         """
 
+    def getAllowedBugInformationTypes():
+        """Get the information types that a bug in this distribution can have.
+
+        :return: A sequence of `InformationType`s.
+        """
+
     def userCanEdit(user):
         """Can the user edit this distribution?"""
 

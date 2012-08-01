@@ -828,7 +828,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(
             from_person=self.team, to_person=target_team,
-            reviewer=target_team.teamowner)
+            reviewer=target_team.teamowner, requester=target_team.teamowner)
         view = create_initialized_view(self.team, name="+index")
         notifications = view.request.response.notifications
         message = (

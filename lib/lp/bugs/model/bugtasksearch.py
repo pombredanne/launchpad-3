@@ -862,18 +862,21 @@ def _build_search_text_clause(params, fast=False):
         assert params.searchtext is None, (
             'Cannot use searchtext at the same time as fast_searchtext.')
         searchtext = params.fast_searchtext
+        fti_expression = "?::tsquery"
     else:
         assert params.fast_searchtext is None, (
             'Cannot use fast_searchtext at the same time as searchtext.')
         searchtext = params.searchtext
+        fti_expression = "ftq(?)"
 
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
         # instead.
         params.orderby = [
-            SQL("-rank(BugTaskFlat.fti, ftq(?))", params=(searchtext,))]
+            SQL("-rank(BugTaskFlat.fti, %s)" % fti_expression,
+                params=(searchtext,))]
 
-    return SQL("BugTaskFlat.fti @@ ftq(?)", params=(searchtext,))
+    return SQL("BugTaskFlat.fti @@ %s" % fti_expression, params=(searchtext,))
 
 
 def _build_status_clause(col, status):

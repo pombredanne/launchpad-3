@@ -42,13 +42,9 @@ class TestBugSubscriptionFilterImportance(TestCaseWithFactory):
         IStore(bug_sub_filter_importance).flush()
         IStore(bug_sub_filter_importance).reload(bug_sub_filter_importance)
         # Check.
-        self.assertIsNot(None, bug_sub_filter_importance.id)
         self.assertEqual(
-            self.subscription_filter.id,
-            bug_sub_filter_importance.filter_id)
+            self.subscription_filter.id, bug_sub_filter_importance.filter_id)
         self.assertEqual(
-            self.subscription_filter,
-            bug_sub_filter_importance.filter)
+            self.subscription_filter, bug_sub_filter_importance.filter)
         self.assertEqual(
-            BugTaskImportance.HIGH,
-            bug_sub_filter_importance.importance)
+            BugTaskImportance.HIGH, bug_sub_filter_importance.importance)

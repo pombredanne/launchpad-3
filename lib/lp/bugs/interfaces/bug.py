@@ -31,7 +31,6 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
-    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -519,8 +518,7 @@ class IBugView(Interface):
             `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None,
-                                     include_master_dupe_subscribers=False):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -528,8 +526,6 @@ class IBugView(Interface):
         includes email addresses and textual and header-ready
         rationales. See `BugNotificationRecipients` for
         details of this implementation.
-        If this bug is a dupe, set include_master_dupe_subscribers to
-        True to include the master bug's subscribers as recipients.
         """
 
     def canBeAQuestion():
@@ -714,6 +710,12 @@ class IBugView(Interface):
         Otherwise, return False.
         """
 
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this bug.
+
+        The intersection of the affected pillars' allowed types is permitted.
+        """
+
 
 class IBugEdit(Interface):
     """IBug attributes that require launchpad.Edit permission."""
@@ -837,18 +839,10 @@ class IBugEdit(Interface):
         file_alias.restricted.
         """
 
-    def linkCVE(cve, user):
-        """Ensure that this CVE is linked to this bug."""
-
-    # XXX intellectronica 2008-11-06 Bug #294858:
-    # We use this method to suppress the return value
-    # from linkCVE, which we don't want to export.
-    # In the future we'll have a decorator which does that for us.
-    @call_with(user=REQUEST_USER)
+    @call_with(user=REQUEST_USER, return_cve=False)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
-    @export_operation_as('linkCVE')
     @export_write_operation()
-    def linkCVEAndReturnNothing(cve, user):
+    def linkCVE(cve, user, return_cve=True):
         """Ensure that this CVE is linked to this bug."""
 
     @call_with(user=REQUEST_USER)
