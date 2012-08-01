@@ -393,6 +393,7 @@ patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
 patch_collection_property(
     IArchive, 'enabled_restricted_families', IProcessorFamily)
+patch_collection_return_type(IArchive, 'getAllPermissions', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
 patch_collection_return_type(

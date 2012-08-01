@@ -212,6 +212,10 @@ class ArchivePermissionSet:
                 ISourcePackageNameSet)[sourcepackagename]
         return sourcepackagename
 
+    def allPermissions(self, archive):
+        """See `IArchivePermissionSet`."""
+        return ArchivePermission.selectBy(archive=archive)
+
     def permissionsForPerson(self, archive, person):
         """See `IArchivePermissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

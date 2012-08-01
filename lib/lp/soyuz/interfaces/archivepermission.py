@@ -160,6 +160,12 @@ class IArchivePermissionSet(Interface):
         authenticated in that context.
         """
 
+    def allPermissions(archive):
+        """All `ArchivePermission` records for the archive.
+
+        :param archive: An `IArchive`.
+        """
+
     def permissionsForPerson(person, archive):
         """All `ArchivePermission` records for the person.
 
