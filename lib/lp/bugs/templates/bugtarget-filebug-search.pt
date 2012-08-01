@@ -57,12 +57,6 @@
                   <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
                 </tal:product_widget>
 
-                <tal:bugtarget
-                    tal:define="widget nocall:view/widgets/bugtarget|nothing"
-                    tal:condition="widget">
-                  <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-                </tal:bugtarget>
-
                 <tal:hidden_tags tal:replace="structure view/widgets/tags/hidden" />
 
                 <tr>
