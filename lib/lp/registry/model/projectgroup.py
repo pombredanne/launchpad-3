@@ -61,6 +61,7 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTag,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -337,9 +338,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         if not self.products:
             return []
-        product_ids = sqlvalues(*self.products)
         return get_bug_tags(
-            "BugTask.product IN (%s)" % ",".join(product_ids))
+            BugTask.productID.is_in([p.id for p in self.products]))
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""

@@ -54,6 +54,7 @@ from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -443,7 +444,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def getUsedBugTags(self):
         """See IBugTarget."""
-        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
+        return get_bug_tags(BugTask.productseriesID == self.id)
 
     def createBug(self, bug_params):
         """See IBugTarget."""
