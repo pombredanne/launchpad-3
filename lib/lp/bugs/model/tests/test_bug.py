@@ -672,7 +672,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # - and bug/pillar owners, drivers if they are already subscribed
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers(private_security_related=True))
+                self.createBugTasksAndSubscribers())
         initial_subscribers = set((
             self.factory.makePerson(name='subscriber'), bug_owner,
             bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
