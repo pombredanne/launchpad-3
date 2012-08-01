@@ -387,14 +387,18 @@ class FileBugViewBase(LaunchpadFormView):
         return field_names
 
     @property
+    def default_information_type(self):
+        value = InformationType.PUBLIC
+        if ((self.extra_data and self.extra_data.private) or
+            (self.context and IProduct.providedBy(self.context) and
+             self.context.private_bugs)):
+            value = InformationType.USERDATA
+        return value
+
+    @property
     def initial_values(self):
         """Give packagename a default value, if applicable."""
-        if (self.context and IProduct.providedBy(self.context)
-            and self.context.private_bugs):
-            type = InformationType.USERDATA
-        else:
-            type = InformationType.PUBLIC
-        values = {'information_type': type}
+        values = {'information_type': self.default_information_type}
 
         if IDistributionSourcePackage.providedBy(self.context):
             values['packagename'] = self.context.name
@@ -563,10 +567,14 @@ class FileBugViewBase(LaunchpadFormView):
             "distribution", getUtility(ILaunchBag).distribution)
 
         information_type = data.get("information_type")
-        # If the old UI is enabled, security bugs are always embargoed
-        # when filed, but can be disclosed after they've been reported.
-        if information_type is None and data.get("security_related"):
-            information_type = InformationType.PRIVATESECURITY
+        if information_type is None:
+            # If the old UI is enabled, security bugs are always embargoed
+            # when filed, but can be disclosed after they've been reported.
+            # Otherwise we use the default.
+            if data.get("security_related"):
+                information_type = InformationType.PRIVATESECURITY
+            else:
+                information_type = self.default_information_type
 
         context = self.context
         if distribution is not None:
@@ -617,10 +625,6 @@ class FileBugViewBase(LaunchpadFormView):
                 params.comment, extra_data.extra_description)
             notifications.append(
                 'Additional information was added to the bug description.')
-
-        if not self.is_bug_supervisor and extra_data.private:
-            if params.information_type in (None, InformationType.PUBLIC):
-                params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
         if self.is_bug_supervisor:
