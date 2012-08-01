@@ -105,7 +105,6 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
@@ -366,8 +365,6 @@ class FileBugViewBase(LaunchpadFormView):
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
-        elif IMaloneApplication.providedBy(context):
-            field_names.append('bugtarget')
         elif IProjectGroup.providedBy(context):
             field_names.append('product')
         elif not IProduct.providedBy(context):
@@ -409,10 +406,7 @@ class FileBugViewBase(LaunchpadFormView):
 
     def targetIsUbuntu(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        return (self.context == ubuntu or
-                (IMaloneApplication.providedBy(self.context) and
-                 self.request.form.get('field.bugtarget.distribution') ==
-                 ubuntu.name))
+        return self.context == ubuntu
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -455,8 +449,6 @@ class FileBugViewBase(LaunchpadFormView):
             if packagename:
                 if IDistribution.providedBy(self.context):
                     distribution = self.context
-                elif 'distribution' in data:
-                    distribution = data['distribution']
                 else:
                     assert IDistributionSourcePackage.providedBy(self.context)
                     distribution = self.context.distribution
@@ -478,17 +470,6 @@ class FileBugViewBase(LaunchpadFormView):
             else:
                 self.setFieldError("packagename",
                                    "Please enter a package name")
-
-        # If we've been called from the frontpage filebug forms we must check
-        # that whatever product or distro is having a bug filed against it
-        # actually uses Malone for its bug tracking.
-        product_or_distro = self.getProductOrDistroFromContext()
-        if (product_or_distro is not None and
-            product_or_distro.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
-            self.setFieldError(
-                'bugtarget',
-                "%s does not use Launchpad as its bug tracker " %
-                product_or_distro.displayname)
 
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
@@ -559,8 +540,6 @@ class FileBugViewBase(LaunchpadFormView):
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
-        distribution = data.get(
-            "distribution", getUtility(ILaunchBag).distribution)
 
         information_type = data.get("information_type")
         # If the old UI is enabled, security bugs are always embargoed
@@ -569,14 +548,8 @@ class FileBugViewBase(LaunchpadFormView):
             information_type = InformationType.PRIVATESECURITY
 
         context = self.context
-        if distribution is not None:
-            # We're being called from the generic bug filing form, so
-            # manually set the chosen distribution as the context.
-            context = distribution
-        elif IProjectGroup.providedBy(context):
+        if IProjectGroup.providedBy(context):
             context = data['product']
-        elif IMaloneApplication.providedBy(context):
-            context = data['bugtarget']
 
         # Ensure that no package information is used, if the user
         # enters a package name but then selects "I don't know".
@@ -866,14 +839,6 @@ class FileBugViewBase(LaunchpadFormView):
                 return bugtask
         return None
 
-    @property
-    def bugtarget(self):
-        """The bugtarget we're currently assuming.
-
-        The same as the context.
-        """
-        return self.context
-
     default_bug_reported_acknowledgement = "Thank you for your bug report."
 
     def getAcknowledgementMessage(self, context):
@@ -960,25 +925,23 @@ class FileBugViewBase(LaunchpadFormView):
                 return target.displayname
 
         guidelines = []
-        bugtarget = self.context
-        if bugtarget is not None:
-            content = bugtarget.bug_reporting_guidelines
+        content = self.context.bug_reporting_guidelines
+        if content is not None and len(content) > 0:
+            guidelines.append({
+                    "source": target_name(self.context),
+                    "content": content,
+                    })
+        # Distribution source packages are shown with both their
+        # own reporting guidelines and those of their
+        # distribution.
+        if IDistributionSourcePackage.providedBy(self.context):
+            distribution = self.context.distribution
+            content = distribution.bug_reporting_guidelines
             if content is not None and len(content) > 0:
                 guidelines.append({
-                        "source": target_name(bugtarget),
+                        "source": target_name(distribution),
                         "content": content,
                         })
-            # Distribution source packages are shown with both their
-            # own reporting guidelines and those of their
-            # distribution.
-            if IDistributionSourcePackage.providedBy(bugtarget):
-                distribution = bugtarget.distribution
-                content = distribution.bug_reporting_guidelines
-                if content is not None and len(content) > 0:
-                    guidelines.append({
-                            "source": target_name(distribution),
-                            "content": content,
-                            })
         return guidelines
 
     def getMainContext(self):
@@ -1118,10 +1081,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
 
     @property
     def page_title(self):
-        if IMaloneApplication.providedBy(self.context):
-            return 'Report a bug'
-        else:
-            return 'Report a bug about %s' % self.context.title
+        return 'Report a bug about %s' % self.context.title
 
     @safe_action
     @action("Continue", name="projectgroupsearch",
@@ -1145,22 +1105,13 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
     @property
     def search_context(self):
         """Return the context used to search for similar bugs."""
-        if IDistributionSourcePackage.providedBy(self.context):
-            return self.context
-
-        search_context = self.getMainContext()
-        if IProjectGroup.providedBy(search_context):
+        if IProjectGroup.providedBy(self.context):
             assert self.widgets['product'].hasValidInput(), (
                 "This method should be called only when we know which"
                 " product the user selected.")
-            search_context = self.widgets['product'].getInputValue()
-        elif IMaloneApplication.providedBy(search_context):
-            if self.widgets['bugtarget'].hasValidInput():
-                search_context = self.widgets['bugtarget'].getInputValue()
-            else:
-                search_context = None
+            return self.widgets['product'].getInputValue()
 
-        return search_context
+        return self.context
 
     @property
     def search_text(self):
