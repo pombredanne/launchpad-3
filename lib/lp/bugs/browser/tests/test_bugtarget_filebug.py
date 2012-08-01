@@ -340,17 +340,11 @@ class TestFileBugViewBase(TestCaseWithFactory):
         self.assertEqual(0, len(view.errors))
         self.assertTrue(view.added_bug is not None)
 
-
-class TestFileBugReportingGuidelines(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
     def test_filebug_reporting_details(self):
         product = self.factory.makeProduct()
         login_person(product.owner)
         product.bug_reporting_guidelines = "Include bug details"
-        view = create_initialized_view(
-            product, '+filebug-reporting-guidelines')
+        view = create_initialized_view(product, '+filebug')
         expected_guidelines = [{
             "source": product.displayname, "content": u"Include bug details",
             }]
@@ -522,53 +516,6 @@ class TestFileBugSourcePackage(TestCaseWithFactory):
         self.assertIn("Thank you for your bug report.", msg)
 
 
-class TestFileBugGuidelinesRequestCache(TestCaseWithFactory):
-    # Tests to ensure the request cache contains the expected values for
-    # file bug guidelines views.
-
-    layer = DatabaseFunctionalLayer
-
-    def _assert_cache_values(self, view, private_bugs, duplicate_search):
-        cache = IJSONRequestCache(view.request).objects
-        self.assertContentEqual(cache['private_types'], [
-            type.name for type in PRIVATE_INFORMATION_TYPES])
-        self.assertEqual(cache['bug_private_by_default'], private_bugs)
-
-    def test_product(self):
-        project = self.factory.makeProduct(official_malone=True)
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(project,
-            '+filebug-reporting-guidelines', principal=user)
-        self._assert_cache_values(view, False, True)
-
-    def test_product_default_private(self):
-        product = self.factory.makeProduct(official_malone=True)
-        removeSecurityProxy(product).private_bugs = True
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(product,
-            '+filebug-reporting-guidelines', principal=user)
-        self._assert_cache_values(view, True, True)
-
-    def test_product_no_duplicate_search(self):
-        product = self.factory.makeProduct(official_malone=True)
-        removeSecurityProxy(product).enable_bugfiling_duplicate_search = False
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(product,
-            '+filebug-reporting-guidelines', principal=user)
-        self._assert_cache_values(view, False, False)
-
-    def test_project_group(self):
-        project = self.factory.makeProject()
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(project,
-            '+filebug-reporting-guidelines', principal=user)
-        self._assert_cache_values(view, False, True)
-
-
 class TestFileBugRequestCache(TestCaseWithFactory):
     # Tests to ensure the request cache contains the expected values for
     # file bug views.
@@ -581,7 +528,7 @@ class TestFileBugRequestCache(TestCaseWithFactory):
             'disclosure.enhanced_choice_popup.enabled': 'true'
         }))
 
-    def _assert_cache_values(self, view, duplicate_search, private_only=False):
+    def _assert_cache_values(self, view, duplicate_search, private_bugs=False):
         cache = IJSONRequestCache(view.request).objects
         self.assertEqual(
             duplicate_search, cache['enable_bugfiling_duplicate_search'])
@@ -628,6 +575,9 @@ class TestFileBugRequestCache(TestCaseWithFactory):
             bugtask_importance_data.append(new_item)
         self.assertEqual(
             bugtask_importance_data, cache['bugtask_importance_data'])
+        self.assertContentEqual(cache['private_types'], [
+            type.name for type in PRIVATE_INFORMATION_TYPES])
+        self.assertEqual(cache['bug_private_by_default'], private_bugs)
         bugtask_info_type_data = []
         if not IProjectGroup.providedBy(view.context):
             for item in view.context.getAllowedBugInformationTypes():
