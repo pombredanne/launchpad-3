@@ -1052,10 +1052,11 @@ class Archive(SQLBase):
                 raise ComponentNotFound(e)
         return self.addArchiveDependency(dependency, pocket, component)
 
-    def getPermissions(self, user, item, perm_type):
+    def getPermissions(self, user, item, perm_type, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.checkAuthenticated(user, self, perm_type, item)
+        return permission_set.checkAuthenticated(
+            user, self, perm_type, item, distroseries=distroseries)
 
     def getPermissionsForPerson(self, person):
         """See `IArchive`."""
@@ -1087,10 +1088,11 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
 
-    def getQueueAdminsForPocket(self, pocket):
+    def getQueueAdminsForPocket(self, pocket, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.queueAdminsForPocket(self, pocket)
+        return permission_set.queueAdminsForPocket(
+            self, pocket, distroseries=distroseries)
 
     def getPocketsForQueueAdmin(self, person):
         """See `IArchive`."""
@@ -1357,24 +1359,33 @@ class Archive(SQLBase):
 
         return None
 
-    def canAdministerQueue(self, user, components):
+    def canAdministerQueue(self, user, components=None, pocket=None,
+                           distroseries=None):
         """See `IArchive`."""
         if components is None:
             components = []
         elif IComponent.providedBy(components):
             components = [components]
-        permissions = self.getComponentsForQueueAdmin(user)
-        if permissions.count() == 0:
-            return False
-        allowed_components = set(
-            permission.component for permission in permissions)
-        # The intersection of allowed_components and components must be
-        # equal to components to allow the operation to go ahead.
-        return allowed_components.intersection(components) == set(components)
+        component_permissions = self.getComponentsForQueueAdmin(user)
+        if not component_permissions.is_empty():
+            allowed_components = set(
+                permission.component for permission in component_permissions)
+            # The intersection of allowed_components and components must be
+            # equal to components to allow the operation to go ahead.
+            if allowed_components.intersection(components) == set(components):
+                return True
+        if pocket is not None:
+            pocket_permissions = self.getPocketsForQueueAdmin(user)
+            for permission in pocket_permissions:
+                if (permission.pocket == pocket and
+                    permission.distroseries in (None, distroseries)):
+                    return True
+        return False
 
-    def _authenticate(self, user, item, permission):
+    def _authenticate(self, user, item, permission, distroseries=None):
         """Private helper method to check permissions."""
-        permissions = self.getPermissions(user, item, permission)
+        permissions = self.getPermissions(
+            user, item, permission, distroseries=distroseries)
         return bool(permissions)
 
     def newPackageUploader(self, person, source_package_name):
@@ -1426,10 +1437,11 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newQueueAdmin(self, person, component_name)
 
-    def newPocketQueueAdmin(self, person, pocket):
+    def newPocketQueueAdmin(self, person, pocket, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.newPocketQueueAdmin(self, person, pocket)
+        return permission_set.newPocketQueueAdmin(
+            self, person, pocket, distroseries=distroseries)
 
     def deletePackageUploader(self, person, source_package_name):
         """See `IArchive`."""
@@ -1453,10 +1465,11 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.deleteQueueAdmin(self, person, component_name)
 
-    def deletePocketQueueAdmin(self, person, pocket):
+    def deletePocketQueueAdmin(self, person, pocket, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.deletePocketQueueAdmin(self, person, pocket)
+        return permission_set.deletePocketQueueAdmin(
+            self, person, pocket, distroseries=distroseries)
 
     def getUploadersForPackageset(self, packageset, direct_permissions=True):
         """See `IArchive`."""

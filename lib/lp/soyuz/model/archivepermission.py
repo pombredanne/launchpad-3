@@ -106,6 +106,9 @@ class ArchivePermission(SQLBase):
 
     pocket = EnumCol(dbName="pocket", schema=PackagePublishingPocket)
 
+    distroseries = ForeignKey(
+        foreignKey='DistroSeries', dbName='distroseries', notNull=False)
+
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -150,6 +153,8 @@ class ArchivePermission(SQLBase):
         """See `IArchivePermission`"""
         if self.packageset:
             return self.packageset.distroseries.name
+        elif self.distroseries:
+            return self.distroseries.name
         else:
             return None
 
@@ -158,7 +163,8 @@ class ArchivePermissionSet:
     """See `IArchivePermissionSet`."""
     implements(IArchivePermissionSet)
 
-    def checkAuthenticated(self, person, archive, permission, item):
+    def checkAuthenticated(self, person, archive, permission, item,
+                           distroseries=None):
         """See `IArchivePermissionSet`."""
         clauses = ["""
             ArchivePermission.archive = %s AND
@@ -184,6 +190,12 @@ class ArchivePermissionSet:
         elif (zope_isinstance(item, DBItem) and
               item.enum.name == "PackagePublishingPocket"):
             clauses.append("ArchivePermission.pocket = %s" % sqlvalues(item))
+            if distroseries is not None:
+                clauses.append(
+                    "ArchivePermission.distroseries IS NULL OR "
+                    "ArchivePermission.distroseries = %s" %
+                    sqlvalues(distroseries))
+                prejoins.append("distroseries")
         else:
             raise AssertionError(
                 "'item' %r is not an IComponent, IPackageset, "
@@ -325,11 +337,14 @@ class ArchivePermissionSet:
         return self._componentsFor(
             archive, person, ArchivePermissionType.QUEUE_ADMIN)
 
-    def queueAdminsForPocket(self, archive, pocket):
+    def queueAdminsForPocket(self, archive, pocket, distroseries=None):
         """See `IArchivePermissionSet`."""
+        kwargs = {}
+        if distroseries is not None:
+            kwargs["distroseries"] = distroseries
         return ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.QUEUE_ADMIN,
-            pocket=pocket)
+            pocket=pocket, **kwargs)
 
     def pocketsForQueueAdmin(self, archive, person):
         """See `IArchivePermissionSet`."""
@@ -384,15 +399,17 @@ class ArchivePermissionSet:
                 archive=archive, person=person, component=component,
                 permission=ArchivePermissionType.QUEUE_ADMIN)
 
-    def newPocketQueueAdmin(self, archive, person, pocket):
+    def newPocketQueueAdmin(self, archive, person, pocket, distroseries=None):
         """See `IArchivePermissionSet`."""
         existing = self.checkAuthenticated(
-            person, archive, ArchivePermissionType.QUEUE_ADMIN, pocket)
+            person, archive, ArchivePermissionType.QUEUE_ADMIN, pocket,
+            distroseries=distroseries)
         try:
             return existing[0]
         except IndexError:
             return ArchivePermission(
                 archive=archive, person=person, pocket=pocket,
+                distroseries=distroseries,
                 permission=ArchivePermissionType.QUEUE_ADMIN)
 
     @staticmethod
@@ -435,11 +452,15 @@ class ArchivePermissionSet:
             permission=ArchivePermissionType.QUEUE_ADMIN)
         self._remove_permission(permission)
 
-    def deletePocketQueueAdmin(self, archive, person, pocket):
+    def deletePocketQueueAdmin(self, archive, person, pocket,
+                               distroseries=None):
         """See `IArchivePermissionSet`."""
+        kwargs = {}
+        if distroseries is not None:
+            kwargs["distroseries"] = distroseries
         permission = ArchivePermission.selectOneBy(
             archive=archive, person=person, pocket=pocket,
-            permission=ArchivePermissionType.QUEUE_ADMIN)
+            permission=ArchivePermissionType.QUEUE_ADMIN, **kwargs)
         self._remove_permission(permission)
 
     def _nameToPackageset(self, packageset):

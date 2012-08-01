@@ -31,6 +31,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.fields import PublicPersonChoice
@@ -124,6 +125,15 @@ class IArchivePermission(Interface):
             description=_("The pocket that this permission is for."),
             vocabulary=PackagePublishingPocket,
             required=True))
+
+    distroseries = exported(
+        Reference(
+            IDistroSeries,
+            title=_("Distro series"),
+            description=_(
+                "The distro series that this permission is for (only for "
+                "pocket permissions)."),
+            required=False))
 
 
 class IArchiveUploader(IArchivePermission):
@@ -357,11 +367,12 @@ class IArchivePermissionSet(Interface):
             'person' is allowed to administer the queue for.
         """
 
-    def queueAdminsForPocket(archive, pocket):
+    def queueAdminsForPocket(archive, pocket, distroseries=None):
         """The `ArchivePermission` records for authorised pocket queue admins.
 
         :param archive: The context `IArchive` for the permission check.
         :param pocket: A `PackagePublishingPocket`.
+        :param distroseries: An optional `IDistroSeries`.
 
         :return: `ArchivePermission` records for all the persons who are
             allowed to administer the pocket upload queue.
@@ -443,12 +454,13 @@ class IArchivePermissionSet(Interface):
             already exists.
         """
 
-    def newPocketQueueAdmin(archive, person, pocket):
+    def newPocketQueueAdmin(archive, person, pocket, distroseries=None):
         """Create and return a new `ArchivePermission` for a queue admin.
 
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to add permission.
         :param pocket: A `PackagePublishingPocket`.
+        :param distroseries: An optional `IDistroSeries`.
 
         :return: The new `ArchivePermission`, or the existing one if it
             already exists.
@@ -500,10 +512,11 @@ class IArchivePermissionSet(Interface):
         :param component: An `IComponent` or a string package name.
         """
 
-    def deletePocketQueueAdmin(archive, person, pocket):
+    def deletePocketQueueAdmin(archive, person, pocket, distroseries=None):
         """Revoke queue admin permissions for a person.
 
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to revoke permission.
         :param pocket: A `PackagePublishingPocket`.
+        :param distroseries: An optional `IDistroSeries`.
         """
