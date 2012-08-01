@@ -3,7 +3,9 @@
 
 SET client_min_messages=ERROR;
 
--- All existing and future specifications are public, until model code supports overriding this.
-ALTER TABLE Specification ADD COLUMN information_type INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE Specification ADD COLUMN information_type INTEGER NOT NULL;
+
+-- All future specifications are public, until model code supports overriding this.
+ALTER TABLE Specification ALTER COLUMN information_type SET DEFAULT 1;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 28, 1);
