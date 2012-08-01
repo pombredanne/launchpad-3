@@ -8,7 +8,10 @@ from textwrap import dedent
 
 from storm.store import Store
 from testtools.content import text_content
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    MatchesRegex,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -416,6 +419,20 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(
             "Destination pocket must be 'release' for a PPA.",
             job.error_message)
+
+    def test_target_ppa_message_unexpected_error(self):
+        # When copying to a PPA archive, unexpected errors are stored in the
+        # job's metadata with an apologetic message.
+        job = self.makePPAJob()
+        removeSecurityProxy(job).attemptCopy = FakeMethod(failure=Exception())
+        self.runJob(job)
+        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertThat(
+            job.error_message,
+            MatchesRegex(
+                "Launchpad encountered an internal error while copying this"
+                " package.  It was logged with id .*.  Sorry for the"
+                " inconvenience."))
 
     def test_run(self):
         # A proper test run synchronizes packages.

@@ -499,6 +499,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if pu is not None:
             pu.setRejected()
 
+    def notifyOops(self, oops):
+        """See `IRunnableJob`."""
+        self.reportFailure(
+            "Launchpad encountered an internal error while copying this"
+            " package.  It was logged with id %s.  Sorry for the"
+            " inconvenience." % oops["id"])
+        super(PlainPackageCopyJob, self).notifyOops(oops)
+
     def run(self):
         """See `IRunnableJob`."""
         try:
@@ -510,7 +518,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             logger = logging.getLogger()
             logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
             self.abort()  # Abort the txn.
-            self.reportFailure(e)
+            self.reportFailure(unicode(e))
 
             # If there is an associated PackageUpload we need to reject it,
             # else it will sit in ACCEPTED forever.
@@ -621,9 +629,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             for dsd in candidates
                 if dsd.parent_series.distributionID == source_distro_id]
 
-    def reportFailure(self, cannotcopy_exception):
+    def reportFailure(self, message):
         """Attempt to report failure to the user."""
-        message = unicode(cannotcopy_exception)
         if self.target_archive.purpose != ArchivePurpose.PPA:
             dsds = self.findMatchingDSDs()
             comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
