@@ -756,22 +756,8 @@ class FileBugViewBase(LaunchpadFormView):
         return self, ()
 
     def getProductOrDistroFromContext(self):
-        """Return the product or distribution relative to the context.
-
-        For instance, if the context is an IDistroSeries, return the
-        distribution related to it. Will return None if the context is
-        not related to a product or a distro.
-        """
-        context = self.context
-        if IProduct.providedBy(context) or IDistribution.providedBy(context):
-            return context
-        elif IProductSeries.providedBy(context):
-            return context.product
-        elif (IDistroSeries.providedBy(context) or
-              IDistributionSourcePackage.providedBy(context)):
-            return context.distribution
-        else:
-            return None
+        """Return the product or distribution relative to the context."""
+        return self.context.pillar
 
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
@@ -951,11 +937,6 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
         return url
 
     @property
-    def search_context(self):
-        """Return the context used to search for similar bugs."""
-        return self.context
-
-    @property
     def search_text(self):
         """Return the search string entered by the user."""
         return self.request.get('title')
@@ -966,19 +947,16 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
         title = self.search_text
         if not title:
             return []
-        search_context = self.search_context
-        if search_context is None:
-            return []
-        elif IProduct.providedBy(search_context):
-            context_params = {'product': search_context}
-        elif IDistribution.providedBy(search_context):
-            context_params = {'distribution': search_context}
+        elif IProduct.providedBy(self.context):
+            context_params = {'product': self.context}
+        elif IDistribution.providedBy(self.context):
+            context_params = {'distribution': self.context}
         else:
-            assert IDistributionSourcePackage.providedBy(search_context), (
-                    'Unknown search context: %r' % search_context)
+            assert IDistributionSourcePackage.providedBy(self.context), (
+                    'Unknown search context: %r' % self.context)
             context_params = {
-                'distribution': search_context.distribution,
-                'sourcepackagename': search_context.sourcepackagename}
+                'distribution': self.context.distribution,
+                'sourcepackagename': self.context.sourcepackagename}
 
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             self.user, title, **context_params)
@@ -1041,17 +1019,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         # won't scroll past the "possible duplicates" list.
         self.initial_focus_widget = None
         return self.showFileBugForm()
-
-    @property
-    def search_context(self):
-        """Return the context used to search for similar bugs."""
-        if IProjectGroup.providedBy(self.context):
-            assert self.widgets['product'].hasValidInput(), (
-                "This method should be called only when we know which"
-                " product the user selected.")
-            return self.widgets['product'].getInputValue()
-
-        return self.context
 
     @property
     def search_text(self):
