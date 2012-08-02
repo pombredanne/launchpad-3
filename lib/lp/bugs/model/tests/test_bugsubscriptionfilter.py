@@ -20,9 +20,11 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.model.bugsubscriptionfilter import (
     BugSubscriptionFilter,
     BugSubscriptionFilterImportance,
+    BugSubscriptionFilterInformationType,
     BugSubscriptionFilterStatus,
     BugSubscriptionFilterTag,
     )
+from lp.registry.enums import InformationType
 from lp.services import searchbuilder
 from lp.services.database.lpstorm import IStore
 from lp.testing import (
@@ -184,7 +186,7 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
             bug_subscription_filter.statuses)
 
     def test_statuses_set_all(self):
-        # Setting all importances is normalized into setting no importances.
+        # Setting all statuses is normalized into setting no statuses.
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.statuses = list(BugTaskStatus.items)
         self.assertEqual(frozenset(), bug_subscription_filter.statuses)
@@ -227,6 +229,46 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.importances = []
         self.assertEqual(frozenset(), bug_subscription_filter.importances)
+
+    def test_information_types(self):
+        # The information_types property is a frozenset of the
+        # information_types that are filtered upon.
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertEqual(
+            frozenset(), bug_subscription_filter.information_types)
+
+    def test_information_types_set(self):
+        # Assigning any iterable to information_types updates the database.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.information_types = [
+            InformationType.PRIVATESECURITY, InformationType.USERDATA]
+        self.assertEqual(
+            frozenset((InformationType.PRIVATESECURITY,
+                InformationType.USERDATA)),
+            bug_subscription_filter.information_types)
+        # Assigning a subset causes the other status filters to be removed.
+        bug_subscription_filter.information_types = [
+            InformationType.USERDATA]
+        self.assertEqual(
+            frozenset((InformationType.USERDATA,)),
+            bug_subscription_filter.information_types)
+
+    def test_information_types_set_all(self):
+        # Setting all information_types is normalized into setting no
+        # information_types.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.information_types = list(
+            InformationType.items)
+        self.assertEqual(
+            frozenset(), bug_subscription_filter.information_types)
+
+    def test_information_types_set_empty(self):
+        # Assigning an empty iterable to information_types updates the
+        # database.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.information_types = []
+        self.assertEqual(
+            frozenset(), bug_subscription_filter.information_types)
 
     def test_tags(self):
         # The tags property is a frozenset of the tags that are filtered upon.
@@ -492,3 +534,35 @@ class TestBugSubscriptionFilterTag(TestCaseWithFactory):
         self.assertEqual(u"foo", bug_sub_filter_tag.qualified_tag)
         bug_sub_filter_tag.include = False
         self.assertEqual(u"-foo", bug_sub_filter_tag.qualified_tag)
+
+
+class TestBugSubscriptionFilterInformationType(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterInformationType, self).setUp()
+        self.target = self.factory.makeProduct()
+        self.subscriber = self.target.owner
+        login_person(self.subscriber)
+        self.subscription = self.target.addBugSubscription(
+            self.subscriber, self.subscriber)
+        self.subscription_filter = BugSubscriptionFilter()
+        self.subscription_filter.structural_subscription = self.subscription
+
+    def test_basics(self):
+        # Test the basics of `BugSubscriptionFilterInformationType` objects.
+        # Create.
+        bug_sub_filter_itype = BugSubscriptionFilterInformationType()
+        bug_sub_filter_itype.filter = self.subscription_filter
+        bug_sub_filter_itype.information_type = InformationType.USERDATA
+        # Flush and reload.
+        IStore(bug_sub_filter_itype).flush()
+        IStore(bug_sub_filter_itype).reload(bug_sub_filter_itype)
+        # Check.
+        self.assertEqual(
+            self.subscription_filter.id, bug_sub_filter_itype.filter_id)
+        self.assertEqual(
+            self.subscription_filter, bug_sub_filter_itype.filter)
+        self.assertEqual(
+            InformationType.USERDATA, bug_sub_filter_itype.information_type)

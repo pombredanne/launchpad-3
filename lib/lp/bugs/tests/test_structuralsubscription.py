@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `StructuralSubscription`."""
@@ -30,6 +30,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions,
     get_structural_subscriptions_for_bug,
     )
+from lp.registry.enums import InformationType
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.testing import (
     anonymous_logged_in,
@@ -203,6 +204,14 @@ class FilteredStructuralSubscriptionTestBase:
 
         # If the filter is adjusted, the subscription is found again.
         self.initial_filter.importances = [self.bugtask.importance]
+        self.assertSubscribers([self.ordinary_subscriber])
+
+    def test_getStructuralSubscribers_with_filter_on_information_type(self):
+        self.assertSubscribers([self.ordinary_subscriber])
+        self.initial_filter.information_types = [InformationType.USERDATA]
+        self.assertSubscribers([])
+        self.initial_filter.information_types = [
+            self.bugtask.bug.information_type]
         self.assertSubscribers([self.ordinary_subscriber])
 
     def test_getStructuralSubscribers_with_filter_on_level(self):

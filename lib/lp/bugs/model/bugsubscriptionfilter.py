@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'BugSubscriptionFilter',
+    'BugSubscriptionFilterInformationType',
     'BugSubscriptionFilterImportance',
     'BugSubscriptionFilterMute',
     'BugSubscriptionFilterStatus',
@@ -33,6 +34,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import validate_person
 from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
@@ -218,6 +220,47 @@ class BugSubscriptionFilter(StormBase):
         _get_tags, _set_tags, doc=(
             "A frozenset of tags filtered on."))
 
+    def _get_information_types(self):
+        """Return a frozenset of information_types to filter on."""
+        return frozenset(
+            IStore(BugSubscriptionFilterInformationType).find(
+                BugSubscriptionFilterInformationType,
+                BugSubscriptionFilterInformationType.filter == self).values(
+                BugSubscriptionFilterInformationType.information_type))
+
+    def _set_information_types(self, information_types):
+        """Update the information_types to filter on.
+
+        The information types must be from the `InformationType` enum, but
+        can be bundled in any iterable.
+
+        Setting all information types is equivalent to setting no statuses,
+        and is normalized that way.
+        """
+        itypes = frozenset(information_types)
+        if itypes == frozenset(InformationType.items):
+            # Setting all is the same as setting none, and setting none is
+            # cheaper for reading and storage.
+            itypes = frozenset()
+        current_itypes = self.information_types
+        store = IStore(BugSubscriptionFilterInformationType)
+        # Add additional information_types.
+        for information_type in itypes.difference(current_itypes):
+            itype_filter = BugSubscriptionFilterInformationType()
+            itype_filter.filter = self
+            itype_filter.information_type = information_type
+            store.add(itype_filter)
+        # Delete unused ones.
+        store.find(
+            BugSubscriptionFilterInformationType,
+            BugSubscriptionFilterInformationType.filter == self,
+            BugSubscriptionFilterInformationType.information_type.is_in(
+                current_itypes.difference(itypes))).remove()
+
+    information_types = property(
+        _get_information_types, _set_information_types, doc=(
+            "A frozenset of information_types filtered on."))
+
     def _has_other_filters(self):
         """Are there other filters for parent `StructuralSubscription`?"""
         store = Store.of(self)
@@ -238,6 +281,7 @@ class BugSubscriptionFilter(StormBase):
         # This clears up all of the linked sub-records in the associated
         # tables.
         self.importances = self.statuses = self.tags = ()
+        self.information_types = ()
 
         if self._has_other_filters():
             Store.of(self).remove(self)
@@ -364,3 +408,15 @@ class BugSubscriptionFilterTag(StormBase):
             return self.tag
         else:
             return u"-" + self.tag
+
+
+class BugSubscriptionFilterInformationType(StormBase):
+    """Information types to filter."""
+
+    __storm_table__ = "BugSubscriptionFilterInformationType"
+    __storm_primary__ = ('filter_id', 'information_type')
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
+
+    information_type = DBEnum(enum=InformationType, allow_none=False)
