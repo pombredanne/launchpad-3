@@ -1081,17 +1081,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         return 'Report a bug about %s' % self.context.title
 
     @safe_action
-    @action("Continue", name="projectgroupsearch",
-            validator="validate_search")
-    def projectgroup_search_action(self, action, data):
-        """Search for similar bug reports."""
-        # Don't give focus to any widget, to ensure that the browser
-        # won't scroll past the "possible duplicates" list.
-        self.initial_focus_widget = None
-        return self._PROJECTGROUP_SEARCH_FOR_DUPES()
-
-    @safe_action
-    @action("Continue", name="search", validator="validate_search")
+    @action("Continue", name="search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
         # Don't give focus to any widget, to ensure that the browser
@@ -1118,18 +1108,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         except InputErrors:
             return None
 
-    def validate_search(self, action, data):
-        """Make sure some keywords are provided."""
-        try:
-            data['title'] = self.widgets['title'].getInputValue()
-        except InputErrors as error:
-            self.setFieldError("title", "A summary is required.")
-            return [error]
-
-        # Return an empty list of errors to satisfy the validation API,
-        # and say "we've handled the validation and found no errors."
-        return []
-
     def validate_no_dupe_found(self, action, data):
         return ()
 
@@ -1143,12 +1121,23 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         return self._FILEBUG_FORM()
 
 
-class ProjectGroupFileBugGuidedView(FileBugGuidedView):
+class ProjectGroupFileBugGuidedView(LaunchpadFormView):
     """Guided filebug pages for IProjectGroup."""
 
-    # Make inheriting the base class' actions work.
-    actions = FileBugGuidedView.actions
     schema = IProjectGroupBugAddForm
+
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
+
+    extra_data_to_process = False
+
+    @property
+    def field_names(self):
+        return ['product', 'title', 'tags']
+
+    @property
+    def page_title(self):
+        return 'Report a bug about %s' % self.context.title
 
     @cachedproperty
     def products_using_malone(self):
@@ -1163,36 +1152,30 @@ class ProjectGroupFileBugGuidedView(FileBugGuidedView):
         else:
             return None
 
-    @property
-    def inline_filebug_form_url(self):
-        """Return the URL to the inline filebug form.
+    def contextUsesMalone(self):
+        return self.default_product is not None
 
-        If a token was passed to this view, it will be passed through
-        to the inline bug filing form via the returned URL.
+    def contextIsProduct(self):
+        return False
 
-        The URL returned will be the URL of the first of the current
-        ProjectGroup's products, since that's the product that will be
-        selected by default when the view is rendered.
-        """
-        url = canonical_url(
-            self.default_product, view_name='+filebug-inline-form')
-        if self.extra_data_token is not None:
-            url = urlappend(url, self.extra_data_token)
-        return url
+    def contextIsProject(self):
+        return True
 
-    @property
-    def duplicate_search_url(self):
-        """Return the URL to the inline duplicate search view.
+    def getProductOrDistroFromContext(self):
+        return None
 
-        The URL returned will be the URL of the first of the current
-        ProjectGroup's products, since that's the product that will be
-        selected by default when the view is rendered.
-        """
-        url = canonical_url(
-            self.default_product, view_name='+filebug-show-similar')
-        if self.extra_data_token is not None:
-            url = urlappend(url, self.extra_data_token)
-        return url
+    @safe_action
+    @action("Continue", name="projectgroupsearch")
+    def projectgroup_search_action(self, action, data):
+        """Redirect to the chosen product's form."""
+        base = canonical_url(data['product'], view_name='+filebug')
+        query = urllib.urlencode([
+            ('field.actions.search', 'Continue'),
+            ('field.title', data['title']),
+            ('field.tags', ' '.join(data['tags'])),
+            ])
+        url = '%s?%s' % (base, query)
+        self.request.response.redirect(url)
 
 
 class BugTargetBugListingView(LaunchpadView):

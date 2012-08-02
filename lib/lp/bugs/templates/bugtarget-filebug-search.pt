@@ -131,7 +131,7 @@
             </tal:filebug-form>
           </div>
         </tal:not_project_group>
-        <p class="hidden">
+        <p class="hidden" tal:condition="view/inline_filebug_base_url|nothing">
           <a id="filebug-base-url"
               tal:attributes="href view/inline_filebug_base_url"></a>
           <a id="filebug-form-url"

@@ -79,20 +79,6 @@ possible duplicates for a bug asynchronously.
     >>> print filebug_view.duplicate_search_url
     http://launchpad.dev/firefox/+filebug-show-similar
 
-For project groups, the URLs returned will refer to the default product
-for those project groups.
-
-    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> gnome_project = getUtility(IProjectGroupSet).getByName('gnome')
-    >>> gnome_filebug_view = create_initialized_view(
-    ...     gnome_project, '+filebug')
-
-    >>> print gnome_filebug_view.inline_filebug_form_url
-    http://launchpad.dev/evolution/+filebug-inline-form
-
-    >>> print gnome_filebug_view.duplicate_search_url
-    http://launchpad.dev/evolution/+filebug-show-similar
-
 
 Adding extra info to filed bugs
 -------------------------------
