@@ -63,6 +63,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
 
     def test_find_missing_ready(self):
         """A job which is ready but not queued is "missing"."""
+        from lp.services.job.celeryjob import FindMissingReady
         job = self.createMissingJob()
         self.addTextDetail(
             'job_info', 'job.id: %d, job.job_id: %d' % (job.id, job.job_id))
@@ -74,7 +75,6 @@ class TestRunMissingJobs(TestCaseWithFactory):
                              [BranchScanJob.task_queue], 1)
         # XXX AaronBentley: 2012-08-01 bug=1031018: Extra diagnostic info to
         # help diagnose this hard-to-reproduce failure.
-        from lp.services.job.celeryjob import FindMissingReady
         find_missing_ready_obj = FindMissingReady(BranchScanJob)
         missing_ready = find_missing_ready_obj.find_missing_ready()
         try:
