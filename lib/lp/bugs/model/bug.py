@@ -197,7 +197,6 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
-    cursor,
     SQLBase,
     sqlvalues,
     )
@@ -228,11 +227,6 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
 
 
-_bug_tag_query_template = """
-        SELECT %(columns)s FROM %(tables)s WHERE
-            %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
-
-
 def snapshot_bug_params(bug_params):
     """Return a snapshot of a `CreateBugParams` object."""
     return Snapshot(
@@ -254,20 +248,16 @@ class BugTag(SQLBase):
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
 
-    context_clause is a SQL condition clause, limiting the tags to a
-    specific context. The SQL clause can only use the BugTask table to
-    choose the context.
+    context_clause is a Storm clause, limiting the tags to a specific
+    context, which can only use the BugTask table to choose the context.
     """
-    from_tables = ['BugTag', 'BugTask']
-    select_columns = ['BugTag.tag']
-    conditions = ['BugTag.bug = BugTask.bug', '(%s)' % context_clause]
+    # Circular imports.
+    from lp.bugs.model.bugtask import BugTask
 
-    cur = cursor()
-    cur.execute(_bug_tag_query_template % dict(
-            columns=', '.join(select_columns),
-            tables=', '.join(from_tables),
-            condition=' AND '.join(conditions)))
-    return shortlist([row[0] for row in cur.fetchall()])
+    return list(IStore(BugTag).find(
+        BugTag.tag,
+        BugTag.bugID == BugTask.bugID, context_clause).group_by(
+            BugTag.tag).order_by(BugTag.tag))
 
 
 def get_bug_tags_open_count(context_condition, user, tag_limit=0,
