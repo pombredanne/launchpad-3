@@ -119,7 +119,7 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         with dbuser(config.expiredmembershipsflagger.dbuser):
             membershipset.handleMembershipsExpiringToday(janitor)
         self.assertEqual(
-            teammembership.status, TeamMembershipStatus.APPROVED)
+            TeamMembershipStatus.EXPIRED, teammembership.status)
 
 
 class TestTeamMembershipSet(TestCaseWithFactory):
