@@ -21,6 +21,7 @@ __all__ = [
     'TeamMailingListSubscribersView',
     'TeamMailingListArchiveView',
     'TeamMemberAddView',
+    'TeamMembershipSelfRenewalView',
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamNavigation',
