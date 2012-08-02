@@ -74,83 +74,50 @@ class BugSubscriptionFilter(StormBase):
 
     description = Unicode('description')
 
-    def _get_statuses(self):
-        """Return a frozenset of statuses to filter on."""
+    def _get_collection(self, cls, attribute):
+        kind = getattr(cls, attribute)
         return frozenset(
-            IStore(BugSubscriptionFilterStatus).find(
-                BugSubscriptionFilterStatus,
-                BugSubscriptionFilterStatus.filter == self).values(
-                BugSubscriptionFilterStatus.status))
+            IStore(cls).find(cls, cls.filter == self).values(kind))
 
-    def _set_statuses(self, statuses):
-        """Update the statuses to filter on.
-
-        The statuses must be from the `BugTaskStatus` enum, but can be
-        bundled in any iterable.
-
-        Setting all statuses is equivalent to setting no statuses, and
-        is normalized that way.
-        """
-        statuses = frozenset(statuses)
-        if statuses == frozenset(BugTaskStatus.items):
+    def _set_collection(self, cls, enum, attribute, current_set, desired_set):
+        desired_set = frozenset(desired_set)
+        if desired_set == frozenset(enum.items):
             # Setting all is the same as setting none, and setting none is
             # cheaper for reading and storage.
-            statuses = frozenset()
-        current_statuses = self.statuses
-        store = IStore(BugSubscriptionFilterStatus)
-        # Add additional statuses.
-        for status in statuses.difference(current_statuses):
-            status_filter = BugSubscriptionFilterStatus()
-            status_filter.filter = self
-            status_filter.status = status
-            store.add(status_filter)
-        # Delete unused ones.
+            desired_set = frozenset()
+        # Add missing.
+        store = IStore(cls)
+        for kind in desired_set.difference(current_set):
+            bsf = cls()
+            bsf.filter = self
+            setattr(bsf, attribute, kind)
+            store.add(bsf)
+        # Remove unused.
+        kind = getattr(cls, attribute)
         store.find(
-            BugSubscriptionFilterStatus,
-            BugSubscriptionFilterStatus.filter == self,
-            BugSubscriptionFilterStatus.status.is_in(
-                current_statuses.difference(statuses))).remove()
+            cls, cls.filter == self, kind.is_in(
+                current_set.difference(desired_set))).remove()
+
+    def _get_statuses(self):
+        return self._get_collection(BugSubscriptionFilterStatus, 'status')
+
+    def _set_statuses(self, statuses):
+        self._set_collection(
+            BugSubscriptionFilterStatus, BugTaskStatus, 'status',
+            self.statuses, statuses)
 
     statuses = property(
         _get_statuses, _set_statuses, doc=(
             "A frozenset of statuses filtered on."))
 
     def _get_importances(self):
-        """Return a frozenset of importances to filter on."""
-        return frozenset(
-            IStore(BugSubscriptionFilterImportance).find(
-                BugSubscriptionFilterImportance,
-                BugSubscriptionFilterImportance.filter == self).values(
-                BugSubscriptionFilterImportance.importance))
+        return self._get_collection(
+            BugSubscriptionFilterImportance, 'importance')
 
     def _set_importances(self, importances):
-        """Update the importances to filter on.
-
-        The importances must be from the `BugTaskImportance` enum, but can be
-        bundled in any iterable.
-
-        Setting all importances is equivalent to setting no importances, and
-        is normalized that way.
-        """
-        importances = frozenset(importances)
-        if importances == frozenset(BugTaskImportance.items):
-            # Setting all is the same as setting none, and setting none is
-            # cheaper for reading and storage.
-            importances = frozenset()
-        current_importances = self.importances
-        store = IStore(BugSubscriptionFilterImportance)
-        # Add additional importances.
-        for importance in importances.difference(current_importances):
-            importance_filter = BugSubscriptionFilterImportance()
-            importance_filter.filter = self
-            importance_filter.importance = importance
-            store.add(importance_filter)
-        # Delete unused ones.
-        store.find(
-            BugSubscriptionFilterImportance,
-            BugSubscriptionFilterImportance.filter == self,
-            BugSubscriptionFilterImportance.importance.is_in(
-                current_importances.difference(importances))).remove()
+        self._set_collection(
+            BugSubscriptionFilterImportance, BugTaskImportance, 'importance',
+            self.importances, importances)
 
     importances = property(
         _get_importances, _set_importances, doc=(
@@ -221,41 +188,13 @@ class BugSubscriptionFilter(StormBase):
             "A frozenset of tags filtered on."))
 
     def _get_information_types(self):
-        """Return a frozenset of information_types to filter on."""
-        return frozenset(
-            IStore(BugSubscriptionFilterInformationType).find(
-                BugSubscriptionFilterInformationType,
-                BugSubscriptionFilterInformationType.filter == self).values(
-                BugSubscriptionFilterInformationType.information_type))
+        return self._get_collection(
+            BugSubscriptionFilterInformationType, 'information_type')
 
     def _set_information_types(self, information_types):
-        """Update the information_types to filter on.
-
-        The information types must be from the `InformationType` enum, but
-        can be bundled in any iterable.
-
-        Setting all information types is equivalent to setting no statuses,
-        and is normalized that way.
-        """
-        itypes = frozenset(information_types)
-        if itypes == frozenset(InformationType.items):
-            # Setting all is the same as setting none, and setting none is
-            # cheaper for reading and storage.
-            itypes = frozenset()
-        current_itypes = self.information_types
-        store = IStore(BugSubscriptionFilterInformationType)
-        # Add additional information_types.
-        for information_type in itypes.difference(current_itypes):
-            itype_filter = BugSubscriptionFilterInformationType()
-            itype_filter.filter = self
-            itype_filter.information_type = information_type
-            store.add(itype_filter)
-        # Delete unused ones.
-        store.find(
-            BugSubscriptionFilterInformationType,
-            BugSubscriptionFilterInformationType.filter == self,
-            BugSubscriptionFilterInformationType.information_type.is_in(
-                current_itypes.difference(itypes))).remove()
+        self._set_collection(
+            BugSubscriptionFilterInformationType, InformationType,
+            'information_type', self.information_types, information_types)
 
     information_types = property(
         _get_information_types, _set_information_types, doc=(

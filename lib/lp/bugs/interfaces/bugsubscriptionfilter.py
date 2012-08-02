@@ -106,7 +106,7 @@ class IBugSubscriptionFilterAttributes(Interface):
             title=_("The information types interested in (empty for all)"),
             required=True, default=frozenset(),
             value_type=Choice(
-                title=_('Information Type'), vocabulary=InformationType)))
+                title=_('Information type'), vocabulary=InformationType)))
 
 
 class IBugSubscriptionFilterMethodsPublic(Interface):
