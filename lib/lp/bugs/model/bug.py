@@ -1799,8 +1799,13 @@ class Bug(SQLBase):
         # another, we must do this check, as different policies are granted to
         # different users/teams.
         if information_type in PRIVATE_INFORMATION_TYPES:
-            # Grant the subscriber access if they can't see the bug.
             if subscribers:
+                # If we're switching to private types, and the driver is
+                # subscribed for a pillar (except ubuntu), we need to make
+                # sure the driver maintains access.
+                for pillar in pillars:
+                    if pillar.driver in subscribers and pillar != ubuntu:
+                        required_subscribers.add(pillar.driver)
                 service = getUtility(IService, 'sharing')
                 subscribers_to_remove = set(service.getPeopleWithoutAccess(
                     self, subscribers)).difference(required_subscribers)
