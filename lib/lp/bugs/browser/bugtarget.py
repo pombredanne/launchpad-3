@@ -278,15 +278,12 @@ class FileBugViewBase(LaunchpadFormView):
             type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['bug_private_by_default'] = (
             IProduct.providedBy(self.context) and self.context.private_bugs)
-        # Project groups are special. The Next button sends you to
-        # Product:+filebug, so we need none of the usual stuff.
-        if not IProjectGroup.providedBy(self.context):
-            cache.objects['information_type_data'] = [
-                {'value': term.name, 'description': term.description,
-                'name': term.title,
-                'description_css_class': 'choice-description'}
-                for term in
-                self.context.pillar.getAllowedBugInformationTypes()]
+        cache.objects['information_type_data'] = [
+            {'value': term.name, 'description': term.description,
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in
+            self.context.pillar.getAllowedBugInformationTypes()]
         bugtask_status_data = vocabulary_to_choice_edit_items(
             BugTaskStatus, include_description=True, css_class_prefix='status',
             excluded_items=[
@@ -303,8 +300,7 @@ class FileBugViewBase(LaunchpadFormView):
             excluded_items=[BugTaskImportance.UNKNOWN])
         cache.objects['bugtask_importance_data'] = bugtask_importance_data
         cache.objects['enable_bugfiling_duplicate_search'] = (
-            IProjectGroup.providedBy(self.context)
-            or self.context.enable_bugfiling_duplicate_search)
+            self.context.enable_bugfiling_duplicate_search)
 
         super(FileBugViewBase, self).initialize()
 
@@ -362,19 +358,8 @@ class FileBugViewBase(LaunchpadFormView):
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
-        elif IProjectGroup.providedBy(context):
-            field_names.append('product')
-        elif not IProduct.providedBy(context):
-            raise AssertionError('Unknown context: %r' % context)
 
-        # If the context is a project group we want to render the optional
-        # fields since they will initially be hidden and later exposed if the
-        # selected project supports them.
-        include_extra_fields = IProjectGroup.providedBy(context)
-        if not include_extra_fields:
-            include_extra_fields = self.is_bug_supervisor
-
-        if include_extra_fields:
+        if self.is_bug_supervisor:
             field_names.extend(
                 ['assignee', 'importance', 'milestone', 'status'])
 
@@ -399,7 +384,7 @@ class FileBugViewBase(LaunchpadFormView):
         return IProduct.providedBy(self.context)
 
     def contextIsProject(self):
-        return IProjectGroup.providedBy(self.context)
+        return False
 
     def targetIsUbuntu(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -480,11 +465,6 @@ class FileBugViewBase(LaunchpadFormView):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugViewBase, self).setUpFields()
 
-        # Project groups are special. The Next button sends you to
-        # Product:+filebug, so we need none of the usual stuff.
-        if IProjectGroup.providedBy(self.context):
-            return
-
         if self.is_bug_supervisor:
             info_type_vocab = InformationTypeVocabulary(
                 types=self.context.pillar.getAllowedBugInformationTypes())
@@ -512,14 +492,8 @@ class FileBugViewBase(LaunchpadFormView):
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
-        if IProjectGroup.providedBy(self.context):
-            products_using_malone = [
-                product for product in self.context.products
-                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
-            return len(products_using_malone) > 0
-        else:
-            bug_tracking_usage = self.getMainContext().bug_tracking_usage
-            return bug_tracking_usage == ServiceUsage.LAUNCHPAD
+        bug_tracking_usage = self.getMainContext().bug_tracking_usage
+        return bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -545,8 +519,6 @@ class FileBugViewBase(LaunchpadFormView):
             information_type = InformationType.PRIVATESECURITY
 
         context = self.context
-        if IProjectGroup.providedBy(context):
-            context = data['product']
 
         # Ensure that no package information is used, if the user
         # enters a package name but then selects "I don't know".
@@ -824,15 +796,8 @@ class FileBugViewBase(LaunchpadFormView):
         total accuracy, and will return the first 'relevant' bugtask
         it finds even if there are other candidates. Be warned!
         """
-        context = self.context
-
-        if IProjectGroup.providedBy(context):
-            contexts = set(context.products)
-        else:
-            contexts = [context]
-
         for bugtask in bug.bugtasks:
-            if bugtask.target in contexts or bugtask.pillar in contexts:
+            if self.context in (bugtask.target, bugtask.pillar):
                 return bugtask
         return None
 
@@ -909,25 +874,13 @@ class FileBugViewBase(LaunchpadFormView):
         Returns a list of dicts, with each dict containing values for
         "preamble" and "content".
         """
-
-        def target_name(target):
-            # IProjectGroup can be considered the target of a bug during
-            # the bug filing process, but does not extend IBugTarget
-            # and ultimately cannot actually be the target of a
-            # bug. Hence this function to determine a suitable
-            # name/title to display. Hurrumph.
-            if IBugTarget.providedBy(target):
-                return target.bugtargetdisplayname
-            else:
-                return target.displayname
-
         guidelines = []
         content = self.context.bug_reporting_guidelines
         if content is not None and len(content) > 0:
             guidelines.append({
-                    "source": target_name(self.context),
-                    "content": content,
-                    })
+                "source": self.context.bugtargetdisplayname,
+                "content": content,
+                })
         # Distribution source packages are shown with both their
         # own reporting guidelines and those of their
         # distribution.
@@ -936,9 +889,9 @@ class FileBugViewBase(LaunchpadFormView):
             content = distribution.bug_reporting_guidelines
             if content is not None and len(content) > 0:
                 guidelines.append({
-                        "source": target_name(distribution),
-                        "content": content,
-                        })
+                    "source": distribution.bugtargetdisplayname,
+                    "content": content,
+                    })
         return guidelines
 
     def getMainContext(self):
