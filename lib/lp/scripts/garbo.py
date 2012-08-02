@@ -26,7 +26,11 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    In,
+    Select,
+    Update,
+    )
 from storm.locals import (
     Max,
     Min,
@@ -38,6 +42,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -927,6 +932,32 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
+class SpecificationInformationTypeDefault(TunableLoop):
+    """Set all Specification.information_type to Public (default)."""
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(SpecificationInformationTypeDefault, self).__init__(log,
+                                                                  abort_time)
+        self.rows_updated = None
+        self.store = IMasterStore(Specification)
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.rows_updated == 0
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        subselect = Select(
+            Specification.id, Specification.information_type==None,
+            limit=chunk_size)
+        result = self.store.execute(
+            Update({Specification.information_type: 1},
+                   Specification.id.is_in(subselect)))
+        transaction.commit()
+        self.rows_updated = result.rowcount
+
+
 class UnusedPOTMsgSetPruner(TunableLoop):
     """Cleans up unused POTMsgSets."""
 
@@ -1273,6 +1304,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
+        SpecificationInformationTypeDefault,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
