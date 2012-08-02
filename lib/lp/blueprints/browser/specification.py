@@ -425,7 +425,8 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
              'linkbug', 'unlinkbug', 'linkbranch',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
-             'retarget']
+             'retarget',
+             'information_type',]
 
     @enabled_with_permission('launchpad.Edit')
     def milestone(self):
@@ -530,6 +531,10 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
+    def information_type(self):
+        """Return the 'Set privacy/security' Link."""
+        text = 'Change privacy/security'
+        return Link('+information-type', text)
 
 class SpecificationSimpleView(LaunchpadView, InformationTypePortletMixin):
     """Used to render portlets and listing items that need browser code."""
