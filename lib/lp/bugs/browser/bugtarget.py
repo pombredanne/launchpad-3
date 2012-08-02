@@ -148,7 +148,6 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import structured
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
