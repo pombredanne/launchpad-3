@@ -1,4 +1,8 @@
-/* The bug picker form should be left aligned, not centred. */
-.yui3-lazr-formoverlay-form {
+/* The bug picker buttons should be left aligned, not centred. */
+.yui3-duplicatebugpickerwidget .yui3-picker-footer-slot {
     margin-left: 0;
+    }
+
+.yui3-duplicatebugpickerwidget .search-header {
+    margin-top: 6px;
     }
