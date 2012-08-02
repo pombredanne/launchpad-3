@@ -62,7 +62,15 @@ class TestRunMissingJobs(TestCaseWithFactory):
         job.runViaCelery()
         self.assertQueueSize(self.CeleryRunJob.app,
                              [BranchScanJob.task_queue], 1)
-        self.assertEqual([], self.find_missing_ready(BranchScanJob))
+        #self.assertEqual([], self.find_missing_ready(BranchScanJob))
+        # XXX AaronBentley: 2012-08-01 bug=1031018: Extra diagnostic info to
+        # help diagnose this hard-to-reproduce failure.
+        if self.find_missing_ready(BranchScanJob) != []:
+            from lazr.jobrunner.celerytask import list_queued
+            contents = list_queued(
+                self.CeleryRunJob.app, [BranchScanJob.task_queue])
+            self.fail('queue: %r, job.id: %d, job.job_id: %d' %
+                      (contents, job.id, job.job_id))
         drain_celery_queues()
         self.assertQueueSize(self.CeleryRunJob.app,
                              [BranchScanJob.task_queue], 0)

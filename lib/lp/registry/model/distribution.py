@@ -89,6 +89,7 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -628,7 +629,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""
-        return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
+        return get_bug_tags(BugTask.distributionID == self.id)
 
     def getBranchTips(self, user=None, since=None):
         """See `IDistribution`."""
