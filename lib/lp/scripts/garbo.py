@@ -949,7 +949,7 @@ class SpecificationInformationTypeDefault(TunableLoop):
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
         subselect = Select(
-            Specification.id, Specification.information_type==None,
+            Specification.id, Specification.information_type == None,
             limit=chunk_size)
         result = self.store.execute(
             Update({Specification.information_type: 1},

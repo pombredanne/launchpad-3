@@ -52,7 +52,6 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
