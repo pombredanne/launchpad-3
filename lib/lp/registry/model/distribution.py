@@ -1603,6 +1603,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         types.discard(InformationType.PROPRIETARY)
         return types
 
+    def getDefaultBugInformationType(self):
+        """See `IDistribution.`"""
+        return InformationType.PUBLIC
+
     def userCanEdit(self, user):
         """See `IDistribution`."""
         if user is None:

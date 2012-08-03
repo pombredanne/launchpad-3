@@ -120,6 +120,7 @@ from lp.registry.browser.product import (
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import IDistribution
@@ -276,7 +277,8 @@ class FileBugViewBase(LaunchpadFormView):
         cache.objects['private_types'] = [
             type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['bug_private_by_default'] = (
-            IProduct.providedBy(self.context) and self.context.private_bugs)
+            self.context.pillar.getDefaultBugInformationType() in
+            PRIVATE_INFORMATION_TYPES)
         cache.objects['information_type_data'] = [
             {'value': term.name, 'description': term.description,
             'name': term.title,
@@ -365,14 +367,18 @@ class FileBugViewBase(LaunchpadFormView):
         return field_names
 
     @property
+    def default_information_type(self):
+        value = self.context.pillar.getDefaultBugInformationType()
+        if (self.extra_data
+            and self.extra_data.private
+            and value in PUBLIC_INFORMATION_TYPES):
+            value = InformationType.USERDATA
+        return value
+
+    @property
     def initial_values(self):
         """Give packagename a default value, if applicable."""
-        if (self.context and IProduct.providedBy(self.context)
-            and self.context.private_bugs):
-            type = InformationType.USERDATA
-        else:
-            type = InformationType.PUBLIC
-        values = {'information_type': type}
+        values = {'information_type': self.default_information_type}
 
         if IDistributionSourcePackage.providedBy(self.context):
             values['packagename'] = self.context.name
@@ -512,10 +518,14 @@ class FileBugViewBase(LaunchpadFormView):
         packagename = data.get("packagename")
 
         information_type = data.get("information_type")
-        # If the old UI is enabled, security bugs are always embargoed
-        # when filed, but can be disclosed after they've been reported.
-        if information_type is None and data.get("security_related"):
-            information_type = InformationType.PRIVATESECURITY
+        if information_type is None:
+            # If the old UI is enabled, security bugs are always embargoed
+            # when filed, but can be disclosed after they've been reported.
+            # Otherwise we use the default.
+            if data.get("security_related"):
+                information_type = InformationType.PRIVATESECURITY
+            else:
+                information_type = self.default_information_type
 
         context = self.context
 
@@ -558,10 +568,6 @@ class FileBugViewBase(LaunchpadFormView):
                 params.comment, extra_data.extra_description)
             notifications.append(
                 'Additional information was added to the bug description.')
-
-        if not self.is_bug_supervisor and extra_data.private:
-            if params.information_type in (None, InformationType.PUBLIC):
-                params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
         if self.is_bug_supervisor:

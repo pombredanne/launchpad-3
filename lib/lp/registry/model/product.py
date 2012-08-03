@@ -571,6 +571,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         types.discard(InformationType.PROPRIETARY)
         return types
 
+    def getDefaultBugInformationType(self):
+        """See `IDistribution.`"""
+        if self.private_bugs:
+            return InformationType.USERDATA
+        else:
+            return InformationType.PUBLIC
+
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
         # information types.
