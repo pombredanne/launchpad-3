@@ -2651,7 +2651,11 @@ class BugSet:
         context = params.product or params.distribution
 
         if params.information_type is None:
-            params.information_type = context.getDefaultBugInformationType()
+            if context is not None:
+                params.information_type = (
+                    context.getDefaultBugInformationType())
+            else:
+                params.information_type = InformationType.PUBLIC
 
         bug, event = self._makeBug(params)
 
