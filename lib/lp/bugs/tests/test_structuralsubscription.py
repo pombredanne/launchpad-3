@@ -159,8 +159,8 @@ class FilteredStructuralSubscriptionTestBase:
             self.ordinary_subscriber, self.ordinary_subscriber)
         self.initial_filter = self.subscription.bug_filters[0]
 
-    def assertSubscribers(
-        self, expected_subscribers, level=BugNotificationLevel.LIFECYCLE):
+    def assertSubscribers(self, expected_subscribers,
+                          level=BugNotificationLevel.LIFECYCLE):
         observed_subscribers = list(
             get_structural_subscribers(self.bugtask, None, level))
         self.assertEqual(expected_subscribers, observed_subscribers)

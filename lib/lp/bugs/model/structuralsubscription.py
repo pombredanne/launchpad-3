@@ -765,7 +765,7 @@ def _get_structural_subscription_filter_id_query(
     conditions.append(Or(
         BugSubscriptionFilterInformationType.information_type == 
             bug.information_type,
-        BugSubscriptionFilterStatus.status == None))
+        BugSubscriptionFilterInformationType.information_type == None))
     # Now we handle tags.  This actually assembles the query, because it
     # may have to union two queries together.
     # Note that casting bug.tags to a list subtly removes the security
