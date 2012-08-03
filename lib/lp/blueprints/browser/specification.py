@@ -534,7 +534,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     def information_type(self):
         """Return the 'Set privacy/security' Link."""
         text = 'Change privacy/security'
-        return Link('+information-type', text)
+        return Link('#', text)
 
 class SpecificationSimpleView(LaunchpadView, InformationTypePortletMixin):
     """Used to render portlets and listing items that need browser code."""

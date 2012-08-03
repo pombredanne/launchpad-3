@@ -10,7 +10,7 @@
       tal:attributes="class view/information_type_css;">This blueprint
       contains <strong id="information-type" tal:content="view/information_type"></strong> information</span>&nbsp;<a class="sprite edit action-icon"
         id="privacy-link" tal:attributes="href link/path"
-        tal:condition="link/enabled" >Edit</a>
+        tal:condition="link/enabled" style="display: none" >Edit</a>
 
     <div id="information-type-description" style="padding-top: 5px" tal:content="view/information_type_description"></div>
 </div>
