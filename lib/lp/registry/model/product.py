@@ -92,10 +92,7 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    BugSet,
-    get_bug_tags,
-    )
+from lp.bugs.model.bug import BugSet
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -881,10 +878,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this product.."""
         search_params.setProduct(self)
-
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return get_bug_tags(BugTask.productID == self.id)
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')

@@ -16,7 +16,6 @@ __all__ = [
     'BugTag',
     'FileBugData',
     'get_also_notified_subscribers',
-    'get_bug_tags',
     'get_bug_tags_open_count',
     ]
 
@@ -243,21 +242,6 @@ class BugTag(SQLBase):
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     tag = StringCol(notNull=True)
-
-
-def get_bug_tags(context_clause):
-    """Return all the bug tags as a list of strings.
-
-    context_clause is a Storm clause, limiting the tags to a specific
-    context, which can only use the BugTask table to choose the context.
-    """
-    # Circular imports.
-    from lp.bugs.model.bugtask import BugTask
-
-    return list(IStore(BugTag).find(
-        BugTag.tag,
-        BugTag.bugID == BugTask.bugID, context_clause).group_by(
-            BugTag.tag).order_by(BugTag.tag))
 
 
 def get_bug_tags_open_count(context_condition, user, tag_limit=0,
