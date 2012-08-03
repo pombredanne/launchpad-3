@@ -1060,10 +1060,12 @@ class SpecificationSet(HasSpecificationsMixin):
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
         drafter=None, whiteboard=None, workitems_text=None,
-        priority=SpecificationPriority.UNDEFINED):
+        priority=SpecificationPriority.UNDEFINED, information_type=None):
         """See ISpecificationSet."""
         # Adapt the NewSpecificationDefinitionStatus item to a
         # SpecificationDefinitionStatus item.
+        if information_type is None:
+            information_type = InformationType.PUBLIC
         status_name = definition_status.name
         status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
         if status_name not in status_names:
@@ -1075,7 +1077,8 @@ class SpecificationSet(HasSpecificationsMixin):
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
+            information_type=information_type)
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""

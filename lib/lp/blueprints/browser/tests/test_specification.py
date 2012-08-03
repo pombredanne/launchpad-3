@@ -24,6 +24,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import BrowserNotificationLevel
@@ -177,13 +178,16 @@ class TestSpecificationInformationType(BrowserTestCase):
     portlet_tag = soupmatchers.Tag('info-type-portlet', True,
                                    attrs=dict(id='information-type-summary'))
 
+    def setUp(self):
+        super(TestSpecificationInformationType, self).setUp()
+        self.useFixture(FeatureFixture({'blueprints.information_type.enabled':
+            'true'}))
+
     def assertBrowserMatches(self, matcher):
         browser = self.getViewBrowser(self.factory.makeSpecification())
         self.assertThat(browser.contents, matcher)
 
     def test_has_privacy_portlet(self):
-        self.useFixture(FeatureFixture({'blueprints.information_type.enabled':
-            'true'}))
         self.assertBrowserMatches(soupmatchers.HTMLContains(self.portlet_tag))
 
     def test_privacy_portlet_requires_flag(self):
@@ -191,6 +195,15 @@ class TestSpecificationInformationType(BrowserTestCase):
             ''}))
         self.assertBrowserMatches(
             Not(soupmatchers.HTMLContains(self.portlet_tag)))
+
+    def test_has_privacy_banner(self):
+        spec = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        browser = self.getViewBrowser(spec)
+        privacy_banner = soupmatchers.Tag('privacy-banner', True,
+                attrs={'class': 'banner-text'})
+        self.assertThat(browser.contents,
+                           soupmatchers.HTMLContains(privacy_banner))
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
