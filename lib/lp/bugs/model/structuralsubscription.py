@@ -56,6 +56,7 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugsubscriptionfilter import (
     BugSubscriptionFilter,
     BugSubscriptionFilterImportance,
+    BugSubscriptionFilterInformationType,
     BugSubscriptionFilterStatus,
     BugSubscriptionFilterTag,
     )
@@ -760,6 +761,11 @@ def _get_structural_subscription_filter_id_query(
             BugSubscriptionFilter.bug_notification_level >= level)
     # This handles the bugtask-specific attributes of status and importance.
     conditions.append(_calculate_bugtask_condition(query_arguments))
+    # Handle filtering by information type.
+    conditions.append(Or(
+        BugSubscriptionFilterInformationType.information_type == 
+            bug.information_type,
+        BugSubscriptionFilterInformationType.information_type == None))
     # Now we handle tags.  This actually assembles the query, because it
     # may have to union two queries together.
     # Note that casting bug.tags to a list subtly removes the security
@@ -845,6 +851,9 @@ def _calculate_tag_query(conditions, tags):
                  BugSubscriptionFilter.id),
         LeftJoin(BugSubscriptionFilterImportance,
                  BugSubscriptionFilterImportance.filter_id ==
+                 BugSubscriptionFilter.id),
+        LeftJoin(BugSubscriptionFilterInformationType,
+                 BugSubscriptionFilterInformationType.filter_id ==
                  BugSubscriptionFilter.id)]
     tag_join = LeftJoin(
         BugSubscriptionFilterTag,
