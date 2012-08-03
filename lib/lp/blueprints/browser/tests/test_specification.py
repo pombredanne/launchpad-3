@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,10 +8,14 @@ import unittest
 
 from BeautifulSoup import BeautifulSoup
 import pytz
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    Not,
+    )
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
+import soupmatchers
 
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
@@ -21,6 +25,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet,
     )
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -163,6 +168,29 @@ class TestSpecificationView(TestCaseWithFactory):
         self.assertThat(
             extract_text(html), DocTestMatches(
                 "... Registered by Some Person ... ago ..."))
+
+
+class TestSpecificationInformationType(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    portlet_tag = soupmatchers.Tag('info-type-portlet', True,
+                                   attrs=dict(id='information-type-summary'))
+
+    def assertBrowserMatches(self, matcher):
+        browser = self.getViewBrowser(self.factory.makeSpecification())
+        self.assertThat(browser.contents, matcher)
+
+    def test_has_privacy_portlet(self):
+        self.useFixture(FeatureFixture({'blueprints.information_type.enabled':
+            'true'}))
+        self.assertBrowserMatches(soupmatchers.HTMLContains(self.portlet_tag))
+
+    def test_privacy_portlet_requires_flag(self):
+        self.useFixture(FeatureFixture({'blueprints.information_type.enabled':
+            ''}))
+        self.assertBrowserMatches(
+            Not(soupmatchers.HTMLContains(self.portlet_tag)))
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
