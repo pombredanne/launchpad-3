@@ -85,11 +85,11 @@ description.
     Thank you for filing a bug for https://launchpad.dev/ubuntu
     *
     Mozilla
-      <http://launchpad.dev/mozilla/+filebug>
-    The Mozilla Project bug reporting guidelines:
-    The version of Mozilla you're using.
+      <http://launchpad.dev/firefox/+filebug?field.actions.search=Continue&field.title=It+doesn%27t+work&field.tags=>
+    Mozilla Firefox bug reporting guidelines:
+    The version of Firefox you're using.
     See http://example.com for more details.
-    Thank you for filing a bug for https://launchpad.dev/mozilla
+    Thank you for filing a bug for https://launchpad.dev/firefox
     *
     Firefox
       <http://launchpad.dev/firefox/+filebug>

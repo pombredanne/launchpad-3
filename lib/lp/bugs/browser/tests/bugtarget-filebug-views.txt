@@ -79,20 +79,6 @@ possible duplicates for a bug asynchronously.
     >>> print filebug_view.duplicate_search_url
     http://launchpad.dev/firefox/+filebug-show-similar
 
-For project groups, the URLs returned will refer to the default product
-for those project groups.
-
-    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> gnome_project = getUtility(IProjectGroupSet).getByName('gnome')
-    >>> gnome_filebug_view = create_initialized_view(
-    ...     gnome_project, '+filebug')
-
-    >>> print gnome_filebug_view.inline_filebug_form_url
-    http://launchpad.dev/evolution/+filebug-inline-form
-
-    >>> print gnome_filebug_view.duplicate_search_url
-    http://launchpad.dev/evolution/+filebug-show-similar
-
 
 Adding extra info to filed bugs
 -------------------------------
@@ -387,6 +373,17 @@ the message.
     >>> filebug_view.added_bug.information_type
     <DBItem InformationType.USERDATA, (4) Private>
 
+Since the bug was marked private before it was filed, only the bug
+reporter has been subscribed to the bug and there should be no indirect
+subscribers.
+
+    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
+    ...     print subscriber.displayname
+    No Privileges Person
+
+    >>> filebug_view.added_bug.getIndirectSubscribers()
+    []
+
 The user will be notified that the bug has been marked as private.
 
     >>> print filebug_view.request.response.notifications[2].message
@@ -583,6 +580,11 @@ to the bug.
     Mark Shuttleworth
     No Privileges Person
 
+Since the bug is private, there should be no indirect subscribers.
+
+    >>> filebug_view.added_bug.getIndirectSubscribers()
+    []
+
 The user will be notified that Mark Shuttleworth has been subscribed to
 this bug and that the bug has been marked as private.
 
@@ -702,9 +704,8 @@ Privileged users are offered several extra options when filing bugs.
     >>> product.setBugSupervisor(owner, owner)
     >>> supervisor_fields = set(filebug_view.field_names)
 
-Privileged users get most of the same fields as normal users, plus a few
-extra.  The security_related checkbox is replaced by an information_type
-radio group.
+Privileged users get most of the same fields as normal users, plus a few extra.
+The security_related checkbox is replaced by an information_type radio group.
 
     >>> normal_fields.remove('security_related')
     >>> owner_fields == supervisor_fields

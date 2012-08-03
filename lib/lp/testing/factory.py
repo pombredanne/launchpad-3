@@ -43,6 +43,7 @@ from StringIO import StringIO
 import sys
 from textwrap import dedent
 from types import InstanceType
+import uuid
 import warnings
 
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
@@ -76,6 +77,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -90,6 +92,7 @@ from lp.bugs.interfaces.cve import (
     CveStatus,
     ICveSet,
     )
+from lp.bugs.model.bug import FileBugData
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -243,6 +246,9 @@ from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
+    )
+from lp.services.temporaryblobstorage.model import (
+    TemporaryBlobStorage,
     )
 from lp.services.utils import AutoDecorate
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
@@ -4154,6 +4160,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
+
+    def makeProcessedApportBlob(self, metadata):
+        """Create a processed ApportJob with the specified metadata dict.
+
+        It doesn't actually run the job. It fakes it, and uses a fake
+        librarian file so as to work without the librarian.
+        """
+        blob = TemporaryBlobStorage(uuid=str(uuid.uuid1()), file_alias=1)
+        job = getUtility(IProcessApportBlobJobSource).create(blob)
+        job.job.start()
+        removeSecurityProxy(job).metadata = {
+            'processed_data': FileBugData(**metadata).asDict()}
+        job.job.complete()
+        return blob
 
     def makeLaunchpadService(self, person=None, version="devel"):
         if person is None:

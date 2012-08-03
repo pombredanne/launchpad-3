@@ -169,7 +169,7 @@ For the purposes of demonstration, we'll make the firefox crashing bug
 private. A bug cannot be made private by an anonymous user.
 
     >>> from lp.services.webapp.interfaces import ILaunchBag
-
+    
     >>> def current_user():
     ...     return getUtility(ILaunchBag).user
 
@@ -423,6 +423,11 @@ When a private bug is filed:
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
 
+Since it's private, there are no indirect subscribers.
+
+    >>> private_bug.getIndirectSubscribers()
+    []
+
 It's up to the submitter to subscribe the maintainer, if they so choose.
 
 This works similarly for distributions; in this case the
@@ -444,6 +449,8 @@ sourcepackage. E.g.
     >>> private_bug = bugset.get(added_bug.id)
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
     [u'name16']
+    >>> private_bug.getIndirectSubscribers()
+    []
 
 
 Prevent reporter from being subscribed to filed bugs
@@ -1077,10 +1084,10 @@ not permit expiration.
 The thunderbird project does not use Launchpad to track bugs.
 Incomplete, unattended bug reports cannot ever expire for this project.
 
-create_old_bug creates an bug with a bugtask that is eligible for expiration,
-so long as the pillar object has enabled bug expiration. Every change to a
-bug or bugtask must be synced back to the database to test can_expire.
-
+    >>> # create_old_bug creates an bug with a bugtask that is eligible for
+    >>> # expiration, so long as the pillar object has enabled bug expiration.
+    >>> # Every change to a bug or bugtask must be synced back to the
+    >>> # database to test can_expire.
     >>> from lp.bugs.tests.bug import create_old_bug
 
     >>> upstream_bugtask = create_old_bug('bug a', 1, thunderbird)

@@ -5,12 +5,12 @@
   <div class="form" id="new-comment" metal:fill-slot="widgets">
     <div
       tal:condition="context/bug/duplicateof"
-      class="warning message"
+      class="block-sprite large-warning"
       id="warning-comment-on-duplicate"
     >
       Remember, this bug report is a duplicate of
         <a href="#" tal:attributes="href context/bug/duplicateof/fmt:url">bug
-          #<span tal:replace="context/bug/duplicateof/id">42</span></a>.
+          #<span tal:replace="context/bug/duplicateof/id">42</span></a><br>.
       Comment here only if you think the duplicate status is wrong.
     </div>
     <input

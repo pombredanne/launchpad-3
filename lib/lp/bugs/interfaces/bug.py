@@ -518,7 +518,8 @@ class IBugView(Interface):
             `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None,
+                                     include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -526,6 +527,8 @@ class IBugView(Interface):
         includes email addresses and textual and header-ready
         rationales. See `BugNotificationRecipients` for
         details of this implementation.
+        If this bug is a dupe, set include_master_dupe_subscribers to
+        True to include the master bug's subscribers as recipients.
         """
 
     def canBeAQuestion():
