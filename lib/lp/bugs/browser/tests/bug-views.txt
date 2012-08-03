@@ -633,14 +633,12 @@ and the bug will have been edited.
     False
     >>> bug_edit.wasRedirected()
     True
-
     >>> bug_one.title
     u'New title'
     >>> bug_one.description
     u'New description.'
     >>> bug_one.tags
     [u'doc']
-
 
 Emails are sent out by adding entries to the bugnotification table. We
 need to know how many messages are currently in that table.
@@ -649,28 +647,15 @@ need to know how many messages are currently in that table.
     >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
     >>> start_bugnotification_count = bn_set.count()
 
-The tag 'doc' has already been used for other Firefox bugs, let's try
-adding a tag that hasn't already been used. Add 'new-tag' multiple times
-so that we can verify that it will only be added once.
+Add 'new-tag' multiple times so that we can verify that it will only be added
+once.
 
     >>> edit_values['field.tags'] = u'new-tag doc new-tag'
     >>> bug_edit.submit('change', edit_values)
-
-The form still contains the 'Change' button, though, so that the user
-can edit the tag and submit the form again.
-
-    >>> bug_edit.view.render()
-    EDIT BUG
-    >>> [action.label for action in bug_edit.view.actions]
-    ['Change']
-
-If we click on the 'Create the new tag' button, we'll get redirected to
-the bug page, and the bug will have the new tag.
-
-    >>> bug_edit.submit('confirm_tag', edit_values)
     >>> bug_edit.hasErrors()
     False
-
+    >>> bug_edit.wasRedirected()
+    True
     >>> bug_one.tags
     [u'doc', u'new-tag']
 
