@@ -610,10 +610,3 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         login_person(user)
         view = create_initialized_view(product, '+filebug', principal=user)
         self._assert_cache_values(view, False)
-
-    def test_project_group(self):
-        project = self.factory.makeProject()
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(project, '+filebug', principal=user)
-        self._assert_cache_values(view, True)
