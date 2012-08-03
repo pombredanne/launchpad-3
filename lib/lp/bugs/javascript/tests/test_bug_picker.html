@@ -6,7 +6,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
-      <title>lp.bugs.duplicates Tests</title>
+      <title>lp.bugs.bug_picker Tests</title>
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
@@ -44,56 +44,25 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript" src="../../../../../build/js/lp/app/lazr/lazr.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/picker/picker.js"></script>
-      <script type="text/javascript" src="../../../../../build/js/lp/bugs/bug_picker.js"></script>
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../duplicates.js"></script>
+      <script type="text/javascript" src="../bug_picker.js"></script>
 
       <!-- Placeholder for any css asset for this module. -->
       <!-- <link rel="stylesheet" href="../assets/lp.bugs.bug_picker-core.css" /> -->
 
       <!-- The test suite -->
-      <script type="text/javascript" src="test_duplicates.js"></script>
       <script type="text/javascript" src="test_bug_picker.js"></script>
 
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <li>lp.bugs.duplicates.test</li>
+            <li>lp.bugs.bug_picker.test</li>
         </ul>
         <div id="fixture">
         </div>
-        <script type="text/x-template" id="no-existing-duplicate">
+        <script type="text/x-template" id="bug-picker">
             <a href="#" class="pick-bug js-action">Select a bug</a>
-            <div><ul id="duplicate-actions">
-                <li class="sprite bug-dupe">
-                    <span id="mark-duplicate-text">
-                    <a href="http://foo/+duplicate"
-                       class="menu-link-mark-dupe js-action">
-                        Mark as duplicate</a>
-                    </span>
-                </li>
-            </ul></div>
-            <div id="duplicate-form-container"></div>
-            <div id="add-comment-form"></div>
-            <div id="portlet-duplicates"></div>
-        </script>
-        <script type="text/x-template" id="existing-duplicate">
-            <a href="#" class="pick-bug js-action">Select a bug</a>
-            <div><ul id="duplicate-actions">
-                <li>
-                    <span id="mark-duplicate-text">
-                    <a class="sprite edit action-icon"
-                       title="Edit or remove linked duplicate bug"
-                       id="change_duplicate_bug"
-                       href="http://foo/+duplicate">Edit</a>
-                    Duplicate of <a href="http://foo/bugs/1234">bug #1234
-                    </a>
-                    </span>
-                </li>
-            </ul></div>
-            <div id="duplicate-form-container"></div>
-            <div id="add-comment-form"></div>
         </script>
     </body>
 </html>

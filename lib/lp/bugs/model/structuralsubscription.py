@@ -56,6 +56,7 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugsubscriptionfilter import (
     BugSubscriptionFilter,
     BugSubscriptionFilterImportance,
+    BugSubscriptionFilterInformationType,
     BugSubscriptionFilterStatus,
     BugSubscriptionFilterTag,
     )
@@ -700,9 +701,6 @@ def _get_structural_subscription_filter_id_query(
     :param direct_subscribers: a collection of Person objects who are
                                directly subscribed to the bug.
     """
-    # Circular. :-(
-    from lp.bugs.model.bugtaskflat import BugTaskFlat
-    from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
     # We get the ids because we need to use group by in order to
     # look at the filters' tags in aggregate.  Once we have the ids,
     # we can get the full set of what we need in subsuming or
@@ -739,11 +737,6 @@ def _get_structural_subscription_filter_id_query(
             Not(In(StructuralSubscription.subscriberID,
                    Select(BugSubscription.person_id,
                           BugSubscription.bug == bug))))
-    if bug.private:
-        filters.extend([
-            Or(*get_bug_privacy_filter_terms(
-                StructuralSubscription.subscriberID)),
-            BugTaskFlat.bug == bug])
     candidates = list(_get_structural_subscriptions(
         StructuralSubscription.id, query_arguments, *filters))
     if not candidates:
@@ -760,6 +753,11 @@ def _get_structural_subscription_filter_id_query(
             BugSubscriptionFilter.bug_notification_level >= level)
     # This handles the bugtask-specific attributes of status and importance.
     conditions.append(_calculate_bugtask_condition(query_arguments))
+    # Handle filtering by information type.
+    conditions.append(Or(
+        BugSubscriptionFilterInformationType.information_type == 
+            bug.information_type,
+        BugSubscriptionFilterInformationType.information_type == None))
     # Now we handle tags.  This actually assembles the query, because it
     # may have to union two queries together.
     # Note that casting bug.tags to a list subtly removes the security
@@ -845,6 +843,9 @@ def _calculate_tag_query(conditions, tags):
                  BugSubscriptionFilter.id),
         LeftJoin(BugSubscriptionFilterImportance,
                  BugSubscriptionFilterImportance.filter_id ==
+                 BugSubscriptionFilter.id),
+        LeftJoin(BugSubscriptionFilterInformationType,
+                 BugSubscriptionFilterInformationType.filter_id ==
                  BugSubscriptionFilter.id)]
     tag_join = LeftJoin(
         BugSubscriptionFilterTag,

@@ -334,7 +334,7 @@ class AccessArtifactGrant(StormBase):
 
     @classmethod
     def revokeByArtifact(cls, artifacts, grantees=None):
-        """See `IAccessArtifactGrantSource`."""
+        """See `IAccessPolicyGrantSource`."""
         cls.findByArtifact(artifacts, grantees).remove()
 
 

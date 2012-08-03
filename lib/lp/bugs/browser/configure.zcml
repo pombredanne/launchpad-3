@@ -422,7 +422,8 @@
     <browser:page
         name="+filebug"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
+        class="lp.bugs.browser.bugtarget.ProjectGroupFileBugGuidedView"
+        template="../templates/bugtarget-filebug-search.pt"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
@@ -524,7 +525,7 @@
             name="+edit"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bug.BugEditView"
-            template="../templates/bug-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             permission="launchpad.Edit"/>
         <browser:page
             name="+delete"
