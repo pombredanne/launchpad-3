@@ -504,10 +504,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         """See `IHasBugs`."""
         return self.distroseries.official_bug_tags
 
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return self.distroseries.getUsedBugTags()
-
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
                                      include_tags=None):
         """See IBugTarget."""

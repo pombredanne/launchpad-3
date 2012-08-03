@@ -525,7 +525,7 @@
             name="+edit"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bug.BugEditView"
-            template="../templates/bug-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             permission="launchpad.Edit"/>
         <browser:page
             name="+delete"
