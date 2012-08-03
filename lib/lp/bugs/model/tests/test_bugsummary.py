@@ -206,11 +206,11 @@ class TestBugSummary(TestCaseWithFactory):
         # subscriptions.
         bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
 
-        # Confirm counts.
+        # Confirm counts; the two other people shouldn't have access.
         self.assertCount(0, product=product)
-        self.assertCount(1, user=person_a, product=product)
+        self.assertCount(0, user=person_a, product=product)
         self.assertCount(1, user=person_b, product=product)
-        self.assertCount(1, user=person_c, product=product)
+        self.assertCount(0, user=person_c, product=product)
         self.assertCount(1, user=bug.owner, product=product)
 
     def test_makePublic(self):
