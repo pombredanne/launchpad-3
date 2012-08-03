@@ -35,7 +35,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
-from lp.blueprints.model.specification import Specification
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -620,18 +619,6 @@ class TestGarbo(TestCaseWithFactory):
         num_unexpired = store.execute(
             "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
         self.failUnless(num_unexpired > 0)
-
-    def test_SpecificationInformationTypeDefault(self):
-        switch_dbuser('testadmin')
-        spec = self.factory.makeSpecification()
-        removeSecurityProxy(spec).information_type = None
-        store = Store.of(spec)
-        store.flush()
-        self.assertEqual(1, store.find(Specification,
-            Specification.information_type == None).count())
-        self.runDaily()
-        self.assertEqual(0, store.find(Specification,
-            Specification.information_type == None).count())
 
     def test_RevisionAuthorEmailLinker(self):
         switch_dbuser('testadmin')
