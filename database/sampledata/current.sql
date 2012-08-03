@@ -1,6 +1,6 @@
 -- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 9.1.3
+-- Created using pg_dump (PostgreSQL) 9.1.4
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -2267,23 +2267,23 @@ ALTER TABLE packageset ENABLE TRIGGER ALL;
 
 ALTER TABLE archivepermission DISABLE TRIGGER ALL;
 
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (1, '2006-10-16 18:31:43.464753', 17, 1, 1, 3, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (2, '2006-10-16 18:31:43.46438', 17, 1, 1, 2, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (3, '2006-10-16 18:31:43.463125', 17, 1, 1, 1, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (4, '2006-10-16 18:31:43.464753', 17, 1, 8, 3, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (5, '2006-10-16 18:31:43.465111', 17, 1, 8, 1, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (6, '2006-10-16 18:31:43.465111', 17, 2, 1, 1, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (7, '2006-10-16 18:31:43.465111', 17, 2, 1, 2, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (8, '2006-10-16 18:31:43.465111', 17, 2, 1, 3, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (10, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (11, '2006-10-16 18:31:43.465111', 13, 1, 1, NULL, 1, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (12, '2006-10-16 18:31:43.465111', 243620, 1, 12, 5, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (13, '2006-10-16 18:31:43.465111', 12, 2, 1, 1, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (14, '2006-10-16 18:31:43.465111', 12, 2, 1, 2, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (15, '2006-10-16 18:31:43.465111', 12, 2, 1, 3, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (16, '2006-10-16 18:31:43.465111', 12, 2, 1, 4, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (17, '2006-10-16 18:31:43.465111', 243602, 2, 1, 3, NULL, NULL, false, NULL);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket) VALUES (18, '2006-10-16 18:31:43.465111', 243602, 2, 1, 4, NULL, NULL, false, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (1, '2006-10-16 18:31:43.464753', 17, 1, 1, 3, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (2, '2006-10-16 18:31:43.46438', 17, 1, 1, 2, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (3, '2006-10-16 18:31:43.463125', 17, 1, 1, 1, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (4, '2006-10-16 18:31:43.464753', 17, 1, 8, 3, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (5, '2006-10-16 18:31:43.465111', 17, 1, 8, 1, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (6, '2006-10-16 18:31:43.465111', 17, 2, 1, 1, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (7, '2006-10-16 18:31:43.465111', 17, 2, 1, 2, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (8, '2006-10-16 18:31:43.465111', 17, 2, 1, 3, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (10, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (11, '2006-10-16 18:31:43.465111', 13, 1, 1, NULL, 1, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (12, '2006-10-16 18:31:43.465111', 243620, 1, 12, 5, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (13, '2006-10-16 18:31:43.465111', 12, 2, 1, 1, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (14, '2006-10-16 18:31:43.465111', 12, 2, 1, 2, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (15, '2006-10-16 18:31:43.465111', 12, 2, 1, 3, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (16, '2006-10-16 18:31:43.465111', 12, 2, 1, 4, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (17, '2006-10-16 18:31:43.465111', 243602, 2, 1, 3, NULL, NULL, false, NULL, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit, pocket, distroseries) VALUES (18, '2006-10-16 18:31:43.465111', 243602, 2, 1, 4, NULL, NULL, false, NULL, NULL);
 
 
 ALTER TABLE archivepermission ENABLE TRIGGER ALL;
