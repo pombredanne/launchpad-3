@@ -56,12 +56,10 @@ from lp.blueprints.model.specification import (
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTag,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -333,13 +331,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.project == self.id).order_by(OfficialBugTag.tag)
         result.config(distinct=True)
         return result
-
-    def getUsedBugTags(self):
-        """See `IHasBugs`."""
-        if not self.products:
-            return []
-        return get_bug_tags(
-            BugTask.productID.is_in([p.id for p in self.products]))
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
