@@ -55,6 +55,10 @@
                     message string:${archive/displayname}"
             replace="message" />
         </tal:define>
+        <tal:message
+          condition="context/creator"
+          define="message string: by ${context/creator/fmt:link}"
+          replace="message" />
       </tal:source_original_location>
       <tal:binary_build_location condition="view/is_binary">
         <tal:message
