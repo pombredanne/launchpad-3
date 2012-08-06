@@ -12,14 +12,14 @@ class TestAuditorClient(TestCaseWithFactory):
 
     layer = AuditorLayer
 
-    def test_send_and_recieve(self):
-        # We can use .send() and .recieve() on AuditorClient to log.
+    def test_send_and_receive(self):
+        # We can use .send() and .receive() on AuditorClient to log.
         actor = self.factory.makePerson()
         pu = self.factory.makePackageUpload()
         client = AuditorClient()
         result = client.send(pu, 'packageupload-accepted', actor)
         self.assertEqual('Operation recorded.', result)
-        result = client.recieve(obj=pu)
+        result = client.receive(obj=pu)
         del result[0]['date'] # Ignore the date.
         expected = [{
             u'comment': u'', u'details': u'', u'actor': actor,
