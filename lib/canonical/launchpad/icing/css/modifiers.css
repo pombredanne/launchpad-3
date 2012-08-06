@@ -112,6 +112,14 @@ div.beta img {
     height: 10px;
     }
 
+.ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -o-text-overflow: ellipsis;
+    -ms-text-overflow: ellipsis;
+    }
+
 .exception {
     color: #cc0000;
     }
@@ -185,6 +193,10 @@ table.diff,
     padding: 0 0 6px 18px;
     line-height: 18px;
     }
+.block-sprite {
+    padding: 2px 2px 15px 36px;
+    margin-bottom: 0;
+    }
 
 .action-icon {
     /* Textual browsers read the text, graphical browsers see the sprite. */
@@ -200,6 +212,10 @@ table.diff,
 .action-icon + .action-icon {
     margin-left: 0px;
     }
+
+th .action-icon {
+    height: 12px;
+}
 
 h1 a.sprite,
 h2 a.sprite,

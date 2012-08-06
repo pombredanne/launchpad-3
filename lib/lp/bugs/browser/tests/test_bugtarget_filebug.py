@@ -27,9 +27,8 @@ from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     )
-from lp.registry.vocabularies import InformationTypeVocabulary
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -43,7 +42,10 @@ from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
@@ -341,23 +343,18 @@ class TestFileBugViewBase(TestCaseWithFactory):
         self.assertEqual(0, len(view.errors))
         self.assertTrue(view.added_bug is not None)
 
-
-class TestFileBugReportingGuidelines(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
     def test_filebug_reporting_details(self):
         product = self.factory.makeProduct()
         login_person(product.owner)
         product.bug_reporting_guidelines = "Include bug details"
-        view = create_initialized_view(
-            product, '+filebug-reporting-guidelines')
+        view = create_initialized_view(product, '+filebug')
         expected_guidelines = [{
             "source": product.displayname, "content": u"Include bug details",
             }]
         self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
 
-    def filebug_via_view(self, private_bugs=False, information_type=None):
+    def filebug_via_view(self, private_bugs=False, information_type=None,
+                         extra_data_token=None):
         form = {
             'field.title': 'A bug',
             'field.comment': 'A comment',
@@ -369,41 +366,54 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         if private_bugs:
             removeSecurityProxy(product).private_bugs = True
         with person_logged_in(product.owner):
-            view = create_initialized_view(
-                product, '+filebug', form=form, principal=product.owner)
+            view = create_view(
+                product, '+filebug', method='POST', form=form,
+                principal=product.owner)
+            if extra_data_token is not None:
+                view = view.publishTraverse(view.request, extra_data_token)
+            view.initialize()
             bug_url = view.request.response.getHeader('Location')
             bug_number = bug_url.split('/')[-1]
-            return getUtility(IBugSet).getByNameOrID(bug_number)
+            return (getUtility(IBugSet).getByNameOrID(bug_number), view)
 
     def test_filebug_default_information_type(self):
         # If we don't specify the bug's information_type, it is PUBLIC for
         # products with private_bugs=False.
-        bug = self.filebug_via_view()
+        bug, view = self.filebug_via_view()
+        self.assertEqual(
+            InformationType.PUBLIC, view.default_information_type)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
 
     def test_filebug_set_information_type(self):
         # When we specify the bug's information_type, it is set.
-        bug = self.filebug_via_view(information_type='PRIVATESECURITY')
+        bug, view = self.filebug_via_view(information_type='PRIVATESECURITY')
         self.assertEqual(
             InformationType.PRIVATESECURITY, bug.information_type)
 
     def test_filebug_information_type_with_private_bugs(self):
         # If we don't specify the bug's information_type, it is USERDATA for
         # products with private_bugs=True.
-        bug = self.filebug_via_view(private_bugs=True)
+        bug, view = self.filebug_via_view(private_bugs=True)
+        self.assertEqual(
+            InformationType.USERDATA, view.default_information_type)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
-    def test_filebug_information_type_commercial_projects(self):
-        # The vocabulary for information_type when filing a bug is created
-        # correctly for proprietary projects.
-        product = self.factory.makeProduct(official_malone=True)
-        self.factory.makeCommercialSubscription(product)
-        with person_logged_in(product.owner):
-            view = create_initialized_view(
-                product, '+filebug', principal=product.owner)
-            html = view.render()
-            soup = BeautifulSoup(html)
-        self.assertIsNotNone(soup.find('label', text="Proprietary"))
+    def test_filebug_information_type_with_public_blob(self):
+        # Bugs filed with an apport blob that doesn't request privacy
+        # are public by default.
+        blob = self.factory.makeProcessedApportBlob({})
+        bug, view = self.filebug_via_view(extra_data_token=blob.uuid)
+        self.assertEqual(
+            InformationType.PUBLIC, view.default_information_type)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_filebug_information_type_with_private_blob(self):
+        # An apport blob can ask for the bug to be private.
+        blob = self.factory.makeProcessedApportBlob({'private': True})
+        bug, view = self.filebug_via_view(extra_data_token=blob.uuid)
+        self.assertEqual(
+            InformationType.USERDATA, view.default_information_type)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
 
     def test_filebug_information_type_normal_projects(self):
         # The vocabulary for information_type when filing a bug is created
@@ -425,7 +435,7 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
                 product, '+filebug', principal=product.owner)
             html = view.render()
             soup = BeautifulSoup(html)
-        for info_type in InformationTypeVocabulary(product):
+        for info_type in product.getAllowedBugInformationTypes():
             self.assertIsNotNone(soup.find('label', text=info_type.title))
 
     def test_filebug_view_renders_info_type_widget(self):
@@ -440,21 +450,6 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
             soup.find('input', attrs={'name': 'field.security_related'}))
         self.assertIsNotNone(
             soup.find('input', attrs={'name': 'field.information_type'}))
-
-    def test_filebug_information_type_vocabulary_private_projects(self):
-        # The vocabulary for information_type when filing a bug only has
-        # private info types for private bug projects.
-        product = self.factory.makeProduct(
-            official_malone=True, private_bugs=True)
-        with person_logged_in(product.owner):
-            view = create_initialized_view(
-                product, '+filebug', principal=product.owner)
-            html = view.render()
-            soup = BeautifulSoup(html)
-        for info_type in InformationTypeVocabulary(private_only=True):
-            self.assertIsNotNone(soup.find('label', text=info_type.title))
-        for info_type in PUBLIC_INFORMATION_TYPES:
-            self.assertIsNone(soup.find('label', text=info_type.title))
 
 
 class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
@@ -550,53 +545,6 @@ class TestFileBugSourcePackage(TestCaseWithFactory):
         self.assertIn("Thank you for your bug report.", msg)
 
 
-class TestFileBugGuidelinesRequestCache(TestCaseWithFactory):
-    # Tests to ensure the request cache contains the expected values for
-    # file bug guidelines views.
-
-    layer = DatabaseFunctionalLayer
-
-    def _assert_cache_values(self, view, private_bugs, duplicate_search):
-        cache = IJSONRequestCache(view.request).objects
-        self.assertContentEqual(cache['private_types'], [
-            type.name for type in PRIVATE_INFORMATION_TYPES])
-        self.assertEqual(cache['bug_private_by_default'], private_bugs)
-
-    def test_product(self):
-        project = self.factory.makeProduct(official_malone=True)
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(project,
-            '+filebug-reporting-guidelines', principal=user)
-        self._assert_cache_values(view, False, True)
-
-    def test_product_default_private(self):
-        product = self.factory.makeProduct(official_malone=True)
-        removeSecurityProxy(product).private_bugs = True
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(product,
-            '+filebug-reporting-guidelines', principal=user)
-        self._assert_cache_values(view, True, True)
-
-    def test_product_no_duplicate_search(self):
-        product = self.factory.makeProduct(official_malone=True)
-        removeSecurityProxy(product).enable_bugfiling_duplicate_search = False
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(product,
-            '+filebug-reporting-guidelines', principal=user)
-        self._assert_cache_values(view, False, False)
-
-    def test_project_group(self):
-        project = self.factory.makeProject()
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(project,
-            '+filebug-reporting-guidelines', principal=user)
-        self._assert_cache_values(view, False, True)
-
-
 class TestFileBugRequestCache(TestCaseWithFactory):
     # Tests to ensure the request cache contains the expected values for
     # file bug views.
@@ -609,7 +557,7 @@ class TestFileBugRequestCache(TestCaseWithFactory):
             'disclosure.enhanced_choice_popup.enabled': 'true'
         }))
 
-    def _assert_cache_values(self, view, duplicate_search, private_only=False):
+    def _assert_cache_values(self, view, duplicate_search, private_bugs=False):
         cache = IJSONRequestCache(view.request).objects
         self.assertEqual(
             duplicate_search, cache['enable_bugfiling_duplicate_search'])
@@ -656,14 +604,18 @@ class TestFileBugRequestCache(TestCaseWithFactory):
             bugtask_importance_data.append(new_item)
         self.assertEqual(
             bugtask_importance_data, cache['bugtask_importance_data'])
+        self.assertContentEqual(cache['private_types'], [
+            type.name for type in PRIVATE_INFORMATION_TYPES])
+        self.assertEqual(cache['bug_private_by_default'], private_bugs)
         bugtask_info_type_data = []
-        for item in InformationTypeVocabulary(private_only=private_only):
-            new_item = {'name': item.title, 'value': item.name,
-                        'description': item.description,
-                        'description_css_class': 'choice-description'}
-            bugtask_info_type_data.append(new_item)
-        self.assertContentEqual(
-            bugtask_info_type_data, cache['information_type_data'])
+        if not IProjectGroup.providedBy(view.context):
+            for item in view.context.getAllowedBugInformationTypes():
+                new_item = {'name': item.title, 'value': item.name,
+                            'description': item.description,
+                            'description_css_class': 'choice-description'}
+                bugtask_info_type_data.append(new_item)
+            self.assertContentEqual(
+                bugtask_info_type_data, cache['information_type_data'])
 
     def test_product(self):
         project = self.factory.makeProduct(official_malone=True)
@@ -687,10 +639,3 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         login_person(user)
         view = create_initialized_view(product, '+filebug', principal=user)
         self._assert_cache_values(view, False)
-
-    def test_project_group(self):
-        project = self.factory.makeProject()
-        user = self.factory.makePerson()
-        login_person(user)
-        view = create_initialized_view(project, '+filebug', principal=user)
-        self._assert_cache_values(view, True)

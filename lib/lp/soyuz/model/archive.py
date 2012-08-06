@@ -1347,10 +1347,20 @@ class Archive(SQLBase):
 
         return None
 
-    def canAdministerQueue(self, user, component):
+    def canAdministerQueue(self, user, components):
         """See `IArchive`."""
-        return self._authenticate(
-            user, component, ArchivePermissionType.QUEUE_ADMIN)
+        if components is None:
+            components = []
+        elif IComponent.providedBy(components):
+            components = [components]
+        permissions = self.getComponentsForQueueAdmin(user)
+        if permissions.count() == 0:
+            return False
+        allowed_components = set(
+            permission.component for permission in permissions)
+        # The intersection of allowed_components and components must be
+        # equal to components to allow the operation to go ahead.
+        return allowed_components.intersection(components) == set(components)
 
     def _authenticate(self, user, item, permission):
         """Private helper method to check permissions."""
@@ -1619,8 +1629,6 @@ class Archive(SQLBase):
 
     def _checkCopyPackageFeatureFlags(self):
         """Prevent copyPackage(s) if these conditions are not met."""
-        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
-            raise ForbiddenByFeatureFlag
         if (self.is_ppa and
             not getFeatureFlag(u"soyuz.copypackageppa.enabled")):
             # We have no way of giving feedback about failed jobs yet,
@@ -1630,7 +1638,7 @@ class Archive(SQLBase):
 
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
-                    sponsored=None, unembargo=False):
+                    sponsored=None, unembargo=False, auto_approve=False):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1652,11 +1660,13 @@ class Archive(SQLBase):
             target_pocket=pocket,
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE, requester=person,
-            sponsored=sponsored, unembargo=unembargo)
+            sponsored=sponsored, unembargo=unembargo,
+            auto_approve=auto_approve)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, from_series=None,
-                     include_binaries=None, sponsored=None, unembargo=False):
+                     include_binaries=None, sponsored=None, unembargo=False,
+                     auto_approve=False):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
@@ -1688,7 +1698,7 @@ class Archive(SQLBase):
         job_source.createMultiple(
             copy_tasks, person, copy_policy=PackageCopyPolicy.MASS_SYNC,
             include_binaries=include_binaries, sponsored=sponsored,
-            unembargo=unembargo)
+            unembargo=unembargo, auto_approve=auto_approve)
 
     def _collectLatestPublishedSources(self, from_archive, from_series,
                                        source_names):

@@ -276,6 +276,20 @@ class TestDistribution(TestCaseWithFactory):
             InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in ap])
 
+    def test_getAllowedBugInformationTypes(self):
+        # All distros currently support just the non-proprietary
+        # information types.
+        self.assertContentEqual(
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            self.factory.makeDistribution().getAllowedBugInformationTypes())
+
+    def test_getDefaultBugInformationType(self):
+        # The default information type for distributions is always PUBLIC.
+        self.assertEqual(
+            InformationType.PUBLIC,
+            self.factory.makeDistribution().getDefaultBugInformationType())
+
 
 class TestDistributionCurrentSourceReleases(
     CurrentSourceReleasesMixin, TestCase):

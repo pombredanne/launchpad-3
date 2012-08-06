@@ -81,10 +81,7 @@ from lp.bugs.interfaces.bugtask import (
     DB_UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    BugSet,
-    get_bug_tags,
-    )
+from lp.bugs.model.bug import BugSet
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -192,7 +189,6 @@ from lp.soyuz.model.publishing import (
     get_current_source_releases,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -626,10 +622,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution."""
         search_params.setDistribution(self)
-
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
     def getBranchTips(self, user=None, since=None):
         """See `IDistribution`."""
@@ -1596,6 +1588,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
             self.addBugSubscription(bug_supervisor, user)
+
+    def getAllowedBugInformationTypes(self):
+        """See `IDistribution.`"""
+        types = set(InformationType.items)
+        types.discard(InformationType.PROPRIETARY)
+        return types
+
+    def getDefaultBugInformationType(self):
+        """See `IDistribution.`"""
+        return InformationType.PUBLIC
 
     def userCanEdit(self, user):
         """See `IDistribution`."""

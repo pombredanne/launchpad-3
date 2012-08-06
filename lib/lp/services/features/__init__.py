@@ -116,12 +116,12 @@ flag in the thread default controller.
 
 To simply check a boolean::
 
-    if features.getFeatureFlag('soyuz.derived_series_ui.enabled'):
+    if features.getFeatureFlag('example_flag.enabled'):
         ...
 
 and if you want to use the value ::
 
-     value = features.getFeatureFlag('soyuz.derived_series_ui.enabled')
+     value = features.getFeatureFlag('example_flag.enabled')
      if value:
         print value
 

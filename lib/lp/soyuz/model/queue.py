@@ -50,6 +50,7 @@ from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.auditor.client import AuditorClient
 from lp.services.config import config
 from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
@@ -64,6 +65,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import LibraryFileAlias
@@ -625,7 +627,7 @@ class PackageUpload(SQLBase):
         # Give some karma!
         self._giveKarma()
 
-    def acceptFromQueue(self, logger=None, dry_run=False):
+    def acceptFromQueue(self, logger=None, dry_run=False, user=None):
         """See `IPackageUpload`."""
         assert not self.is_delayed_copy, 'Cannot process delayed copies.'
 
@@ -633,6 +635,9 @@ class PackageUpload(SQLBase):
             self._acceptNonSyncFromQueue(logger, dry_run)
         else:
             self._acceptSyncFromQueue()
+        if bool(getFeatureFlag('auditor.enabled')):
+            client = AuditorClient()
+            client.send(self, 'packageupload-accepted', user)
 
     def acceptFromCopy(self):
         """See `IPackageUpload`."""
@@ -874,15 +879,15 @@ class PackageUpload(SQLBase):
                 changes_file = None
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
                     release = pub_record.sourcepackagerelease
-                    changes_file = release.package_upload.changesfile
+                    changes_file = StringIO.StringIO(
+                        release.package_upload.changesfile.read())
 
                 for new_file in update_files_privacy(pub_record):
-                    debug(logger,
-                          "Re-uploaded %s to librarian" % new_file.filename)
+                    debug(logger, "Made %s public" % new_file.filename)
                 for custom_file in self.customfiles:
                     update_files_privacy(custom_file)
                     debug(logger,
-                          "Re-uploaded custom file %s to librarian" %
+                          "Made custom file %s public" %
                           custom_file.libraryfilealias.filename)
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
                     pas_verify = BuildDaemonPackagesArchSpecific(
@@ -894,11 +899,8 @@ class PackageUpload(SQLBase):
                     debug(
                         logger,
                         "sending email to %s" % self.distroseries.changeslist)
-                    changes_file_object = StringIO.StringIO(
-                        changes_file.read())
                     self.notify(
-                        changes_file_object=changes_file_object,
-                        logger=logger)
+                        changes_file_object=changes_file, logger=logger)
                     self.syncUpdate()
 
         self.setDone()

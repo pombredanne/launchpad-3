@@ -89,7 +89,7 @@
   <div tal:define="comment_form nocall:context/@@+addcomment-form;
        dummy comment_form/initialize" id="add-comment-form">
     <div tal:condition="context/bug/duplicateof"
-        class="warning message"
+        class="block-sprite large-warning"
         id="warning-comment-on-duplicate">
       Remember, this bug report is a duplicate of
       <a  tal:define="duplicateof context/bug/duplicateof"
@@ -102,7 +102,7 @@
       <span
           tal:define="duplicateof context/bug/duplicateof"
           tal:condition="not:duplicateof/required:launchpad.View"
-          tal:replace="string: a private bug." />
+          tal:replace="string: a private bug." /><br>
       Comment here only if you think the duplicate status is wrong.
     </div>
     <h2>Add comment</h2>
@@ -126,7 +126,7 @@
         Y.on('domready', function(){
             var comment = new Y.lp.app.comment.Comment();
             comment.render();
-            }, window);
+        });
     });
   </script>
 </div>

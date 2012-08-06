@@ -92,10 +92,7 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    BugSet,
-    get_bug_tags,
-    )
+from lp.bugs.model.bug import BugSet
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -123,8 +120,8 @@ from lp.registry.enums import (
     )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicySource,
     IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
@@ -565,6 +562,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
+    def getAllowedBugInformationTypes(self):
+        """See `IProduct.`"""
+        types = set(InformationType.items)
+        types.discard(InformationType.PROPRIETARY)
+        return types
+
+    def getDefaultBugInformationType(self):
+        """See `IDistribution.`"""
+        if self.private_bugs:
+            return InformationType.USERDATA
+        else:
+            return InformationType.PUBLIC
+
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
         # information types.
@@ -875,10 +885,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this product.."""
         search_params.setProduct(self)
-
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')

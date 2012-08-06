@@ -42,7 +42,7 @@ __all__ = [
     'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
-    'NewPillarShareeVocabulary',
+    'NewPillarGranteeVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
@@ -103,10 +103,7 @@ from zope.security.proxy import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.code.interfaces.branch import IBranch
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -177,7 +174,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -304,8 +300,9 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = ensure_unicode(query).lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            query = ensure_unicode(query)
+            like_query = query.lower()
+            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
@@ -354,8 +351,9 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = ensure_unicode(query).lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            query = ensure_unicode(query)
+            like_query = query.lower()
+            like_query = "'%%' || %s || '%%'" % quote_like(like_query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
@@ -435,7 +433,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        return self._select(ensure_unicode(text).lower())
+        return self._select(ensure_unicode(text))
 
 
 class PersonAccountToMergeVocabulary(
@@ -469,7 +467,7 @@ class PersonAccountToMergeVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        text = ensure_unicode(text).lower()
+        text = ensure_unicode(text)
         return self._select(text)
 
 
@@ -649,14 +647,15 @@ class ValidPersonOrTeamVocabulary(
                 FROM (
                     SELECT Person.id,
                     (case
-                        when person.name=? then 100
-                        when person.name like ? || '%%' then 0.6
-                        when lower(person.displayname) like ? || '%%' then 0.5
+                        when person.name=lower(?) then 100
+                        when person.name like lower(?) || '%%' then 0.6
+                        when lower(person.displayname) like lower(?)
+                            || '%%' then 0.5
                         else rank(fti, ftq(?))
                     end) as rank
                     FROM Person
-                    WHERE Person.name LIKE ? || '%%'
-                    or lower(Person.displayname) LIKE ? || '%%'
+                    WHERE Person.name LIKE lower(?) || '%%'
+                    or lower(Person.displayname) LIKE lower(?) || '%%'
                     or Person.fti @@ ftq(?)
                     UNION ALL
                     SELECT Person.id, 0.8 AS rank
@@ -667,7 +666,7 @@ class ValidPersonOrTeamVocabulary(
                     SELECT Person.id, 0.4 AS rank
                     FROM Person, EmailAddress
                     WHERE Person.id = EmailAddress.person
-                        AND LOWER(EmailAddress.email) LIKE ? || '%%'
+                        AND LOWER(EmailAddress.email) LIKE lower(?) || '%%'
                         AND status IN (?, ?)
                 ) AS person_match
                 GROUP BY id, is_private_team
@@ -680,9 +679,10 @@ class ValidPersonOrTeamVocabulary(
                 private_tables = [Person] + private_tables
                 private_ranking_sql = SQL("""
                     (case
-                        when person.name=? then 100
-                        when person.name like ? || '%%' then 0.6
-                        when lower(person.displayname) like ? || '%%' then 0.5
+                        when person.name=lower(?) then 100
+                        when person.name like lower(?) || '%%' then 0.6
+                        when lower(person.displayname) like lower(?)
+                            || '%%' then 0.5
                         else rank(fti, ftq(?))
                     end) as rank
                 """, (text, text, text, text))
@@ -696,8 +696,8 @@ class ValidPersonOrTeamVocabulary(
                                 SQL("true as is_private_team")),
                     where=And(
                         SQL("""
-                            Person.name LIKE ? || '%%'
-                            OR lower(Person.displayname) LIKE ? || '%%'
+                            Person.name LIKE lower(?) || '%%'
+                            OR lower(Person.displayname) LIKE lower(?) || '%%'
                             OR Person.fti @@ ftq(?)
                             """, [text, text, text]),
                         private_query))
@@ -792,7 +792,7 @@ class ValidPersonOrTeamVocabulary(
             else:
                 return self.emptySelectResults()
 
-        text = ensure_unicode(text).lower()
+        text = ensure_unicode(text)
         return self._doSearch(text=text, vocab_filter=vocab_filter)
 
     def searchForTerms(self, query=None, vocab_filter=None):
@@ -838,8 +838,8 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
             result = self.store.using(*tables).find(Person, query)
         else:
             name_match_query = SQL("""
-                Person.name LIKE ? || '%%'
-                OR lower(Person.displayname) LIKE ? || '%%'
+                Person.name LIKE lower(?) || '%%'
+                OR lower(Person.displayname) LIKE lower(?) || '%%'
                 OR Person.fti @@ ftq(?)
                 """, [text, text, text]),
 
@@ -1059,11 +1059,11 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
+class NewPillarGranteeVocabulary(ValidPersonOrClosedTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an
-    existing sharee for the pillar.
+    existing grantee for the pillar.
     """
 
     displayname = 'Share project information'
@@ -1071,7 +1071,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
 
     def __init__(self, context):
         assert IPillar.providedBy(context)
-        super(NewPillarShareeVocabulary, self).__init__(context)
+        super(NewPillarGranteeVocabulary, self).__init__(context)
         aps = getUtility(IAccessPolicySource)
         access_policies = aps.findByPillar([self.context])
         self.policy_ids = [policy.id for policy in access_policies]
@@ -1086,7 +1086,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
             """ % sqlvalues(self.policy_ids))
         return And(
             clause,
-            super(NewPillarShareeVocabulary, self).extra_clause)
+            super(NewPillarGranteeVocabulary, self).extra_clause)
 
 
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
@@ -2244,47 +2244,7 @@ class InformationTypeVocabulary(SimpleVocabulary):
 
     implements(IEnumeratedType)
 
-    def __init__(self, context=None, public_only=False, private_only=False):
-        types = []
-        if not public_only:
-            types = [
-                InformationType.PRIVATESECURITY,
-                InformationType.USERDATA]
-            # So long as not disabled by the feature flag, Proprietary is
-            # allowed for:
-            # - single pillar bugs where the target has a current commercial
-            #   subscription
-            # - branches for a project with a current commercial subscription
-            # - projects with current commercial subscriptions
-            # - contexts which already have an information type set to
-            #   proprietary
-            proprietary_disabled = bool(getFeatureFlag(
-                'disclosure.proprietary_information_type.disabled'))
-            if not proprietary_disabled:
-                subscription_context = context
-                if (IBug.providedBy(context)
-                    and len(context.affected_pillars) == 1):
-                    subscription_context = context.affected_pillars[0]
-                elif (IBugTask.providedBy(context)
-                    and len(context.bug.affected_pillars) == 1):
-                    subscription_context = context.pillar
-                elif IBranch.providedBy(context):
-                    subscription_context = context.target.context
-                has_commercial_subscription = (
-                    IProduct.providedBy(subscription_context) and
-                    subscription_context.has_current_commercial_subscription)
-                already_proprietary = (
-                    safe_hasattr(context, 'information_type') and
-                    context.information_type == InformationType.PROPRIETARY)
-                if has_commercial_subscription or already_proprietary:
-                    types.append(InformationType.PROPRIETARY)
-        # Disallow public items for projects with private bugs.
-        if (not private_only and (context is None or
-            not IProduct.providedBy(context) or
-            not context.private_bugs)):
-            types = [InformationType.PUBLIC,
-                     InformationType.PUBLICSECURITY] + types
-
+    def __init__(self, types):
         terms = []
         for type in types:
             term = SimpleTerm(type, type.name, type.title)

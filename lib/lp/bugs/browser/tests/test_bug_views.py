@@ -409,20 +409,6 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.assertEqual(
             u'Private', soup.find('label', text="Private"))
 
-    def test_information_type_vocabulary_commercial_project(self):
-        # Test that the view creates the vocabulary correctly for commercial
-        # projects.
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        bug = self.factory.makeBug(product=product)
-        with person_logged_in(bug.owner):
-            view = create_initialized_view(
-                bug.default_bugtask, name='+secrecy',
-                principal=bug.owner)
-            html = view.render()
-            soup = BeautifulSoup(html)
-        self.assertIsNot(None, soup.find('label', text="Proprietary"))
-
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
     """ Test for rendering BugTextView with private team artifacts.
@@ -529,3 +515,55 @@ class TestBugMessageAddFormView(TestCaseWithFactory):
         view = create_initialized_view(
             bug.default_bugtask, '+addcomment', form=form)
         self.assertEqual(0, len(view.errors))
+
+
+class TestBugMarkAsDuplicateView(TestCaseWithFactory):
+    """Tests for marking a bug as a duplicate."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugMarkAsDuplicateView, self).setUp()
+        self.bug_owner = self.factory.makePerson()
+        self.bug = self.factory.makeBug(owner=self.bug_owner)
+        self.duplicate_bug = self.factory.makeBug(owner=self.bug_owner)
+
+    def test_remove_link_not_shown_if_no_duplicate(self):
+        with person_logged_in(self.bug_owner):
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner)
+            soup = BeautifulSoup(view.render())
+        self.assertIsNone(soup.find(attrs={'id': 'field.actions.remove'}))
+
+    def test_remove_link_shown_if_duplicate(self):
+        with person_logged_in(self.bug_owner):
+            self.bug.markAsDuplicate(self.duplicate_bug)
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner)
+            soup = BeautifulSoup(view.render())
+        self.assertIsNotNone(
+            soup.find(attrs={'id': 'field.actions.remove'}))
+
+    def test_create_duplicate(self):
+        with person_logged_in(self.bug_owner):
+            form = {
+                'field.actions.change': u'Set Duplicate',
+                'field.duplicateof': u'%s' % self.duplicate_bug.id
+                }
+            create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner, form=form)
+        self.assertEqual(self.duplicate_bug, self.bug.duplicateof)
+
+    def test_remove_duplicate(self):
+        with person_logged_in(self.bug_owner):
+            self.bug.markAsDuplicate(self.duplicate_bug)
+            form = {
+                'field.actions.remove': u'Remove Duplicate',
+                }
+            create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner, form=form)
+        self.assertIsNone(self.bug.duplicateof)

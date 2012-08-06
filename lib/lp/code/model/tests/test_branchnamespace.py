@@ -32,6 +32,8 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branchnamespace import (
+    FREE_INFORMATION_TYPES,
+    FREE_PRIVATE_INFORMATION_TYPES,
     PackageNamespace,
     PersonalNamespace,
     ProductNamespace,
@@ -39,7 +41,6 @@ from lp.code.model.branchnamespace import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
-    PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     SharingPermission,
     )
@@ -482,8 +483,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertContentEqual(
-            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-            namespace.getAllowedInformationTypes())
+            FREE_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.PUBLIC, namespace.getDefaultInformationType())
 
@@ -501,8 +501,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
                 namespace.product, namespace.owner, namespace.product.owner,
                 {InformationType.USERDATA: SharingPermission.ALL})
         self.assertContentEqual(
-            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-            namespace.getAllowedInformationTypes())
+            FREE_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.USERDATA, namespace.getDefaultInformationType())
 
@@ -512,7 +511,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
-    def test_proprietary_grantor(self):
+    def test_proprietary_grantee(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY)
         with admin_logged_in():
@@ -520,7 +519,8 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
                 namespace.product, namespace.owner, namespace.product.owner,
                 {InformationType.USERDATA: SharingPermission.ALL})
         self.assertContentEqual(
-            PRIVATE_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
+            FREE_PRIVATE_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.USERDATA, namespace.getDefaultInformationType())
 
@@ -1051,7 +1051,7 @@ class TestPersonalNamespaceAllowedInformationTypes(TestCaseWithFactory):
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         namespace = PersonalNamespace(team)
         self.assertContentEqual(
-            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
+            FREE_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
 
@@ -1110,10 +1110,8 @@ class TestProductNamespaceAllowedInformationTypes(TestCaseWithFactory):
         team = self.factory.makeTeam(owner=person)
         self.product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
-        self.assertTypes(
-            person, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
-        self.assertTypes(
-            team, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(person, FREE_INFORMATION_TYPES)
+        self.assertTypes(team, FREE_INFORMATION_TYPES)
 
     def test_team_member_with_private_only_rule(self):
         # If a person is a member of a team that has a PRIVATE_ONLY rule, then
@@ -1124,8 +1122,8 @@ class TestProductNamespaceAllowedInformationTypes(TestCaseWithFactory):
             None, BranchVisibilityRule.FORBIDDEN)
         self.product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE_ONLY)
-        self.assertTypes(person, PRIVATE_INFORMATION_TYPES)
-        self.assertTypes(team, PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(person, FREE_PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(team, FREE_PRIVATE_INFORMATION_TYPES)
 
     def test_non_team_member_with_private_rule(self):
         # If a person is a not a member of a team that has a privacy rule,
@@ -1146,12 +1144,9 @@ class TestProductNamespaceAllowedInformationTypes(TestCaseWithFactory):
             team_1, BranchVisibilityRule.PRIVATE)
         self.product.setBranchVisibilityTeamPolicy(
             team_2, BranchVisibilityRule.PRIVATE)
-        self.assertTypes(
-            person, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
-        self.assertTypes(
-            team_1, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
-        self.assertTypes(
-            team_2, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(person, FREE_INFORMATION_TYPES)
+        self.assertTypes(team_1, FREE_INFORMATION_TYPES)
+        self.assertTypes(team_2, FREE_INFORMATION_TYPES)
 
     def test_team_member_with_multiple_differing_private_rules(self):
         # If a person is a member of multiple teams that has a privacy rules,
@@ -1165,11 +1160,8 @@ class TestProductNamespaceAllowedInformationTypes(TestCaseWithFactory):
             private_team, BranchVisibilityRule.PRIVATE)
         self.product.setBranchVisibilityTeamPolicy(
             public_team, BranchVisibilityRule.PUBLIC)
-        self.assertTypes(
-            person, PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
-        self.assertTypes(
-            private_team,
-            PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES)
+        self.assertTypes(person, FREE_INFORMATION_TYPES)
+        self.assertTypes(private_team, FREE_INFORMATION_TYPES)
         self.assertTypes(public_team, PUBLIC_INFORMATION_TYPES)
 
 

@@ -25,6 +25,7 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.webapp.vocabulary import FilteredVocabularyBase
 from lp.testing import (
     login_person,
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -187,6 +188,22 @@ class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
         team = self.factory.makeTeam(
             name="fredteam", email="fredteam@foo.com")
         self._team_filter_tests([team])
+
+    def test_search_accepts_or_expressions(self):
+        person = self.factory.makePerson(name='baz')
+        team = self.factory.makeTeam(name='blah')
+        result = list(self.searchVocabulary(None, 'baz OR blah'))
+        self.assertEqual([person, team], result)
+        private_team_one = self.factory.makeTeam(
+            name='private-eye', visibility=PersonVisibility.PRIVATE,
+            owner=person)
+        private_team_two = self.factory.makeTeam(
+            name='paranoid', visibility=PersonVisibility.PRIVATE,
+            owner=person)
+        with person_logged_in(person):
+            result = list(
+                self.searchVocabulary(None, 'paranoid OR private-eye'))
+        self.assertEqual([private_team_one, private_team_two], result)
 
 
 class TestValidPersonOrTeamPreloading(VocabularyTestBase,
@@ -373,36 +390,43 @@ class TestValidTeamVocabulary(VocabularyTestBase,
 
     def test_unvalidated_emails_ignored(self):
         person = self.factory.makePerson()
-        unvalidated_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             'fnord@example.com',
             person,
             email_status=EmailAddressStatus.NEW)
         search = self.searchVocabulary(None, 'fnord@example.com')
         self.assertEqual([], [s for s in search])
 
-class TestNewPillarShareeVocabulary(VocabularyTestBase,
+    def test_search_accepts_or_expressions(self):
+        team_one = self.factory.makeTeam(name='baz')
+        team_two = self.factory.makeTeam(name='blah')
+        result = list(self.searchVocabulary(None, 'baz OR blah'))
+        self.assertEqual([team_one, team_two], result)
+
+
+class TestNewPillarGranteeVocabulary(VocabularyTestBase,
                                         TestCaseWithFactory):
-    """Test that the NewPillarShareeVocabulary behaves as expected."""
+    """Test that the NewPillarGranteeVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer
-    vocabulary_name = 'NewPillarSharee'
+    vocabulary_name = 'NewPillarGrantee'
 
     def test_existing_grantees_excluded(self):
         # Existing grantees should be excluded from the results.
         product = self.factory.makeProduct()
-        person1 = self.factory.makePerson(name='sharee1')
-        person2 = self.factory.makePerson(name='sharee2')
+        person1 = self.factory.makePerson(name='grantee1')
+        person2 = self.factory.makePerson(name='grantee2')
         policy = self.factory.makeAccessPolicy(pillar=product)
         self.factory.makeAccessPolicyGrant(policy=policy, grantee=person1)
-        [newsharee] = self.searchVocabulary(product, 'sharee')
-        self.assertEqual(newsharee, person2)
+        [newgrantee] = self.searchVocabulary(product, 'grantee')
+        self.assertEqual(newgrantee, person2)
 
     def test_open_teams_excluded(self):
         # Only closed teams should be available for selection.
         product = self.factory.makeProduct()
-        self.factory.makeTeam(name='sharee1')
+        self.factory.makeTeam(name='grantee1')
         closed_team = self.factory.makeTeam(
-            name='sharee2',
+            name='grantee2',
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        [newsharee] = self.searchVocabulary(product, 'sharee')
-        self.assertEqual(newsharee, closed_team)
+        [newgrantee] = self.searchVocabulary(product, 'grantee')
+        self.assertEqual(newgrantee, closed_team)

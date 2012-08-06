@@ -381,9 +381,6 @@ class IHasOfficialBugTags(Interface):
         value_type=Tag(),
         readonly=True))
 
-    def getUsedBugTags():
-        """Return the tags used by the context as a sorted list of strings."""
-
     def getUsedBugTagsWithOpenCounts(user, tag_limit=0, include_tags=None):
         """Return name and bug count of tags having open bugs.
 

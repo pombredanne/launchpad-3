@@ -18,7 +18,6 @@ from storm.properties import Bool
 import transaction
 
 from lp.bugs.model.bug import BugTag
-from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
@@ -40,6 +39,7 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import create
 from lp.services.database.lpstorm import IStore
+from lp.services.database.stormexpr import Unnest
 from lp.services.looptuner import TunableLoop
 
 
@@ -140,7 +140,8 @@ def get_bugsummary_rows(target):
     return IStore(RawBugSummary).find(
         (RawBugSummary.status, RawBugSummary.milestone_id,
          RawBugSummary.importance, RawBugSummary.has_patch, RawBugSummary.tag,
-         RawBugSummary.viewed_by_id, RawBugSummary.count),
+         RawBugSummary.viewed_by_id, RawBugSummary.access_policy_id,
+         RawBugSummary.count),
         *get_bugsummary_constraint(target))
 
 
@@ -191,7 +192,8 @@ def apply_bugsummary_changes(target, added, updated, removed):
     key_cols = (
         RawBugSummary.status, RawBugSummary.milestone_id,
         RawBugSummary.importance, RawBugSummary.has_patch,
-        RawBugSummary.tag, RawBugSummary.viewed_by_id)
+        RawBugSummary.tag, RawBugSummary.viewed_by_id,
+        RawBugSummary.access_policy_id)
 
     # Postgres doesn't do bulk updates, so do a delete+add.
     for key, count in updated.iteritems():
@@ -252,7 +254,8 @@ def calculate_bugsummary_rows(target):
             (BugTaskFlat.bug_id, BugTaskFlat.information_type,
              BugTaskFlat.status, BugTaskFlat.milestone_id,
              BugTaskFlat.importance,
-             Alias(BugTaskFlat.latest_patch_uploaded != None, 'has_patch')),
+             Alias(BugTaskFlat.latest_patch_uploaded != None, 'has_patch'),
+             BugTaskFlat.access_grants, BugTaskFlat.access_policies),
             tables=[BugTaskFlat],
             where=And(
                 BugTaskFlat.duplicateof_id == None,
@@ -270,17 +273,16 @@ def calculate_bugsummary_rows(target):
 
     # Prepare a union for all combination of privacy and taggedness.
     # It'll return a full set of
-    # (status, milestone, importance, has_patch, tag, viewed_by) rows.
+    # (status, milestone, importance, has_patch, tag, viewed_by, access_policy)
+    # rows.
     common_cols = (
         RelevantTask.status, RelevantTask.milestone_id,
         RelevantTask.importance, RelevantTask.has_patch)
     null_tag = Alias(Cast(None, 'text'), 'tag')
     null_viewed_by = Alias(Cast(None, 'integer'), 'viewed_by')
+    null_policy = Alias(Cast(None, 'integer'), 'access_policy')
 
     tag_join = Join(BugTag, BugTag.bugID == RelevantTask.bug_id)
-    sub_join = Join(
-        BugSubscription,
-        BugSubscription.bug_id == RelevantTask.bug_id)
 
     public_constraint = RelevantTask.information_type.is_in(
         PUBLIC_INFORMATION_TYPES)
@@ -290,28 +292,40 @@ def calculate_bugsummary_rows(target):
     unions = Union(
         # Public, tagless
         Select(
-            common_cols + (null_tag, null_viewed_by),
+            common_cols + (null_tag, null_viewed_by, null_policy),
             tables=[RelevantTask], where=public_constraint),
         # Public, tagged
         Select(
-            common_cols + (BugTag.tag, null_viewed_by),
+            common_cols + (BugTag.tag, null_viewed_by, null_policy),
             tables=[RelevantTask, tag_join], where=public_constraint),
-        # Private, tagless
+        # Private, access grant, tagless
         Select(
-            common_cols + (null_tag, BugSubscription.person_id),
-            tables=[RelevantTask, sub_join], where=private_constraint),
-        # Private, tagged
+            common_cols +
+            (null_tag, Unnest(RelevantTask.access_grants), null_policy),
+            tables=[RelevantTask], where=private_constraint),
+        # Private, access grant, tagged
         Select(
-            common_cols + (BugTag.tag, BugSubscription.person_id),
-            tables=[RelevantTask, sub_join, tag_join],
-            where=private_constraint),
+            common_cols +
+            (BugTag.tag, Unnest(RelevantTask.access_grants), null_policy),
+            tables=[RelevantTask, tag_join], where=private_constraint),
+        # Private, access policy, tagless
+        Select(
+            common_cols +
+            (null_tag, null_viewed_by, Unnest(RelevantTask.access_policies)),
+            tables=[RelevantTask], where=private_constraint),
+        # Private, access policy, tagged
+        Select(
+            common_cols +
+            (BugTag.tag, null_viewed_by, Unnest(RelevantTask.access_policies)),
+            tables=[RelevantTask, tag_join], where=private_constraint),
         all=True)
 
     # Select the relevant bits of the prototype rows and aggregate them.
     proto_key_cols = (
         BugSummaryPrototype.status, BugSummaryPrototype.milestone_id,
         BugSummaryPrototype.importance, BugSummaryPrototype.has_patch,
-        BugSummaryPrototype.tag, BugSummaryPrototype.viewed_by_id)
+        BugSummaryPrototype.tag, BugSummaryPrototype.viewed_by_id,
+        BugSummaryPrototype.access_policy_id)
     origin = IStore(BugTaskFlat).with_(relevant_tasks).using(
         Alias(unions, 'bugsummary_prototype'))
     results = origin.find(proto_key_cols + (Count(),))

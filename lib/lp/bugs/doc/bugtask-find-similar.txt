@@ -142,6 +142,7 @@ has been narrowed - see bug 612384.
     ...     distribution=test_distro)
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
+    Nothing to do with cheese or sandwiches
     This cheese sandwich should show up
 
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(

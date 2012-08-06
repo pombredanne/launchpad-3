@@ -97,9 +97,6 @@ from lp.services.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.soyuz.enums import ArchivePermissionType
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     person_logged_in,
     TestCase,
@@ -1018,82 +1015,6 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(old_update, naked_bug.heat_last_updated)
         self.runHourly()
         self.assertNotEqual(old_update, naked_bug.heat_last_updated)
-
-    def test_DuplicateArchivePermissionPruner_removes_duplicate_rows(self):
-        # DuplicateArchivePermissionPruner removes duplicated packageset
-        # permissions.
-        switch_dbuser('testadmin')
-        archive = self.factory.makeArchive()
-        person = self.factory.makePerson()
-        packageset = self.factory.makePackageset()
-        for _ in range(3):
-            ArchivePermission(
-                archive=archive, person=person, packageset=packageset,
-                permission=ArchivePermissionType.UPLOAD)
-        ap_set = getUtility(IArchivePermissionSet)
-        self.assertEqual(
-            3, ap_set.uploadersForPackageset(archive, packageset).count())
-        self.runDaily()
-        self.assertEqual(
-            1, ap_set.uploadersForPackageset(archive, packageset).count())
-
-    def test_DuplicateArchivePermissionPruner_skips_unique_rows(self):
-        # DuplicateArchivePermissionPruner leaves unique packageset
-        # permissions alone.
-        switch_dbuser('testadmin')
-        archive_one = self.factory.makeArchive()
-        archive_two = self.factory.makeArchive()
-        person_one = self.factory.makePerson()
-        person_two = self.factory.makePerson()
-        packageset_one = self.factory.makePackageset()
-        packageset_two = self.factory.makePackageset()
-        for archive, person, packageset in (
-            (archive_one, person_one, packageset_one),
-            (archive_two, person_one, packageset_one),
-            (archive_one, person_two, packageset_one),
-            (archive_one, person_one, packageset_two),
-            ):
-            ArchivePermission(
-                archive=archive, person=person, packageset=packageset,
-                permission=ArchivePermissionType.UPLOAD)
-        ap_set = getUtility(IArchivePermissionSet)
-        self.assertEqual(
-            2,
-            ap_set.uploadersForPackageset(archive_one, packageset_one).count())
-        self.assertEqual(
-            1,
-            ap_set.uploadersForPackageset(archive_two, packageset_one).count())
-        self.assertEqual(
-            1,
-            ap_set.uploadersForPackageset(archive_one, packageset_two).count())
-        self.runDaily()
-        self.assertEqual(
-            2,
-            ap_set.uploadersForPackageset(archive_one, packageset_one).count())
-        self.assertEqual(
-            1,
-            ap_set.uploadersForPackageset(archive_two, packageset_one).count())
-        self.assertEqual(
-            1,
-            ap_set.uploadersForPackageset(archive_one, packageset_two).count())
-
-    def test_DuplicateArchivePermissionPruner_skips_non_packagesets(self):
-        # DuplicateArchivePermissionPruner leaves non-packageset permissions
-        # alone.
-        switch_dbuser('testadmin')
-        archive = self.factory.makeArchive()
-        person = self.factory.makePerson()
-        component = self.factory.makeComponent()
-        for _ in range(3):
-            ArchivePermission(
-                archive=archive, person=person, component=component,
-                permission=ArchivePermissionType.UPLOAD)
-        ap_set = getUtility(IArchivePermissionSet)
-        self.assertEqual(
-            3, ap_set.uploadersForComponent(archive, component).count())
-        self.runDaily()
-        self.assertEqual(
-            3, ap_set.uploadersForComponent(archive, component).count())
 
 
 class TestGarboTasks(TestCaseWithFactory):

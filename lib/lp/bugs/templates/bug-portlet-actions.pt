@@ -7,15 +7,17 @@
   tal:define="context_menu context/menu:context"
 >
   <ul id="duplicate-actions">
-    <li id="mark-duplicate-text"
+    <li
         tal:define="link context_menu/markduplicate"
         tal:condition="python: link.enabled and not
                       context.duplicateof"
         class="sprite bug-dupe"
     >
+    <span id="mark-duplicate-text">
     <a
       tal:attributes="href link/path"
       class="menu-link-mark-dupe">Mark as duplicate</a>
+    </span>
     </li>
     <tal:block
       tal:define="duplicateof context/duplicateof"

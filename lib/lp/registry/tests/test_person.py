@@ -301,17 +301,22 @@ class TestPerson(TestCaseWithFactory):
         # another person in an active merge job.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
-        getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        requester = self.factory.makePerson()
+        getUtility(IPersonSet).mergeAsync(from_person, to_person, requester)
         self.assertTrue(from_person.isMergePending())
         self.assertFalse(to_person.isMergePending())
 
     def test_mergeAsync_success(self):
-        # mergeAsync returns a job with the from and to persons.
+        # mergeAsync returns a job with the from and to persons, and the
+        # requester.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
-        job = getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        requester = self.factory.makePerson()
+        person_set = getUtility(IPersonSet)
+        job = person_set.mergeAsync(from_person, to_person, requester)
         self.assertEqual(from_person, job.from_person)
         self.assertEqual(to_person, job.to_person)
+        self.assertEqual(requester, job.requester)
 
     def test_selfgenerated_bugnotifications_none_by_default(self):
         # Default for new accounts is to not get any

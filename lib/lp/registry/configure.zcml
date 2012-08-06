@@ -504,7 +504,6 @@
                 findRelatedArchives
                 getMergeProposals
                 getReleasesAndPublishingHistory
-                getUsedBugTags
                 getUsedBugTagsWithOpenCounts
                 getVersion
                 get_distroseries_packages

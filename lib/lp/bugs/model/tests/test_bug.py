@@ -937,6 +937,15 @@ class TestBugPrivacy(TestCaseWithFactory):
                 (pillar, InformationType.USERDATA) for pillar in pillars),
             get_policies_for_artifact(bug))
 
+    def test_getAllowedInformationTypes(self):
+        # A bug's information type must be in the intersection of its
+        # pillars' permitted information types. Currently that means
+        # it's just one of the usual four.
+        self.assertContentEqual(
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            self.factory.makeBug().getAllowedInformationTypes(None))
+
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
         TestBugPrivateAndSecurityRelatedUpdatesMixin, TestCaseWithFactory):
