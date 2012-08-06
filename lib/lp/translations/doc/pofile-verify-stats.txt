@@ -126,6 +126,7 @@ The rosetta-pofile-stats cron script invokes the verifier code.  It
 completes without finding any errors: the one we introduced earlier was
 fixed by running the verifier directly.
 
+    >>> from lp.testing.script import run_script
     >>> (returncode, out, err) = run_script(
     ...     'cronscripts/rosetta-pofile-stats.py', ['--start-id=99'])
     >>> print returncode
