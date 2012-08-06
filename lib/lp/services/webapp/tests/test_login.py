@@ -750,7 +750,6 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertIsInstance(pape_extension, pape.Request)
         self.assertEqual(0, pape_extension.max_auth_age)
 
-
     def test_logs_to_timeline(self):
         # Beginning an OpenID association makes an HTTP request to the
         # OP, so it's a potentially long action. It is logged to the
