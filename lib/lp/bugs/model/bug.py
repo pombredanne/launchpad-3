@@ -1730,70 +1730,84 @@ class Bug(SQLBase):
         if information_type in PRIVATE_INFORMATION_TYPES:
             self.who_made_private = who
             self.date_made_private = UTC_NOW
-            missing_subscribers = set([who, self.owner])
+            required_subscribers = set([who, self.owner])
         else:
             self.who_made_private = None
             self.date_made_private = None
-            missing_subscribers = set()
+            required_subscribers = set()
         # XXX: This should be a bulk update. RBC 20100827
         # bug=https://bugs.launchpad.net/storm/+bug/625071
         for attachment in self.attachments_unpopulated:
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
 
-        # There are several people we need to ensure are subscribed.
-        # If the information type is userdata, we need to check for bug
-        # supervisors who aren't subscribed and should be. If there is no
-        # bug supervisor, we need to subscribe the maintainer.
-        pillars = self.affected_pillars
-        if information_type == InformationType.USERDATA:
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            for pillar in pillars:
-                # Ubuntu is special cased; no one else should be added in the
-                # USERDATA case.
-                if pillar != ubuntu:
-                    if pillar.bug_supervisor is not None:
-                        missing_subscribers.add(pillar.bug_supervisor)
-                    else:
-                        missing_subscribers.add(pillar.owner)
-
-        # If the information type is security related, we need to ensure
-        # the security contacts are subscribed. If there is no security
-        # contact, we need to subscribe the maintainer.
-        if information_type in SECURITY_INFORMATION_TYPES:
-            for pillar in pillars:
-                if pillar.security_contact is not None:
-                    missing_subscribers.add(pillar.security_contact)
-                else:
-                    missing_subscribers.add(pillar.owner)
-
-        for s in missing_subscribers:
-            # Don't subscribe someone if they're already subscribed via a
-            # team.
-            already_subscribed_teams = self.getSubscribersForPerson(s)
-            if already_subscribed_teams.is_empty():
-                self.subscribe(s, who)
-
         self.information_type = information_type
         self._reconcileAccess()
 
-        # If the transition makes the bug private, then we need to ensure all
-        # subscribers can see the bug. For any who can't, we create an access
-        # artifact grant. Note that the previous value of information_type may
-        # also have been private but we still need to perform the access check
-        # since any access policy grants will not confer access with the new
-        # information type value.
+        pillars = self.affected_pillars
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        subscribers = self.getDirectSubscribers()
+
+        # We have to capture subscribers that must exist after transition. In
+        # the case of a transition to USERDATA, we want the bug supervisor or
+        # maintainer. For SECURITY types, we want the security contact or
+        # maintainer. In either case, if the driver is already subscribed,
+        # then the driver is also required.
+        # Ubuntu is special: we don't want to add required subscribers in that
+        # case.
+        if information_type == InformationType.USERDATA:
+            for pillar in pillars:
+                if pillar.driver in subscribers:
+                    required_subscribers.add(pillar.driver)
+                if pillar != ubuntu:
+                    if pillar.bug_supervisor is not None:
+                        required_subscribers.add(pillar.bug_supervisor)
+                    else:
+                        required_subscribers.add(pillar.owner)
+
+        if information_type in SECURITY_INFORMATION_TYPES:
+            for pillar in pillars:
+                if pillar.driver in subscribers:
+                    required_subscribers.add(pillar.driver)
+                if pillar.security_contact is not None:
+                    required_subscribers.add(pillar.security_contact)
+                else:
+                    required_subscribers.add(pillar.owner)
+
+        # If we've made the bug private, we need to do some cleanup.
+        # Required subscribers must be given access.
+        # People without existing access who aren't required should be
+        # unsubscribed. Even if we're transitioning from one private type to
+        # another, we must do this check, as different policies are granted to
+        # different users/teams.
         if information_type in PRIVATE_INFORMATION_TYPES:
-            # Grant the subscriber access if they can't see the bug.
-            subscribers = self.getDirectSubscribers()
             if subscribers:
+                # If we're switching to private types, and the driver is
+                # subscribed for a pillar (except ubuntu), we need to make
+                # sure the driver maintains access.
+                for pillar in pillars:
+                    if pillar.driver in subscribers and pillar != ubuntu:
+                        required_subscribers.add(pillar.driver)
                 service = getUtility(IService, 'sharing')
-                blind_subscribers = service.getPeopleWithoutAccess(
-                    self, subscribers)
-                if len(blind_subscribers):
+                subscribers_to_remove = set(service.getPeopleWithoutAccess(
+                    self, subscribers)).difference(required_subscribers)
+                if len(required_subscribers):
                     service.ensureAccessGrants(
-                        blind_subscribers, who, bugs=[self],
+                        required_subscribers, who, bugs=[self],
                         ignore_permissions=True)
+                # There is a job to do the unsubscribe, but it's behind a
+                # flag. If that flag is not set, do it manually.
+                if len(subscribers_to_remove) and not bool(
+                    getFeatureFlag('disclosure.unsubscribe_jobs.enabled')):
+                    for s in subscribers_to_remove:
+                        self.unsubscribe(s, who, ignore_permissions=True)
+
+        # Add the required subscribers, but not if they are all already
+        # subscribed via a team.
+        for s in required_subscribers:
+            already_subscribed_teams = self.getSubscribersForPerson(s)
+            if already_subscribed_teams.is_empty():
+                self.subscribe(s, who)
 
         self.updateHeat()
 

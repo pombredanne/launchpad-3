@@ -374,8 +374,9 @@ bug.
     >>> linux_source_bug.getSubscribersFromDuplicates()
     ()
 
-When a bug is marked private, specific people like the bugtask bug supervisors
-will be automatically subscribed.
+When a bug is marked private, specific people like the person marking private
+will be subscribed. People without pre-existing access and aren't one of the
+special users will be removed.
 
     >>> from zope.event import notify
 
@@ -397,7 +398,6 @@ will be automatically subscribed.
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
-    Mark Shuttleworth
     Robert Collins
 
 A private bug never has indirect subscribers. Let's add an indirect subscriber
@@ -421,7 +421,6 @@ any subscribers not converted to direct subscribers.
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
-    Mark Shuttleworth
     Robert Collins
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
@@ -449,7 +448,6 @@ You can query for the addresses and reasons:
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
-     ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
@@ -464,7 +462,6 @@ notification level or higher will be returned.
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
-     ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
@@ -479,7 +476,6 @@ the COMMENTS level...
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
-     ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
@@ -492,7 +488,6 @@ the COMMENTS level...
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
-     ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
