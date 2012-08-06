@@ -665,9 +665,10 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
         login_person(from_person)
-        job = self.person_set.mergeAsync(from_person, to_person)
+        job = self.person_set.mergeAsync(from_person, to_person, from_person)
         self.assertEqual(from_person, job.from_person)
         self.assertEqual(to_person, job.to_person)
+        self.assertEqual(from_person, job.requester)
 
     def test_mergeProposedInvitedTeamMembership(self):
         # Proposed and invited memberships are declined.

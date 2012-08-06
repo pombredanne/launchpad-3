@@ -10,6 +10,7 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
+    'BugInformationTypePortletView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
@@ -514,7 +515,12 @@ class BugViewMixin:
         return getUtility(ILaunchBag).bugtask
 
 
-class BugView(InformationTypePortletMixin, LaunchpadView, BugViewMixin):
+class BugInformationTypePortletView(InformationTypePortletMixin,
+                                    LaunchpadView):
+    """View class for the information type portlet."""
+
+
+class BugView(LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -776,12 +782,17 @@ class BugMarkAsDuplicateView(BugEditViewBase):
     label = "Mark bug report as a duplicate"
     page_title = label
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
     def setUpFields(self):
         """Make the readonly version of duplicateof available."""
         super(BugMarkAsDuplicateView, self).setUpFields()
 
         duplicateof_field = DuplicateBug(
-            __name__='duplicateof', title=_('Duplicate Of'), required=False)
+            __name__='duplicateof', title=_('Duplicate Of'), required=True)
 
         self.form_fields = self.form_fields.omit('duplicateof')
         self.form_fields = formlib.form.Fields(duplicateof_field)
@@ -791,7 +802,12 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         """See `LaunchpadFormView.`"""
         return {'duplicateof': self.context.bug.duplicateof}
 
-    @action('Change', name='change')
+    def _validate(self, action, data):
+        if action.name != 'remove':
+            return super(BugMarkAsDuplicateView, self)._validate(action, data)
+        return []
+
+    @action('Set Duplicate', name='change')
     def change_action(self, action, data):
         """Update the bug."""
         data = dict(data)
@@ -805,6 +821,19 @@ class BugMarkAsDuplicateView(BugEditViewBase):
             ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
         # Apply other changes.
         self.updateBugFromData(data)
+
+    def shouldShowRemoveButton(self, action):
+        return self.context.bug.duplicateof is not None
+
+    @action('Remove Duplicate', name='remove',
+        condition=shouldShowRemoveButton)
+    def remove_action(self, action, data):
+        """Update the bug."""
+        bug = self.context.bug
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
+        bug.markAsDuplicate(None)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
 
 
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
@@ -823,10 +852,12 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     @property
     def schema(self):
         """Schema for editing the information type of a `IBug`."""
+        info_types = self.context.bug.getAllowedInformationTypes(self.user)
+
         class information_type_schema(Interface):
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary(self.context))
+                vocabulary=InformationTypeVocabulary(types=info_types))
         return information_type_schema
 
     @property

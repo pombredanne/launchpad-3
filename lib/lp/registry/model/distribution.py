@@ -192,7 +192,6 @@ from lp.soyuz.model.publishing import (
     get_current_source_releases,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -1596,6 +1595,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
             self.addBugSubscription(bug_supervisor, user)
+
+    def getAllowedBugInformationTypes(self):
+        """See `IDistribution.`"""
+        types = set(InformationType.items)
+        types.discard(InformationType.PROPRIETARY)
+        return types
 
     def userCanEdit(self, user):
         """See `IDistribution`."""

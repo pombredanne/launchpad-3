@@ -925,6 +925,91 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # the target archive.
         self.assertEqual('main', pcj.metadata['component_override'])
 
+    def createAutoApproveEnvironment(self, create_ancestry, component_names):
+        """Create an environment for testing the auto_approve flag."""
+        if create_ancestry:
+            self.distroseries.status = SeriesStatus.FROZEN
+        target_archive = self.factory.makeArchive(
+            self.distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            for component_name in component_names:
+                target_archive.newQueueAdmin(requester, component_name)
+        spph = self.publisher.getPubSource(
+            distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED, archive=source_archive)
+        spr = spph.sourcepackagerelease
+        if create_ancestry:
+            self.publisher.getPubSource(
+                distroseries=self.distroseries, sourcename=spr.name,
+                version="%s~" % spr.version,
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=target_archive)
+        return target_archive, source_archive, requester, spph, spr
+
+    def test_auto_approve(self):
+        # The auto_approve flag causes the job to be processed immediately,
+        # even if it would normally have required manual approval.
+        (target_archive, source_archive, requester,
+         spph, spr) = self.createAutoApproveEnvironment(True, ["main"])
+        job = self.createCopyJobForSPPH(
+            spph, source_archive, target_archive, requester=requester,
+            auto_approve=True)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        new_publication = target_archive.getPublishedSources(
+            name=spr.name, version=spr.version, exact_match=True).one()
+        self.assertEqual(target_archive, new_publication.archive)
+
+    def test_auto_approve_non_queue_admin(self):
+        # The auto_approve flag is ignored for people without queue admin
+        # permissions.
+        (target_archive, source_archive, requester,
+         spph, spr) = self.createAutoApproveEnvironment(True, [])
+        job = self.createCopyJobForSPPH(
+            spph, source_archive, target_archive, requester=requester,
+            auto_approve=True)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+
+    def test_auto_approve_new(self):
+        # The auto_approve flag causes copies to bypass the NEW queue.
+        (target_archive, source_archive, requester,
+         spph, spr) = self.createAutoApproveEnvironment(False, ["universe"])
+
+        # Without auto_approve, this job would be suspended and the upload
+        # moved to the NEW queue.
+        job = self.createCopyJobForSPPH(
+            spph, source_archive, target_archive, requester=requester)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        switch_dbuser("launchpad_main")
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        self.assertEqual(PackageUploadStatus.NEW, pu.status)
+
+        # With auto_approve, the job completes immediately.
+        job = self.createCopyJobForSPPH(
+            spph, source_archive, target_archive, requester=requester,
+            auto_approve=True)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        new_publication = target_archive.getPublishedSources(
+            name=spr.name, version=spr.version, exact_match=True).one()
+        self.assertEqual(target_archive, new_publication.archive)
+
+    def test_auto_approve_new_non_queue_admin(self):
+        # For NEW packages, the auto_approve flag is ignored for people
+        # without queue admin permissions.
+        (target_archive, source_archive, requester,
+         spph, spr) = self.createAutoApproveEnvironment(False, [])
+        job = self.createCopyJobForSPPH(
+            spph, source_archive, target_archive, requester=requester,
+            auto_approve=True)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+
     def test_copying_after_job_released(self):
         # The first pass of the job may have created a PackageUpload and
         # suspended the job.  Here we test the second run to make sure
@@ -1053,8 +1138,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(BugTaskStatus.NEW, bugtask280.status)
 
     def test_copying_unembargoes_files(self):
-        # The unembargo flag causes the job to re-upload restricted files to
-        # the public librarian.
+        # The unembargo flag causes the job to unrestrict files.
         self.distroseries.status = SeriesStatus.CURRENT
         target_archive = self.factory.makeArchive(
             self.distroseries.distribution, purpose=ArchivePurpose.PRIMARY)

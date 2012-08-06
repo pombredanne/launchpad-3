@@ -66,7 +66,7 @@ firefox.
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/firefox/+bug/4/+duplicate")
     >>> user_browser.getControl('Duplicate Of').value = '8'
-    >>> user_browser.getControl('Change').click()
+    >>> user_browser.getControl('Set Duplicate').click()
 
 Then, if we match bug 1, only basic details of bug 8 are displayed:
 
@@ -110,7 +110,7 @@ filing a bug against a project:
         >>> user_browser.open(
         ...     "http://bugs.launchpad.dev/evolution/+bug/7/+duplicate")
         >>> user_browser.getControl('Duplicate Of').value = '8'
-        >>> user_browser.getControl('Change').click()
+        >>> user_browser.getControl('Set Duplicate').click()
 
         >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
         >>> user_browser.getControl("Project", index=0).value = ['evolution']
@@ -145,7 +145,7 @@ filing a bug against a project:
         ...     "http://bugs.launchpad.dev/ubuntu/+source/"
         ...     "thunderbird/+bug/9/+duplicate")
         >>> user_browser.getControl('Duplicate Of').value = '8'
-        >>> user_browser.getControl('Change').click()
+        >>> user_browser.getControl('Set Duplicate').click()
 
         >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
         >>> user_browser.getControl("Summary", index=0).value = 'crashes'
@@ -181,7 +181,7 @@ filing a bug against a project:
         >>> user_browser.open(
         ...     "http://bugs.launchpad.dev/firefox/+bug/1/+duplicate")
         >>> user_browser.getControl('Duplicate Of').value = '8'
-        >>> user_browser.getControl('Change').click()
+        >>> user_browser.getControl('Set Duplicate').click()
 
         >>> user_browser.open(
         ...     "http://launchpad.dev/ubuntu/+source/"

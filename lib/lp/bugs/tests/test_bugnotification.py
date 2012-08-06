@@ -431,41 +431,12 @@ class NotificationForRegistrantsMixin:
         self.pillar = self.makePillar()
         self.bug = self.makeBug()
 
-    def test_notification_uses_malone(self):
-        self.pillar.official_malone = True
-        direct = self.bug.getDirectSubscribers()
-        indirect = self.bug.getIndirectSubscribers()
-        self.assertThat(direct, Not(Contains(self.pillar_owner)))
-        self.assertThat(indirect, Contains(self.pillar_owner))
-
     def test_notification_does_not_use_malone(self):
         self.pillar.official_malone = False
         direct = self.bug.getDirectSubscribers()
         indirect = self.bug.getIndirectSubscribers()
         self.assertThat(direct, Not(Contains(self.pillar_owner)))
         self.assertThat(indirect, Not(Contains(self.pillar_owner)))
-
-    def test_status_change_uses_malone(self):
-        # Status changes are sent to the direct and indirect subscribers.
-        self.pillar.official_malone = True
-        [bugtask] = self.bug.bugtasks
-        all_subscribers = set(
-            [person.name for person in chain(
-                    self.bug.getDirectSubscribers(),
-                    self.bug.getIndirectSubscribers())])
-        bugtask_before_modification = Snapshot(
-            bugtask, providing=providedBy(bugtask))
-        bugtask.transitionToStatus(
-            BugTaskStatus.INVALID, self.bug.owner)
-        notify(ObjectModifiedEvent(
-            bugtask, bugtask_before_modification, ['status'],
-            user=self.bug.owner))
-        latest_notification = BugNotification.selectFirst(orderBy='-id')
-        notified_people = set(
-            recipient.person.name
-            for recipient in latest_notification.recipients)
-        self.assertEqual(all_subscribers, notified_people)
-        self.assertThat(all_subscribers, Contains(self.pillar_owner.name))
 
     def test_status_change_does_not_use_malone(self):
         # Status changes are sent to the direct and indirect subscribers.

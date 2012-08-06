@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -53,14 +53,12 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTargetHelper,
     )
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
-from lp.bugs.model.bugsubscriptionfilterimportance import (
+from lp.bugs.model.bugsubscriptionfilter import (
+    BugSubscriptionFilter,
     BugSubscriptionFilterImportance,
-    )
-from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
+    BugSubscriptionFilterTag,
     )
-from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 from lp.registry.errors import (
     DeleteSubscriptionError,
     UserCannotSubscribePerson,
@@ -702,6 +700,9 @@ def _get_structural_subscription_filter_id_query(
     :param direct_subscribers: a collection of Person objects who are
                                directly subscribed to the bug.
     """
+    # Circular. :-(
+    from lp.bugs.model.bugtaskflat import BugTaskFlat
+    from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
     # We get the ids because we need to use group by in order to
     # look at the filters' tags in aggregate.  Once we have the ids,
     # we can get the full set of what we need in subsuming or
@@ -738,6 +739,11 @@ def _get_structural_subscription_filter_id_query(
             Not(In(StructuralSubscription.subscriberID,
                    Select(BugSubscription.person_id,
                           BugSubscription.bug == bug))))
+    if bug.private:
+        filters.extend([
+            Or(*get_bug_privacy_filter_terms(
+                StructuralSubscription.subscriberID)),
+            BugTaskFlat.bug == bug])
     candidates = list(_get_structural_subscriptions(
         StructuralSubscription.id, query_arguments, *filters))
     if not candidates:
