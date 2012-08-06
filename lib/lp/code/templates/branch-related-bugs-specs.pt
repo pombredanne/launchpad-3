@@ -9,7 +9,7 @@
     <div id="buglink-list">
       <tal:bugs tal:define="branch context; show_edit python:True;">
       <metal:bug-branch-links
-              use-macro="context/@@+macros/bug-branch-links"/>
+              use-macro="branch/@@+macros/bug-branch-links"/>
       </tal:bugs>
     </div>
 
