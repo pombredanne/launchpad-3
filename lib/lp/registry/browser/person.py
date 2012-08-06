@@ -147,6 +147,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
@@ -3595,10 +3596,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
                 project['bug_count'] = product_bugtask_counts.get(
                     pillar.id, 0)
             else:
-                search = BugTaskSearchParams(
-                    self.user, status=BugTaskStatus.OPEN, omit_dupes=True)
-                search.setTarget(pillar)
-                project['bug_count'] = pillar.searchTasks(search).count()
+                project['bug_count'] = pillar.searchTasks(
+                    BugTaskSet().open_bugtask_search).count()
             project['spec_count'] = pillar.specifications().count()
             project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)

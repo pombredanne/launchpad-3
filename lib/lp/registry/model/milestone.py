@@ -48,6 +48,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugtarget import HasBugsBase
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -273,8 +274,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
 
     def closeBugsAndBlueprints(self, user):
         """See `IMilestone`."""
-        search = BugTaskSearchParams(
-            milestone=self, user=None, status=BugTaskStatus.OPEN)
+        search = BugTaskSet().open_bugtask_search
         for bugtask in self.searchTasks(search):
             if bugtask.status == BugTaskStatus.FIXCOMMITTED:
                 bugtask.bug.setStatus(
