@@ -3592,10 +3592,13 @@ class PersonRelatedSoftwareView(LaunchpadView):
             project['title'] = pillar.title
             project['url'] = canonical_url(pillar)
             if IProduct.providedBy(pillar):
-                project['bug_count'] = product_bugtask_counts.get(pillar.id,
-                                                                  0)
+                project['bug_count'] = product_bugtask_counts.get(
+                    pillar.id, 0)
             else:
-                project['bug_count'] = pillar.open_bugtasks.count()
+                search = BugTaskSearchParams(
+                    self.user, status=BugTaskStatus.OPEN, omit_dupes=True)
+                search.setTarget(pillar)
+                project['bug_count'] = pillar.searchTasks(search).count()
             project['spec_count'] = pillar.specifications().count()
             project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)

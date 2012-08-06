@@ -273,7 +273,9 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
 
     def closeBugsAndBlueprints(self, user):
         """See `IMilestone`."""
-        for bugtask in self.open_bugtasks:
+        search = BugTaskSearchParams(
+            milestone=self, user=None, status=BugTaskStatus.OPEN)
+        for bugtask in self.searchTasks(search):
             if bugtask.status == BugTaskStatus.FIXCOMMITTED:
                 bugtask.bug.setStatus(
                     bugtask.target, BugTaskStatus.FIXRELEASED, user)
