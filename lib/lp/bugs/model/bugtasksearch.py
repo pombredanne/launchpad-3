@@ -1494,7 +1494,7 @@ def get_bug_bulk_privacy_filter_terms(person, bug):
     select_btf = (
         lambda select, *conds: Select(
             select, tables=[BugTaskFlat],
-            where=And(BugTaskFlat.bug == bug, *conds), limit=1))
+            where=And(BugTaskFlat.bug == bug, *conds)))
     # Admins, artifact grantees, and policy grantees can all see private
     # bugs.
     teams = Union(
