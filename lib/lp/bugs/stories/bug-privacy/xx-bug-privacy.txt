@@ -144,7 +144,7 @@ Ubuntu evolution is, so we can avoid hardcoding its ID here:
 
     >>> from zope.component import getUtility
     >>> from lp.services.webapp.interfaces import ILaunchBag
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet,

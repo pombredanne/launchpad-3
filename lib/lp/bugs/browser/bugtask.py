@@ -191,7 +191,6 @@ from lp.bugs.interfaces.bugtask import (
     BugBranchSearch,
     BugTagsSearchCombinator,
     BugTaskImportance,
-    BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
@@ -210,6 +209,7 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IHasExternalBugTracker,
