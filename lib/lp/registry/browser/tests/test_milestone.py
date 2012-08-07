@@ -182,9 +182,8 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         view = create_initialized_view(milestone, '+delete', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual([], list(product.all_milestones))
-        search = BugTaskSearchParams(user=None, omit_dupes=True)
-        search.setTarget(product.development_focus)
-        tasks = product.development_focus.searchTasks(search)
+        tasks = product.development_focus.searchTasks(
+            BugTaskSearchParams(user=None))
         self.assertEqual(0, tasks.count())
 
 

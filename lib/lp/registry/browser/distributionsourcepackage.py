@@ -581,7 +581,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     def new_bugtasks_count(self):
         search_params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.NEW, omit_dupes=True)
-        search_params.setSourcePackage(self.context)
         return self.context.searchTasks(search_params).count()
 
 

@@ -34,6 +34,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
+    IStore,
     )
 
 
@@ -149,7 +150,7 @@ class OfficialBugTagTargetMixin:
     def _getOfficialTags(self):
         """Get the official bug tags as a sorted list of strings."""
         target_clause = self._getOfficialTagClause()
-        return list(IMasterStore(OfficialBugTag).find(
+        return list(IStore(OfficialBugTag).find(
             OfficialBugTag.tag, target_clause).order_by(OfficialBugTag.tag))
 
     def _setOfficialTags(self, tags):
@@ -171,7 +172,7 @@ class OfficialBugTagTargetMixin:
         If the tag is not defined for this target, None is returned.
         """
         target_clause = self._getOfficialTagClause()
-        return IMasterStore(OfficialBugTag).find(
+        return IStore(OfficialBugTag).find(
             OfficialBugTag, OfficialBugTag.tag == tag, target_clause).one()
 
     def addOfficialBugTag(self, tag):
@@ -188,7 +189,7 @@ class OfficialBugTagTargetMixin:
         """See `IOfficialBugTagTarget`."""
         tag = self._getTag(tag)
         if tag is not None:
-            IMasterStore(OfficialBugTag).remove(tag)
+            IStore(OfficialBugTag).remove(tag)
 
 
 class OfficialBugTag(Storm):
