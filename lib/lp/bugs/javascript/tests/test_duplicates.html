@@ -44,6 +44,11 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript" src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/app/picker/picker.js"></script>
       <script type="text/javascript" src="../../../../../build/js/lp/bugs/bug_picker.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/bugs/bugtask_index.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/banners/banner.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/banners/privacy.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/choice.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
 
       <!-- The module under test. -->
       <script type="text/javascript" src="../duplicates.js"></script>
@@ -63,6 +68,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         <div id="fixture">
         </div>
         <script type="text/x-template" id="no-existing-duplicate">
+            <table id="affected-software"></table>
             <a href="#" class="pick-bug js-action">Select a bug</a>
             <div><ul id="duplicate-actions">
                 <li class="sprite bug-dupe">
@@ -78,6 +84,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             <div id="portlet-duplicates"></div>
         </script>
         <script type="text/x-template" id="existing-duplicate">
+            <table id="affected-software"></table>
             <a href="#" class="pick-bug js-action">Select a bug</a>
             <div><ul id="duplicate-actions">
                 <li>
