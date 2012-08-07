@@ -625,6 +625,12 @@ class IDistributionPublic(
         :return: A sequence of `InformationType`s.
         """
 
+    def getDefaultBugInformationType():
+        """Get the default information type of a new bug in this distro.
+
+        :return: The `InformationType`.
+        """
+
     def userCanEdit(user):
         """Can the user edit this distribution?"""
 

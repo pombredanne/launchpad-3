@@ -55,7 +55,6 @@ from lp.blueprints.model.specification import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -779,10 +778,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.distribution.official_bug_tags
-
-    def getUsedBugTags(self):
-        """See `IHasBugs`."""
-        return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
     @property
     def has_any_specifications(self):

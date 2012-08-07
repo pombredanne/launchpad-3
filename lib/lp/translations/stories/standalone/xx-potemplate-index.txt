@@ -69,11 +69,8 @@ Sharing information
 The template is sharing translations with the template of the same name in
 the Ubuntu source package. This information is displayed on the page.
 
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'translations.sharing_information.enabled': 'on'}
-    >>> with FeatureFixture(feature_flag):
-    ...     anon_browser.open('http://translations.launchpad.dev/evolution'
-    ...         '/trunk/+pots/evolution-2.2')
+    >>> anon_browser.open('http://translations.launchpad.dev/evolution'
+    ...     '/trunk/+pots/evolution-2.2')
     >>> sharing_info = find_tag_by_id(
     ...     anon_browser.contents, 'sharing-information')
     >>> print extract_text(sharing_info)
@@ -87,9 +84,8 @@ the Ubuntu source package. This information is displayed on the page.
 Likewise, the Ubuntu template gives information about how it is sharing
 translations with the upstream project.
 
-    >>> with FeatureFixture(feature_flag):
-    ...     anon_browser.open('http://translations.launchpad.dev/ubuntu'
-    ...         '/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu'
+    ...     '/hoary/+source/evolution/+pots/evolution-2.2')
     >>> sharing_info = find_tag_by_id(
     ...     anon_browser.contents, 'sharing-information')
     >>> print extract_text(sharing_info)
@@ -103,9 +99,8 @@ translations with the upstream project.
 If the user has the right permissions, they are offered to edit the sharing
 information.
 
-    >>> with FeatureFixture(feature_flag):
-    ...     admin_browser.open('http://translations.launchpad.dev/evolution'
-    ...         '/trunk/+pots/evolution-2.2')
+    >>> admin_browser.open('http://translations.launchpad.dev/evolution'
+    ...     '/trunk/+pots/evolution-2.2')
     >>> sharing_details = find_tag_by_id(
     ...     admin_browser.contents, 'sharing-details')
     >>> print extract_text(sharing_details)

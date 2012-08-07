@@ -9,12 +9,15 @@ from contextlib import contextmanager
 
 from zope.component import getUtility
 
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.publisher import BugsLayer
+from lp.registry.enums import InformationType
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     celebrity_logged_in,
     feature_flags,
+    person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )
@@ -113,3 +116,27 @@ class TestMaloneView(TestCaseWithFactory):
 
         # we should get some valid content out of this
         self.assertIn('Search all bugs', content)
+
+    def test_getBugData(self):
+        # The getBugData method works as expected.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner,
+            status=BugTaskStatus.INPROGRESS,
+            title='title', description='description',
+            information_type=InformationType.PRIVATESECURITY)
+        with person_logged_in(owner):
+            bug_data = getUtility(IMaloneApplication).getBugData(owner, bug.id)
+            expected_bug_data = {
+                    'id': bug.id,
+                    'information_type': 'Private Security',
+                    'is_private': True,
+                    'importance': 'Undecided',
+                    'importance_class': 'importanceUNDECIDED',
+                    'status': 'In Progress',
+                    'status_class': 'statusINPROGRESS',
+                    'bug_summary': 'title',
+                    'description': 'description',
+                    'bug_url': canonical_url(bug.default_bugtask)
+        }
+        self.assertEqual([expected_bug_data], bug_data)

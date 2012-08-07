@@ -4,12 +4,6 @@
   omit-tag="">
 <metal:basic_filebug_widgets define-macro="basic_filebug_widgets">
 
-  <tal:bugtarget
-      tal:define="widget nocall:view/widgets/bugtarget|nothing"
-      tal:condition="widget">
-    <metal:widget use-macro="context/@@launchpad_form/widget_row" />
-  </tal:bugtarget>
-
   <tr tal:condition="view/widgets/packagename|nothing">
     <th colspan="2" style="text-align: left"><label
         tal:attributes="for view/widgets/packagename/name"
@@ -57,8 +51,50 @@
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
 
-  <tr id="extra-filebug-details"
-    tal:replace="structure context/@@+filebug-reporting-guidelines" />
+  <tr id="extra-filebug-details"><td colspan="2" width="100%"><table><tbody>
+  <tr>
+    <metal:bug_reporting_guidelines
+            use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
+  </tr>
+
+  <tr tal:define="security_context view/getMainContext">
+  <tal:information_type tal:condition="view/is_bug_supervisor">
+    <td colspan="2" width="100%"
+        tal:define="widget nocall: view/widgets/information_type|nothing"
+        tal:condition="widget">
+      <label tal:attributes="for widget/name">
+        This bug contains information that is:
+      </label>
+      <input tal:replace="structure widget" />
+    </td>
+  </tal:information_type>
+  <tal:security_related tal:condition="not: view/is_bug_supervisor">
+      <td colspan="2" width="100%"
+        tal:define="widget nocall: view/widgets/security_related|nothing"
+        tal:condition="widget">
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <input type="checkbox" tal:replace="structure widget" />
+            </td>
+            <td>
+              <label tal:attributes="for widget/name">
+                This bug is a security vulnerability
+              </label>
+              <div>
+                  The security group for
+                  <tal:security-context content="security_context/displayname" />
+                  will be notified.
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tal:security_related>
+  </tr>
+  </tbody></table></td></tr>
 
   <tr>
     <td colspan="2">
@@ -112,10 +148,6 @@
           Change this <span class="sprite edit action-icon">Edit</span>
         </a>
       </div>
-      <span tal:condition="view/frontpage_form">
-        You can <a href="+filebug">refine and resubmit</a> your bug
-        report.
-      </span>
       <tal:upstream condition="view/contextIsProduct">
         <tal:defines define="bugtracker product_or_distro/getExternalBugTracker">
           <h3>
