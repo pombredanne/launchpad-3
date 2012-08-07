@@ -13,17 +13,20 @@ __all__ = [
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'get_person_bugtasks_search_params',
     'IBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
     'IFrontPageBugTaskSearch',
     'IPersonBugTaskSearch',
     'IUpstreamProductBugTaskSearch',
     ]
 
 import collections
+import httplib
 
 from lazr.enum import (
     EnumeratedType,
     Item,
     )
+from lazr.restful.declarations import error_status
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -42,7 +45,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     IBugTask,
-    IllegalRelatedBugTasksParams,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.registry.enums import InformationType
@@ -53,6 +55,12 @@ from lp.services.searchbuilder import (
     NULL,
     )
 from lp.soyuz.interfaces.component import IComponent
+
+
+@error_status(httplib.BAD_REQUEST)
+class IllegalRelatedBugTasksParams(Exception):
+    """Exception raised when trying to overwrite all relevant parameters
+    in a search for related bug tasks"""
 
 
 class BugBranchSearch(EnumeratedType):
