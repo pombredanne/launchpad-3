@@ -137,7 +137,7 @@ from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.bugtarget import HasBugsBase
-from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.bugs.interfaces.bugtasksearch import get_person_bugtasks_search_params
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.code.interfaces.branchcollection import (
     IAllBranches,
@@ -1028,7 +1028,7 @@ class Person(
             # calling this method on a Person object directly via the
             # webservice API means searching for user related tasks
             user = kwargs.pop('user')
-            search_params = get_related_bugtasks_search_params(
+            search_params = get_person_bugtasks_search_params(
                 user, self, **kwargs)
             return getUtility(IBugTaskSet).search(
                 *search_params, prejoins=prejoins)

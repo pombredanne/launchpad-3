@@ -18,13 +18,15 @@ from zope.security.proxy import removeSecurityProxy
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
     BugTaskImportance,
     BugTaskStatus,
     IBugTaskSet,
     )
-from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTaskSearchParams,
+    )
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtasksearch import (

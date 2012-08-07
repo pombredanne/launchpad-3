@@ -28,7 +28,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-import replication.helpers
 from replication.helpers import Node
 import upgrade
 
@@ -73,42 +72,11 @@ class DatabasePreflight:
         master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
-        self.is_slony = replication.helpers.slony_installed(master_con)
-        if self.is_slony:
-            self.nodes = set(
-                replication.helpers.get_all_cluster_nodes(master_con))
-            for node in self.nodes:
-                node.con = node.connect(ISOLATION_LEVEL_AUTOCOMMIT)
-
-            # Create a list of nodes subscribed to the replicated sets we
-            # are modifying.
-            cur = master_con.cursor()
-            cur.execute("""
-                WITH subscriptions AS (
-                    SELECT *
-                    FROM _sl.sl_subscribe
-                    WHERE sub_set = 1 AND sub_active IS TRUE)
-                SELECT sub_provider FROM subscriptions
-                UNION
-                SELECT sub_receiver FROM subscriptions
-                """)
-            lpmain_node_ids = set(row[0] for row in cur.fetchall())
-            self.lpmain_nodes = set(
-                node for node in self.nodes
-                if node.node_id in lpmain_node_ids)
-
-            # Store a reference to the lpmain origin.
-            lpmain_master_node_id = replication.helpers.get_master_node(
-                master_con, 1).node_id
-            self.lpmain_master_node = [
-                node for node in self.lpmain_nodes
-                    if node.node_id == lpmain_master_node_id][0]
-        else:
-            node = Node(None, None, None, True)
-            node.con = master_con
-            self.nodes = set([node])
-            self.lpmain_nodes = self.nodes
-            self.lpmain_master_node = node
+        node = Node(None, None, None, True)
+        node.con = master_con
+        self.nodes = set([node])
+        self.lpmain_nodes = self.nodes
+        self.lpmain_master_node = node
 
         # Add streaming replication standbys, which unfortunately cannot be
         # detected reliably and has to be passed in via the command line.
@@ -258,29 +226,6 @@ class DatabasePreflight:
 
     def check_replication_lag(self):
         """Return False if the replication cluster is badly lagged."""
-        slony_lagged = False
-        if self.is_slony:
-            # Check replication lag on every node just in case there are
-            # disagreements.
-            max_lag = timedelta(seconds=-1)
-            for node in self.nodes:
-                cur = node.con.cursor()
-                cur.execute("""
-                    SELECT current_database(),
-                    max(st_lag_time) AS lag FROM _sl.sl_status
-                """)
-                dbname, lag = cur.fetchone()
-                if lag > max_lag:
-                    max_lag = lag
-                self.log.debug(
-                    "%s reports database lag of %s.", dbname, lag)
-            if max_lag <= MAX_LAG:
-                self.log.info("Slony cluster lag is ok (%s)", max_lag)
-                slony_lagged = False
-            else:
-                self.log.fatal("Slony cluster lag is high (%s)", max_lag)
-                slony_lagged = True
-
         # Do something harmless to force changes to be streamed in case
         # system is idle.
         self.lpmain_master_node.con.cursor().execute(
@@ -322,7 +267,7 @@ class DatabasePreflight:
             self.log.debug(
                 "Streaming replication lag is not high (%s)", max_lag)
 
-        return not (slony_lagged or streaming_lagged)
+        return not streaming_lagged
 
     def check_can_sync(self):
         """Return True if a sync event is acknowledged by all nodes.
@@ -330,20 +275,6 @@ class DatabasePreflight:
         We only wait 30 seconds for the sync, because we require the
         cluster to be quiescent.
         """
-        slony_success = True
-        if self.is_slony:
-            slony_success = replication.helpers.sync(30, exit_on_fail=False)
-            if slony_success:
-                self.log.info(
-                    "Slony replication events are being propagated.")
-            else:
-                self.log.fatal(
-                    "Slony replication events are not being propagated.")
-                self.log.fatal(
-                    "One or more slony replication daemons may be down.")
-                self.log.fatal(
-                    "Bounce the slony replication daemons and check logs.")
-
         # PG 9.1 streaming replication, or no replication.
         streaming_success = streaming_sync(self.lpmain_master_node.con, 30)
         if streaming_success:
@@ -351,7 +282,7 @@ class DatabasePreflight:
         else:
             self.log.fatal("Streaming replicas not syncing.")
 
-        return slony_success and streaming_success
+        return streaming_success
 
     def report_patches(self):
         """Report what patches are due to be applied from this tree."""
