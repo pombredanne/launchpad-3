@@ -6,6 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugBlueprintSearch',
+    'BugBranchSearch',
+    'BugTagsSearchCombinator',
     'BugTaskSearchParams',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IBugTaskSearch',
@@ -16,6 +19,10 @@ __all__ = [
 
 import collections
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -31,7 +38,6 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from lp import _
 from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     IBugTask,
@@ -45,6 +51,53 @@ from lp.services.searchbuilder import (
     NULL,
     )
 from lp.soyuz.interfaces.component import IComponent
+
+
+class BugBranchSearch(EnumeratedType):
+    """Bug branch search option.
+
+    The possible values to search for bugs having branches attached
+    or not having branches attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
+
+    BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
+
+
+class BugBlueprintSearch(EnumeratedType):
+    """Bug blueprint search option.
+
+    The possible values to search for bugs having blueprints attached
+    or not having blueprints attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BLUEPRINTS = Item("Show only Bugs with linked Blueprints")
+
+    BUGS_WITHOUT_BLUEPRINTS = Item("Show only Bugs without linked Blueprints")
+
+
+class BugTagsSearchCombinator(EnumeratedType):
+    """Bug Tags Search Combinator
+
+    The possible values for combining the list of tags in a bug search.
+    """
+
+    ANY = Item("""
+        Any
+
+        Search for bugs tagged with any of the specified tags.
+        """)
+
+    ALL = Item("""
+        All
+
+        Search for bugs tagged with all of the specified tags.
+        """)
 
 
 class BugTaskSearchParams:

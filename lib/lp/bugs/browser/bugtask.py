@@ -187,9 +187,6 @@ from lp.bugs.interfaces.bugnomination import (
     )
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
-    BugTagsSearchCombinator,
     BugTaskImportance,
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -205,6 +202,9 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskStatus,
     )
 from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTagsSearchCombinator,
     BugTaskSearchParams,
     DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTaskSearch,

@@ -9,9 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
-    'BugBlueprintSearch',
-    'BugBranchSearch',
-    'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskStatus',
     'BugTaskStatusSearch',
@@ -46,8 +43,6 @@ import httplib
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
-    EnumeratedType,
-    Item,
     use_template,
     )
 from lazr.restful.declarations import (
@@ -292,25 +287,6 @@ def normalize_bugtask_status(status):
         return BugTaskStatusSearch.items[status.value]
 
 
-class BugTagsSearchCombinator(EnumeratedType):
-    """Bug Tags Search Combinator
-
-    The possible values for combining the list of tags in a bug search.
-    """
-
-    ANY = Item("""
-        Any
-
-        Search for bugs tagged with any of the specified tags.
-        """)
-
-    ALL = Item("""
-        All
-
-        Search for bugs tagged with all of the specified tags.
-        """)
-
-
 class BugTaskStatusSearchDisplay(DBEnumeratedType):
     """Bug Task Status
 
@@ -318,34 +294,6 @@ class BugTaskStatusSearchDisplay(DBEnumeratedType):
     bug search forms.
     """
     use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
-
-
-class BugBranchSearch(EnumeratedType):
-    """Bug branch search option.
-
-    The possible values to search for bugs having branches attached
-    or not having branches attached.
-    """
-
-    ALL = Item("Show all bugs")
-
-    BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
-
-    BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
-
-
-class BugBlueprintSearch(EnumeratedType):
-    """Bug blueprint search option.
-
-    The possible values to search for bugs having blueprints attached
-    or not having blueprints attached.
-    """
-
-    ALL = Item("Show all bugs")
-
-    BUGS_WITH_BLUEPRINTS = Item("Show only Bugs with linked Blueprints")
-
-    BUGS_WITHOUT_BLUEPRINTS = Item("Show only Bugs without linked Blueprints")
 
 
 UNRESOLVED_BUGTASK_STATUSES = (
