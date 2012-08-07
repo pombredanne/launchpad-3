@@ -24,7 +24,6 @@ __all__ = [
     'IBugTaskDelta',
     'IBugTaskSet',
     'ICreateQuestionFromBugTaskForm',
-    'IllegalRelatedBugTasksParams',
     'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'IRemoveQuestionFromBugTaskForm',
@@ -376,12 +375,6 @@ class UserCannotEditBugTaskAssignee(Unauthorized):
 @error_status(httplib.BAD_REQUEST)
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
-
-
-@error_status(httplib.BAD_REQUEST)
-class IllegalRelatedBugTasksParams(Exception):
-    """Exception raised when trying to overwrite all relevant parameters
-    in a search for related bug tasks"""
 
 
 class IBugTaskDelete(Interface):
