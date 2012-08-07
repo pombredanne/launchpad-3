@@ -2023,7 +2023,7 @@ class Bug(SQLBase):
         to be made to the queries which screen for privacy.  See
         bugtasksearch's get_bug_privacy_filter.
         """
-        from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+        from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 
         if not self.private:
             # This is a public bug.

@@ -41,11 +41,12 @@ class IMaloneApplication(ILaunchpadApplication):
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        bug_id=copy_field(IBug['id'])
+        bug_id=copy_field(IBug['id']),
+        related_bug=Reference(schema=IBug)
     )
     @export_read_operation()
     @operation_for_version('devel')
-    def getBugData(user, bug_id):
+    def getBugData(user, bug_id, related_bug=None):
         """Search bugtasks matching the specified criteria.
 
         The only criteria currently supported is to search for a bugtask with

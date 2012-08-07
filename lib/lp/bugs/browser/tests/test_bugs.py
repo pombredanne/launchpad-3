@@ -117,16 +117,19 @@ class TestMaloneView(TestCaseWithFactory):
         # we should get some valid content out of this
         self.assertIn('Search all bugs', content)
 
-    def test_getBugData(self):
+    def _assert_getBugData(self, related_bug=None):
         # The getBugData method works as expected.
         owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
         bug = self.factory.makeBug(
+            product=product,
             owner=owner,
             status=BugTaskStatus.INPROGRESS,
             title='title', description='description',
             information_type=InformationType.PRIVATESECURITY)
         with person_logged_in(owner):
-            bug_data = getUtility(IMaloneApplication).getBugData(owner, bug.id)
+            bug_data = getUtility(IMaloneApplication).getBugData(
+                owner, bug.id, related_bug)
             expected_bug_data = {
                     'id': bug.id,
                     'information_type': 'Private Security',
@@ -137,6 +140,16 @@ class TestMaloneView(TestCaseWithFactory):
                     'status_class': 'statusINPROGRESS',
                     'bug_summary': 'title',
                     'description': 'description',
-                    'bug_url': canonical_url(bug.default_bugtask)
+                    'bug_url': canonical_url(bug.default_bugtask),
+                    'different_pillars': related_bug is not None
         }
         self.assertEqual([expected_bug_data], bug_data)
+
+    def test_getBugData(self):
+        # The getBugData method works as expected without a related_bug.
+        self._assert_getBugData()
+
+    def test_getBugData_with_related_bug(self):
+        # The getBugData method works as expected if related bug is specified.
+        related_bug = self.factory.makeBug()
+        self._assert_getBugData(related_bug)

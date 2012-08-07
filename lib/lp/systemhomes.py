@@ -31,10 +31,8 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.malone import (
@@ -128,7 +126,7 @@ class MaloneApplication:
         """See `IMaloneApplication`."""
         return getUtility(IBugTaskSet).search(search_params)
 
-    def getBugData(self, user, bug_id):
+    def getBugData(self, user, bug_id, related_bug=None):
         """See `IMaloneApplication`."""
         search_params = BugTaskSearchParams(user, bug=bug_id)
         bugtasks = getUtility(IBugTaskSet).search(search_params)
@@ -138,6 +136,9 @@ class MaloneApplication:
         data = []
         for bug in bugs:
             bugtask = bug.default_bugtask
+            different_pillars = related_bug and (
+                set(bug.affected_pillars).isdisjoint(
+                    related_bug.affected_pillars)) or False
             data.append({
                 'id': bug_id,
                 'information_type': bug.information_type.title,
@@ -149,7 +150,8 @@ class MaloneApplication:
                 'status_class': 'status' + bugtask.status.name,
                 'bug_summary': bug.title,
                 'description': bug.description,
-                'bug_url': canonical_url(bugtask)})
+                'bug_url': canonical_url(bugtask),
+                'different_pillars': different_pillars})
         return data
 
     def createBug(self, owner, title, description, target,
