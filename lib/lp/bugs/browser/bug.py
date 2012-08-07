@@ -81,9 +81,11 @@ from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTask,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTaskSearchParams,
     IFrontPageBugTaskSearch,
     )
-from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date

@@ -52,11 +52,11 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.bugs.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtasksearch import (
     BugBlueprintSearch,
     BugBranchSearch,
     BugTagsSearchCombinator,
-    IBugTask,
     IBugTaskSearch,
     )
 from lp.services.fields import Tag

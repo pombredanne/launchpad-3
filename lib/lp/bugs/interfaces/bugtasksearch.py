@@ -6,22 +6,98 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugBlueprintSearch',
+    'BugBranchSearch',
+    'BugTagsSearchCombinator',
     'BugTaskSearchParams',
+    'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
+    'IBugTaskSearch',
+    'IFrontPageBugTaskSearch',
+    'IPersonBugTaskSearch',
+    'IUpstreamProductBugTaskSearch',
     ]
 
 import collections
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Choice,
+    List,
+    TextLine,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.proxy import isinstance as zope_isinstance
 
+from lp import _
 from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator,
+    BugTaskStatusSearch,
+    BugTaskStatusSearchDisplay,
+    IBugTask,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.registry.enums import InformationType
+from lp.services.fields import SearchTag
 from lp.services.searchbuilder import (
     all,
     any,
     NULL,
     )
+from lp.soyuz.interfaces.component import IComponent
+
+
+class BugBranchSearch(EnumeratedType):
+    """Bug branch search option.
+
+    The possible values to search for bugs having branches attached
+    or not having branches attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
+
+    BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
+
+
+class BugBlueprintSearch(EnumeratedType):
+    """Bug blueprint search option.
+
+    The possible values to search for bugs having blueprints attached
+    or not having blueprints attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BLUEPRINTS = Item("Show only Bugs with linked Blueprints")
+
+    BUGS_WITHOUT_BLUEPRINTS = Item("Show only Bugs without linked Blueprints")
+
+
+class BugTagsSearchCombinator(EnumeratedType):
+    """Bug Tags Search Combinator
+
+    The possible values for combining the list of tags in a bug search.
+    """
+
+    ANY = Item("""
+        Any
+
+        Search for bugs tagged with any of the specified tags.
+        """)
+
+    ALL = Item("""
+        All
+
+        Search for bugs tagged with all of the specified tags.
+        """)
 
 
 class BugTaskSearchParams:
@@ -372,3 +448,202 @@ class BugTaskSearchParams:
         return search_params
 
 
+DEFAULT_SEARCH_BUGTASK_STATUSES = (
+    BugTaskStatusSearch.NEW,
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+    BugTaskStatusSearch.CONFIRMED,
+    BugTaskStatusSearch.TRIAGED,
+    BugTaskStatusSearch.INPROGRESS,
+    BugTaskStatusSearch.FIXCOMMITTED)
+
+DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
+    BugTaskStatusSearchDisplay.items.mapping[item.value]
+    for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
+
+
+UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show bugs that need to be forwarded to an upstream "
+              "bug tracker"),
+    SimpleTerm(
+        "hide_upstream",
+        title="Show bugs that are not known to affect upstream"),
+    SimpleTerm(
+        "resolved_upstream",
+        title="Show bugs that are resolved upstream"),
+    SimpleTerm(
+        "open_upstream",
+        title="Show bugs that are open upstream"),
+    ])
+
+UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show bugs that need to be forwarded to an upstream bug "
+              "tracker"),
+    SimpleTerm(
+        "resolved_upstream",
+        title="Show bugs that are resolved elsewhere"),
+    ])
+
+
+class IBugTaskSearchBase(Interface):
+    """The basic search controls."""
+    searchtext = TextLine(title=_("Bug ID or search text."), required=False)
+    status = List(
+        title=_('Status'),
+        description=_('Show only bugs with the given status value '
+                      'or list of values.'),
+        value_type=Choice(
+            title=_('Status'),
+            vocabulary=BugTaskStatusSearch,
+            default=BugTaskStatusSearch.NEW),
+        default=list(DEFAULT_SEARCH_BUGTASK_STATUSES),
+        required=False)
+    importance = List(
+        title=_('Importance'),
+        description=_('Show only bugs with the given importance '
+                      'or list of importances.'),
+        value_type=IBugTask['importance'],
+        required=False)
+    information_type = List(
+        title=_('Information Type'),
+        description=_('Show only bugs with the given information type '
+                      'or list of information types.'),
+        value_type=Choice(
+            title=_('Information Type'),
+            vocabulary=InformationType),
+        required=False)
+    assignee = Choice(
+        title=_('Assignee'),
+        description=_('Person entity assigned for this bug.'),
+        vocabulary='ValidAssignee', required=False)
+    bug_reporter = Choice(
+        title=_('Bug reporter'),
+        description=_('Person entity that filed the bug report.'),
+        vocabulary='ValidAssignee', required=False)
+    omit_dupes = Bool(
+        title=_('Omit bugs marked as duplicate,'), required=False,
+        default=True)
+    omit_targeted = Bool(
+        title=_('Omit bugs targeted to a series'), required=False,
+        default=True)
+    has_patch = Bool(
+        title=_('Show only bugs with patches available.'), required=False,
+        default=False)
+    has_no_package = Bool(
+        title=_('Exclude bugs with packages specified'),
+        required=False, default=False)
+    milestone_assignment = Choice(
+        title=_('Target'), vocabulary="Milestone", required=False)
+    milestone = List(
+        title=_('Milestone'),
+        description=_('Show only bug tasks targeted to this milestone.'),
+        value_type=IBugTask['milestone'], required=False)
+    component = List(
+        title=_('Component'),
+        description=_('Distribution package archive grouping. '
+                      'E.g. main, universe, multiverse'),
+        value_type=IComponent['name'], required=False)
+    tag = List(title=_("Tag"), value_type=SearchTag(), required=False)
+    status_upstream = List(
+        title=_('Status upstream'),
+        description=_('Indicates the status of any remote watches '
+                      'associated with the bug.  Possible values '
+                      'include: pending_bugwatch, hide_upstream, '
+                      'resolved_upstream, and open_upstream.'),
+        value_type=Choice(vocabulary=UPSTREAM_STATUS_VOCABULARY),
+        required=False)
+    has_cve = Bool(
+        title=_('Show only bugs associated with a CVE'), required=False)
+    structural_subscriber = Choice(
+        title=_('Structural Subscriber'), vocabulary='ValidPersonOrTeam',
+        description=_(
+            'Show only bugs in projects, series, distributions, and packages '
+            'that this person or team is subscribed to.'),
+        required=False)
+    bug_commenter = Choice(
+        title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
+        description=_('Show only bugs commented on by this person.'),
+        required=False)
+    subscriber = Choice(
+        title=_('Bug subscriber'), vocabulary='ValidPersonOrTeam',
+        description=_('Show only bugs this person or team '
+                      'is directly subscribed to.'),
+        required=False)
+    affects_me = Bool(
+        title=_('Show only bugs affecting me'), required=False)
+    has_branches = Bool(
+        title=_('Show bugs with linked branches'), required=False,
+        default=True)
+    has_no_branches = Bool(
+        title=_('Show bugs without linked branches'), required=False,
+        default=True)
+    has_blueprints = Bool(
+        title=_('Show bugs with linked blueprints'), required=False,
+        default=True)
+    has_no_blueprints = Bool(
+        title=_('Show bugs without linked blueprints'), required=False,
+        default=True)
+
+
+class IBugTaskSearch(IBugTaskSearchBase):
+    """The schema used by a bug task search form not on a Person.
+
+    Note that this is slightly different than simply IBugTask because
+    some of the field types are different (e.g. it makes sense for
+    status to be a Choice on a bug task edit form, but it makes sense
+    for status to be a List field on a search form, where more than
+    one value can be selected.)
+    """
+    tag = List(
+        title=_("Tags"),
+        description=_("String or list of strings for tags to search. "
+                      "To exclude, prepend a '-', e.g. '-unwantedtag'"),
+        value_type=SearchTag(), required=False)
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
+
+    upstream_target = Choice(
+        title=_('Project'), required=False, vocabulary='Product')
+
+
+class IPersonBugTaskSearch(IBugTaskSearchBase):
+    """The schema used by the bug task search form of a person."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
+        vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
+
+
+class IUpstreamProductBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form for upstream products.
+
+    This schema is the same as IBugTaskSearch, except that it has only
+    one choice for Status Upstream.
+    """
+    status_upstream = List(
+        title=_('Status Upstream'),
+        value_type=Choice(
+            vocabulary=UPSTREAM_PRODUCT_STATUS_VOCABULARY),
+        required=False)
+
+
+class IFrontPageBugTaskSearch(IBugTaskSearch):
+    """Additional search options for the front page of bugs."""
+    scope = Choice(
+        title=u"Search Scope", required=False,
+        vocabulary="DistributionOrProductOrProjectGroup")
