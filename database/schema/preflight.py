@@ -28,7 +28,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-import replication.helpers
 from replication.helpers import Node
 import upgrade
 
