@@ -11,6 +11,7 @@ from operator import attrgetter
 import unittest
 
 import pytz
+from storm.expr import Or
 from testtools.matchers import Equals
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -31,11 +32,13 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugtasksearch import (
     _build_status_clause,
     _build_tag_search_clause,
     _process_order_by,
     get_bug_bulk_privacy_filter_terms,
+    get_bug_privacy_filter_terms,
     )
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
@@ -2361,15 +2364,9 @@ class BugTaskSetSearchTest(TestCaseWithFactory):
         self.assertContentEqual(bug1.bugtasks, tasks)
 
 
-class TestGetBugBulkPrivacyFilterTerms(TestCaseWithFactory):
+class BaseGetBugPrivacyFilterTermsTests:
 
     layer = DatabaseFunctionalLayer
-
-    def getVisiblePeople(self, bug, people):
-        return IStore(Bug).find(
-            Person,
-            Person.id.is_in(map(attrgetter('id'), people)),
-            get_bug_bulk_privacy_filter_terms(Person.id, bug.id))
 
     def test_public(self):
         bug = self.factory.makeBug()
@@ -2435,6 +2432,27 @@ class TestGetBugBulkPrivacyFilterTerms(TestCaseWithFactory):
             self.grantee_team.acceptInvitationToBeMemberOf(admins, None)
 
         self.assertPrivacyRespected()
+
+
+class TestGetBugPrivacyFilterTerms(BaseGetBugPrivacyFilterTermsTests,
+                                   TestCaseWithFactory):
+
+    def getVisiblePeople(self, bug, people):
+        return IStore(Bug).find(
+            Person,
+            Person.id.is_in(map(attrgetter('id'), people)),
+            BugTaskFlat.bug_id == bug.id,
+            Or(*get_bug_privacy_filter_terms(Person.id)))
+
+
+class TestGetBugBulkPrivacyFilterTerms(BaseGetBugPrivacyFilterTermsTests,
+                                       TestCaseWithFactory):
+
+    def getVisiblePeople(self, bug, people):
+        return IStore(Bug).find(
+            Person,
+            Person.id.is_in(map(attrgetter('id'), people)),
+            get_bug_bulk_privacy_filter_terms(Person.id, bug.id))
 
 
 def test_suite():
