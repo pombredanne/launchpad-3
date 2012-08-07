@@ -2394,6 +2394,12 @@ class TestGetBugBulkPrivacyFilterTerms(TestCaseWithFactory):
             self.owner, self.grantee_team, self.grantee_member,
             self.grantee_person]
 
+    def assertPrivacyRespected(self):
+        self.assertContentEqual(
+            [], self.getVisiblePeople(self.bug, [self.other_person]))
+        self.assertContentEqual(
+            self.expected_people, self.getVisiblePeople(self.bug, self.people))
+
     def test_artifact_grant(self):
         # People and teams with AccessArtifactGrants can see the bug.
         self.makePrivacyScenario()
@@ -2402,23 +2408,21 @@ class TestGetBugBulkPrivacyFilterTerms(TestCaseWithFactory):
             [self.grantee_team, self.grantee_person], self.owner,
             bugs=[self.bug], ignore_permissions=True)
 
-        self.assertContentEqual(
-            self.expected_people, self.getVisiblePeople(self.bug, self.people))
+        self.assertPrivacyRespected()
 
     def test_policy_grant(self):
         # People and teams with AccessPolicyGrants can see the bug.
-        self.useFixture(FeatureFixture(
-            {'disclosure.enhanced_sharing.writable': 'true'}))
         self.makePrivacyScenario()
 
+        self.useFixture(FeatureFixture(
+            {'disclosure.enhanced_sharing.writable': 'true'}))
         with admin_logged_in():
             for princ in (self.grantee_team, self.grantee_person):
                 getUtility(IService, 'sharing').sharePillarInformation(
                     self.bug.default_bugtask.target, princ, self.owner,
                     {InformationType.USERDATA: SharingPermission.ALL})
 
-        self.assertContentEqual(
-            self.expected_people, self.getVisiblePeople(self.bug, self.people))
+        self.assertPrivacyRespected()
 
     def test_admin(self):
         # People and teams in the admin team can see the bug.
@@ -2430,8 +2434,7 @@ class TestGetBugBulkPrivacyFilterTerms(TestCaseWithFactory):
                 admins.addMember(princ, admins)
             self.grantee_team.acceptInvitationToBeMemberOf(admins, None)
 
-        self.assertContentEqual(
-            self.expected_people, self.getVisiblePeople(self.bug, self.people))
+        self.assertPrivacyRespected()
 
 
 def test_suite():
