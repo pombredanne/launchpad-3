@@ -70,7 +70,7 @@ stagingsetup:
 	# Apply database patches.
 	@echo Running upgrade.py `date`.
 	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/upgrade.py \
-	    --ignore-slony --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	@echo Running security.py `date`
 	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/security.py \
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
@@ -90,5 +90,5 @@ dogfood:
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
 	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
 	rm ${DUMPLIST}
-	../schema/upgrade.py --ignore-slony -d ${DOGFOOD_DBNAME}
+	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
 	../schema/security.py -d ${DOGFOOD_DBNAME}
