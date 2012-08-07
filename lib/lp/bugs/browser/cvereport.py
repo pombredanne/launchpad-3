@@ -15,10 +15,10 @@ from zope.component import getUtility
 from lp.app.browser.stringformatter import escape
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     IBugTaskSet,
     RESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.helpers import shortlist

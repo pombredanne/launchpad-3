@@ -90,10 +90,10 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )

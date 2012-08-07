@@ -143,10 +143,11 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
@@ -3592,10 +3593,11 @@ class PersonRelatedSoftwareView(LaunchpadView):
             project['title'] = pillar.title
             project['url'] = canonical_url(pillar)
             if IProduct.providedBy(pillar):
-                project['bug_count'] = product_bugtask_counts.get(pillar.id,
-                                                                  0)
+                project['bug_count'] = product_bugtask_counts.get(
+                    pillar.id, 0)
             else:
-                project['bug_count'] = pillar.open_bugtasks.count()
+                project['bug_count'] = pillar.searchTasks(
+                    BugTaskSet().open_bugtask_search).count()
             project['spec_count'] = pillar.specifications().count()
             project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)

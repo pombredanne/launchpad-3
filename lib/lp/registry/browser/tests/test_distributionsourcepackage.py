@@ -28,7 +28,7 @@ class TestDistributionSourcePackageFormatterAPI(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_link(self):
-        sourcepackagename = self.factory.makeSourcePackageName('mouse')
+        self.factory.makeSourcePackageName('mouse')
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         dsp = ubuntu.getSourcePackage('mouse')
         markup = (
@@ -63,7 +63,7 @@ class TestDistributionSourceView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistributionSourceView, self).setUp()
-        sourcepackagename = self.factory.makeSourcePackageName('mouse')
+        self.factory.makeSourcePackageName('mouse')
         distro = self.factory.makeDistribution()
         self.dsp = distro.getSourcePackage('mouse')
 
@@ -105,3 +105,8 @@ class TestDistributionSourceView(TestCaseWithFactory):
         self.assertTrue(view.bugs_answers_usage['uses_answers'])
         self.assertTrue(view.bugs_answers_usage['uses_both'])
         self.assertTrue(view.bugs_answers_usage['uses_either'])
+
+    def test_new_bugtasks_count(self):
+        self.factory.makeBugTask(target=self.dsp)
+        view = create_view(self.dsp, '+index')
+        self.assertEqual(1, view.new_bugtasks_count)

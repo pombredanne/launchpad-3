@@ -119,75 +119,6 @@ The Translations administrators also receive an email about the error.
     <BLANKLINE>
     See the log file for detailed information.
 
-Verify recently touched POFiles runs
-------------------------------------
-
-A separate script is used to verify statistics on POFiles that have
-been modified in the last week (or whatever number of days is configured
-in rosetta_pofile_stats.days_considered_recent parameter).
-
-    >>> from lp.translations.scripts.verify_pofile_stats import (
-    ...     VerifyRecentPOFileStatsProcess)
-    >>> from datetime import datetime, timedelta
-    >>> import pytz
-    >>> from zope.security.proxy import removeSecurityProxy
-
-In default configuration, we are looking for files modified in the last
-7 days.
-
-    >>> from lp.services.config import config
-    >>> pofile_age = int(
-    ...     config.rosetta_pofile_stats.days_considered_recent)
-    >>> pofile_age
-    7
-
-We add two POFiles with incorrect statistics, with one of them last
-modified 8 days ago, and another recently modified.
-
-    >>> now = datetime.now(pytz.UTC)
-    >>> more_than_a_week_ago = now - timedelta(pofile_age + 1)
-    >>> pofile_recent = removeSecurityProxy(factory.makePOFile('sr'))
-    >>> pofile_recent.rosettacount = 9
-    >>> pofile_old = removeSecurityProxy(factory.makePOFile('sr'))
-    >>> pofile_old.date_changed = more_than_a_week_ago
-    >>> pofile_old.rosettacount = 9
-
-A run of `VerifyRecentPOFileStatsProcess` script fixes only the POFile
-which was modified in the last week.
-
-    >>> verifier = VerifyRecentPOFileStatsProcess(transaction, logger)
-    >>> verifier.run()
-    INFO Verifying stats of POFiles updated in the last 7 days.
-    INFO Verifying a total of 1 POFiles.
-    INFO POFile ...:
-    cached stats were (0, 0, 9, 0), recomputed as (0, 0, 0, 0)
-    INFO Done.
-
-We can see that stats have been updated in the recently touched POFile,
-but not in the older one.
-
-    >>> pofile_recent.rosettacount
-    0
-    >>> pofile_old.rosettacount
-    9
-
-
-An actual script run also works, though it finds no errors since they were
-all fixed already.
-
-    >>> transaction.commit() # Ensure other process can see latest changes
-
-    >>> from lp.testing.script import run_script
-    >>> (returncode, out, err) = run_script(
-    ...     'cronscripts/rosetta-pofile-stats-daily.py')
-    >>> print returncode
-    0
-    >>> print err
-    INFO    Creating lockfile: /var/lock/launchpad-pofile-stats-daily.lock
-    INFO    Verifying stats of POFiles updated in the last ... days.
-    INFO    Verifying a total of 1 POFiles.
-    INFO    Done.
-
 Cron job
 --------
 
@@ -195,6 +126,7 @@ The rosetta-pofile-stats cron script invokes the verifier code.  It
 completes without finding any errors: the one we introduced earlier was
 fixed by running the verifier directly.
 
+    >>> from lp.testing.script import run_script
     >>> (returncode, out, err) = run_script(
     ...     'cronscripts/rosetta-pofile-stats.py', ['--start-id=99'])
     >>> print returncode
