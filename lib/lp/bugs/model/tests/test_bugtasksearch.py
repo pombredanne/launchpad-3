@@ -21,10 +21,10 @@ from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
     BugBranchSearch,
     BugTaskImportance,
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtasksearch import (

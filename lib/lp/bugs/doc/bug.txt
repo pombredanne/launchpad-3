@@ -254,8 +254,8 @@ firefox_crashes bug, we can still access properties of this bug:
 Note that a search will return all public bugs, omitting bug 14 which is
 private:
 
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     IBugTaskSet, BugTaskSearchParams)
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> from lp.bugs.model.bug import Bug
     >>> from lp.services.database.lpstorm import IStore
 
