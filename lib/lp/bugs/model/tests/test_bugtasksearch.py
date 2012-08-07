@@ -22,12 +22,14 @@ from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
     BugTaskImportance,
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTaskSearchParams,
     )
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugsummary import BugSummary

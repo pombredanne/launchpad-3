@@ -19,6 +19,7 @@ from testtools.matchers import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.model.person import Person
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.librarian.model import LibraryFileAlias
@@ -812,7 +813,9 @@ class TestStormRangeFactory(TestCaseWithFactory):
 
     def test_StormRangeFactory__empty_real_resultset(self):
         # StormRangeFactory works with empty regular result sets,
-        resultset = self.factory.makeProduct().open_bugtasks
+        product = self.factory.makeProduct()
+        resultset = product.development_focus.searchTasks(
+            BugTaskSet().open_bugtask_search)
         self.assertEqual(0, resultset.count())
         range_factory = StormRangeFactory(resultset)
         # rough_length is supposed to be zero, but the ANALYZE SELECT

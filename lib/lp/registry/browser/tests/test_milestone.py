@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
@@ -179,7 +180,9 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         view = create_initialized_view(milestone, '+delete', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual([], list(product.all_milestones))
-        self.assertEqual(0, product.development_focus.all_bugtasks.count())
+        tasks = product.development_focus.searchTasks(
+            BugTaskSearchParams(user=None))
+        self.assertEqual(0, tasks.count())
 
 
 class TestQueryCountBase(TestCaseWithFactory):

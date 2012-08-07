@@ -44,12 +44,14 @@ from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
-    BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
     DB_INCOMPLETE_BUGTASK_STATUSES,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTaskSearchParams,
     )
 from lp.bugs.model.bug import (
     Bug,

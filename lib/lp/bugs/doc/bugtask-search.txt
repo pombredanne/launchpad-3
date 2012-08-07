@@ -4,10 +4,8 @@ BugTasks are usually searched through an IBugTarget's searchTasks()
 method, but they all delegate the search to IBugTaskSet.search(). That
 method accepts a single parameter; an BugTaskSearchParams instance.
 
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskSearchParams,
-    ...     IBugTaskSet,
-    ...     )
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> all_public = BugTaskSearchParams(user=None)
     >>> found_bugtasks = bugtask_set.search(all_public)
@@ -977,7 +975,7 @@ return True for isUserAffected(foo_bar).
 
 We can search for bugs having branches linked to them.
 
-    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> from lp.bugs.interfaces.bugtasksearch import BugBranchSearch
     >>> search_params = BugTaskSearchParams(
     ...     user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
     >>> for task in firefox.searchTasks(search_params):
@@ -987,7 +985,6 @@ We can search for bugs having branches linked to them.
 
 Similarly, we can search for bugs that do not have any linked branches.
 
-    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
     >>> search_params = BugTaskSearchParams(
     ...     user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
     >>> for task in firefox.searchTasks(search_params):

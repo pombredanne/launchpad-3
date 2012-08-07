@@ -79,9 +79,11 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTask,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTaskSearchParams,
     IFrontPageBugTaskSearch,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
