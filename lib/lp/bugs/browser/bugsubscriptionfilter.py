@@ -70,14 +70,12 @@ class BugSubscriptionFilterView(LaunchpadView):
     # in particular, if no importances are checked, or no statuses.
     filters_everything = False
 
-    def _english_condition(self, variable, description):
-        condition = []
+    def _english_condition(self, variable, description, conditions):
         if len(variable) > 0:
-            condition.append(
+            conditions.append(
                 u"the %s is %s" % (description, english_list(
                     (kind.title for kind in sorted(variable)),
                     conjunction=u"or")))
-        return condition
 
     @property
     def conditions(self):
@@ -89,19 +87,17 @@ class BugSubscriptionFilterView(LaunchpadView):
                 'the bug')
             conditions.append(
                 mapping[bug_notification_level].lower()[:-1])
-        conditions.extend(
-            self._english_condition(self.context.statuses, 'status'))
-        conditions.extend(
-            self._english_condition(self.context.importances, 'importance'))
+        self._english_condition(self.context.statuses, 'status', conditions)
+        self._english_condition(
+            self.context.importances, 'importance', conditions)
         tags = self.context.tags
         if len(tags) > 0:
             conditions.append(
                 u"the bug is tagged with %s" % english_list(
                     sorted(tags), conjunction=(
                         u"and" if self.context.find_all_tags else u"or")))
-        conditions.extend(
-            self._english_condition(self.context.information_types,
-            'information type'))
+        self._english_condition(
+            self.context.information_types, 'information type', conditions)
         return conditions
 
 
