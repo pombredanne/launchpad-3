@@ -2417,12 +2417,12 @@ class BugSubscriptionInfo:
 
     def visible_recipients_filter(self, column):
         # Circular fail :(
-        from lp.bugs.model.bugtaskflat import BugTaskFlat
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
+        from lp.bugs.model.bugtasksearch import (
+            get_bug_bulk_privacy_filter_terms,
+            )
 
         if self.bug.private:
-            return [Or(*get_bug_privacy_filter_terms(column)),
-                BugTaskFlat.bug_id == self.bug.id]
+            return get_bug_bulk_privacy_filter_terms(column, self.bug.id)
         else:
             return True
 
