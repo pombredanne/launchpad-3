@@ -150,7 +150,11 @@
       <tal:link replace="structure spec/fmt:link:blueprints" />
       (<span tal:attributes="class string:specpriority${spec/priority/name}"
              tal:content="spec/priority/title">High</span>)
-       </div>
+      <tal:show-edit condition="show_edit|nothing">
+      <a class="sprite edit action-icon"
+        tal:attributes="href spec_branch/fmt:url;">Edit</a>
+      </tal:show-edit>
+      </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:specbranch${spec_branch/id}"
             class="hidden"
