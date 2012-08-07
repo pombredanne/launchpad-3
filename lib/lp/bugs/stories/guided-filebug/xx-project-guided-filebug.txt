@@ -16,14 +16,16 @@ shown in the list of options.
     >>> user_browser.getControl('Project', index=0).options
     ['evolution']
 
-After we selected a product and entered a summary, we get presented with
-a list of possible duplicates.
+After we selected a product and entered a summary, we're sent to the
+product's +filebug page and presented with a list of possible duplicates.
 
     >>> user_browser.getControl('Project', index=0).value = ['evolution']
     >>> user_browser.getControl('Summary', index=0).value = (
     ...     'Evolution crashes')
     >>> user_browser.getControl('Continue').click()
 
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/evolution/+filebug?field.actions.search=Continue&field.title=Evolution+crashes&field.tags='
     >>> print find_main_content(user_browser.contents).renderContents()
     <...
     No similar bug reports were found...
@@ -38,78 +40,6 @@ page.
 
     >>> user_browser.title
     'Bug #...Evolution crashes... : Bugs : Evolution'
-
-
-Subscribing to a similar bug
-----------------------------
-
-If our bug is described by one of the suggested similar bugs, we can
-subscribe to it instead of filing a new bug. This also loosely implies a
-"me too" vote.
-
-    >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
-    >>> user_browser.getControl('Project', index=0).value = ['evolution']
-    >>> user_browser.getControl('Summary', index=0).value = (
-    ...     'Evolution crashes')
-    >>> user_browser.getControl('Continue').click()
-
-As before, we get a list of similar bugs to choose from, including the
-bugs we filed recently.
-
-    >>> from lp.bugs.tests.bug import print_bugs_list
-    >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #... Evolution crashes
-    New (0 comments) last updated ...
-
-This one matches, so we subscribe.
-
-    >>> user_browser.getControl(
-    ...     "Yes, this is the bug I'm trying to report").click()
-
-    >>> print user_browser.url
-    http://bugs.launchpad.dev/evolution/+bug/...
-
-But, of course, we're already subscribed because we created it.
-
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
-    This bug is already marked as affecting you.
-
-
-Filing a bug when there are none similar
-----------------------------------------
-
-When no similar bugs are found the form works the same but appears
-different in the user agent.
-
-    >>> user_browser.open("http://launchpad.dev/gnome/+filebug")
-
-Submitting some distinctive details...
-
-    >>> user_browser.getControl('Project', index=0).value = ['evolution']
-    >>> user_browser.getControl('Summary', index=0).value = (
-    ...     'Faznambutron dumps core unless clenching')
-    >>> user_browser.getControl('Continue').click()
-
-...yields no similar bugs. In fact, the similar bugs table is not even
-shown.
-
-    >>> similar_bugs_list = find_tag_by_id(
-    ...     user_browser.contents, "similar-bugs")
-    >>> print similar_bugs_list
-    None
-
-But, as before, entering a description and submitting the bug takes the
-user to the bug page.
-
-    >>> user_browser.getControl('Further information').value = (
-    ...     'Faznambutron is a plugin designed to ...')
-    >>> user_browser.getControl('Submit Bug Report').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/evolution/+bug/...'
-
-    >>> user_browser.title
-    'Bug #...Faznambutron dumps core... : Bugs : Evolution'
 
 
 Empty ProjectGroups

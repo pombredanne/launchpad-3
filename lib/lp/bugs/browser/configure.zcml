@@ -103,12 +103,6 @@
             template="../templates/bugtarget-filebug-inline-form.pt"
             permission="launchpad.AnyPerson"/>
         <browser:page
-            for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtarget.FileBugReportingGuidelines"
-            template="../templates/bugtarget-filebug-guidelines.pt"
-            permission="launchpad.AnyPerson"
-            name="+filebug-reporting-guidelines"/>
-        <browser:page
             name="+manage-official-tags"
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
             class="lp.bugs.browser.bugtarget.OfficialBugTagsManageView"
@@ -428,7 +422,8 @@
     <browser:page
         name="+filebug"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
+        class="lp.bugs.browser.bugtarget.ProjectGroupFileBugGuidedView"
+        template="../templates/bugtarget-filebug-search.pt"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
@@ -530,7 +525,7 @@
             name="+edit"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bug.BugEditView"
-            template="../templates/bug-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             permission="launchpad.Edit"/>
         <browser:page
             name="+delete"

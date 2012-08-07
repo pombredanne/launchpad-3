@@ -46,7 +46,10 @@ from lp.bugs.interfaces.bugtask import (
     IllegalTarget,
     )
 from lp.bugs.interfaces.cve import ICveSet
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -185,12 +188,14 @@ class PrivateEmailCommand(EmailCommand):
                 stop_processing=True)
 
         if isinstance(context, CreateBugParams):
-            if private and (
-                context.information_type == InformationType.PUBLIC):
-                context.information_type = InformationType.USERDATA
-            elif (
-                context.information_type !=
-                InformationType.PRIVATESECURITY):
+            if private:
+                # "private yes" forces it to Private if it isn't already.
+                if (context.information_type is None
+                    or context.information_type in PUBLIC_INFORMATION_TYPES):
+                    context.information_type = InformationType.USERDATA
+            elif context.information_type != InformationType.PRIVATESECURITY:
+                # "private no" forces it to Public, except we always
+                # force new security bugs to be private.
                 context.information_type = InformationType.PUBLIC
             return context, current_event
 

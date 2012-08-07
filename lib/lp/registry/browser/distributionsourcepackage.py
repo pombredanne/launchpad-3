@@ -55,6 +55,10 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    BugTaskStatus,
+    )
 from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -572,6 +576,12 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         return dict(
             uses_bugs=uses_bugs, uses_answers=uses_answers,
             uses_both=uses_both, uses_either=uses_either)
+
+    @cachedproperty
+    def new_bugtasks_count(self):
+        search_params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.NEW, omit_dupes=True)
+        return self.context.searchTasks(search_params).count()
 
 
 class DistributionSourcePackageChangelogView(

@@ -81,8 +81,6 @@ class TestSharingInfoMixin:
     def _test_sharing_information(self, obj,
                                   id_under_test, expected_text,
                                   authorized=False):
-        self.useFixture(FeatureFixture(
-            {'translations.sharing_information.enabled': 'on'}))
         if authorized:
             user = self.getAuthorizedUser(obj)
         else:

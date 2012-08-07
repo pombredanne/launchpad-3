@@ -76,7 +76,12 @@
         var logged_in = LP.links['me'] !== undefined;
 
         if (logged_in) {
-            Y.lp.code.branch.bugspeclinks.connect_branchlinks();
+            var config = {
+                picker_activator: '#linkbug'
+            };
+            var linked_bug_picker = new Y.lp.code.branch.bugspeclinks.LinkedBugPicker(config);
+            linked_bug_picker.render();
+            linked_bug_picker.hide();
         }
     });
 

@@ -71,14 +71,25 @@ class CeleryRunJobIgnoreResult(CeleryRunJob):
     ignore_result = True
 
 
+class FindMissingReady:
+
+    def __init__(self, job_source):
+        from lp.services.job.celeryjob import CeleryRunJob
+        from lazr.jobrunner.celerytask import list_queued
+        self.job_source = job_source
+        self.queue_contents = list_queued(CeleryRunJob.app,
+                                          [job_source.task_queue])
+        self.queued_job_ids = set(task[1][0][0] for task in
+                                  self.queue_contents)
+
+    def find_missing_ready(self):
+        return [job for job in self.job_source.iterReady()
+                if job.job_id not in self.queued_job_ids]
+
+
 def find_missing_ready(job_source):
     """Find ready jobs that are not queued."""
-    from lp.services.job.celeryjob import CeleryRunJob
-    from lazr.jobrunner.celerytask import list_queued
-    queued_job_ids = set(task[1][0][0] for task in list_queued(
-        CeleryRunJob.app, [job_source.task_queue]))
-    return [job for job in job_source.iterReady() if job.job_id not in
-            queued_job_ids]
+    return FindMissingReady(job_source).find_missing_ready()
 
 
 class RunMissingReady(Task):

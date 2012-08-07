@@ -482,10 +482,6 @@ class DistributionSourcePackage(BugTargetBase,
         """Customize `search_params` for this distribution source package."""
         search_params.setSourcePackage(self)
 
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return self.distribution.getUsedBugTags()
-
     def _getOfficialTagClause(self):
         return self.distribution._getOfficialTagClause()
 
