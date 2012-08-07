@@ -202,27 +202,6 @@ class IHasBugs(Interface):
 
     export_as_webservice_entry()
 
-    # XXX Tom Berger 2008-09-26, Bug #274735
-    # The following are attributes, rather than fields, and must remain
-    # so, to make sure that they are not being copied into snapshots.
-    # Eventually, we'd like to remove these attributes from the content
-    # class altogether.
-    open_bugtasks = Attribute("A list of open bugTasks for this target.")
-    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
-    inprogress_bugtasks = Attribute(
-        "A list of in-progress bugTasks for this target.")
-    high_bugtasks = Attribute(
-        "A list of high importance BugTasks for this target.")
-    critical_bugtasks = Attribute(
-        "A list of critical BugTasks for this target.")
-    new_bugtasks = Attribute("A list of New BugTasks for this target.")
-    unassigned_bugtasks = Attribute(
-        "A list of unassigned BugTasks for this target.")
-    all_bugtasks = Attribute(
-        "A list of all BugTasks ever reported for this target.")
-    has_bugtasks = Attribute(
-        "True if a BugTask has ever been reported for this target.")
-
     # searchTasks devel API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(**search_tasks_params_for_api_devel)
