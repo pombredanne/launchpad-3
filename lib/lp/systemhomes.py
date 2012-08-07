@@ -128,7 +128,7 @@ class MaloneApplication:
         """See `IMaloneApplication`."""
         return getUtility(IBugTaskSet).search(search_params)
 
-    def getBugData(self, user, bug_id):
+    def getBugData(self, user, bug_id, related_bug=None):
         """See `IMaloneApplication`."""
         search_params = BugTaskSearchParams(user, bug=bug_id)
         bugtasks = getUtility(IBugTaskSet).search(search_params)
@@ -138,6 +138,9 @@ class MaloneApplication:
         data = []
         for bug in bugs:
             bugtask = bug.default_bugtask
+            different_pillars = related_bug and (
+                set(bug.affected_pillars).isdisjoint(
+                    related_bug.affected_pillars)) or False
             data.append({
                 'id': bug_id,
                 'information_type': bug.information_type.title,
@@ -149,7 +152,8 @@ class MaloneApplication:
                 'status_class': 'status' + bugtask.status.name,
                 'bug_summary': bug.title,
                 'description': bug.description,
-                'bug_url': canonical_url(bugtask)})
+                'bug_url': canonical_url(bugtask),
+                'different_pillars': different_pillars})
         return data
 
     def createBug(self, owner, title, description, target,
