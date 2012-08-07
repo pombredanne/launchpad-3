@@ -28,7 +28,10 @@ from openid.consumer.consumer import (
     FAILURE,
     SUCCESS,
     )
-from openid.extensions import sreg
+from openid.extensions import (
+    pape,
+    sreg,
+    )
 from openid.yadis.discover import DiscoveryFailure
 from testtools.matchers import Contains
 from zope.component import getUtility
@@ -730,6 +733,22 @@ class TestOpenIDLogin(TestCaseWithFactory):
                           sorted(sreg_extension.allRequestedFields()))
         self.assertEquals(sorted(sreg_extension.required),
                           sorted(sreg_extension.allRequestedFields()))
+
+    def test_pape_extension_added_with_reauth_query(self):
+        # We can signal that a request should be reauthenticated via
+        # a reauth URL parameter, which should add PAPE extension's
+        # max_auth_age paramter.
+        request = LaunchpadTestRequest(QUERY_STRING='reauth=1')
+        # This is a hack to make the request.getURL(1) call issued by the view
+        # not raise an IndexError.
+        request._app_names = ['foo']
+        view = StubbedOpenIDLogin(object(), request)
+        view()
+        extensions = view.openid_request.extensions
+        self.assertIsNot(None, extensions)
+        pape_extension = extensions[1]
+        self.assertIsInstance(pape_extension, pape.Request)
+        self.assertEqual(0, pape_extension.max_auth_age)
 
     def test_logs_to_timeline(self):
         # Beginning an OpenID association makes an HTTP request to the
