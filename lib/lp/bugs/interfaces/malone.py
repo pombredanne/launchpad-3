@@ -20,7 +20,9 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
 from zope.interface import Attribute
+from zope.schema import Bool
 
+from lp import _
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.services.webapp.interfaces import ILaunchpadApplication
@@ -74,9 +76,16 @@ class IMaloneApplication(ILaunchpadApplication):
         target=Reference(
             schema=IBugTarget, required=True,
             title=u"The project, distribution or source package that has "
-                   "this bug."))
+                   "this bug."),
+        security_related=Bool(title=_("This bug is a security vulnerability."),
+             required=False, default=None, readonly=True),
+        private=Bool(title=_("This bug report should be private"),
+             description=_("Private bug reports are visible only to "
+                           "their subscribers."),
+             required=False, default=None, readonly=True)
+         )
     @export_factory_operation(
-        IBug, ['title', 'description', 'tags', 'security_related', 'private'])
+        IBug, ['title', 'description', 'tags'])
     def createBug(owner, title, description, target, security_related=None,
                   private=None, tags=None):
         """Create a bug (with an appropriate bugtask) and return it.
