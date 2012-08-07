@@ -157,11 +157,6 @@ class MaloneApplication:
     def createBug(self, owner, title, description, target,
                   security_related=None, private=None, tags=None):
         """See `IMaloneApplication`."""
-
-#        if security_related is False and private is False:
-#            # XXX sinzui 2012-08-07: Liar! Fuck lazr.restful and its evil
-#            # cache of default values
-#            information_type = None
         if security_related is None and private is None:
             # Nothing to adapt, let BugSet.createBug() choose the default.
             information_type = None
