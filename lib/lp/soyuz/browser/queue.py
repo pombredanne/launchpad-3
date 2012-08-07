@@ -443,7 +443,7 @@ class QueueItemsView(LaunchpadView):
 
     def queue_action_accept(self, queue_item):
         """Reject the queue item passed."""
-        queue_item.acceptFromQueue()
+        queue_item.acceptFromQueue(user=self.user)
 
     def queue_action_reject(self, queue_item):
         """Accept the queue item passed."""

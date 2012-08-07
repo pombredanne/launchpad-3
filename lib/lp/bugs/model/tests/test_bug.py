@@ -14,9 +14,7 @@ from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.interfaces.services import IService
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
     BugNotificationLevel,
@@ -586,10 +584,13 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
     def test_setPrivate_does_not_subscribe_member_of_subscribed_team(self):
         # When setPrivate(True) is called on a bug, the person who is
         # marking the bug private will not be subscribed if they're
-        # already a member of a team which is a direct subscriber.
+        # already a member of a team which is a direct subscriber and
+        # maintains access after transition.
         bug = self.factory.makeBug()
         person = self.factory.makePerson(name='teamowner')
         team = self.factory.makeTeam(owner=person, name='team')
+        artifact = self.factory.makeAccessArtifact(bug)
+        self.factory.makeAccessArtifactGrant(artifact, team)
         with person_logged_in(person):
             bug.subscribe(team, person)
             bug.setPrivate(True, person)
@@ -654,13 +655,11 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.transitionToInformationType(
                 InformationType.PRIVATESECURITY, who=who)
             subscribers = bug.getDirectSubscribers()
-            initial_subscribers.update(bug.getDirectSubscribers())
         expected_subscribers = set((
-            bugtask_a.owner,
             default_bugtask.pillar.driver,
             default_bugtask.pillar.security_contact,
-            bug_owner, who))
-        expected_subscribers.update(initial_subscribers)
+            bug_owner,
+            who))
         self.assertContentEqual(expected_subscribers, subscribers)
 
     def test_transition_to_USERDATA_information_type(self):
@@ -672,7 +671,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # - and bug/pillar owners, drivers if they are already subscribed
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers(private_security_related=True))
+                self.createBugTasksAndSubscribers())
         initial_subscribers = set((
             self.factory.makePerson(name='subscriber'), bug_owner,
             bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
@@ -686,8 +685,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         expected_subscribers = set((
             default_bugtask.pillar.bug_supervisor,
             default_bugtask.pillar.driver,
-            bug_owner, who))
-        expected_subscribers.update(initial_subscribers)
+            bug_owner,
+            who))
         self.assertContentEqual(expected_subscribers, subscribers)
 
     def test_transition_to_PUBLICSECURITY_information_type(self):
@@ -738,23 +737,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         self.assertContentEqual(
             subscribers_before_public,
             subscribers_after_public)
-
-    def test_transition_to_private_grants_subscribers_access(self):
-        # When a bug is made private, any direct subscribers should be granted
-        # access.
-        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers())
-        some_person = self.factory.makePerson()
-        with person_logged_in(bug_owner):
-            bug.subscribe(some_person, bug_owner)
-            subscribers = bug.getDirectSubscribers()
-            who = self.factory.makePerson(name='who')
-            bug.transitionToInformationType(
-                InformationType.USERDATA, who)
-
-        service = getUtility(IService, 'sharing')
-        peopleWithoutAccess = service.getPeopleWithoutAccess(bug, subscribers)
-        self.assertContentEqual([], peopleWithoutAccess)
 
     def test_setPillarOwnerSubscribedIfNoBugSupervisor(self):
         # The pillar owner is subscribed if the bug supervisor is not set and

@@ -701,6 +701,8 @@ class BugEditViewBase(LaunchpadEditFormView):
         """Return the next URL to call when this call completes."""
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
 
 class BugEditView(BugEditViewBase):
     """The view for the edit bug page."""
@@ -708,71 +710,18 @@ class BugEditView(BugEditViewBase):
     field_names = ['title', 'description', 'tags']
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
-    next_url = None
-
-    _confirm_new_tags = False
-
-    def __init__(self, context, request):
-        """context is always an IBugTask."""
-        BugEditViewBase.__init__(self, context, request)
-        self.notifications = []
 
     @property
     def label(self):
         """The form label."""
         return 'Edit details for bug #%d' % self.context.bug.id
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
-
-    def validate(self, data):
-        """Make sure new tags are confirmed."""
-        if 'tags' not in data:
-            return
-        confirm_action = self.confirm_tag_action
-        if confirm_action.submitted():
-            # Validation is needed only for the change action.
-            return
-        bugtarget = self.context.target
-        newly_defined_tags = set(data['tags']).difference(
-            bugtarget.getUsedBugTags() + bugtarget.official_bug_tags)
-        # Display the confirm button in a notification message. We want
-        # it to be slightly smaller than usual, so we can't simply let
-        # it render itself.
-        confirm_button = (
-            '<input style="font-size: smaller" type="submit"'
-            ' value="%s" name="%s" />' % (
-                confirm_action.label, confirm_action.__name__))
-        for new_tag in newly_defined_tags:
-            self.notifications.append(
-                'The tag "%s" hasn\'t been used by %s before. %s' % (
-                    new_tag, bugtarget.bugtargetdisplayname, confirm_button))
-            self._confirm_new_tags = True
+    page_title = label
 
     @action('Change', name='change')
-    def edit_bug_action(self, action, data):
+    def change_action(self, action, data):
         """Update the bug with submitted changes."""
-        if not self._confirm_new_tags:
-            self.updateBugFromData(data)
-            self.next_url = canonical_url(self.context)
-
-    @action('Create the new tag', name='confirm_tag')
-    def confirm_tag_action(self, action, data):
-        """Define a new tag."""
-        self.actions['field.actions.change'].success(data)
-
-    def render(self):
-        """Render the page with only one submit button."""
-        # The confirmation button shouldn't be rendered automatically.
-        self.actions = [self.edit_bug_action]
-        return BugEditViewBase.render(self)
+        self.updateBugFromData(data)
 
 
 class BugMarkAsDuplicateView(BugEditViewBase):
@@ -787,7 +736,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         super(BugMarkAsDuplicateView, self).setUpFields()
 
         duplicateof_field = DuplicateBug(
-            __name__='duplicateof', title=_('Duplicate Of'), required=False)
+            __name__='duplicateof', title=_('Duplicate Of'), required=True)
 
         self.form_fields = self.form_fields.omit('duplicateof')
         self.form_fields = formlib.form.Fields(duplicateof_field)
@@ -797,7 +746,12 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         """See `LaunchpadFormView.`"""
         return {'duplicateof': self.context.bug.duplicateof}
 
-    @action('Change', name='change')
+    def _validate(self, action, data):
+        if action.name != 'remove':
+            return super(BugMarkAsDuplicateView, self)._validate(action, data)
+        return []
+
+    @action('Set Duplicate', name='change')
     def change_action(self, action, data):
         """Update the bug."""
         data = dict(data)
@@ -811,6 +765,19 @@ class BugMarkAsDuplicateView(BugEditViewBase):
             ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
         # Apply other changes.
         self.updateBugFromData(data)
+
+    def shouldShowRemoveButton(self, action):
+        return self.context.bug.duplicateof is not None
+
+    @action('Remove Duplicate', name='remove',
+        condition=shouldShowRemoveButton)
+    def remove_action(self, action, data):
+        """Update the bug."""
+        bug = self.context.bug
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
+        bug.markAsDuplicate(None)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
 
 
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
