@@ -195,21 +195,23 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     CannotDeleteBugtask,
-    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
-    IBugTaskSearch,
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
-    IFrontPageBugTaskSearch,
     IllegalTarget,
     INominationsReviewTableBatchNavigator,
-    IPersonBugTaskSearch,
     IRemoveQuestionFromBugTaskForm,
-    IUpstreamProductBugTaskSearch,
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTaskSearchParams,
+    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
+    IBugTaskSearch,
+    IFrontPageBugTaskSearch,
+    IPersonBugTaskSearch,
+    IUpstreamProductBugTaskSearch,
+    )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IHasExternalBugTracker,

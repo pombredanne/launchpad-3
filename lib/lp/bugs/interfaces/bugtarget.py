@@ -57,8 +57,8 @@ from lp.bugs.interfaces.bugtask import (
     BugBranchSearch,
     BugTagsSearchCombinator,
     IBugTask,
-    IBugTaskSearch,
     )
+from lp.bugs.interfaces.bugtasksearch import IBugTaskSearch
 from lp.services.fields import Tag
 
 
