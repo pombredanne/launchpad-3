@@ -11,6 +11,7 @@ __all__ = [
     'BugTagsSearchCombinator',
     'BugTaskSearchParams',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
+    'get_person_bugtasks_search_params',
     'IBugTaskSearch',
     'IFrontPageBugTaskSearch',
     'IPersonBugTaskSearch',
@@ -41,6 +42,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     IBugTask,
+    IllegalRelatedBugTasksParams,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.registry.enums import InformationType
@@ -647,3 +649,48 @@ class IFrontPageBugTaskSearch(IBugTaskSearch):
     scope = Choice(
         title=u"Search Scope", required=False,
         vocabulary="DistributionOrProductOrProjectGroup")
+
+
+def get_person_bugtasks_search_params(user, context, **kwargs):
+    """Returns a list of `BugTaskSearchParams` which can be used to
+    search for all tasks related to a user given by `context`.
+
+    Which tasks are related to a user?
+      * the user has to be either assignee or owner of this task
+        OR
+      * the user has to be subscriber or commenter to the underlying bug
+        OR
+      * the user is reporter of the underlying bug, but this condition
+        is automatically fulfilled by the first one as each new bug
+        always get one task owned by the bug reporter
+    """
+    from lp.registry.interfaces.person import IPerson
+    assert IPerson.providedBy(context), "Context argument needs to be IPerson"
+    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter',
+                       'structural_subscriber')
+    search_params = []
+    for key in relevant_fields:
+        # all these parameter default to None
+        user_param = kwargs.get(key)
+        if user_param is None or user_param == context:
+            # we are only creating a `BugTaskSearchParams` object if
+            # the field is None or equal to the context
+            arguments = kwargs.copy()
+            arguments[key] = context
+            if key == 'owner':
+                # Specify both owner and bug_reporter to try to
+                # prevent the same bug (but different tasks)
+                # being displayed.
+                # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
+                arguments['bug_reporter'] = context
+            search_params.append(
+                BugTaskSearchParams.fromSearchForm(user, **arguments))
+    if len(search_params) == 0:
+        # unable to search for related tasks to user_context because user
+        # modified the query in an invalid way by overwriting all user
+        # related parameters
+        raise IllegalRelatedBugTasksParams(
+            ('Cannot search for related tasks to \'%s\', at least one '
+             'of these parameter has to be empty: %s'
+                % (context.name, ", ".join(relevant_fields))))
+    return search_params
