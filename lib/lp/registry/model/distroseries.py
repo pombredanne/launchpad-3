@@ -1465,20 +1465,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self, created_since_date, status, archive, pocket, custom_type,
             name=name, version=version, exact_match=exact_match)
 
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        # We don't currently support opening a new bug on an IDistroSeries,
-        # because internally bugs are reported against IDistroSeries only when
-        # targeted to be fixed in that series, which is rarely the case for a
-        # brand new bug report.
-        raise NotImplementedError(
-            "A new bug cannot be filed directly on a distribution series, "
-            "because series are meant for \"targeting\" a fix to a specific "
-            "version. It's possible that we may change this behaviour to "
-            "allow filing a bug on a distribution series in the "
-            "not-too-distant future. For now, you probably meant to file "
-            "the bug on the distribution instead.")
-
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.

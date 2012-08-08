@@ -604,9 +604,9 @@ class AffectsEmailCommand(EmailCommand):
             # equivalent here. The series will be nominated/targeted in
             # the remainder of the method.
             if ISeriesBugTarget.providedBy(bug_target):
-                bug.setBugTarget(target=bug_target.bugtarget_parent)
+                bug.target = bug_target.bugtarget_parent
             else:
-                bug.setBugTarget(target=bug_target)
+                bug.target = bug_target
             bug, bug_event = getUtility(IBugSet).createBug(
                 bug, notify_event=False)
             event = ObjectCreatedEvent(bug.bugtasks[0])

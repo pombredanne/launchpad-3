@@ -445,10 +445,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `IHasBugs`."""
         return self.product.official_bug_tags
 
-    def createBug(self, bug_params):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file a bug against a productseries')
-
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.

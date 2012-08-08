@@ -779,11 +779,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             official_candidate=official_candidate, enabled=enabled,
             whiteboard=whiteboard)
 
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        bug_params.setBugTarget(self)
-        return BugSet().createBug(bug_params)
-
     @property
     def currentseries(self):
         """See `IDistribution`."""
