@@ -247,9 +247,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
-from lp.services.temporaryblobstorage.model import (
-    TemporaryBlobStorage,
-    )
+from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 from lp.services.utils import AutoDecorate
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import (

@@ -91,7 +91,7 @@ from lp.services.database.stormexpr import (
     ArrayIntersects,
     get_where_for_reference,
     NullCount,
-    Unnest
+    Unnest,
     )
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
