@@ -97,6 +97,30 @@
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
       </p>
 
+      <div id="bug-is-duplicate">
+          <p class="bug-duplicate-details ellipsis line-block"
+             style="max-width: 60em;"
+             tal:condition="context/bug/duplicateof|nothing"
+             tal:define="duplicateof context/bug/duplicateof">
+            <span class="sprite info"></span>
+            This bug report is a duplicate of:&nbsp;
+                <a
+                  tal:condition="duplicateof/required:launchpad.View"
+                  tal:attributes="href duplicateof/fmt:url; title
+                     duplicateof/title;
+                     id string:duplicate-of-warning-link-bugtasks;"
+                  tal:content="string:Bug #${duplicateof/id}: ${duplicateof/title}."
+                >bug #42</a>
+                <a id="change-duplicate-bug-bugtasks"
+                    href="+duplicate"
+                    title="Edit or remove linked duplicate bug"
+                    class="sprite edit action-icon change-duplicate-bug">Edit</a>
+                <a id="remove-duplicate-bug-bugtasks"
+                    href="+duplicate"
+                    title="Remove linked duplicate bug"
+                    class="sprite remove action-icon remove-duplicate-bug">Remove</a>
+          </p>
+      </div>
       <p id="bug-is-question"
          tal:condition="context/bug/getQuestionCreatedFromBug"
          tal:define="question context/bug/getQuestionCreatedFromBug">

@@ -387,10 +387,17 @@ p.update-failure-message {
     padding-left: 18px;
 }
 
-.update-in-progress-message {
+:not(button).update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
     color: #666;
+}
+
+button.update-in-progress-message:after {
+    background: url("/@@/spinner") center left no-repeat;
+    content: "\00A0";
+    margin-left: 6px;
+    padding-right: 12px;
 }
 
 a.update-retry {
