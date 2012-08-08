@@ -135,9 +135,11 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTaskSearchParams,
+    get_person_bugtasks_search_params,
+    )
 from lp.bugs.model.bugtarget import HasBugsBase
-from lp.bugs.interfaces.bugtasksearch import get_person_bugtasks_search_params
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.code.interfaces.branchcollection import (
     IAllBranches,

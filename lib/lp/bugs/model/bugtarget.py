@@ -25,9 +25,11 @@ from zope.interface import implements
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
-from lp.bugs.interfaces.bugtasksearch import BugTagsSearchCombinator
 from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
-from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTagsSearchCombinator,
+    BugTaskSearchParams,
+    )
 from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct

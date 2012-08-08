@@ -170,7 +170,6 @@ class IBugPublic(IPrivacy):
         Bool(title=_("This bug report should be private"), required=False,
              description=_("Private bug reports are visible only to "
                            "their subscribers."),
-             default=False,
              readonly=True))
     information_type = exported(
         Choice(
@@ -305,7 +304,7 @@ class IBugView(Interface):
             readonly=True)))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability."),
-             required=False, default=False, readonly=True))
+             required=False, readonly=True))
     has_patches = Attribute("Does this bug have any patches?")
     latest_patch_uploaded = exported(
         Datetime(

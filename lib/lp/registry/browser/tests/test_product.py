@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-import transaction
 from lazr.restful.interfaces import IJSONRequestCache
+import transaction
 from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary
 

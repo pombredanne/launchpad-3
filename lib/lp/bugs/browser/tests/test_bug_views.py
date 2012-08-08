@@ -567,3 +567,52 @@ class TestBugMarkAsDuplicateView(TestCaseWithFactory):
                 self.bug.default_bugtask, name="+duplicate",
                 principal=self.bug_owner, form=form)
         self.assertIsNone(self.bug.duplicateof)
+
+    def test_ajax_create_duplicate(self):
+        # An ajax request to create a duplicate returns the new bugtask table.
+        with person_logged_in(self.bug_owner):
+            extra = {
+                'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+                }
+            form = {
+                'field.actions.change': u'Set Duplicate',
+                'field.duplicateof': u'%s' % self.duplicate_bug.id
+                }
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner, form=form, **extra)
+            result_html = view.render()
+
+        self.assertEqual(self.duplicate_bug, self.bug.duplicateof)
+        self.assertEqual(
+            view.request.response.getHeader('content-type'), 'text/html')
+        soup = BeautifulSoup(result_html)
+        table = soup.find(
+            'table',
+            {'id': 'affected-software', 'class': 'duplicate listing'})
+        self.assertIsNotNone(table)
+
+    def test_ajax_remove_duplicate(self):
+        # An ajax request to remove a duplicate returns the new bugtask table.
+        with person_logged_in(self.bug_owner):
+            self.bug.markAsDuplicate(self.duplicate_bug)
+            extra = {
+                'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+                }
+            form = {
+                'field.actions.remove': u'Remove Duplicate',
+                }
+
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner, form=form, **extra)
+            result_html = view.render()
+
+        self.assertIsNone(self.bug.duplicateof)
+        self.assertEqual(
+            view.request.response.getHeader('content-type'), 'text/html')
+        soup = BeautifulSoup(result_html)
+        table = soup.find(
+            'table',
+            {'id': 'affected-software', 'class': 'listing'})
+        self.assertIsNotNone(table)
