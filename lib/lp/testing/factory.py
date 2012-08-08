@@ -1710,7 +1710,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=sourcepackagename)
         target = product or distribution
         if sourcepackagename is not None:
-            target = target.getSourcePackageName(sourcepackagename)
+            target = target.getSourcePackage(sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
