@@ -461,19 +461,19 @@ patch_choice_parameter_type(
     IArchive, 'getUploadersForPocket', 'pocket', PackagePublishingPocket)
 patch_choice_parameter_type(
     IArchive, 'getQueueAdminsForPocket', 'pocket', PackagePublishingPocket)
-patch_choice_parameter_type(
+patch_plain_parameter_type(
     IArchive, 'getQueueAdminsForPocket', 'distroseries', IDistroSeries)
 patch_choice_parameter_type(
     IArchive, 'newPocketUploader', 'pocket', PackagePublishingPocket)
 patch_choice_parameter_type(
     IArchive, 'newPocketQueueAdmin', 'pocket', PackagePublishingPocket)
-patch_choice_parameter_type(
+patch_plain_parameter_type(
     IArchive, 'newPocketQueueAdmin', 'distroseries', IDistroSeries)
 patch_choice_parameter_type(
     IArchive, 'deletePocketUploader', 'pocket', PackagePublishingPocket)
 patch_choice_parameter_type(
     IArchive, 'deletePocketQueueAdmin', 'pocket', PackagePublishingPocket)
-patch_choice_parameter_type(
+patch_plain_parameter_type(
     IArchive, 'deletePocketQueueAdmin', 'distroseries', IDistroSeries)
 patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
