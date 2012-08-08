@@ -233,10 +233,9 @@ def snapshot_bug_params(bug_params):
     return Snapshot(
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
-            "datecreated", "information_type", "target", "distribution",
-            "sourcepackagename", "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by", "importance", "milestone",
-            "assignee", "cve"])
+            "datecreated", "information_type", "target", "status",
+            "subscribers", "tags", "subscribe_owner", "filed_by",
+            "importance", "milestone", "assignee", "cve"])
 
 
 class BugTag(SQLBase):

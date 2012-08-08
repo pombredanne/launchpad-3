@@ -102,8 +102,8 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None,
                  msg=None, status=None, datecreated=None,
                  information_type=None, subscribers=(), tags=None,
-                 subscribe_owner=True, filed_by=None, importance=None,
-                 milestone=None, assignee=None, cve=None):
+                 subscribe_owner=True, filed_by=None, target=None,
+                 importance=None, milestone=None, assignee=None, cve=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -113,10 +113,7 @@ class CreateBugParams:
         self.datecreated = datecreated
         self.information_type = information_type
         self.subscribers = subscribers
-        self.target = None
-        self.product = None
-        self.distribution = None
-        self.sourcepackagename = None
+        self.target = target
         self.tags = tags
         self.subscribe_owner = subscribe_owner
         self.filed_by = filed_by
