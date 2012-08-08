@@ -122,15 +122,6 @@ class CreateBugParams:
         self.assignee = assignee
         self.cve = cve
 
-    def setBugTarget(self, target):
-        """Set the IBugTarget in which the bug is being reported.
-
-        :target: an IBugTarget
-        """
-        assert target, "You must speciy the target in which this bug exists"
-
-        self.target = target
-
 
 class BugNameField(ContentNameField):
     """Provides a a way to retrieve bugs by name."""
