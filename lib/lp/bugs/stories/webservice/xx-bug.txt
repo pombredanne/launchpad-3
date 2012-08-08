@@ -139,8 +139,8 @@ A ProductSeries can't be the target of a new bug.
     ...     target=webservice.getAbsoluteUrl('/firefox/1.0'))
     HTTP/1.1 400 Bad Request
     ...
-    A bug target must be a Project, a Distribution or a
-    DistributionSourcePackage.  Got <ProductSeries...
+    Can't create a bug on a series. Create it with a non-series
+    task instead, and target it to the series afterwards.
 
 That operation will fail if the client doesn't specify the product or
 distribution in which the bug exists.
