@@ -218,7 +218,8 @@ def check_copy_permissions(person, archive, series, pocket, sources):
             strict_component=strict_component, pocket=pocket)
         if reason is not None:
             # Queue admins are allowed to copy even if they can't upload.
-            if not archive.canAdministerQueue(person, destination_component):
+            if not archive.canAdministerQueue(
+                person, destination_component, pocket, dest_series):
                 raise CannotCopy(reason)
 
 
