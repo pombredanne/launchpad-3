@@ -1457,7 +1457,7 @@ class TestPlainPackageCopyJobDbPrivileges(TestCaseWithFactory,
     def test_reportFailure(self):
         job = self.makeJob()
         switch_dbuser(self.dbuser)
-        removeSecurityProxy(job).reportFailure(CannotCopy("Mommy it hurts"))
+        removeSecurityProxy(job).reportFailure("Mommy it hurts")
 
 
 class TestPackageCopyJobSource(TestCaseWithFactory):
