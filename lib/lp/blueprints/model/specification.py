@@ -813,6 +813,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
 
+    def getAllowedInformationTypes(self, who):
+        return set(InformationType.items)
+
 
 class HasSpecificationsMixin:
     """A mixin class that implements many of the common shortcut properties

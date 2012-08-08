@@ -536,7 +536,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         return Link('#', text)
 
 
-class SpecificationSimpleView(LaunchpadView, InformationTypePortletMixin):
+class SpecificationSimpleView(InformationTypePortletMixin, LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     @cachedproperty
@@ -580,6 +580,7 @@ class SpecificationView(SpecificationSimpleView):
         return self.context.summary
 
     def initialize(self):
+        super(SpecificationView, self).initialize()
         # The review that the user requested on this spec, if any.
         self.notices = []
 

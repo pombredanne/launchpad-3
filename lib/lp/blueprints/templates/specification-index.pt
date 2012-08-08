@@ -310,7 +310,13 @@
     </div>
 
   <script type="text/javascript">
-    LPJS.use('lp.anim', 'lp.ui', 'node', 'widget', function(Y) {
+    LPJS.use('lp.anim', 'lp.client', 'lp.ui',
+             'lp.app.information_type_choice', 'node', 'widget', function(Y) {
+        Y.on('domready', function(){
+            var privacy_link = Y.one('#privacy-link');
+            Y.lp.app.information_type_choice.setup_information_type_choice(
+                privacy_link, new Y.lp.client.Launchpad(), LP.cache.context);
+        });
 
         Y.on('lp:context:implementation_status:changed', function(e) {
             var icon = Y.one('#informational-icon');

@@ -553,6 +553,12 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         :param user: The user doing the search.
         """
 
+    def getAllowedInformationTypes(who):
+        """Get a list of acceptable `InformationType`s for this spec.
+
+        The intersection of the affected pillars' allowed types is permitted.
+        """
+
 
 class ISpecificationEditRestricted(Interface):
     """Specification's attributes and methods protected with launchpad.Edit.
