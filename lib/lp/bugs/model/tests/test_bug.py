@@ -14,6 +14,7 @@ from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
@@ -872,25 +873,6 @@ class TestBugPrivacy(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
-
-    def test_information_type_does_not_leak(self):
-        # Make sure that bug notifications for private bugs do not leak to
-        # people with a subscription on the product.
-        product = self.factory.makeProduct()
-        with person_logged_in(product.owner):
-            product.addSubscription(product.owner, product.owner)
-        reporter = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            information_type=InformationType.USERDATA, product=product,
-            owner=reporter)
-        recipients = Store.of(bug).using(
-            BugNotificationRecipient,
-            Join(BugNotification, BugNotification.bugID == bug.id)).find(
-            BugNotificationRecipient,
-            BugNotificationRecipient.bug_notificationID ==
-                BugNotification.id)
-        self.assertEqual(
-            [reporter], [recipient.person for recipient in recipients])
 
     def test__reconcileAccess_handles_all_targets(self):
         # _reconcileAccess gets the pillar from any task

@@ -298,7 +298,7 @@
 
         <!-- BugTaskSearchParams -->
         <class
-            class="lp.bugs.interfaces.bugtask.BugTaskSearchParams">
+            class="lp.bugs.interfaces.bugtasksearch.BugTaskSearchParams">
             <allow
                 attributes="
                     setTarget

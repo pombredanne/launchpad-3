@@ -19,15 +19,17 @@ from storm.locals import (
     Storm,
     Unicode,
     )
+from zope.component import getUtility
 from zope.interface import implements
 
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
-from lp.bugs.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
+from lp.bugs.interfaces.bugtasksearch import (
     BugTagsSearchCombinator,
     BugTaskSearchParams,
-    UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
 from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
@@ -122,6 +124,13 @@ class BugTargetBase(HasBugsBase):
         return get_bug_tags_open_count(
             self.getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
+
+    def createBug(self, params):
+        """See IBugTarget."""
+        # createBug will raise IllegalTarget for ISeriesBugTargets and
+        # IProjectGroup.
+        params.target = self
+        return getUtility(IBugSet).createBug(params)
 
 
 class OfficialBugTagTargetMixin:

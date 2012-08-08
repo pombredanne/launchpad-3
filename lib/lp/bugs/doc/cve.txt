@@ -106,7 +106,7 @@ reports that inform on the status of bugs related to CVEs in the
 distribution. The method that drives this report is
 ICveSet.getBugCvesForBugTasks:
 
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> from lp.registry.model.distribution import Distribution
     >>> params = BugTaskSearchParams(None)
     >>> ubuntu = Distribution.selectOneBy(name="ubuntu")

@@ -52,11 +52,11 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.bugs.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtasksearch import (
     BugBlueprintSearch,
     BugBranchSearch,
     BugTagsSearchCombinator,
-    IBugTask,
     IBugTaskSearch,
     )
 from lp.services.fields import Tag
@@ -427,5 +427,7 @@ class IOfficialBugTag(Interface):
 class ISeriesBugTarget(Interface):
     """An `IBugTarget` which is a series."""
 
+    series = Attribute(
+        "The product or distribution series of this series bug target.")
     bugtarget_parent = Attribute(
         "Non-series parent of this series bug target.")
