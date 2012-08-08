@@ -131,6 +131,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
+    IllegalTarget,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
@@ -2647,8 +2648,7 @@ class BugSet:
                 target = target.getSourcePackage(params.sourcepackagename)
 
         if ISeriesBugTarget.providedBy(target):
-            raise AssertionError(
-                "Can't create bug with just a series task for %r." % target)
+            raise IllegalTarget("Can't create a bug on a series.")
 
         if params.information_type is None:
             params.information_type = (

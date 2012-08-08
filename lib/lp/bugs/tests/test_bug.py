@@ -18,6 +18,7 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
+    IllegalTarget,
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
@@ -205,7 +206,7 @@ class TestBugCreation(TestCaseWithFactory):
                 owner=owner, title="A bug", comment="Nothing important.")
             params.setBugTarget(target=target)
             self.assertRaises(
-                AssertionError, getUtility(IBugSet).createBug, params)
+                IllegalTarget, getUtility(IBugSet).createBug, params)
 
     def test_CreateBugParams_accepts_importance(self):
         # The importance of the initial bug task can be set using
