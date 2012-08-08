@@ -2638,46 +2638,38 @@ class BugSet:
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
 
-        if params.target:
-            target = params.target
-        elif params.product:
-            target = params.product
-        elif params.distribution:
-            target = params.distribution
-            if params.sourcepackagename:
-                target = target.getSourcePackage(params.sourcepackagename)
-
-        if ISeriesBugTarget.providedBy(target):
+        if ISeriesBugTarget.providedBy(params.target):
             raise IllegalTarget(
                 "Can't create a bug on a series. Create it with a non-series "
                 "task instead, and target it to the series afterwards.")
 
         if params.information_type is None:
             params.information_type = (
-                target.pillar.getDefaultBugInformationType())
+                params.target.pillar.getDefaultBugInformationType())
 
         bug, event = self._makeBug(params)
 
         # Create the initial task on the specified target.
         getUtility(IBugTaskSet).createTask(
-            bug, params.owner, target, status=params.status)
+            bug, params.owner, params.target, status=params.status)
 
         if params.information_type in SECURITY_INFORMATION_TYPES:
-            if target.pillar.security_contact:
-                bug.subscribe(target.pillar.security_contact, params.owner)
+            pillar = params.target.pillar
+            if pillar.security_contact:
+                bug.subscribe(pillar.security_contact, params.owner)
             else:
-                bug.subscribe(target.pillar.owner, params.owner)
+                bug.subscribe(pillar.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
-        elif params.product and params.product.private_bugs:
+        elif IProduct.providedBy(params.target) and params.target.private_bugs:
             # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
-            if params.product.bug_supervisor:
-                bug.subscribe(params.product.bug_supervisor, params.owner)
+            if params.target.bug_supervisor:
+                bug.subscribe(params.target.bug_supervisor, params.owner)
             else:
-                bug.subscribe(params.product.owner, params.owner)
+                bug.subscribe(params.target.owner, params.owner)
 
         if params.subscribe_owner:
             bug.subscribe(params.owner, params.owner)

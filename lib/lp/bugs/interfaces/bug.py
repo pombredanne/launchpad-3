@@ -125,46 +125,14 @@ class CreateBugParams:
         self.assignee = assignee
         self.cve = cve
 
-    def setBugTarget(self, target=None, product=None, distribution=None,
-                     sourcepackagename=None):
+    def setBugTarget(self, target):
         """Set the IBugTarget in which the bug is being reported.
 
         :target: an IBugTarget
-        :product: an IProduct
-        :distribution: an IDistribution
-        :sourcepackagename: an ISourcePackageName
-
-        A target, product or distribution must be provided, or an
-        AssertionError is raised.
-
-        If product is specified, all other parameters must evaluate to
-        False in a boolean context, or an AssertionError will be raised.
-
-        If distribution is specified, sourcepackagename may optionally
-        be provided. Product must evaluate to False in a boolean
-        context, or an AssertionError will be raised.
         """
-        assert target or product or distribution, (
-            "You must specify the product or distribution in which this "
-            "bug exists")
-
-        if target:
-            conflicting_context = (
-                product or distribution or sourcepackagename)
-        elif product:
-            conflicting_context = (
-                target or distribution or sourcepackagename)
-        elif distribution:
-            conflicting_context = target or product
-
-        assert not conflicting_context, (
-            "You must specify either an upstream context or a distribution "
-            "context, but not both.")
+        assert target, "You must speciy the target in which this bug exists"
 
         self.target = target
-        self.product = product
-        self.distribution = distribution
-        self.sourcepackagename = sourcepackagename
 
 
 class BugNameField(ContentNameField):
