@@ -701,6 +701,8 @@ def _get_structural_subscription_filter_id_query(
     :param direct_subscribers: a collection of Person objects who are
                                directly subscribed to the bug.
     """
+    # Circular. :-(
+    from lp.bugs.model.bugtasksearch import get_bug_bulk_privacy_filter_terms
     # We get the ids because we need to use group by in order to
     # look at the filters' tags in aggregate.  Once we have the ids,
     # we can get the full set of what we need in subsuming or
@@ -737,6 +739,10 @@ def _get_structural_subscription_filter_id_query(
             Not(In(StructuralSubscription.subscriberID,
                    Select(BugSubscription.person_id,
                           BugSubscription.bug == bug))))
+    if bug.private:
+        filters.append(
+            get_bug_bulk_privacy_filter_terms(
+                StructuralSubscription.subscriberID, bug))
     candidates = list(_get_structural_subscriptions(
         StructuralSubscription.id, query_arguments, *filters))
     if not candidates:
@@ -755,7 +761,7 @@ def _get_structural_subscription_filter_id_query(
     conditions.append(_calculate_bugtask_condition(query_arguments))
     # Handle filtering by information type.
     conditions.append(Or(
-        BugSubscriptionFilterInformationType.information_type == 
+        BugSubscriptionFilterInformationType.information_type ==
             bug.information_type,
         BugSubscriptionFilterInformationType.information_type == None))
     # Now we handle tags.  This actually assembles the query, because it

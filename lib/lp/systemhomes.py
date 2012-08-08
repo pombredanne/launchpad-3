@@ -155,10 +155,14 @@ class MaloneApplication:
         return data
 
     def createBug(self, owner, title, description, target,
-                  security_related=False, private=False, tags=None):
+                  security_related=None, private=None, tags=None):
         """See `IMaloneApplication`."""
-        information_type = convert_to_information_type(
-            private, security_related)
+        if security_related is None and private is None:
+            # Nothing to adapt, let BugSet.createBug() choose the default.
+            information_type = None
+        else:
+            information_type = convert_to_information_type(
+                private, security_related)
         params = CreateBugParams(
             title=title, comment=description, owner=owner,
             information_type=information_type, tags=tags)

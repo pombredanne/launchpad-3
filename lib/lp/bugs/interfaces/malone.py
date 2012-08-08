@@ -74,11 +74,13 @@ class IMaloneApplication(ILaunchpadApplication):
         target=Reference(
             schema=IBugTarget, required=True,
             title=u"The project, distribution or source package that has "
-                   "this bug."))
+                   "this bug."),
+        security_related=copy_field(IBug['security_related'], default=None),
+        private=copy_field(IBug['private'], default=None))
     @export_factory_operation(
-        IBug, ['title', 'description', 'tags', 'security_related', 'private'])
-    def createBug(owner, title, description, target, security_related=False,
-                  private=False, tags=None):
+        IBug, ['title', 'description', 'tags'])
+    def createBug(owner, title, description, target, security_related=None,
+                  private=None, tags=None):
         """Create a bug (with an appropriate bugtask) and return it.
 
         :param target: The Product, Distribution or DistributionSourcePackage
