@@ -31,8 +31,7 @@ class TestSearchBase(TestCaseWithFactory):
     """Tests of exclude_conjoined_tasks param."""
 
     def makeBug(self, milestone):
-        bug = self.factory.makeBug(
-            product=milestone.product, distribution=milestone.distribution)
+        bug = self.factory.makeBug(target=milestone.target)
         with person_logged_in(milestone.target.owner):
             bug.default_bugtask.transitionToMilestone(
                 milestone, milestone.target.owner)

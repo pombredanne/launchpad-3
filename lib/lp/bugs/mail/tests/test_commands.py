@@ -288,7 +288,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         # expected error message.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.PROPRIETARY)
+            target=product, information_type=InformationType.PROPRIETARY)
         self.factory.makeProduct(name='fnord')
         login_celebrity('admin')
         login_person(bug.owner)

@@ -57,7 +57,7 @@ class TestBugConstraints(TestCaseWithFactory):
     def setUp(self):
         super(TestBugConstraints, self).setUp()
         product = self.factory.makeProduct(name='foo')
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         lp = launchpadlib_for('testing', product.owner)
         self.bug = lp.bugs[bug.id]
 

@@ -1003,12 +1003,11 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
         }))
         super(TestTeamMembershipJobs, self).setUp()
 
-    def _make_subscribed_bug(self, grantee, product=None, distribution=None,
+    def _make_subscribed_bug(self, grantee, target,
                              information_type=InformationType.USERDATA):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            owner=owner, product=product, distribution=distribution,
-            information_type=information_type)
+            owner=owner, target=target, information_type=information_type)
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
         return bug, owner
@@ -1020,7 +1019,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
         product = self.factory.makeProduct()
         # Make a bug the person_grantee is subscribed to.
         bug1, ignored = self._make_subscribed_bug(
-            person_grantee, product=product,
+            person_grantee, product,
             information_type=InformationType.USERDATA)
 
         # Make another bug and grant access to a team.
@@ -1028,7 +1027,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
             members=[person_grantee])
         bug2, bug2_owner = self._make_subscribed_bug(
-            team_grantee, product=product,
+            team_grantee, product,
             information_type=InformationType.PRIVATESECURITY)
         # Add a subscription for the person_grantee.
         with person_logged_in(bug2_owner):
