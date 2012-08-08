@@ -38,8 +38,8 @@ from zope.app.testing.functional import (
     SimpleCookie,
     )
 from zope.component import getUtility
-from zope.session.interfaces import ISession
 from zope.security.proxy import removeSecurityProxy
+from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
