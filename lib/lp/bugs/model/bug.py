@@ -2740,15 +2740,10 @@ class BugSet:
                 date_made_private=params.datecreated,
                 who_made_private=params.owner)
 
-        # Set the legacy attributes for now.
-        private = params.information_type in PRIVATE_INFORMATION_TYPES
-        security_related = (
-            params.information_type in SECURITY_INFORMATION_TYPES)
         bug = Bug(
             title=params.title, description=params.description,
             owner=params.owner, datecreated=params.datecreated,
             information_type=params.information_type,
-            _private=private, _security_related=security_related,
             **extra_params)
 
         if params.tags:
