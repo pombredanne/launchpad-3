@@ -327,13 +327,13 @@ class OpenIDCallbackView(OpenIDLogin):
         finally:
             timeline_action.finish()
 
-    def login(self, person, when=None):
+    def login(self, person):
         loginsource = getUtility(IPlacelessLoginSource)
         # We don't have a logged in principal, so we must remove the security
         # proxy of the account's preferred email.
         email = removeSecurityProxy(person.preferredemail).email
         logInPrincipal(
-            self.request, loginsource.getPrincipalByLogin(email), email, when)
+            self.request, loginsource.getPrincipalByLogin(email), email)
 
     @cachedproperty
     def sreg_response(self):
@@ -464,18 +464,7 @@ class AlreadyLoggedInView(LaunchpadView):
     template = ViewPageTemplateFile("templates/login-already.pt")
 
 
-def isFreshLogin(request):
-    """Return True if the principal login happened in the last 120 seconds."""
-    session = ISession(request)
-    authdata = session['launchpad.authenticateduser']
-    logintime = authdata.get('logintime', None)
-    if logintime is not None:
-        now = datetime.utcnow()
-        return logintime > now - timedelta(seconds=120)
-    return False
-
-
-def logInPrincipal(request, principal, email, when=None):
+def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
     # Force a fresh session, per Bug #828638. Any changes to any
     # existing session made this request will be lost, but that should
@@ -488,10 +477,8 @@ def logInPrincipal(request, principal, email, when=None):
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
     request.setPrincipal(principal)
-    if when is None:
-        when = datetime.utcnow()
     authdata['accountid'] = principal.id
-    authdata['logintime'] = when
+    authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
 
