@@ -3348,15 +3348,14 @@ class TestTargetNameCache(TestCase):
         # accepted and have targetnamecache updated.
         ubuntu = getUtility(IDistributionSet).get(1)
 
+        params = CreateBugParams(
+            mark, 'New Bug', comment='New Bug',
+            target=ubuntu.getSourcePackage('mozilla-firefox'))
         new_bug, new_bug_event = getUtility(IBugSet).createBug(
-            CreateBugParams(mark, 'New Bug', comment='New Bug'),
-            notify_event=False)
+            params, notify_event=False)
 
         # The first message of a new bug has index 0.
         self.assertEqual(new_bug.bug_messages[0].index, 0)
-
-        getUtility(IBugTaskSet).createTask(
-            new_bug, mark, ubuntu.getSourcePackage('mozilla-firefox'))
 
         # The first task has been created and successfully nominated to Hoary.
         new_bug.addNomination(mark, ubuntu.currentseries).approve(mark)

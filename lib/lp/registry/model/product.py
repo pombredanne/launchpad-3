@@ -1032,11 +1032,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             """ % sqlvalues(self.id, name))
         return results
 
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        bug_params.setBugTarget(product=self)
-        return BugSet().createBug(bug_params)
-
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
