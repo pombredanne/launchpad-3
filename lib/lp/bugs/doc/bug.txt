@@ -97,7 +97,7 @@ The event can be seen when we file a bug.
     ...     owner=steve_harris, title="Oh I hate this song",
     ...     comment="Janick keeps playing Mr Blobby.")
     >>> jukebox = factory.makeProduct()
-    >>> params.setBugTarget(product=jukebox)
+    >>> params.setBugTarget(target=jukebox)
 
     >>> bug = bugset.createBug(params)
     New bug created: Oh I hate this song
@@ -114,7 +114,7 @@ parameter is available to override the user recorded in the event.
     ...     owner=steve_harris, filed_by=rod_smallwood,
     ...     title="Steve really hates this song",
     ...     comment="He thinks Janick is doing it, but it's really me.")
-    >>> params.setBugTarget(product=jukebox)
+    >>> params.setBugTarget(target=jukebox)
     >>> bug = bugset.createBug(params)
     New bug created: Steve really hates this song
               Owner: steve-harris
@@ -372,7 +372,7 @@ When a public bug is filed:
     >>> foobar = personset.getByEmail('foo.bar@canonical.com')
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
-    >>> params.setBugTarget(product=firefox)
+    >>> params.setBugTarget(target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> public_bug = bugset.get(added_bug.id)
 
@@ -382,7 +382,7 @@ passing both a comment /and/ a msg would have raised an AssertionError:
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah",
     ...     msg="foo foo foo", owner=foobar)
-    >>> params.setBugTarget(product=firefox)
+    >>> params.setBugTarget(target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     Traceback (most recent call last):
     ...
@@ -414,7 +414,7 @@ When a private bug is filed:
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar,
     ...     information_type=InformationType.USERDATA)
-    >>> params.setBugTarget(product=firefox)
+    >>> params.setBugTarget(target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
 
@@ -439,7 +439,7 @@ sourcepackage. E.g.
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah",
     ...     owner=foobar, information_type=InformationType.USERDATA)
-    >>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
+    >>> params.setBugTarget(target=ubuntu.getSourcePackage(evolution))
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]

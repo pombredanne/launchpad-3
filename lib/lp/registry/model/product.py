@@ -1034,7 +1034,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""
-        bug_params.setBugTarget(product=self)
+        bug_params.setBugTarget(target=self)
         return BugSet().createBug(bug_params)
 
     def getBugSummaryContextWhereClause(self):

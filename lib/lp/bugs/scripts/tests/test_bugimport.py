@@ -1024,11 +1024,11 @@ class CheckwatchesErrorRecoveryTestCase(TestCase):
         foobar = getUtility(IPersonSet).get(16)
         params = CreateBugParams(
             title="test bug one", comment="test bug one", owner=foobar)
-        params.setBugTarget(product=firefox)
+        params.setBugTarget(target=firefox)
         test_bug_one = getUtility(IBugSet).createBug(params)
         params = CreateBugParams(
             title="test bug two", comment="test bug two", owner=foobar)
-        params.setBugTarget(product=firefox)
+        params.setBugTarget(target=firefox)
         test_bug_two = getUtility(IBugSet).createBug(params)
         self.layer.txn.commit()
 

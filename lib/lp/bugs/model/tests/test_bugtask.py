@@ -74,7 +74,6 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.sqlbase import (
@@ -3350,10 +3349,7 @@ class TestTargetNameCache(TestCase):
         ubuntu = getUtility(IDistributionSet).get(1)
 
         params = CreateBugParams(mark, 'New Bug', comment='New Bug')
-        params.setBugTarget(
-            distribution=ubuntu,
-            sourcepackagename=(
-                getUtility(ISourcePackageNameSet)['mozilla-firefox']))
+        params.setBugTarget(target=ubuntu.getSourcePackage('mozilla-firefox'))
         new_bug, new_bug_event = getUtility(IBugSet).createBug(
             params, notify_event=False)
 

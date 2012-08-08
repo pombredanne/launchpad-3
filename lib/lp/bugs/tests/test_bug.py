@@ -216,7 +216,7 @@ class TestBugCreation(TestCaseWithFactory):
             params = CreateBugParams(
                 owner=owner, title="A bug", comment="Nothing important.",
                 importance=BugTaskImportance.HIGH)
-            params.setBugTarget(product=target)
+            params.setBugTarget(target=target)
             bug = getUtility(IBugSet).createBug(params)
             self.assertEqual(
                 bug.default_bugtask.importance, params.importance)
@@ -230,7 +230,7 @@ class TestBugCreation(TestCaseWithFactory):
             params = CreateBugParams(
                 owner=owner, title="A bug", comment="Nothing important.",
                 assignee=owner)
-            params.setBugTarget(product=target)
+            params.setBugTarget(target=target)
             bug = getUtility(IBugSet).createBug(params)
             self.assertEqual(
                 bug.default_bugtask.assignee, params.assignee)
@@ -244,7 +244,7 @@ class TestBugCreation(TestCaseWithFactory):
             params = CreateBugParams(
                 owner=owner, title="A bug", comment="Nothing important.",
                 milestone=self.factory.makeMilestone(product=target))
-            params.setBugTarget(product=target)
+            params.setBugTarget(target=target)
             bug = getUtility(IBugSet).createBug(params)
             self.assertEqual(
                 bug.default_bugtask.milestone, params.milestone)
@@ -258,7 +258,7 @@ class TestBugCreation(TestCaseWithFactory):
             params = CreateBugParams(
                 owner=owner, title="A bug", comment="Nothing important.",
                 status=BugTaskStatus.TRIAGED)
-            params.setBugTarget(product=target)
+            params.setBugTarget(target=target)
             bug = getUtility(IBugSet).createBug(params)
             self.assertEqual(
                 bug.default_bugtask.status, params.status)
@@ -272,7 +272,7 @@ class TestBugCreation(TestCaseWithFactory):
             params = CreateBugParams(
                 owner=person, title="A bug", comment="Nothing important.",
                 importance=BugTaskImportance.HIGH)
-            params.setBugTarget(product=target)
+            params.setBugTarget(target=target)
             self.assertRaises(
                 UserCannotEditBugTaskImportance,
                 getUtility(IBugSet).createBug, params)
@@ -292,7 +292,7 @@ class TestBugCreation(TestCaseWithFactory):
             params = CreateBugParams(
                 owner=person, title="A bug", comment="Nothing important.",
                 assignee=person_2)
-            params.setBugTarget(product=target)
+            params.setBugTarget(target=target)
             self.assertRaises(
                 UserCannotEditBugTaskAssignee,
                 getUtility(IBugSet).createBug, params)
@@ -306,7 +306,7 @@ class TestBugCreation(TestCaseWithFactory):
             params = CreateBugParams(
                 owner=person, title="A bug", comment="Nothing important.",
                 milestone=self.factory.makeMilestone(product=target))
-            params.setBugTarget(product=target)
+            params.setBugTarget(target=target)
             self.assertRaises(
                 UserCannotEditBugTaskMilestone,
                 getUtility(IBugSet).createBug, params)
@@ -318,6 +318,6 @@ class TestBugCreation(TestCaseWithFactory):
         with person_logged_in(person):
             params = CreateBugParams(
                 owner=person, title="A bug", comment="bad thing.", cve=cve)
-        params.setBugTarget(product=target)
+        params.setBugTarget(target=target)
         bug = getUtility(IBugSet).createBug(params)
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])

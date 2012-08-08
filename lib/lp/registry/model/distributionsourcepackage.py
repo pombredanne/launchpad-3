@@ -493,8 +493,7 @@ class DistributionSourcePackage(BugTargetBase,
     def createBug(self, bug_params):
         """See `IBugTarget`."""
         bug_params.setBugTarget(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+            target=self.distribution.getSourcePackage(self.sourcepackagename))
         return BugSet().createBug(bug_params)
 
     def composeCustomLanguageCodeMatch(self):

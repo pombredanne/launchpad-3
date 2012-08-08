@@ -1256,7 +1256,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         """A branch linked to a bug cannot be deleted."""
         params = CreateBugParams(
             owner=self.user, title='Firefox bug', comment='blah')
-        params.setBugTarget(product=self.product)
+        params.setBugTarget(target=self.product)
         bug = getUtility(IBugSet).createBug(params)
         bug.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
@@ -1949,7 +1949,7 @@ class BranchDateLastModified(TestCaseWithFactory):
 
         params = CreateBugParams(
             owner=branch.owner, title='A bug', comment='blah')
-        params.setBugTarget(product=branch.product)
+        params.setBugTarget(target=branch.product)
         bug = getUtility(IBugSet).createBug(params)
 
         bug.linkBranch(branch, branch.owner)
