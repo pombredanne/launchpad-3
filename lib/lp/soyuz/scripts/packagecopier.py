@@ -1,12 +1,11 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""PackageCopier utilities."""
+"""Package copying utilities."""
 
 __metaclass__ = type
 
 __all__ = [
-    'PackageCopier',
     'CopyChecker',
     'check_copy_permissions',
     'do_copy',
@@ -27,9 +26,7 @@ from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.services.database.bulk import load_related
 from lp.soyuz.adapters.notification import notify
-from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
-    ArchivePurpose,
     BinaryPackageFileType,
     SourcePackageFormat,
     )
@@ -47,10 +44,6 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     )
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
-from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript,
-    SoyuzScriptError,
-    )
 
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
@@ -881,192 +874,3 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     delayed_copy.acceptFromCopy()
 
     return DelayedCopy(delayed_copy)
-
-
-class PackageCopier(SoyuzScript):
-    """SoyuzScript that copies published packages between locations.
-
-    Possible exceptions raised are:
-    * PackageLocationError: specified package or distro does not exist
-    * PackageCopyError: the copy operation itself has failed
-    * LaunchpadScriptFailure: only raised if entering via main(), ie this
-        code is running as a genuine script.  In this case, this is
-        also the _only_ exception to be raised.
-
-    The test harness doesn't enter via main(), it calls doCopy(), so
-    it only sees the first two exceptions.
-    """
-
-    usage = '%prog -s warty mozilla-firefox --to-suite hoary'
-    description = 'MOVE or COPY a published package to another suite.'
-
-    def add_my_options(self):
-
-        SoyuzScript.add_my_options(self)
-
-        self.parser.add_option(
-            "-b", "--include-binaries", dest="include_binaries",
-            default=False, action="store_true",
-            help='Whether to copy related binaries or not.')
-
-        self.parser.add_option(
-            '--to-distribution', dest='to_distribution',
-            default='ubuntu', action='store',
-            help='Destination distribution name.')
-
-        self.parser.add_option(
-            '--to-suite', dest='to_suite', default=None,
-            action='store', help='Destination suite name.')
-
-        self.parser.add_option(
-            '--to-ppa', dest='to_ppa', default=None,
-            action='store', help='Destination PPA owner name.')
-
-        self.parser.add_option(
-            '--to-ppa-name', dest='to_ppa_name', default='ppa',
-            action='store', help='Destination PPA name.')
-
-        self.parser.add_option(
-            '--to-partner', dest='to_partner', default=False,
-            action='store_true', help='Destination set to PARTNER archive.')
-
-        self.parser.add_option(
-            '--unembargo', dest='unembargo', default=False,
-            action='store_true',
-            help='Allow copying from a private archive to a public archive.')
-
-    def checkCopyOptions(self):
-        """Check if the locations options are sane.
-
-         * Catch Cross-PARTNER copies, they are not allowed.
-         * Catch simulataneous PPA and PARTNER locations or destinations,
-           results are unpredictable (in fact, the code will ignore PPA and
-           operate only in PARTNER, but that's odd)
-        """
-        if ((self.options.partner_archive and not self.options.to_partner)
-            or (self.options.to_partner and not
-                self.options.partner_archive)):
-            raise SoyuzScriptError(
-                "Cross-PARTNER copies are not allowed.")
-
-        if self.options.archive_owner_name and self.options.partner_archive:
-            raise SoyuzScriptError(
-                "Cannot operate with location PARTNER and PPA "
-                "simultaneously.")
-
-        if self.options.to_ppa and self.options.to_partner:
-            raise SoyuzScriptError(
-                "Cannot operate with destination PARTNER and PPA "
-                "simultaneously.")
-
-    def checkPrivacyOptions(self):
-        """Check privacy-related location options.
-
-        We can copy from a private archive to a public archive, but only
-        with the --unembargo option (to avoid accidents).  Unembargoing into
-        the release pocket of a distribution is not permitted.
-        """
-        if (self.location.archive.private and
-            not self.destination.archive.private):
-            if not self.options.unembargo:
-                raise SoyuzScriptError(
-                    "Copying from a private archive to a public archive "
-                    "requires the --unembargo option.")
-
-            if not self.destination.archive.canModifySuite(
-                self.destination.distroseries, self.destination.pocket):
-                raise SoyuzScriptError(
-                    "Can't unembargo into suite '%s' of a distribution." %
-                    self.destination.distroseries.getSuite(
-                        self.destination.pocket))
-
-    def mainTask(self):
-        """Execute package copy procedure.
-
-        Copy source publication and optionally also copy its binaries by
-        passing '-b' (include_binary) option.
-
-        Modules using this class outside of its normal usage in the
-        copy-package.py script can call this method to start the copy.
-
-        In this case the caller can override test_args on __init__
-        to set the command line arguments.
-
-        Can raise SoyuzScriptError.
-        """
-        assert self.location, (
-            "location is not available, call PackageCopier.setupLocation() "
-            "before dealing with mainTask.")
-
-        self.checkCopyOptions()
-
-        sourcename = self.args[0]
-
-        self.setupDestination()
-
-        self.checkPrivacyOptions()
-
-        self.logger.info("FROM: %s" % (self.location))
-        self.logger.info("TO: %s" % (self.destination))
-
-        to_copy = []
-        source_pub = self.findLatestPublishedSource(sourcename)
-        to_copy.append(source_pub)
-        if self.options.include_binaries:
-            to_copy.extend(source_pub.getPublishedBinaries())
-
-        self.logger.info("Copy candidates:")
-        for candidate in to_copy:
-            self.logger.info('\t%s' % candidate.displayname)
-
-        sources = [source_pub]
-        try:
-            copies = do_copy(
-                sources, self.destination.archive,
-                self.destination.distroseries, self.destination.pocket,
-                self.options.include_binaries, allow_delayed_copies=False,
-                check_permissions=False, unembargo=self.options.unembargo,
-                logger=self.logger)
-        except CannotCopy as error:
-            self.logger.error(str(error))
-            return []
-
-        self.logger.info("Copied:")
-        for copy in copies:
-            self.logger.info('\t%s' % copy.displayname)
-
-        if len(copies) == 1:
-            self.logger.info(
-                "%s package successfully copied." % len(copies))
-        elif len(copies) > 1:
-            self.logger.info(
-                "%s packages successfully copied." % len(copies))
-        else:
-            self.logger.info("No packages copied.")
-
-        # Information returned mainly for the benefit of the test harness.
-        return copies
-
-    def setupDestination(self):
-        """Build PackageLocation for the destination context."""
-        if self.options.to_partner:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite,
-                ArchivePurpose.PARTNER)
-        elif self.options.to_ppa:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite,
-                ArchivePurpose.PPA,
-                self.options.to_ppa,
-                self.options.to_ppa_name)
-        else:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite)
-
-        if self.location == self.destination:
-            raise SoyuzScriptError(
-                "Can not sync between the same locations: '%s' to '%s'" % (
-                self.location, self.destination))

@@ -796,8 +796,7 @@ Package copying/synchronisation
 
 IArchive contains 2 custom operations to copy packages from another archive.
 These are syncSource() and syncSources(). Both are wrappers of the
-`PackageCopier` infrastructure, see more information in
-scripts/packagecopier.py.
+`do_copy` infrastructure, see more information in scripts/packagecopier.py.
 
 For testing purposes we will create some publications.
 

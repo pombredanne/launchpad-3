@@ -324,8 +324,6 @@ class ArchivePopulator(SoyuzScript):
         """
         SoyuzScript.add_my_options(self)
 
-        self.parser.remove_option('-a')
-
         self.parser.add_option(
             "-a", "--architecture", dest="arch_tags", action="append",
             help="The architecture tags for which to create build "
