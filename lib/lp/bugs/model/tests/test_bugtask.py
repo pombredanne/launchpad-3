@@ -1492,7 +1492,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         # With the feature flag on, the bug supervisor can delete a bug task.
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         login_person(bug_supervisor)
         self.assertTrue(
             check_permission('launchpad.Delete', bug.default_bugtask))
@@ -1768,7 +1768,7 @@ class TestBugTaskMilestones(TestCaseWithFactory):
     def setUp(self):
         super(TestBugTaskMilestones, self).setUp()
         self.product = self.factory.makeProduct()
-        self.product_bug = self.factory.makeBug(product=self.product)
+        self.product_bug = self.factory.makeBug(target=self.product)
         self.product_milestone = self.factory.makeMilestone(
             product=self.product)
         self.distribution = self.factory.makeDistribution()
@@ -2881,7 +2881,7 @@ class ValidateTargetMixin:
         p1 = self.factory.makeProduct()
         p2 = self.factory.makeProduct()
         d = self.factory.makeDistribution()
-        bug = self.factory.makeBug(product=p1)
+        bug = self.factory.makeBug(target=p1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):
@@ -2909,7 +2909,7 @@ class ValidateTargetMixin:
         p1 = self.factory.makeProduct()
         p2 = self.factory.makeProduct()
         series = self.factory.makeProductSeries(product=p2)
-        bug = self.factory.makeBug(product=p1)
+        bug = self.factory.makeBug(target=p1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):

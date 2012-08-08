@@ -248,7 +248,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         # The pillar owner and job requestor are the error recipients.
         requestor = self.factory.makePerson()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             requestor, [bug], pillar=product)
         expected_emails = [

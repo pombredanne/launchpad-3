@@ -19,7 +19,7 @@ class TestBugTargetTags(TestCaseWithFactory):
         self.target_product = self.factory.makeProduct(project=self.project)
 
     def test_no_tags(self):
-        self.factory.makeBug(product=self.target_product)
+        self.factory.makeBug(target=self.target_product)
         view = create_view(
             self.project,
             name="+bugtarget-portlet-tags-content",

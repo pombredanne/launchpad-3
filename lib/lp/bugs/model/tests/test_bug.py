@@ -136,7 +136,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_also_notified_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -146,7 +146,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_indirect_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -156,7 +156,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_direct_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -261,7 +261,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         dupe_bug = self.factory.makeBug()
         member = self.factory.makePerson()
         team = self.factory.makeTeam(

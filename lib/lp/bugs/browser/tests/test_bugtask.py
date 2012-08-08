@@ -716,7 +716,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         product_foo = self.factory.makeProduct(name="foo")
         product_bar = self.factory.makeProduct(name="bar")
-        foo_bug = self.factory.makeBug(product=product_foo)
+        foo_bug = self.factory.makeBug(target=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
         bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
         removeSecurityProxy(product_bar).active = False
@@ -742,7 +742,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         # Test the situation when there are no bugtasks to show.
 
         product_foo = self.factory.makeProduct(name="foo")
-        foo_bug = self.factory.makeBug(product=product_foo)
+        foo_bug = self.factory.makeBug(target=product_foo)
         removeSecurityProxy(product_foo).active = False
 
         request = LaunchpadTestRequest()
@@ -783,7 +783,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         # Create a bugtask with a private assignee.
         product_foo = self.factory.makeProduct(name="foo")
-        foo_bug = self.factory.makeBug(product=product_foo)
+        foo_bug = self.factory.makeBug(target=product_foo)
         assignee = self.factory.makeTeam(
             name="assignee",
             visibility=PersonVisibility.PRIVATE)
@@ -1150,7 +1150,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
         bug_supervisor = self.factory.makePerson(name='bug-supervisor')
         product = self.factory.makeProduct(
             owner=product_owner, bug_supervisor=bug_supervisor)
-        self.bug = self.factory.makeBug(product=product)
+        self.bug = self.factory.makeBug(target=product)
 
     def getWidgetOptionTitles(self, widget):
         """Return the titles of options of the given choice widget."""
@@ -1318,7 +1318,7 @@ class TestBugTaskEditView(TestCaseWithFactory):
         first_product = self.factory.makeProduct(name='bunny')
         with person_logged_in(first_product.owner):
             first_product.official_malone = True
-            bug = self.factory.makeBug(product=first_product)
+            bug = self.factory.makeBug(target=first_product)
             bug_task = bug.bugtasks[0]
             milestone = self.factory.makeMilestone(
                 productseries=first_product.development_focus, name='1.0')
@@ -2023,10 +2023,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     def test_rendered_query_counts_constant_with_many_bugtasks(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         buggy_product = self.factory.makeProduct()
         for _ in range(10):
-            self.factory.makeBug(product=buggy_product)
+            self.factory.makeBug(target=buggy_product)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
@@ -2523,7 +2523,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         """urls contain the correct project group if target_context is None"""
         project_group = self.factory.makeProject()
         product = self.factory.makeProduct(project=project_group)
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         with person_logged_in(bug.owner):
             bug.tags = ['foo']
         owner, item = make_bug_task_listing_item(
@@ -2535,7 +2535,7 @@ class TestBugTaskListingItem(TestCaseWithFactory):
     def test_urls_without_target_context(self):
         """urls contain the project if target_context is not None"""
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         with person_logged_in(bug.owner):
             bug.tags = ['foo']
         owner, item = make_bug_task_listing_item(

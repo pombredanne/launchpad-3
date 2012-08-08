@@ -41,7 +41,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         product = self.factory.makeProduct()
         with person_logged_in(subscriber):
             product.addBugSubscription(subscriber, subscriber)
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         self.assertContentEqual(
             [bug.owner, subscriber], bug.getBugNotificationRecipients())
 

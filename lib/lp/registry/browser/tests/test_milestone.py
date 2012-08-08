@@ -167,7 +167,7 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
 
     def test_delete_conjoined_bugtask(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         master_bugtask = getUtility(IBugTaskSet).createTask(
             bug, product.owner, product.development_focus)
         milestone = self.factory.makeMilestone(
@@ -226,7 +226,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
     def add_bug(self, count):
         login_person(self.product.owner)
         for i in range(count):
-            bug = self.factory.makeBug(product=self.product)
+            bug = self.factory.makeBug(target=self.product)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.product.owner)
             # This is necessary to test precaching of assignees.
@@ -355,7 +355,7 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
     def add_bug(self, count):
         login_person(self.owner)
         for i in range(count):
-            bug = self.factory.makeBug(product=self.product_milestone.product)
+            bug = self.factory.makeBug(target=self.product_milestone.product)
             bug.bugtasks[0].transitionToMilestone(
                 self.product_milestone, self.owner)
             # This is necessary to test precaching of assignees.

@@ -1257,7 +1257,7 @@ of the bug reports about the project. Search for bug tasks that this new
 person is subscribed.
 
     >>> product = factory.makeProduct()
-    >>> bug = factory.makeBug(product=product)
+    >>> bug = factory.makeBug(target=product)
     >>> project = factory.makeProject()
     >>> product.project = project
     >>> project_struct_subber = factory.makePerson(
@@ -1276,7 +1276,7 @@ the project and ensure that duplicate bug tasks do not appear in the search
 results.
 
     >>> product2 = factory.makeProduct()
-    >>> bug = factory.makeBug(product=product2)
+    >>> bug = factory.makeBug(target=product2)
     >>> product2.project = project
     >>> product2.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)

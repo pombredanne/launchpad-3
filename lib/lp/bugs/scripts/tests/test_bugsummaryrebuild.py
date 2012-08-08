@@ -47,7 +47,7 @@ def create_tasks(factory):
     product = ps.product
     sp = factory.makeSourcePackage(publish=True)
 
-    bug = factory.makeBug(product=product)
+    bug = factory.makeBug(target=product)
     getUtility(IBugTaskSet).createManyTasks(
         bug, bug.owner, [sp, sp.distribution_sourcepackage, ps])
 
@@ -131,7 +131,7 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
         # specific target from BugTaskFlat. Since it ignores the
         # journal, it also removes any relevant journal entries.
         product = self.factory.makeProduct()
-        self.factory.makeBug(product=product)
+        self.factory.makeBug(target=product)
         self.assertEqual(0, get_bugsummary_rows(product).count())
         self.assertEqual(1, get_bugsummaryjournal_rows(product).count())
         log = BufferLogger()
@@ -146,7 +146,7 @@ class TestBugSummaryRebuild(TestCaseWithFactory):
 
     def test_script(self):
         product = self.factory.makeProduct()
-        self.factory.makeBug(product=product)
+        self.factory.makeBug(target=product)
         self.assertEqual(0, get_bugsummary_rows(product).count())
         self.assertEqual(1, get_bugsummaryjournal_rows(product).count())
         transaction.commit()
@@ -169,7 +169,7 @@ class TestGetBugSummaryRows(TestCaseWithFactory):
         product = self.factory.makeProduct()
         rollup_journal()
         orig_rows = set(get_bugsummary_rows(product))
-        task = self.factory.makeBug(product=product).default_bugtask
+        task = self.factory.makeBug(target=product).default_bugtask
         rollup_journal()
         new_rows = set(get_bugsummary_rows(product))
         self.assertContentEqual(
@@ -185,7 +185,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         # Public untagged bugs show up in a single row, with both tag
         # and viewed_by = None.
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product).default_bugtask
+        bug = self.factory.makeBug(target=product).default_bugtask
         self.assertContentEqual(
             [(bug.status, None, bug.importance, False, None, None, None, 1)],
             calculate_bugsummary_rows(product))
@@ -243,8 +243,8 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         # Multiple bugs with the same attributes appear in a single
         # aggregate row with an increased count.
         product = self.factory.makeProduct()
-        bug1 = self.factory.makeBug(product=product).default_bugtask
-        self.factory.makeBug(product=product).default_bugtask
+        bug1 = self.factory.makeBug(target=product).default_bugtask
+        self.factory.makeBug(target=product).default_bugtask
         bug3 = self.factory.makeBug(
             product=product, status=BugTaskStatus.TRIAGED).default_bugtask
         self.assertContentEqual(
@@ -256,7 +256,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         # Bugs with a patch attachment (latest_patch_uploaded is not
         # None) have has_patch=True.
         product = self.factory.makeProduct()
-        bug1 = self.factory.makeBug(product=product).default_bugtask
+        bug1 = self.factory.makeBug(target=product).default_bugtask
         self.factory.makeBugAttachment(bug=bug1.bug, is_patch=True)
         bug2 = self.factory.makeBug(
             product=product, status=BugTaskStatus.TRIAGED).default_bugtask

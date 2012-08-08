@@ -57,7 +57,7 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         # We need a product, a bug for this product, a question linked
         # to the bug and a subscriber.
         self.product = self.factory.makeProduct()
-        self.bug = self.factory.makeBug(product=self.product)
+        self.bug = self.factory.makeBug(target=self.product)
         question = self.factory.makeQuestion(target=self.product)
         self.subscriber = self.factory.makePerson()
         question.subscribe(self.subscriber)
@@ -518,7 +518,7 @@ class TestBug778847(TestCaseWithFactory):
             mute.filter = subscription_filter.id
             store.add(mute)
 
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         transaction.commit()
         # Ensure that the notification about the bug being created will
         # appear when we call getNotificationsToSend() by setting its

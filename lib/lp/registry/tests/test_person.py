@@ -1431,7 +1431,7 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
     def test_query_count(self):
         # Create one Product bugtask;
         milestone = self.factory.makeMilestone(dateexpected=self.today)
-        product_bug = self.factory.makeBug(product=milestone.product)
+        product_bug = self.factory.makeBug(target=milestone.product)
         self._assignBugTaskToTeamOwnerAndSetMilestone(
             product_bug.bugtasks[0], milestone)
 
