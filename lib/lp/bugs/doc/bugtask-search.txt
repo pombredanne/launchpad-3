@@ -702,7 +702,7 @@ closed after a certain date.
     >>> from lp.services.searchbuilder import greater_than
     >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
-    >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
+    >>> not_closed_bug = factory.makeBug(target=product, title="Not closed")
     >>> bug_closed_a_day_ago = factory.makeBug(
     ...     product=product, date_closed=utc_now-timedelta(days=1),
     ...     title="Closed a day ago")

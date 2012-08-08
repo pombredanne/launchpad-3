@@ -491,7 +491,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
         login_person(actor)
         product = self.factory.makeProduct()
         milestone = self.factory.makeMilestone(product=product)
-        bug = self.factory.makeBug(product=product, milestone=milestone)
+        bug = self.factory.makeBug(target=product, milestone=milestone)
         bugtask = bug.bugtasks[0]
         result = get_structural_subscription_targets(bug.bugtasks)
         self.assertEqual(set(result), set(

@@ -789,7 +789,7 @@ class TestSimilarBugs(TestCaseWithFactory):
         """Helper to init the firefox bugtask bits."""
         login('foo.bar@canonical.com')
         firefox = getUtility(IProductSet).getByName("firefox")
-        new_ff_bug = self.factory.makeBug(product=firefox, title="Firefox")
+        new_ff_bug = self.factory.makeBug(target=firefox, title="Firefox")
         ff_bugtask = new_ff_bug.bugtasks[0]
         return firefox, new_ff_bug, ff_bugtask
 
@@ -825,7 +825,7 @@ class TestSimilarBugs(TestCaseWithFactory):
         firefox, new_ff_bug, ff_bugtask = self._setupFirefoxBugTask()
         sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        a_ff_bug = self.factory.makeBug(product=firefox, title="a Firefox")
+        a_ff_bug = self.factory.makeBug(target=firefox, title="a Firefox")
         firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
         firefox_package_bugtask = self.factory.makeBugTask(
             bug=a_ff_bug, target=firefox_package)
@@ -1442,8 +1442,8 @@ class TestBugTaskContributor(TestCaseWithFactory):
     def test_contributor(self):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, owner=owner)
-        bug1 = self.factory.makeBug(product=product, owner=owner)
+        bug = self.factory.makeBug(target=product, owner=owner)
+        bug1 = self.factory.makeBug(target=product, owner=owner)
         # Create a person who has contributed
         person = self.factory.makePerson()
         login('foo.bar@canonical.com')

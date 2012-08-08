@@ -158,8 +158,8 @@ they are tagged, we must specify BugSummary.tag == None. If we are
 interested in all bugs targeted to a product regardless of their status
 or milestone, we need to aggregate them.
 
-    >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.NEW)
-    >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.CONFIRMED)
+    >>> bug = factory.makeBug(target=prod_a, status=BugTaskStatus.NEW)
+    >>> bug = factory.makeBug(target=prod_a, status=BugTaskStatus.CONFIRMED)
     >>> bug = factory.makeBug(
     ...     product=prod_a, status=BugTaskStatus.CONFIRMED, tags=['t-a'])
 

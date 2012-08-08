@@ -51,7 +51,7 @@ class TestBugChanges(TestCaseWithFactory):
             selfgenerated_bugnotifications=True)
         self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
-        self.bug = self.factory.makeBug(product=self.product, owner=self.user)
+        self.bug = self.factory.makeBug(target=self.product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
 
         # Add some structural subscribers to show that notifications

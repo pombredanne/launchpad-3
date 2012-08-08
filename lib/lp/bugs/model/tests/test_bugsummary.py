@@ -197,7 +197,7 @@ class TestBugSummary(TestCaseWithFactory):
             getUtility(IService, 'sharing').sharePillarInformation(
                 product, person_c, product.owner,
                 {InformationType.USERDATA: SharingPermission.ALL})
-        bug = self.factory.makeBug(product=product, owner=person_b)
+        bug = self.factory.makeBug(target=product, owner=person_b)
 
         bug.subscribe(person=person_a, subscribed_by=person_a)
 

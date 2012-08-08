@@ -281,7 +281,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_bugtag_urls_are_encoded(self):
         # The link to bug tags are encoded to protect against special chars.
         product = self.factory.makeProduct(name='foobar')
-        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        bug = self.factory.makeBug(target=product, tags=['depends-on+987'])
         getUtility(ILaunchBag).add(bug.default_bugtask)
         view = create_initialized_view(bug.default_bugtask, name=u'+index')
         expected = [(u'depends-on+987',
@@ -2441,7 +2441,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_tags_encoded_in_model(self):
         # The tag name is encoded properly in the JSON.
         product = self.factory.makeProduct(name='foobar')
-        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        bug = self.factory.makeBug(target=product, tags=['depends-on+987'])
         with dynamic_listings():
             view = self.makeView(bugtask=bug.default_bugtask)
         cache = IJSONRequestCache(view.request)

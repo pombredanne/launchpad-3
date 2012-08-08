@@ -2272,11 +2272,11 @@ class TestBugTaskSearch(TestCaseWithFactory):
         """Private bugs from a search know the user can see the bugs."""
         target = self.makeBugTarget()
         person = self.login()
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
         # Search style and parameters taken from the milestone index view
         # where the issue was discovered.

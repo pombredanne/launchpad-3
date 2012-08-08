@@ -139,7 +139,7 @@ class TestBugNominationView(TestCaseWithFactory):
         # actual usage.
         for index in range(3):
             self.factory.makeProductSeries(product=product)
-        bug = self.factory.makeBug(product=product, series=current_series)
+        bug = self.factory.makeBug(target=product, series=current_series)
         series_bugtask = bug.bugtasks[1]
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
