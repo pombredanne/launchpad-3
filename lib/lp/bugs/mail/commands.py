@@ -58,7 +58,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.mail.commands import (
     EditEmailCommand,
@@ -655,19 +654,14 @@ class AffectsEmailCommand(EmailCommand):
             # distribution/product task.
             general_task = bug.addTask(user, general_target)
 
-        if ISourcePackage.providedBy(target):
-            series = target.distroseries
-        else:
-            series = target
-
         # We know the target is of the right type, and we just created
         # a pillar task, so if canBeNominatedFor == False then a task or
         # nomination must already exist.
-        if not bug.canBeNominatedFor(series):
+        if not bug.canBeNominatedFor(target.series):
             # A nomination has already been created.
-            nomination = bug.getNominationFor(series)
+            nomination = bug.getNominationFor(target.series)
         else:
-            nomination = bug.addNomination(target=series, owner=user)
+            nomination = bug.addNomination(target=target.series, owner=user)
 
         # Automatically approve an existing or new nomination if possible.
         if not nomination.isApproved() and nomination.canApprove(user):
