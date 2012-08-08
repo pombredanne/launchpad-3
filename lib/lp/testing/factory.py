@@ -247,9 +247,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
-from lp.services.temporaryblobstorage.model import (
-    TemporaryBlobStorage,
-    )
+from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 from lp.services.utils import AutoDecorate
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import (
@@ -1708,13 +1706,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=distribution.currentseries,
                 sourcepackagename=sourcepackagename)
+        target = product or distribution
+        if sourcepackagename is not None:
+            target = target.getSourcePackage(sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
-            status=status, tags=tags)
-        create_bug_params.setBugTarget(
-            product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            status=status, tags=tags, target=target)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.

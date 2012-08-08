@@ -102,8 +102,8 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None,
                  msg=None, status=None, datecreated=None,
                  information_type=None, subscribers=(), tags=None,
-                 subscribe_owner=True, filed_by=None, importance=None,
-                 milestone=None, assignee=None, cve=None):
+                 subscribe_owner=True, filed_by=None, target=None,
+                 importance=None, milestone=None, assignee=None, cve=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -113,9 +113,7 @@ class CreateBugParams:
         self.datecreated = datecreated
         self.information_type = information_type
         self.subscribers = subscribers
-        self.product = None
-        self.distribution = None
-        self.sourcepackagename = None
+        self.target = target
         self.tags = tags
         self.subscribe_owner = subscribe_owner
         self.filed_by = filed_by
@@ -123,42 +121,6 @@ class CreateBugParams:
         self.milestone = milestone
         self.assignee = assignee
         self.cve = cve
-
-    def setBugTarget(self, product=None, distribution=None,
-                     sourcepackagename=None):
-        """Set the IBugTarget in which the bug is being reported.
-
-        :product: an IProduct
-        :distribution: an IDistribution
-        :sourcepackagename: an ISourcePackageName
-
-        A product or distribution must be provided, or an AssertionError
-        is raised.
-
-        If product is specified, all other parameters must evaluate to
-        False in a boolean context, or an AssertionError will be raised.
-
-        If distribution is specified, sourcepackagename may optionally
-        be provided. Product must evaluate to False in a boolean
-        context, or an AssertionError will be raised.
-        """
-        assert product or distribution, (
-            "You must specify the product or distribution in which this "
-            "bug exists")
-
-        if product:
-            conflicting_context = (
-                distribution or sourcepackagename)
-        elif distribution:
-            conflicting_context = product
-
-        assert not conflicting_context, (
-            "You must specify either an upstream context or a distribution "
-            "context, but not both.")
-
-        self.product = product
-        self.distribution = distribution
-        self.sourcepackagename = sourcepackagename
 
 
 class BugNameField(ContentNameField):
@@ -208,7 +170,6 @@ class IBugPublic(IPrivacy):
         Bool(title=_("This bug report should be private"), required=False,
              description=_("Private bug reports are visible only to "
                            "their subscribers."),
-             default=False,
              readonly=True))
     information_type = exported(
         Choice(
@@ -343,7 +304,7 @@ class IBugView(Interface):
             readonly=True)))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability."),
-             required=False, default=False, readonly=True))
+             required=False, readonly=True))
     has_patches = Attribute("Does this bug have any patches?")
     latest_patch_uploaded = exported(
         Datetime(
@@ -518,8 +479,7 @@ class IBugView(Interface):
             `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None,
-                                     include_master_dupe_subscribers=False):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -527,8 +487,6 @@ class IBugView(Interface):
         includes email addresses and textual and header-ready
         rationales. See `BugNotificationRecipients` for
         details of this implementation.
-        If this bug is a dupe, set include_master_dupe_subscribers to
-        True to include the master bug's subscribers as recipients.
         """
 
     def canBeAQuestion():

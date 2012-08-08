@@ -156,12 +156,11 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
             level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
     for change in changes:
+        bug = bug_delta.bug
         if isinstance(change, BugDuplicateChange):
-            no_dupe_master_recipients = (
-                bug_delta.bug.getBugNotificationRecipients(
-                    old_bug=bug_delta.bug_before_modification,
-                    level=change.change_level,
-                    include_master_dupe_subscribers=False))
+            no_dupe_master_recipients = bug.getBugNotificationRecipients(
+                old_bug=bug_delta.bug_before_modification,
+                level=change.change_level)
             bug_delta.bug.addChange(
                 change, recipients=no_dupe_master_recipients)
         elif (isinstance(change, BugTaskAssigneeChange) and
@@ -173,11 +172,9 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
             bug_delta.bug.addChange(change, recipients=recipients)
         else:
             if change.change_level == BugNotificationLevel.LIFECYCLE:
-                change_recipients = (
-                    bug_delta.bug.getBugNotificationRecipients(
-                        old_bug=bug_delta.bug_before_modification,
-                        level=change.change_level,
-                        include_master_dupe_subscribers=False))
+                change_recipients = bug.getBugNotificationRecipients(
+                    old_bug=bug_delta.bug_before_modification,
+                    level=change.change_level)
                 recipients.update(change_recipients)
             # Additionally, if we are re-targetting a bugtask for a private
             # bug, we need to ensure the new bug supervisor and maintainer are

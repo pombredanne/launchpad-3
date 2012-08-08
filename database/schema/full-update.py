@@ -57,7 +57,6 @@ def run_upgrade(options, log):
     # Fake expected command line arguments and global log
     options.commit = True
     options.partial = False
-    options.ignore_slony = False
     upgrade.options = options
     upgrade.log = log
     # Invoke the database schema upgrade process.
