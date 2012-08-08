@@ -601,12 +601,13 @@ class AffectsEmailCommand(EmailCommand):
 
         if isinstance(bug, CreateBugParams):
             # Enough information has been gathered to create a new bug.
-            kwargs = {
-                'product': IProduct(bug_target, None),
-                'distribution': IDistribution(bug_target, None),
-                'sourcepackagename': ISourcePackageName(bug_target, None),
-                }
-            bug.setBugTarget(**kwargs)
+            # If a series task is requested, create the non-series
+            # equivalent here. The series will be nominated/targeted in
+            # the remainder of the method.
+            if ISeriesBugTarget.providedBy(bug_target):
+                bug.setBugTarget(target=bug_target.bugtarget_parent)
+            else:
+                bug.setBugTarget(target=bug_target)
             bug, bug_event = getUtility(IBugSet).createBug(
                 bug, notify_event=False)
             event = ObjectCreatedEvent(bug.bugtasks[0])
