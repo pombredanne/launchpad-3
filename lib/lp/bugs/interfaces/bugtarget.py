@@ -427,5 +427,7 @@ class IOfficialBugTag(Interface):
 class ISeriesBugTarget(Interface):
     """An `IBugTarget` which is a series."""
 
+    series = Attribute(
+        "The product or distribution series of this series bug target.")
     bugtarget_parent = Attribute(
         "Non-series parent of this series bug target.")

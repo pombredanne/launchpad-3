@@ -63,6 +63,9 @@ class TestDistroSeries(BugTargetBugFilingDuplicateSearchAlwaysOn,
     def test_pillar(self):
         self.assertEqual(self.bugtarget.distribution, self.bugtarget.pillar)
 
+    def test_series(self):
+        self.assertEqual(self.bugtarget, self.bugtarget.series)
+
 
 class TestProjectGroup(BugTargetBugFilingDuplicateSearchAlwaysOn,
                        TestCaseWithFactory):
@@ -163,6 +166,9 @@ class TestProductSeries(BugTargetBugFilingDuplicateSearchInherited,
     def test_pillar(self):
         self.assertEqual(self.bugtarget.product, self.bugtarget.pillar)
 
+    def test_series(self):
+        self.assertEqual(self.bugtarget, self.bugtarget.series)
+
 
 class TestSourcePackage(BugTargetBugFilingDuplicateSearchInherited,
                        TestCaseWithFactory):
@@ -189,3 +195,6 @@ class TestSourcePackage(BugTargetBugFilingDuplicateSearchInherited,
     def test_pillar(self):
         self.assertEqual(
             self.bugtarget.distroseries.distribution, self.bugtarget.pillar)
+
+    def test_series(self):
+        self.assertEqual(self.bugtarget.distroseries, self.bugtarget.series)
