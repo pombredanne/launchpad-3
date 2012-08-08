@@ -183,6 +183,30 @@ class TestBugCreation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_CreateBugParams_accepts_target(self):
+        # The initial bug task's target can be set using
+        # CreateBugParams.
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.")
+            params.setBugTarget(target=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(bug.default_bugtask.target, target)
+
+    def test_CreateBugParams_rejects_series_target(self):
+        # createBug refuses attempts to create a bug with a series
+        # target. A non-series task must be created first.
+        owner = self.factory.makePerson()
+        target = self.factory.makeProductSeries(owner=owner)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.")
+            params.setBugTarget(target=target)
+            self.assertRaises(
+                AssertionError, getUtility(IBugSet).createBug, params)
+
     def test_CreateBugParams_accepts_importance(self):
         # The importance of the initial bug task can be set using
         # CreateBugParams

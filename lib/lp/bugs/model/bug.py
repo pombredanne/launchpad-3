@@ -125,6 +125,7 @@ from lp.bugs.interfaces.bugnomination import (
     NominationSeriesObsoleteError,
     )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -231,7 +232,7 @@ def snapshot_bug_params(bug_params):
     return Snapshot(
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
-            "datecreated", "information_type", "distribution",
+            "datecreated", "information_type", "target", "distribution",
             "sourcepackagename", "product", "status", "subscribers", "tags",
             "subscribe_owner", "filed_by", "importance", "milestone",
             "assignee", "cve"])
@@ -2636,12 +2637,18 @@ class BugSet:
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
 
-        if params.product:
+        if params.target:
+            target = params.target
+        elif params.product:
             target = params.product
         elif params.distribution:
             target = params.distribution
             if params.sourcepackagename:
                 target = target.getSourcePackage(params.sourcepackagename)
+
+        if ISeriesBugTarget.providedBy(target):
+            raise AssertionError(
+                "Can't create bug with just a series task for %r." % target)
 
         if params.information_type is None:
             params.information_type = (

@@ -113,6 +113,7 @@ class CreateBugParams:
         self.datecreated = datecreated
         self.information_type = information_type
         self.subscribers = subscribers
+        self.target = None
         self.product = None
         self.distribution = None
         self.sourcepackagename = None
@@ -124,16 +125,17 @@ class CreateBugParams:
         self.assignee = assignee
         self.cve = cve
 
-    def setBugTarget(self, product=None, distribution=None,
+    def setBugTarget(self, target=None, product=None, distribution=None,
                      sourcepackagename=None):
         """Set the IBugTarget in which the bug is being reported.
 
+        :target: an IBugTarget
         :product: an IProduct
         :distribution: an IDistribution
         :sourcepackagename: an ISourcePackageName
 
-        A product or distribution must be provided, or an AssertionError
-        is raised.
+        A target, product or distribution must be provided, or an
+        AssertionError is raised.
 
         If product is specified, all other parameters must evaluate to
         False in a boolean context, or an AssertionError will be raised.
@@ -142,20 +144,24 @@ class CreateBugParams:
         be provided. Product must evaluate to False in a boolean
         context, or an AssertionError will be raised.
         """
-        assert product or distribution, (
+        assert target or product or distribution, (
             "You must specify the product or distribution in which this "
             "bug exists")
 
-        if product:
+        if target:
             conflicting_context = (
-                distribution or sourcepackagename)
+                product or distribution or sourcepackagename)
+        elif product:
+            conflicting_context = (
+                target or distribution or sourcepackagename)
         elif distribution:
-            conflicting_context = product
+            conflicting_context = target or product
 
         assert not conflicting_context, (
             "You must specify either an upstream context or a distribution "
             "context, but not both.")
 
+        self.target = target
         self.product = product
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
