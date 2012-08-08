@@ -2636,28 +2636,28 @@ class BugSet:
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
 
-        context = params.product or params.distribution
-
-        if params.information_type is None:
-            params.information_type = context.getDefaultBugInformationType()
-
-        bug, event = self._makeBug(params)
-
-        # Create the initial task on the specified target.
         if params.product:
             target = params.product
         elif params.distribution:
             target = params.distribution
             if params.sourcepackagename:
                 target = target.getSourcePackage(params.sourcepackagename)
+
+        if params.information_type is None:
+            params.information_type = (
+                target.pillar.getDefaultBugInformationType())
+
+        bug, event = self._makeBug(params)
+
+        # Create the initial task on the specified target.
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, target, status=params.status)
 
         if params.information_type in SECURITY_INFORMATION_TYPES:
-            if context.security_contact:
-                bug.subscribe(context.security_contact, params.owner)
+            if target.pillar.security_contact:
+                bug.subscribe(target.pillar.security_contact, params.owner)
             else:
-                bug.subscribe(context.owner, params.owner)
+                bug.subscribe(target.pillar.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
