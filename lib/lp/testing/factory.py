@@ -1657,7 +1657,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeBug(self, product=None, owner=None, bug_watch_url=None,
+    def makeBug(self, target=None, product=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
                 status=None, distribution=None, milestone=None, series=None,
@@ -1686,31 +1686,30 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         At least one of the parameters distribution and product must be
         None, otherwise, an assertion error will be raised.
         """
-        if product is None and distribution is None:
+        target = target or product or distribution
+        if sourcepackagename is not None:
+            self.makeSourcePackagePublishingHistory(
+                distroseries=target.currentseries,
+                sourcepackagename=sourcepackagename)
+        if target is None:
             if milestone is not None:
                 # One of these will be None.
-                product = milestone.product
-                distribution = milestone.distribution
+                target = milestone.product or milestone.distribution
             elif series is not None:
                 if IProductSeries.providedBy(series):
-                    product = series.product
+                    target = series.product
                 else:
-                    distribution = series.distribution
+                    target = series.distribution
             else:
-                product = self.makeProduct()
+                target = self.makeProduct()
+        if sourcepackagename is not None:
+            target = target.getSourcePackageName(sourcepackagename)
         if owner is None:
             owner = self.makePerson()
         if title is None:
             title = self.getUniqueString('bug-title')
         if comment is None:
             comment = self.getUniqueString()
-        if sourcepackagename is not None:
-            self.makeSourcePackagePublishingHistory(
-                distroseries=distribution.currentseries,
-                sourcepackagename=sourcepackagename)
-        target = product or distribution
-        if sourcepackagename is not None:
-            target = target.getSourcePackageName(sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
