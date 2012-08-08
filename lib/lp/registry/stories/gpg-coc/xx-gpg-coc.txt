@@ -141,13 +141,7 @@ Make sure that UIDs were properly processed; in particular, check that
 added as an email address:
 
     >>> from lp.testing.pages import strip_label
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.testing.pages import setupBrowserFreshLogin
 
-    >>> login(ANONYMOUS)
-    >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> logout()
-    >>> browser = setupBrowserFreshLogin(person)
     >>> browser.open("http://launchpad.dev/~name12/+editemails")
     >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
     >>> [strip_label(label) for label in sorted(control.displayOptions)]
