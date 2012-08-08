@@ -2648,7 +2648,9 @@ class BugSet:
                 target = target.getSourcePackage(params.sourcepackagename)
 
         if ISeriesBugTarget.providedBy(target):
-            raise IllegalTarget("Can't create a bug on a series.")
+            raise IllegalTarget(
+                "Can't create a bug on a series. Create it with a non-series "
+                "task instead, and target it to the series afterwards.")
 
         if params.information_type is None:
             params.information_type = (
