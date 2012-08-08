@@ -265,12 +265,7 @@ h1 .yui3-ieditor-errors {
     cursor: pointer;
     }
 
-.no-click {
-    text-decoration: none !important;
-    cursor: default !important;
-    }
-
-.no-click .value:hover{
+.no-click:hover {
     text-decoration: none !important;
     cursor: default !important;
     }
