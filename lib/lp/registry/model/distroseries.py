@@ -257,6 +257,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.distribution
 
     @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self
+
+    @property
     def named_version(self):
         return '%s (%s)' % (self.displayname, self.version)
 

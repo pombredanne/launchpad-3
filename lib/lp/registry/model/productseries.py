@@ -163,6 +163,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return self.product
 
     @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self
+
+    @property
     def answers_usage(self):
         """See `IServiceUsage.`"""
         return self.product.answers_usage

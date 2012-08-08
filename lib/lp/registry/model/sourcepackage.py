@@ -543,6 +543,11 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         """See `IBugTarget`."""
         return self.distroseries.distribution
 
+    @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self.distroseries
+
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
