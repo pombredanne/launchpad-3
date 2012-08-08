@@ -525,8 +525,7 @@ def milestoneSetUp(test):
 
 def distroseries_sourcepackage_filebug(distroseries, summary, status=None):
     params = CreateBugParams(
-        getUtility(ILaunchBag).user, summary, comment=summary, status=status)
-    params.setBugTarget(
+        getUtility(ILaunchBag).user, summary, comment=summary, status=status,
         target=distroseries.distribution.getSourcePackage('alsa-utils'))
     bug = distroseries.distribution.createBug(params)
     nomination = bug.addNomination(

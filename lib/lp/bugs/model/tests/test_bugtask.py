@@ -3348,8 +3348,9 @@ class TestTargetNameCache(TestCase):
         # accepted and have targetnamecache updated.
         ubuntu = getUtility(IDistributionSet).get(1)
 
-        params = CreateBugParams(mark, 'New Bug', comment='New Bug')
-        params.setBugTarget(target=ubuntu.getSourcePackage('mozilla-firefox'))
+        params = CreateBugParams(
+            mark, 'New Bug', comment='New Bug',
+            target=ubuntu.getSourcePackage('mozilla-firefox'))
         new_bug, new_bug_event = getUtility(IBugSet).createBug(
             params, notify_event=False)
 

@@ -166,8 +166,8 @@ def create_bug_from_strings(
     owner = personset.getByName(owner)
 
     bugset = getUtility(IBugSet)
-    params = CreateBugParams(owner, summary, description, status=status)
-    params.setBugTarget(
+    params = CreateBugParams(
+        owner, summary, description, status=status,
         target=distribution.getSourcePackage(sourcepackagename))
     return bugset.createBug(params)
 

@@ -58,7 +58,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.mail.commands import (
     EditEmailCommand,
     EmailCommand,

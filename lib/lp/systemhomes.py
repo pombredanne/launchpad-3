@@ -157,8 +157,7 @@ class MaloneApplication:
                 private, security_related)
         params = CreateBugParams(
             title=title, comment=description, owner=owner,
-            information_type=information_type, tags=tags)
-        params.setBugTarget(target=target)
+            information_type=information_type, tags=tags, target=target)
         return getUtility(IBugSet).createBug(params)
 
     @property
