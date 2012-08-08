@@ -45,7 +45,10 @@ from lazr.restful.interfaces import IJSONRequestCache
 from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.event import notify
 from zope.interface import (
     implements,
@@ -748,12 +751,20 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         """See `LaunchpadFormView.`"""
         return {'duplicateof': self.context.bug.duplicateof}
 
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
+
     def _validate(self, action, data):
         if action.name != 'remove':
             return super(BugMarkAsDuplicateView, self)._validate(action, data)
         return []
 
-    @action('Set Duplicate', name='change')
+    @action('Set Duplicate', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def change_action(self, action, data):
         """Update the bug."""
         data = dict(data)
@@ -767,6 +778,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
             ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
         # Apply other changes.
         self.updateBugFromData(data)
+        return self._duplicate_action_result()
 
     def shouldShowRemoveButton(self, action):
         return self.context.bug.duplicateof is not None
@@ -780,6 +792,19 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         bug.markAsDuplicate(None)
         notify(
             ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        return self._duplicate_action_result()
+
+    def _duplicate_action_result(self):
+        if self.request.is_ajax:
+            bug = self.context.bug
+            launchbag = getUtility(ILaunchBag)
+            launchbag.add(bug.default_bugtask)
+            view = getMultiAdapter(
+                (bug, self.request),
+                name='+bugtasks-and-nominations-table')
+            view.initialize()
+            return view.render()
+        return None
 
 
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):

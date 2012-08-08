@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'get_bug_privacy_filter',
     'get_bug_privacy_filter_terms',
+    'get_bug_bulk_privacy_filter_terms',
     'orderby_expression',
     'search_bugs',
     ]
@@ -27,6 +28,7 @@ from storm.expr import (
     Row,
     Select,
     SQL,
+    Union,
     )
 from storm.info import ClassAlias
 from storm.references import Reference
@@ -89,6 +91,7 @@ from lp.services.database.stormexpr import (
     ArrayIntersects,
     get_where_for_reference,
     NullCount,
+    Unnest,
     )
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
@@ -1414,6 +1417,23 @@ def _get_bug_privacy_filter_with_decorator(user):
 
 
 def get_bug_privacy_filter_terms(user, check_admin=True):
+    """Return Storm terms for filtering bugs by visibility.
+
+    The same rules as get_bug_bulk_privacy_filter_terms, except designed
+    and optimised for cases like bug searches, where we have a small
+    number of users and a lot of bugs.
+
+    Also unlike get_bug_bulk_privacy_filter_terms, this constrains
+    BugTaskFlat to user, rather than user to a bug column. It's up to
+    callsites to work with BugTaskFlat.
+
+    :param user: a Person ID value or column reference.
+    :param check_admin: add an admin role check. This is probably only
+        necessary when checking multiple users; if you're only checking a
+        specific one, you can do the admin check beforehand.
+    :return: a Storm expression relating person to bug, where bug is visible
+        to person.
+    """
     public_bug_filter = (
         BugTaskFlat.information_type.is_in(PUBLIC_INFORMATION_TYPES))
 
@@ -1451,3 +1471,51 @@ def get_bug_privacy_filter_terms(user, check_admin=True):
                         getUtility(ILaunchpadCelebrities).admin))))
 
     return filters
+
+
+def get_bug_bulk_privacy_filter_terms(person, bug):
+    """Return Storm terms for filtering people by bug visibility.
+
+    The same rules as get_bug_privacy_filter_terms, except that it's
+    designed and optimised for cases like bug notifications, where we
+    have a small number of bug and need to check which people can see
+    them.
+
+    :param person: a Person ID value or column reference.
+    :param bug: a Bug ID value or column reference.
+    :return: a Storm expression relating person to bug, where bug is visible
+        to person.
+    """
+    # This whole query is a bit ugly what with the repeated BugTaskFlat
+    # SELECTs and all that, but it's an order of magnitude faster than
+    # joining at a higher level, and a thousand times faster than
+    # get_bug_privacy_filter_terms for some cases. Test carefully
+    # (particularly with the structural subscription queries) before
+    # touching.
+
+    select_btf = (
+        lambda select, *conds: Select(
+            select, tables=[BugTaskFlat],
+            where=And(BugTaskFlat.bug == bug, *conds)))
+    # Admins, artifact grantees, and policy grantees can all see private
+    # bugs.
+    teams = Union(
+        Select(getUtility(ILaunchpadCelebrities).admin.id),
+        select_btf(Unnest(BugTaskFlat.access_grants)),
+        Select(
+            AccessPolicyGrant.grantee_id,
+            tables=[AccessPolicyGrant],
+            where=In(
+                AccessPolicyGrant.policy_id,
+                select_btf(
+                    Unnest(BugTaskFlat.access_policies)))))
+    # And we need to expand team memberships.
+    participants = Select(
+        TeamParticipation.personID,
+        tables=[TeamParticipation],
+        where=In(TeamParticipation.teamID, teams))
+    # The bug must public, or the user must satisfy the above criteria.
+    return Or(
+        Exists(select_btf(
+            1, BugTaskFlat.information_type.is_in(PUBLIC_INFORMATION_TYPES))),
+        In(person, participants))

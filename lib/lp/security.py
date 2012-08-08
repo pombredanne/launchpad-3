@@ -1659,10 +1659,18 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
             return True
 
         permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
+        component_permissions = permission_set.componentsForQueueAdmin(
             self.obj.distroseries.distribution.all_distro_archives,
             user.person)
-        return not permissions.is_empty()
+        if not component_permissions.is_empty():
+            return True
+        pocket_permissions = permission_set.pocketsForQueueAdmin(
+            self.obj.distroseries.distribution.all_distro_archives,
+            user.person)
+        for permission in pocket_permissions:
+            if permission.distroseries in (None, self.obj.distroseries):
+                return True
+        return False
 
 
 class EditPlainPackageCopyJob(AuthorizationBase):
@@ -1731,7 +1739,8 @@ class EditPackageUpload(AdminByAdminsTeam):
             return archive_append.checkAuthenticated(user)
 
         return self.obj.archive.canAdministerQueue(
-            user.person, self.obj.components)
+            user.person, self.obj.components, self.obj.pocket,
+            self.obj.distroseries)
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
@@ -1831,8 +1840,8 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         # If the permission check on the sourcepackagerelease for this
         # build passes then it means the build can be released from
         # privacy since the source package is published publicly.
-        # This happens when copy-package is used to re-publish a private
-        # package in the primary archive.
+        # This happens when Archive.copyPackage is used to re-publish a
+        # private package in the primary archive.
         auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         if auth_spr.checkAuthenticated(user):
             return True

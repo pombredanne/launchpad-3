@@ -680,15 +680,20 @@ class IArchiveView(IHasBuildRecords):
             None otherwise.
         """
 
-    def canAdministerQueue(person, components):
+    def canAdministerQueue(person, components=None, pocket=None,
+                           distroseries=None):
         """Check to see if person is allowed to administer queue items.
 
         :param person: An `IPerson` who should be checked for authentication.
         :param components: The context `IComponent`(s) for the check.
+        :param pocket: The context `PackagePublishingPocket` for the check.
+        :param distroseries: The context `IDistroSeries` for the check.
 
         :return: True if 'person' is allowed to administer the package upload
-        queue for all given 'components'.  If 'components' is empty or None,
-        check if 'person' has any queue admin permissions for this archive.
+        queue for all given 'components', or for the given 'pocket'
+        (optionally restricted to a single 'distroseries').  If 'components'
+        is empty or None and 'pocket' is None, check if 'person' has any
+        queue admin permissions for this archive.
         """
 
     def getFileByName(filename):
@@ -1236,6 +1241,41 @@ class IArchiveView(IHasBuildRecords):
         :return: A list of `IArchivePermission` records.
         """
 
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        distroseries=Reference(
+            # Really IDistroSeries, avoiding a circular import here.
+            Interface,
+            title=_("Distro series"), required=False),
+        )
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getQueueAdminsForPocket(pocket, distroseries=None):
+        """Return `IArchivePermission` records for authorised queue admins.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :param distroseries: An optional `IDistroSeries`.
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(person=Reference(schema=IPerson))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getPocketsForQueueAdmin(person):
+        """Return `IArchivePermission` for the person's queue admin pockets.
+
+        :param person: An `IPerson`.
+        :return: A list of `IArchivePermission` records.
+        """
+
     def hasAnyPermission(person):
         """Whether or not this person has any permission at all on this
         archive.
@@ -1607,7 +1647,7 @@ class IArchiveEdit(Interface):
         """Add permission for a person to upload to a pocket.
 
         :param person: An `IPerson` whom should be given permission.
-        :param component: A `PackagePublishingPocket`.
+        :param pocket: A `PackagePublishingPocket`.
         :return: An `IArchivePermission` which is the newly-created
             permission.
         :raises InvalidPocketForPartnerArchive: if this archive is a partner
@@ -1630,6 +1670,34 @@ class IArchiveEdit(Interface):
 
         :param person: An `IPerson` whom should be given permission.
         :param component: An `IComponent` or textual component name.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        distroseries=Reference(
+            # Really IDistroSeries, avoiding a circular import here.
+            Interface,
+            title=_("Distro series"), required=True),
+        )
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    @operation_for_version("devel")
+    def newPocketQueueAdmin(person, pocket, distroseries=None):
+        """Add permission for a person to administer a distroseries queue.
+
+        The supplied person will gain permission to administer the
+        distroseries queue for packages in the supplied series and pocket.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param pocket: A `PackagePublishingPocket`.
+        :param distroseries: An optional `IDistroSeries`.
         :return: An `IArchivePermission` which is the newly-created
             permission.
         """
@@ -1696,6 +1764,7 @@ class IArchiveEdit(Interface):
         """Revoke permission for the person to upload to the pocket.
 
         :param person: An `IPerson` whose permission should be revoked.
+        :param distroseries: An `IDistroSeries`.
         :param pocket: A `PackagePublishingPocket`.
         """
 
@@ -1712,6 +1781,31 @@ class IArchiveEdit(Interface):
 
         :param person: An `IPerson` whose permission should be revoked.
         :param component: An `IComponent` or textual component name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        distroseries=Reference(
+            # Really IDistroSeries, avoiding a circular import here.
+            Interface,
+            title=_("Distro series"), required=True),
+        )
+    @export_write_operation()
+    @operation_for_version("devel")
+    def deletePocketQueueAdmin(person, pocket, distroseries=None):
+        """Revoke permission for the person to administer distroseries queues.
+
+        The supplied person will lose permission to administer the
+        distroseries queue for packages in the supplied series and pocket.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param pocket: A `PackagePublishingPocket`.
+        :param distroseries: An optional `IDistroSeries`.
         """
 
     @operation_parameters(
