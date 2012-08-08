@@ -273,7 +273,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         milestone = self.factory.makeMilestone(
             productseries=product.development_focus)
         bug1 = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA,
+            target=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug1.bugtasks[0].transitionToMilestone(milestone, product.owner)
         # We look at the page as someone who is a member of a team and the
@@ -303,13 +303,13 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
             enumerate(collector.queries)]
         login_person(product.owner)
         bug2 = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA,
+            target=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug2.bugtasks[0].transitionToMilestone(milestone, product.owner)
         bug2.subscribe(subscribed_team, product.owner)
         bug2_url = canonical_url(bug2)
         bug3 = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA,
+            target=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug3.bugtasks[0].transitionToMilestone(milestone, product.owner)
         bug3.subscribe(subscribed_team, product.owner)
@@ -416,7 +416,7 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
     def add_bug(self, count):
         login_person(self.owner)
         for i in range(count):
-            bug = self.factory.makeBug(distribution=self.ubuntu)
+            bug = self.factory.makeBug(target=self.ubuntu)
             distrosourcepackage = self.factory.makeDistributionSourcePackage(
                 distribution=self.ubuntu)
             self.factory.makeSourcePackagePublishingHistory(
@@ -478,7 +478,7 @@ class TestMilestoneTagView(TestQueryCountBase):
         with person_logged_in(self.owner):
             for n in range(count):
                 self.factory.makeBug(
-                    product=self.product, owner=self.owner,
+                    target=self.product, owner=self.owner,
                     milestone=self.milestone)
 
     def _make_form(self, tags):

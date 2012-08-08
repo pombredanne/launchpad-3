@@ -98,7 +98,7 @@ class TestBugNominationView(TestCaseWithFactory):
         # actual usage.
         for index in range(3):
             self.factory.makeDistroSeries(distribution=distro)
-        bug = self.factory.makeBug(distribution=distro, series=current_series)
+        bug = self.factory.makeBug(target=distro, series=current_series)
         series_bugtask = bug.bugtasks[1]
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
@@ -119,9 +119,7 @@ class TestBugNominationView(TestCaseWithFactory):
             self.factory.makeDistroSeries(distribution=distro)
         package = self.factory.makeDistributionSourcePackage(
             distribution=distro)
-        bug = self.factory.makeBug(
-            distribution=distro, series=current_series,
-            sourcepackagename=package.name)
+        bug = self.factory.makeBug(target=package, series=current_series)
         series_bugtask = bug.bugtasks[1]
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
@@ -153,9 +151,7 @@ class TestBugNominationView(TestCaseWithFactory):
         series = self.factory.makeDistroSeries(distribution=dsp.distribution)
         self._makeBugSupervisorTeam(
             person, dsp.distribution.owner, dsp.distribution)
-        bug = self.factory.makeBug(
-            distribution=dsp.distribution,
-            sourcepackagename=dsp.sourcepackagename)
+        bug = self.factory.makeBug(target=dsp)
         with person_logged_in(dsp.distribution.owner):
             nomination = bug.addNomination(dsp.distribution.owner, series)
             nomination.approve(person)

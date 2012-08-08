@@ -216,7 +216,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_makePublic(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -234,7 +234,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_subscribePrivate(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -247,7 +247,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_unsubscribePrivate(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -288,7 +288,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_addProduct(self):
         distribution = self.factory.makeDistribution()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(distribution=distribution)
+        bug = self.factory.makeBug(target=distribution)
 
         self.assertCount(1, distribution=distribution)
         self.assertCount(0, product=product)

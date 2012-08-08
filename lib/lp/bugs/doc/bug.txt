@@ -1429,7 +1429,7 @@ and a user and returns the set of Bugs for those BugTasks.
     >>> from operator import attrgetter
     >>> bug_tasks = [
     ...     factory.makeBug(
-    ...         product=firefox, title="New bug %s" % i).bugtasks[0]
+    ...         target=firefox, title="New bug %s" % i).bugtasks[0]
     ...     for i in range(5)]
 
     >>> bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(

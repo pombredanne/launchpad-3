@@ -560,7 +560,7 @@ class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
         self.product = self.factory.makeProduct()
         self.milestone = self.factory.makeMilestone(product=self.product)
         self.bug = self.factory.makeBug(
-            product=self.product, milestone=self.milestone)
+            target=self.product, milestone=self.milestone)
 
     def getSubscriptions(self, person=None):
         result = get_structural_subscriptions_for_bug(self.bug, person)

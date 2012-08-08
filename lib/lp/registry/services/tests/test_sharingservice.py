@@ -748,7 +748,7 @@ class TestSharingService(TestCaseWithFactory):
         bugs = []
         for access_policy in access_policies:
             bug = self.factory.makeBug(
-                product=product, owner=product.owner,
+                target=product, owner=product.owner,
                 information_type=access_policy.type)
             bugs.append(bug)
             artifact = self.factory.makeAccessArtifact(concrete=bug)
@@ -865,7 +865,7 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
         bug = self.factory.makeBug(
-            distribution=distro, owner=owner,
+            target=distro, owner=owner,
             information_type=InformationType.USERDATA)
         self._assert_revokeAccessGrants(distro, [bug], None)
 
@@ -947,7 +947,7 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
         bug = self.factory.makeBug(
-            distribution=distro, owner=owner,
+            target=distro, owner=owner,
             information_type=InformationType.USERDATA)
         self._assert_revokeTeamAccessGrants(distro, [bug], None)
 
@@ -965,7 +965,7 @@ class TestSharingService(TestCaseWithFactory):
         # is not permitted to do so.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
         grantee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
@@ -989,7 +989,7 @@ class TestSharingService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
         grantee = self.factory.makePerson()
         login_person(owner)
         self.assertRaises(
@@ -1031,7 +1031,7 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
         bug = self.factory.makeBug(
-            distribution=distro, owner=owner,
+            target=distro, owner=owner,
             information_type=InformationType.USERDATA)
         self._assert_ensureAccessGrants(owner, [bug], None)
 
@@ -1051,10 +1051,10 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
         bug = self.factory.makeBug(
-            distribution=distro, owner=owner,
+            target=distro, owner=owner,
             information_type=InformationType.USERDATA)
         bug2 = self.factory.makeBug(
-            distribution=distro, owner=owner,
+            target=distro, owner=owner,
             information_type=InformationType.USERDATA)
         # Create an existing access grant.
         grantee = self.factory.makePerson()
@@ -1069,7 +1069,7 @@ class TestSharingService(TestCaseWithFactory):
         # is not permitted to do so.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
         grantee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
@@ -1094,7 +1094,7 @@ class TestSharingService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
         grantee = self.factory.makePerson()
         login_person(owner)
         self.assertRaises(
@@ -1111,7 +1111,7 @@ class TestSharingService(TestCaseWithFactory):
         bug_tasks = []
         for x in range(0, 10):
             bug = self.factory.makeBug(
-                product=product, owner=owner,
+                target=product, owner=owner,
                 information_type=InformationType.USERDATA)
             bugs.append(bug)
             bug_tasks.append(bug.default_bugtask)
@@ -1153,7 +1153,7 @@ class TestSharingService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         bug = self.factory.makeBug(
-            product=product, owner=owner,
+            target=product, owner=owner,
             information_type=InformationType.USERDATA)
         login_person(owner)
         self._assert_getPeopleWithoutAccess(product, bug)
@@ -1211,7 +1211,7 @@ class TestSharingService(TestCaseWithFactory):
         bugs = []
         for x in range(0, 10):
             bug = self.factory.makeBug(
-                product=product, owner=owner,
+                target=product, owner=owner,
                 information_type=InformationType.USERDATA)
             bugs.append(bug)
         branches = []
@@ -1269,7 +1269,7 @@ class TestSharingService(TestCaseWithFactory):
         bugs = []
         for x in range(0, 10):
             bug = self.factory.makeBug(
-                product=product, owner=owner,
+                target=product, owner=owner,
                 information_type=InformationType.USERDATA)
             bugs.append(bug)
 

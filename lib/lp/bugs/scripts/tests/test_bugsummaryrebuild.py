@@ -195,7 +195,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         # untagged row.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, tags=[u'foo', u'bar']).default_bugtask
+            target=product, tags=[u'foo', u'bar']).default_bugtask
         self.assertContentEqual(
             [(bug.status, None, bug.importance, False, None, None, None, 1),
              (bug.status, None, bug.importance, False, u'foo', None, None, 1),
@@ -209,7 +209,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         product = self.factory.makeProduct()
         o = self.factory.makePerson()
         bug = self.factory.makeBug(
-            product=product, owner=o,
+            target=product, owner=o,
             information_type=InformationType.USERDATA).default_bugtask
         [ap] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)])
@@ -225,7 +225,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         product = self.factory.makeProduct()
         o = self.factory.makePerson()
         bug = self.factory.makeBug(
-            product=product, owner=o, tags=[u'foo', u'bar'],
+            target=product, owner=o, tags=[u'foo', u'bar'],
             information_type=InformationType.USERDATA).default_bugtask
         [ap] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)])
@@ -246,7 +246,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         bug1 = self.factory.makeBug(target=product).default_bugtask
         self.factory.makeBug(target=product).default_bugtask
         bug3 = self.factory.makeBug(
-            product=product, status=BugTaskStatus.TRIAGED).default_bugtask
+            target=product, status=BugTaskStatus.TRIAGED).default_bugtask
         self.assertContentEqual(
             [(bug1.status, None, bug1.importance, False, None, None, None, 2),
              (bug3.status, None, bug3.importance, False, None, None, None, 1)],
@@ -259,7 +259,7 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         bug1 = self.factory.makeBug(target=product).default_bugtask
         self.factory.makeBugAttachment(bug=bug1.bug, is_patch=True)
         bug2 = self.factory.makeBug(
-            product=product, status=BugTaskStatus.TRIAGED).default_bugtask
+            target=product, status=BugTaskStatus.TRIAGED).default_bugtask
         self.assertContentEqual(
             [(bug1.status, None, bug1.importance, True, None, None, None, 1),
              (bug2.status, None, bug2.importance, False, None, None, None, 1)],
@@ -271,9 +271,9 @@ class TestCalculateBugSummaryRows(TestCaseWithFactory):
         mile1 = self.factory.makeMilestone(product=product)
         mile2 = self.factory.makeMilestone(product=product)
         bug1 = self.factory.makeBug(
-            product=product, milestone=mile1).default_bugtask
+            target=product, milestone=mile1).default_bugtask
         bug2 = self.factory.makeBug(
-            product=product, milestone=mile2,
+            target=product, milestone=mile2,
             status=BugTaskStatus.TRIAGED).default_bugtask
         self.assertContentEqual(
             [(bug1.status, mile1.id, bug1.importance, False, None, None, None,

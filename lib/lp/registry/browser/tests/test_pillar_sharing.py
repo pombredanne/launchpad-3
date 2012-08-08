@@ -101,11 +101,11 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner = self.pillar.owner
             if self.pillar_type == 'product':
                 bug = self.factory.makeBug(
-                    product=self.pillar, owner=owner,
+                    target=self.pillar, owner=owner,
                     information_type=InformationType.USERDATA)
             elif self.pillar_type == 'distribution':
                 bug = self.factory.makeBug(
-                    distribution=self.pillar, owner=owner,
+                    target=self.pillar, owner=owner,
                     information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=bug))

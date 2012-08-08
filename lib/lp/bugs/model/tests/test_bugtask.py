@@ -845,7 +845,7 @@ class TestSimilarBugs(TestCaseWithFactory):
         """
         firefox, new_ff_bug, ff_bugtask = self._setupFirefoxBugTask()
         second_ff_bug = self.factory.makeBug(
-            product=firefox, title="Yet another Firefox bug")
+            target=firefox, title="Yet another Firefox bug")
         no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
         similar_bugs = sorted(similar_bugs, key=attrgetter('id'))
@@ -1527,8 +1527,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         # A bugtask can be deleted and after deletion, re-nominated.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(driver=owner, bug_supervisor=owner)
-        bug = self.factory.makeBug(
-            product=product, owner=owner)
+        bug = self.factory.makeBug(target=product, owner=owner)
         target = self.factory.makeProductSeries(product=product)
         login_person(bug.owner)
         nomination = bug.addNomination(bug.owner, target)
@@ -1552,8 +1551,7 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         # delete() updates the AccessPolicyArtifacts related
         # to the bug.
         new_product = self.factory.makeProduct()
-        bug = self.factory.makeBug(
-            information_type=InformationType.USERDATA)
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
         with admin_logged_in():
             old_product = bug.default_bugtask.product
             task = getUtility(IBugTaskSet).createTask(
@@ -1772,8 +1770,7 @@ class TestBugTaskMilestones(TestCaseWithFactory):
         self.product_milestone = self.factory.makeMilestone(
             product=self.product)
         self.distribution = self.factory.makeDistribution()
-        self.distribution_bug = self.factory.makeBug(
-            distribution=self.distribution)
+        self.distribution_bug = self.factory.makeBug(target=self.distribution)
         self.distribution_milestone = self.factory.makeMilestone(
             distribution=self.distribution)
         self.bugtaskset = getUtility(IBugTaskSet)
@@ -1836,8 +1833,7 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         source_package = self.factory.makeSourcePackage(
             sourcepackagename="spam", distroseries=distro_release)
         bug = self.factory.makeBug(
-            distribution=distro,
-            sourcepackagename=source_package.sourcepackagename,
+            target=source_package.distribution_sourcepackage,
             owner=owner)
         with person_logged_in(owner):
             nomination = bug.addNomination(owner, distro_release)
@@ -2338,7 +2334,7 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
             product = self.factory.makeProduct()
             with person_logged_in(product.owner):
                 bug = self.factory.makeBug(
-                    product=product, owner=product.owner)
+                    target=product, owner=product.owner)
                 bug_task = bug.getBugTask(product)
                 watch = self.factory.makeBugWatch(bug=bug)
                 bug_task.bugwatch = watch
@@ -2659,7 +2655,7 @@ class TestTransitionToTarget(TestCaseWithFactory):
 
         # Create a distribution and distroseries with tasks.
         ds = self.factory.makeDistroSeries()
-        bug = self.factory.makeBug(distribution=ds.distribution)
+        bug = self.factory.makeBug(target=ds.distribution)
         ds_task = self.factory.makeBugTask(bug=bug, target=ds)
 
         # Also create a task for another distro. It will not be touched.
@@ -2704,7 +2700,7 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(policy, policy_grantee, owner)
         login_person(owner)
         bug = self.factory.makeBug(
-            owner=owner, product=product,
+            owner=owner, target=product,
             information_type=InformationType.USERDATA)
 
         # The artifact grantees will not lose access when the job is run.
@@ -2859,7 +2855,7 @@ class ValidateTargetMixin:
         # A new task project cannot be added if there is already one from
         # another pillar.
         d = self.factory.makeDistribution()
-        bug = self.factory.makeBug(distribution=d)
+        bug = self.factory.makeBug(target=d)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         p = self.factory.makeProduct()
@@ -2931,7 +2927,7 @@ class ValidateTargetMixin:
         d1 = self.factory.makeDistribution()
         d2 = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=d2)
-        bug = self.factory.makeBug(distribution=d1)
+        bug = self.factory.makeBug(target=d1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):

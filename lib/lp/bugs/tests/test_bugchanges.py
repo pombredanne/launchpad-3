@@ -236,7 +236,7 @@ class TestBugChanges(TestCaseWithFactory):
         subscriber = self.factory.makePerson(displayname='Mom')
         # Create the private bug.
         bug = self.factory.makeBug(
-            product=self.product, owner=self.user,
+            target=self.product, owner=self.user,
             information_type=InformationType.USERDATA)
         bug.subscribe(subscriber, self.user)
         self.saveOldChanges(bug=bug)
@@ -1056,8 +1056,7 @@ class TestBugChanges(TestCaseWithFactory):
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
 
-        source_package_bug = self.factory.makeBug(
-            owner=self.user)
+        source_package_bug = self.factory.makeBug(owner=self.user)
         source_package_bug_task = source_package_bug.addTask(
             owner=self.user, target=target)
         self.saveOldChanges(source_package_bug)
@@ -1105,7 +1104,7 @@ class TestBugChanges(TestCaseWithFactory):
         new_product.addBugSubscription(subscriber, subscriber)
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            product=old_product, owner=owner,
+            target=old_product, owner=owner,
             information_type=InformationType.USERDATA)
         bug.default_bugtask.transitionToTarget(new_product, owner)
         self.assertNotIn(subscriber, bug.getDirectSubscribers())
@@ -1737,7 +1736,7 @@ class TestBugChanges(TestCaseWithFactory):
         # When a bug is created, activity is recorded and a comment
         # notification is sent.
         new_bug = self.factory.makeBug(
-            product=self.product, owner=self.user, comment="ENOTOWEL")
+            target=self.product, owner=self.user, comment="ENOTOWEL")
 
         expected_activity = {
             'person': self.user,

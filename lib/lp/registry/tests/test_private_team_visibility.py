@@ -309,7 +309,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         else:
             information_type = InformationType.PUBLIC
         bug = self.factory.makeBug(
-            owner=bug_owner, product=product,
+            owner=bug_owner, target=product,
             information_type=information_type)
         # Initially no visibility.
         some_person = self.factory.makePerson()
@@ -343,7 +343,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         else:
             information_type = InformationType.PUBLIC
         bug = self.factory.makeBug(
-            owner=bug_owner, product=product,
+            owner=bug_owner, target=product,
             information_type=information_type)
         # Initially no visibility.
         some_person = self.factory.makePerson()

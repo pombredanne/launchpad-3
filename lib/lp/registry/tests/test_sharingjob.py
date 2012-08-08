@@ -174,7 +174,7 @@ class TestRunViaCron(TestCaseWithFactory):
         grantee = self.factory.makePerson()
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            owner=owner, distribution=distro,
+            owner=owner, target=distro,
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
@@ -273,7 +273,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(policy, policy_team_grantee, owner)
         login_person(owner)
         bug = self.factory.makeBug(
-            owner=owner, product=product,
+            owner=owner, target=product,
             information_type=InformationType.USERDATA)
         branch = self.factory.makeBranch(
             owner=owner, product=product,
@@ -336,7 +336,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(policy, policy_team_grantee, owner)
         login_person(owner)
         bug = self.factory.makeBug(
-            owner=owner, product=product,
+            owner=owner, target=product,
             information_type=InformationType.USERDATA)
         branch = self.factory.makeBranch(
             owner=owner, product=product,
@@ -421,12 +421,11 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
 
         self._assert_bug_change_unsubscribes(change_target)
 
-    def _make_subscribed_bug(self, grantee, product=None, distribution=None,
+    def _make_subscribed_bug(self, grantee, target,
                              information_type=InformationType.USERDATA):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            owner=owner, product=product, distribution=distribution,
-            information_type=information_type)
+            owner=owner, target=target, information_type=information_type)
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
         # Subscribing grantee to bug creates an access grant so we need to
@@ -447,11 +446,11 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
 
         # Make bugs the person_grantee is subscribed to.
         bug1, ignored = self._make_subscribed_bug(
-            person_grantee, product=pillar,
+            person_grantee, pillar,
             information_type=InformationType.USERDATA)
 
         bug2, ignored = self._make_subscribed_bug(
-            person_grantee, product=pillar,
+            person_grantee, pillar,
             information_type=InformationType.PRIVATESECURITY)
 
         # Now run the job, removing access to userdata artifacts.
@@ -475,7 +474,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
 
         login_person(owner)
         bug = self.factory.makeBug(
-            owner=owner, product=product,
+            owner=owner, target=product,
             information_type=InformationType.USERDATA)
 
         bug.subscribe(admin, owner)

@@ -258,8 +258,7 @@ class TestBugTaskView(TestCaseWithFactory):
             name='product2', official_malone=True)
         with person_logged_in(product_2.owner):
             product_2.setBugSupervisor(product_2.owner, product_2.owner)
-        bug = self.factory.makeBug(
-            product=product, owner=person)
+        bug = self.factory.makeBug(target=product, owner=person)
         # We need to commit here, otherwise all the sample data we
         # created gets destroyed when the transaction is rolled back.
         transaction.commit()
@@ -1106,7 +1105,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, owner=owner,
+            target=distro, owner=owner,
             information_type=InformationType.PROPRIETARY)
         with person_logged_in(owner):
             view = self._createView(bug)
@@ -1122,11 +1121,11 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         sp_name = self.factory.getOrMakeSourcePackageName()
-        self.factory.makeSourcePackage(
+        sp = self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, sourcepackagename=sp_name, owner=owner,
+            target=sp.distribution_sourcepackage, owner=owner,
             information_type=InformationType.PROPRIETARY)
         with person_logged_in(owner):
             view = self._createView(bug)
@@ -1236,7 +1235,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         self.owner = self.factory.makePerson()
         self.product = self.factory.makeProduct(owner=self.owner)
         self.bugtask = self.factory.makeBug(
-            product=self.product).default_bugtask
+            target=self.product).default_bugtask
 
     def test_assignee_vocabulary_regular_user_with_bug_supervisor(self):
         # For regular users, the assignee vocabulary is
@@ -2464,7 +2463,7 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
         with person_logged_in(product.owner):
             product.enable_bug_expiration = True
         bug = self.factory.makeBug(
-            product=product,
+            target=product,
             status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
         with dynamic_listings():

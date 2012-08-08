@@ -28,7 +28,7 @@ class TestBugTargetPatchCountBase(TestCaseWithFactory):
 
     def makeBugWithPatch(self, status):
         bug = self.factory.makeBug(
-            product=self.product, owner=self.product.owner)
+            target=self.product, owner=self.product.owner)
         self.factory.makeBugAttachment(bug=bug, is_patch=True)
         bug.default_bugtask.transitionToStatus(status, user=bug.owner)
 

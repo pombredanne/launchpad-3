@@ -41,10 +41,10 @@ class TestBugTargetTags(TestCaseWithFactory):
         self.factory.makeBug(target=self.target_product, tags=['tag-last'])
         for counter in range(0, 2):
             self.factory.makeBug(
-                product=self.target_product, tags=['tag-middle'])
+                target=self.target_product, tags=['tag-middle'])
         for counter in range(0, 3):
             self.factory.makeBug(
-                product=self.target_product, tags=['tag-first'])
+                target=self.target_product, tags=['tag-first'])
         view = create_view(
             self.project,
             name="+bugtarget-portlet-tags-content",

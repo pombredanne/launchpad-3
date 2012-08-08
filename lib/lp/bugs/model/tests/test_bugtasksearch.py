@@ -681,18 +681,17 @@ class TargetTests:
             ISourcePackage.providedBy(self.searchtarget) or
             IDistributionSourcePackage.providedBy(self.searchtarget)):
             if IDistribution.providedBy(self.searchtarget):
-                bug = self.factory.makeBug(distribution=self.searchtarget)
+                bug = self.factory.makeBug(target=self.searchtarget)
                 expected = [bug.default_bugtask]
             else:
-                bug = self.factory.makeBug(
-                    distribution=self.searchtarget.distribution,
-                    sourcepackagename=self.factory.makeSourcePackageName())
+                dsp = self.factory.makeDistributionSourcePackage(
+                    distribution=self.searchtarget.distribution)
+                bug = self.factory.makeBug(target=dsp)
                 bugtask = self.factory.makeBugTask(
                     bug=bug, target=self.searchtarget)
                 expected = [bugtask]
         elif IDistroSeries.providedBy(self.searchtarget):
-            bug = self.factory.makeBug(
-                distribution=self.searchtarget.distribution)
+            bug = self.factory.makeBug(target=self.searchtarget.distribution)
             bugtask = self.factory.makeBugTask(
                 bug=bug, target=self.searchtarget)
             expected = [bugtask]
@@ -750,8 +749,7 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
         self.active_product = self.factory.makeProduct()
         self.inactive_product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=self.active_product,
-            description="Monkeys are bad.")
+            target=self.active_product, description="Monkeys are bad.")
         self.active_bugtask = self.factory.makeBugTask(
             bug=bug,
             target=self.active_product)

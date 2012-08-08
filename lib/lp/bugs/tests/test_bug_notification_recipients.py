@@ -107,7 +107,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         with person_logged_in(subscriber):
             product.addBugSubscription(subscriber, subscriber)
         bug = self.factory.makeBug(
-            product=product, owner=owner,
+            target=product, owner=owner,
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             self.assertContentEqual(
@@ -125,7 +125,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             [(product, InformationType.USERDATA)]).one()
         self.factory.makeAccessPolicyGrant(policy=policy, grantee=subscriber)
         bug = self.factory.makeBug(
-            product=product, owner=owner,
+            target=product, owner=owner,
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             self.assertContentEqual(
