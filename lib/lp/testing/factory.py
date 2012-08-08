@@ -1712,9 +1712,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
             status=status, tags=tags)
-        create_bug_params.setBugTarget(
-            product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+        target = product or distribution
+        if sourcepackagename is not None:
+            target = target.getSourcePackageName(sourcepackagename)
+        create_bug_params.setBugTarget(target=target)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
