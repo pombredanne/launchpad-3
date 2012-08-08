@@ -24,6 +24,7 @@ from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,
+    login_person,
     logout,
     person_logged_in,
     TestCaseWithFactory,
@@ -93,25 +94,21 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         # Create a user with queue admin rights for main, and a separate
         # user with queue admin rights for partner (on the partner
         # archive).
-        self.main_queue_admin = self.factory.makePerson(
-            email='main-queue@example.org')
+        self.main_queue_admin = self.factory.makePerson()
         getUtility(IArchivePermissionSet).newQueueAdmin(
             distribution.getArchiveByComponent('main'),
             self.main_queue_admin, self.main_spr.component)
-        self.partner_queue_admin = self.factory.makePerson(
-            email='partner-queue@example.org')
+        self.partner_queue_admin = self.factory.makePerson()
         getUtility(IArchivePermissionSet).newQueueAdmin(
             distribution.getArchiveByComponent('partner'),
             self.partner_queue_admin, self.partner_spr.component)
 
         # Create users with various pocket queue admin rights.
-        self.proposed_queue_admin = self.factory.makePerson(
-            email='proposed-queue@example.org')
+        self.proposed_queue_admin = self.factory.makePerson()
         getUtility(IArchivePermissionSet).newPocketQueueAdmin(
             self.main_archive, self.proposed_queue_admin,
             PackagePublishingPocket.PROPOSED)
-        self.proposed_series_queue_admin = self.factory.makePerson(
-            email='proposed-series-queue@example.org')
+        self.proposed_series_queue_admin = self.factory.makePerson()
         getUtility(IArchivePermissionSet).newPocketQueueAdmin(
             self.main_archive, self.proposed_series_queue_admin,
             PackagePublishingPocket.PROPOSED, distroseries=self.second_series)
@@ -133,7 +130,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_main_admin_can_accept_main_upload(self):
         # A person with queue admin access for main
         # can accept uploads to the main archive.
-        login('main-queue@example.org')
+        login_person(self.main_queue_admin)
         self.assertTrue(
             self.main_archive.canAdministerQueue(
                 self.main_queue_admin, self.main_spr.component))
@@ -151,7 +148,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_main_admin_cannot_accept_partner_upload(self):
         # A person with queue admin access for main cannot necessarily
         # accept uploads to partner.
-        login('main-queue@example.org')
+        login_person(self.main_queue_admin)
         self.assertFalse(
             self.partner_archive.canAdministerQueue(
                 self.main_queue_admin, self.partner_spr.component))
@@ -188,7 +185,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_partner_admin_can_accept_partner_upload(self):
         # A person with queue admin access for partner
         # can accept uploads to the partner archive.
-        login('partner-queue@example.org')
+        login_person(self.partner_queue_admin)
         self.assertTrue(
             self.partner_archive.canAdministerQueue(
                 self.partner_queue_admin, self.partner_spr.component))
@@ -206,7 +203,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_partner_admin_cannot_accept_main_upload(self):
         # A person with queue admin access for partner cannot necessarily
         # accept uploads to main.
-        login('partner-queue@example.org')
+        login_person(self.partner_queue_admin)
         self.assertFalse(
             self.main_archive.canAdministerQueue(
                 self.partner_queue_admin, self.main_spr.component))
@@ -228,7 +225,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_proposed_admin_can_accept_proposed_upload(self):
         # A person with queue admin access for proposed can accept uploads
         # to the proposed pocket for any series.
-        login('proposed-queue@example.org')
+        login_person(self.proposed_queue_admin)
         self.assertTrue(
             self.main_archive.canAdministerQueue(
                 self.proposed_queue_admin,
@@ -254,7 +251,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_proposed_admin_cannot_accept_release_upload(self):
         # A person with queue admin access for proposed cannot necessarly
         # accept uploads to the release pocket.
-        login('proposed-queue@example.org')
+        login_person(self.proposed_queue_admin)
         self.assertFalse(
             self.main_archive.canAdministerQueue(
                 self.proposed_queue_admin,
@@ -277,7 +274,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_proposed_series_admin_can_accept_that_series_upload(self):
         # A person with queue admin access for proposed for one series can
         # accept uploads to that series.
-        login('proposed-series-queue@example.org')
+        login_person(self.proposed_series_queue_admin)
         self.assertTrue(
             self.main_archive.canAdministerQueue(
                 self.proposed_series_queue_admin,
@@ -297,7 +294,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_proposed_series_admin_cannot_accept_other_series_upload(self):
         # A person with queue admin access for proposed for one series
         # cannot necessarily accept uploads to other series.
-        login('proposed-series-queue@example.org')
+        login_person(self.proposed_series_queue_admin)
         self.assertFalse(
             self.main_archive.canAdministerQueue(
                 self.proposed_series_queue_admin,
