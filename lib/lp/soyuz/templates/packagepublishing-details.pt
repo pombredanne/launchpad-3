@@ -41,8 +41,7 @@
           define="linkify_archive view/linkify_source_archive;
                   source context/sourcepackagerelease">
           <tal:message
-            define="archive source/upload_archive;
-                    series source/upload_distroseries;
+            define="series source/upload_distroseries;
                     distro series/distribution;
                     message string:${distro/name} ${series/name} in "
             replace="message" />
