@@ -12,6 +12,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
+    person_logged_in,
     test_tales,
     TestCaseWithFactory,
     )
@@ -55,6 +56,36 @@ class TestDistributionSourcePackageChangelogView(TestCaseWithFactory):
                 self.factory.makePackageDiff(
                     to_source=spph.sourcepackagerelease)
         self.assertThat(dsp, changelog_browses_under_limit)
+
+
+class TestDistributionSourcePackagePublishingHistoryView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_publishinghistory_query_count(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive)
+        spn = spph.sourcepackagerelease.sourcepackagename
+        dsp = archive.distribution.getSourcePackage(spn)
+        publishinghistory_browses_under_limit = BrowsesWithQueryLimit(
+            27, self.factory.makePerson(), "+publishinghistory")
+        self.assertThat(dsp, publishinghistory_browses_under_limit)
+        with person_logged_in(archive.owner):
+            copy_source_archive = self.factory.makeArchive()
+            copy_spph = self.factory.makeSourcePackagePublishingHistory(
+                archive=copy_source_archive, sourcepackagename=spn)
+            copy_spph.copyTo(
+                spph.distroseries, spph.pocket, archive,
+                creator=self.factory.makePerson())
+            delete_spph = self.factory.makeSourcePackagePublishingHistory(
+                archive=archive, sourcepackagename=spn)
+            delete_spph.requestDeletion(self.factory.makePerson())
+        # This is a lot of extra queries per publication, and should be
+        # ratcheted down over time; but it at least ensures that we don't
+        # make matters any worse.
+        publishinghistory_browses_under_limit.query_limit += 10
+        self.assertThat(dsp, publishinghistory_browses_under_limit)
 
 
 class TestDistributionSourceView(TestCaseWithFactory):
