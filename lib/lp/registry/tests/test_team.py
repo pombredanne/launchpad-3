@@ -225,11 +225,6 @@ class TestDefaultRenewalPeriodIsRequiredForSomeTeams(TestCaseWithFactory):
         self.team.defaultrenewalperiod = period
         ITeamPublic.validateInvariants(self.team)
 
-    def test_policy_automatic_period_none(self):
-        # Automatic policy cannot have a none day period.
-        self.assertInvalid(
-            TeamMembershipRenewalPolicy.AUTOMATIC, None)
-
     def test_policy_ondemand_period_none(self):
         # Ondemand policy cannot have a none day period.
         self.assertInvalid(
@@ -241,24 +236,24 @@ class TestDefaultRenewalPeriodIsRequiredForSomeTeams(TestCaseWithFactory):
             TeamMembershipRenewalPolicy.NONE, None)
 
     def test_policy_requres_period_below_minimum(self):
-        # Automatic and ondemand policy cannot have a zero day period.
+        # Ondemand policy cannot have a zero day period.
         self.assertInvalid(
-            TeamMembershipRenewalPolicy.AUTOMATIC, 0)
+            TeamMembershipRenewalPolicy.ONDEMAND, 0)
 
     def test_policy_requres_period_minimum(self):
-        # Automatic and ondemand policy can have a 1 day period.
+        # Ondemand policy can have a 1 day period.
         self.assertValid(
-            TeamMembershipRenewalPolicy.AUTOMATIC, 1)
+            TeamMembershipRenewalPolicy.ONDEMAND, 1)
 
     def test_policy_requres_period_maximum(self):
-        # Automatic and ondemand policy cannot have a 3650 day max value.
+        # Ondemand policy cannot have a 3650 day max value.
         self.assertValid(
-            TeamMembershipRenewalPolicy.AUTOMATIC, 3650)
+            TeamMembershipRenewalPolicy.ONDEMAND, 3650)
 
     def test_policy_requres_period_over_maximum(self):
-        # Automatic and ondemand policy cannot have a 3650 day max value.
+        # Ondemand policy cannot have a 3650 day max value.
         self.assertInvalid(
-            TeamMembershipRenewalPolicy.AUTOMATIC, 3651)
+            TeamMembershipRenewalPolicy.ONDEMAND, 3651)
 
 
 class TestDefaultMembershipPeriod(TestCaseWithFactory):
