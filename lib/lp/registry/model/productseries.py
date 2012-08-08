@@ -163,6 +163,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return self.product
 
     @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self
+
+    @property
     def answers_usage(self):
         """See `IServiceUsage.`"""
         return self.product.answers_usage
@@ -439,10 +444,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.product.official_bug_tags
-
-    def createBug(self, bug_params):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file a bug against a productseries')
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
