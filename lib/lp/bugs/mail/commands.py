@@ -39,6 +39,7 @@ from lp.bugs.interfaces.bug import (
     IBugAddForm,
     IBugSet,
     )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -54,10 +55,8 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
@@ -643,33 +642,23 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event, bug_event
 
-    def _targetBug(self, user, bug, series, sourcepackagename=None):
+    def _targetBug(self, user, bug, target):
         """Try to target the bug the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.
         """
-        product = None
-        distribution = None
-        if IDistroSeries.providedBy(series):
-            distribution = series.distribution
-            if sourcepackagename:
-                general_target = distribution.getSourcePackage(
-                    sourcepackagename)
-            else:
-                general_target = distribution
-        else:
-            assert IProductSeries.providedBy(series), (
-                "Unknown series target: %r" % series)
-            assert sourcepackagename is None, (
-                "A product series can't have a source package.")
-            product = series.product
-            general_target = product
+        general_target = target.bugtarget_parent
         general_task = bug.getBugTask(general_target)
         if general_task is None:
             # A series task has to have a corresponding
             # distribution/product task.
             general_task = bug.addTask(user, general_target)
+
+        if ISourcePackage.providedBy(target):
+            series = target.distroseries
+        else:
+            series = target
 
         # We know the target is of the right type, and we just created
         # a pillar task, so if canBeNominatedFor == False then a task or
@@ -685,11 +674,7 @@ class AffectsEmailCommand(EmailCommand):
             nomination.approve(user)
 
         if nomination.isApproved():
-            if sourcepackagename:
-                return bug.getBugTask(
-                    series.getSourcePackage(sourcepackagename))
-            else:
-                return bug.getBugTask(series)
+            return bug.getBugTask(target)
         else:
             # We can't return a nomination, so return the
             # distribution/product bugtask instead.
@@ -698,13 +683,8 @@ class AffectsEmailCommand(EmailCommand):
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
         user = getUtility(ILaunchBag).user
-        if (IProductSeries.providedBy(bug_target) or
-            IDistroSeries.providedBy(bug_target)):
+        if ISeriesBugTarget.providedBy(bug_target):
             return self._targetBug(user, bug, bug_target)
-        elif ISourcePackage.providedBy(bug_target):
-            return self._targetBug(
-                user, bug, bug_target.distroseries,
-                bug_target.sourcepackagename)
         else:
             return bug.addTask(user, bug_target)
 
