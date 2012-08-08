@@ -2643,18 +2643,15 @@ class BugSet:
 
         bug, event = self._makeBug(params)
 
-        # Create the task on a product if one was passed.
+        # Create the initial task on the specified target.
         if params.product:
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, params.product, status=params.status)
-
-        # Create the task on a source package name if one was passed.
-        if params.distribution:
+            target = params.product
+        elif params.distribution:
             target = params.distribution
             if params.sourcepackagename:
                 target = target.getSourcePackage(params.sourcepackagename)
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, target, status=params.status)
+        getUtility(IBugTaskSet).createTask(
+            bug, params.owner, target, status=params.status)
 
         if params.information_type in SECURITY_INFORMATION_TYPES:
             if context.security_contact:
