@@ -74,6 +74,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.database.sqlbase import (
@@ -3348,15 +3349,16 @@ class TestTargetNameCache(TestCase):
         # accepted and have targetnamecache updated.
         ubuntu = getUtility(IDistributionSet).get(1)
 
+        params = CreateBugParams(mark, 'New Bug', comment='New Bug')
+        params.setBugTarget(
+            distribution=ubuntu,
+            sourcepackagename=(
+                getUtility(ISourcePackageNameSet)['mozilla-firefox']))
         new_bug, new_bug_event = getUtility(IBugSet).createBug(
-            CreateBugParams(mark, 'New Bug', comment='New Bug'),
-            notify_event=False)
+            params, notify_event=False)
 
         # The first message of a new bug has index 0.
         self.assertEqual(new_bug.bug_messages[0].index, 0)
-
-        getUtility(IBugTaskSet).createTask(
-            new_bug, mark, ubuntu.getSourcePackage('mozilla-firefox'))
 
         # The first task has been created and successfully nominated to Hoary.
         new_bug.addNomination(mark, ubuntu.currentseries).approve(mark)
