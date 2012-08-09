@@ -960,7 +960,7 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         title_field = IProduct['title']
         title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            product, title_field, title, 'h1')
+            product, title_field, title, 'h1', max_width='80%')
         programming_lang = IProduct['programminglang']
         title = 'Edit programming languages'
         additional_arguments = {

@@ -620,7 +620,8 @@ class SpecificationView(SpecificationSimpleView):
     def title_widget(self):
         field = ISpecification['title']
         title = "Edit the blueprint title"
-        return TextLineEditorWidget(self.context, field, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, field, title, 'h1', max_width='80%')
 
     @property
     def summary_widget(self):

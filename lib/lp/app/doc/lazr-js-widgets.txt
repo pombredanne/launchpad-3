@@ -28,14 +28,18 @@ over, and the tag that surrounds the text.
     ...     name='widget', title='Widgets > important')
     >>> title_field = IProduct['title']
     >>> title = 'Edit the title'
-    >>> widget = TextLineEditorWidget(product, title_field, title, 'h1')
+    >>> widget = TextLineEditorWidget(
+    ...     product, title_field, title, 'h1', max_width='80%')
 
 The widget is rendered by executing it, it prints out the attribute
 content.
 
     >>> print widget()
-    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt;
-        important</span>
+    <h1 id="edit-title">
+    <span class="yui3-editable_text-text ellipsis"
+          style="max-width: 80%;">
+        Widgets &gt; important
+    </span>
     </h1>
 
 In addition, when the logged in user can edit the value, there is a link to
@@ -44,8 +48,11 @@ link into an AJAX control when JS is available:
 
     >>> ignored = login_person(product.owner)
     >>> print widget()
-    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets
-        &gt; important</span>
+    <h1 id="edit-title">
+    <span class="yui3-editable_text-text ellipsis"
+          style="max-width: 80%;">
+        Widgets &gt; important
+    </span>
         <a class="yui3-editable_text-trigger sprite edit action-icon"
            href="http://launchpad.dev/widget/+edit"
            title="">Edit</a>
