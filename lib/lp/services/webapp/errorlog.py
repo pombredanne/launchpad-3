@@ -294,9 +294,7 @@ def _get_type(report):
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set([
-        'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
-        'TranslationUnavailable', 'NoReferrerError'])
+    _ignored_exceptions = set(['TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_offsite_referer = set([
         'GoneError', 'InvalidBatchSizeError', 'NotFound'])
     _default_config_section = 'error_reports'

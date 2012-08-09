@@ -9,7 +9,6 @@ __all__ = [
     'DatabaseBlockedPolicy',
     'LaunchpadDatabasePolicy',
     'MasterDatabasePolicy',
-    'ReadOnlyLaunchpadDatabasePolicy',
     'SlaveDatabasePolicy',
     'SlaveOnlyDatabasePolicy',
     ]
@@ -45,7 +44,6 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
-from lp.services.database.readonly import is_read_only
 from lp.services.database.sqlbase import StupidCache
 from lp.services.webapp import LaunchpadView
 from lp.services.webapp.interfaces import (
@@ -55,7 +53,6 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
-    ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR,
     )
 
@@ -195,8 +192,6 @@ def LaunchpadDatabasePolicyFactory(request):
     # of test requests in our automated tests.
     if request.get('PATH_INFO') in [u'/+opstats', u'/+haproxy']:
         return DatabaseBlockedPolicy(request)
-    elif is_read_only():
-        return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         return LaunchpadDatabasePolicy(request)
 
@@ -357,41 +352,15 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 def WebServiceDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    if is_read_only():
-        return ReadOnlyLaunchpadDatabasePolicy(request)
-    else:
-        # If a session cookie was sent with the request, use the
-        # standard Launchpad database policy for load balancing to
-        # the slave databases. The javascript web service libraries
-        # send the session cookie for authenticated users.
-        cookie_name = getUtility(IClientIdManager).namespace
-        if cookie_name in request.cookies:
-            return LaunchpadDatabasePolicy(request)
-        # Otherwise, use the master only web service database policy.
-        return MasterDatabasePolicy(request)
-
-
-class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
-    """Policy for Launchpad web requests when running in read-only mode.
-
-    Access to all master Stores is blocked.
-    """
-
-    def getStore(self, name, flavor):
-        """See `IDatabasePolicy`.
-
-        Access to all master Stores is blocked. The default Store is
-        the slave.
-
-        Note that we even have to block access to the authdb master
-        Store, as it allows access to tables replicated from the
-        lpmain replication set. These tables will be locked during
-        a lpmain replication set database upgrade.
-        """
-        if flavor == MASTER_FLAVOR:
-            raise ReadOnlyModeDisallowedStore(name, flavor)
-        return super(ReadOnlyLaunchpadDatabasePolicy, self).getStore(
-            name, SLAVE_FLAVOR)
+    # If a session cookie was sent with the request, use the
+    # standard Launchpad database policy for load balancing to
+    # the slave databases. The javascript web service libraries
+    # send the session cookie for authenticated users.
+    cookie_name = getUtility(IClientIdManager).namespace
+    if cookie_name in request.cookies:
+        return LaunchpadDatabasePolicy(request)
+    # Otherwise, use the master only web service database policy.
+    return MasterDatabasePolicy(request)
 
 
 class WhichDbView(LaunchpadView):

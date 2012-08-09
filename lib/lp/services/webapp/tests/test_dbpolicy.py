@@ -30,15 +30,10 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
-from lp.services.database.tests.readonly import (
-    remove_read_only_file,
-    touch_read_only_file,
-    )
 from lp.services.webapp.dbpolicy import (
     BaseDatabasePolicy,
     LaunchpadDatabasePolicy,
     MasterDatabasePolicy,
-    ReadOnlyLaunchpadDatabasePolicy,
     SlaveDatabasePolicy,
     SlaveOnlyDatabasePolicy,
     )
@@ -50,7 +45,6 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
-    ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -230,63 +224,9 @@ class LayerDatabasePolicyTestCase(TestCase):
         finally:
             endInteraction()
 
-    def test_WebServiceRequest_uses_ReadOnlyDatabasePolicy(self):
-        """WebService requests should use the read only database
-        policy in read only mode.
-        """
-        touch_read_only_file()
-        try:
-            api_prefix = getUtility(
-                IWebServiceConfiguration).active_versions[0]
-            server_url = 'http://api.launchpad.dev/%s' % api_prefix
-            request = LaunchpadTestRequest(SERVER_URL=server_url)
-            setFirstLayer(request, WebServiceLayer)
-            policy = IDatabasePolicy(request)
-            self.assertIsInstance(policy, ReadOnlyLaunchpadDatabasePolicy)
-        finally:
-            remove_read_only_file()
-
-    def test_read_only_mode_uses_ReadOnlyLaunchpadDatabasePolicy(self):
-        touch_read_only_file()
-        try:
-            request = LaunchpadTestRequest(
-                SERVER_URL='http://launchpad.dev')
-            policy = IDatabasePolicy(request)
-            self.assertIsInstance(policy, ReadOnlyLaunchpadDatabasePolicy)
-        finally:
-            remove_read_only_file()
-
     def test_other_request_uses_LaunchpadDatabasePolicy(self):
         """By default, requests should use the LaunchpadDatabasePolicy."""
         server_url = 'http://launchpad.dev/'
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, LaunchpadDatabasePolicy)
-
-
-class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
-    """Tests for the `ReadOnlyModeLaunchpadDatabasePolicy`"""
-
-    def setUp(self):
-        self.policy = ReadOnlyLaunchpadDatabasePolicy()
-        super(ReadOnlyLaunchpadDatabasePolicyTestCase, self).setUp()
-
-    def test_defaults(self):
-        # default Store is the slave.
-        for store in ALL_STORES:
-            self.assertProvides(
-                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
-                ISlaveStore)
-
-    def test_slave_allowed(self):
-        for store in ALL_STORES:
-            self.assertProvides(
-                getUtility(IStoreSelector).get(store, SLAVE_FLAVOR),
-                ISlaveStore)
-
-    def test_master_disallowed(self):
-        store_selector = getUtility(IStoreSelector)
-        for store in ALL_STORES:
-            self.assertRaises(
-                ReadOnlyModeDisallowedStore,
-                store_selector.get, store, MASTER_FLAVOR)
