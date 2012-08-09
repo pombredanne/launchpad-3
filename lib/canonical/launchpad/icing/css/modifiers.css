@@ -113,11 +113,16 @@ div.beta img {
     }
 
 .ellipsis {
+    display: inline-block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     -o-text-overflow: ellipsis;
     -ms-text-overflow: ellipsis;
+    }
+
+.ellipsis.wide {
+    max-width: 60em;
     }
 
 .exception {
@@ -211,6 +216,10 @@ table.diff,
 
 .action-icon + .action-icon {
     margin-left: 0px;
+    }
+
+.action-icon.standalone {
+    margin-top: -6px;
     }
 
 th .action-icon {

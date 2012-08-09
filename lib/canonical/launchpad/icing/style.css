@@ -387,10 +387,27 @@ p.update-failure-message {
     padding-left: 18px;
 }
 
-:not(button).update-in-progress-message {
+.update-in-progress-message {
     background: url(/@@/spinner) center left no-repeat;
     padding-left: 18px;
     color: #666;
+}
+
+a.action-icon.standalone.update-in-progress-message {
+    display: inline-block;
+    margin-left: inherit;
+    margin-top: -10px;
+    width: 1px;
+    height: 16px;
+    vertical-align: text-top;
+    text-indent: 3px;
+    overflow: hidden;
+}
+
+button.update-in-progress-message {
+    background: buttonface none;
+    padding-left: inherit;
+    color: inherit;
 }
 
 button.update-in-progress-message:after {
