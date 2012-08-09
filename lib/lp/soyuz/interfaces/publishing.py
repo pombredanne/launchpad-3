@@ -510,6 +510,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=True
         ))
 
+    sponsorID = Attribute("DB ID for sponsor.")
     sponsor = exported(
         Reference(
             IPerson,

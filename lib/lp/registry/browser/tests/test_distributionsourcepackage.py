@@ -83,7 +83,8 @@ class TestDistributionSourcePackagePublishingHistoryView(TestCaseWithFactory):
                 archive=copy_source_archive, sourcepackagename=spn)
             copy_spph.copyTo(
                 spph.distroseries, spph.pocket, archive,
-                creator=self.factory.makePerson())
+                creator=self.factory.makePerson(),
+                sponsor=self.factory.makePerson())
             delete_spph = self.factory.makeSourcePackagePublishingHistory(
                 archive=archive, sourcepackagename=spn)
             delete_spph.requestDeletion(self.factory.makePerson())

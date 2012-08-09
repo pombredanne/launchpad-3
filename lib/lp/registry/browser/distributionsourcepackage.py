@@ -594,7 +594,7 @@ class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
         """Preload relevant `IPerson` objects."""
         ids = set()
         for spph in self.context.publishing_history:
-            ids.update((spph.removed_byID, spph.creatorID))
+            ids.update((spph.removed_byID, spph.creatorID, spph.sponsorID))
         ids.discard(None)
         if ids:
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
