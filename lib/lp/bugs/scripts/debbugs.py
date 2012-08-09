@@ -165,7 +165,7 @@ class Database:
         if version is None:
             raise SummaryParseError, "%s: Missing Format-Version" % summary
 
-        if version != '2':
+        if version not in ('2', '3'):
             raise SummaryVersionError, "%s: I don't understand version %s" % (summary, version)
 
         bug.originator = message['submitter']
