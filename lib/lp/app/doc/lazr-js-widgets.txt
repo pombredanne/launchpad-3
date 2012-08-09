@@ -29,7 +29,7 @@ over, and the tag that surrounds the text.
     >>> title_field = IProduct['title']
     >>> title = 'Edit the title'
     >>> widget = TextLineEditorWidget(
-    ...     product, title_field, title, 'h1', max_width='80%')
+    ...     product, title_field, title, 'h1', max_width='90%')
 
 The widget is rendered by executing it, it prints out the attribute
 content.
@@ -37,7 +37,7 @@ content.
     >>> print widget()
     <h1 id="edit-title">
     <span class="yui3-editable_text-text ellipsis"
-          style="max-width: 80%;">
+          style="max-width: 90%;">
         Widgets &gt; important
     </span>
     </h1>
@@ -50,7 +50,7 @@ link into an AJAX control when JS is available:
     >>> print widget()
     <h1 id="edit-title">
     <span class="yui3-editable_text-text ellipsis"
-          style="max-width: 80%;">
+          style="max-width: 90%;">
         Widgets &gt; important
     </span>
         <a class="yui3-editable_text-trigger sprite edit action-icon"
