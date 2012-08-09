@@ -204,6 +204,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             return 'max-width: %s;' % self.max_width
         return ''
 
+
 class TextAreaEditorWidget(TextWidgetBase):
     """Wrapper for the multine-line lazr-js inlineedit/editor.js widget."""
 
