@@ -123,7 +123,7 @@ class TestMaloneView(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product,
+            target=product,
             owner=owner,
             status=BugTaskStatus.INPROGRESS,
             title='title', description='description',

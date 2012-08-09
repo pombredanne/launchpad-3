@@ -13,17 +13,12 @@ __all__ = [
     'SoyuzScript',
     ]
 
-from zope.component import getUtility
-
-from lp.app.errors import NotFoundError
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
     )
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import active_publishing_status
 
 
 class SoyuzScriptError(Exception):
@@ -94,15 +89,6 @@ class SoyuzScript(LaunchpadScript):
     def add_package_location_options(self):
         """Add SoyuzScript package location-related options."""
         self.parser.add_option(
-            "-a", "--architecture", dest="architecture", default=None,
-            help="Architecture tag.")
-
-        self.parser.add_option(
-            '-e', '--version', dest='version', default=None,
-            action='store',
-            help='Optional package version, defaults to the current version.')
-
-        self.parser.add_option(
             "-c", "--component", dest="component", default=None,
             help="Component name.")
 
@@ -120,46 +106,6 @@ class SoyuzScript(LaunchpadScript):
             '-j', '--partner', dest='partner_archive', default=False,
             action='store_true',
             help='Specify partner archive')
-
-    def _validatePublishing(self, currently_published):
-        """Validate the given publishing record.
-
-        Check if it matches the desired 'pocket' and 'component'.
-        """
-        if not self.options.component:
-            return
-
-        try:
-            desired_component = getUtility(IComponentSet)[
-                self.options.component]
-        except NotFoundError as err:
-            raise SoyuzScriptError(err)
-
-        if currently_published.component != desired_component:
-            raise SoyuzScriptError(
-                "%s was skipped because it is not in %s component" % (
-                currently_published.displayname,
-                desired_component.name.upper()))
-
-    def findLatestPublishedSource(self, name):
-        """Return a suitable `SourcePackagePublishingHistory`."""
-        assert self.location is not None, 'Undefined location.'
-
-        published_sources = self.location.archive.getPublishedSources(
-            name=name, version=self.options.version,
-            status=active_publishing_status,
-            distroseries=self.location.distroseries,
-            pocket=self.location.pocket,
-            exact_match=True)
-
-        try:
-            latest_source = published_sources[0]
-        except IndexError:
-            raise SoyuzScriptError(
-                "Could not find source '%s/%s' in %s" % (
-                name, self.options.version, self.location))
-        self._validatePublishing(latest_source)
-        return latest_source
 
     def _getUserConfirmation(self, full_question=None, valid_answers=None):
         """Use raw_input to collect user feedback.

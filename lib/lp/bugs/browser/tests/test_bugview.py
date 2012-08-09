@@ -17,8 +17,8 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
-    LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

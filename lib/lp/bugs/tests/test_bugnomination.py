@@ -66,7 +66,7 @@ class TestBugCanBeNominatedForProductSeries(
 
     def setUpTarget(self):
         self.series = self.factory.makeProductSeries()
-        self.bug = self.factory.makeBug(product=self.series.product)
+        self.bug = self.factory.makeBug(target=self.series.product)
         self.milestone = self.factory.makeMilestone(productseries=self.series)
         self.random_series = self.factory.makeProductSeries()
 

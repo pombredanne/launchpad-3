@@ -26,7 +26,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.bugs.adapters.bug import convert_to_information_type
-from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -57,16 +56,9 @@ from lp.hardwaredb.interfaces.hwdb import (
     ParameterError,
     )
 from lp.registry.enums import PRIVATE_INFORMATION_TYPES
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.mailinglist import IMailingListApplication
-from lp.registry.interfaces.product import (
-    IProduct,
-    IProductSet,
-    )
+from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.feeds.interfaces.application import IFeedsApplication
@@ -165,18 +157,7 @@ class MaloneApplication:
                 private, security_related)
         params = CreateBugParams(
             title=title, comment=description, owner=owner,
-            information_type=information_type, tags=tags)
-        if IProduct.providedBy(target):
-            params.setBugTarget(product=target)
-        elif IDistribution.providedBy(target):
-            params.setBugTarget(distribution=target)
-        elif IDistributionSourcePackage.providedBy(target):
-            params.setBugTarget(distribution=target.distribution,
-                                sourcepackagename=target.sourcepackagename)
-        else:
-            raise InvalidBugTargetType(
-                "A bug target must be a Project, a Distribution or a "
-                "DistributionSourcePackage. Got %r." % target)
+            information_type=information_type, tags=tags, target=target)
         return getUtility(IBugSet).createBug(params)
 
     @property

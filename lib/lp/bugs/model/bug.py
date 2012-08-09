@@ -125,11 +125,13 @@ from lp.bugs.interfaces.bugnomination import (
     NominationSeriesObsoleteError,
     )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
+    IllegalTarget,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
@@ -231,10 +233,9 @@ def snapshot_bug_params(bug_params):
     return Snapshot(
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
-            "datecreated", "information_type", "distribution",
-            "sourcepackagename", "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by", "importance", "milestone",
-            "assignee", "cve"])
+            "datecreated", "information_type", "target", "status",
+            "subscribers", "tags", "subscribe_owner", "filed_by",
+            "importance", "milestone", "assignee", "cve"])
 
 
 class BugTag(SQLBase):
@@ -2636,46 +2637,38 @@ class BugSet:
         # of its attribute values below.
         params = snapshot_bug_params(bug_params)
 
-        context = params.product or params.distribution
+        if ISeriesBugTarget.providedBy(params.target):
+            raise IllegalTarget(
+                "Can't create a bug on a series. Create it with a non-series "
+                "task instead, and target it to the series afterwards.")
 
         if params.information_type is None:
-            if context is not None:
-                params.information_type = (
-                    context.getDefaultBugInformationType())
-            else:
-                params.information_type = InformationType.PUBLIC
+            params.information_type = (
+                params.target.pillar.getDefaultBugInformationType())
 
         bug, event = self._makeBug(params)
 
-        # Create the task on a product if one was passed.
-        if params.product:
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, params.product, status=params.status)
-
-        # Create the task on a source package name if one was passed.
-        if params.distribution:
-            target = params.distribution
-            if params.sourcepackagename:
-                target = target.getSourcePackage(params.sourcepackagename)
-            getUtility(IBugTaskSet).createTask(
-                bug, params.owner, target, status=params.status)
+        # Create the initial task on the specified target.
+        getUtility(IBugTaskSet).createTask(
+            bug, params.owner, params.target, status=params.status)
 
         if params.information_type in SECURITY_INFORMATION_TYPES:
-            if context.security_contact:
-                bug.subscribe(context.security_contact, params.owner)
+            pillar = params.target.pillar
+            if pillar.security_contact:
+                bug.subscribe(pillar.security_contact, params.owner)
             else:
-                bug.subscribe(context.owner, params.owner)
+                bug.subscribe(pillar.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
-        elif params.product and params.product.private_bugs:
+        elif IProduct.providedBy(params.target) and params.target.private_bugs:
             # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
-            if params.product.bug_supervisor:
-                bug.subscribe(params.product.bug_supervisor, params.owner)
+            if params.target.bug_supervisor:
+                bug.subscribe(params.target.bug_supervisor, params.owner)
             else:
-                bug.subscribe(params.product.owner, params.owner)
+                bug.subscribe(params.target.owner, params.owner)
 
         if params.subscribe_owner:
             bug.subscribe(params.owner, params.owner)
@@ -2744,15 +2737,10 @@ class BugSet:
                 date_made_private=params.datecreated,
                 who_made_private=params.owner)
 
-        # Set the legacy attributes for now.
-        private = params.information_type in PRIVATE_INFORMATION_TYPES
-        security_related = (
-            params.information_type in SECURITY_INFORMATION_TYPES)
         bug = Bug(
             title=params.title, description=params.description,
             owner=params.owner, datecreated=params.datecreated,
             information_type=params.information_type,
-            _private=private, _security_related=security_related,
             **extra_params)
 
         if params.tags:

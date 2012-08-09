@@ -378,8 +378,7 @@ working on.
 
 Assigned bugs do not display when their status is not INPROGRESS.
 
-    >>> bug = factory.makeBug(
-    ...     product=product, title='tool does not work')
+    >>> bug = factory.makeBug(target=product, title='tool does not work')
     >>> bug.bugtasks[0].transitionToAssignee(user)
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
@@ -424,7 +423,7 @@ status is in INPROGRESS.
 Multiple bugs and specs are displayed.
 
     >>> another_bug = factory.makeBug(
-    ...     product=product, title='tool does is broken')
+    ...     target=product, title='tool does is broken')
     >>> another_bug.bugtasks[0].transitionToAssignee(user)
     >>> another_bug.bugtasks[0].transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, user)

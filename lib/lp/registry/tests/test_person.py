@@ -1381,15 +1381,12 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
     def test_skips_distroseries_task_that_is_a_conjoined_master(self):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
+        sp = distroseries.getSourcePackage(sourcepackagename.name)
         milestone = self.factory.makeMilestone(
             distroseries=distroseries, dateexpected=self.today)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, sourcepackagename=sourcepackagename)
         bug = self.factory.makeBug(
-            milestone=milestone, sourcepackagename=sourcepackagename,
-            distribution=distroseries.distribution)
-        package = distroseries.getSourcePackage(sourcepackagename.name)
-        removeSecurityProxy(bug).addTask(bug.owner, package)
+            milestone=milestone, target=sp.distribution_sourcepackage)
+        removeSecurityProxy(bug).addTask(bug.owner, sp)
         self.assertEqual(2, len(bug.bugtasks))
         slave, master = bug.bugtasks
         self._assignBugTaskToTeamOwner(master)
@@ -1431,7 +1428,7 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
     def test_query_count(self):
         # Create one Product bugtask;
         milestone = self.factory.makeMilestone(dateexpected=self.today)
-        product_bug = self.factory.makeBug(product=milestone.product)
+        product_bug = self.factory.makeBug(target=milestone.product)
         self._assignBugTaskToTeamOwnerAndSetMilestone(
             product_bug.bugtasks[0], milestone)
 
@@ -1451,19 +1448,15 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
             distroseries_bug.bugtasks[1], distro_milestone)
 
         # One Distribution bugtask;
-        distro_bug = self.factory.makeBug(
-            distribution=distro_milestone.distribution)
+        distro_bug = self.factory.makeBug(target=distro_milestone.distribution)
         self._assignBugTaskToTeamOwnerAndSetMilestone(
             distro_bug.bugtasks[0], distro_milestone)
 
         # One SourcePackage bugtask;
         distroseries = distro_milestone.distroseries
-        sourcepackagename = self.factory.makeSourcePackageName()
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
-        sourcepackage_bug = self.factory.makeBug(
-            sourcepackagename=sourcepackagename, distribution=distro)
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=distroseries.distribution)
+        sourcepackage_bug = self.factory.makeBug(target=dsp)
         self._assignBugTaskToTeamOwnerAndSetMilestone(
             sourcepackage_bug.bugtasks[0], distro_milestone)
 

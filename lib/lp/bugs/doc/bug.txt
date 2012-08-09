@@ -93,11 +93,11 @@ The event can be seen when we file a bug.
     >>> from lp.registry.enums import InformationType
 
     >>> steve_harris = factory.makePerson(name='steve-harris')
+    >>> jukebox = factory.makeProduct()
     >>> params = CreateBugParams(
     ...     owner=steve_harris, title="Oh I hate this song",
-    ...     comment="Janick keeps playing Mr Blobby.")
-    >>> jukebox = factory.makeProduct()
-    >>> params.setBugTarget(product=jukebox)
+    ...     comment="Janick keeps playing Mr Blobby.",
+    ...     target=jukebox)
 
     >>> bug = bugset.createBug(params)
     New bug created: Oh I hate this song
@@ -113,8 +113,8 @@ parameter is available to override the user recorded in the event.
     >>> params = CreateBugParams(
     ...     owner=steve_harris, filed_by=rod_smallwood,
     ...     title="Steve really hates this song",
-    ...     comment="He thinks Janick is doing it, but it's really me.")
-    >>> params.setBugTarget(product=jukebox)
+    ...     comment="He thinks Janick is doing it, but it's really me.",
+    ...     target=jukebox)
     >>> bug = bugset.createBug(params)
     New bug created: Steve really hates this song
               Owner: steve-harris
@@ -371,8 +371,8 @@ When a public bug is filed:
     >>> firefox = productset.get(4)
     >>> foobar = personset.getByEmail('foo.bar@canonical.com')
     >>> params = CreateBugParams(
-    ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
-    >>> params.setBugTarget(product=firefox)
+    ...     title="test firefox bug", comment="blah blah blah", owner=foobar,
+    ...     target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> public_bug = bugset.get(added_bug.id)
 
@@ -381,8 +381,7 @@ passing both a comment /and/ a msg would have raised an AssertionError:
 
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah",
-    ...     msg="foo foo foo", owner=foobar)
-    >>> params.setBugTarget(product=firefox)
+    ...     msg="foo foo foo", owner=foobar, target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     Traceback (most recent call last):
     ...
@@ -413,8 +412,7 @@ When a private bug is filed:
 
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar,
-    ...     information_type=InformationType.USERDATA)
-    >>> params.setBugTarget(product=firefox)
+    ...     information_type=InformationType.USERDATA, target=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
 
@@ -438,8 +436,8 @@ sourcepackage. E.g.
     >>> evolution = spnset.get(9)
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah",
-    ...     owner=foobar, information_type=InformationType.USERDATA)
-    >>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
+    ...     owner=foobar, information_type=InformationType.USERDATA,
+    ...     target=ubuntu.getSourcePackage(evolution))
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
     >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
@@ -1431,7 +1429,7 @@ and a user and returns the set of Bugs for those BugTasks.
     >>> from operator import attrgetter
     >>> bug_tasks = [
     ...     factory.makeBug(
-    ...         product=firefox, title="New bug %s" % i).bugtasks[0]
+    ...         target=firefox, title="New bug %s" % i).bugtasks[0]
     ...     for i in range(5)]
 
     >>> bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(

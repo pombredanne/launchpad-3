@@ -54,7 +54,7 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
                 bug_supervisor=self.bug_team,
                 user=self.product.owner)
         self.bug = self.factory.makeBug(
-            owner=self.owner, product=self.product,
+            owner=self.owner, target=self.product,
             information_type=InformationType.USERDATA)
 
     def test_privateBugRegularUser(self):
