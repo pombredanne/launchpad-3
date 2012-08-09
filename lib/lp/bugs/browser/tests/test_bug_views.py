@@ -95,7 +95,7 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro,
+            target=distro,
             information_type=InformationType.PROPRIETARY, owner=owner)
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url, user=owner)
@@ -162,7 +162,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         super(TestBugPortletSubscribers, self).setUp()
         self.target = self.factory.makeProduct()
         bug_owner = self.factory.makePerson(name="bug-owner")
-        self.bug = self.factory.makeBug(owner=bug_owner, product=self.target)
+        self.bug = self.factory.makeBug(owner=bug_owner, target=self.target)
         # We need to put the Bug and default BugTask into the LaunchBag
         # because BugContextMenu relies on the LaunchBag to populate its
         # context property

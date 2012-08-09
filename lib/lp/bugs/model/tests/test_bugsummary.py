@@ -80,7 +80,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_tag = BugTag(bug=bug, tag=tag)
             self.store.add(bug_tag)
 
@@ -101,7 +101,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_tag = BugTag(bug=bug, tag=old_tag)
             self.store.add(bug_tag)
 
@@ -128,7 +128,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_tag = BugTag(bug=bug, tag=tag)
             self.store.add(bug_tag)
 
@@ -150,7 +150,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
             bug_task._status = org_status
             self.assertCount(count + 1, product=product, status=org_status)
@@ -169,7 +169,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         for count in range(3):
-            bug = self.factory.makeBug(product=product)
+            bug = self.factory.makeBug(target=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
             bug_task.importance = org_importance
             self.assertCount(
@@ -197,7 +197,7 @@ class TestBugSummary(TestCaseWithFactory):
             getUtility(IService, 'sharing').sharePillarInformation(
                 product, person_c, product.owner,
                 {InformationType.USERDATA: SharingPermission.ALL})
-        bug = self.factory.makeBug(product=product, owner=person_b)
+        bug = self.factory.makeBug(target=product, owner=person_b)
 
         bug.subscribe(person=person_a, subscribed_by=person_a)
 
@@ -216,7 +216,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_makePublic(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -234,7 +234,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_subscribePrivate(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -247,7 +247,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_unsubscribePrivate(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -261,7 +261,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_subscribePublic(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -273,7 +273,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_unsubscribePublic(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -288,7 +288,7 @@ class TestBugSummary(TestCaseWithFactory):
     def test_addProduct(self):
         distribution = self.factory.makeDistribution()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(distribution=distribution)
+        bug = self.factory.makeBug(target=distribution)
 
         self.assertCount(1, distribution=distribution)
         self.assertCount(0, product=product)
@@ -612,7 +612,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_addPatch(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
 
         self.assertCount(0, product=product, has_patch=True)
 
@@ -622,7 +622,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_removePatch(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         removeSecurityProxy(bug).latest_patch_uploaded = datetime.now(tz=utc)
 
         self.assertCount(1, product=product, has_patch=True)
@@ -635,7 +635,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_duplicate(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
 
         self.assertCount(1, product=product)
 

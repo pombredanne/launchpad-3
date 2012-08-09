@@ -702,12 +702,12 @@ closed after a certain date.
     >>> from lp.services.searchbuilder import greater_than
     >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
-    >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
+    >>> not_closed_bug = factory.makeBug(target=product, title="Not closed")
     >>> bug_closed_a_day_ago = factory.makeBug(
-    ...     product=product, date_closed=utc_now-timedelta(days=1),
+    ...     target=product, date_closed=utc_now-timedelta(days=1),
     ...     title="Closed a day ago")
     >>> bug_closed_a_week_ago = factory.makeBug(
-    ...     product=product, date_closed=utc_now-timedelta(days=7),
+    ...     target=product, date_closed=utc_now-timedelta(days=7),
     ...     title="Closed a week ago")
 
     >>> search_params = BugTaskSearchParams(
@@ -734,8 +734,7 @@ It's possible to search for bugs with an attachment of a certain type.
     ...     IBugAttachmentSet,
     ...     )
     >>> product = factory.makeProduct()
-    >>> patch_bug = factory.makeBug(
-    ...     product=product)
+    >>> patch_bug = factory.makeBug(target=product)
     >>> filecontent = 'Some diff data'
     >>> filealias = getUtility(ILibraryFileAliasSet).create(
     ...     name='patch.diff', size=len(filecontent),
@@ -1257,7 +1256,7 @@ of the bug reports about the project. Search for bug tasks that this new
 person is subscribed.
 
     >>> product = factory.makeProduct()
-    >>> bug = factory.makeBug(product=product)
+    >>> bug = factory.makeBug(target=product)
     >>> project = factory.makeProject()
     >>> product.project = project
     >>> project_struct_subber = factory.makePerson(
@@ -1276,7 +1275,7 @@ the project and ensure that duplicate bug tasks do not appear in the search
 results.
 
     >>> product2 = factory.makeProduct()
-    >>> bug = factory.makeBug(product=product2)
+    >>> bug = factory.makeBug(target=product2)
     >>> product2.project = project
     >>> product2.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)

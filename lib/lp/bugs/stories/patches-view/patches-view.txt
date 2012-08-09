@@ -39,7 +39,7 @@ view, because that bug has no patch attachments.
     ... def make_bug(
     ...     title, product, importance=BugTaskImportance.UNDECIDED,
     ...     status=BugTaskStatus.NEW):
-    ...     bug = factory.makeBug(title=title, product=product)
+    ...     bug = factory.makeBug(title=title, target=product)
     ...     transaction.commit()
     ...     bug.default_bugtask.transitionToImportance(
     ...         importance, product.owner)

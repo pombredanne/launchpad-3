@@ -102,7 +102,7 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         adminteam.setContactAddress(None)
         team = self.factory.makeTeam(owner=adminteam)
         with person_logged_in(team.teamowner):
-            team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+            team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
             team.defaultrenewalperiod = 10
 
         # Create a person to be in the control team.
@@ -119,7 +119,7 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         with dbuser(config.expiredmembershipsflagger.dbuser):
             membershipset.handleMembershipsExpiringToday(janitor)
         self.assertEqual(
-            teammembership.status, TeamMembershipStatus.APPROVED)
+            TeamMembershipStatus.EXPIRED, teammembership.status)
 
 
 class TestTeamMembershipSet(TestCaseWithFactory):
@@ -1003,12 +1003,11 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
         }))
         super(TestTeamMembershipJobs, self).setUp()
 
-    def _make_subscribed_bug(self, grantee, product=None, distribution=None,
+    def _make_subscribed_bug(self, grantee, target,
                              information_type=InformationType.USERDATA):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            owner=owner, product=product, distribution=distribution,
-            information_type=information_type)
+            owner=owner, target=target, information_type=information_type)
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
         return bug, owner
@@ -1020,7 +1019,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
         product = self.factory.makeProduct()
         # Make a bug the person_grantee is subscribed to.
         bug1, ignored = self._make_subscribed_bug(
-            person_grantee, product=product,
+            person_grantee, product,
             information_type=InformationType.USERDATA)
 
         # Make another bug and grant access to a team.
@@ -1028,7 +1027,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
             members=[person_grantee])
         bug2, bug2_owner = self._make_subscribed_bug(
-            team_grantee, product=product,
+            team_grantee, product,
             information_type=InformationType.PRIVATESECURITY)
         # Add a subscription for the person_grantee.
         with person_logged_in(bug2_owner):
@@ -1074,19 +1073,6 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         # expiration date.
         self.assertEqual(None, self.tm.dateexpires)
         message = 'green in team red has no membership expiration date.'
-        self.assertRaisesWithContent(
-            AssertionError, message, self.tm.sendExpirationWarningEmail)
-
-    def test_error_raised_for_team_with_automatic_renewal(self):
-        # An exception is raised if the team's TeamMembershipRenewalPolicy
-        # is AUTOMATIC.
-        self.team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
-        self.team.defaultrenewalperiod = 365
-        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
-        removeSecurityProxy(self.tm).dateexpires = tomorrow
-        message = (
-            'Team red with automatic renewals should not send '
-            'expiration warnings.')
         self.assertRaisesWithContent(
             AssertionError, message, self.tm.sendExpirationWarningEmail)
 

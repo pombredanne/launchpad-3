@@ -381,7 +381,7 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         super(BugSubscriptionsListViewTestCase, self).setUp()
         self.product = self.factory.makeProduct(
             name='widgetsrus', displayname='Widgets R Us')
-        self.bug = self.factory.makeBug(product=self.product)
+        self.bug = self.factory.makeBug(target=self.product)
         self.subscriber = self.factory.makePerson()
 
     def test_form_initializes(self):

@@ -810,7 +810,7 @@ with different verbose_bugnotifications settings.
 
     >>> with lp_dbuser():
     ...     bug = factory.makeBug(
-    ...         product=factory.makeProduct(title='Foo'),
+    ...         target=factory.makeProduct(title='Foo'),
     ...         title='In the beginning, the universe was created. This '
     ...             'has made a lot of people very angry and has been '
     ...             'widely regarded as a bad move',
