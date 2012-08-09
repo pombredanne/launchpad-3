@@ -35,7 +35,7 @@ class TestDistributionSourcePackageFormatterAPI(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_link(self):
-        sourcepackagename = self.factory.makeSourcePackageName('mouse')
+        self.factory.makeSourcePackageName('mouse')
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         dsp = ubuntu.getSourcePackage('mouse')
         markup = (
@@ -128,7 +128,7 @@ class TestDistributionSourceView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistributionSourceView, self).setUp()
-        sourcepackagename = self.factory.makeSourcePackageName('mouse')
+        self.factory.makeSourcePackageName('mouse')
         distro = self.factory.makeDistribution()
         self.dsp = distro.getSourcePackage('mouse')
 
