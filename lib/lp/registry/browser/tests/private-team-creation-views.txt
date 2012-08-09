@@ -100,9 +100,9 @@ Commercial admins can create a team too.
     ...     'field.displayname': 'Shhhh',
     ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '',
+    ...     'field.defaultrenewalperiod': '365',
     ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.renewal_policy': 'NONE',
+    ...     'field.renewal_policy': 'ONDEMAND',
     ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
