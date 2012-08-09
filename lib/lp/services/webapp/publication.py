@@ -74,7 +74,6 @@ from lp.services.webapp.interfaces import (
     FinishReadOnlyRequestEvent,
     IDatabasePolicy,
     ILaunchpadRoot,
-    INotificationResponse,
     IOpenLaunchBag,
     IPlacelessAuthUtility,
     IPrimaryContext,
@@ -84,7 +83,6 @@ from lp.services.webapp.interfaces import (
     OffsiteFormPostError,
     StartRequestEvent,
     )
-from lp.services.webapp.menu import structured
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.vhosts import allvhosts
 
@@ -308,21 +306,6 @@ class LaunchpadBrowserPublication(
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         maybe_block_offsite_form_post(request)
-        self.maybeNotifyReadOnlyMode(request)
-
-    def maybeNotifyReadOnlyMode(self, request):
-        """Hook to notify about read-only mode."""
-        if is_read_only():
-            notification_response = INotificationResponse(request, None)
-            if notification_response is not None:
-                notification_response.addWarningNotification(
-                    structured("""
-                        Launchpad is undergoing maintenance and is in
-                        read-only mode. <i>You cannot make any
-                        changes.</i> You can find more information on the
-                        <a href="http://identi.ca/launchpadstatus">Launchpad
-                        system status</a> page.
-                        """))
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.
