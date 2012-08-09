@@ -16,7 +16,6 @@ from storm.database import (
     STATE_RECONNECT,
     )
 from storm.exceptions import DisconnectionError
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import directlyProvides
 from zope.publisher.interfaces import (
@@ -24,13 +23,7 @@ from zope.publisher.interfaces import (
     Retry,
     )
 
-from lp.services.config import dbconfig
 from lp.services.database.lpstorm import IMasterStore
-from lp.services.database.readonly import is_read_only
-from lp.services.database.tests.readonly import (
-    remove_read_only_file,
-    touch_read_only_file,
-    )
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
@@ -38,13 +31,9 @@ from lp.services.oauth.interfaces import (
     )
 import lp.services.webapp.adapter as dbadapter
 from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
     NoReferrerError,
     OAuthPermission,
     OffsiteFormPostError,
-    SLAVE_FLAVOR,
     )
 from lp.services.webapp.publication import (
     is_browser,
