@@ -348,3 +348,68 @@ deleteQueueAdmin() removes it:
     ubuntu-team
     name12
 
+newPocketQueueAdmin() creates a permission for a person to administer a
+specific pocket in the distroseries queues, which may or may not be
+per-series:
+
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+    >>> def showPocketQueueAdmins(archive, pocket, distroseries=None):
+    ...     archive_admins = permission_set.queueAdminsForPocket(
+    ...         archive, pocket, distroseries=distroseries)
+    ...     for archive_admin in sorted(
+    ...         archive_admins, key=operator.attrgetter("id")):
+    ...         print archive_admin.person.name
+
+    >>> new_permission = permission_set.newPocketQueueAdmin(
+    ...     ubuntu.main_archive, carlos, PackagePublishingPocket.SECURITY)
+    >>> new_permission = permission_set.newPocketQueueAdmin(
+    ...     ubuntu.main_archive, mark, PackagePublishingPocket.PROPOSED,
+    ...     distroseries=ubuntu.series[0])
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
+    carlos
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED)
+    mark
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED,
+    ...     distroseries=ubuntu.series[0])
+    mark
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED,
+    ...     distroseries=ubuntu.series[1])
+
+checkAuthenticated returns sensible results for these permissions:
+
+    >>> def countPocketAdminPermissions(person, pocket, distroseries=None):
+    ...     return permission_set.checkAuthenticated(
+    ...         person, ubuntu.main_archive,
+    ...         ArchivePermissionType.QUEUE_ADMIN, pocket,
+    ...         distroseries=distroseries).count()
+
+    >>> countPocketAdminPermissions(carlos, PackagePublishingPocket.SECURITY)
+    1
+    >>> countPocketAdminPermissions(mark, PackagePublishingPocket.PROPOSED)
+    1
+    >>> countPocketAdminPermissions(
+    ...     mark, PackagePublishingPocket.PROPOSED, ubuntu.series[0])
+    1
+    >>> countPocketAdminPermissions(
+    ...     mark, PackagePublishingPocket.PROPOSED, ubuntu.series[1])
+    0
+    >>> countPocketAdminPermissions(
+    ...     mark, PackagePublishingPocket.SECURITY, ubuntu.series[0])
+    0
+
+deletePocketQueueAdmin removes them:
+
+    >>> permission_set.deletePocketQueueAdmin(
+    ...     ubuntu.main_archive, carlos, PackagePublishingPocket.SECURITY)
+    >>> permission_set.deletePocketQueueAdmin(
+    ...     ubuntu.main_archive, mark, PackagePublishingPocket.PROPOSED,
+    ...     distroseries=ubuntu.series[0])
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED)
