@@ -10,7 +10,6 @@ import os
 from testtools.matchers import (
     Equals,
     IsInstance,
-    Not,
     raises,
     )
 
@@ -149,11 +148,6 @@ class TestDebBugs(TestCase):
         tracker = self.get_tracker()
         self.assertThat(tracker.getRemoteStatus("1"), IsInstance(str))
         self.assertThat(tracker.getRemoteImportance("1"), IsInstance(str))
-        name, email = tracker.getBugReporter("1")
-        self.expectFailure("No decoding on headers done",
-            self.assertThat, name, Not(Equals("=?UTF-8?Q?Jes=C3=BAs?=")))
-        self.assertThat((name, email),
-            Equals((u"Jes\xfas", "jesus@example.com")))
 
     def test_non_ascii_v3(self):
         """Format-Version 2 UTF-8 encoding on headers should not break"""
@@ -165,8 +159,3 @@ class TestDebBugs(TestCase):
         tracker = self.get_tracker()
         self.assertThat(tracker.getRemoteStatus("1"), IsInstance(str))
         self.assertThat(tracker.getRemoteImportance("1"), IsInstance(str))
-        name, email = tracker.getBugReporter("1")
-        self.expectFailure("No decoding on headers done",
-            self.assertThat, name, Not(Equals("Jes\xc3\xbas")))
-        self.assertThat((name, email),
-            Equals((u"Jes\xfas", "jesus@example.com")))
