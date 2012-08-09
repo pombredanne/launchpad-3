@@ -303,7 +303,8 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
 
 Use can explicitly select 'published' filter and will get the same result.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['published']
+    >>> anon_browser.getControl(
+    ...     name='field.status_filter').value = ['published']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -313,7 +314,8 @@ Use can explicitly select 'published' filter and will get the same result.
 When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['superseded']
+    >>> anon_browser.getControl(
+    ...     name='field.status_filter').value = ['superseded']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source            Published    Status        Series   Section  Build

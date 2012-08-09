@@ -125,7 +125,8 @@ First, create a subscription for Joe Smith's team to mark's archive
 so that Joe has multiple subscriptions:
 
     >>> mark_browser = setupBrowser(auth="Basic mark@example.com:test")
-    >>> mark_browser.open("http://launchpad.dev/~mark/+archive/p3a/+subscriptions")
+    >>> mark_browser.open(
+    ...     "http://launchpad.dev/~mark/+archive/p3a/+subscriptions")
     >>> mark_browser.getControl(name='field.subscriber').value = 'joesmith'
     >>> mark_browser.getControl(
     ...     name='field.description').value = "Joe is also my friend"

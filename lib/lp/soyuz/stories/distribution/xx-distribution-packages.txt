@@ -388,10 +388,10 @@ A link to further PPA searches is also included.
 Source package change logs
 --------------------------
 
-/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that lists
-each published version of a package with its changelog entry for that version.
-To navigate to this page, click on the "View full change log" link from
-the index page.
+/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that
+lists each published version of a package with its changelog entry for that
+version.  To navigate to this page, click on the "View full change log" link
+from the index page.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/")
     >>> browser.getLink("View full change log").click()

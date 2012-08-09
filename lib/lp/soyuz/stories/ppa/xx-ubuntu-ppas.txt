@@ -623,7 +623,8 @@ series-widget-div control to update them:
 
 And the sources.list entries point to the right distribution release:
 
-    >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
+    >>> results = find_tag_by_id(
+    ...     anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
