@@ -48,6 +48,7 @@ import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
+from zope.app.form.browser.textwidgets import IntWidget
 from zope.formlib.form import (
     Fields,
     FormField,
@@ -1004,7 +1005,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
-    custom_widget('defaultrenewalperiod', StrippedTextWidget,
+    custom_widget('defaultrenewalperiod', IntWidget,
         widget_class='field subordinate')
 
     def setUpFields(self):
