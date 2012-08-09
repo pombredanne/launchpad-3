@@ -650,7 +650,6 @@ deletePocketUploader removes that permission:
 
     >>> show_pocket_permissions('Proposed')
 
-    >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
     >>> response = user_webservice.named_get(
     ...     ubuntu['main_archive_link'], 'checkUpload',
     ...     distroseries=grumpy['self_link'],
@@ -711,20 +710,28 @@ It can also grant series-specific pocket queue admin permissions.
 
     >>> ubuntu_owner_ws = ubuntu_owner_webservice.get(
     ...     "/~ubuntu-owner").jsonBody()
-    >>> response = ubuntu_owner_webservice.named_post(
-    ...     ubuntu_devel['main_archive_link'], 'newPocketQueueAdmin', {},
-    ...     api_version='devel', person=ubuntu_owner_ws['self_link'],
-    ...     pocket='Security', distroseries=grumpy['self_link'])
-    >>> print response
+    >>> hoary = user_webservice.get("/ubuntu/hoary").jsonBody()
+    >>> new_permissions = []
+    >>> for series in hoary, grumpy:
+    ...     response = ubuntu_owner_webservice.named_post(
+    ...         ubuntu_devel['main_archive_link'], 'newPocketQueueAdmin', {},
+    ...         api_version='devel', person=ubuntu_owner_ws['self_link'],
+    ...         pocket='Security', distroseries=series['self_link'])
+    ...     print response
+    ...     new_permissions.append(ubuntu_owner_webservice.get(
+    ...         response.getHeader('Location')).jsonBody())
+    HTTP/1.1 201 Created
+    ...
     HTTP/1.1 201 Created
     ...
 
-    >>> new_permission = ubuntu_owner_webservice.get(
-    ...     response.getHeader('Location')).jsonBody()
-    >>> print new_permission['self_link']
+    >>> print new_permissions[0]['self_link']
+    http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-owner?type=pocket&item=SECURITY&series=hoary
+    >>> print new_permissions[1]['self_link']
     http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-owner?type=pocket&item=SECURITY&series=grumpy
 
     >>> show_pockets_for_admin(ubuntu_owner_ws)
+    Queue Administration Rights ...~ubuntu-owner None None Security .../hoary
     Queue Administration Rights ...~ubuntu-owner None None Security .../grumpy
 
 deletePocketQueueAdmin removes these permissions.
@@ -735,10 +742,13 @@ deletePocketQueueAdmin removes these permissions.
     ...     pocket='Security')
     HTTP/1.1 200 Ok
     ...
-    >>> print ubuntu_owner_webservice.named_post(
-    ...     ubuntu_devel['main_archive_link'], 'deletePocketQueueAdmin', {},
-    ...     api_version='devel', person=ubuntu_owner_ws['self_link'],
-    ...     pocket='Security', distroseries=grumpy['self_link'])
+    >>> for series in hoary, grumpy:
+    ...     print ubuntu_owner_webservice.named_post(
+    ...         ubuntu_devel['main_archive_link'], 'deletePocketQueueAdmin',
+    ...         {}, api_version='devel', person=ubuntu_owner_ws['self_link'],
+    ...         pocket='Security', distroseries=series['self_link'])
+    HTTP/1.1 200 Ok
+    ...
     HTTP/1.1 200 Ok
     ...
 
