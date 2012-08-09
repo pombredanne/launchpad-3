@@ -1,10 +1,13 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test distributionsourcepackage views."""
 
 __metaclass__ = type
 
+import re
+
+import soupmatchers
 from zope.component import getUtility
 
 from lp.app.enums import ServiceUsage
@@ -21,7 +24,10 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import BrowsesWithQueryLimit
-from lp.testing.views import create_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestDistributionSourcePackageFormatterAPI(TestCaseWithFactory):
@@ -86,6 +92,34 @@ class TestDistributionSourcePackagePublishingHistoryView(TestCaseWithFactory):
         # make matters any worse.
         publishinghistory_browses_under_limit.query_limit += 10
         self.assertThat(dsp, publishinghistory_browses_under_limit)
+
+    def test_show_sponsor(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        ppa = self.factory.makeArchive()
+        spph = self.factory.makeSourcePackagePublishingHistory(archive=ppa)
+        creator = self.factory.makePerson()
+        sponsor = self.factory.makePerson()
+        copied_spph = spph.copyTo(
+            spph.distroseries, spph.pocket, archive, creator=creator,
+            sponsor=sponsor)
+        html = create_initialized_view(copied_spph, "+record-details").render()
+        record_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "copy summary", "li", text=re.compile("sponsored by")),
+            soupmatchers.Tag(
+                "copy creator", "a", text=creator.displayname,
+                attrs={
+                    "href": "/~%s" % creator.name,
+                    "class": "sprite person",
+                    }),
+            soupmatchers.Tag(
+                "copy sponsor", "a", text=sponsor.displayname,
+                attrs={
+                    "href": "/~%s" % sponsor.name,
+                    "class": "sprite person",
+                    }),
+            )
+        self.assertThat(html, record_matches)
 
 
 class TestDistributionSourceView(TestCaseWithFactory):

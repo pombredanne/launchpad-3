@@ -57,6 +57,9 @@
         <tal:source_creator condition="context/creator">
           by <a tal:replace="structure context/creator/fmt:link"/>
         </tal:source_creator>
+        <tal:source_sponsor condition="context/sponsor">
+          (sponsored by <a tal:replace="structure context/sponsor/fmt:link"/>)
+        </tal:source_sponsor>
       </tal:source_original_location>
       <tal:binary_build_location condition="view/is_binary">
         <tal:message
