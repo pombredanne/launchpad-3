@@ -433,23 +433,11 @@ class DatabaseConfig:
 
     @property
     def main_master(self):
-        # Its a bit silly having ro_main_master and rw_main_master.
-        # rw_main_master will never be used, as read-only-mode will
-        # fail attempts to access the master database with a
-        # ReadOnlyModeDisallowedStore exception.
-        from lp.services.database.readonly import is_read_only
-        if is_read_only():
-            return self.ro_main_master
-        else:
-            return self.rw_main_master
+        return self.rw_main_master
 
     @property
     def main_slave(self):
-        from lp.services.database.readonly import is_read_only
-        if is_read_only():
-            return self.ro_main_slave
-        else:
-            return self.rw_main_slave
+        return self.rw_main_slave
 
     def override(self, **kwargs):
         """Override one or more config attributes.
