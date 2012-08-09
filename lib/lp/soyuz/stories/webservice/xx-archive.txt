@@ -284,8 +284,6 @@ Colin is a valid member of the team who owns the ubuntu primary archive.
     >>> from lp.testing.pages import webservice_for_person
     >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
 
     >>> login('foo.bar@canonical.com')
     >>> cjwatson = getUtility(IPersonSet).getByName('kamion')
