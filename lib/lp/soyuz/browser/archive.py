@@ -380,6 +380,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
         if item_type is None or item is None:
             return None
 
+        the_item = None
         kwargs = {}
         if item_type == 'component':
             # See if "item" is a component name.
@@ -418,8 +419,6 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
                         pass
             except KeyError:
                 pass
-        else:
-            the_item = None
 
         if the_item is not None:
             result_set = getUtility(IArchivePermissionSet).checkAuthenticated(
