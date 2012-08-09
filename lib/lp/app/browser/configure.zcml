@@ -421,15 +421,6 @@
       class="lp.services.webapp.error.TranslationUnavailableView"
       />
 
-  <!-- ReadOnlyModeViolation -->
-  <browser:page
-      for="lp.services.webapp.interfaces.ReadOnlyModeViolation"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-readonlyfailure.pt"
-      class="lp.services.webapp.error.ReadOnlyErrorView"
-      />
-
   <!-- Vocabularies -->
   <browser:page
     for="*"
