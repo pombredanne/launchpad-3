@@ -69,7 +69,7 @@ has a number of useful properties that can be checked:
 The checkAuthenticated() call is also able to check someone's
 permission on a SourcePackageName, which gives a smaller radius of
 permission than allowing access to the whole component.  Just pass
-a SourcePacakgeName as the "item" parameter:
+a SourcePackageName as the "item" parameter:
 
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
@@ -98,10 +98,9 @@ team are returned.  This allows team-level permissions to be set.
     >>> [permission.person.name for permission in all_main_permissions]
     [u'ubuntu-team']
 
-    >>> mark_permissions = permission_set.checkAuthenticated(
+    >>> permission_set.checkAuthenticated(
     ...     mark, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
-    ...     main_component)
-    >>> mark_permissions.count()
+    ...     main_component).count()
     1
 
 checkAuthenticated() does not know about any other item types, and
@@ -121,9 +120,8 @@ check permissions.
 permissionsForPerson() returns all the permission records for the supplied
 person:
 
-    >>> permissions = permission_set.permissionsForPerson(
-    ...     ubuntu.main_archive,  ubuntu_team)
-    >>> permissions.count()
+    >>> permission_set.permissionsForPerson(
+    ...     ubuntu.main_archive, ubuntu_team).count()
     7
 
 uploadersForComponent() returns ArchivePermission records where a person
@@ -178,16 +176,14 @@ components that the supplied user has permission to upload to.
 uploadersForPackage() returns the ArchivePermission records where a person
 or team has permission to upload to the supplied source package name:
 
-    >>> uploaders = permission_set.uploadersForPackage(
-    ...     ubuntu.main_archive, alsa_utils)
-    >>> uploaders.count()
+    >>> permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, alsa_utils).count()
     0
 
 You can also pass a string package name instead of an ISourcePackageName:
 
-    >>> uploaders = permission_set.uploadersForPackage(
-    ...     ubuntu.main_archive, "alsa-utils")
-    >>> uploaders.count()
+    >>> permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, "alsa-utils").count()
     0
 
 Passing a non-existent package name will cause a
