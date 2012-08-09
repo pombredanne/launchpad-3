@@ -301,6 +301,7 @@
       name="index.html"
       permission="zope.Public"
       class="lp.services.webapp.login.UnauthorizedView"
+      template="../templates/launchpad-forbidden.pt"
       attribute="__call__"
       />
 
