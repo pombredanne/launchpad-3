@@ -30,6 +30,7 @@ from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.enums import (
     BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     )
 from lp.registry.errors import (
@@ -652,27 +653,19 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertEqual(lp_janitor, cs.purchaser)
 
 
-class ProductSharingPoliciesTestCase(TestCaseWithFactory):
-    """Test Product.bug_sharing_policy and Product.branch_sharing_policy."""
+class BaseSharingPolicyTests:
+    """Common tests for product sharing policies."""
 
     layer = DatabaseFunctionalLayer
 
-    enum = BranchSharingPolicy
-    public_policy = BranchSharingPolicy.PUBLIC
-    commercial_policies = (
-        BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
-        BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
-        BranchSharingPolicy.PROPRIETARY,
-        )
-
     def setSharingPolicy(self, policy, user):
-        return self.product.setBranchSharingPolicy(policy, user)
+        raise NotImplementedError
 
     def getSharingPolicy(self):
-        return self.product.branch_sharing_policy
+        raise NotImplementedError
 
     def setUp(self):
-        super(ProductSharingPoliciesTestCase, self).setUp()
+        super(BaseSharingPolicyTests, self).setUp()
         self.product = self.factory.makeProduct()
         self.commercial_admin = self.factory.makePerson()
         with admin_logged_in():
@@ -731,6 +724,48 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
                 self.product, InformationType.PROPRIETARY, self.product.owner))
+
+
+class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
+                                      TestCaseWithFactory):
+    """Test Product.bug_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    enum = BugSharingPolicy
+    public_policy = BugSharingPolicy.PUBLIC
+    commercial_policies = (
+        BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        BugSharingPolicy.PROPRIETARY,
+        )
+
+    def setSharingPolicy(self, policy, user):
+        return self.product.setBugSharingPolicy(policy, user)
+
+    def getSharingPolicy(self):
+        return self.product.bug_sharing_policy
+
+
+class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
+                                         TestCaseWithFactory):
+    """Test Product.branch_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    enum = BranchSharingPolicy
+    public_policy = BranchSharingPolicy.PUBLIC
+    commercial_policies = (
+        BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        BranchSharingPolicy.PROPRIETARY,
+        )
+
+    def setSharingPolicy(self, policy, user):
+        return self.product.setBranchSharingPolicy(policy, user)
+
+    def getSharingPolicy(self):
+        return self.product.branch_sharing_policy
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
