@@ -672,24 +672,25 @@ class BaseSharingPolicyTests:
             commercials = getUtility(ILaunchpadCelebrities).commercial_admin
             commercials.addMember(self.commercial_admin, commercials)
 
-    def test_commercial_admin_can_set_branch_policy(self):
-        # Commercial admins can use setBranchSharingPolicy.
+    def test_commercial_admin_can_set_policy(self):
+        # Commercial admins can set sharing policies.
         self.setSharingPolicy(self.public_policy, self.commercial_admin)
         self.assertEqual(self.public_policy, self.getSharingPolicy())
 
-    def test_random_cannot_set_branch_policy(self):
-        # An unrelated user can't use setBranchSharingPolicy.
+    def test_random_cannot_set_policy(self):
+        # An unrelated user can't set sharing policies.
         person = self.factory.makePerson()
         self.assertRaises(
             Unauthorized, self.setSharingPolicy, self.public_policy, person)
 
-    def test_owner_cannot_set_branch_policy(self):
-        # The project owner can't yet use setBranchSharingPolicy.
+    def test_owner_cannot_set_policy(self):
+        # The project owner can't yet set sharing policies. This will
+        # change once they're stable.
         self.assertRaises(
             Unauthorized, self.setSharingPolicy,
             self.public_policy, self.product.owner)
 
-    def test_proprietary_branches_forbidden_without_commercial_sub(self):
+    def test_proprietary_forbidden_without_commercial_sub(self):
         # No policy that allows Proprietary can be configured without a
         # commercial subscription.
         self.setSharingPolicy(self.public_policy, self.commercial_admin)
@@ -699,7 +700,7 @@ class BaseSharingPolicyTests:
                 CommercialSubscribersOnly,
                 self.setSharingPolicy, policy, self.commercial_admin)
 
-    def test_proprietary_branches_allowed_with_commercial_sub(self):
+    def test_proprietary_allowed_with_commercial_sub(self):
         # All policies are valid when there's a current commercial
         # subscription.
         self.factory.makeCommercialSubscription(product=self.product)
@@ -707,7 +708,10 @@ class BaseSharingPolicyTests:
             self.setSharingPolicy(policy, self.commercial_admin)
             self.assertEqual(policy, self.getSharingPolicy())
 
-    def test_setting_proprietary_branches_creates_access_policy(self):
+    def test_setting_proprietary_creates_access_policy(self):
+        # Setting a policy that allows Proprietary creates a
+        # corresponding access policy and shares it with the the
+        # maintainer.
         self.factory.makeCommercialSubscription(product=self.product)
         self.assertEqual(
             [InformationType.PRIVATESECURITY, InformationType.USERDATA],
