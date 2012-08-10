@@ -420,13 +420,12 @@ class DatabaseConfig:
     _config_section = None
     _db_config_attrs = frozenset([
         'dbuser',
-        'rw_main_master', 'rw_main_slave', 'ro_main_master', 'ro_main_slave',
+        'rw_main_master', 'rw_main_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'soft_request_timeout',
         'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
-        'dbuser', 'rw_main_master', 'rw_main_slave', 'ro_main_master',
-        'ro_main_slave'])
+        'dbuser', 'rw_main_master', 'rw_main_slave'])
 
     def __init__(self):
         self.reset()
