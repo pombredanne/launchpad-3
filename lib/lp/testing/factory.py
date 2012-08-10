@@ -532,17 +532,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     @with_celebrity_logged_in('admin')
     def makeAdministrator(self, name=None, email=None):
-        user = self.makePerson(name=name, email=email)
-        administrators = getUtility(ILaunchpadCelebrities).admin
-        administrators.addMember(user, administrators.teamowner)
-        return user
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).admin])
 
     @with_celebrity_logged_in('admin')
     def makeRegistryExpert(self, name=None, email='expert@example.com'):
-        user = self.makePerson(name=name, email=email)
-        registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-        registry_team.addMember(user, registry_team.teamowner)
-        return user
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).registry_experts])
+
+    @with_celebrity_logged_in('admin')
+    def makeCommercialAdmin(self, name=None, email=None):
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):

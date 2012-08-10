@@ -25,9 +25,14 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    InformationType,
+    )
 from lp.registry.errors import (
     CommercialSubscribersOnly,
     OpenTeamLinkageError,
@@ -53,6 +58,7 @@ from lp.registry.model.product import (
     )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import (
+    admin_logged_in,
     celebrity_logged_in,
     login,
     login_person,
@@ -374,33 +380,6 @@ class TestProduct(TestCaseWithFactory):
         grantees = set([grant.grantee for grant in grants])
         self.assertEqual(expected_grantess, grantees)
 
-    def test_redeemSubscription_creates_proprietary_policy(self):
-        # Creating a commercial subscription for a product also creates a
-        # Proprietary policy.
-        product = self.factory.makeProduct()
-        product.redeemSubscriptionVoucher(
-            'hello', product.owner, product.owner, 1)
-
-        ap = getUtility(IAccessPolicySource).findByPillar((product,))
-        expected = [
-            InformationType.USERDATA, InformationType.PRIVATESECURITY,
-            InformationType.PROPRIETARY]
-        self.assertContentEqual(expected, [policy.type for policy in ap])
-
-    def test_redeemSubscription_grants_maintainer_access(self):
-        # Creating a commercial subscription for a product creates an access
-        # grant on the Proprietary policy for the maintainer.
-        product = self.factory.makeProduct()
-        product.redeemSubscriptionVoucher(
-            'hello', product.owner, product.owner, 1)
-
-        policies = getUtility(IAccessPolicySource).find(
-            [(product, InformationType.PROPRIETARY)])
-        grants = getUtility(IAccessPolicyGrantSource).findByPolicy(policies)
-        expected_grantess = set([product.owner])
-        grantees = set([grant.grantee for grant in grants])
-        self.assertEqual(expected_grantess, grantees)
-
     def test_getAllowedBugInformationTypes(self):
         # All projects currently support just the non-proprietary
         # information types.
@@ -672,6 +651,129 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             lp_janitor = getUtility(ILaunchpadCelebrities).janitor
             self.assertEqual(lp_janitor, cs.registrant)
             self.assertEqual(lp_janitor, cs.purchaser)
+
+
+class BaseSharingPolicyTests:
+    """Common tests for product sharing policies."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setSharingPolicy(self, policy, user):
+        raise NotImplementedError
+
+    def getSharingPolicy(self):
+        raise NotImplementedError
+
+    def setUp(self):
+        super(BaseSharingPolicyTests, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.commercial_admin = self.factory.makePerson()
+        with admin_logged_in():
+            commercials = getUtility(ILaunchpadCelebrities).commercial_admin
+            commercials.addMember(self.commercial_admin, commercials)
+
+    def test_commercial_admin_can_set_policy(self):
+        # Commercial admins can set sharing policies.
+        self.setSharingPolicy(self.public_policy, self.commercial_admin)
+        self.assertEqual(self.public_policy, self.getSharingPolicy())
+
+    def test_random_cannot_set_policy(self):
+        # An unrelated user can't set sharing policies.
+        person = self.factory.makePerson()
+        self.assertRaises(
+            Unauthorized, self.setSharingPolicy, self.public_policy, person)
+
+    def test_owner_cannot_set_policy(self):
+        # The project owner can't yet set sharing policies. This will
+        # change once they're stable.
+        self.assertRaises(
+            Unauthorized, self.setSharingPolicy,
+            self.public_policy, self.product.owner)
+
+    def test_anonymous_cannot_set_policy(self):
+        # An anonymous user can't set sharing policies.
+        self.assertRaises(
+            Unauthorized, self.setSharingPolicy, self.public_policy, None)
+
+    def test_proprietary_forbidden_without_commercial_sub(self):
+        # No policy that allows Proprietary can be configured without a
+        # commercial subscription.
+        self.setSharingPolicy(self.public_policy, self.commercial_admin)
+        self.assertEqual(self.public_policy, self.getSharingPolicy())
+        for policy in self.commercial_policies:
+            self.assertRaises(
+                CommercialSubscribersOnly,
+                self.setSharingPolicy, policy, self.commercial_admin)
+
+    def test_proprietary_allowed_with_commercial_sub(self):
+        # All policies are valid when there's a current commercial
+        # subscription.
+        self.factory.makeCommercialSubscription(product=self.product)
+        for policy in self.enum.items:
+            self.setSharingPolicy(policy, self.commercial_admin)
+            self.assertEqual(policy, self.getSharingPolicy())
+
+    def test_setting_proprietary_creates_access_policy(self):
+        # Setting a policy that allows Proprietary creates a
+        # corresponding access policy and shares it with the the
+        # maintainer.
+        self.factory.makeCommercialSubscription(product=self.product)
+        self.assertEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            [policy.type for policy in
+             getUtility(IAccessPolicySource).findByPillar([self.product])])
+        self.setSharingPolicy(
+            self.commercial_policies[0], self.commercial_admin)
+        self.assertEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY],
+            [policy.type for policy in
+             getUtility(IAccessPolicySource).findByPillar([self.product])])
+        self.assertTrue(
+            getUtility(IService, 'sharing').checkPillarAccess(
+                self.product, InformationType.PROPRIETARY, self.product.owner))
+
+
+class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
+                                      TestCaseWithFactory):
+    """Test Product.bug_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    enum = BugSharingPolicy
+    public_policy = BugSharingPolicy.PUBLIC
+    commercial_policies = (
+        BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        BugSharingPolicy.PROPRIETARY,
+        )
+
+    def setSharingPolicy(self, policy, user):
+        return self.product.setBugSharingPolicy(policy, user)
+
+    def getSharingPolicy(self):
+        return self.product.bug_sharing_policy
+
+
+class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
+                                         TestCaseWithFactory):
+    """Test Product.branch_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    enum = BranchSharingPolicy
+    public_policy = BranchSharingPolicy.PUBLIC
+    commercial_policies = (
+        BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        BranchSharingPolicy.PROPRIETARY,
+        )
+
+    def setSharingPolicy(self, policy, user):
+        return self.product.setBranchSharingPolicy(policy, user)
+
+    def getSharingPolicy(self):
+        return self.product.branch_sharing_policy
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
