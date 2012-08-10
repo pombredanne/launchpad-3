@@ -4,7 +4,11 @@
 from cStringIO import StringIO
 import sys
 from time import sleep
+
 from lazr.jobrunner.bin.clear_queues import clear_queues
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+
 from lp.code.model.branchjob import BranchScanJob
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.features.testing import FeatureFixture
@@ -38,6 +42,20 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.addCleanup(drain_celery_queues)
         return job
 
+    def getFMR(self, job_source, expected_len):
+        """Get a FindMissingReady object when job queue reaches expected size.
+
+        Fails if the queue never reaches the expected size.
+        """
+        from lp.services.job.celeryjob import FindMissingReady
+        for x in range(600):
+            find_missing = FindMissingReady(job_source)
+            if len(find_missing.queue_contents) == expected_len:
+                return find_missing
+            sleep(0.1)
+        self.fail('Queue size did not reach %d; still at %d' %
+                  (expected_len, len(find_missing.queue_contents)))
+
     def assertQueueSize(self, app, queues, expected_len):
         """Assert the message queue (eventually) reaches the specified size.
 
@@ -53,28 +71,36 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.fail('Queue size did not reach %d; still at %d' %
                   (expected_len, actual_len))
 
+    def addTextDetail(self, name, text):
+        content = Content(UTF8_TEXT, lambda: text)
+        self.addDetail(name, content)
+
     def test_find_missing_ready(self):
         """A job which is ready but not queued is "missing"."""
         job = self.createMissingJob()
-        self.assertQueueSize(self.CeleryRunJob.app,
-                             [BranchScanJob.task_queue], 0)
-        self.assertEqual([job], self.find_missing_ready(BranchScanJob))
+        self.addTextDetail(
+            'job_info', 'job.id: %d, job.job_id: %d' % (job.id, job.job_id))
+        find_missing_ready_obj = self.getFMR(BranchScanJob, 0)
+        self.assertEqual([job], find_missing_ready_obj.find_missing_ready())
         job.runViaCelery()
-        self.assertQueueSize(self.CeleryRunJob.app,
-                             [BranchScanJob.task_queue], 1)
-        #self.assertEqual([], self.find_missing_ready(BranchScanJob))
-        # XXX AaronBentley: 2012-08-01 bug=1031018: Extra diagnostic info to
-        # help diagnose this hard-to-reproduce failure.
-        if self.find_missing_ready(BranchScanJob) != []:
-            from lazr.jobrunner.celerytask import list_queued
-            contents = list_queued(
-                self.CeleryRunJob.app, [BranchScanJob.task_queue])
-            self.fail('queue: %r, job.id: %d, job.job_id: %d' %
-                      (contents, job.id, job.job_id))
+        find_missing_ready_obj = self.getFMR(BranchScanJob, 1)
+        missing_ready = find_missing_ready_obj.find_missing_ready()
+        try:
+            self.assertEqual([], missing_ready)
+        except:
+            # XXX AaronBentley: 2012-08-01 bug=1031018: Extra diagnostic info
+            # to help diagnose this hard-to-reproduce failure.
+            self.addTextDetail('queued_job_ids',
+                               '%r' % (find_missing_ready_obj.queued_job_ids))
+            self.addTextDetail('queue_contents',
+                               repr(find_missing_ready_obj.queue_contents))
+            self.addTextDetail(
+                'missing_ready_job_id', repr([missing.job_id for missing in
+                missing_ready]))
+            raise
         drain_celery_queues()
-        self.assertQueueSize(self.CeleryRunJob.app,
-                             [BranchScanJob.task_queue], 0)
-        self.assertEqual([job], self.find_missing_ready(BranchScanJob))
+        find_missing_ready_obj = self.getFMR(BranchScanJob, 0)
+        self.assertEqual([job], find_missing_ready_obj.find_missing_ready())
 
     def test_run_missing_ready_not_enabled(self):
         """run_missing_ready does nothing if the class isn't enabled."""

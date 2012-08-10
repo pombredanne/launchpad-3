@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `StructuralSubscription`."""
@@ -30,6 +30,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions,
     get_structural_subscriptions_for_bug,
     )
+from lp.registry.enums import InformationType
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.testing import (
     anonymous_logged_in,
@@ -158,8 +159,8 @@ class FilteredStructuralSubscriptionTestBase:
             self.ordinary_subscriber, self.ordinary_subscriber)
         self.initial_filter = self.subscription.bug_filters[0]
 
-    def assertSubscribers(
-        self, expected_subscribers, level=BugNotificationLevel.LIFECYCLE):
+    def assertSubscribers(self, expected_subscribers,
+                          level=BugNotificationLevel.LIFECYCLE):
         observed_subscribers = list(
             get_structural_subscribers(self.bugtask, None, level))
         self.assertEqual(expected_subscribers, observed_subscribers)
@@ -203,6 +204,14 @@ class FilteredStructuralSubscriptionTestBase:
 
         # If the filter is adjusted, the subscription is found again.
         self.initial_filter.importances = [self.bugtask.importance]
+        self.assertSubscribers([self.ordinary_subscriber])
+
+    def test_getStructuralSubscribers_with_filter_on_information_type(self):
+        self.assertSubscribers([self.ordinary_subscriber])
+        self.initial_filter.information_types = [InformationType.USERDATA]
+        self.assertSubscribers([])
+        self.initial_filter.information_types = [
+            self.bugtask.bug.information_type]
         self.assertSubscribers([self.ordinary_subscriber])
 
     def test_getStructuralSubscribers_with_filter_on_level(self):
@@ -472,7 +481,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
 
     def test_product_target(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         bugtask = bug.bugtasks[0]
         result = get_structural_subscription_targets(bug.bugtasks)
         self.assertEqual(list(result), [(bugtask, product)])
@@ -482,7 +491,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
         login_person(actor)
         product = self.factory.makeProduct()
         milestone = self.factory.makeMilestone(product=product)
-        bug = self.factory.makeBug(product=product, milestone=milestone)
+        bug = self.factory.makeBug(target=product, milestone=milestone)
         bugtask = bug.bugtasks[0]
         result = get_structural_subscription_targets(bug.bugtasks)
         self.assertEqual(set(result), set(
@@ -495,7 +504,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries, publish=True)
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         bug.addTask(actor, sourcepackage)
         product_bugtask = bug.bugtasks[0]
         sourcepackage_bugtask = bug.bugtasks[1]
@@ -511,7 +520,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
         dist_sourcepackage = self.factory.makeDistributionSourcePackage(
             distribution=distribution)
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         bug.addTask(actor, dist_sourcepackage)
         product_bugtask = bug.bugtasks[0]
         dist_sourcepackage_bugtask = bug.bugtasks[1]
@@ -532,7 +541,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
             project.addBugSubscription(subscriber, subscriber)
         # This is a sanity check.
         self.assertEqual(project, product.parent_subscription_target)
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         result = get_structural_subscription_targets(bug.bugtasks)
         self.assertEqual(
             set([(bug.bugtasks[0], product), (bug.bugtasks[0], project)]),
@@ -551,7 +560,7 @@ class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
         self.product = self.factory.makeProduct()
         self.milestone = self.factory.makeMilestone(product=self.product)
         self.bug = self.factory.makeBug(
-            product=self.product, milestone=self.milestone)
+            target=self.product, milestone=self.milestone)
 
     def getSubscriptions(self, person=None):
         result = get_structural_subscriptions_for_bug(self.bug, person)
@@ -633,7 +642,7 @@ class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
         self_sub = project.addBugSubscription(subscriber, subscriber)
         # This is a sanity check.
         self.assertEqual(project, product.parent_subscription_target)
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         subscriptions = get_structural_subscriptions_for_bug(
             bug, subscriber)
         self.assertEqual(set([self_sub]), set(subscriptions))
@@ -645,7 +654,7 @@ class TestGetStructuralSubscriptions(TestCaseWithFactory):
 
     def make_product_with_bug(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         return product, bug
 
     def test_get_structural_subscriptions_no_subscriptions(self):
@@ -678,7 +687,7 @@ class TestGetStructuralSubscriptions(TestCaseWithFactory):
         product2 = self.factory.makeProduct(owner=actor)
         subscription2 = product2.addBugSubscription(subscriber2, subscriber2)
 
-        bug = self.factory.makeBug(product=product1)
+        bug = self.factory.makeBug(target=product1)
         bug.addTask(actor, product2)
 
         subscriptions = get_structural_subscriptions(bug, None)
@@ -698,7 +707,7 @@ class TestGetStructuralSubscriptions(TestCaseWithFactory):
         product2 = self.factory.makeProduct(owner=actor)
         product2.addBugSubscription(subscriber, subscriber)
 
-        bug = self.factory.makeBug(product=product1)
+        bug = self.factory.makeBug(target=product1)
         bug.addTask(actor, product2)
 
         subscriptions = get_structural_subscriptions(bug, None)
@@ -738,7 +747,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
 
     def make_product_with_bug(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         return product, bug
 
     def test_getStructuralSubscribers_no_subscribers(self):
@@ -772,7 +781,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         product2 = self.factory.makeProduct(owner=actor)
         product2.addBugSubscription(subscriber2, subscriber2)
 
-        bug = self.factory.makeBug(product=product1)
+        bug = self.factory.makeBug(target=product1)
         bug.addTask(actor, product2)
 
         subscribers = get_structural_subscribers(bug, None, None, None)

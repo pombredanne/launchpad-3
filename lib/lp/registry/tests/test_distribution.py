@@ -282,7 +282,13 @@ class TestDistribution(TestCaseWithFactory):
         self.assertContentEqual(
             [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
              InformationType.PRIVATESECURITY, InformationType.USERDATA],
-            self.factory.makeProduct().getAllowedBugInformationTypes())
+            self.factory.makeDistribution().getAllowedBugInformationTypes())
+
+    def test_getDefaultBugInformationType(self):
+        # The default information type for distributions is always PUBLIC.
+        self.assertEqual(
+            InformationType.PUBLIC,
+            self.factory.makeDistribution().getDefaultBugInformationType())
 
 
 class TestDistributionCurrentSourceReleases(

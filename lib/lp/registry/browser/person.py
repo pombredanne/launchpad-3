@@ -143,10 +143,11 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
@@ -256,10 +257,7 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     IOpenLaunchBag,
     )
-from lp.services.webapp.login import (
-    isFreshLogin,
-    logoutPerson,
-    )
+from lp.services.webapp.login import logoutPerson
 from lp.services.webapp.menu import get_current_view
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
@@ -2812,11 +2810,6 @@ class PersonEditEmailsView(LaunchpadFormView):
     label = 'Change your e-mail settings'
 
     def initialize(self):
-        if not isFreshLogin(self.request):
-            reauth_query = '+login?reauth=1'
-            base_url = canonical_url(self.context, view_name='+editemails')
-            login_url = '%s/%s' % (base_url, reauth_query)
-            self.request.response.redirect(login_url)
         if self.context.is_team:
             # +editemails is not available on teams.
             name = self.request['PATH_INFO'].split('/')[-1]
@@ -3600,10 +3593,11 @@ class PersonRelatedSoftwareView(LaunchpadView):
             project['title'] = pillar.title
             project['url'] = canonical_url(pillar)
             if IProduct.providedBy(pillar):
-                project['bug_count'] = product_bugtask_counts.get(pillar.id,
-                                                                  0)
+                project['bug_count'] = product_bugtask_counts.get(
+                    pillar.id, 0)
             else:
-                project['bug_count'] = pillar.open_bugtasks.count()
+                project['bug_count'] = pillar.searchTasks(
+                    BugTaskSet().open_bugtask_search).count()
             project['spec_count'] = pillar.specifications().count()
             project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)

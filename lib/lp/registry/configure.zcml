@@ -57,8 +57,7 @@
                 sendExpirationWarningEmail
                 canBeRenewedByMember
                 sendSelfRenewalNotification
-                canChangeExpirationDate
-                sendAutoRenewalNotification"/>
+                canChangeExpirationDate"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -504,7 +503,6 @@
                 findRelatedArchives
                 getMergeProposals
                 getReleasesAndPublishingHistory
-                getUsedBugTags
                 getUsedBugTagsWithOpenCounts
                 getVersion
                 get_distroseries_packages

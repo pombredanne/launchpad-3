@@ -264,6 +264,12 @@ h1 .yui3-ieditor-errors {
     text-decoration: underline;
     cursor: pointer;
     }
+
+.no-click:hover {
+    text-decoration: none !important;
+    cursor: default !important;
+    }
+    
 .yui3-buglisting-config-util a {
     position: relative;
     top: 3px;

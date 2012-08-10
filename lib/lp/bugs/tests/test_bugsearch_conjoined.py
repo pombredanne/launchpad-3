@@ -13,10 +13,10 @@ from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     person_logged_in,
@@ -31,8 +31,7 @@ class TestSearchBase(TestCaseWithFactory):
     """Tests of exclude_conjoined_tasks param."""
 
     def makeBug(self, milestone):
-        bug = self.factory.makeBug(
-            product=milestone.product, distribution=milestone.distribution)
+        bug = self.factory.makeBug(target=milestone.target)
         with person_logged_in(milestone.target.owner):
             bug.default_bugtask.transitionToMilestone(
                 milestone, milestone.target.owner)

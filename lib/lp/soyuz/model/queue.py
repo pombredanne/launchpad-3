@@ -50,6 +50,7 @@ from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.auditor.client import AuditorClient
 from lp.services.config import config
 from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
@@ -64,6 +65,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import LibraryFileAlias
@@ -625,7 +627,7 @@ class PackageUpload(SQLBase):
         # Give some karma!
         self._giveKarma()
 
-    def acceptFromQueue(self, logger=None, dry_run=False):
+    def acceptFromQueue(self, logger=None, dry_run=False, user=None):
         """See `IPackageUpload`."""
         assert not self.is_delayed_copy, 'Cannot process delayed copies.'
 
@@ -633,6 +635,9 @@ class PackageUpload(SQLBase):
             self._acceptNonSyncFromQueue(logger, dry_run)
         else:
             self._acceptSyncFromQueue()
+        if bool(getFeatureFlag('auditor.enabled')):
+            client = AuditorClient()
+            client.send(self, 'packageupload-accepted', user)
 
     def acceptFromCopy(self):
         """See `IPackageUpload`."""

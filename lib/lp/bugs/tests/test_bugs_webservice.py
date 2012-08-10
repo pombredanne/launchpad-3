@@ -24,6 +24,7 @@ from zope.component import getMultiAdapter
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
 from lp.registry.enums import InformationType
+from lp.registry.interfaces.product import License
 from lp.services.webapp import snapshot
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -32,6 +33,7 @@ from lp.testing import (
     login,
     login_person,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
@@ -55,7 +57,7 @@ class TestBugConstraints(TestCaseWithFactory):
     def setUp(self):
         super(TestBugConstraints, self).setUp()
         product = self.factory.makeProduct(name='foo')
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         lp = launchpadlib_for('testing', product.owner)
         self.bug = lp.bugs[bug.id]
 
@@ -363,3 +365,37 @@ class TestErrorHandling(TestCaseWithFactory):
         lp_bug = launchpad.load(api_url(bug))
         self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product))
+
+
+class BugSetTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_private_bugs_true(self):
+        # Verify the path through user submission, to MaloneApplication to
+        # BugSet, and back to the user creates a private bug according
+        # to the project's bugs are private by default rule.
+        project = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(project.owner):
+            project.setPrivateBugs(True, project.owner)
+        webservice = launchpadlib_for('test', 'salgado')
+        bugs_collection = webservice.load('/bugs')
+        bug = bugs_collection.createBug(
+            target=api_url(project), title='title', description='desc')
+        self.assertEqual('Private', bug.information_type)
+
+    def test_explicit_private_private_bugs_true(self):
+        # Verify the path through user submission, to MaloneApplication to
+        # BugSet, and back to the user creates a private bug beause the
+        # user commands it.
+        project = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(project.owner):
+            project.setPrivateBugs(True, project.owner)
+        webservice = launchpadlib_for('test', 'salgado')
+        bugs_collection = webservice.load('/bugs')
+        bug = bugs_collection.createBug(
+            target=api_url(project), title='title', description='desc',
+            private=True)
+        self.assertEqual('Private', bug.information_type)

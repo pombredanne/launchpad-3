@@ -423,13 +423,6 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
         workflow for joining the team.
         """)
 
-    AUTOMATIC = DBItem(30, """
-        renew their membership automatically, also notifying the admins
-
-        Memberships are automatically renewed when they expire and a note is
-        sent to the member and to team admins.
-        """)
-
 
 class TeamSubscriptionPolicy(DBEnumeratedType):
     """Team Subscription Policies
@@ -1918,9 +1911,7 @@ class ITeamPublic(Interface):
         renewal_period = person.defaultrenewalperiod
         is_required_value_missing = (
             renewal_period is None
-            and renewal_policy in [
-                TeamMembershipRenewalPolicy.AUTOMATIC,
-                TeamMembershipRenewalPolicy.ONDEMAND])
+            and renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND)
         out_of_range = (
             renewal_period is not None
             and (renewal_period <= 0 or renewal_period > 3650))
@@ -1961,13 +1952,10 @@ class ITeamPublic(Interface):
         exported_as='default_membership_period')
 
     defaultrenewalperiod = exported(
-        Int(title=_('Renewal period'), required=False,
+        Int(title=_('Self renewal period'), required=False,
             description=_(
-                "Number of days a subscription lasts after being renewed. "
-                "The number can be from 1 to 3650 (10 years). "
-                "You can customize the lengths of individual renewals, but "
-                "this is what's used for auto-renewed and user-renewed "
-                "memberships.")),
+                "Number of days members can renew their own membership. "
+                "The number can be from 1 to 3650 (10 years).")),
         exported_as='default_renewal_period')
 
     defaultexpirationdate = Attribute(

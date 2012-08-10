@@ -13,7 +13,7 @@ Set up a branch and a bug to link to.
     >>> _robots = factory.makeProductBranch(product=cybertron, owner=prime,
     ...     name='robots')
     >>> robots_url = '/' + _robots.unique_name
-    >>> _bug = factory.makeBug(product=cybertron)
+    >>> _bug = factory.makeBug(target=cybertron)
     >>> bug_url = '/bugs/' + str(_bug.id)
     >>> _spec = factory.makeSpecification()
     >>> spec_url = '/' + '/'.join([_spec.product.name, '+spec', _spec.name])

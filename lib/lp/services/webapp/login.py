@@ -16,10 +16,7 @@ from openid.consumer.consumer import (
     FAILURE,
     SUCCESS,
     )
-from openid.extensions import (
-    pape,
-    sreg,
-    )
+from openid.extensions import sreg
 from openid.fetchers import (
     setDefaultFetcher,
     Urllib2Fetcher,
@@ -48,7 +45,6 @@ from lp.registry.interfaces.person import (
     TeamEmailAddressError,
     )
 from lp.services.config import config
-from lp.services.database.readonly import is_read_only
 from lp.services.identity.interfaces.account import AccountSuspendedError
 from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.propertycache import cachedproperty
@@ -62,7 +58,6 @@ from lp.services.webapp.interfaces import (
     IPlacelessLoginSource,
     LoggedOutEvent,
     )
-from lp.services.webapp.metazcml import ILaunchpadPermission
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
@@ -71,33 +66,9 @@ from lp.services.webapp.vhosts import allvhosts
 class UnauthorizedView(SystemErrorView):
 
     response_code = None
-
-    forbidden_page = ViewPageTemplateFile(
-        '../../../lp/app/templates/launchpad-forbidden.pt')
-
-    read_only_page = ViewPageTemplateFile(
-        '../../../lp/app/templates/launchpad-readonlyfailure.pt')
-
-    def page_title(self):
-        if is_read_only():
-            return super(UnauthorizedView, self).page_title
-        else:
-            return 'Forbidden'
+    page_title = 'Forbidden'
 
     def __call__(self):
-        # In read only mode, Unauthorized exceptions get raised by the
-        # security policy when write permissions are requested. We need
-        # to render the read-only failure screen so the user knows their
-        # request failed for operational reasons rather than a genuine
-        # permission problem.
-        if is_read_only():
-            # Our context is an Unauthorized exception, which acts like
-            # a tuple containing (object, attribute_requested, permission).
-            lp_permission = getUtility(ILaunchpadPermission, self.context[2])
-            if lp_permission.access_level != "read":
-                self.request.response.setStatus(503)  # Service Unavailable
-                return self.read_only_page()
-
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
                 target = '%s?loggingout=1' % self.request.URL[-2]
@@ -136,7 +107,7 @@ class UnauthorizedView(SystemErrorView):
             return ''
         else:
             self.request.response.setStatus(403)  # Forbidden
-            return self.forbidden_page()
+            return self.template()
 
     def getRedirectURL(self, current_url, query_string):
         """Get the URL to redirect to.
@@ -197,10 +168,7 @@ class OpenIDLogin(LaunchpadView):
         return Consumer(session, openid_store)
 
     def render(self):
-        # Reauthentication is called for by a query string parameter.
-        reauth_qs = self.request.query_string_params.get('reauth', ['0'])
-        do_reauth = int(reauth_qs[0])
-        if self.account is not None and not do_reauth:
+        if self.account is not None:
             return AlreadyLoggedInView(self.context, self.request)()
 
         # Allow unauthenticated users to have sessions for the OpenID
@@ -220,11 +188,6 @@ class OpenIDLogin(LaunchpadView):
             timeline_action.finish()
         self.openid_request.addExtension(
             sreg.SRegRequest(required=['email', 'fullname']))
-
-        # Force the Open ID handshake to re-authenticate, using
-        # pape extension's max_auth_age, if the URL indicates it.
-        if do_reauth:
-            self.openid_request.addExtension(pape.Request(max_auth_age=0))
 
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
@@ -253,7 +216,7 @@ class OpenIDLogin(LaunchpadView):
     def starting_url(self):
         starting_url = self.request.getURL(1)
         query_string = "&".join([arg for arg in self.form_args])
-        if query_string and query_string != 'reauth=1':
+        if query_string:
             starting_url += "?%s" % query_string
         return starting_url
 
@@ -338,13 +301,13 @@ class OpenIDCallbackView(OpenIDLogin):
         finally:
             timeline_action.finish()
 
-    def login(self, person, when=None):
+    def login(self, person):
         loginsource = getUtility(IPlacelessLoginSource)
         # We don't have a logged in principal, so we must remove the security
         # proxy of the account's preferred email.
         email = removeSecurityProxy(person.preferredemail).email
         logInPrincipal(
-            self.request, loginsource.getPrincipalByLogin(email), email, when)
+            self.request, loginsource.getPrincipalByLogin(email), email)
 
     @cachedproperty
     def sreg_response(self):
@@ -475,18 +438,7 @@ class AlreadyLoggedInView(LaunchpadView):
     template = ViewPageTemplateFile("templates/login-already.pt")
 
 
-def isFreshLogin(request):
-    """Return True if the principal login happened in the last 120 seconds."""
-    session = ISession(request)
-    authdata = session['launchpad.authenticateduser']
-    logintime = authdata.get('logintime', None)
-    if logintime is not None:
-        now = datetime.utcnow()
-        return logintime > now - timedelta(seconds=120)
-    return False
-
-
-def logInPrincipal(request, principal, email, when=None):
+def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
     # Force a fresh session, per Bug #828638. Any changes to any
     # existing session made this request will be lost, but that should
@@ -499,10 +451,8 @@ def logInPrincipal(request, principal, email, when=None):
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
     request.setPrincipal(principal)
-    if when is None:
-        when = datetime.utcnow()
     authdata['accountid'] = principal.id
-    authdata['logintime'] = when
+    authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
 
@@ -593,4 +543,4 @@ class FeedsUnauthorizedView(UnauthorizedView):
         assert IUnauthenticatedPrincipal.providedBy(self.request.principal), (
             "Feeds user should always be anonymous.")
         self.request.response.setStatus(403)  # Forbidden
-        return self.forbidden_page()
+        return self.template()

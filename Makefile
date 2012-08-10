@@ -131,12 +131,6 @@ logs:
 xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
-check-configs: $(PY)
-	${PY} utilities/check-configs.py
-
-pagetests: build
-	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
-
 codehosting-dir:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config

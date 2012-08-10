@@ -11,13 +11,7 @@ __all__ = [
 
 import os
 
-from lp.registry.model.person import Person
 from lp.services.config import config
-
-
-known_types = {
-    'Person': Person,
-    }
 
 
 def object_to_enterpriseid(obj):
@@ -33,8 +27,15 @@ def object_to_enterpriseid(obj):
 
 def enterpriseid_to_object(eid):
     """Given an SOA Enterprise ID, return the object that it references."""
+    # Circular imports.
+    from lp.registry.model.person import Person
+    from lp.soyuz.model.queue import PackageUpload
     scheme = eid.split(':')
     if not scheme[0].startswith('lp'):
         raise TypeError
+    known_types = {
+        'PackageUpload': PackageUpload,
+        'Person': Person,
+    }
     klass = known_types[scheme[1]]
     return klass.get(scheme[2])

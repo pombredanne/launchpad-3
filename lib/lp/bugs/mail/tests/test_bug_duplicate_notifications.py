@@ -29,8 +29,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.user = getUtility(ILaunchBag).user
         self.product = self.factory.makeProduct(owner=self.user,
                                                 name='project')
-        self.master_bug = self.factory.makeBug(product=self.product)
-        self.dup_bug = self.factory.makeBug(product=self.product)
+        self.master_bug = self.factory.makeBug(target=self.product)
+        self.dup_bug = self.factory.makeBug(target=self.product)
         self.master_bug_task = self.master_bug.getBugTask(self.product)
         self.master_bug_task_before_modification = Snapshot(
             self.master_bug_task,

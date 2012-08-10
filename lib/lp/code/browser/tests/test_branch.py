@@ -36,6 +36,7 @@ from lp.code.enums import (
     BranchVisibilityRule,
     )
 from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -652,6 +653,52 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         soup = BeautifulSoup(browser.contents)
         reviews_list = soup.find('dl', attrs={'class': 'reviews'})
         self.assertIsNone(reviews_list.find('a', text='Privateteam'))
+
+    def test_unsubscribe_private_branch(self):
+        # Unsubscribing from a branch with a policy grant still allows the
+        # branch to be seen.
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        [ap] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        self.factory.makeAccessPolicyGrant(
+            policy=ap, grantee=subscriber, grantor=product.owner)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            self.factory.makeBranchSubscription(branch, subscriber, owner)
+            base_url = canonical_url(branch, rootsite='code')
+            expected_title = '%s : Code : %s' % (
+                branch.name, product.displayname)
+        url = '%s/+subscription/%s' % (base_url, subscriber.name)
+        browser = self._getBrowser(user=subscriber)
+        browser.open(url)
+        browser.getControl('Unsubscribe').click()
+        self.assertEqual(base_url, browser.url)
+        self.assertEqual(expected_title, browser.title)
+
+    def test_unsubscribe_private_branch_no_access(self):
+        # Unsubscribing from a branch with no access will redirect to the
+        # context of the branch.
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        branch = self.factory.makeBranch(
+            product=product, owner=owner,
+            information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            self.factory.makeBranchSubscription(branch, subscriber, owner)
+            base_url = canonical_url(branch, rootsite='code')
+            product_url = canonical_url(product, rootsite='code')
+        url = '%s/+subscription/%s' % (base_url, subscriber.name)
+        browser = self._getBrowser(user=subscriber)
+        browser.open(url)
+        browser.getControl('Unsubscribe').click()
+        self.assertEqual(product_url, browser.url)
+        expected_title = "Code : %s" % product.displayname
+        self.assertEqual(expected_title, browser.title)
 
 
 class TestBranchReviewerEditView(TestCaseWithFactory):

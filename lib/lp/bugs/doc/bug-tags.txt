@@ -227,7 +227,7 @@ Searching
 We can search for bugs with some specific tag.
 
     >>> from lp.services.searchbuilder import all
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> svg_tasks = ubuntu.searchTasks(
@@ -286,57 +286,26 @@ If we now set bug one's tag to 'some-tag', it will be found.
 Tags for a context
 ------------------
 
-When viewing a bug listing for a context we want to display all the tags
-that are used in that context. For this we have a method on each bug
-target to return all the used tags. For source packages we return the
-tags used in its distribution/distroseries, since it's good to see
-which tags can be used. The tags are ordered alphabetically.  All tags
-are shown, no matter if they are used in open bugs or closed ones.
-
-    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> login('test@canonical.com')
-    >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(
-    ...     tag=all(u'layout-test'), user=None)):
-    ...     bugtask.transitionToStatus(
-    ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-
-    >>> firefox.getUsedBugTags()
-    [u'doc', u'layout-test', u'sco', u'svg']
-
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
-    >>> mozilla.getUsedBugTags()
-    [u'crash', u'doc', u'layout-test', u'sco', u'svg']
-
-    >>> ubuntu.getUsedBugTags()
-    [u'crash', u'dataloss', u'pebcak', u'sco', u'svg']
-
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
-    >>> ubuntu_thunderbird.getUsedBugTags()
-    [u'crash', u'dataloss', u'pebcak', u'sco', u'svg']
-
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> debian_woody = debian.getSeries('woody')
-    >>> debian_woody.getUsedBugTags()
-    [u'dataloss', u'layout-test', u'pebcak']
-
     >>> debian_woody_firefox = (
     ...     debian_woody.getSourcePackage('mozilla-firefox'))
-    >>> debian_woody_firefox.getUsedBugTags()
-    [u'dataloss', u'layout-test', u'pebcak']
 
-We can also get all the used tags, together with the number of open
-bugs each tag has. Only tags having open bugs are returned.
+When viewing a bug listing for a context we want to display all the tags
+that are used in that context. We can also get all the used tags, together
+with the number of open bugs each tag has. Only tags having open bugs are
+returned.
 
     >>> sorted(firefox.getUsedBugTagsWithOpenCounts(None).items())
-    [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
+    [(u'doc', 1L), (u'layout-test', 1L), (u'sco', 1L), (u'svg', 1L)]
 
     >>> sorted(mozilla.getUsedBugTagsWithOpenCounts(None).items())
-    [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
+    [(u'doc', 1L), (u'layout-test', 1L), (u'sco', 1L), (u'svg', 1L)]
 
     >>> sorted(ubuntu.getUsedBugTagsWithOpenCounts(None).items())
     [(u'crash', 2L), (u'dataloss', 1L), (u'pebcak', 1L),
@@ -378,17 +347,3 @@ Only bugs that the supplied user has access to will be counted:
     True
     >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(sample_person)
     {u'crash': 1L}
-
-When context doesn't have any tags getUsedBugTags() returns a empty list.
-
-    >>> gimp = getUtility(IProjectGroupSet).getByName('gimp')
-    >>> gimp.getUsedBugTags()
-    []
-
-    >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
-    >>> alsa.getUsedBugTags()
-    []
-
-    >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
-    >>> gentoo.getUsedBugTags()
-    []

@@ -55,7 +55,6 @@ from lp.blueprints.model.specification import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -256,6 +255,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def pillar(self):
         """See `IBugTarget`."""
         return self.distribution
+
+    @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self
 
     @property
     def named_version(self):
@@ -779,10 +783,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.distribution.official_bug_tags
-
-    def getUsedBugTags(self):
-        """See `IHasBugs`."""
-        return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
     @property
     def has_any_specifications(self):
@@ -1464,20 +1464,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return getUtility(IPackageUploadSet).getAll(
             self, created_since_date, status, archive, pocket, custom_type,
             name=name, version=version, exact_match=exact_match)
-
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        # We don't currently support opening a new bug on an IDistroSeries,
-        # because internally bugs are reported against IDistroSeries only when
-        # targeted to be fixed in that series, which is rarely the case for a
-        # brand new bug report.
-        raise NotImplementedError(
-            "A new bug cannot be filed directly on a distribution series, "
-            "because series are meant for \"targeting\" a fix to a specific "
-            "version. It's possible that we may change this behaviour to "
-            "allow filing a bug on a distribution series in the "
-            "not-too-distant future. For now, you probably meant to file "
-            "the bug on the distribution instead.")
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""

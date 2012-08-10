@@ -21,6 +21,7 @@ __all__ = [
     'TeamMailingListSubscribersView',
     'TeamMailingListArchiveView',
     'TeamMemberAddView',
+    'TeamMembershipSelfRenewalView',
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamNavigation',
@@ -47,6 +48,7 @@ import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
+from zope.app.form.browser.textwidgets import IntWidget
 from zope.formlib.form import (
     Fields,
     FormField,
@@ -90,6 +92,7 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.app.widgets.popup import PersonPickerWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
@@ -295,6 +298,8 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
 
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget('defaultrenewalperiod', StrippedTextWidget,
+        widget_class='field subordinate')
     custom_widget(
         'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
@@ -1000,6 +1005,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget('defaultrenewalperiod', IntWidget,
+        widget_class='field subordinate')
 
     def setUpFields(self):
         """See `LaunchpadViewForm`.

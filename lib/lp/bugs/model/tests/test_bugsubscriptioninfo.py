@@ -123,7 +123,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         super(TestBugSubscriptionInfo, self).setUp()
         self.target = self.factory.makeProduct(
             bug_supervisor=self.factory.makePerson())
-        self.bug = self.factory.makeBug(product=self.target)
+        self.bug = self.factory.makeBug(target=self.target)
         # Unsubscribe the bug filer to make the tests more readable.
         with person_logged_in(self.bug.owner):
             self.bug.unsubscribe(self.bug.owner, self.bug.owner)
@@ -230,7 +230,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             [sub1, sub2], info.direct_subscriptions_at_all_levels)
 
     def _create_duplicate_subscription(self):
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
             duplicate_bug_subscription = (
@@ -276,7 +276,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
     def test_duplicate_only(self):
         # The set of duplicate subscriptions where the subscriber has no other
         # subscriptions.
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
             duplicate_bug_subscription = (
@@ -450,7 +450,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
     def setUp(self):
         super(TestBugSubscriptionInfoQueries, self).setUp()
         self.target = self.factory.makeProduct()
-        self.bug = self.factory.makeBug(product=self.target)
+        self.bug = self.factory.makeBug(target=self.target)
         self.info = BugSubscriptionInfo(
             self.bug, BugNotificationLevel.LIFECYCLE)
         # Get the Storm cache into a known state.
@@ -527,7 +527,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             "direct_subscriptions_at_all_levels")
 
     def make_duplicate_bug(self):
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
 
