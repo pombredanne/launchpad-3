@@ -155,7 +155,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
 
     def __init__(self, context, exported_field, title, tag, css_class=None,
                  content_box_id=None, edit_view="+edit", edit_url=None,
-                 edit_title='', max_width=None,
+                 edit_title='', max_width=None, truncate_lines=0,
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
@@ -167,6 +167,8 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
         :param css_class: The css class value to use.
         :param max_width: The maximum width of the rendered text before it is
             truncated with an '...'.
+        :param truncate_lines: The maximum number of lines of text to display
+            before any overflow is truncated with an '...'.
         :param content_box_id: The HTML id to use for this widget.
             Defaults to edit-<attribute name>.
         :param edit_view: The view name to use to generate the edit_url if
@@ -186,6 +188,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
         self.tag = tag
         self.css_class = css_class
         self.max_width = max_width
+        self.truncate_lines = truncate_lines
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
         self.width = simplejson.dumps(width)
@@ -199,7 +202,16 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             return FormattersAPI(text).obfuscate_email()
 
     @property
-    def css_style(self):
+    def text_css_class(self):
+        clazz = "yui3-editable_text-text"
+        if self.truncate_lines and self.truncate_lines > 0:
+            clazz += ' ellipsis'
+            if self.truncate_lines == 1:
+                clazz += ' single-line'
+        return clazz
+
+    @property
+    def text_css_style(self):
         if self.max_width:
             return 'max-width: %s;' % self.max_width
         return ''

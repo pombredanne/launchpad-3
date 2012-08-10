@@ -167,7 +167,8 @@
             'lp.app.banner.beta', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
             'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
-            'lp.code.branchmergeproposal.diff', function(Y) {
+            'lp.app.ellipsis', 'lp.code.branchmergeproposal.diff',
+             function(Y) {
 
             Y.on("domready", function () {
                 if (Y.one(document.body).hasClass('private')) {

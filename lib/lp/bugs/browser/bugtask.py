@@ -734,7 +734,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, IBug['title'], "Edit this summary", 'h1',
             edit_url=canonical_url(self.context, view_name='+edit'),
-            max_width='90%')
+            max_width='95%', truncate_lines=2)
 
         # XXX 2010-10-05 gmb bug=655597:
         # This line of code keeps the view's query count down,

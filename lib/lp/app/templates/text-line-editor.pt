@@ -1,6 +1,8 @@
 <tal:open-tag replace="structure view/open_tag"/>
-<span class="yui3-editable_text-text ellipsis"
-    tal:attributes="style string:${view/css_style}">
+<span
+    tal:attributes="
+     class string:${view/text_css_class};
+     style string:${view/text_css_style};">
     <tal:text replace="view/value"/>
 </span>
   <a tal:condition="view/can_write"
@@ -17,6 +19,7 @@
                 contentBox: ${view/widget_css_selector},
                 accept_empty: ${view/accept_empty},
                 width: ${view/width},
+                truncate_lines: ${view/truncate_lines},
                 initial_value_override: ${view/initial_value_override}
                 });
             widget.editor.plug({

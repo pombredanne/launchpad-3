@@ -302,7 +302,8 @@ class SourcePackageRecipeView(LaunchpadView):
         name = ISourcePackageRecipe['name']
         title = "Edit the recipe name"
         return TextLineEditorWidget(
-            self.context, name, title, 'h1', max_width='90%')
+            self.context, name, title, 'h1', max_width='95%',
+            truncate_lines=1)
 
     @property
     def distroseries_widget(self):

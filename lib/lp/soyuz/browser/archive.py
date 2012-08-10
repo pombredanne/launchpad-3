@@ -901,7 +901,8 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         display_name = IArchive['displayname']
         title = "Edit the displayname"
         return TextLineEditorWidget(
-            self.context, display_name, title, 'h1', max_width='90%')
+            self.context, display_name, title, 'h1', max_width='95%',
+            truncate_lines=1)
 
     @property
     def default_series_filter(self):
