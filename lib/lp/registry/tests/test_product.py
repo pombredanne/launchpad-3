@@ -734,11 +734,7 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
         # All policies are valid when there's a current commercial
         # subscription.
         self.factory.makeCommercialSubscription(product=self.product)
-        self.product.setBranchSharingPolicy(
-            BranchSharingPolicy.PUBLIC, self.commercial_admin)
-        self.assertEqual(
-            BranchSharingPolicy.PUBLIC, self.product.branch_sharing_policy)
-        for policy in self.commercial_policies:
+        for policy in BranchSharingPolicy.items:
             self.product.setBranchSharingPolicy(policy, self.commercial_admin)
             self.assertEqual(policy, self.product.branch_sharing_policy)
 
