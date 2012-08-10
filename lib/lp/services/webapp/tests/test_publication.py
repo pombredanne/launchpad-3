@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import logging
 import sys
 
 from contrib.oauth import (
@@ -17,7 +16,6 @@ from storm.database import (
     STATE_RECONNECT,
     )
 from storm.exceptions import DisconnectionError
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import directlyProvides
 from zope.publisher.interfaces import (
@@ -25,13 +23,7 @@ from zope.publisher.interfaces import (
     Retry,
     )
 
-from lp.services.config import dbconfig
 from lp.services.database.lpstorm import IMasterStore
-from lp.services.database.readonly import is_read_only
-from lp.services.database.tests.readonly import (
-    remove_read_only_file,
-    touch_read_only_file,
-    )
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
@@ -39,13 +31,9 @@ from lp.services.oauth.interfaces import (
     )
 import lp.services.webapp.adapter as dbadapter
 from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
     NoReferrerError,
     OAuthPermission,
     OffsiteFormPostError,
-    SLAVE_FLAVOR,
     )
 from lp.services.webapp.publication import (
     is_browser,
@@ -64,10 +52,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestLaunchpadBrowserPublication(TestCase):
@@ -93,137 +78,6 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication.callTraversalHooks(request, obj1)
         publication.callTraversalHooks(request, obj2)
         self.assertEquals(request.traversed_objects, [obj1])
-
-
-class TestReadOnlyModeSwitches(TestCase):
-    # At the beginning of every request (in publication.beforeTraversal()), we
-    # check to see if we've changed from/to read-only/read-write and if there
-    # was a change we remove the main_master/slave stores from ZStorm, forcing
-    # them to be recreated the next time they're needed, thus causing them to
-    # point to the correct databases.
-    layer = DatabaseFunctionalLayer
-
-    def tearDown(self):
-        TestCase.tearDown(self)
-        # If a DB policy was installed (e.g. by publication.beforeTraversal),
-        # uninstall it.
-        try:
-            getUtility(IStoreSelector).pop()
-        except IndexError:
-            pass
-        # Cleanup needed so that further tests can start processing other
-        # requests (e.g. calling beforeTraversal).
-        self.publication.endRequest(self.request, None)
-        # Force pending mode switches to actually happen and get logged so
-        # that we don't interfere with other tests.
-        assert not is_read_only(), (
-            "A test failed to clean things up properly, leaving the app "
-            "in read-only mode.")
-
-    def setUp(self):
-        TestCase.setUp(self)
-        # Get the main_master/slave stores just to make sure they're added to
-        # ZStorm.
-        master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        slave = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-        self.master_connection = master._connection
-        self.slave_connection = slave._connection
-        self.zstorm = getUtility(IZStorm)
-        self.publication = LaunchpadBrowserPublication(None)
-        # Run through once to initialize. beforeTraversal will never
-        # disconnect Stores the first run through because there is no
-        # need.
-        request = LaunchpadTestRequest()
-        self.publication.beforeTraversal(request)
-        self.publication.endRequest(request, None)
-        getUtility(IStoreSelector).pop()
-
-        self.request = LaunchpadTestRequest()
-
-    @property
-    def zstorm_stores(self):
-        return [name for (name, store) in self.zstorm.iterstores()]
-
-    def test_no_mode_changes(self):
-        # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('main-master', self.zstorm_stores)
-        self.assertIn('main-slave', self.zstorm_stores)
-
-        self.publication.beforeTraversal(self.request)
-
-        # Since the mode didn't change, the stores were left in zstorm.
-        self.assertIn('main-master', self.zstorm_stores)
-        self.assertIn('main-slave', self.zstorm_stores)
-
-        # With the store's connection being the same as before.
-        master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        self.assertIs(self.master_connection, master._connection)
-
-        # And they still point to the read-write databases.
-        self.assertEquals(
-            dbconfig.rw_main_master.strip(),
-            # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
-            # through private attributes to get to the store's database.
-            master._connection._database.dsn_without_user.strip())
-
-    def test_changing_modes(self):
-        # Make sure the master/slave stores are present in zstorm.
-        self.assertIn('main-master', self.zstorm_stores)
-        self.assertIn('main-slave', self.zstorm_stores)
-
-        try:
-            touch_read_only_file()
-            self.publication.beforeTraversal(self.request)
-        finally:
-            # Tell remove_read_only_file() to not assert that the mode switch
-            # actually happened, as we know it won't happen until this request
-            # is finished.
-            remove_read_only_file(assert_mode_switch=False)
-
-        # Here the mode has changed to read-only, so the stores were removed
-        # from zstorm.
-        self.assertNotIn('main-master', self.zstorm_stores)
-        self.assertNotIn('main-slave', self.zstorm_stores)
-
-        # If they're needed again, they'll be re-created by ZStorm, and when
-        # that happens they will point to the read-only databases.
-        master = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-        self.assertEquals(
-            dbconfig.ro_main_master.strip(),
-            # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
-            # through private attributes to get to the store's database.
-            master._connection._database.dsn_without_user.strip())
-
-
-class TestReadOnlyNotifications(TestCase):
-    """Tests for `LaunchpadBrowserPublication.maybeNotifyReadOnlyMode`."""
-
-    layer = FunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        touch_read_only_file()
-        self.addCleanup(remove_read_only_file, assert_mode_switch=False)
-
-    def test_notification(self):
-        # In read-only mode, maybeNotifyReadOnlyMode adds a warning that
-        # changes cannot be made to every request that supports notifications.
-        publication = LaunchpadBrowserPublication(None)
-        request = LaunchpadTestRequest()
-        publication.maybeNotifyReadOnlyMode(request)
-        self.assertEqual(1, len(request.notifications))
-        notification = request.notifications[0]
-        self.assertEqual(logging.WARNING, notification.level)
-        self.assertTrue('read-only mode' in notification.message)
-
-    def test_notification_xmlrpc(self):
-        # Even in read-only mode, maybeNotifyReadOnlyMode doesn't try to add a
-        # notification to a request that doesn't support notifications.
-        from lp.services.webapp.servers import PublicXMLRPCRequest
-        publication = LaunchpadBrowserPublication(None)
-        request = PublicXMLRPCRequest(None, {})
-        # This is just assertNotRaises
-        publication.maybeNotifyReadOnlyMode(request)
 
 
 class TestWebServicePublication(TestCaseWithFactory):
