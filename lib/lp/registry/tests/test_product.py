@@ -657,11 +657,19 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    enum = BranchSharingPolicy
+    public_policy = BranchSharingPolicy.PUBLIC
     commercial_policies = (
         BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
         BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
         BranchSharingPolicy.PROPRIETARY,
         )
+
+    def setSharingPolicy(self, policy, user):
+        return self.product.setBranchSharingPolicy(policy, user)
+
+    def getSharingPolicy(self):
+        return self.product.branch_sharing_policy
 
     def setUp(self):
         super(ProductSharingPoliciesTestCase, self).setUp()
@@ -673,44 +681,39 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
 
     def test_commercial_admin_can_set_branch_policy(self):
         # Commercial admins can use setBranchSharingPolicy.
-        self.product.setBranchSharingPolicy(
-            BranchSharingPolicy.PUBLIC, self.commercial_admin)
+        self.setSharingPolicy(self.public_policy, self.commercial_admin)
         self.assertEqual(
-            BranchSharingPolicy.PUBLIC, self.product.branch_sharing_policy)
+            self.public_policy, self.product.branch_sharing_policy)
 
     def test_random_cannot_set_branch_policy(self):
         # An unrelated user can't use setBranchSharingPolicy.
         person = self.factory.makePerson()
         self.assertRaises(
-            Unauthorized, self.product.setBranchSharingPolicy,
-            BranchSharingPolicy.PUBLIC, person)
+            Unauthorized, self.setSharingPolicy, self.public_policy, person)
 
     def test_owner_cannot_set_branch_policy(self):
         # The project owner can't yet use setBranchSharingPolicy.
         self.assertRaises(
-            Unauthorized, self.product.setBranchSharingPolicy,
-            BranchSharingPolicy.PUBLIC, self.product.owner)
+            Unauthorized, self.setSharingPolicy,
+            self.public_policy, self.product.owner)
 
     def test_proprietary_branches_forbidden_without_commercial_sub(self):
         # No policy that allows Proprietary can be configured without a
         # commercial subscription.
-        self.product.setBranchSharingPolicy(
-            BranchSharingPolicy.PUBLIC, self.commercial_admin)
-        self.assertEqual(
-            BranchSharingPolicy.PUBLIC, self.product.branch_sharing_policy)
+        self.setSharingPolicy(self.public_policy, self.commercial_admin)
+        self.assertEqual(self.public_policy, self.getSharingPolicy())
         for policy in self.commercial_policies:
             self.assertRaises(
                 CommercialSubscribersOnly,
-                self.product.setBranchSharingPolicy,
-                policy, self.commercial_admin)
+                self.setSharingPolicy, policy, self.commercial_admin)
 
     def test_proprietary_branches_allowed_with_commercial_sub(self):
         # All policies are valid when there's a current commercial
         # subscription.
         self.factory.makeCommercialSubscription(product=self.product)
-        for policy in BranchSharingPolicy.items:
-            self.product.setBranchSharingPolicy(policy, self.commercial_admin)
-            self.assertEqual(policy, self.product.branch_sharing_policy)
+        for policy in self.enum.items:
+            self.setSharingPolicy(policy, self.commercial_admin)
+            self.assertEqual(policy, self.getSharingPolicy())
 
     def test_setting_proprietary_branches_creates_access_policy(self):
         self.factory.makeCommercialSubscription(product=self.product)
@@ -718,8 +721,8 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
             [InformationType.PRIVATESECURITY, InformationType.USERDATA],
             [policy.type for policy in
              getUtility(IAccessPolicySource).findByPillar([self.product])])
-        self.product.setBranchSharingPolicy(
-            BranchSharingPolicy.PUBLIC_OR_PROPRIETARY, self.commercial_admin)
+        self.setSharingPolicy(
+            self.commercial_policies[0], self.commercial_admin)
         self.assertEqual(
             [InformationType.PRIVATESECURITY, InformationType.USERDATA,
              InformationType.PROPRIETARY],
