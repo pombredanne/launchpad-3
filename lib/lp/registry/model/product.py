@@ -576,6 +576,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self._ensurePolicies([InformationType.PROPRIETARY])
         self.branch_sharing_policy = branch_sharing_policy
 
+    def setBugSharingPolicy(self, bug_sharing_policy, user):
+        """See `IProductPublic`."""
+        if not IPersonRoles(user).in_commercial_admin:
+            raise Unauthorized(
+                "Only commercial admins can configure sharing policies right "
+                "now.")
+        if bug_sharing_policy != BugSharingPolicy.PUBLIC:
+            if not self.has_current_commercial_subscription:
+                raise CommercialSubscribersOnly(
+                    "A current commercial subscription is required to use "
+                    "proprietary bugs.")
+            self._ensurePolicies([InformationType.PROPRIETARY])
+        self.bug_sharing_policy = bug_sharing_policy
+
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
         types = set(InformationType.items)

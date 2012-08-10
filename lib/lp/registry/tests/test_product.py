@@ -675,8 +675,7 @@ class BaseSharingPolicyTests:
     def test_commercial_admin_can_set_branch_policy(self):
         # Commercial admins can use setBranchSharingPolicy.
         self.setSharingPolicy(self.public_policy, self.commercial_admin)
-        self.assertEqual(
-            self.public_policy, self.product.branch_sharing_policy)
+        self.assertEqual(self.public_policy, self.getSharingPolicy())
 
     def test_random_cannot_set_branch_policy(self):
         # An unrelated user can't use setBranchSharingPolicy.
