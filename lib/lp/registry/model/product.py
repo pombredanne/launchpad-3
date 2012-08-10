@@ -568,7 +568,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             raise Unauthorized(
                 "Only commercial admins can configure sharing policies right "
                 "now.")
-        return
+        self.branch_sharing_policy = branch_sharing_policy
 
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
