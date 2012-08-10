@@ -220,7 +220,7 @@ class ArchivePermissionSet:
             set(map(attrgetter("personID"), permissions))))
         return permissions
 
-    def allPermissions(self, archive):
+    def permissionsForArchive(self, archive):
         """See `IArchivePermissionSet`."""
         return self._precachePersonsForPermissions(
             ArchivePermission.selectBy(archive=archive))

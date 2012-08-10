@@ -1060,7 +1060,7 @@ class Archive(SQLBase):
     def getAllPermissions(self):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.allPermissions(self)
+        return permission_set.permissionsForArchive(self)
 
     def getPermissionsForPerson(self, person):
         """See `IArchive`."""
