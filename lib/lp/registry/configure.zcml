@@ -1322,7 +1322,7 @@
                 project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
-            set_attributes="active branch_sharing_policy"/>
+            set_attributes="active branch_sharing_policy bug_sharing_policy"/>
 
         <!-- IHasAliases -->
 

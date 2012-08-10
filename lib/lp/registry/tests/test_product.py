@@ -27,7 +27,10 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    InformationType,
+    )
 from lp.registry.errors import (
     CommercialSubscribersOnly,
     OpenTeamLinkageError,
@@ -53,6 +56,7 @@ from lp.registry.model.product import (
     )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import (
+    admin_logged_in,
     celebrity_logged_in,
     login,
     login_person,
@@ -672,6 +676,40 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             lp_janitor = getUtility(ILaunchpadCelebrities).janitor
             self.assertEqual(lp_janitor, cs.registrant)
             self.assertEqual(lp_janitor, cs.purchaser)
+
+
+class ProductSharingPoliciesTestCase(TestCaseWithFactory):
+    """Test Product.bug_sharing_policy and Product.branch_sharing_policy."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(ProductSharingPoliciesTestCase, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.commercial_admin = self.factory.makePerson()
+        with admin_logged_in():
+            commercials = getUtility(ILaunchpadCelebrities).commercial_admin
+            commercials.addMember(self.commercial_admin, commercials)
+
+    def test_commercial_admin_can_set_branch_policy(self):
+        # Commercial admins can use setBranchSharingPolicy.
+        self.product.setBranchSharingPolicy(
+            BranchSharingPolicy.PUBLIC, self.commercial_admin)
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, self.product.branch_sharing_policy)
+
+    def test_random_cannot_set_branch_policy(self):
+        # An unrelated user can't use setBranchSharingPolicy.
+        person = self.factory.makePerson()
+        self.assertRaises(
+            Unauthorized, self.product.setBranchSharingPolicy,
+            BranchSharingPolicy.PUBLIC, person)
+
+    def test_owner_cannot_set_branch_policy(self):
+        # The project owner can't yet use setBranchSharingPolicy.
+        self.assertRaises(
+            Unauthorized, self.product.setBranchSharingPolicy,
+            BranchSharingPolicy.PUBLIC, self.product.owner)
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):

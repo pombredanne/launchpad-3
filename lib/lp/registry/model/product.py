@@ -562,6 +562,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
+    def setBranchSharingPolicy(self, branch_sharing_policy, user):
+        """See `IProductPublic`."""
+        if not IPersonRoles(user).in_commercial_admin:
+            raise Unauthorized(
+                "Only commercial admins can configure sharing policies right "
+                "now.")
+        return
+
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
         types = set(InformationType.items)
