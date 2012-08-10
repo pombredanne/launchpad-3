@@ -25,6 +25,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.enums import (
@@ -710,6 +711,23 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
         for policy in BranchSharingPolicy.items:
             self.product.setBranchSharingPolicy(policy, self.commercial_admin)
             self.assertEqual(policy, self.product.branch_sharing_policy)
+
+    def test_setting_proprietary_branches_creates_access_policy(self):
+        self.factory.makeCommercialSubscription(product=self.product)
+        self.assertEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            [policy.type for policy in
+             getUtility(IAccessPolicySource).findByPillar([self.product])])
+        self.product.setBranchSharingPolicy(
+            BranchSharingPolicy.PUBLIC_OR_PROPRIETARY, self.commercial_admin)
+        self.assertEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY],
+            [policy.type for policy in
+             getUtility(IAccessPolicySource).findByPillar([self.product])])
+        self.assertTrue(
+            getUtility(IService, 'sharing').checkPillarAccess(
+                self.product, InformationType.PROPRIETARY, self.product.owner))
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):

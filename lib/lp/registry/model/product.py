@@ -568,11 +568,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             raise Unauthorized(
                 "Only commercial admins can configure sharing policies right "
                 "now.")
-        if (branch_sharing_policy != BranchSharingPolicy.PUBLIC
-            and not self.has_current_commercial_subscription):
-            raise CommercialSubscribersOnly(
-                "A current commercial subscription is required to use "
-                "proprietary bugs.")
+        if branch_sharing_policy != BranchSharingPolicy.PUBLIC:
+            if not self.has_current_commercial_subscription:
+                raise CommercialSubscribersOnly(
+                    "A current commercial subscription is required to use "
+                    "proprietary branches.")
+            self._ensurePolicies([InformationType.PROPRIETARY])
         self.branch_sharing_policy = branch_sharing_policy
 
     def getAllowedBugInformationTypes(self):
