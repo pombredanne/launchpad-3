@@ -717,7 +717,7 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
             Unauthorized, self.product.setBranchSharingPolicy,
             BranchSharingPolicy.PUBLIC, self.product.owner)
 
-    def test_proprietary_forbidden_without_commercial_subscription(self):
+    def test_proprietary_branches_forbidden_without_commercial_sub(self):
         # No policy that allows Proprietary can be configured without a
         # commercial subscription.
         self.product.setBranchSharingPolicy(
@@ -730,7 +730,7 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
                 self.product.setBranchSharingPolicy,
                 policy, self.commercial_admin)
 
-    def test_proprietary_allowed_with_commercial_subscription(self):
+    def test_proprietary_branches_allowed_with_commercial_sub(self):
         # All policies are valid when there's a current commercial
         # subscription.
         self.factory.makeCommercialSubscription(product=self.product)
