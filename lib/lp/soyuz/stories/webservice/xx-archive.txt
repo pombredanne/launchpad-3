@@ -260,20 +260,20 @@ archive.  First, define some general helper functions.
     ...     show_permission_entries(permissions)
 
     >>> show_all_permissions(ubuntu_devel['main_archive_link'])
-    Archive Upload Rights ...~carlos None mozilla-firefox None
-    Archive Upload Rights ...~ubuntu-team main None None
-    Archive Upload Rights ...~ubuntu-team restricted None None
-    Archive Upload Rights ...~ubuntu-team universe None None
-    Queue Administration Rights ...~name12 main None None
-    Queue Administration Rights ...~name12 multiverse None None
-    Queue Administration Rights ...~name12 restricted None None
-    Queue Administration Rights ...~name12 universe None None
-    Queue Administration Rights ...~no-team-memberships multiverse None None
-    Queue Administration Rights ...~no-team-memberships universe None None
-    Queue Administration Rights ...~ubuntu-team main None None
-    Queue Administration Rights ...~ubuntu-team partner None None
-    Queue Administration Rights ...~ubuntu-team restricted None None
-    Queue Administration Rights ...~ubuntu-team universe None None
+    Archive Upload Rights ...~carlos None mozilla-firefox None None
+    Archive Upload Rights ...~ubuntu-team main None None None
+    Archive Upload Rights ...~ubuntu-team restricted None None None
+    Archive Upload Rights ...~ubuntu-team universe None None None
+    Queue Administration Rights ...~name12 main None None None
+    Queue Administration Rights ...~name12 multiverse None None None
+    Queue Administration Rights ...~name12 restricted None None None
+    Queue Administration Rights ...~name12 universe None None None
+    Queue Administration Rights ...~no-team-memberships multiverse None None None
+    Queue Administration Rights ...~no-team-memberships universe None None None
+    Queue Administration Rights ...~ubuntu-team main None None None
+    Queue Administration Rights ...~ubuntu-team partner None None None
+    Queue Administration Rights ...~ubuntu-team restricted None None None
+    Queue Administration Rights ...~ubuntu-team universe None None None
 
 `getPermissionsForPerson` returns all the permissions that a user has.
 
