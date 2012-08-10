@@ -10,6 +10,8 @@ __all__ = [
     'ArchivePermissionSet',
     ]
 
+from operator import attrgetter
+
 from lazr.enum import DBItem
 from sqlobject import (
     BoolCol,
@@ -30,6 +32,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
@@ -223,6 +226,16 @@ class ArchivePermissionSet:
             sourcepackagename = getUtility(
                 ISourcePackageNameSet)[sourcepackagename]
         return sourcepackagename
+
+    def _precachePersonsForPermissions(self, permissions):
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            set(map(attrgetter("personID"), permissions))))
+        return permissions
+
+    def permissionsForArchive(self, archive):
+        """See `IArchivePermissionSet`."""
+        return self._precachePersonsForPermissions(
+            ArchivePermission.selectBy(archive=archive))
 
     def permissionsForPerson(self, archive, person):
         """See `IArchivePermissionSet`."""
