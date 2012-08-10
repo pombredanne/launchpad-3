@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
@@ -166,7 +167,7 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
 
     def test_delete_conjoined_bugtask(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         master_bugtask = getUtility(IBugTaskSet).createTask(
             bug, product.owner, product.development_focus)
         milestone = self.factory.makeMilestone(
@@ -179,7 +180,9 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         view = create_initialized_view(milestone, '+delete', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual([], list(product.all_milestones))
-        self.assertEqual(0, product.development_focus.all_bugtasks.count())
+        tasks = product.development_focus.searchTasks(
+            BugTaskSearchParams(user=None))
+        self.assertEqual(0, tasks.count())
 
 
 class TestQueryCountBase(TestCaseWithFactory):
@@ -223,7 +226,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
     def add_bug(self, count):
         login_person(self.product.owner)
         for i in range(count):
-            bug = self.factory.makeBug(product=self.product)
+            bug = self.factory.makeBug(target=self.product)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.product.owner)
             # This is necessary to test precaching of assignees.
@@ -270,7 +273,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         milestone = self.factory.makeMilestone(
             productseries=product.development_focus)
         bug1 = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA,
+            target=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug1.bugtasks[0].transitionToMilestone(milestone, product.owner)
         # We look at the page as someone who is a member of a team and the
@@ -300,13 +303,13 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
             enumerate(collector.queries)]
         login_person(product.owner)
         bug2 = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA,
+            target=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug2.bugtasks[0].transitionToMilestone(milestone, product.owner)
         bug2.subscribe(subscribed_team, product.owner)
         bug2_url = canonical_url(bug2)
         bug3 = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA,
+            target=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug3.bugtasks[0].transitionToMilestone(milestone, product.owner)
         bug3.subscribe(subscribed_team, product.owner)
@@ -352,7 +355,7 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
     def add_bug(self, count):
         login_person(self.owner)
         for i in range(count):
-            bug = self.factory.makeBug(product=self.product_milestone.product)
+            bug = self.factory.makeBug(target=self.product_milestone.product)
             bug.bugtasks[0].transitionToMilestone(
                 self.product_milestone, self.owner)
             # This is necessary to test precaching of assignees.
@@ -413,7 +416,7 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
     def add_bug(self, count):
         login_person(self.owner)
         for i in range(count):
-            bug = self.factory.makeBug(distribution=self.ubuntu)
+            bug = self.factory.makeBug(target=self.ubuntu)
             distrosourcepackage = self.factory.makeDistributionSourcePackage(
                 distribution=self.ubuntu)
             self.factory.makeSourcePackagePublishingHistory(
@@ -475,7 +478,7 @@ class TestMilestoneTagView(TestQueryCountBase):
         with person_logged_in(self.owner):
             for n in range(count):
                 self.factory.makeBug(
-                    product=self.product, owner=self.owner,
+                    target=self.product, owner=self.owner,
                     milestone=self.milestone)
 
     def _make_form(self, tags):

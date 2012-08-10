@@ -335,10 +335,12 @@ class QueueItemsView(LaunchpadView):
         # Get a list of components for which the user has rights to
         # override to or from.
         permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
+        component_permissions = permission_set.componentsForQueueAdmin(
             self.context.main_archive, self.user)
         allowed_components = set(
-            permission.component for permission in permissions)
+            permission.component for permission in component_permissions)
+        pocket_permissions = permission_set.pocketsForQueueAdmin(
+            self.context.main_archive, self.user)
 
         try:
             if section_override:
@@ -385,15 +387,23 @@ class QueueItemsView(LaunchpadView):
             # Sources and binaries are mutually exclusive when it comes to
             # overriding, so only one of these will be set.
             try:
+                for permission in pocket_permissions:
+                    if (permission.pocket == queue_item.pocket and
+                        permission.distroseries in (
+                            None, queue_item.distroseries)):
+                        item_allowed_components = (
+                            queue_item.distroseries.upload_components)
+                else:
+                    item_allowed_components = allowed_components
                 source_overridden = queue_item.overrideSource(
-                    new_component, new_section, allowed_components)
+                    new_component, new_section, item_allowed_components)
                 binary_changes = [{
                     "component": new_component,
                     "section": new_section,
                     "priority": new_priority,
                     }]
                 binary_overridden = queue_item.overrideBinaries(
-                    binary_changes, allowed_components)
+                    binary_changes, item_allowed_components)
             except (QueueAdminUnauthorizedError,
                     QueueInconsistentStateError) as info:
                 failure.append("FAILED: %s (%s)" %
@@ -443,7 +453,7 @@ class QueueItemsView(LaunchpadView):
 
     def queue_action_accept(self, queue_item):
         """Reject the queue item passed."""
-        queue_item.acceptFromQueue()
+        queue_item.acceptFromQueue(user=self.user)
 
     def queue_action_reject(self, queue_item):
         """Accept the queue item passed."""

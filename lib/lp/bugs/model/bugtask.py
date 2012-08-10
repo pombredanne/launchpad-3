@@ -15,7 +15,6 @@ __all__ = [
     'bugtask_sort_key',
     'bug_target_from_key',
     'bug_target_to_key',
-    'get_related_bugtasks_search_params',
     'validate_new_target',
     'validate_target',
     ]
@@ -78,7 +77,6 @@ from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugTaskImportance,
-    BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
     CannotDeleteBugtask,
@@ -88,7 +86,6 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
-    IllegalRelatedBugTasksParams,
     IllegalTarget,
     normalize_bugtask_status,
     RESOLVED_BUGTASK_STATUSES,
@@ -97,6 +94,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
@@ -112,7 +110,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestoneSet
 from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.interfaces.person import (
-    IPerson,
     validate_person,
     validate_public_person,
     )
@@ -194,50 +191,6 @@ def bugtask_sort_key(bugtask):
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
         distroseries_name, sourcepackage_name)
-
-
-def get_related_bugtasks_search_params(user, context, **kwargs):
-    """Returns a list of `BugTaskSearchParams` which can be used to
-    search for all tasks related to a user given by `context`.
-
-    Which tasks are related to a user?
-      * the user has to be either assignee or owner of this task
-        OR
-      * the user has to be subscriber or commenter to the underlying bug
-        OR
-      * the user is reporter of the underlying bug, but this condition
-        is automatically fulfilled by the first one as each new bug
-        always get one task owned by the bug reporter
-    """
-    assert IPerson.providedBy(context), "Context argument needs to be IPerson"
-    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter',
-                       'structural_subscriber')
-    search_params = []
-    for key in relevant_fields:
-        # all these parameter default to None
-        user_param = kwargs.get(key)
-        if user_param is None or user_param == context:
-            # we are only creating a `BugTaskSearchParams` object if
-            # the field is None or equal to the context
-            arguments = kwargs.copy()
-            arguments[key] = context
-            if key == 'owner':
-                # Specify both owner and bug_reporter to try to
-                # prevent the same bug (but different tasks)
-                # being displayed.
-                # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
-                arguments['bug_reporter'] = context
-            search_params.append(
-                BugTaskSearchParams.fromSearchForm(user, **arguments))
-    if len(search_params) == 0:
-        # unable to search for related tasks to user_context because user
-        # modified the query in an invalid way by overwriting all user
-        # related parameters
-        raise IllegalRelatedBugTasksParams(
-            ('Cannot search for related tasks to \'%s\', at least one '
-             'of these parameter has to be empty: %s'
-                % (context.name, ", ".join(relevant_fields))))
-    return search_params
 
 
 def bug_target_from_key(product, productseries, distribution, distroseries,

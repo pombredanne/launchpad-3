@@ -187,28 +187,30 @@ from lp.bugs.interfaces.bugnomination import (
     )
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
-    BugTagsSearchCombinator,
     BugTaskImportance,
-    BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     CannotDeleteBugtask,
-    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
-    IBugTaskSearch,
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
-    IFrontPageBugTaskSearch,
     IllegalTarget,
     INominationsReviewTableBatchNavigator,
-    IPersonBugTaskSearch,
     IRemoveQuestionFromBugTaskForm,
-    IUpstreamProductBugTaskSearch,
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTagsSearchCombinator,
+    BugTaskSearchParams,
+    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
+    IBugTaskSearch,
+    IFrontPageBugTaskSearch,
+    IPersonBugTaskSearch,
+    IUpstreamProductBugTaskSearch,
     )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,

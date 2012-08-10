@@ -158,10 +158,10 @@ they are tagged, we must specify BugSummary.tag == None. If we are
 interested in all bugs targeted to a product regardless of their status
 or milestone, we need to aggregate them.
 
-    >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.NEW)
-    >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.CONFIRMED)
+    >>> bug = factory.makeBug(target=prod_a, status=BugTaskStatus.NEW)
+    >>> bug = factory.makeBug(target=prod_a, status=BugTaskStatus.CONFIRMED)
     >>> bug = factory.makeBug(
-    ...     product=prod_a, status=BugTaskStatus.CONFIRMED, tags=['t-a'])
+    ...     target=prod_a, status=BugTaskStatus.CONFIRMED, tags=['t-a'])
 
 
 Here are the untagged rows. This will show us there are 2 New and 2
@@ -317,7 +317,7 @@ the same as tag.
     ...     distribution=distribution, sourcepackagename='sp-a')
 
     >>> bug = factory.makeBug(
-    ...     distribution=distribution, status=BugTaskStatus.CONFIRMED)
+    ...     target=distribution, status=BugTaskStatus.CONFIRMED)
     >>> bug_task = factory.makeBugTask(target=package) # status is NEW
 
     >>> print_find(
@@ -447,15 +447,15 @@ Create some bugs.
     >>> series_p = factory.makeDistroSeries(
     ...     distribution=distro_p, name='ds-p')
     >>> bug_a = factory.makeBug(
-    ...     owner=owner, distribution=distro_p,
+    ...     owner=owner, target=distro_p,
     ...     information_type=InformationType.USERDATA)
     >>> bug_b = factory.makeBug(
-    ...     owner=owner, distribution=distro_p,
+    ...     owner=owner, target=distro_p,
     ...     information_type=InformationType.USERDATA)
     >>> bug_c = factory.makeBug(
     ...     owner=owner, series=series_p,
     ...     information_type=InformationType.USERDATA)
-    >>> bug_z = factory.makeBug(owner=owner, distribution=distro_p)
+    >>> bug_z = factory.makeBug(owner=owner, target=distro_p)
 
     >>> sub = bug_a.subscribe(team_a, person_a)
     >>> sub = bug_b.subscribe(person_b, person_b)

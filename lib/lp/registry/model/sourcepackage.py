@@ -504,10 +504,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         """See `IHasBugs`."""
         return self.distroseries.official_bug_tags
 
-    def getUsedBugTags(self):
-        """See `IBugTarget`."""
-        return self.distroseries.getUsedBugTags()
-
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
                                      include_tags=None):
         """See IBugTarget."""
@@ -528,24 +524,15 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         """See `IHasOwner`."""
         return self.distroseries.owner
 
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        # We don't currently support opening a new bug directly on an
-        # ISourcePackage, because internally ISourcePackage bugs mean bugs
-        # targeted to be fixed in a specific distroseries + sourcepackage.
-        raise NotImplementedError(
-            "A new bug cannot be filed directly on a source package in a "
-            "specific distribution series, because series are meant for "
-            "\"targeting\" a fix to a specific series. It's possible that "
-            "we may change this behaviour to allow filing a bug on a "
-            "distribution series source package in the not-too-distant "
-            "future. For now, you probably meant to file the bug on the "
-            "distro-wide (i.e. not series-specific) source package.")
-
     @property
     def pillar(self):
         """See `IBugTarget`."""
         return self.distroseries.distribution
+
+    @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self.distroseries
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""

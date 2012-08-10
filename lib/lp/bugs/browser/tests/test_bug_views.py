@@ -95,7 +95,7 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro,
+            target=distro,
             information_type=InformationType.PROPRIETARY, owner=owner)
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url, user=owner)
@@ -162,7 +162,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         super(TestBugPortletSubscribers, self).setUp()
         self.target = self.factory.makeProduct()
         bug_owner = self.factory.makePerson(name="bug-owner")
-        self.bug = self.factory.makeBug(owner=bug_owner, product=self.target)
+        self.bug = self.factory.makeBug(owner=bug_owner, target=self.target)
         # We need to put the Bug and default BugTask into the LaunchBag
         # because BugContextMenu relies on the LaunchBag to populate its
         # context property
@@ -515,3 +515,104 @@ class TestBugMessageAddFormView(TestCaseWithFactory):
         view = create_initialized_view(
             bug.default_bugtask, '+addcomment', form=form)
         self.assertEqual(0, len(view.errors))
+
+
+class TestBugMarkAsDuplicateView(TestCaseWithFactory):
+    """Tests for marking a bug as a duplicate."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugMarkAsDuplicateView, self).setUp()
+        self.bug_owner = self.factory.makePerson()
+        self.bug = self.factory.makeBug(owner=self.bug_owner)
+        self.duplicate_bug = self.factory.makeBug(owner=self.bug_owner)
+
+    def test_remove_link_not_shown_if_no_duplicate(self):
+        with person_logged_in(self.bug_owner):
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner)
+            soup = BeautifulSoup(view.render())
+        self.assertIsNone(soup.find(attrs={'id': 'field.actions.remove'}))
+
+    def test_remove_link_shown_if_duplicate(self):
+        with person_logged_in(self.bug_owner):
+            self.bug.markAsDuplicate(self.duplicate_bug)
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner)
+            soup = BeautifulSoup(view.render())
+        self.assertIsNotNone(
+            soup.find(attrs={'id': 'field.actions.remove'}))
+
+    def test_create_duplicate(self):
+        with person_logged_in(self.bug_owner):
+            form = {
+                'field.actions.change': u'Set Duplicate',
+                'field.duplicateof': u'%s' % self.duplicate_bug.id
+                }
+            create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner, form=form)
+        self.assertEqual(self.duplicate_bug, self.bug.duplicateof)
+
+    def test_remove_duplicate(self):
+        with person_logged_in(self.bug_owner):
+            self.bug.markAsDuplicate(self.duplicate_bug)
+            form = {
+                'field.actions.remove': u'Remove Duplicate',
+                }
+            create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner, form=form)
+        self.assertIsNone(self.bug.duplicateof)
+
+    def test_ajax_create_duplicate(self):
+        # An ajax request to create a duplicate returns the new bugtask table.
+        with person_logged_in(self.bug_owner):
+            extra = {
+                'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+                }
+            form = {
+                'field.actions.change': u'Set Duplicate',
+                'field.duplicateof': u'%s' % self.duplicate_bug.id
+                }
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner, form=form, **extra)
+            result_html = view.render()
+
+        self.assertEqual(self.duplicate_bug, self.bug.duplicateof)
+        self.assertEqual(
+            view.request.response.getHeader('content-type'), 'text/html')
+        soup = BeautifulSoup(result_html)
+        table = soup.find(
+            'table',
+            {'id': 'affected-software', 'class': 'duplicate listing'})
+        self.assertIsNotNone(table)
+
+    def test_ajax_remove_duplicate(self):
+        # An ajax request to remove a duplicate returns the new bugtask table.
+        with person_logged_in(self.bug_owner):
+            self.bug.markAsDuplicate(self.duplicate_bug)
+            extra = {
+                'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+                }
+            form = {
+                'field.actions.remove': u'Remove Duplicate',
+                }
+
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+duplicate",
+                principal=self.bug_owner, form=form, **extra)
+            result_html = view.render()
+
+        self.assertIsNone(self.bug.duplicateof)
+        self.assertEqual(
+            view.request.response.getHeader('content-type'), 'text/html')
+        soup = BeautifulSoup(result_html)
+        table = soup.find(
+            'table',
+            {'id': 'affected-software', 'class': 'listing'})
+        self.assertIsNotNone(table)

@@ -59,7 +59,7 @@
         use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
       <!-- Sharing information -->
-      <div tal:condition="features/translations.sharing_information.enabled">
+      <div>
         <div id="sharing-information"
              tal:condition="view/is_sharing">
           <p tal:define="sharing_pofile view/sharing_pofile;

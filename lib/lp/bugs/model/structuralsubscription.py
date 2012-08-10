@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -53,14 +53,13 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTargetHelper,
     )
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
-from lp.bugs.model.bugsubscriptionfilterimportance import (
+from lp.bugs.model.bugsubscriptionfilter import (
+    BugSubscriptionFilter,
     BugSubscriptionFilterImportance,
-    )
-from lp.bugs.model.bugsubscriptionfilterstatus import (
+    BugSubscriptionFilterInformationType,
     BugSubscriptionFilterStatus,
+    BugSubscriptionFilterTag,
     )
-from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 from lp.registry.errors import (
     DeleteSubscriptionError,
     UserCannotSubscribePerson,
@@ -703,8 +702,7 @@ def _get_structural_subscription_filter_id_query(
                                directly subscribed to the bug.
     """
     # Circular. :-(
-    from lp.bugs.model.bugtaskflat import BugTaskFlat
-    from lp.bugs.model.bugtasksearch import get_bug_privacy_filter_terms
+    from lp.bugs.model.bugtasksearch import get_bug_bulk_privacy_filter_terms
     # We get the ids because we need to use group by in order to
     # look at the filters' tags in aggregate.  Once we have the ids,
     # we can get the full set of what we need in subsuming or
@@ -742,10 +740,9 @@ def _get_structural_subscription_filter_id_query(
                    Select(BugSubscription.person_id,
                           BugSubscription.bug == bug))))
     if bug.private:
-        filters.extend([
-            Or(*get_bug_privacy_filter_terms(
-                StructuralSubscription.subscriberID)),
-            BugTaskFlat.bug == bug])
+        filters.append(
+            get_bug_bulk_privacy_filter_terms(
+                StructuralSubscription.subscriberID, bug))
     candidates = list(_get_structural_subscriptions(
         StructuralSubscription.id, query_arguments, *filters))
     if not candidates:
@@ -762,6 +759,11 @@ def _get_structural_subscription_filter_id_query(
             BugSubscriptionFilter.bug_notification_level >= level)
     # This handles the bugtask-specific attributes of status and importance.
     conditions.append(_calculate_bugtask_condition(query_arguments))
+    # Handle filtering by information type.
+    conditions.append(Or(
+        BugSubscriptionFilterInformationType.information_type ==
+            bug.information_type,
+        BugSubscriptionFilterInformationType.information_type == None))
     # Now we handle tags.  This actually assembles the query, because it
     # may have to union two queries together.
     # Note that casting bug.tags to a list subtly removes the security
@@ -847,6 +849,9 @@ def _calculate_tag_query(conditions, tags):
                  BugSubscriptionFilter.id),
         LeftJoin(BugSubscriptionFilterImportance,
                  BugSubscriptionFilterImportance.filter_id ==
+                 BugSubscriptionFilter.id),
+        LeftJoin(BugSubscriptionFilterInformationType,
+                 BugSubscriptionFilterInformationType.filter_id ==
                  BugSubscriptionFilter.id)]
     tag_join = LeftJoin(
         BugSubscriptionFilterTag,

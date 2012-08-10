@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from lazr.restful.utils import get_current_browser_request
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
@@ -40,11 +39,6 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         self.view = DistroSeriesLanguageView(
             self.dsl, LaunchpadTestRequest())
 
-    def _simulateReadOnlyMode(self):
-        """Pretend to be in read-only mode for this test."""
-        request = get_current_browser_request()
-        request.annotations['launchpad.read_only_mode'] = True
-
     def test_empty_view(self):
         self.assertEquals(self.view.translation_group, None)
         self.assertEquals(self.view.translation_team, None)
@@ -77,13 +71,6 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
             self.dsl, LaunchpadTestRequest())
         self.view.initialize()
         self.assertEquals(self.view.translation_team, translator)
-
-    def test_access_level_description_handles_readonly(self):
-        self._simulateReadOnlyMode()
-        notice = (
-            "No work can be done on these translations while Launchpad "
-            "is in read-only mode.")
-        self.assertEqual(notice, self.view.access_level_description)
 
     def test_sourcepackagenames_bulk_loaded(self):
         # SourcePackageName records referenced by POTemplates

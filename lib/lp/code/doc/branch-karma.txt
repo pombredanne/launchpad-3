@@ -49,7 +49,7 @@ However, no karma is added for junk branches.
 You get karma for linking a bug to a branch.
 
     >>> reporter = factory.makePerson(name='reporter')
-    >>> bug = factory.makeBug(product=fooix, owner=reporter)
+    >>> bug = factory.makeBug(target=fooix, owner=reporter)
     Karma added: action=bugcreated, product=fooix, person=reporter
     >>> branch_link = bug.linkBranch(branch, eric)
     Karma added: action=bugbranchcreated, product=fooix, person=eric
