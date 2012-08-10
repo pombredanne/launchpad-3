@@ -564,7 +564,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def setBranchSharingPolicy(self, branch_sharing_policy, user):
         """See `IProductPublic`."""
-        if not IPersonRoles(user).in_commercial_admin:
+        if not user or not IPersonRoles(user).in_commercial_admin:
             raise Unauthorized(
                 "Only commercial admins can configure sharing policies right "
                 "now.")
@@ -578,7 +578,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def setBugSharingPolicy(self, bug_sharing_policy, user):
         """See `IProductPublic`."""
-        if not IPersonRoles(user).in_commercial_admin:
+        if not user or not IPersonRoles(user).in_commercial_admin:
             raise Unauthorized(
                 "Only commercial admins can configure sharing policies right "
                 "now.")

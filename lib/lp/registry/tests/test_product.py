@@ -690,6 +690,11 @@ class BaseSharingPolicyTests:
             Unauthorized, self.setSharingPolicy,
             self.public_policy, self.product.owner)
 
+    def test_anonymous_cannot_set_policy(self):
+        # An anonymous user can't set sharing policies.
+        self.assertRaises(
+            Unauthorized, self.setSharingPolicy, self.public_policy, None)
+
     def test_proprietary_forbidden_without_commercial_sub(self):
         # No policy that allows Proprietary can be configured without a
         # commercial subscription.
