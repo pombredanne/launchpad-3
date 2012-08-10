@@ -62,6 +62,7 @@ class IArchivePermission(Interface):
             title=_("The permission type being granted."),
             values=ArchivePermissionType, readonly=False, required=True))
 
+    personID = Attribute("DB ID for person.")
     person = exported(
         PublicPersonChoice(
             title=_("Person"),

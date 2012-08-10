@@ -12,25 +12,31 @@ from lazr.restfulclient.errors import (
     Unauthorized as LRUnauthorized,
     )
 from testtools import ExpectedException
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
 
 
@@ -40,12 +46,12 @@ class TestArchiveWebservice(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         with celebrity_logged_in('admin'):
-            archive = self.factory.makeArchive(
+            self.archive = self.factory.makeArchive(
                 purpose=ArchivePurpose.PRIMARY)
             distroseries = self.factory.makeDistroSeries(
-                distribution=archive.distribution)
+                distribution=self.archive.distribution)
             person = self.factory.makePerson()
-            distro_name = archive.distribution.name
+            distro_name = self.archive.distribution.name
             distroseries_name = distroseries.name
             person_name = person.name
 
@@ -82,6 +88,24 @@ class TestArchiveWebservice(TestCaseWithFactory):
         self.assertIn(
             "Not permitted to upload to the UPDATES pocket in a series "
             "in the 'DEVELOPMENT' state.", e.content)
+
+    def test_getAllPermissions_constant_query_count(self):
+        # getAllPermissions has a query count constant in the number of
+        # permissions and people.
+        with celebrity_logged_in('admin'):
+            main = getUtility(IComponentSet)["main"]
+            ArchivePermission(
+                archive=self.archive, person=self.factory.makePerson(),
+                component=main, permission=ArchivePermissionType.UPLOAD)
+        with StormStatementRecorder() as recorder_one:
+            list(self.main_archive.getAllPermissions())
+        with celebrity_logged_in('admin'):
+            ArchivePermission(
+                archive=self.archive, person=self.factory.makePerson(),
+                component=main, permission=ArchivePermissionType.UPLOAD)
+        with StormStatementRecorder() as recorder:
+            list(self.main_archive.getAllPermissions())
+        self.assertThat(recorder, HasQueryCount(Equals(recorder_one.count)))
 
 
 class TestExternalDependencies(WebServiceTestCase):
