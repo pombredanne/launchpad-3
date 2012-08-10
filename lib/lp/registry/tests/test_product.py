@@ -683,6 +683,12 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    commercial_policies = (
+        BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+        BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+        BranchSharingPolicy.PROPRIETARY,
+        )
+
     def setUp(self):
         super(ProductSharingPoliciesTestCase, self).setUp()
         self.product = self.factory.makeProduct()
@@ -710,6 +716,31 @@ class ProductSharingPoliciesTestCase(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, self.product.setBranchSharingPolicy,
             BranchSharingPolicy.PUBLIC, self.product.owner)
+
+    def test_proprietary_forbidden_without_commercial_subscription(self):
+        # No policy that allows Proprietary can be configured without a
+        # commercial subscription.
+        self.product.setBranchSharingPolicy(
+            BranchSharingPolicy.PUBLIC, self.commercial_admin)
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, self.product.branch_sharing_policy)
+        for policy in self.commercial_policies:
+            self.assertRaises(
+                CommercialSubscribersOnly,
+                self.product.setBranchSharingPolicy,
+                policy, self.commercial_admin)
+
+    def test_proprietary_allowed_with_commercial_subscription(self):
+        # All policies are valid when there's a current commercial
+        # subscription.
+        self.factory.makeCommercialSubscription(product=self.product)
+        self.product.setBranchSharingPolicy(
+            BranchSharingPolicy.PUBLIC, self.commercial_admin)
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, self.product.branch_sharing_policy)
+        for policy in self.commercial_policies:
+            self.product.setBranchSharingPolicy(policy, self.commercial_admin)
+            self.assertEqual(policy, self.product.branch_sharing_policy)
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
