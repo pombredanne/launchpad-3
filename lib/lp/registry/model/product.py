@@ -676,10 +676,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.commercial_subscription.registrant = registrant
             self.commercial_subscription.purchaser = purchaser
 
-        # The product now has a commercial subscription, so we need to ensure
-        # it has a Proprietary access policy.
-        self._ensurePolicies([InformationType.PROPRIETARY])
-
     @property
     def qualifies_for_free_hosting(self):
         """See `IProduct`."""
