@@ -1058,6 +1058,11 @@ class Archive(SQLBase):
         return permission_set.checkAuthenticated(
             user, self, perm_type, item, distroseries=distroseries)
 
+    def getAllPermissions(self):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.permissionsForArchive(self)
+
     def getPermissionsForPerson(self, person):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)

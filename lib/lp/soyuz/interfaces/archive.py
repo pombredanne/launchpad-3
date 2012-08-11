@@ -1160,6 +1160,16 @@ class IArchiveView(IHasBuildRecords):
             could not be found.
         """
 
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getAllPermissions():
+        """Return all `IArchivePermission` records for this archive.
+
+        :return: A list of `IArchivePermission` records.
+        """
+
     @operation_parameters(person=Reference(schema=IPerson))
     # Really IArchivePermission, set below to avoid circular import.
     @operation_returns_collection_of(Interface)

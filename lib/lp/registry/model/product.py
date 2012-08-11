@@ -562,6 +562,34 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
+    def setBranchSharingPolicy(self, branch_sharing_policy, user):
+        """See `IProductPublic`."""
+        if not user or not IPersonRoles(user).in_commercial_admin:
+            raise Unauthorized(
+                "Only commercial admins can configure sharing policies right "
+                "now.")
+        if branch_sharing_policy != BranchSharingPolicy.PUBLIC:
+            if not self.has_current_commercial_subscription:
+                raise CommercialSubscribersOnly(
+                    "A current commercial subscription is required to use "
+                    "proprietary branches.")
+            self._ensurePolicies([InformationType.PROPRIETARY])
+        self.branch_sharing_policy = branch_sharing_policy
+
+    def setBugSharingPolicy(self, bug_sharing_policy, user):
+        """See `IProductPublic`."""
+        if not user or not IPersonRoles(user).in_commercial_admin:
+            raise Unauthorized(
+                "Only commercial admins can configure sharing policies right "
+                "now.")
+        if bug_sharing_policy != BugSharingPolicy.PUBLIC:
+            if not self.has_current_commercial_subscription:
+                raise CommercialSubscribersOnly(
+                    "A current commercial subscription is required to use "
+                    "proprietary bugs.")
+            self._ensurePolicies([InformationType.PROPRIETARY])
+        self.bug_sharing_policy = bug_sharing_policy
+
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
         types = set(InformationType.items)
@@ -662,10 +690,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.commercial_subscription.sales_system_id = voucher
             self.commercial_subscription.registrant = registrant
             self.commercial_subscription.purchaser = purchaser
-
-        # The product now has a commercial subscription, so we need to ensure
-        # it has a Proprietary access policy.
-        self._ensurePolicies([InformationType.PROPRIETARY])
 
     @property
     def qualifies_for_free_hosting(self):

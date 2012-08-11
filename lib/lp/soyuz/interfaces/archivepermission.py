@@ -63,6 +63,7 @@ class IArchivePermission(Interface):
             title=_("The permission type being granted."),
             values=ArchivePermissionType, readonly=False, required=True))
 
+    personID = Attribute("DB ID for person.")
     person = exported(
         PublicPersonChoice(
             title=_("Person"),
@@ -168,6 +169,12 @@ class IArchivePermissionSet(Interface):
         :return: all the `ArchivePermission` records that match the parameters
         supplied.  If none are returned, it means the person is not
         authenticated in that context.
+        """
+
+    def permissionsForArchive(archive):
+        """All `ArchivePermission` records for the archive.
+
+        :param archive: An `IArchive`.
         """
 
     def permissionsForPerson(person, archive):
