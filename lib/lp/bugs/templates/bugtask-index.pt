@@ -101,7 +101,7 @@
           <tal:dupe-info
              condition="duplicateof|nothing"
              define="duplicateof context/bug/duplicateof">
-          <span class="bug-duplicate-details ellipsis wide">
+          <span class="bug-duplicate-details ellipsis single-line wide">
             <span class="sprite info"></span>
             This bug report is a duplicate of:&nbsp;
                 <a
