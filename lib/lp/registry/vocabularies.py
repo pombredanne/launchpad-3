@@ -101,7 +101,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -141,6 +140,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
@@ -569,10 +569,10 @@ class ValidPersonOrTeamVocabulary(
         tables = []
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
-            celebrities = getUtility(ILaunchpadCelebrities)
-            if logged_in_user.inTeam(celebrities.admin):
-                # If the user is a LP admin we allow all private teams to be
-                # visible.
+            roles = IPersonRoles(logged_in_user)
+            if roles.in_admin or roles.in_commercial_admin:
+                # If the user is a LP admin or commercial admin we allow
+                # all private teams to be visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
                     Person.visibility == PersonVisibility.PRIVATE)
