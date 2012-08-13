@@ -175,15 +175,20 @@ jsbuild_widget_css: bin/jsbuild
 jsbuild_watch:
 	$(PY) bin/watch_jsbuild
 
+$(JS_BUILD_DIR):
+	mkdir -p $@
+
 .PHONY: yui_default
 yui_default: $(YUI_BUILDS)
 	ln -s $(YUI_DEFAULT) $(JS_BUILD_DIRJ)/yui
 
-$(YUI_BUILDS):
-	for  VER in $(YUI_VERSIONS); do \
-	unzip -q download-cache/dist/yui_$VER.zip -d $(JS_BUILD_DIR)/yui-$VER-tmp \
-	mv $(JS_BUILD_DIR)/yui-$VER-tmp/yui/build/* $(JS_BUILD_DIR)/$@
-	rm -rf $(JS_BUILD_DIR)/yui-$VER-tmp
+$(YUI_BUILDS): $(JS_BUILD_DIR)
+	for V in $(YUI_VERSIONS); do \
+		mkdir $(JS_BUILD_DIR)/yui-$$V $(JS_BUILD_DIR)/yui-$$V-tmp; \
+		unzip -q download-cache/dist/yui_$$V.zip -d $(JS_BUILD_DIR)/yui-$$V-tmp; \
+		mv $(JS_BUILD_DIR)/yui-$$V-tmp/yui/build/* $(JS_BUILD_DIR)/yui-$$V/; \
+		rm -rf $(JS_BUILD_DIR)/yui-$$V-tmp; \
+	done
 
 $(JS_LP): $(YUI_DEFAULT) jsbuild_widget_css
 $(JS_YUI):
