@@ -222,7 +222,7 @@ def validate_membership_policy(obj, attr, value):
     if value is None:
         return None
 
-    # If we are just creating a new team, it can have any subscription policy.
+    # If we are just creating a new team, it can have any membership policy.
     if getattr(obj, '_SO_creating', True):
         return value
 
@@ -549,14 +549,14 @@ class PersonNameField(BlacklistableContentNameField):
 
 
 def team_membership_policy_can_transition(team, policy):
-    """Can the team can change its subscription policy?
+    """Can the team can change its membership policy?
 
     Returns True when the policy can change. or raises an error. OPEN teams
     cannot be members of MODERATED or RESTRICTED teams. OPEN teams
     cannot have PPAs. Changes from between OPEN and the two closed states
     can be blocked by team membership and team artifacts.
 
-    We only perform the check if a subscription policy is transitioning from
+    We only perform the check if a membership policy is transitioning from
     open->closed or visa versa. So if a team already has a closed subscription
     policy, it is always allowed to transition to another closed policy.
 
@@ -578,7 +578,7 @@ def team_membership_policy_can_transition(team, policy):
 
 
 class TeamSubsciptionPolicyChoice(Choice):
-    """A valid team subscription policy."""
+    """A valid team membership policy."""
 
     def _getTeam(self):
         """Return the context if it is a team or None."""
@@ -599,7 +599,7 @@ class TeamSubsciptionPolicyChoice(Choice):
     def _validate(self, value):
         """Ensure the TeamSubsciptionPolicy is valid for state of the team.
 
-        Returns True if the team can change its subscription policy to the
+        Returns True if the team can change its membership policy to the
         `TeamMembershipPolicy`, otherwise raise TeamMembershipPolicyError.
         """
         team = self._getTeam()
@@ -1721,7 +1721,7 @@ class IPersonEditRestricted(Interface):
         :return: A tuple containing a boolean indicating when the
             membership status changed and the current `TeamMembershipStatus`.
             This depends on the desired status passed as an argument, the
-            subscription policy and the user's privileges.
+            membership policy and the user's privileges.
         """
 
     @operation_parameters(
@@ -1967,11 +1967,11 @@ class ITeamPublic(Interface):
         "which a just-renewed membership will expire.")
 
     def checkInclusiveMembershipPolicyAllowed(policy='open'):
-        """Check whether this team's subscription policy can be open.
+        """Check whether this team's membership policy can be open.
 
-        An inclusive subscription policy is OPEN or DELEGATED.
-        A exclusive subscription policy is MODERATED or RESTRICTED.
-        An exclusive subscription policy is required when:
+        An inclusive membership policy is OPEN or DELEGATED.
+        A exclusive membership policy is MODERATED or RESTRICTED.
+        An exclusive membership policy is required when:
         - any of the team's super teams are closed.
         - the team has any active PPAs
         - it is subscribed or assigned to any private bugs
@@ -1983,16 +1983,16 @@ class ITeamPublic(Interface):
             just wants to know if any open policy is allowed without having a
             particular policy to check. In this case, the method is called
             without a policy parameter being required.
-        :raises TeamMembershipPolicyError: When the subscription policy is
+        :raises TeamMembershipPolicyError: When the membership policy is
             not allowed to be open.
         """
 
     def checkExclusiveMembershipPolicyAllowed(policy='closed'):
-        """Return true if this team's subscription policy must be open.
+        """Return true if this team's membership policy must be open.
 
-        An inclusive subscription policy is OPEN or DELEGATED.
-        A exclusive subscription policy is MODERATED or RESTRICTED.
-        An inclusive subscription policy is required when:
+        An inclusive membership policy is OPEN or DELEGATED.
+        A exclusive membership policy is MODERATED or RESTRICTED.
+        An inclusive membership policy is required when:
         - any of the team's sub (member) teams are open.
 
         :param policy: The policy that is being checked for validity. This is
@@ -2001,7 +2001,7 @@ class ITeamPublic(Interface):
             just wants to know if any closed policy is allowed without having
             a particular policy to check. In this case, the method is called
             without a policy parameter being required.
-        :raises TeamMembershipPolicyError: When the subscription policy is
+        :raises TeamMembershipPolicyError: When the membership policy is
             not allowed to be closed.
         """
 

@@ -36,7 +36,7 @@ class TestTeamJoining(TestCaseWithFactory):
 
     def test_restricted_rejects_membership(self):
         # Calling person.join with a team that has a restricted membership
-        # subscription policy should raise an HTTP error with BAD_REQUEST
+        # membership policy should raise an HTTP error with BAD_REQUEST
         self.person = self.factory.makePerson(name='test-person')
         self.team = self.factory.makeTeam(name='test-team')
         login_person(self.team.teamowner)
@@ -53,7 +53,7 @@ class TestTeamJoining(TestCaseWithFactory):
 
     def test_open_accepts_membership(self):
         # Calling person.join with a team that has an open membership
-        # subscription policy should add that that user to the team.
+        # membership policy should add that that user to the team.
         self.person = self.factory.makePerson(name='test-person')
         owner = self.factory.makePerson()
         self.team = self.factory.makeTeam(name='test-team', owner=owner)

@@ -43,7 +43,7 @@ And real admins see the visibility widget too.
     >>> 'visibility' in [field.__name__ for field in view.form_fields]
     True
 
-When creating a private team, the team subscription policy must be
+When creating a private team, the team membership policy must be
 'Restricted.'
 
     >>> login('foo.bar@canonical.com')
@@ -68,7 +68,7 @@ When creating a private team, the team subscription policy must be
 
     >>> for error in view.errors:
     ...     print error
-    Private teams must have a Restricted subscription policy.
+    Private teams must have a Restricted membership policy.
 
 When the inputs are correct the admin can successfully create the team.
 
@@ -220,7 +220,7 @@ And a private team must have restricted membership.
 
     >>> for error in view.errors:
     ...     print error
-    Private teams must have a Restricted subscription policy.
+    Private teams must have a Restricted membership policy.
 
 = Visibility transitions =
 

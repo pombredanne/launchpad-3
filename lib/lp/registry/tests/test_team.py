@@ -486,13 +486,13 @@ class TestTeamMembershipPolicyChoiceDelegated(
 
 
 class TestTeamMembershipPolicyValidator(TestCaseWithFactory):
-    # Test that the subscription policy storm validator stops bad transitions.
+    # Test that the membership policy storm validator stops bad transitions.
 
     layer = DatabaseFunctionalLayer
 
     def test_illegal_transition_to_open_subscription(self):
         # Check that TeamMembershipPolicyError is raised when an attempt is
-        # made to set an illegal open subscription policy on a team.
+        # made to set an illegal open membership policy on a team.
         team = self.factory.makeTeam(
             membership_policy=TeamMembershipPolicy.RESTRICTED)
         with person_logged_in(team.teamowner):
@@ -505,7 +505,7 @@ class TestTeamMembershipPolicyValidator(TestCaseWithFactory):
 
     def test_illegal_transition_to_closed_subscription(self):
         # Check that TeamMembershipPolicyError is raised when an attempt is
-        # made to set an illegal closed subscription policy on a team.
+        # made to set an illegal closed membership policy on a team.
         team = self.factory.makeTeam()
         other_team = self.factory.makeTeam(
             owner=team.teamowner,

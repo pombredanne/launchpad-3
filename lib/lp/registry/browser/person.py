@@ -3285,7 +3285,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         newpolicy = data['mailing_list_auto_subscribe_policy']
         self.context.mailing_list_auto_subscribe_policy = newpolicy
         self.request.response.addInfoNotification(
-            'Your auto-subscription policy has been updated.')
+            'Your auto-subscribe policy has been updated.')
         self.next_url = self.action_url
 
 

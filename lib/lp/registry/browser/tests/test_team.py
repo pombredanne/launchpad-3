@@ -320,7 +320,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
                 view.widgets['membership_policy'].extra_hint)
 
     def test_edit_team_view_pillar_owner(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team is a pillar owner.
 
         def setup_team(team):
@@ -330,7 +330,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_pillar_security_contact(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team is a pillar security contact.
 
         def setup_team(team):
@@ -340,7 +340,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_ppas(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team has any ppas.
 
         def setup_team(team):
@@ -351,7 +351,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_closed_super_team(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team has any closed super teams.
 
         def setup_team(team):
@@ -366,7 +366,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_subscribed_private_bug(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team is subscribed to a private bug.
 
         def setup_team(team):
@@ -380,7 +380,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_open_member(self):
-        # The edit view renders open closed subscription policy choices when
+        # The edit view renders open closed membership policy choices when
         # the team has any open sub teams.
 
         def setup_team(team):

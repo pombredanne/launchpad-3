@@ -1,7 +1,7 @@
 = Propose/add your teams as member of another one =
 
 Any team administrator is allowed to propose/add (depending on the
-subscription policy) their teams as members of another team.
+membership policy) their teams as members of another team.
 
 This is done from the +add-my-teams page, which is linked from a team's
 home page.

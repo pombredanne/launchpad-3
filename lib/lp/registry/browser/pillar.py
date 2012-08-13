@@ -264,7 +264,7 @@ class PillarViewMixin():
     """A mixin for pillar views to populate the json request cache."""
 
     def initialize(self):
-        # Insert close team subscription policy data into the json cache.
+        # Insert close team membership policy data into the json cache.
         # This data is used for the maintainer and driver pickers.
         cache = IJSONRequestCache(self.request)
         policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]

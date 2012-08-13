@@ -85,7 +85,7 @@ member of that team --somebody has to approve his membership first:
     >>> [m.displayname for m in t3.allmembers]
     [u'Guilherme Salgado', u'Jeff Waugh']
 
-The join() method is not allowed for teams whose subscription policy is
+The join() method is not allowed for teams whose membership policy is
 RESTRICTED. And it'll be a no-op in case the user has already joined the
 given team.
 

@@ -1462,7 +1462,7 @@ class Person(
             status = approved
         else:
             raise AssertionError(
-                "Unknown subscription policy: %s" % team.membership_policy)
+                "Unknown membership policy: %s" % team.membership_policy)
 
         # XXX Edwin Grubbs 2007-12-14 bug=117980
         # removeSecurityProxy won't be necessary after addMember()
@@ -1817,12 +1817,12 @@ class Person(
         # Does this team own or is the security contact for any pillars?
         if self.isAnyPillarOwner():
             raise TeamMembershipPolicyError(
-                "The team subscription policy cannot be %s because it "
+                "The team membership policy cannot be %s because it "
                 "maintains one or more projects, project groups, or "
                 "distributions." % policy)
         if self.isAnySecurityContact():
             raise TeamMembershipPolicyError(
-                "The team subscription policy cannot be %s because it "
+                "The team membership policy cannot be %s because it "
                 "is the security contact for one or more projects, "
                 "project groups, or distributions." % policy)
 
@@ -1830,14 +1830,14 @@ class Person(
         for ppa in self.ppas:
             if ppa.status != ArchiveStatus.DELETED:
                 raise TeamMembershipPolicyError(
-                    "The team subscription policy cannot be %s because it "
+                    "The team membership policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
 
         # Does this team have any super teams that are closed?
         for team in self.super_teams:
             if team.membership_policy in EXCLUSIVE_TEAM_POLICY:
                 raise TeamMembershipPolicyError(
-                    "The team subscription policy cannot be %s because one "
+                    "The team membership policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
 
         # Does this team subscribe or is assigned to any private bugs.
@@ -1867,7 +1867,7 @@ class Person(
             limit=1))
         if private_bugs_involved.rowcount:
             raise TeamMembershipPolicyError(
-                "The team subscription policy cannot be %s because it is "
+                "The team membership policy cannot be %s because it is "
                 "subscribed to or assigned to one or more private "
                 "bugs." % policy)
 
@@ -1880,7 +1880,7 @@ class Person(
         for member in self.activemembers:
             if member.membership_policy in INCLUSIVE_TEAM_POLICY:
                 raise TeamMembershipPolicyError(
-                    "The team subscription policy cannot be %s because one "
+                    "The team membership policy cannot be %s because one "
                     "or more if its member teams are Open." % policy)
 
     @property

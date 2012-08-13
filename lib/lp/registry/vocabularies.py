@@ -909,7 +909,7 @@ class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
                                 ValidPersonOrTeamVocabulary):
     """The set of people and closed teams in Launchpad.
 
-    A closed team is one for which the subscription policy is either
+    A closed team is one for which the membership policy is either
     RESTRICTED or MODERATED.
     """
 

@@ -317,7 +317,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
         team = self.context
-        # Do we need to only show open subscription policy choices?
+        # Do we need to only show open membership policy choices?
         try:
             team.checkExclusiveMembershipPolicyAllowed()
         except TeamMembershipPolicyError as e:
@@ -332,7 +332,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                 'sprite info')
             self.widgets['membership_policy'].extra_hint = e.message
 
-        # Do we need to only show closed subscription policy choices?
+        # Do we need to only show closed membership policy choices?
         try:
             team.checkInclusiveMembershipPolicyAllowed()
         except TeamMembershipPolicyError as e:
@@ -1786,14 +1786,14 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     def join_allowed(self):
         """Is the logged in user allowed to join this team?
 
-        The answer is yes if this team's subscription policy is not RESTRICTED
+        The answer is yes if this team's membership policy is not RESTRICTED
         and this team's visibility is either None or PUBLIC.
         """
         # Joining a moderated team will put you on the proposed_members
         # list. If it is a private team, you are not allowed to view the
         # proposed_members attribute until you are an active member;
         # therefore, it would look like the join button is broken. Either
-        # private teams should always have a restricted subscription policy,
+        # private teams should always have a restricted membership policy,
         # or we need a more complicated permission model.
         if not (self.context.visibility is None
                 or self.context.visibility == PersonVisibility.PUBLIC):
@@ -1824,7 +1824,7 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     def team_is_moderated(self):
         """Is this team a moderated team?
 
-        Return True if the team's subscription policy is MODERATED.
+        Return True if the team's membership policy is MODERATED.
         """
         policy = self.context.membership_policy
         return policy == TeamMembershipPolicy.MODERATED
