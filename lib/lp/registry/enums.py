@@ -218,7 +218,7 @@ class TeamMembershipPolicy(DBEnumeratedType):
         Restricted Team
 
         Membership is exlusive; team administrators can invite users and
-        exclusive teams join.
+        exclusive teams to join.
         """)
 
 
