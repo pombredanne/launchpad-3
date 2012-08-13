@@ -178,10 +178,6 @@ jsbuild_watch:
 $(JS_BUILD_DIR):
 	mkdir -p $@
 
-.PHONY: yui_default
-yui_default: $(YUI_BUILDS)
-	ln -s $(YUI_DEFAULT) $(JS_BUILD_DIRJ)/yui
-
 $(YUI_BUILDS): $(JS_BUILD_DIR)
 	for V in $(YUI_VERSIONS); do \
 		mkdir $(JS_BUILD_DIR)/yui-$$V $(JS_BUILD_DIR)/yui-$$V-tmp; \
@@ -190,10 +186,12 @@ $(YUI_BUILDS): $(JS_BUILD_DIR)
 		rm -rf $(JS_BUILD_DIR)/yui-$$V-tmp; \
 	done
 
-$(JS_LP): $(YUI_DEFAULT) jsbuild_widget_css
+$(JS_LP): jsbuild_widget_css
 $(JS_YUI):
 	cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
 
+# YUI_DEFAULT is one of the targets in YUI_BUILDS which expands all of our YUI
+# versions for us.
 $(JS_ALL): $(YUI_DEFAULT)
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
@@ -207,7 +205,7 @@ combobuild:
 	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)
-	bin/combo-rootdir build/js
+	bin/combo-rootdir build/js $(YUI_DEFAULT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
