@@ -893,7 +893,7 @@ class TeamVocabularyMixin:
 
     @property
     def is_closed_team(self):
-        return self.team.subscriptionpolicy in CLOSED_TEAM_POLICY
+        return self.team.membership_policy in CLOSED_TEAM_POLICY
 
     @property
     def step_title(self):
@@ -919,7 +919,7 @@ class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
 
     @property
     def extra_clause(self):
-        return Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY)
+        return Person.membership_policy.is_in(CLOSED_TEAM_POLICY)
 
 
 class ValidTeamMemberVocabulary(TeamVocabularyMixin,
@@ -954,7 +954,7 @@ class ValidTeamMemberVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
+                Person.membership_policy.is_in(CLOSED_TEAM_POLICY))
         return clause
 
 
@@ -992,7 +992,7 @@ class ValidTeamOwnerVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
+                Person.membership_policy.is_in(CLOSED_TEAM_POLICY))
         return clause
 
 

@@ -188,7 +188,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
     def test_cannot_merge_team_with_ppa(self):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
-        self.dupe_team.subscriptionpolicy = TeamMembershipPolicy.MODERATED
+        self.dupe_team.membership_policy = TeamMembershipPolicy.MODERATED
         self.dupe_team.createPPA()
         login_celebrity('registry_experts')
         view = self.getView()

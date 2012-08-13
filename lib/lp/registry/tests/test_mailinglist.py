@@ -48,7 +48,7 @@ class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
             MailingListAutoSubscribePolicy.ALWAYS)
         pending_member.mailing_list_auto_subscribe_policy = (
             MailingListAutoSubscribePolicy.ALWAYS)
-        self.team.subscriptionpolicy = TeamMembershipPolicy.MODERATED
+        self.team.membership_policy = TeamMembershipPolicy.MODERATED
         pending_member.join(self.team)
         self.team.addMember(former_member, reviewer=self.team.teamowner)
         former_member.leave(self.team)

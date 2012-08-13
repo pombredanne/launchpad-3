@@ -268,11 +268,11 @@ class PillarViewMixin():
         # This data is used for the maintainer and driver pickers.
         cache = IJSONRequestCache(self.request)
         policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
-        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
             SimpleVocabulary.fromItems(policy_items),
             value_fn=lambda item: item.name)
-        cache.objects['team_subscriptionpolicy_data'] = (
-            team_subscriptionpolicy_data)
+        cache.objects['team_membership_policy_data'] = (
+            team_membership_policy_data)
 
 
 class PillarSharingView(LaunchpadView):

@@ -227,13 +227,13 @@ def validate_membership_policy(obj, attr, value):
         return value
 
     team = obj
-    existing_membership_policy = getattr(team, 'subscriptionpolicy', None)
+    existing_membership_policy = getattr(team, 'membership_policy', None)
     if value == existing_membership_policy:
         return value
     if value in OPEN_TEAM_POLICY:
-        team.checkOpenSubscriptionPolicyAllowed(policy=value)
+        team.checkInclusiveMembershipPolicyAllowed(policy=value)
     if value in CLOSED_TEAM_POLICY:
-        team.checkClosedSubscriptionPolicyAllowed(policy=value)
+        team.checkExclusiveMembershipPolicyAllowed(policy=value)
     return value
 
 
@@ -565,15 +565,15 @@ def team_membership_policy_can_transition(team, policy):
     :raises TeamSubsciptionPolicyError: Raised when a membership constrain
         or a team artifact prevents the policy from being set.
     """
-    if team is None or policy == team.subscriptionpolicy:
+    if team is None or policy == team.membership_policy:
         # The team is being initialized or the policy is not changing.
         return True
     elif (policy in OPEN_TEAM_POLICY
-          and team.subscriptionpolicy in CLOSED_TEAM_POLICY):
-        team.checkOpenSubscriptionPolicyAllowed(policy)
+          and team.membership_policy in CLOSED_TEAM_POLICY):
+        team.checkInclusiveMembershipPolicyAllowed(policy)
     elif (policy in CLOSED_TEAM_POLICY
-          and team.subscriptionpolicy in OPEN_TEAM_POLICY):
-        team.checkClosedSubscriptionPolicyAllowed(policy)
+          and team.membership_policy in OPEN_TEAM_POLICY):
+        team.checkExclusiveMembershipPolicyAllowed(policy)
     return True
 
 
@@ -1631,14 +1631,14 @@ class IPersonEditRestricted(Interface):
     @export_write_operation()
     @operation_for_version("beta")
     def join(team, requester=None, may_subscribe_to_list=True):
-        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+        """Join the given team if its membership_policy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
         team:
 
-        - If the team subscriptionpolicy is OPEN, the user is added as
+        - If the team membership_policy is OPEN, the user is added as
           an APPROVED member with a NULL TeamMembership.reviewer.
-        - If the team subscriptionpolicy is MODERATED, the user is added as
+        - If the team membership_policy is MODERATED, the user is added as
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
@@ -1928,8 +1928,8 @@ class ITeamPublic(Interface):
                 "preserved and URLs are linked in pages.")),
         exported_as='team_description')
 
-    subscriptionpolicy = exported(
-        TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
+    membership_policy = exported(
+        TeamSubsciptionPolicyChoice(title=_('Membership policy'),
                vocabulary=TeamMembershipPolicy,
                default=TeamMembershipPolicy.RESTRICTED, required=True,
                description=_(
@@ -1966,12 +1966,12 @@ class ITeamPublic(Interface):
         "The date, according to team's default values, in "
         "which a just-renewed membership will expire.")
 
-    def checkOpenSubscriptionPolicyAllowed(policy='open'):
-        """ Check whether this team's subscription policy can be open.
+    def checkInclusiveMembershipPolicyAllowed(policy='open'):
+        """Check whether this team's subscription policy can be open.
 
-        An open subscription policy is OPEN or DELEGATED.
-        A closed subscription policy is MODERATED or RESTRICTED.
-        An closed subscription policy is required when:
+        An inclusive subscription policy is OPEN or DELEGATED.
+        A exclusive subscription policy is MODERATED or RESTRICTED.
+        An exclusive subscription policy is required when:
         - any of the team's super teams are closed.
         - the team has any active PPAs
         - it is subscribed or assigned to any private bugs
@@ -1987,12 +1987,12 @@ class ITeamPublic(Interface):
             not allowed to be open.
         """
 
-    def checkClosedSubscriptionPolicyAllowed(policy='closed'):
-        """ Return true if this team's subscription policy must be open.
+    def checkExclusiveMembershipPolicyAllowed(policy='closed'):
+        """Return true if this team's subscription policy must be open.
 
-        An open subscription policy is OPEN or DELEGATED.
-        A closed subscription policy is MODERATED or RESTRICTED.
-        An open subscription policy is required when:
+        An inclusive subscription policy is OPEN or DELEGATED.
+        A exclusive subscription policy is MODERATED or RESTRICTED.
+        An inclusive subscription policy is required when:
         - any of the team's sub (member) teams are open.
 
         :param policy: The policy that is being checked for validity. This is
@@ -2182,11 +2182,11 @@ class IPersonSet(Interface):
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
-        subscriptionpolicy='membership_policy',
+        membership_policy='membership_policy',
         defaultmembershipperiod='default_membership_period',
         defaultrenewalperiod='default_renewal_period')
     @operation_parameters(
-        subscriptionpolicy=Choice(
+        membership_policy=Choice(
             title=_('Subscription policy'), vocabulary=TeamMembershipPolicy,
             required=False, default=TeamMembershipPolicy.MODERATED))
     @export_factory_operation(
@@ -2194,7 +2194,7 @@ class IPersonSet(Interface):
                 'defaultmembershipperiod', 'defaultrenewalperiod'])
     @operation_for_version("beta")
     def newTeam(teamowner, name, displayname, teamdescription=None,
-                subscriptionpolicy=TeamMembershipPolicy.MODERATED,
+                membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
         """Create and return a new Team with given arguments."""
 

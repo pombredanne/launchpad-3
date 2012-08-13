@@ -724,7 +724,7 @@ class TestPersonStates(TestCaseWithFactory):
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.membership_policy': 'RESTRICTED',
             'field.renewal_policy': 'NONE',
             'field.visibility': 'PUBLIC',
             'field.actions.save': 'Save',

@@ -288,11 +288,11 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
                 'A great team', view.widgets['teamdescription']._data)
             self.assertEqual(
                 TeamMembershipPolicy.MODERATED,
-                view.widgets['subscriptionpolicy']._data)
+                view.widgets['membership_policy']._data)
             self.assertEqual(
                 TeamMembershipPolicy,
-                view.widgets['subscriptionpolicy'].vocabulary)
-            self.assertIsNone(view.widgets['subscriptionpolicy'].extra_hint)
+                view.widgets['membership_policy'].vocabulary)
+            self.assertIsNone(view.widgets['membership_policy'].extra_hint)
             self.assertEqual(
                 TeamMembershipRenewalPolicy.NONE,
                 view.widgets['renewal_policy']._data)
@@ -312,12 +312,12 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             self.assertContentEqual(
                 expected_items,
                 [term.value
-                 for term in view.widgets['subscriptionpolicy'].vocabulary])
+                 for term in view.widgets['membership_policy'].vocabulary])
             self.assertEqual(
                 'sprite info',
-                view.widgets['subscriptionpolicy'].extra_hint_class)
+                view.widgets['membership_policy'].extra_hint_class)
             self.assertIsNotNone(
-                view.widgets['subscriptionpolicy'].extra_hint)
+                view.widgets['membership_policy'].extra_hint)
 
     def test_edit_team_view_pillar_owner(self):
         # The edit view renders only closed subscription policy choices when
@@ -518,7 +518,7 @@ class TestTeamAddView(TestCaseWithFactory):
         form = {
             'field.name': team_name,
             'field.displayname': 'New Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.membership_policy': 'RESTRICTED',
             'field.visibility': 'PRIVATE',
             'field.actions.create': 'Create',
             }
@@ -571,7 +571,7 @@ class TestSimpleTeamAddView(TestCaseWithFactory):
             'field.name': team_name,
             'field.displayname': 'New Team',
             'field.visibility': 'PRIVATE',
-            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.membership_policy': 'RESTRICTED',
             'field.actions.create': 'Create',
             }
         login_celebrity('admin')
@@ -582,7 +582,7 @@ class TestSimpleTeamAddView(TestCaseWithFactory):
         self.assertEqual('New Team', team.displayname)
         self.assertEqual(PersonVisibility.PRIVATE, team.visibility)
         self.assertEqual(
-            TeamMembershipPolicy.RESTRICTED, team.subscriptionpolicy)
+            TeamMembershipPolicy.RESTRICTED, team.membership_policy)
 
 
 class TestTeamMenu(TestCaseWithFactory):

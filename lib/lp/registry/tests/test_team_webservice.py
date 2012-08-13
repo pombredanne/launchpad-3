@@ -40,7 +40,7 @@ class TestTeamJoining(TestCaseWithFactory):
         self.person = self.factory.makePerson(name='test-person')
         self.team = self.factory.makeTeam(name='test-team')
         login_person(self.team.teamowner)
-        self.team.subscriptionpolicy = TeamMembershipPolicy.RESTRICTED
+        self.team.membership_policy = TeamMembershipPolicy.RESTRICTED
         logout()
 
         launchpad = launchpadlib_for("test", self.person)
@@ -58,7 +58,7 @@ class TestTeamJoining(TestCaseWithFactory):
         owner = self.factory.makePerson()
         self.team = self.factory.makeTeam(name='test-team', owner=owner)
         login_person(owner)
-        self.team.subscriptionpolicy = TeamMembershipPolicy.OPEN
+        self.team.membership_policy = TeamMembershipPolicy.OPEN
         logout()
 
         launchpad = launchpadlib_for("test", self.person)

@@ -831,7 +831,7 @@ def is_public_person_or_closed_team(person):
         return False
     if not person.is_team:
         return person.visibility == PersonVisibility.PUBLIC
-    return person.subscriptionpolicy in CLOSED_TEAM_POLICY
+    return person.membership_policy in CLOSED_TEAM_POLICY
 
 
 class PrivateTeamNotAllowed(ConstraintNotSatisfied):

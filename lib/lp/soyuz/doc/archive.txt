@@ -1603,7 +1603,7 @@ One of the new copy archives will be owned by a team:
     >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipPolicy)
     >>> team = getUtility(IPersonSet).newTeam(mark, 't1', 't1',
-    ...     subscriptionpolicy=TeamMembershipPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
     ...                                        name="team-archive",
     ...                                        owner=team)

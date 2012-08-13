@@ -783,7 +783,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, teamdescription=description,
-            subscriptionpolicy=membership_policy)
+            membership_policy=membership_policy)
         naked_team = removeSecurityProxy(team)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so

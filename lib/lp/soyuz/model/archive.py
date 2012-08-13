@@ -2128,7 +2128,7 @@ def validate_ppa(owner, proposed_name, private=False):
     elif owner.private:
         return 'Private teams may not have public archives.'
     if owner.is_team and (
-        owner.subscriptionpolicy in OPEN_TEAM_POLICY):
+        owner.membership_policy in OPEN_TEAM_POLICY):
         return "Open teams cannot have PPAs."
     if proposed_name is not None and proposed_name == ubuntu.name:
         return (

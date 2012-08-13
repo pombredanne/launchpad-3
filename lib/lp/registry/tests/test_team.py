@@ -312,7 +312,7 @@ class TeamMembershipPolicyBase(TestCaseWithFactory):
         self.team = self.factory.makeTeam(membership_policy=self.POLICY)
         self.other_team = self.factory.makeTeam(
             membership_policy=other_policy, owner=self.team.teamowner)
-        self.field = ITeamPublic['subscriptionpolicy'].bind(self.team)
+        self.field = ITeamPublic['membership_policy'].bind(self.team)
         login_person(self.team.teamowner)
 
 
@@ -330,7 +330,7 @@ class TestTeamMembershipPolicyChoiceCommon(TeamMembershipPolicyBase):
     def test___getTeam_with_person_set(self):
         # _getTeam returns the context person set for team creation.
         person_set = getUtility(IPersonSet)
-        field = ITeamPublic['subscriptionpolicy'].bind(person_set)
+        field = ITeamPublic['membership_policy'].bind(person_set)
         self.assertEqual(None, field._getTeam())
 
 
@@ -501,7 +501,7 @@ class TestTeamMembershipPolicyValidator(TestCaseWithFactory):
             self.assertRaises(
                 TeamMembershipPolicyError,
                 removeSecurityProxy(team).__setattr__,
-                "subscriptionpolicy", policy)
+                "membership_policy", policy)
 
     def test_illegal_transition_to_closed_subscription(self):
         # Check that TeamMembershipPolicyError is raised when an attempt is
@@ -518,7 +518,7 @@ class TestTeamMembershipPolicyValidator(TestCaseWithFactory):
             self.assertRaises(
                 TeamMembershipPolicyError,
                 removeSecurityProxy(team).__setattr__,
-                "subscriptionpolicy", policy)
+                "membership_policy", policy)
 
 
 class TestVisibilityConsistencyWarning(TestCaseWithFactory):

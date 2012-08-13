@@ -312,7 +312,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         # teams are unrestricted, notifications on join/ leave do not help the
         # admins.
         if (len(admin_emails) != 0 and
-            self.team.subscriptionpolicy != TeamMembershipPolicy.OPEN):
+            self.team.membership_policy != TeamMembershipPolicy.OPEN):
             admin_template = get_email_template(
                 "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:

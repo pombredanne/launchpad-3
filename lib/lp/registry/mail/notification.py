@@ -180,7 +180,7 @@ def notify_team_join(event):
         return
 
     # Open teams do not notify admins about new members.
-    if team.subscriptionpolicy == TeamMembershipPolicy.OPEN:
+    if team.membership_policy == TeamMembershipPolicy.OPEN:
         return
 
     replacements = {

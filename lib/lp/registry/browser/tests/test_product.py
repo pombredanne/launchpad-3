@@ -327,12 +327,12 @@ class TestProductView(TestCaseWithFactory):
         view = create_initialized_view(self.product, '+index')
         cache = IJSONRequestCache(view.request)
         policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
-        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
             SimpleVocabulary.fromItems(policy_items),
             value_fn=lambda item: item.name)
         self.assertContentEqual(
-            team_subscriptionpolicy_data,
-            cache.objects['team_subscriptionpolicy_data'])
+            team_membership_policy_data,
+            cache.objects['team_membership_policy_data'])
 
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):

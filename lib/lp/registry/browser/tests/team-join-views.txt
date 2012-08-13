@@ -26,7 +26,7 @@ Tests for the team '+join' page's raw view objects.
     >>> def make_team(teamname, membership_policy):
     ...     creator = personset.getByName('no-priv')
     ...     team = personset.newTeam(creator, teamname, teamname,
-    ...         subscriptionpolicy=membership_policy)
+    ...         membership_policy=membership_policy)
     ...     return team
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet

@@ -167,7 +167,7 @@ def new_team(team_name, with_list=False):
     personset = getUtility(IPersonSet)
     team_creator = personset.getByName('no-priv')
     team = personset.newTeam(team_creator, team_name, displayname,
-                             subscriptionpolicy=policy)
+                             membership_policy=policy)
     if not with_list:
         return team
     else:
@@ -203,11 +203,11 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
     browser.getControl('Display Name').value = displayname
     if private:
         browser.getControl('Visibility').value = ['PRIVATE']
-        browser.getControl(name='field.subscriptionpolicy').value = [
+        browser.getControl(name='field.membership_policy').value = [
             'RESTRICTED']
     else:
         browser.getControl(
-            name='field.subscriptionpolicy').displayValue = ['Open Team']
+            name='field.membership_policy').displayValue = ['Open Team']
     browser.getControl('Create').click()
     # Create the team's mailing list.
     browser.open('%s~%s/+mailinglist' % (rooturl, team_name))

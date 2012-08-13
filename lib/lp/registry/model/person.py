@@ -587,8 +587,8 @@ class Person(
     renewal_policy = EnumCol(
         enum=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
-    subscriptionpolicy = EnumCol(
-        dbName='subscriptionpolicy',
+    membership_policy = EnumCol(
+        dbName='subscription_policy',
         enum=TeamMembershipPolicy,
         default=TeamMembershipPolicy.RESTRICTED,
         storm_validator=validate_membership_policy)
@@ -1453,16 +1453,16 @@ class Person(
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
 
-        if team.subscriptionpolicy == TeamMembershipPolicy.RESTRICTED:
+        if team.membership_policy == TeamMembershipPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
-        elif (team.subscriptionpolicy == TeamMembershipPolicy.MODERATED
-            or team.subscriptionpolicy == TeamMembershipPolicy.DELEGATED):
+        elif (team.membership_policy == TeamMembershipPolicy.MODERATED
+            or team.membership_policy == TeamMembershipPolicy.DELEGATED):
             status = proposed
-        elif team.subscriptionpolicy == TeamMembershipPolicy.OPEN:
+        elif team.membership_policy == TeamMembershipPolicy.OPEN:
             status = approved
         else:
             raise AssertionError(
-                "Unknown subscription policy: %s" % team.subscriptionpolicy)
+                "Unknown subscription policy: %s" % team.membership_policy)
 
         # XXX Edwin Grubbs 2007-12-14 bug=117980
         # removeSecurityProxy won't be necessary after addMember()
@@ -1809,7 +1809,7 @@ class Person(
             EmailAddress.personID == self.id,
             EmailAddress.status == status)
 
-    def checkOpenSubscriptionPolicyAllowed(self, policy='open'):
+    def checkInclusiveMembershipPolicyAllowed(self, policy='open'):
         """See `ITeam`"""
         if not self.is_team:
             raise ValueError("This method must only be used for teams.")
@@ -1835,7 +1835,7 @@ class Person(
 
         # Does this team have any super teams that are closed?
         for team in self.super_teams:
-            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
+            if team.membership_policy in CLOSED_TEAM_POLICY:
                 raise TeamMembershipPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
@@ -1871,14 +1871,14 @@ class Person(
                 "subscribed to or assigned to one or more private "
                 "bugs." % policy)
 
-    def checkClosedSubscriptionPolicyAllowed(self, policy='closed'):
+    def checkExclusiveMembershipPolicyAllowed(self, policy='closed'):
         """See `ITeam`"""
         if not self.is_team:
             raise ValueError("This method must only be used for teams.")
 
         # The team must be open if any of it's members are open.
         for member in self.activemembers:
-            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
+            if member.membership_policy in OPEN_TEAM_POLICY:
                 raise TeamMembershipPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its member teams are Open." % policy)
@@ -2168,7 +2168,7 @@ class Person(
             TeamMembershipPolicy.OPEN,
             TeamMembershipPolicy.DELEGATED
             )
-        return (self.subscriptionpolicy in open_types)
+        return (self.membership_policy in open_types)
 
     @property
     def open_membership_invitations(self):
@@ -3093,7 +3093,7 @@ class Person(
 
     def canCreatePPA(self):
         """See `IPerson.`"""
-        return self.subscriptionpolicy in CLOSED_TEAM_POLICY
+        return self.membership_policy in CLOSED_TEAM_POLICY
 
     def checkAllowVisibility(self):
         role = IPersonRoles(self)
@@ -3289,7 +3289,7 @@ class PersonSet:
             return email.person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
-                subscriptionpolicy=TeamMembershipPolicy.MODERATED,
+                membership_policy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
         """See `IPersonSet`."""
         assert teamowner
@@ -3300,7 +3300,7 @@ class PersonSet:
                 teamdescription=teamdescription,
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
-                subscriptionpolicy=subscriptionpolicy)
+                membership_policy=membership_policy)
         notify(ObjectCreatedEvent(team))
         # Here we add the owner as a team admin manually because we know what
         # we're doing (so we don't need to do any sanity checks) and we don't

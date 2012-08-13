@@ -617,8 +617,8 @@ class TestTeamCreationView(TestCaseWithFactory):
             'field.name': 'libertyland',
             'field.renewal_policy': 'NONE',
             'field.renewal_policy-empty-marker': 1,
-            'field.subscriptionpolicy': 'RESTRICTED',
-            'field.subscriptionpolicy-empty-marker': 1,
+            'field.membership_policy': 'RESTRICTED',
+            'field.membership_policy-empty-marker': 1,
             }
         person_set = getUtility(IPersonSet)
         create_initialized_view(

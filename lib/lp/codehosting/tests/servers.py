@@ -42,7 +42,7 @@ def set_up_test_user(test_user, test_team):
     testUser.name = test_user
     testTeam = person_set.newTeam(
         testUser, test_team, test_team,
-        subscriptionpolicy=TeamMembershipPolicy.OPEN)
+        membership_policy=TeamMembershipPolicy.OPEN)
     testUser.join(testTeam)
     ssh_key_set = getUtility(ISSHKeySet)
     ssh_key_set.new(

@@ -882,7 +882,7 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
 
     def test_declined_member_can_be_made_admin(self):
-        self.team2.subscriptionpolicy = TeamMembershipPolicy.MODERATED
+        self.team2.membership_policy = TeamMembershipPolicy.MODERATED
         self.team1.join(self.team2, requester=self.foobar)
         team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.team1, self.team2)
@@ -967,7 +967,7 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
 
     def test_retractTeamMembership_proposed(self):
         # A team can retract the proposed membership in a team.
-        self.team2.subscriptionpolicy = TeamMembershipPolicy.MODERATED
+        self.team2.membership_policy = TeamMembershipPolicy.MODERATED
         self.team1.join(self.team2, self.team1.teamowner)
         self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
         tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(

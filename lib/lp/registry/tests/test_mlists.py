@@ -446,7 +446,7 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         # OPEN teams do not send notifications ever on joins, so test this
         # variant with a MODERATED team.
         login_person(self.team.teamowner)
-        self.team.subscriptionpolicy = TeamMembershipPolicy.MODERATED
+        self.team.membership_policy = TeamMembershipPolicy.MODERATED
         transaction.commit()
         login('foo.bar@canonical.com')
         process = self.makeProcess('--notifications')
