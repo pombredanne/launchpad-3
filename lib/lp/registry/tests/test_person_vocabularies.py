@@ -14,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     OPEN_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipPolicy,
@@ -259,7 +259,7 @@ class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
                 email="team_%s@foo.com" % policy.name,
                 membership_policy=policy)
         closed_teams = []
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             closed_teams.append(self.factory.makeTeam(
                 name="fred%s" % policy.name.lower(),
                 email="team_%s@foo.com" % policy.name,

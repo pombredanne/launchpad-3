@@ -17,7 +17,7 @@ from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     OPEN_TEAM_POLICY,
     )
 from lp.services.database.lpstorm import IStore
@@ -528,7 +528,7 @@ class Test_is_person_or_closed_team(TestCaseWithFactory):
                 "%s is not open" % policy)
 
     def test_closed_team(self):
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.assertTrue(
                 is_public_person_or_closed_team(closed_team),

@@ -20,7 +20,7 @@ from lp.registry.errors import (
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
     ITeamPublic,
     OPEN_TEAM_POLICY,
@@ -514,7 +514,7 @@ class TestTeamMembershipPolicyValidator(TestCaseWithFactory):
             team.addMember(
                 other_team, team.teamowner, force_team_add=True)
 
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             self.assertRaises(
                 TeamMembershipPolicyError,
                 removeSecurityProxy(team).__setattr__,

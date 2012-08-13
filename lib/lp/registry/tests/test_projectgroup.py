@@ -9,7 +9,7 @@ from zope.security.interfaces import Unauthorized
 
 from lp.registry.errors import OpenTeamLinkageError
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     OPEN_TEAM_POLICY,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -45,7 +45,7 @@ class TestProjectGroup(TestCaseWithFactory):
 
     def test_owner_can_be_closed_team(self):
         """Project group owners can be closed teams."""
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProject(owner=closed_team)
 

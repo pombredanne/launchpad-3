@@ -121,7 +121,7 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
@@ -341,7 +341,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
             self.widgets['membership_policy'].vocabulary = (
                 SimpleVocabulary([SimpleVocabulary.createTerm(
                     policy, policy.name, policy.title)
-                    for policy in CLOSED_TEAM_POLICY])
+                    for policy in EXCLUSIVE_TEAM_POLICY])
                 )
             self.widgets['membership_policy'].extra_hint_class = (
                 'sprite info')

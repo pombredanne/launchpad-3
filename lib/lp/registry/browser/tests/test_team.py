@@ -19,7 +19,7 @@ from lp.registry.browser.team import (
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
     OPEN_TEAM_POLICY,
     PersonVisibility,
@@ -327,7 +327,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             self.factory.makeProduct(owner=team)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_pillar_security_contact(self):
         # The edit view renders only closed subscription policy choices when
@@ -337,7 +337,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             self.factory.makeProduct(security_contact=team)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_ppas(self):
         # The edit view renders only closed subscription policy choices when
@@ -348,7 +348,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
                 team.createPPA()
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_closed_super_team(self):
         # The edit view renders only closed subscription policy choices when
@@ -363,7 +363,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
                     team, team.teamowner, force_team_add=True)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_subscribed_private_bug(self):
         # The edit view renders only closed subscription policy choices when
@@ -377,7 +377,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
                 bug.default_bugtask.transitionToAssignee(team)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_open_member(self):
         # The edit view renders open closed subscription policy choices when

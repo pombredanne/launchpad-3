@@ -8,7 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'CLOSED_TEAM_POLICY',
+    'EXCLUSIVE_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'ICanonicalSSOAPI',
@@ -232,7 +232,7 @@ def validate_membership_policy(obj, attr, value):
         return value
     if value in OPEN_TEAM_POLICY:
         team.checkInclusiveMembershipPolicyAllowed(policy=value)
-    if value in CLOSED_TEAM_POLICY:
+    if value in EXCLUSIVE_TEAM_POLICY:
         team.checkExclusiveMembershipPolicyAllowed(policy=value)
     return value
 
@@ -478,7 +478,7 @@ OPEN_TEAM_POLICY = (
     TeamMembershipPolicy.OPEN, TeamMembershipPolicy.DELEGATED)
 
 
-CLOSED_TEAM_POLICY = (
+EXCLUSIVE_TEAM_POLICY = (
     TeamMembershipPolicy.RESTRICTED, TeamMembershipPolicy.MODERATED)
 
 
@@ -569,9 +569,9 @@ def team_membership_policy_can_transition(team, policy):
         # The team is being initialized or the policy is not changing.
         return True
     elif (policy in OPEN_TEAM_POLICY
-          and team.membership_policy in CLOSED_TEAM_POLICY):
+          and team.membership_policy in EXCLUSIVE_TEAM_POLICY):
         team.checkInclusiveMembershipPolicyAllowed(policy)
-    elif (policy in CLOSED_TEAM_POLICY
+    elif (policy in EXCLUSIVE_TEAM_POLICY
           and team.membership_policy in OPEN_TEAM_POLICY):
         team.checkExclusiveMembershipPolicyAllowed(policy)
     return True

@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     OPEN_TEAM_POLICY,
     )
 from lp.services.webapp.publisher import canonical_url
@@ -31,7 +31,7 @@ class TestTeamActivatePPA(TestCaseWithFactory):
     def test_closed_teams_has_link(self):
         # Closed teams (a subscription policy of Moderated or Restricted)
         # have a link to create a new PPA.
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             team = self.factory.makeTeam(membership_policy=policy)
             html = self.create_view(team)
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')

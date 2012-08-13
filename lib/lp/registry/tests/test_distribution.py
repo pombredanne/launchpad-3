@@ -38,7 +38,7 @@ from lp.registry.interfaces.distribution import (
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
     OPEN_TEAM_POLICY,
     )
@@ -87,7 +87,7 @@ class TestDistribution(TestCaseWithFactory):
 
     def test_owner_can_be_closed_team(self):
         """Distro owners can be closed teams."""
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeDistribution(owner=closed_team)
 
@@ -101,7 +101,7 @@ class TestDistribution(TestCaseWithFactory):
 
     def test_security_contact_can_be_closed_team(self):
         """Distro security contacts can be closed teams."""
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeDistribution(security_contact=closed_team)
 

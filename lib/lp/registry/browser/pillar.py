@@ -53,7 +53,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
     )
 from lp.registry.interfaces.pillar import IPillar
@@ -267,7 +267,7 @@ class PillarViewMixin():
         # Insert close team subscription policy data into the json cache.
         # This data is used for the maintainer and driver pickers.
         cache = IJSONRequestCache(self.request)
-        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
         team_membership_policy_data = vocabulary_to_choice_edit_items(
             SimpleVocabulary.fromItems(policy_items),
             value_fn=lambda item: item.name)

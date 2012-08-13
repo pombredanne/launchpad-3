@@ -17,7 +17,7 @@ from lp.registry.browser.product import (
     ProjectAddStepTwo,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.product import (
@@ -326,7 +326,7 @@ class TestProductView(TestCaseWithFactory):
         # The view's json request cache contains the expected data.
         view = create_initialized_view(self.product, '+index')
         cache = IJSONRequestCache(view.request)
-        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
         team_membership_policy_data = vocabulary_to_choice_edit_items(
             SimpleVocabulary.fromItems(policy_items),
             value_fn=lambda item: item.name)

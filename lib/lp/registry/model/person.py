@@ -179,7 +179,7 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
+    EXCLUSIVE_TEAM_POLICY,
     ImmutableVisibilityError,
     IPerson,
     IPersonSet,
@@ -1835,7 +1835,7 @@ class Person(
 
         # Does this team have any super teams that are closed?
         for team in self.super_teams:
-            if team.membership_policy in CLOSED_TEAM_POLICY:
+            if team.membership_policy in EXCLUSIVE_TEAM_POLICY:
                 raise TeamMembershipPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
@@ -3093,7 +3093,7 @@ class Person(
 
     def canCreatePPA(self):
         """See `IPerson.`"""
-        return self.membership_policy in CLOSED_TEAM_POLICY
+        return self.membership_policy in EXCLUSIVE_TEAM_POLICY
 
     def checkAllowVisibility(self):
         role = IPersonRoles(self)
