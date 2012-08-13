@@ -7,7 +7,7 @@ from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.registry.errors import OpenTeamLinkageError
+from lp.registry.errors import InclusiveTeamLinkageError
 from lp.registry.interfaces.person import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
@@ -40,7 +40,7 @@ class TestProjectGroup(TestCaseWithFactory):
         for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeProject,
+                InclusiveTeamLinkageError, self.factory.makeProject,
                 owner=open_team)
 
     def test_owner_can_be_closed_team(self):

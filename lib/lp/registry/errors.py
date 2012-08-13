@@ -18,7 +18,7 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
-    'OpenTeamLinkageError',
+    'InclusiveTeamLinkageError',
     'PPACreationError',
     'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
@@ -42,7 +42,7 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @error_status(httplib.FORBIDDEN)
-class OpenTeamLinkageError(ValueError):
+class InclusiveTeamLinkageError(ValueError):
     """An attempt was made to link an open team to something."""
 
 

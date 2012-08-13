@@ -21,7 +21,7 @@ from lp.registry.errors import (
     DistroSeriesDifferenceError,
     JoinNotAllowed,
     NameAlreadyTaken,
-    OpenTeamLinkageError,
+    InclusiveTeamLinkageError,
     PPACreationError,
     PrivatePersonLinkageError,
     TeamMembershipTransitionError,
@@ -40,8 +40,8 @@ class TestWebServiceErrors(TestCase):
 
     layer = FunctionalLayer
 
-    def test_OpenTeamLinkageError_forbidden(self):
-        error_view = create_webservice_error_view(OpenTeamLinkageError())
+    def test_InclusiveTeamLinkageError_forbidden(self):
+        error_view = create_webservice_error_view(InclusiveTeamLinkageError())
         self.assertEqual(FORBIDDEN, error_view.status)
 
     def test_PersonLinkageError_forbidden(self):

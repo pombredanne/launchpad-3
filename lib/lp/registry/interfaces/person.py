@@ -120,7 +120,7 @@ from lp.code.interfaces.hasbranches import (
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.errors import (
-    OpenTeamLinkageError,
+    InclusiveTeamLinkageError,
     PrivatePersonLinkageError,
     TeamMembershipPolicyError,
     )
@@ -214,7 +214,7 @@ def validate_person_or_closed_team(obj, attr, value):
         return is_public_person_or_closed_team(person)
 
     return validate_person_common(
-        obj, attr, value, validate, error_class=OpenTeamLinkageError)
+        obj, attr, value, validate, error_class=InclusiveTeamLinkageError)
 
 
 def validate_membership_policy(obj, attr, value):

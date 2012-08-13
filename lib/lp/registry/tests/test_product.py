@@ -35,7 +35,7 @@ from lp.registry.enums import (
     )
 from lp.registry.errors import (
     CommercialSubscribersOnly,
-    OpenTeamLinkageError,
+    InclusiveTeamLinkageError,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
@@ -256,7 +256,7 @@ class TestProduct(TestCaseWithFactory):
         for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeProduct,
+                InclusiveTeamLinkageError, self.factory.makeProduct,
                 owner=open_team)
 
     def test_owner_can_be_closed_team(self):
@@ -270,7 +270,7 @@ class TestProduct(TestCaseWithFactory):
         for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeProduct,
+                InclusiveTeamLinkageError, self.factory.makeProduct,
                 security_contact=open_team)
 
     def test_security_contact_can_be_closed_team(self):

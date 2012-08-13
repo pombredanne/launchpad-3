@@ -29,7 +29,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import InformationType
 from lp.registry.errors import (
     NoSuchDistroSeries,
-    OpenTeamLinkageError,
+    InclusiveTeamLinkageError,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
@@ -82,7 +82,7 @@ class TestDistribution(TestCaseWithFactory):
         for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeDistribution,
+                InclusiveTeamLinkageError, self.factory.makeDistribution,
                 owner=open_team)
 
     def test_owner_can_be_closed_team(self):
@@ -96,7 +96,7 @@ class TestDistribution(TestCaseWithFactory):
         for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeDistribution,
+                InclusiveTeamLinkageError, self.factory.makeDistribution,
                 security_contact=open_team)
 
     def test_security_contact_can_be_closed_team(self):
