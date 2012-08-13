@@ -258,10 +258,6 @@ class ImporterHandler:
     # Package stuff
     #
 
-    def ensure_sourcepackagename(self, name):
-        """Import only the sourcepackagename ensuring them."""
-        self.sphandler.ensureSourcePackageName(name)
-
     def preimport_sourcecheck(self, sourcepackagedata):
         """
         Check if this SourcePackageRelease already exists. This can
