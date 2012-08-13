@@ -242,9 +242,9 @@ class TestValidPersonOrTeamPreloading(VocabularyTestBase,
         self.assertThat(recorder, HasQueryCount(Equals(0)))
 
 
-class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
-                                            TestCaseWithFactory):
-    """Test that the ValidPersonOrClosedTeamVocabulary behaves as expected."""
+class TestValidPersonOrExclusiveTeamVocabulary(
+                    ValidPersonOrTeamVocabularyMixin, TestCaseWithFactory):
+    """Test that the ValidPersonOrExclusiveTeamVocabulary is correct."""
 
     layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPillarOwner'

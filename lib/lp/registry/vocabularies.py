@@ -905,7 +905,7 @@ class TeamVocabularyMixin:
             return 'Search'
 
 
-class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
+class ValidPersonOrExclusiveTeamVocabulary(TeamVocabularyMixin,
                                 ValidPersonOrTeamVocabulary):
     """The set of people and exclusive teams in Launchpad.
 
@@ -1059,7 +1059,7 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarGranteeVocabulary(ValidPersonOrClosedTeamVocabulary):
+class NewPillarGranteeVocabulary(ValidPersonOrExclusiveTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an
