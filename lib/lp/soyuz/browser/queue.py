@@ -452,12 +452,12 @@ class QueueItemsView(LaunchpadView):
         self.request.response.redirect(url)
 
     def queue_action_accept(self, queue_item):
-        """Reject the queue item passed."""
+        """Accept the queue item passed."""
         queue_item.acceptFromQueue(user=self.user)
 
     def queue_action_reject(self, queue_item):
-        """Accept the queue item passed."""
-        queue_item.rejectFromQueue()
+        """Reject the queue item passed."""
+        queue_item.rejectFromQueue(user=self.user)
 
     def sortedSections(self):
         """Possible sections for the context distroseries.
