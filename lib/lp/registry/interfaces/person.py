@@ -2187,7 +2187,7 @@ class IPersonSet(Interface):
         defaultrenewalperiod='default_renewal_period')
     @operation_parameters(
         membership_policy=Choice(
-            title=_('Subscription policy'), vocabulary=TeamMembershipPolicy,
+            title=_('Membership policy'), vocabulary=TeamMembershipPolicy,
             required=False, default=TeamMembershipPolicy.MODERATED))
     @export_factory_operation(
         ITeam, ['name', 'displayname', 'teamdescription',

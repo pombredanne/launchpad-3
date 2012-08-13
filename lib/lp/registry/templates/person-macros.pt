@@ -60,7 +60,7 @@
         </dd>
       </dl>
       <dl id="subscription-policy">
-        <dt>Subscription policy:</dt>
+        <dt>Membership policy:</dt>
         <dd
           tal:attributes="title context/membership_policy/description">
           <span tal:replace="context/membership_policy/title" />
