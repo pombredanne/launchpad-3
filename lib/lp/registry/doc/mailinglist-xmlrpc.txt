@@ -110,7 +110,7 @@ mailing lists.
     ...     PersonVisibility, TeamMembershipPolicy)
     >>> team_private = factory.makeTeam(
     ...     no_priv, name='team-private',
-    ...     subscription_policy=TeamMembershipPolicy.RESTRICTED,
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED,
     ...     visibility=PersonVisibility.PRIVATE)
     >>> list_private = list_set.new(team_private)
     >>> transaction.commit()

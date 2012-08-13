@@ -154,10 +154,10 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         # reporting guidelines.
         owning_team = self.factory.makeTeam(
             owner=self.owner,
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         bug_team = self.factory.makeTeam(
             owner=self.owner,
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         weak_owner = self.factory.makePerson()
         login_person(self.owner)
         owning_team.addMember(weak_owner, self.owner)

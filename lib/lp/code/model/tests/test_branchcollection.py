@@ -716,7 +716,7 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         # branch, even if it's private.
         team_owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             owner=team_owner)
         private_branch = self.factory.makeAnyBranch(
             information_type=InformationType.USERDATA)

@@ -108,7 +108,7 @@ class TestBranchVisibility(TestCaseWithFactory):
         person = self.factory.makePerson()
         teamowner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             owner=teamowner, members=[person])
 
         # Not visible to an unsubscribed person.

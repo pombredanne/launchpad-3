@@ -58,7 +58,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         self.priv_team = self.factory.makeTeam(
             owner=self.priv_owner, name="priv-team",
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         login_person(self.priv_owner)
         self.priv_team.addMember(self.priv_member, reviewer=self.priv_owner)
 

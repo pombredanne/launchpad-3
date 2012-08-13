@@ -187,7 +187,7 @@ for moderator approval.
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> team_private = factory.makeTeam(
     ...     no_priv, name='team-private',
-    ...     subscription_policy=TeamMembershipPolicy.RESTRICTED,
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED,
     ...     visibility=PersonVisibility.PRIVATE)
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet

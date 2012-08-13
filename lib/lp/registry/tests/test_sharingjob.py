@@ -267,7 +267,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         # The policy grantees will lose access.
         policy_indirect_grantee = self.factory.makePerson()
         policy_team_grantee = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[policy_indirect_grantee])
 
         self.factory.makeAccessPolicyGrant(policy, policy_team_grantee, owner)
@@ -282,7 +282,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         # The artifact grantees will not lose access when the job is run.
         artifact_indirect_grantee = self.factory.makePerson()
         artifact_team_grantee = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[artifact_indirect_grantee])
 
         bug.subscribe(policy_team_grantee, owner)
@@ -330,7 +330,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         # The policy grantees will lose access.
         policy_indirect_grantee = self.factory.makePerson()
         policy_team_grantee = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[policy_indirect_grantee])
 
         self.factory.makeAccessPolicyGrant(policy, policy_team_grantee, owner)
@@ -345,7 +345,7 @@ class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
         # The artifact grantees will not lose access when the job is run.
         artifact_indirect_grantee = self.factory.makePerson()
         artifact_team_grantee = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[artifact_indirect_grantee])
 
         branch.subscribe(

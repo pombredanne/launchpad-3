@@ -193,7 +193,7 @@ from lp.registry.interfaces.person import (
     TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
     validate_public_person,
-    validate_subscription_policy,
+    validate_membership_policy,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
@@ -591,7 +591,7 @@ class Person(
         dbName='subscriptionpolicy',
         enum=TeamMembershipPolicy,
         default=TeamMembershipPolicy.RESTRICTED,
-        storm_validator=validate_subscription_policy)
+        storm_validator=validate_membership_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)

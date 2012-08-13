@@ -890,7 +890,7 @@ class TestSharingService(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         team_grantee = self.factory.makeTeam(
             owner=team_owner,
-            subscription_policy=TeamMembershipPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[person_grantee])
 
         # Subscribe the team and person grantees to the artifacts.

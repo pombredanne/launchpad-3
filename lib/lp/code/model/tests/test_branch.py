@@ -2389,7 +2389,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
 
     def test_personal_branches_for_private_teams_are_private(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)

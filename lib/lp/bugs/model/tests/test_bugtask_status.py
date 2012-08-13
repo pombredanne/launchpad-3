@@ -374,7 +374,7 @@ class TestBugTaskStatusTransitionOwnerTeam(
         self.person = self.factory.makePerson()
         self.team = self.factory.makeTeam(
             members=[self.person],
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         self.product = self.factory.makeProduct(owner=self.team)
         self.task = self.factory.makeBugTask(target=self.product)
 

@@ -745,7 +745,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  description=None, icon=None, logo=None,
-                 subscription_policy=TeamMembershipPolicy.OPEN,
+                 membership_policy=TeamMembershipPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
 
@@ -760,8 +760,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :type email: string
         :param icon: The team's icon.
         :param logo: The team's logo.
-        :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamMembershipPolicy`
+        :param membership_policy: The subscription policy of the team.
+        :type membership_policy: `TeamMembershipPolicy`
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
@@ -783,7 +783,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, teamdescription=description,
-            subscriptionpolicy=subscription_policy)
+            subscriptionpolicy=membership_policy)
         naked_team = removeSecurityProxy(team)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
@@ -3306,7 +3306,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
-        subscription_policy=TeamMembershipPolicy.OPEN):
+        membership_policy=TeamMembershipPolicy.OPEN):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -3316,8 +3316,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
-        :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamMembershipPolicy`
+        :param membership_policy: The subscription policy of the team.
+        :type membership_policy: `TeamMembershipPolicy`
         :return: The new team and mailing list.
         :rtype: (`ITeam`, `IMailingList`)
         """
@@ -3329,7 +3329,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             team = self.makeTeam(
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
-                subscription_policy=subscription_policy)
+                membership_policy=membership_policy)
         team_list = self.makeMailingList(team, owner)
         return team, team_list
 

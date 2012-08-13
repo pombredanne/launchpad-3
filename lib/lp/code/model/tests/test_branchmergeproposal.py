@@ -177,7 +177,7 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
         product = self.factory.makeProduct()
         trunk = self.factory.makeBranch(product=product, owner=owner)
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA, owner=owner,
             product=product)
@@ -1570,7 +1570,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
 
     def test_nominate_team_grants_visibility(self):
         reviewer = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self._test_nominate_grants_visibility(reviewer)
 
     def test_comment_with_vote_creates_reference(self):

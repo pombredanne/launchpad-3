@@ -86,7 +86,7 @@ class TestTeamLimitedViewAccess(TestCaseWithFactory):
         db_team = self.factory.makeTeam(
             name='private-team', owner=team_owner,
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         # Create a P3A for the team.
         with person_logged_in(team_owner):
             self.factory.makeArchive(

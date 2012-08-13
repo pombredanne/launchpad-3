@@ -221,7 +221,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         public_person1 = self.factory.makePerson()
         private_team1 = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self._nominateReviewer(public_person1, owner)
         self._nominateReviewer(private_team1, owner)
 

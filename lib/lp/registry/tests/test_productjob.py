@@ -326,7 +326,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
     def make_maintainer_team(self, product):
         team = self.factory.makeTeam(
             owner=product.owner,
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         team_admin = self.factory.makePerson()
         with person_logged_in(team.teamowner):
             team.addMember(
@@ -577,7 +577,7 @@ class CommericialExpirationMixin(CommercialHelpers):
         # Create a proprietary project owned by a team which will have
         # different DB relations.
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         proprietary_product = self.factory.makeProduct(
             owner=team, licenses=[License.OTHER_PROPRIETARY])
         self.expire_commercial_subscription(proprietary_product)

@@ -200,7 +200,7 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
         branch, distro = self.makeBranch()
         person = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             members=[person])
         removeSecurityProxy(branch).subscribe(
             team, BranchSubscriptionNotificationLevel.NOEMAIL,

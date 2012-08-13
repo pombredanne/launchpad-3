@@ -18,7 +18,7 @@ Set Up
 
     >>> soyuz_team = factory.makeTeam(
     ...     name='soyuz-team',
-    ...     subscription_policy=TeamMembershipPolicy.RESTRICTED)
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
     >>> soyuz_team_owner = soyuz_team.teamowner
     >>> parent_series = factory.makeDistroSeries(name="parentseries")
     >>> arch = factory.makeDistroArchSeries(distroseries=parent_series)

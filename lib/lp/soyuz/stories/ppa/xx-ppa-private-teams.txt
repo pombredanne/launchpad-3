@@ -18,7 +18,7 @@ as for individuals and public teams.
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=cprov, displayname="Private Team",
     ...     visibility=PersonVisibility.PRIVATE,
-    ...     subscription_policy=TeamMembershipPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> logout()
 
 A section named 'Personal Package Archives' is presented in the

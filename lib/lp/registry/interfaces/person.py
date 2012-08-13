@@ -43,7 +43,7 @@ __all__ = [
     'validate_person',
     'validate_person_or_closed_team',
     'validate_public_person',
-    'validate_subscription_policy',
+    'validate_membership_policy',
     ]
 
 import httplib
@@ -217,8 +217,8 @@ def validate_person_or_closed_team(obj, attr, value):
         obj, attr, value, validate, error_class=OpenTeamLinkageError)
 
 
-def validate_subscription_policy(obj, attr, value):
-    """Validate the team subscription_policy."""
+def validate_membership_policy(obj, attr, value):
+    """Validate the team membership_policy."""
     if value is None:
         return None
 
@@ -227,8 +227,8 @@ def validate_subscription_policy(obj, attr, value):
         return value
 
     team = obj
-    existing_subscription_policy = getattr(team, 'subscriptionpolicy', None)
-    if value == existing_subscription_policy:
+    existing_membership_policy = getattr(team, 'subscriptionpolicy', None)
+    if value == existing_membership_policy:
         return value
     if value in OPEN_TEAM_POLICY:
         team.checkOpenSubscriptionPolicyAllowed(policy=value)
@@ -548,7 +548,7 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
-def team_subscription_policy_can_transition(team, policy):
+def team_membership_policy_can_transition(team, policy):
     """Can the team can change its subscription policy?
 
     Returns True when the policy can change. or raises an error. OPEN teams
@@ -592,7 +592,7 @@ class TeamSubsciptionPolicyChoice(Choice):
         team = self._getTeam()
         policy = value
         try:
-            return team_subscription_policy_can_transition(team, policy)
+            return team_membership_policy_can_transition(team, policy)
         except TeamMembershipPolicyError:
             return False
 
@@ -604,7 +604,7 @@ class TeamSubsciptionPolicyChoice(Choice):
         """
         team = self._getTeam()
         policy = value
-        team_subscription_policy_can_transition(team, policy)
+        team_membership_policy_can_transition(team, policy)
         super(TeamSubsciptionPolicyChoice, self)._validate(value)
 
 
@@ -1934,7 +1934,7 @@ class ITeamPublic(Interface):
                default=TeamMembershipPolicy.RESTRICTED, required=True,
                description=_(
                 TeamMembershipPolicy.__doc__.split('\n\n')[1])),
-        exported_as='subscription_policy')
+        exported_as='membership_policy')
 
     renewal_policy = exported(
         Choice(title=_("When someone's membership is about to expire, "
@@ -2182,7 +2182,7 @@ class IPersonSet(Interface):
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
-        subscriptionpolicy='subscription_policy',
+        subscriptionpolicy='membership_policy',
         defaultmembershipperiod='default_membership_period',
         defaultrenewalperiod='default_renewal_period')
     @operation_parameters(

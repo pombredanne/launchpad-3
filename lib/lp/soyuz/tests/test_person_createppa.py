@@ -60,7 +60,7 @@ class TestCreatePPA(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
             owner=team_owner, visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         team_admin = self.factory.makePerson()
         with person_logged_in(team_owner):
             private_team.addMember(

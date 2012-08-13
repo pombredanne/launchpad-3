@@ -533,7 +533,7 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         with person_logged_in(series.distribution.owner):
             series.distribution.owner = self.factory.makeTeam(
                 displayname=u"Team Teamy Team Team",
-                subscription_policy=TeamMembershipPolicy.RESTRICTED)
+                membership_policy=TeamMembershipPolicy.RESTRICTED)
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()

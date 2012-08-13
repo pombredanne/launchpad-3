@@ -150,7 +150,7 @@ class TestProductAddView(TestCaseWithFactory):
         # An owner can be any valid user or team selected.
         registrant = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         transaction.commit()
         login_person(registrant)
         form = self.makeForm(action=2)

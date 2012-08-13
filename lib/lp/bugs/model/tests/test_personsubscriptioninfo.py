@@ -463,7 +463,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         target = self.bug.default_bugtask.target
         team = self.factory.makeTeam(
             members=[self.subscriber],
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         removeSecurityProxy(target).owner = team
         # Load a `PersonSubscriptionInfo`s for target.owner and a bug.
         self.subscriptions.reload()
@@ -481,7 +481,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Bug is targeted to a pillar with no supervisor set.
         target = self.bug.default_bugtask.target
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         with person_logged_in(team.teamowner):
             team.addMember(self.subscriber, team.teamowner,
                            status=TeamMembershipStatus.ADMIN)

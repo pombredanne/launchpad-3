@@ -642,9 +642,9 @@ class TestTeamMembership(TestCaseWithFactory):
         person = self.factory.makePerson()
         login_person(person)  # Now login with the future owner of the teams.
         teamA = self.factory.makeTeam(
-            person, subscription_policy=TeamMembershipPolicy.MODERATED)
+            person, membership_policy=TeamMembershipPolicy.MODERATED)
         teamB = self.factory.makeTeam(
-            person, subscription_policy=TeamMembershipPolicy.MODERATED)
+            person, membership_policy=TeamMembershipPolicy.MODERATED)
         self.failUnless(
             teamA.inTeam(teamA), "teamA is not a participant of itself")
         self.failUnless(
@@ -1024,7 +1024,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
 
         # Make another bug and grant access to a team.
         team_grantee = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[person_grantee])
         bug2, bug2_owner = self._make_subscribed_bug(
             team_grantee, product,

@@ -76,7 +76,7 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
             name=name,
             owner=self.owner,
             displayname=displayname,
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
 
     def inviteToJoin(self, joinee, joiner):
         """Invite the joiner team into the joinee team."""
@@ -278,7 +278,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         team = self.factory.makeTeam(
             name="team", displayname='A Team',
             description="A great team", owner=owner,
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertEqual('team', view.widgets['name']._data)
@@ -305,7 +305,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         # the setup performed by fn_setup occurs.
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            owner=owner, subscription_policy=TeamMembershipPolicy.MODERATED)
+            owner=owner, membership_policy=TeamMembershipPolicy.MODERATED)
         fn_setup(team)
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
@@ -357,7 +357,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         def setup_team(team):
             super_team = self.factory.makeTeam(
                 owner=team.teamowner,
-                subscription_policy=TeamMembershipPolicy.RESTRICTED)
+                membership_policy=TeamMembershipPolicy.RESTRICTED)
             with person_logged_in(team.teamowner):
                 super_team.addMember(
                     team, team.teamowner, force_team_add=True)
@@ -386,7 +386,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         def setup_team(team):
             team_member = self.factory.makeTeam(
                 owner=team.teamowner,
-                subscription_policy=TeamMembershipPolicy.DELEGATED)
+                membership_policy=TeamMembershipPolicy.DELEGATED)
             with person_logged_in(team.teamowner):
                 team.addMember(
                     team_member, team.teamowner, force_team_add=True)
@@ -402,7 +402,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             name="team", displayname='A Team',
             description="A great team", owner=owner,
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
 
         with person_logged_in(owner):
             team_list = self.factory.makeMailingList(team, owner)
@@ -500,7 +500,7 @@ class TestTeamAddView(TestCaseWithFactory):
     def test_person_with_cs_sees_visibility_field(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.grantCommercialSubscription(team)
         with person_logged_in(team.teamowner):
             view = create_initialized_view(
@@ -512,7 +512,7 @@ class TestTeamAddView(TestCaseWithFactory):
     def test_person_with_cs_can_create_private_team(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.grantCommercialSubscription(team)
         team_name = self.factory.getUniqueString()
         form = {
@@ -533,7 +533,7 @@ class TestTeamAddView(TestCaseWithFactory):
     def test_person_with_expired_cs_does_not_see_visibility(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
         self.factory.makeCommercialSubscription(product, expired=True)
         with person_logged_in(team.teamowner):
@@ -546,7 +546,7 @@ class TestTeamAddView(TestCaseWithFactory):
     def test_visibility_is_correct_during_edit(self):
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             visibility=PersonVisibility.PRIVATE, owner=owner)
         product = self.factory.makeProduct(owner=owner)
         self.factory.makeCommercialSubscription(product)
@@ -870,7 +870,7 @@ class TestPersonIndexVisibilityView(TestCaseWithFactory):
 
     def createTeams(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         private = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE, name='private-team',
             members=[team])

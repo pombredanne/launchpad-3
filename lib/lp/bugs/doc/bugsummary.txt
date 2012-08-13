@@ -429,11 +429,11 @@ to private bugs.
     >>> team_a = factory.makeTeam(
     ...     name='t-a',
     ...     members=[person_a],
-    ...     subscription_policy=TeamMembershipPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> team_c = factory.makeTeam(
     ...     name='t-c',
     ...     members=[person_a, person_b],
-    ...     subscription_policy=TeamMembershipPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
 
 Create some bugs.
     - bug_a is a private distribution bug, subscribed by team_a

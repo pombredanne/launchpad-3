@@ -49,7 +49,7 @@ Ownership can not be transferred to an open team.
     >>> product = factory.makeProduct(owner=owner)
     >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> team = factory.makeTeam(
-    ...     name='open', subscription_policy=TeamMembershipPolicy.OPEN)
+    ...     name='open', membership_policy=TeamMembershipPolicy.OPEN)
     >>> form = {
     ...     'field.owner': 'open',
     ...     'field.actions.save': 'Save changes',

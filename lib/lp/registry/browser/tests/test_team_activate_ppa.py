@@ -32,7 +32,7 @@ class TestTeamActivatePPA(TestCaseWithFactory):
         # Closed teams (a subscription policy of Moderated or Restricted)
         # have a link to create a new PPA.
         for policy in CLOSED_TEAM_POLICY:
-            team = self.factory.makeTeam(subscription_policy=policy)
+            team = self.factory.makeTeam(membership_policy=policy)
             html = self.create_view(team)
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
             self.assertEqual(
@@ -45,7 +45,7 @@ class TestTeamActivatePPA(TestCaseWithFactory):
         # Open teams (a subscription policy of Open or Delegated) do not
         # have a link to create a new PPA.
         for policy in OPEN_TEAM_POLICY:
-            team = self.factory.makeTeam(subscription_policy=policy)
+            team = self.factory.makeTeam(membership_policy=policy)
             html = self.create_view(team)
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
             self.assertIs(None, create_ppa)

@@ -38,7 +38,7 @@ class TestProjectGroup(TestCaseWithFactory):
     def test_owner_cannot_be_open_team(self):
         """Project group owners cannot be open teams."""
         for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
+            open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
                 OpenTeamLinkageError, self.factory.makeProject,
                 owner=open_team)
@@ -46,7 +46,7 @@ class TestProjectGroup(TestCaseWithFactory):
     def test_owner_can_be_closed_team(self):
         """Project group owners can be closed teams."""
         for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProject(owner=closed_team)
 
 

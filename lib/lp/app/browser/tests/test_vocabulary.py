@@ -539,7 +539,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         # The results are JSON encoded.
         team = self.factory.makeTeam(
             name='xpting-team',
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
@@ -590,7 +590,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         # The vocab filter is used to filter results.
         team = self.factory.makeTeam(
             name='xpting-team',
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         TestPersonVocabulary.test_persons.extend([team, person])
         product = self.factory.makeProduct(owner=team)

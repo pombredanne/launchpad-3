@@ -80,7 +80,7 @@ class TestDistribution(TestCaseWithFactory):
     def test_owner_cannot_be_open_team(self):
         """Distro owners cannot be open teams."""
         for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
+            open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
                 OpenTeamLinkageError, self.factory.makeDistribution,
                 owner=open_team)
@@ -88,13 +88,13 @@ class TestDistribution(TestCaseWithFactory):
     def test_owner_can_be_closed_team(self):
         """Distro owners can be closed teams."""
         for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeDistribution(owner=closed_team)
 
     def test_security_contact_cannot_be_open_team(self):
         """Distro security contacts cannot be open teams."""
         for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
+            open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
                 OpenTeamLinkageError, self.factory.makeDistribution,
                 security_contact=open_team)
@@ -102,7 +102,7 @@ class TestDistribution(TestCaseWithFactory):
     def test_security_contact_can_be_closed_team(self):
         """Distro security contacts can be closed teams."""
         for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeDistribution(security_contact=closed_team)
 
     def test_distribution_repr_ansii(self):

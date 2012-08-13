@@ -884,7 +884,7 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         self.target_owner_member = self.factory.makePerson()
         self.target_owner_team = self.factory.makeTeam(
             owner=self.target_owner_member,
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         self.regular_user = self.factory.makePerson()
 
         login_person(self.target_owner_member)

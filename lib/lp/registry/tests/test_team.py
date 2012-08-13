@@ -309,9 +309,9 @@ class TeamMembershipPolicyBase(TestCaseWithFactory):
     def setUpTeams(self, other_policy=None):
         if other_policy is None:
             other_policy = self.POLICY
-        self.team = self.factory.makeTeam(subscription_policy=self.POLICY)
+        self.team = self.factory.makeTeam(membership_policy=self.POLICY)
         self.other_team = self.factory.makeTeam(
-            subscription_policy=other_policy, owner=self.team.teamowner)
+            membership_policy=other_policy, owner=self.team.teamowner)
         self.field = ITeamPublic['subscriptionpolicy'].bind(self.team)
         login_person(self.team.teamowner)
 
@@ -365,7 +365,7 @@ class TestTeamMembershipPolicyChoiceModerated(TeamMembershipPolicyBase):
         self.setUpTeams()
         self.team.addMember(self.other_team, self.team.teamowner)
         super_team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             owner=self.team.teamowner)
         super_team.addMember(self.team, self.team.teamowner)
         self.assertTrue(
@@ -494,7 +494,7 @@ class TestTeamMembershipPolicyValidator(TestCaseWithFactory):
         # Check that TeamMembershipPolicyError is raised when an attempt is
         # made to set an illegal open subscription policy on a team.
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         with person_logged_in(team.teamowner):
             team.createPPA()
         for policy in OPEN_TEAM_POLICY:
@@ -509,7 +509,7 @@ class TestTeamMembershipPolicyValidator(TestCaseWithFactory):
         team = self.factory.makeTeam()
         other_team = self.factory.makeTeam(
             owner=team.teamowner,
-            subscription_policy=TeamMembershipPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         with person_logged_in(team.teamowner):
             team.addMember(
                 other_team, team.teamowner, force_team_add=True)
@@ -549,7 +549,7 @@ class TestPersonJoinTeam(TestCaseWithFactory):
     def test_join_restricted_team_error(self):
         # Calling join with a Restricted team raises an error.
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         user = self.factory.makePerson()
         login_person(user)
         self.assertRaises(JoinNotAllowed, user.join, team, user)
@@ -557,7 +557,7 @@ class TestPersonJoinTeam(TestCaseWithFactory):
     def test_join_moderated_team_proposed(self):
         # Joining a Moderated team creates a Proposed TeamMembership.
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         user = self.factory.makePerson()
         login_person(user)
         user.join(team, user)
@@ -568,7 +568,7 @@ class TestPersonJoinTeam(TestCaseWithFactory):
     def test_join_delegated_team_proposed(self):
         # Joining a Delegated team creates a Proposed TeamMembership.
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.DELEGATED)
+            membership_policy=TeamMembershipPolicy.DELEGATED)
         user = self.factory.makePerson()
         login_person(user)
         user.join(team, user)
@@ -579,7 +579,7 @@ class TestPersonJoinTeam(TestCaseWithFactory):
     def test_join_open_team_appoved(self):
         # Joining an Open team creates an Approved TeamMembership.
         team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         user = self.factory.makePerson()
         login_person(user)
         user.join(team, user)

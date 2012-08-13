@@ -280,7 +280,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # team is subscribed to the bugs, so that we don't get trivial
         # shortcuts avoiding queries : test the worst case.
         subscribed_team = self.factory.makeTeam(
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         viewer = self.factory.makePerson()
         with person_logged_in(subscribed_team.teamowner):
             subscribed_team.addMember(viewer, subscribed_team.teamowner)

@@ -22,7 +22,7 @@ Bug subscriptions
     >>> priv_team = factory.makeTeam(name='private-team',
     ...     owner=team_owner,
     ...     visibility=PersonVisibility.PRIVATE,
-    ...     subscription_policy=TeamMembershipPolicy.RESTRICTED)
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
 
 A private team can be subscribed to a bug.
 
@@ -188,7 +188,7 @@ or private, can be the project registrant.
     >>> public_team = factory.makeTeam(name='public-team',
     ...     owner=team_owner,
     ...     visibility=PersonVisibility.PUBLIC,
-    ...     subscription_policy=TeamMembershipPolicy.RESTRICTED)
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
     >>> product = factory.makeProduct(registrant=team_owner)
     >>> product = factory.makeProduct(registrant=public_team)
     >>> product = factory.makeProduct(registrant=priv_team)

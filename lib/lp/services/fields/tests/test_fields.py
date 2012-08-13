@@ -522,14 +522,14 @@ class Test_is_person_or_closed_team(TestCaseWithFactory):
 
     def test_open_team(self):
         for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
+            open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertFalse(
                 is_public_person_or_closed_team(open_team),
                 "%s is not open" % policy)
 
     def test_closed_team(self):
         for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            closed_team = self.factory.makeTeam(membership_policy=policy)
             self.assertTrue(
                 is_public_person_or_closed_team(closed_team),
                 "%s is not closed" % policy)

@@ -23,7 +23,7 @@ contact, and asker, and three questions.
     >>> _team = factory.makeTeam(
     ...     owner=_contact,
     ...     name='my-team',
-    ...     subscription_policy=TeamMembershipPolicy.RESTRICTED)
+    ...     membership_policy=TeamMembershipPolicy.RESTRICTED)
     >>> _team_project = factory.makeProduct(name='team-project', owner=_team)
     >>> _asker = factory.makePerson(name='asker')
     >>> _question_1 = factory.makeQuestion(

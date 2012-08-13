@@ -712,7 +712,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.user = self.factory.makePerson(name='eric')
         team = self.factory.makeTeam(
             name='vikings', members=[self.user],
-            subscription_policy=TeamMembershipPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         with person_logged_in(team.teamowner):
             team.setMembershipData(
                 self.user, TeamMembershipStatus.ADMIN, team.teamowner)
