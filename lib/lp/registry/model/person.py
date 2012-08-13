@@ -588,7 +588,7 @@ class Person(
         enum=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
     membership_policy = EnumCol(
-        dbName='subscription_policy',
+        dbName='subscriptionpolicy',
         enum=TeamMembershipPolicy,
         default=TeamMembershipPolicy.RESTRICTED,
         storm_validator=validate_membership_policy)
