@@ -18,9 +18,11 @@ import unittest
 
 import transaction
 
+from lp.registry.enums import (
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     PersonVisibility,
-    TeamMembershipPolicy,
     )
 from lp.registry.scripts.mlistimport import Importer
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus

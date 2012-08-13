@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from lp.registry.interfaces.person import (
+from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     )

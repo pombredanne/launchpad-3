@@ -17,10 +17,12 @@ from zope.component import (
     getUtility,
     )
 
+from lp.registry.enums import (
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,

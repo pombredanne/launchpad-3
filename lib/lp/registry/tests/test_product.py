@@ -29,6 +29,8 @@ from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     BranchSharingPolicy,
     BugSharingPolicy,
     InformationType,
@@ -42,10 +44,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import (
-    EXCLUSIVE_TEAM_POLICY,
-    INCLUSIVE_TEAM_POLICY,
-    )
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,

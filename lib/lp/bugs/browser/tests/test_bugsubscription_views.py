@@ -20,10 +20,12 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enums import BugNotificationLevel
+from lp.registry.enums import (
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
-    TeamMembershipPolicy,
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest

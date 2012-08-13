@@ -16,15 +16,17 @@ from lp.registry.browser.team import (
     TeamMailingListArchiveView,
     TeamOverviewMenu,
     )
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.mailinglist import MailingListStatus
-from lp.registry.interfaces.person import (
+from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
-    IPersonSet,
     INCLUSIVE_TEAM_POLICY,
-    PersonVisibility,
+    InformationType,
     TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
+    )
+from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
     )
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.teammembership import (

@@ -53,10 +53,12 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     PersonVisibility,
-    TeamMembershipPolicy,
     )
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url

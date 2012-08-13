@@ -27,12 +27,14 @@ from zope.interface import (
     )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import PersonTransferJobType
+from lp.registry.enums import (
+    PersonTransferJobType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,

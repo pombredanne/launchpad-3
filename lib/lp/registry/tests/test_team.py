@@ -11,8 +11,12 @@ from zope.interface.exceptions import Invalid
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     InformationType,
     PersonTransferJobType,
+    TeamMembershipRenewalPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.errors import (
     JoinNotAllowed,
@@ -20,13 +24,9 @@ from lp.registry.errors import (
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
-    EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
     ITeamPublic,
-    INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
-    TeamMembershipRenewalPolicy,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.persontransferjob import PersonTransferJob

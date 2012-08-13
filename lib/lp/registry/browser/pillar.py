@@ -47,13 +47,15 @@ from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    InformationType,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
-    EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
     )
 from lp.registry.interfaces.pillar import IPillar

@@ -62,10 +62,12 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW

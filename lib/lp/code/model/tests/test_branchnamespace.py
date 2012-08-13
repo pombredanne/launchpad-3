@@ -43,6 +43,7 @@ from lp.registry.enums import (
     InformationType,
     PUBLIC_INFORMATION_TYPES,
     SharingPermission,
+    TeamMembershipPolicy,
     )
 from lp.registry.errors import (
     NoSuchDistroSeries,
@@ -52,7 +53,6 @@ from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.person import (
     NoSuchPerson,
     PersonVisibility,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage

@@ -150,7 +150,13 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    PRIVATE_INFORMATION_TYPES,
+    TeamMembershipRenewalPolicy,
+    TeamMembershipPolicy,
+    )
 from lp.registry.errors import (
     InvalidName,
     JoinNotAllowed,
@@ -179,19 +185,15 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
-    EXCLUSIVE_TEAM_POLICY,
     ImmutableVisibilityError,
     IPerson,
     IPersonSet,
     IPersonSettings,
     ITeam,
-    INCLUSIVE_TEAM_POLICY,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
     TeamEmailAddressError,
-    TeamMembershipRenewalPolicy,
-    TeamMembershipPolicy,
     validate_public_person,
     validate_membership_policy,
     )

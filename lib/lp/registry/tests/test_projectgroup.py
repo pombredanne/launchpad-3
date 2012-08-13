@@ -7,11 +7,11 @@ from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.registry.errors import InclusiveTeamLinkageError
-from lp.registry.interfaces.person import (
+from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     )
+from lp.registry.errors import InclusiveTeamLinkageError
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     launchpadlib_for,

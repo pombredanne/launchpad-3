@@ -20,10 +20,12 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     PersonVisibility,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,

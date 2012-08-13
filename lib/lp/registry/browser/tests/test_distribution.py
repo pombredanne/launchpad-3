@@ -15,7 +15,7 @@ from testtools.matchers import (
 from zope.schema.vocabulary import SimpleVocabulary
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
-from lp.registry.interfaces.person import EXCLUSIVE_TEAM_POLICY
+from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp import canonical_url
 from lp.testing import (

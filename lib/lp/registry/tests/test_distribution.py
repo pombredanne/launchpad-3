@@ -26,7 +26,11 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    InformationType,
+    )
 from lp.registry.errors import (
     NoSuchDistroSeries,
     InclusiveTeamLinkageError,
@@ -38,9 +42,7 @@ from lp.registry.interfaces.distribution import (
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
-    EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
-    INCLUSIVE_TEAM_POLICY,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin

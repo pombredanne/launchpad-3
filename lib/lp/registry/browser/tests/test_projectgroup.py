@@ -13,8 +13,10 @@ from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
-from lp.registry.interfaces.person import (
+from lp.registry.emums import (
     EXCLUSIVE_TEAM_POLICY,
+    )
+from lp.registry.interfaces.person import (
     IPersonSet,
     )
 from lp.services.webapp import canonical_url

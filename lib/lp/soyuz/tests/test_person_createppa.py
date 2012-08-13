@@ -7,10 +7,12 @@ __metaclass__ = type
 
 from zope.security.interfaces import Unauthorized
 
+from lp.registry.enums import (
+    TeamMembershipPolicy,
+    )
 from lp.registry.errors import PPACreationError
 from lp.registry.interfaces.person import (
     PersonVisibility,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (

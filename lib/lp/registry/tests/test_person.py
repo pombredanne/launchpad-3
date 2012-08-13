@@ -29,14 +29,16 @@ from lp.bugs.interfaces.bugtasksearch import (
     IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bug import Bug
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     IPersonSet,
     PersonVisibility,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet

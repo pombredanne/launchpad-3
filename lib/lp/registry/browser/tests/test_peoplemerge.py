@@ -6,10 +6,12 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.testing import (

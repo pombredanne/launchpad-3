@@ -22,16 +22,17 @@ import xmlrpclib
 
 from zope.component import getUtility
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     IMessageApprovalSet,
     MailingListStatus,
     PostedMessageStatus,
     )
+from lp.registry.enums import (
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamMembershipPolicy,
     )
 from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 from lp.services.config import config
@@ -181,8 +182,6 @@ def new_list_for_team(team):
     """
     # Any member of the mailing-list-experts team can review a list
     # registration.  It doesn't matter which one.
-    experts = getUtility(ILaunchpadCelebrities).registry_experts
-    reviewer = list(experts.allmembers)[0]
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)
     team_list.startConstructing()

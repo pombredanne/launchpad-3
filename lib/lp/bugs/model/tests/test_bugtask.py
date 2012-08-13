@@ -55,7 +55,10 @@ from lp.bugs.scripts.bugtasktargetnamecaches import (
     BugTaskTargetNameCacheUpdater,
     )
 from lp.bugs.tests.bug import create_old_bug
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
@@ -69,7 +72,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet

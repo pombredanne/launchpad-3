@@ -11,10 +11,12 @@ from lazr.restfulclient.errors import (
     )
 import transaction
 
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     PersonVisibility,
-    TeamMembershipPolicy,
     )
 from lp.testing import (
     ExpectedException,

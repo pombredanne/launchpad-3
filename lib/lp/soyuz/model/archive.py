@@ -57,11 +57,13 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.enums import (
+    INCLUSIVE_TEAM_POLICY,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
-    INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     validate_person,
     )

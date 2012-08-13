@@ -23,15 +23,17 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipRenewalPolicy,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamMembershipRenewalPolicy,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,

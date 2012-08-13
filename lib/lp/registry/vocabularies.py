@@ -103,6 +103,9 @@ from zope.security.proxy import (
 
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -124,7 +127,6 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.interfaces.person import (
-    EXCLUSIVE_TEAM_POLICY,
     IPerson,
     IPersonSet,
     ITeam,

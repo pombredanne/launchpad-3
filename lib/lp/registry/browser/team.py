@@ -109,6 +109,12 @@ from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
     )
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    TeamMembershipRenewalPolicy,
+    TeamMembershipPolicy,
+    )
 from lp.registry.errors import TeamMembershipPolicyError
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
@@ -121,18 +127,14 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
-    EXCLUSIVE_TEAM_POLICY,
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
     ITeamContactAddressForm,
     ITeamReassignment,
-    INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
-    TeamMembershipRenewalPolicy,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.poll import IPollSet
 from lp.registry.interfaces.role import IPersonRoles

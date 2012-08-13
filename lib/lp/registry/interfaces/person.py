@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'EXCLUSIVE_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'ICanonicalSSOAPI',
@@ -31,15 +30,12 @@ __all__ = [
     'ITeamReassignment',
     'ImmutableVisibilityError',
     'NoSuchPerson',
-    'INCLUSIVE_TEAM_POLICY',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamEmailAddressError',
-    'TeamMembershipRenewalPolicy',
-    'TeamMembershipPolicy',
     'validate_person',
     'validate_person_or_closed_team',
     'validate_public_person',
@@ -119,6 +115,12 @@ from lp.code.interfaces.hasbranches import (
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    TeamMembershipPolicy,
+    TeamMembershipRenewalPolicy,
+    )
 from lp.registry.errors import (
     InclusiveTeamLinkageError,
     PrivatePersonLinkageError,
@@ -400,86 +402,6 @@ class PersonCreationRationale(DBEnumeratedType):
         A purchase of commercial software (ie. subscriptions to a private
         and commercial archive) was made via Software Center.
         """)
-
-
-class TeamMembershipRenewalPolicy(DBEnumeratedType):
-    """TeamMembership Renewal Policy.
-
-    How Team Memberships can be renewed on a given team.
-    """
-
-    NONE = DBItem(10, """
-        invite them to apply for renewal
-
-        Memberships can be renewed only by team administrators or by going
-        through the normal workflow for joining the team.
-        """)
-
-    ONDEMAND = DBItem(20, """
-        invite them to renew their own membership
-
-        Memberships can be renewed by the members themselves a few days before
-        it expires. After it expires the member has to go through the normal
-        workflow for joining the team.
-        """)
-
-
-class TeamMembershipPolicy(DBEnumeratedType):
-    """Team Subscription Policies
-
-    The policies that describe who can be a member and how new memberships
-    are handled. The choice of policy reflects the need to build a community
-    versus the need to control Launchpad assets.
-    """
-
-    OPEN = DBItem(2, """
-        Open Team
-
-        Membership is open, no approval required, and subteams can be open or
-        closed. Any user can be a member of the team and no approval is
-        required. Subteams can be Open, Delegated, Moderated, or Restricted.
-        Open is a good choice for encouraging a community of contributors.
-        Open teams cannot have PPAs.
-        """)
-
-    DELEGATED = DBItem(4, """
-        Delegated Team
-
-        Membership is open, requires approval, and subteams can be open or
-        closed. Any user can be a member of the team via a subteam, but team
-        administrators approve direct memberships. Subteams can be Open,
-        Delegated, Moderated, or Restricted. Delegated is a good choice for
-        managing a large community of contributors. Delegated teams cannot
-        have PPAs.
-        """)
-
-    MODERATED = DBItem(1, """
-        Moderated Team
-
-        Membership is closed, requires approval, and subteams must be closed.
-        Any user can propose a new member, but team administrators approve
-        membership. Subteams must be Moderated or Restricted. Moderated is a
-        good choice for teams that manage things that need to be secure, like
-        projects, branches, or PPAs, but want to encourage users to help.
-        """)
-
-    RESTRICTED = DBItem(3, """
-        Restricted Team
-
-        Membership is closed, requires approval, and subteams must be closed.
-        Only the team's administrators can invite a user to be a member.
-        Subteams must be Moderated or Restricted. Restricted is a good choice
-        for teams that manage things that need to be secure, like projects,
-        branches, or PPAs.
-        """)
-
-
-INCLUSIVE_TEAM_POLICY = (
-    TeamMembershipPolicy.OPEN, TeamMembershipPolicy.DELEGATED)
-
-
-EXCLUSIVE_TEAM_POLICY = (
-    TeamMembershipPolicy.RESTRICTED, TeamMembershipPolicy.MODERATED)
 
 
 class PersonVisibility(DBEnumeratedType):
