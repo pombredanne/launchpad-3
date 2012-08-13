@@ -67,7 +67,7 @@
         <div class="yui-g">
           <div class="yui-u first" style="margin-top: 1.5em;">
             <div class="homepage-whatslaunchpad"
-                 tal:condition="not:view/user">
+                 tal:condition="view/show_whatslaunchpad">
               <h2><span class="launchpad-gold">Launchpad</span> is a software collaboration platform that provides:</h2>
               <ul tal:define="apphomes view/apphomes">
               <li>
@@ -109,7 +109,8 @@
                </div>
             </div>
 
-            <div id="homepage-blogposts" class="homepage-portlet">
+            <div id="homepage-blogposts" class="homepage-portlet"
+                 tal:condition="features/app.root_blog.enabled">
               <h2>Recent Launchpad blog posts</h2>
               <ul tal:define="posts view/getRecentBlogPosts">
                 <li class="news"
