@@ -189,44 +189,36 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
 class TeamMembershipPolicy(DBEnumeratedType):
     """Team Membership Policies
 
-    The policies that describe who can be a member and how new memberships
-    are handled. The choice of policy reflects the need to build a community
-    versus the need to control Launchpad assets.
+    The policies that describe who can be a member. The choice of policy
+    reflects the need to build a community (inclusive) versus the need to
+    control Launchpad projects, branches, and PPAs (exclusive).
     """
 
     OPEN = DBItem(2, """
         Open Team
 
         Membership is inclusive; any user or team can join, and no
-        approval is required. Open is a good choice for encouraging a
-        community of contributors. Open teams cannot have PPAs.
+        approval is required.
         """)
 
     DELEGATED = DBItem(4, """
         Delegated Team
 
         Membership is inclusive; any user or team can join, but team
-        administrators approve direct memberships. Delegated is a good choice
-        for managing a large community of contributors. Delegated teams
-        cannot have PPAs.
+        administrators approve direct memberships.
         """)
 
     MODERATED = DBItem(1, """
         Moderated Team
 
         Membership is exclusive; users and exclusive teams may ask to join.
-        Moderated is a good choice for teams that manage things that need to
-        be secure, like projects, branches, or PPAs, and want to encourage
-        users to help.
         """)
 
     RESTRICTED = DBItem(3, """
         Restricted Team
 
         Membership is exlusive; team administrators can invite users and
-        exclusive teams join. Restricted is a good choice for teams that
-        manage things that need to be secure, like projects, branches, or
-        PPAs.
+        exclusive teams join.
         """)
 
 
