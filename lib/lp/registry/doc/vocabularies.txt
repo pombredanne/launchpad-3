@@ -995,7 +995,7 @@ created earlier with an icr nickname of 'team':
 ValidPillarOwner
 ..........
 
-Valid persons and closed teams are valid pillar owners.
+Valid persons and exclusive teams are valid pillar owners.
 
     >>> login(ANONYMOUS)
     >>> vocab = get_naked_vocab(None, "ValidPillarOwner")

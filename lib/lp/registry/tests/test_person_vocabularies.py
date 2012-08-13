@@ -250,7 +250,7 @@ class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
     vocabulary_name = 'ValidPillarOwner'
 
     def test_team_filter(self):
-        # Test that the team filter only returns closed teams.
+        # Test that the team filter only returns exclusive teams.
         self.factory.makePerson(
             name="fredperson", email="fredperson@foo.com")
         for policy in INCLUSIVE_TEAM_POLICY:
@@ -422,7 +422,7 @@ class TestNewPillarGranteeVocabulary(VocabularyTestBase,
         self.assertEqual(newgrantee, person2)
 
     def test_open_teams_excluded(self):
-        # Only closed teams should be available for selection.
+        # Only exclusive teams should be available for selection.
         product = self.factory.makeProduct()
         self.factory.makeTeam(name='grantee1')
         closed_team = self.factory.makeTeam(

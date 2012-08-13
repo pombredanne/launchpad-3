@@ -44,7 +44,7 @@ class TestProjectGroup(TestCaseWithFactory):
                 owner=open_team)
 
     def test_owner_can_be_closed_team(self):
-        """Project group owners can be closed teams."""
+        """Project group owners can be exclusive teams."""
         for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProject(owner=closed_team)

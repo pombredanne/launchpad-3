@@ -172,7 +172,7 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             self.assertEqual([owner], subscriptions)
 
     def test_closed_reviewer_with_private_branch(self):
-        """If the reviewer is a closed team, they are subscribed."""
+        """If the reviewer is a exclusive team, they are subscribed."""
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         trunk = self.factory.makeBranch(product=product, owner=owner)

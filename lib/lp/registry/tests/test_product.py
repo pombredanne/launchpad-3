@@ -260,7 +260,7 @@ class TestProduct(TestCaseWithFactory):
                 owner=open_team)
 
     def test_owner_can_be_closed_team(self):
-        """Product owners can be closed teams."""
+        """Product owners can be exclusive teams."""
         for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProduct(owner=closed_team)
@@ -274,7 +274,7 @@ class TestProduct(TestCaseWithFactory):
                 security_contact=open_team)
 
     def test_security_contact_can_be_closed_team(self):
-        """Product security contacts can be closed teams."""
+        """Product security contacts can be exclusive teams."""
         for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProduct(security_contact=closed_team)

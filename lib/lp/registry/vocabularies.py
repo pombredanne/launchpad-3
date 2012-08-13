@@ -907,9 +907,9 @@ class TeamVocabularyMixin:
 
 class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
                                 ValidPersonOrTeamVocabulary):
-    """The set of people and closed teams in Launchpad.
+    """The set of people and exclusive teams in Launchpad.
 
-    A closed team is one for which the membership policy is either
+    A exclusive team is one for which the membership policy is either
     RESTRICTED or MODERATED.
     """
 

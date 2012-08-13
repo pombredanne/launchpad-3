@@ -29,7 +29,7 @@ class TestTeamActivatePPA(TestCaseWithFactory):
             return view()
 
     def test_closed_teams_has_link(self):
-        # Closed teams (a membership policy of Moderated or Restricted)
+        # Exclusive teams (a membership policy of Moderated or Restricted)
         # have a link to create a new PPA.
         for policy in EXCLUSIVE_TEAM_POLICY:
             team = self.factory.makeTeam(membership_policy=policy)
