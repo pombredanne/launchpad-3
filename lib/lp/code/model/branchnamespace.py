@@ -87,24 +87,24 @@ FREE_INFORMATION_TYPES = (
     PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
 
 POLICY_ALLOWED_TYPES = {
-    BranchSharingPolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
-    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: FREE_INFORMATION_TYPES,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: FREE_INFORMATION_TYPES,
-    BranchSharingPolicy.PROPRIETARY: FREE_PRIVATE_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.items,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.items,
+    BranchSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     }
 
 POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.PUBLIC: InformationType.PUBLIC,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
-    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     }
 
 POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PUBLIC: None,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: None,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
-    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
     }
 
 
