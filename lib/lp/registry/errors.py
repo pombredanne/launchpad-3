@@ -163,7 +163,7 @@ class TeamMembershipPolicyError(ConstraintNotSatisfied):
     raised if the team has an active PPA.
     """
 
-    _default_message = "Team Subscription Policy Error"
+    _default_message = "Team Membership Policy Error"
 
     def __init__(self, message=None):
         if message is None:

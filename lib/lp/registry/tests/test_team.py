@@ -286,7 +286,7 @@ class TestTeamMembershipPolicyError(TestCaseWithFactory):
 
     def test_default_message(self):
         error = TeamMembershipPolicyError()
-        self.assertEqual('Team Subscription Policy Error', error.message)
+        self.assertEqual('Team Membership Policy Error', error.message)
 
     def test_str(self):
         # The string is the error message.
