@@ -39,7 +39,7 @@ __all__ = [
     'TeamContactMethod',
     'TeamEmailAddressError',
     'TeamMembershipRenewalPolicy',
-    'TeamSubscriptionPolicy',
+    'TeamMembershipPolicy',
     'validate_person',
     'validate_person_or_closed_team',
     'validate_public_person',
@@ -122,7 +122,7 @@ from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.errors import (
     OpenTeamLinkageError,
     PrivatePersonLinkageError,
-    TeamSubscriptionPolicyError,
+    TeamMembershipPolicyError,
     )
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
@@ -424,7 +424,7 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
         """)
 
 
-class TeamSubscriptionPolicy(DBEnumeratedType):
+class TeamMembershipPolicy(DBEnumeratedType):
     """Team Subscription Policies
 
     The policies that describe who can be a member and how new memberships
@@ -475,11 +475,11 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
 
 
 OPEN_TEAM_POLICY = (
-    TeamSubscriptionPolicy.OPEN, TeamSubscriptionPolicy.DELEGATED)
+    TeamMembershipPolicy.OPEN, TeamMembershipPolicy.DELEGATED)
 
 
 CLOSED_TEAM_POLICY = (
-    TeamSubscriptionPolicy.RESTRICTED, TeamSubscriptionPolicy.MODERATED)
+    TeamMembershipPolicy.RESTRICTED, TeamMembershipPolicy.MODERATED)
 
 
 class PersonVisibility(DBEnumeratedType):
@@ -593,14 +593,14 @@ class TeamSubsciptionPolicyChoice(Choice):
         policy = value
         try:
             return team_subscription_policy_can_transition(team, policy)
-        except TeamSubscriptionPolicyError:
+        except TeamMembershipPolicyError:
             return False
 
     def _validate(self, value):
         """Ensure the TeamSubsciptionPolicy is valid for state of the team.
 
         Returns True if the team can change its subscription policy to the
-        `TeamSubscriptionPolicy`, otherwise raise TeamSubscriptionPolicyError.
+        `TeamMembershipPolicy`, otherwise raise TeamMembershipPolicyError.
         """
         team = self._getTeam()
         policy = value
@@ -1930,10 +1930,10 @@ class ITeamPublic(Interface):
 
     subscriptionpolicy = exported(
         TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
-               vocabulary=TeamSubscriptionPolicy,
-               default=TeamSubscriptionPolicy.RESTRICTED, required=True,
+               vocabulary=TeamMembershipPolicy,
+               default=TeamMembershipPolicy.RESTRICTED, required=True,
                description=_(
-                TeamSubscriptionPolicy.__doc__.split('\n\n')[1])),
+                TeamMembershipPolicy.__doc__.split('\n\n')[1])),
         exported_as='subscription_policy')
 
     renewal_policy = exported(
@@ -1983,7 +1983,7 @@ class ITeamPublic(Interface):
             just wants to know if any open policy is allowed without having a
             particular policy to check. In this case, the method is called
             without a policy parameter being required.
-        :raises TeamSubscriptionPolicyError: When the subscription policy is
+        :raises TeamMembershipPolicyError: When the subscription policy is
             not allowed to be open.
         """
 
@@ -2001,7 +2001,7 @@ class ITeamPublic(Interface):
             just wants to know if any closed policy is allowed without having
             a particular policy to check. In this case, the method is called
             without a policy parameter being required.
-        :raises TeamSubscriptionPolicyError: When the subscription policy is
+        :raises TeamMembershipPolicyError: When the subscription policy is
             not allowed to be closed.
         """
 
@@ -2187,14 +2187,14 @@ class IPersonSet(Interface):
         defaultrenewalperiod='default_renewal_period')
     @operation_parameters(
         subscriptionpolicy=Choice(
-            title=_('Subscription policy'), vocabulary=TeamSubscriptionPolicy,
-            required=False, default=TeamSubscriptionPolicy.MODERATED))
+            title=_('Subscription policy'), vocabulary=TeamMembershipPolicy,
+            required=False, default=TeamMembershipPolicy.MODERATED))
     @export_factory_operation(
         ITeam, ['name', 'displayname', 'teamdescription',
                 'defaultmembershipperiod', 'defaultrenewalperiod'])
     @operation_for_version("beta")
     def newTeam(teamowner, name, displayname, teamdescription=None,
-                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                subscriptionpolicy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
         """Create and return a new Team with given arguments."""
 

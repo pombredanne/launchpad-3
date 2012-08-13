@@ -188,7 +188,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     PersonCreationRationale,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.poll import (
@@ -745,7 +745,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  description=None, icon=None, logo=None,
-                 subscription_policy=TeamSubscriptionPolicy.OPEN,
+                 subscription_policy=TeamMembershipPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
 
@@ -761,7 +761,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param icon: The team's icon.
         :param logo: The team's logo.
         :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamSubscriptionPolicy`
+        :type subscription_policy: `TeamMembershipPolicy`
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
@@ -3306,7 +3306,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
-        subscription_policy=TeamSubscriptionPolicy.OPEN):
+        subscription_policy=TeamMembershipPolicy.OPEN):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -3317,7 +3317,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             (public) will be used.
         :type visibility: `PersonVisibility`
         :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamSubscriptionPolicy`
+        :type subscription_policy: `TeamMembershipPolicy`
         :return: The new team and mailing list.
         :rtype: (`ITeam`, `IMailingList`)
         """

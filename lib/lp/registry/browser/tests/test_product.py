@@ -18,7 +18,7 @@ from lp.registry.browser.product import (
     )
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.product import (
     IProductSet,
@@ -150,7 +150,7 @@ class TestProductAddView(TestCaseWithFactory):
         # An owner can be any valid user or team selected.
         registrant = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            subscription_policy=TeamMembershipPolicy.RESTRICTED)
         transaction.commit()
         login_person(registrant)
         form = self.makeForm(action=2)

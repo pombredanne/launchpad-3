@@ -31,7 +31,7 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 from lp.services.config import config
@@ -163,7 +163,7 @@ def new_team(team_name, with_list=False):
     displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
     # XXX BarryWarsaw 2007-09-27 bug 125505: Set the team's subscription
     # policy to OPEN.
-    policy = TeamSubscriptionPolicy.OPEN
+    policy = TeamMembershipPolicy.OPEN
     personset = getUtility(IPersonSet)
     team_creator = personset.getByName('no-priv')
     team = personset.newTeam(team_creator, team_name, displayname,

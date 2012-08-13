@@ -25,7 +25,7 @@ from lp.registry.errors import (
     PPACreationError,
     PrivatePersonLinkageError,
     TeamMembershipTransitionError,
-    TeamSubscriptionPolicyError,
+    TeamMembershipPolicyError,
     UserCannotChangeMembershipSilently,
     UserCannotSubscribePerson,
     )
@@ -56,9 +56,9 @@ class TestWebServiceErrors(TestCase):
         error_view = create_webservice_error_view(JoinNotAllowed())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
-    def test_TeamSubscriptionPolicyError_bad_request(self):
+    def test_TeamMembershipPolicyError_bad_request(self):
         error_view = create_webservice_error_view(
-            TeamSubscriptionPolicyError())
+            TeamMembershipPolicyError())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
     def test_TeamMembershipTransitionError_bad_request(self):

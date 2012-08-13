@@ -30,7 +30,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.services.sharingservice import SharingService
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
@@ -890,7 +890,7 @@ class TestSharingService(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         team_grantee = self.factory.makeTeam(
             owner=team_owner,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            subscription_policy=TeamMembershipPolicy.RESTRICTED,
             members=[person_grantee])
 
         # Subscribe the team and person grantees to the artifacts.

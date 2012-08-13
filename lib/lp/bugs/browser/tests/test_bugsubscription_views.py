@@ -23,7 +23,7 @@ from lp.bugs.enums import BugNotificationLevel
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -66,12 +66,12 @@ class BugsubscriptionPrivacyTests(TestCaseWithFactory):
 
     def test_open_team_cannot_be_subscribed_to_private_bug(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            subscription_policy=TeamMembershipPolicy.OPEN)
         self._assert_subscription_fails(team)
 
     def test_delegated_team_cannot_be_subscribed_to_private_bug(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+            subscription_policy=TeamMembershipPolicy.DELEGATED)
         self._assert_subscription_fails(team)
 
 

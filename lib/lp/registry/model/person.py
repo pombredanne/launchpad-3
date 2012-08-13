@@ -156,7 +156,7 @@ from lp.registry.errors import (
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
-    TeamSubscriptionPolicyError,
+    TeamMembershipPolicyError,
     )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -191,7 +191,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamEmailAddressError,
     TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     validate_public_person,
     validate_subscription_policy,
     )
@@ -589,8 +589,8 @@ class Person(
         default=TeamMembershipRenewalPolicy.NONE)
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
-        enum=TeamSubscriptionPolicy,
-        default=TeamSubscriptionPolicy.RESTRICTED,
+        enum=TeamMembershipPolicy,
+        default=TeamMembershipPolicy.RESTRICTED,
         storm_validator=validate_subscription_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
@@ -1453,12 +1453,12 @@ class Person(
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
 
-        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if team.subscriptionpolicy == TeamMembershipPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
-        elif (team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED
-            or team.subscriptionpolicy == TeamSubscriptionPolicy.DELEGATED):
+        elif (team.subscriptionpolicy == TeamMembershipPolicy.MODERATED
+            or team.subscriptionpolicy == TeamMembershipPolicy.DELEGATED):
             status = proposed
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+        elif team.subscriptionpolicy == TeamMembershipPolicy.OPEN:
             status = approved
         else:
             raise AssertionError(
@@ -1816,12 +1816,12 @@ class Person(
 
         # Does this team own or is the security contact for any pillars?
         if self.isAnyPillarOwner():
-            raise TeamSubscriptionPolicyError(
+            raise TeamMembershipPolicyError(
                 "The team subscription policy cannot be %s because it "
                 "maintains one or more projects, project groups, or "
                 "distributions." % policy)
         if self.isAnySecurityContact():
-            raise TeamSubscriptionPolicyError(
+            raise TeamMembershipPolicyError(
                 "The team subscription policy cannot be %s because it "
                 "is the security contact for one or more projects, "
                 "project groups, or distributions." % policy)
@@ -1829,14 +1829,14 @@ class Person(
         # Does this team have any PPAs
         for ppa in self.ppas:
             if ppa.status != ArchiveStatus.DELETED:
-                raise TeamSubscriptionPolicyError(
+                raise TeamMembershipPolicyError(
                     "The team subscription policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
 
         # Does this team have any super teams that are closed?
         for team in self.super_teams:
             if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
+                raise TeamMembershipPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
 
@@ -1866,7 +1866,7 @@ class Person(
                     BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:
-            raise TeamSubscriptionPolicyError(
+            raise TeamMembershipPolicyError(
                 "The team subscription policy cannot be %s because it is "
                 "subscribed to or assigned to one or more private "
                 "bugs." % policy)
@@ -1879,7 +1879,7 @@ class Person(
         # The team must be open if any of it's members are open.
         for member in self.activemembers:
             if member.subscriptionpolicy in OPEN_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
+                raise TeamMembershipPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its member teams are Open." % policy)
 
@@ -2165,8 +2165,8 @@ class Person(
 
     def anyone_can_join(self):
         open_types = (
-            TeamSubscriptionPolicy.OPEN,
-            TeamSubscriptionPolicy.DELEGATED
+            TeamMembershipPolicy.OPEN,
+            TeamMembershipPolicy.DELEGATED
             )
         return (self.subscriptionpolicy in open_types)
 
@@ -3289,7 +3289,7 @@ class PersonSet:
             return email.person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
-                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                subscriptionpolicy=TeamMembershipPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
         """See `IPersonSet`."""
         assert teamowner

@@ -14,7 +14,7 @@ import transaction
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import (
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.testing import (
     ExpectedException,
@@ -40,7 +40,7 @@ class TestTeamJoining(TestCaseWithFactory):
         self.person = self.factory.makePerson(name='test-person')
         self.team = self.factory.makeTeam(name='test-team')
         login_person(self.team.teamowner)
-        self.team.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+        self.team.subscriptionpolicy = TeamMembershipPolicy.RESTRICTED
         logout()
 
         launchpad = launchpadlib_for("test", self.person)
@@ -58,7 +58,7 @@ class TestTeamJoining(TestCaseWithFactory):
         owner = self.factory.makePerson()
         self.team = self.factory.makeTeam(name='test-team', owner=owner)
         login_person(owner)
-        self.team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
+        self.team.subscriptionpolicy = TeamMembershipPolicy.OPEN
         logout()
 
         launchpad = launchpadlib_for("test", self.person)
@@ -86,7 +86,7 @@ class TestTeamLimitedViewAccess(TestCaseWithFactory):
         db_team = self.factory.makeTeam(
             name='private-team', owner=team_owner,
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            subscription_policy=TeamMembershipPolicy.RESTRICTED)
         # Create a P3A for the team.
         with person_logged_in(team_owner):
             self.factory.makeArchive(

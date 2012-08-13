@@ -20,7 +20,7 @@ import transaction
 
 from lp.registry.interfaces.person import (
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.scripts.mlistimport import Importer
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -446,7 +446,7 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         # OPEN teams do not send notifications ever on joins, so test this
         # variant with a MODERATED team.
         login_person(self.team.teamowner)
-        self.team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.team.subscriptionpolicy = TeamMembershipPolicy.MODERATED
         transaction.commit()
         login('foo.bar@canonical.com')
         process = self.makeProcess('--notifications')
@@ -481,7 +481,7 @@ class TestImportToRestrictedList(BaseMailingListImportTest):
         self.team, self.mailing_list = factory.makeTeamAndMailingList(
             name, owner,
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            subscription_policy=TeamMembershipPolicy.RESTRICTED)
 
     def test_simple_import_membership(self):
         # Test the import of a list/team membership to a restricted, private

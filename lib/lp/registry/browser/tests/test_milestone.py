@@ -14,7 +14,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.config import config
 from lp.services.webapp import canonical_url
@@ -280,7 +280,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # team is subscribed to the bugs, so that we don't get trivial
         # shortcuts avoiding queries : test the worst case.
         subscribed_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            subscription_policy=TeamMembershipPolicy.MODERATED)
         viewer = self.factory.makePerson()
         with person_logged_in(subscribed_team.teamowner):
             subscribed_team.addMember(viewer, subscribed_team.teamowner)

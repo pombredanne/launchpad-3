@@ -22,7 +22,7 @@ __all__ = [
     'PPACreationError',
     'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
-    'TeamSubscriptionPolicyError',
+    'TeamMembershipPolicyError',
     'UserCannotChangeMembershipSilently',
     'UserCannotSubscribePerson',
     ]
@@ -155,8 +155,8 @@ class TeamMembershipTransitionError(ValueError):
 
 
 @error_status(httplib.BAD_REQUEST)
-class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
-    """The team cannot have the specified TeamSubscriptionPolicy.
+class TeamMembershipPolicyError(ConstraintNotSatisfied):
+    """The team cannot have the specified TeamMembershipPolicy.
 
     The error can be raised because a super team or member team prevents
     this team from setting a specific policy. The error can also be

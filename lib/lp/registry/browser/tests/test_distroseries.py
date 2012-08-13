@@ -49,7 +49,7 @@ from lp.registry.enums import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
@@ -533,7 +533,7 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         with person_logged_in(series.distribution.owner):
             series.distribution.owner = self.factory.makeTeam(
                 displayname=u"Team Teamy Team Team",
-                subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+                subscription_policy=TeamMembershipPolicy.RESTRICTED)
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()

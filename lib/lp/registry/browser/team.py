@@ -109,7 +109,7 @@ from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
     )
-from lp.registry.errors import TeamSubscriptionPolicyError
+from lp.registry.errors import TeamMembershipPolicyError
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
     IMailingListSet,
@@ -132,7 +132,7 @@ from lp.registry.interfaces.person import (
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
     TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.poll import IPollSet
 from lp.registry.interfaces.role import IPersonRoles
@@ -264,7 +264,7 @@ class TeamFormMixin:
                 if warning is not None:
                     self.setFieldError('visibility', warning)
             if (data['subscriptionpolicy']
-                != TeamSubscriptionPolicy.RESTRICTED):
+                != TeamMembershipPolicy.RESTRICTED):
                 self.setFieldError(
                     'subscriptionpolicy',
                     'Private teams must have a Restricted subscription '
@@ -320,7 +320,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         # Do we need to only show open subscription policy choices?
         try:
             team.checkClosedSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError as e:
+        except TeamMembershipPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -335,7 +335,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         # Do we need to only show closed subscription policy choices?
         try:
             team.checkOpenSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError as e:
+        except TeamMembershipPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -1514,7 +1514,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        restricted = TeamSubscriptionPolicy.RESTRICTED
+        restricted = TeamMembershipPolicy.RESTRICTED
         if self.person.subscriptionpolicy == restricted:
             # This is a restricted team; users can't join.
             enabled = False
@@ -1598,7 +1598,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         if userIsActiveTeamMember(person):
             enabled = False
         elif (self.person.subscriptionpolicy ==
-              TeamSubscriptionPolicy.RESTRICTED):
+              TeamMembershipPolicy.RESTRICTED):
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -1799,7 +1799,7 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
                 or self.context.visibility == PersonVisibility.PUBLIC):
             return False
 
-        restricted = TeamSubscriptionPolicy.RESTRICTED
+        restricted = TeamMembershipPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
 
     @property
@@ -1827,7 +1827,7 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
         Return True if the team's subscription policy is MODERATED.
         """
         policy = self.context.subscriptionpolicy
-        return policy == TeamSubscriptionPolicy.MODERATED
+        return policy == TeamMembershipPolicy.MODERATED
 
     @property
     def next_url(self):
@@ -1895,7 +1895,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
 
     def initialize(self):
         context = self.context
-        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+        if context.subscriptionpolicy == TeamMembershipPolicy.MODERATED:
             self.label = 'Propose these teams as members'
         else:
             self.label = 'Add these teams to %s' % context.displayname

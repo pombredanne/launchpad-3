@@ -32,7 +32,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,
@@ -312,7 +312,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         # teams are unrestricted, notifications on join/ leave do not help the
         # admins.
         if (len(admin_emails) != 0 and
-            self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN):
+            self.team.subscriptionpolicy != TeamMembershipPolicy.OPEN):
             admin_template = get_email_template(
                 "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:

@@ -83,10 +83,10 @@ the team's home page.
 If this was a moderated team, the membership would not have been automatically
 approved, though.
 
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> from lp.registry.model.person import Person
     >>> myemail = Person.selectOneBy(name='myemail')
-    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+    >>> myemail.subscriptionpolicy = TeamMembershipPolicy.MODERATED
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
@@ -128,7 +128,7 @@ the 'Cancel' button, going back to the team's page...
 
 If it was a restricted team, users wouldn't even see a link to join the team.
 
-    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+    >>> myemail.subscriptionpolicy = TeamMembershipPolicy.RESTRICTED
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(

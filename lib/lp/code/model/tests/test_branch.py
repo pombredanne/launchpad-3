@@ -124,7 +124,7 @@ from lp.registry.interfaces.accesspolicy import (
     )
 from lp.registry.interfaces.person import (
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
@@ -2389,7 +2389,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
 
     def test_personal_branches_for_private_teams_are_private(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            subscription_policy=TeamMembershipPolicy.MODERATED,
             visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)
