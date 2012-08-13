@@ -14,13 +14,11 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    )
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus

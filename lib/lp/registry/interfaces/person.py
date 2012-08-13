@@ -31,7 +31,6 @@ __all__ = [
     'ImmutableVisibilityError',
     'NoSuchPerson',
     'PersonCreationRationale',
-    'PersonVisibility',
     'PersonalStanding',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
@@ -118,6 +117,7 @@ from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
     TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
     )
@@ -401,28 +401,6 @@ class PersonCreationRationale(DBEnumeratedType):
 
         A purchase of commercial software (ie. subscriptions to a private
         and commercial archive) was made via Software Center.
-        """)
-
-
-class PersonVisibility(DBEnumeratedType):
-    """The visibility level of person or team objects.
-
-    Currently, only teams can have their visibility set to something
-    besides PUBLIC.
-    """
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Everyone can view all the attributes of this person.
-        """)
-
-    PRIVATE = DBItem(30, """
-        Private
-
-        Only Launchpad admins and team members can view the team's data.
-        Other users may only know of the team if it is placed
-        in a public relationship such as subscribing to a bug.
         """)
 
 

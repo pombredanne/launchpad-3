@@ -59,12 +59,12 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
-    PersonVisibility,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -345,7 +345,7 @@ class Archive(SQLBase):
     def private(self):
         return self._private
 
-    @private.setter
+    @private.setter  # pyflakes:ignore
     def private(self, private):
         self._private = private
         if private:

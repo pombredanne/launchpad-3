@@ -56,8 +56,6 @@ from lp.code.tests.helpers import (
 from lp.registry.enums import (
     InformationType,
     TeamMembershipPolicy,
-    )
-from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.services.messages.model.message import MessageSet

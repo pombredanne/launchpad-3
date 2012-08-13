@@ -105,6 +105,7 @@ from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
@@ -130,7 +131,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import (
     IPillar,

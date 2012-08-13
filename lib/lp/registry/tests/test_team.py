@@ -15,6 +15,7 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     InformationType,
     PersonTransferJobType,
+    PersonVisibility,
     TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
     )
@@ -26,7 +27,6 @@ from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
     ITeamPublic,
-    PersonVisibility,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.persontransferjob import PersonTransferJob

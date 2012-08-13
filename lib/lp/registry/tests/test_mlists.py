@@ -20,8 +20,6 @@ import transaction
 
 from lp.registry.enums import (
     TeamMembershipPolicy,
-    )
-from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.scripts.mlistimport import Importer

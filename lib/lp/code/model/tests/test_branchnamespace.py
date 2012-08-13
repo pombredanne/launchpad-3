@@ -41,6 +41,7 @@ from lp.code.model.branchnamespace import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
+    PersonVisibility,
     PUBLIC_INFORMATION_TYPES,
     SharingPermission,
     TeamMembershipPolicy,
@@ -52,7 +53,6 @@ from lp.registry.errors import (
 from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.person import (
     NoSuchPerson,
-    PersonVisibility,
     )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage

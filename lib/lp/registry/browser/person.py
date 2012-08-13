@@ -160,6 +160,9 @@ from lp.registry.browser.menu import (
     TopLevelMenuMixin,
     )
 from lp.registry.browser.teamjoin import TeamJoinMixin
+from lp.registry.enums import (
+    PersonVisibility,
+    )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -178,7 +181,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonClaim,
     IPersonSet,
-    PersonVisibility,
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet

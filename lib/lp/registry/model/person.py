@@ -153,6 +153,7 @@ from lp.code.model.hasbranches import (
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
     TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
@@ -192,7 +193,6 @@ from lp.registry.interfaces.person import (
     ITeam,
     PersonalStanding,
     PersonCreationRationale,
-    PersonVisibility,
     TeamEmailAddressError,
     validate_public_person,
     validate_membership_policy,

@@ -15,6 +15,9 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.emums import(
+    PersonVisibility,
+    )
 from lp.registry.interfaces.mailinglist import (
     IMailingListAPIView,
     IMailingListSet,
@@ -25,7 +28,6 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonalStanding,
-    PersonVisibility,
     )
 from lp.services.config import config
 from lp.services.encoding import escape_nonascii_uniquely
@@ -41,8 +43,8 @@ from lp.xmlrpc import faults
 # 'make mailman_instance').  In that case, this import will fail, but in that
 # case just use the constant value directly.
 try:
-    # pylint: disable-msg=F0401
     from Mailman.MemberAdaptor import ENABLED, BYUSER
+    ENABLED, BYUSER
 except ImportError:
     ENABLED = 0
     BYUSER = 2

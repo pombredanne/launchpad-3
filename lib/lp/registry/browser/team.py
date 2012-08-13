@@ -112,6 +112,7 @@ from lp.registry.browser.teamjoin import (
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
     TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
     )
@@ -132,7 +133,6 @@ from lp.registry.interfaces.person import (
     ITeam,
     ITeamContactAddressForm,
     ITeamReassignment,
-    PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
     )
