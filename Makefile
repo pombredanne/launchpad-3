@@ -34,11 +34,15 @@ lib -path 'lib/lp/*/javascript/*' \
 ! -path 'lib/lp/services/*'
 endef
 
+
+JS_BUILD_DIR := build/js
+YUI_VERSIONS := 3.3.0 3.5.1
+YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
+YUI_DEFAULT := $(JS_BUILD_DIR)/yui-3.3.0
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
 JS_ALL := $(JS_YUI) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
-
 MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
@@ -171,10 +175,21 @@ jsbuild_widget_css: bin/jsbuild
 jsbuild_watch:
 	$(PY) bin/watch_jsbuild
 
-$(JS_LP): jsbuild_widget_css
+.PHONY: yui_default
+yui_default: $(YUI_BUILDS)
+	ln -s $(YUI_DEFAULT) $(JS_BUILD_DIRJ)/yui
+
+$(YUI_BUILDS):
+	for  VER in $(YUI_VERSIONS); do \
+	unzip -q download-cache/dist/yui_$VER.zip -d $(JS_BUILD_DIR)/yui-$VER-tmp \
+	mv $(JS_BUILD_DIR)/yui-$VER-tmp/yui/build/* $(JS_BUILD_DIR)/$@
+	rm -rf $(JS_BUILD_DIR)/yui-$VER-tmp
+
+$(JS_LP): $(YUI_DEFAULT) jsbuild_widget_css
 $(JS_YUI):
 	cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
 
+$(JS_ALL): $(YUI_DEFAULT)
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | bin/lpjsmin > $@
@@ -470,7 +485,7 @@ copy-apache-config:
 	if [ ! -d /srv/launchpad.dev ]; then \
 		mkdir /srv/launchpad.dev; \
 		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
-	fi	
+	fi
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
