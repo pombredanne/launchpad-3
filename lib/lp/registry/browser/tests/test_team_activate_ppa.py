@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from lp.registry.interfaces.person import (
     EXCLUSIVE_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     )
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -44,7 +44,7 @@ class TestTeamActivatePPA(TestCaseWithFactory):
     def test_open_team_does_not_have_link(self):
         # Open teams (a subscription policy of Open or Delegated) do not
         # have a link to create a new PPA.
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             team = self.factory.makeTeam(membership_policy=policy)
             html = self.create_view(team)
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')

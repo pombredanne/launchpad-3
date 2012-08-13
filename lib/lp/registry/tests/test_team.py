@@ -23,7 +23,7 @@ from lp.registry.interfaces.person import (
     EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
     ITeamPublic,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
@@ -497,7 +497,7 @@ class TestTeamMembershipPolicyValidator(TestCaseWithFactory):
             membership_policy=TeamMembershipPolicy.RESTRICTED)
         with person_logged_in(team.teamowner):
             team.createPPA()
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             self.assertRaises(
                 TeamMembershipPolicyError,
                 removeSecurityProxy(team).__setattr__,

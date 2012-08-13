@@ -21,7 +21,7 @@ from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
@@ -392,7 +392,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
                     team_member, team.teamowner, force_team_add=True)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, OPEN_TEAM_POLICY)
+            setup_team, INCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_save(self):
         # A team can be edited and saved, including a name change, even if it

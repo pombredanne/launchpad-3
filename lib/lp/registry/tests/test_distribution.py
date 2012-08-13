@@ -40,7 +40,7 @@ from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     EXCLUSIVE_TEAM_POLICY,
     IPersonSet,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin
@@ -79,7 +79,7 @@ class TestDistribution(TestCaseWithFactory):
 
     def test_owner_cannot_be_open_team(self):
         """Distro owners cannot be open teams."""
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
                 OpenTeamLinkageError, self.factory.makeDistribution,
@@ -93,7 +93,7 @@ class TestDistribution(TestCaseWithFactory):
 
     def test_security_contact_cannot_be_open_team(self):
         """Distro security contacts cannot be open teams."""
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
                 OpenTeamLinkageError, self.factory.makeDistribution,

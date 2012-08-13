@@ -18,7 +18,7 @@ from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     EXCLUSIVE_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     )
 from lp.services.database.lpstorm import IStore
 from lp.services.fields import (
@@ -521,7 +521,7 @@ class Test_is_person_or_closed_team(TestCaseWithFactory):
         self.assertTrue(is_public_person_or_closed_team(person))
 
     def test_open_team(self):
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertFalse(
                 is_public_person_or_closed_team(open_team),

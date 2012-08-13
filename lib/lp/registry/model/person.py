@@ -185,7 +185,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IPersonSettings,
     ITeam,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -1878,7 +1878,7 @@ class Person(
 
         # The team must be open if any of it's members are open.
         for member in self.activemembers:
-            if member.membership_policy in OPEN_TEAM_POLICY:
+            if member.membership_policy in INCLUSIVE_TEAM_POLICY:
                 raise TeamMembershipPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its member teams are Open." % policy)

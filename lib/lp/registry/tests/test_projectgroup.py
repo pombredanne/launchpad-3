@@ -10,7 +10,7 @@ from zope.security.interfaces import Unauthorized
 from lp.registry.errors import OpenTeamLinkageError
 from lp.registry.interfaces.person import (
     EXCLUSIVE_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
@@ -37,7 +37,7 @@ class TestProjectGroup(TestCaseWithFactory):
 
     def test_owner_cannot_be_open_team(self):
         """Project group owners cannot be open teams."""
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
                 OpenTeamLinkageError, self.factory.makeProject,

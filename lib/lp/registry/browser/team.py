@@ -127,7 +127,7 @@ from lp.registry.interfaces.person import (
     ITeam,
     ITeamContactAddressForm,
     ITeamReassignment,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
@@ -326,7 +326,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
             self.widgets['membership_policy'].vocabulary = (
                 SimpleVocabulary([SimpleVocabulary.createTerm(
                     policy, policy.name, policy.title)
-                    for policy in OPEN_TEAM_POLICY])
+                    for policy in INCLUSIVE_TEAM_POLICY])
                 )
             self.widgets['membership_policy'].extra_hint_class = (
                 'sprite info')

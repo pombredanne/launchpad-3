@@ -61,7 +61,7 @@ from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     validate_person,
     )
@@ -2128,7 +2128,7 @@ def validate_ppa(owner, proposed_name, private=False):
     elif owner.private:
         return 'Private teams may not have public archives.'
     if owner.is_team and (
-        owner.membership_policy in OPEN_TEAM_POLICY):
+        owner.membership_policy in INCLUSIVE_TEAM_POLICY):
         return "Open teams cannot have PPAs."
     if proposed_name is not None and proposed_name == ubuntu.name:
         return (

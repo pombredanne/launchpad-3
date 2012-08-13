@@ -15,7 +15,7 @@ from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     EXCLUSIVE_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipPolicy,
     )
@@ -253,7 +253,7 @@ class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
         # Test that the team filter only returns closed teams.
         self.factory.makePerson(
             name="fredperson", email="fredperson@foo.com")
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             self.factory.makeTeam(
                 name="fred%s" % policy.name.lower(),
                 email="team_%s@foo.com" % policy.name,

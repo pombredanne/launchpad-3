@@ -31,7 +31,7 @@ __all__ = [
     'ITeamReassignment',
     'ImmutableVisibilityError',
     'NoSuchPerson',
-    'OPEN_TEAM_POLICY',
+    'INCLUSIVE_TEAM_POLICY',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -230,7 +230,7 @@ def validate_membership_policy(obj, attr, value):
     existing_membership_policy = getattr(team, 'membership_policy', None)
     if value == existing_membership_policy:
         return value
-    if value in OPEN_TEAM_POLICY:
+    if value in INCLUSIVE_TEAM_POLICY:
         team.checkInclusiveMembershipPolicyAllowed(policy=value)
     if value in EXCLUSIVE_TEAM_POLICY:
         team.checkExclusiveMembershipPolicyAllowed(policy=value)
@@ -474,7 +474,7 @@ class TeamMembershipPolicy(DBEnumeratedType):
         """)
 
 
-OPEN_TEAM_POLICY = (
+INCLUSIVE_TEAM_POLICY = (
     TeamMembershipPolicy.OPEN, TeamMembershipPolicy.DELEGATED)
 
 
@@ -568,11 +568,11 @@ def team_membership_policy_can_transition(team, policy):
     if team is None or policy == team.membership_policy:
         # The team is being initialized or the policy is not changing.
         return True
-    elif (policy in OPEN_TEAM_POLICY
+    elif (policy in INCLUSIVE_TEAM_POLICY
           and team.membership_policy in EXCLUSIVE_TEAM_POLICY):
         team.checkInclusiveMembershipPolicyAllowed(policy)
     elif (policy in EXCLUSIVE_TEAM_POLICY
-          and team.membership_policy in OPEN_TEAM_POLICY):
+          and team.membership_policy in INCLUSIVE_TEAM_POLICY):
         team.checkExclusiveMembershipPolicyAllowed(policy)
     return True
 
