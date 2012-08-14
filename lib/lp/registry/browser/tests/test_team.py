@@ -11,7 +11,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.browser.lazrjs import TextAreaEditorWidget
 from lp.registry.browser.team import (
     TeamIndexMenu,
     TeamMailingListArchiveView,
@@ -865,13 +864,6 @@ class TestTeamIndexView(TestCaseWithFactory):
                 self.assertEndsWith(
                     extract_text(document.find(True, id='maincontent')),
                     'The information in this page is not shared with you.')
-
-    def test_description_widget(self):
-        # The view provides a widget to render ond edit the team description.
-        view = create_initialized_view(self.team, '+index')
-        self.assertIsInstance(view.description_widget, TextAreaEditorWidget)
-        self.assertEqual(
-            'description', view.description_widget.exported_field.__name__)
 
 
 class TestPersonIndexVisibilityView(TestCaseWithFactory):

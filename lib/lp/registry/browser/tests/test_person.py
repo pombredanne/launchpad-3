@@ -19,6 +19,9 @@ import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -140,6 +143,14 @@ class TestPersonIndexView(TestCaseWithFactory):
         self.assertThat(extract_text(html), DocTestMatches(extract_text(
             "... Asia/Kolkata (UTC+0530) ..."), doctest.ELLIPSIS
             | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
+
+    def test_description_widget(self):
+        # The view provides a widget to render ond edit the person description.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index')
+        self.assertIsInstance(view.description_widget, TextAreaEditorWidget)
+        self.assertEqual(
+            'description', view.description_widget.exported_field.__name__)
 
     def test_person_view_page_description(self):
         person_description = self.factory.getUniqueString()
