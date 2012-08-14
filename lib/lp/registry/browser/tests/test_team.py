@@ -871,7 +871,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, '+index')
         self.assertIsInstance(view.description_widget, TextAreaEditorWidget)
         self.assertEqual(
-            'teamdescription', view.description_widget.exported_field.__name__)
+            'description', view.description_widget.exported_field.__name__)
 
 
 class TestPersonIndexVisibilityView(TestCaseWithFactory):

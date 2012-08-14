@@ -42,12 +42,6 @@
 <div metal:fill-slot="main"
      tal:define="overview_menu context/menu:overview">
 
-  <div
-    class="description"
-    tal:condition="context/homepage_content"
-    tal:content="structure context/homepage_content/fmt:text-to-html"
-  />
-
   <div class="description">
       <tal:widget replace="structure view/description_widget" />
   </div>

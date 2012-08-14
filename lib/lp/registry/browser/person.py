@@ -126,6 +126,9 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    )
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,
@@ -2239,6 +2242,13 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
             return '%s in Launchpad' % context.displayname
         else:
             return "%s does not use Launchpad" % context.displayname
+
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        return TextAreaEditorWidget(
+            self.context, IPerson['description'], title="",
+            edit_title='Edit description', hide_empty=False)
 
     @cachedproperty
     def page_description(self):
