@@ -542,6 +542,7 @@ class Person(
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
+    _description = StringCol(dbName='description', default=None)
     icon = ForeignKey(
         dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
@@ -626,6 +627,15 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @property
+    def description(self):
+        """See `IPerson`."""
+        return self._description
+
+    @description.setter  # pyflakes: ignore
+    def set_description(self, value):
+        self._description = value
 
     @cachedproperty
     def ircnicknames(self):
