@@ -147,3 +147,25 @@ policy, either before or after release:
     >>> flush_database_updates()
     >>> insecure_policy.autoApprove(FakeUpload())
     False
+
+Uploads containing UEFI custom files are auto-approved by the buildd policy
+if the target archive is a PPA, but not otherwise:
+
+    >>> from lp.archiveuploader.nascentuploadfile import CustomUploadFile
+
+    >>> class FakeChangesFile:
+    ...     def __init__(self, custom_files=[]):
+    ...         self.custom_files = custom_files
+
+    >>> uploadfile = CustomUploadFile(
+    ...     "uefi.tar.gz", None, 0, "main/raw-uefi", "extra", buildd_policy,
+    ...     None)
+    >>> upload = FakeUpload()
+    >>> upload.binaryful = True
+    >>> upload.changes = FakeChangesFile(custom_files=[uploadfile])
+    >>> buildd_policy.autoApprove(upload)
+    False
+
+    >>> upload.is_ppa = True
+    >>> buildd_policy.autoApprove(upload)
+    True
