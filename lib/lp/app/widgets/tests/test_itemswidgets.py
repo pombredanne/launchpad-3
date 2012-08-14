@@ -227,8 +227,8 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
         self.assertEqual(expected, hint_html)
 
 
-class TestVocabularyToChoiceEditItems(TestCaseWithFactory):
-    """Tests for vocabulary_to_choice_edit_items and EnumChoiceWidget."""
+class TestEnumChoiceWidget(TestCaseWithFactory):
+    """Tests for EnumChoiceWidget and vocabulary_to_choice_edit_items."""
 
     layer = DatabaseFunctionalLayer
 
