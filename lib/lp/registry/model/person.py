@@ -631,7 +631,16 @@ class Person(
     @property
     def description(self):
         """See `IPerson`."""
-        return self._description
+        if self._description is not None:
+            return self._description
+        else:
+            # Fallback to obsolete sources.
+            texts = [
+                val for val in [self.homepage_content, self.teamdescription]
+                if val is not None]
+            if len(texts) > 0:
+                return '\n'.join(texts)
+            return None
 
     @description.setter  # pyflakes:ignore
     def description(self, value):

@@ -286,12 +286,30 @@ class TestPerson(TestCaseWithFactory):
     def test_description_not_exists(self):
         # When the person does not have a description, teamdescription or
         # homepage_content, the value is None.
-        person = self.factory.makePerson(name='snarf')
+        person = self.factory.makePerson()
         self.assertEqual(None, person.description)
+
+    def test_description_fallback_for_team(self):
+        # When the person does not have a description, but does have a
+        # teamdescription or homepage_content, they are used.
+        person = self.factory.makeTeam()
+        with person_logged_in(person.teamowner):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+        self.assertEqual('babble\nfish', person.description)
+
+    def test_description_fallback_for_person(self):
+        # When the person does not have a description, but does have a
+        # teamdescription or homepage_content, they are used.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+        self.assertEqual('babble\nfish', person.description)
 
     def test_description_exists(self):
         # When the person has a description, it is returned.
-        person = self.factory.makePerson(name='snarf')
+        person = self.factory.makePerson()
         with person_logged_in(person):
             person.description = 'babble'
         self.assertEqual('babble', person.description)
