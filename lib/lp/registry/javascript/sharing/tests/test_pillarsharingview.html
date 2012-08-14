@@ -79,7 +79,24 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script id="test-fixture" type="text/x-template">
           <div id="sharing-header"></div>
           <table id='grantee-table'></table>
-          <a id='add-grantee-link' class='sprite add js-action' href="#">Share</a>
+          <a id='add-grantee-link'
+             class='sprite add js-action hidden' href="#">Share</a>
+          <div id="branch-sharing-policy-portlet" class="hidden portlet">
+               <span id="branch-sharing-policy">
+                 Sharing policy for this project's branches:&nbsp;
+                 <strong><span class="value"></span></strong>
+                 <a class="editicon sprite edit action-icon">Edit</a>
+               </span>
+              <div id="branch-sharing-policy-description"></div>
+          </div>
+          <div id="bug-sharing-policy-portlet" class="hidden portlet">
+               <span id="bug-sharing-policy">
+                 Sharing policy for this project's bugs:&nbsp;
+                 <strong><span class="value"></span></strong>
+                 <a class="editicon sprite edit action-icon">Edit</a>
+               </span>
+              <div id="bug-sharing-policy-description"></div>
+          </div>
       </script>
     </head>
     <body class="yui3-skin-sam">

@@ -297,6 +297,14 @@ class PillarSharingView(LaunchpadView):
         return self._getSharingService().getInformationTypes(self.context)
 
     @property
+    def bug_sharing_policies(self):
+        return self._getSharingService().getBugSharingPolicies(self.context)
+
+    @property
+    def branch_sharing_policies(self):
+        return self._getSharingService().getBranchSharingPolicies(self.context)
+
+    @property
     def sharing_permissions(self):
         return self._getSharingService().getSharingPermissions()
 
@@ -356,6 +364,9 @@ class PillarSharingView(LaunchpadView):
             and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
+        cache.objects['bug_sharing_policies'] = self.bug_sharing_policies
+        cache.objects['branch_sharing_policies'] = (
+            self.branch_sharing_policies)
 
         view_names = set(reg.name for reg
             in iter_view_registrations(self.__class__))

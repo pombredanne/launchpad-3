@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
@@ -31,15 +31,33 @@
         </p>
     </div>
     <ul class="horizontal">
-      <li><a id='add-grantee-link' class='sprite add js-action' href="#">Share
+      <li><a id='add-grantee-link' class='sprite add js-action hidden' href="#">Share
         with someone</a></li>
     </ul>
 
     <div tal:define="batch_navigator view/grantees">
       <tal:granteelisting content="structure batch_navigator/@@+grantee-table-view" />
     </div>
-
   </div>
-
+  <tal:side metal:fill-slot="side">
+      <div id="branch-sharing-policy-portlet" class="portlet"
+           tal:condition="view/branch_sharing_policies">
+           <span id="branch-sharing-policy">
+             Sharing policy for this project's branches:&nbsp;
+             <strong><span class="value"></span></strong>
+             <a class="editicon sprite edit action-icon">Edit</a>
+           </span>
+          <div id="branch-sharing-policy-description" style="padding-top: 5px"></div>
+      </div>
+      <div id="bug-sharing-policy-portlet" class="portlet"
+           tal:condition="view/bug_sharing_policies">
+           <span id="bug-sharing-policy">
+             Sharing policy for this project's bugs:&nbsp;
+             <strong><span class="value"></span></strong>
+             <a class="editicon sprite edit action-icon">Edit</a>
+           </span>
+          <div id="bug-sharing-policy-description" style="padding-top: 5px"></div>
+      </div>
+  </tal:side>
 </body>
 </html>
