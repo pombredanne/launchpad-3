@@ -990,6 +990,23 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.runJob(job)
         self.assertEqual(JobStatus.SUSPENDED, job.status)
 
+    def test_auto_approve_pocket_queue_admin(self):
+        # The auto_approve flag is honoured for people with pocket queue
+        # admin permissions.
+        (target_archive, source_archive, requester,
+         spph, spr) = self.createAutoApproveEnvironment(True, [])
+        with person_logged_in(target_archive.owner):
+            target_archive.newPocketQueueAdmin(
+                requester, PackagePublishingPocket.RELEASE)
+        job = self.createCopyJobForSPPH(
+            spph, source_archive, target_archive, requester=requester,
+            auto_approve=True)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        new_publication = target_archive.getPublishedSources(
+            name=spr.name, version=spr.version, exact_match=True).one()
+        self.assertEqual(target_archive, new_publication.archive)
+
     def test_auto_approve_new(self):
         # The auto_approve flag causes copies to bypass the NEW queue.
         (target_archive, source_archive, requester,
@@ -1026,6 +1043,23 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             auto_approve=True)
         self.runJob(job)
         self.assertEqual(JobStatus.SUSPENDED, job.status)
+
+    def test_auto_approve_new_pocket_queue_admin(self):
+        # For NEW packages, the auto_approve flag is honoured for people
+        # with pocket queue admin permissions.
+        (target_archive, source_archive, requester,
+         spph, spr) = self.createAutoApproveEnvironment(False, [])
+        with person_logged_in(target_archive.owner):
+            target_archive.newPocketQueueAdmin(
+                requester, PackagePublishingPocket.RELEASE)
+        job = self.createCopyJobForSPPH(
+            spph, source_archive, target_archive, requester=requester,
+            auto_approve=True)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        new_publication = target_archive.getPublishedSources(
+            name=spr.name, version=spr.version, exact_match=True).one()
+        self.assertEqual(target_archive, new_publication.archive)
 
     def test_copying_after_job_released(self):
         # The first pass of the job may have created a PackageUpload and

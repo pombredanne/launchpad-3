@@ -480,7 +480,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self.addSourceOverride(defaults[0])
             if auto_approve:
                 auto_approve = self.target_archive.canAdministerQueue(
-                    self.requester, self.getSourceOverride().component)
+                    self.requester, self.getSourceOverride().component,
+                    self.target_pocket, self.target_distroseries)
 
             approve_new = auto_approve or copy_policy.autoApproveNew(
                 self.target_archive, self.target_distroseries,
@@ -496,7 +497,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self.addSourceOverride(ancestry[0])
             if auto_approve:
                 auto_approve = self.target_archive.canAdministerQueue(
-                    self.requester, self.getSourceOverride().component)
+                    self.requester, self.getSourceOverride().component,
+                    self.target_pocket, self.target_distroseries)
 
         # The package is not new (it has ancestry) so check the copy
         # policy for existing packages.
