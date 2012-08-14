@@ -516,10 +516,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def notifyOops(self, oops):
         """See `IRunnableJob`."""
         if not self.error_message:
+            transaction.abort()
             self.reportFailure(
                 "Launchpad encountered an internal error while copying this"
                 " package.  It was logged with id %s.  Sorry for the"
                 " inconvenience." % oops["id"])
+            transaction.commit()
         super(PlainPackageCopyJob, self).notifyOops(oops)
 
     def run(self):
