@@ -17,7 +17,7 @@ Regular users can create teams.
     >>> browser.getControl(name='field.name').value = 'myemail'
     >>> browser.getControl('Display Name').value = 'your own team'
     >>> browser.getControl(
-    ...     'Team Description').value = 'my own team description'
+    ...     'Description').value = 'my own team description'
     >>> browser.getControl('Subscription period').value = '365'
     >>> browser.getControl('Open Team').selected = True
     >>> browser.getControl('Create').click()

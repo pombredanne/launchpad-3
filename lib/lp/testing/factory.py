@@ -782,7 +782,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname, teamdescription=description,
+            owner, name, displayname, description,
             membership_policy=membership_policy)
         naked_team = removeSecurityProxy(team)
         if visibility is not None:

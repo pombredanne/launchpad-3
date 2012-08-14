@@ -287,7 +287,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             self.assertEqual(
                 'A Team', view.widgets['displayname']._data)
             self.assertEqual(
-                'A great team', view.widgets['teamdescription']._data)
+                'A great team', view.widgets['description']._data)
             self.assertEqual(
                 TeamMembershipPolicy.MODERATED,
                 view.widgets['membership_policy']._data)
@@ -416,7 +416,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         browser.getLink('Change details').click()
         browser.getControl('Name', index=0).value = 'ubuntuteam'
         browser.getControl('Display Name').value = 'Ubuntu Team'
-        browser.getControl('Team Description').value = ''
+        browser.getControl('Description').value = ''
         browser.getControl('Restricted Team').selected = True
         browser.getControl('Save').click()
 
@@ -431,7 +431,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(
             'Ubuntu Team', browser.getControl('Display Name', index=0).value)
         self.assertEqual(
-            '', browser.getControl('Team Description', index=0).value)
+            '', browser.getControl('Description', index=0).value)
         self.assertTrue(
             browser.getControl('Restricted Team', index=0).selected)
 

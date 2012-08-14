@@ -62,9 +62,9 @@ A multi-line text widget is displayed with the label above it:
     <tr>
       <td colspan="2" style="text-align: left">
         <div>
-        <label for="field.teamdescription">Team Description:</label>
+        <label for="field.description">Description:</label>
         <span ...
-        <div><textarea ... name="field.teamdescription" ...></textarea></div>
+        <div><textarea ... name="field.description" ...></textarea></div>
         <p class="formHelp">Details about the team's work, highlights, goals,
           and how to contribute. Use plain text, paragraphs are preserved and
           URLs are linked in pages.</p>
@@ -81,9 +81,9 @@ right of the label:
     <tr>
       <td colspan="2" style="text-align: left">
         <div>
-        <label for="field.teamdescription">Team Description:</label>
+        <label for="field.description">Description:</label>
         <span class="fieldRequired">(Optional)</span>
-        <div><textarea ... name="field.teamdescription" ...></textarea></div>
+        <div><textarea ... name="field.description" ...></textarea></div>
         <p class="formHelp">Details about the team's work, highlights, goals,
           and how to contribute. Use plain text, paragraphs are preserved and
           URLs are linked in pages.</p>

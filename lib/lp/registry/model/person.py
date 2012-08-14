@@ -3333,7 +3333,7 @@ class PersonSet:
             # Support 1.0 API.
             membership_policy = subscription_policy
         team = Person(teamowner=teamowner, name=name, displayname=displayname,
-                teamdescription=teamdescription,
+                description=teamdescription,
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 membership_policy=membership_policy)

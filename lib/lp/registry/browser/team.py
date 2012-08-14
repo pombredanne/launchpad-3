@@ -233,7 +233,7 @@ class TeamFormMixin:
     """
     field_names = [
         "name", "visibility", "displayname",
-        "teamdescription", "membership_policy",
+        "description", "membership_policy",
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod", "teamowner",
         ]
@@ -304,7 +304,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     custom_widget(
         'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget('description', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
         """See `LaunchpadViewForm`."""
@@ -1005,7 +1005,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget('description', TextAreaWidget, height=10, width=30)
     custom_widget('defaultrenewalperiod', IntWidget,
         widget_class='field subordinate')
 
@@ -1022,13 +1022,13 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
-        teamdescription = data.get('teamdescription')
+        description = data.get('description')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         membership_policy = data.get('membership_policy')
         teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
-            teamowner, name, displayname, teamdescription,
+            teamowner, name, displayname, description,
             membership_policy, defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:

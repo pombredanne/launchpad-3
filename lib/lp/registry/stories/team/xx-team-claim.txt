@@ -93,7 +93,7 @@ claim process the team's owner.
     Team Owner: No Privileges Person...
 
     >>> user_browser.getControl('Display Name').value = 'Ubuntu Doc Team'
-    >>> user_browser.getControl('Team Description').value = 'The doc team'
+    >>> user_browser.getControl('Description').value = 'The doc team'
     >>> user_browser.getControl('Continue').click()
 
 Once the conversion is finished the user is redirected to the team's home
