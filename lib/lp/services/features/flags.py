@@ -233,13 +233,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.enhanced_choice_popup.enabled',
-     'boolean',
-     ('If true, will include any available descriptive text with each choice '
-      'item in the selection popup.'),
-     '',
-     '',
-     ''),
     ('disclosure.enhanced_sharing.enabled',
      'boolean',
      ('If true, will allow the use of the new sharing view and apis used '
