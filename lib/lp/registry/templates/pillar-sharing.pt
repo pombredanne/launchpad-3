@@ -24,11 +24,45 @@
 </head>
 <body>
   <div metal:fill-slot="main">
+    <h2>What's shared</h2>
+    <p tal:condition="context/has_current_commercial_subscription|nothing">
+      You can choose whether new bugs and branches are public or
+      proprietary by default, and what you can change them to
+      afterwards. Changing the default here won't automatically change
+      existing bugs or branches.
+    </p>
+    <p tal:condition="not: context/has_current_commercial_subscription|nothing">
+      Open source projects have limited access to sharing features. You can
+      <a href="https://help.launchpad.net/CommercialHosting">purchase a
+      commercial subscription</a> to enable more privacy options, such as
+      setting bugs and branches to be proprietary by default.
+    </p>
+      <table>
+        <tr id="branch-sharing-policy-row"
+           tal:condition="view/branch_sharing_policies">
+           <th style="padding-right: 5px">Branches:</th>
+           <td id="branch-sharing-policy">
+             <strong><span class="value"></span></strong>:
+             <span id="branch-sharing-policy-description"></span>
+             <a class="editicon sprite edit action-icon">Edit</a>
+           </td>
+        </tr>
+        <tr id="bug-sharing-policy-row"
+           tal:condition="view/bug_sharing_policies">
+           <th style="padding-right: 5px">Bugs:</th>
+           <td id="bug-sharing-policy">
+             <strong><span class="value"></span></strong>:
+             <span id="bug-sharing-policy-description"></span>
+             <a class="editicon sprite edit action-icon">Edit</a>
+           </td>
+        </tr>
+      </table>
+    <h2>Who it's shared with</h2>
     <div id="sharing-header">
-        <p>
-          Private security, private, or proprietary information is
-          shared with these users and teams.
-        </p>
+      <p>
+        Everyone can see your project's public information. You can
+        choose who can see the private bugs and branches.
+     </p>
     </div>
     <ul class="horizontal">
       <li><a id='add-grantee-link' class='sprite add js-action hidden' href="#">Share
@@ -39,25 +73,5 @@
       <tal:granteelisting content="structure batch_navigator/@@+grantee-table-view" />
     </div>
   </div>
-  <tal:side metal:fill-slot="side">
-      <div id="branch-sharing-policy-portlet" class="portlet"
-           tal:condition="view/branch_sharing_policies">
-           <span id="branch-sharing-policy">
-             Sharing policy for this project's branches:&nbsp;
-             <strong><span class="value"></span></strong>
-             <a class="editicon sprite edit action-icon">Edit</a>
-           </span>
-          <div id="branch-sharing-policy-description" style="padding-top: 5px"></div>
-      </div>
-      <div id="bug-sharing-policy-portlet" class="portlet"
-           tal:condition="view/bug_sharing_policies">
-           <span id="bug-sharing-policy">
-             Sharing policy for this project's bugs:&nbsp;
-             <strong><span class="value"></span></strong>
-             <a class="editicon sprite edit action-icon">Edit</a>
-           </span>
-          <div id="bug-sharing-policy-description" style="padding-top: 5px"></div>
-      </div>
-  </tal:side>
 </body>
 </html>
