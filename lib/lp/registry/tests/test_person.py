@@ -283,6 +283,19 @@ class TestPerson(TestCaseWithFactory):
         title = smartquote('"%s" team') % team.displayname
         self.assertEqual(title, team.title)
 
+    def test_description_not_exists(self):
+        # When the person does not have a description, teamdescription or
+        # homepage_content, the value is None.
+        person = self.factory.makePerson(name='snarf')
+        self.assertEqual(None, person.description)
+
+    def test_description_exists(self):
+        # When the person has a description, it is returned.
+        person = self.factory.makePerson(name='snarf')
+        with person_logged_in(person):
+            person.description = 'babble'
+        self.assertEqual('babble', person.description)
+
     def test_getOwnedOrDrivenPillars(self):
         user = self.factory.makePerson()
         active_project = self.factory.makeProject(owner=user)

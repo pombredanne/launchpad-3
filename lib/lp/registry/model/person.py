@@ -633,8 +633,8 @@ class Person(
         """See `IPerson`."""
         return self._description
 
-    @description.setter  # pyflakes: ignore
-    def set_description(self, value):
+    @description.setter  # pyflakes:ignore
+    def description(self, value):
         self._description = value
 
     @cachedproperty
