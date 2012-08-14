@@ -154,11 +154,9 @@ class TestPersonIndexView(TestCaseWithFactory):
 
     def test_person_view_page_description(self):
         person_description = self.factory.getUniqueString()
-        person = self.factory.makePerson(
-            homepage_content=person_description)
+        person = self.factory.makePerson(description=person_description)
         view = create_initialized_view(person, '+index')
-        self.assertThat(view.page_description,
-            Equals(person_description))
+        self.assertThat(view.page_description, Equals(person_description))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):

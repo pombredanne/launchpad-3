@@ -1679,8 +1679,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         if content is None:
             return None
         elif self.is_probationary_or_invalid_user:
-            # XXX: Is this really useful?  They can post links in many other
-            # places. -- mbp 2011-11-20.
             return cgi.escape(content)
         else:
             formatter = FormattersAPI

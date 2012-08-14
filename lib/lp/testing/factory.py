@@ -604,7 +604,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePerson(
         self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
-        time_zone=None, latitude=None, longitude=None, homepage_content=None,
+        time_zone=None, latitude=None, longitude=None, description=None,
         selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
@@ -633,8 +633,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
-        if homepage_content is not None:
-            naked_person.homepage_content = homepage_content
+        if description is not None:
+            naked_person.description = description
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
