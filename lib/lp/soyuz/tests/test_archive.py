@@ -24,11 +24,13 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.enums import (
+    PersonVisibility,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPersonSet,
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -1801,7 +1803,7 @@ class TestValidatePPA(TestCaseWithFactory):
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.makeArchive(owner=team, name='ppa')
         self.assertEqual(
             "%s already has a PPA named 'ppa'." % team.displayname,
@@ -1817,7 +1819,7 @@ class TestValidatePPA(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
             owner=team_owner, visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         team_admin = self.factory.makePerson()
         with person_logged_in(team_owner):
             private_team.addMember(
@@ -1831,7 +1833,7 @@ class TestValidatePPA(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
             owner=team_owner, visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         team_admin = self.factory.makePerson()
         with person_logged_in(team_owner):
             private_team.addMember(

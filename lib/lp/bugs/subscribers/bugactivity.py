@@ -20,10 +20,12 @@ from lp.bugs.adapters.bugchange import (
     )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
+from lp.registry.enums import (
+    PersonVisibility,
+    )
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import (
     IPerson,
-    PersonVisibility,
     )
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.services.database.constants import UTC_NOW

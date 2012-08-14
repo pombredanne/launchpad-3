@@ -23,9 +23,11 @@ import transaction
 from twisted.python.util import sibpath
 from zope.component import getUtility
 
+from lp.registry.enums import (
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.services.config import config
@@ -42,7 +44,7 @@ def set_up_test_user(test_user, test_team):
     testUser.name = test_user
     testTeam = person_set.newTeam(
         testUser, test_team, test_team,
-        subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+        membership_policy=TeamMembershipPolicy.OPEN)
     testUser.join(testTeam)
     ssh_key_set = getUtility(ISSHKeySet)
     ssh_key_set.new(

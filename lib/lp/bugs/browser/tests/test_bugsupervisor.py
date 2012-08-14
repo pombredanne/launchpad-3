@@ -9,9 +9,11 @@ from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
+from lp.registry.enums import (
+    PersonVisibility,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    PersonVisibility,
     )
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (

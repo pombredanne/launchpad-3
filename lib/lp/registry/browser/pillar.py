@@ -47,13 +47,15 @@ from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    InformationType,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
     IPersonSet,
     )
 from lp.registry.interfaces.pillar import IPillar
@@ -264,15 +266,15 @@ class PillarViewMixin():
     """A mixin for pillar views to populate the json request cache."""
 
     def initialize(self):
-        # Insert close team subscription policy data into the json cache.
+        # Insert close team membership policy data into the json cache.
         # This data is used for the maintainer and driver pickers.
         cache = IJSONRequestCache(self.request)
-        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
-        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
             SimpleVocabulary.fromItems(policy_items),
             value_fn=lambda item: item.name)
-        cache.objects['team_subscriptionpolicy_data'] = (
-            team_subscriptionpolicy_data)
+        cache.objects['team_membership_policy_data'] = (
+            team_membership_policy_data)
 
 
 class PillarSharingView(LaunchpadView):

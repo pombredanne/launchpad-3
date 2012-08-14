@@ -23,15 +23,17 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipRenewalPolicy,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
     )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
@@ -642,9 +644,9 @@ class TestTeamMembership(TestCaseWithFactory):
         person = self.factory.makePerson()
         login_person(person)  # Now login with the future owner of the teams.
         teamA = self.factory.makeTeam(
-            person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            person, membership_policy=TeamMembershipPolicy.MODERATED)
         teamB = self.factory.makeTeam(
-            person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            person, membership_policy=TeamMembershipPolicy.MODERATED)
         self.failUnless(
             teamA.inTeam(teamA), "teamA is not a participant of itself")
         self.failUnless(
@@ -882,7 +884,7 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
 
     def test_declined_member_can_be_made_admin(self):
-        self.team2.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.team2.membership_policy = TeamMembershipPolicy.MODERATED
         self.team1.join(self.team2, requester=self.foobar)
         team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.team1, self.team2)
@@ -967,7 +969,7 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
 
     def test_retractTeamMembership_proposed(self):
         # A team can retract the proposed membership in a team.
-        self.team2.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.team2.membership_policy = TeamMembershipPolicy.MODERATED
         self.team1.join(self.team2, self.team1.teamowner)
         self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
         tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
@@ -1024,7 +1026,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
 
         # Make another bug and grant access to a team.
         team_grantee = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[person_grantee])
         bug2, bug2_owner = self._make_subscribed_bug(
             team_grantee, product,

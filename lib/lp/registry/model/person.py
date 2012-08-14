@@ -150,13 +150,20 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    PRIVATE_INFORMATION_TYPES,
+    TeamMembershipRenewalPolicy,
+    TeamMembershipPolicy,
+    )
 from lp.registry.errors import (
     InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
-    TeamSubscriptionPolicyError,
+    TeamMembershipPolicyError,
     )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -179,21 +186,16 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPerson,
     IPersonSet,
     IPersonSettings,
     ITeam,
-    OPEN_TEAM_POLICY,
     PersonalStanding,
     PersonCreationRationale,
-    PersonVisibility,
     TeamEmailAddressError,
-    TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy,
     validate_public_person,
-    validate_subscription_policy,
+    validate_membership_policy,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
@@ -587,11 +589,11 @@ class Person(
     renewal_policy = EnumCol(
         enum=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
-    subscriptionpolicy = EnumCol(
+    membership_policy = EnumCol(
         dbName='subscriptionpolicy',
-        enum=TeamSubscriptionPolicy,
-        default=TeamSubscriptionPolicy.RESTRICTED,
-        storm_validator=validate_subscription_policy)
+        enum=TeamMembershipPolicy,
+        default=TeamMembershipPolicy.RESTRICTED,
+        storm_validator=validate_membership_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)
@@ -1453,16 +1455,16 @@ class Person(
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
 
-        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if team.membership_policy == TeamMembershipPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
-        elif (team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED
-            or team.subscriptionpolicy == TeamSubscriptionPolicy.DELEGATED):
+        elif (team.membership_policy == TeamMembershipPolicy.MODERATED
+            or team.membership_policy == TeamMembershipPolicy.DELEGATED):
             status = proposed
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+        elif team.membership_policy == TeamMembershipPolicy.OPEN:
             status = approved
         else:
             raise AssertionError(
-                "Unknown subscription policy: %s" % team.subscriptionpolicy)
+                "Unknown membership policy: %s" % team.membership_policy)
 
         # XXX Edwin Grubbs 2007-12-14 bug=117980
         # removeSecurityProxy won't be necessary after addMember()
@@ -1581,6 +1583,15 @@ class Person(
     #
     # ITeam methods
     #
+    @property
+    def subscription_policy(self):
+        """Obsolete API 1.0 property. See `IPerson`."""
+        return self.membership_policy
+
+    @subscription_policy.setter  # pyflakes:ignore
+    def subscription_policy(self, value):
+        self.membership_policy = value
+
     @property
     def super_teams(self):
         """See `IPerson`."""
@@ -1809,35 +1820,35 @@ class Person(
             EmailAddress.personID == self.id,
             EmailAddress.status == status)
 
-    def checkOpenSubscriptionPolicyAllowed(self, policy='open'):
+    def checkInclusiveMembershipPolicyAllowed(self, policy='open'):
         """See `ITeam`"""
         if not self.is_team:
             raise ValueError("This method must only be used for teams.")
 
         # Does this team own or is the security contact for any pillars?
         if self.isAnyPillarOwner():
-            raise TeamSubscriptionPolicyError(
-                "The team subscription policy cannot be %s because it "
+            raise TeamMembershipPolicyError(
+                "The team membership policy cannot be %s because it "
                 "maintains one or more projects, project groups, or "
                 "distributions." % policy)
         if self.isAnySecurityContact():
-            raise TeamSubscriptionPolicyError(
-                "The team subscription policy cannot be %s because it "
+            raise TeamMembershipPolicyError(
+                "The team membership policy cannot be %s because it "
                 "is the security contact for one or more projects, "
                 "project groups, or distributions." % policy)
 
         # Does this team have any PPAs
         for ppa in self.ppas:
             if ppa.status != ArchiveStatus.DELETED:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because it "
+                raise TeamMembershipPolicyError(
+                    "The team membership policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
 
         # Does this team have any super teams that are closed?
         for team in self.super_teams:
-            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because one "
+            if team.membership_policy in EXCLUSIVE_TEAM_POLICY:
+                raise TeamMembershipPolicyError(
+                    "The team membership policy cannot be %s because one "
                     "or more if its super teams are not open." % policy)
 
         # Does this team subscribe or is assigned to any private bugs.
@@ -1866,21 +1877,21 @@ class Person(
                     BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:
-            raise TeamSubscriptionPolicyError(
-                "The team subscription policy cannot be %s because it is "
+            raise TeamMembershipPolicyError(
+                "The team membership policy cannot be %s because it is "
                 "subscribed to or assigned to one or more private "
                 "bugs." % policy)
 
-    def checkClosedSubscriptionPolicyAllowed(self, policy='closed'):
+    def checkExclusiveMembershipPolicyAllowed(self, policy='closed'):
         """See `ITeam`"""
         if not self.is_team:
             raise ValueError("This method must only be used for teams.")
 
         # The team must be open if any of it's members are open.
         for member in self.activemembers:
-            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
-                raise TeamSubscriptionPolicyError(
-                    "The team subscription policy cannot be %s because one "
+            if member.membership_policy in INCLUSIVE_TEAM_POLICY:
+                raise TeamMembershipPolicyError(
+                    "The team membership policy cannot be %s because one "
                     "or more if its member teams are Open." % policy)
 
     @property
@@ -2165,10 +2176,10 @@ class Person(
 
     def anyone_can_join(self):
         open_types = (
-            TeamSubscriptionPolicy.OPEN,
-            TeamSubscriptionPolicy.DELEGATED
+            TeamMembershipPolicy.OPEN,
+            TeamMembershipPolicy.DELEGATED
             )
-        return (self.subscriptionpolicy in open_types)
+        return (self.membership_policy in open_types)
 
     @property
     def open_membership_invitations(self):
@@ -3093,7 +3104,7 @@ class Person(
 
     def canCreatePPA(self):
         """See `IPerson.`"""
-        return self.subscriptionpolicy in CLOSED_TEAM_POLICY
+        return self.membership_policy in EXCLUSIVE_TEAM_POLICY
 
     def checkAllowVisibility(self):
         role = IPersonRoles(self)
@@ -3289,18 +3300,22 @@ class PersonSet:
             return email.person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
-                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
-                defaultmembershipperiod=None, defaultrenewalperiod=None):
+                membership_policy=TeamMembershipPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None,
+                subscription_policy=None):
         """See `IPersonSet`."""
         assert teamowner
         if self.getByName(name, ignore_merged=False) is not None:
             raise NameAlreadyTaken(
                 "The name '%s' is already taken." % name)
+        if subscription_policy is not None:
+            # Support 1.0 API.
+            membership_policy = subscription_policy
         team = Person(teamowner=teamowner, name=name, displayname=displayname,
                 teamdescription=teamdescription,
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
-                subscriptionpolicy=subscriptionpolicy)
+                membership_policy=membership_policy)
         notify(ObjectCreatedEvent(team))
         # Here we add the owner as a team admin manually because we know what
         # we're doing (so we don't need to do any sanity checks) and we don't

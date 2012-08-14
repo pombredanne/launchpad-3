@@ -43,7 +43,7 @@ Karl will join the newly created team.
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Open Team
 
     >>> browser.getLink('Join the team').click()
@@ -83,10 +83,10 @@ the team's home page.
 If this was a moderated team, the membership would not have been automatically
 approved, though.
 
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> from lp.registry.model.person import Person
     >>> myemail = Person.selectOneBy(name='myemail')
-    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+    >>> myemail.membership_policy = TeamMembershipPolicy.MODERATED
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
@@ -94,7 +94,7 @@ approved, though.
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Moderated Team
 
     >>> browser.getLink('Join the team').click()
@@ -128,7 +128,7 @@ the 'Cancel' button, going back to the team's page...
 
 If it was a restricted team, users wouldn't even see a link to join the team.
 
-    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+    >>> myemail.membership_policy = TeamMembershipPolicy.RESTRICTED
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
@@ -138,7 +138,7 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     'http://launchpad.dev/~myemail'
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Restricted Team
 
     >>> browser.getLink('Join the team')

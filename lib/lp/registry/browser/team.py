@@ -109,7 +109,14 @@ from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
     )
-from lp.registry.errors import TeamSubscriptionPolicyError
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    TeamMembershipRenewalPolicy,
+    TeamMembershipPolicy,
+    )
+from lp.registry.errors import TeamMembershipPolicyError
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
     IMailingListSet,
@@ -121,18 +128,13 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
     ITeamContactAddressForm,
     ITeamReassignment,
-    OPEN_TEAM_POLICY,
-    PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
-    TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.poll import IPollSet
 from lp.registry.interfaces.role import IPersonRoles
@@ -231,7 +233,7 @@ class TeamFormMixin:
     """
     field_names = [
         "name", "visibility", "displayname",
-        "teamdescription", "subscriptionpolicy",
+        "teamdescription", "membership_policy",
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod", "teamowner",
         ]
@@ -263,12 +265,11 @@ class TeamFormMixin:
                 warning = self._validateVisibilityConsistency(visibility)
                 if warning is not None:
                     self.setFieldError('visibility', warning)
-            if (data['subscriptionpolicy']
-                != TeamSubscriptionPolicy.RESTRICTED):
+            if (data['membership_policy']
+                != TeamMembershipPolicy.RESTRICTED):
                 self.setFieldError(
-                    'subscriptionpolicy',
-                    'Private teams must have a Restricted subscription '
-                    'policy.')
+                    'membership_policy',
+                    'Private teams must have a Restricted membership policy.')
 
     def setUpVisibilityField(self, render_context=False):
         """Set the visibility field to read-write, or remove it."""
@@ -301,7 +302,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     custom_widget('defaultrenewalperiod', StrippedTextWidget,
         widget_class='field subordinate')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
@@ -317,35 +318,35 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
         team = self.context
-        # Do we need to only show open subscription policy choices?
+        # Do we need to only show open membership policy choices?
         try:
-            team.checkClosedSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError as e:
+            team.checkExclusiveMembershipPolicyAllowed()
+        except TeamMembershipPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
-            self.widgets['subscriptionpolicy'].vocabulary = (
+            self.widgets['membership_policy'].vocabulary = (
                 SimpleVocabulary([SimpleVocabulary.createTerm(
                     policy, policy.name, policy.title)
-                    for policy in OPEN_TEAM_POLICY])
+                    for policy in INCLUSIVE_TEAM_POLICY])
                 )
-            self.widgets['subscriptionpolicy'].extra_hint_class = (
+            self.widgets['membership_policy'].extra_hint_class = (
                 'sprite info')
-            self.widgets['subscriptionpolicy'].extra_hint = e.message
+            self.widgets['membership_policy'].extra_hint = e.message
 
-        # Do we need to only show closed subscription policy choices?
+        # Do we need to only show closed membership policy choices?
         try:
-            team.checkOpenSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError as e:
+            team.checkInclusiveMembershipPolicyAllowed()
+        except TeamMembershipPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
-            self.widgets['subscriptionpolicy'].vocabulary = (
+            self.widgets['membership_policy'].vocabulary = (
                 SimpleVocabulary([SimpleVocabulary.createTerm(
                     policy, policy.name, policy.title)
-                    for policy in CLOSED_TEAM_POLICY])
+                    for policy in EXCLUSIVE_TEAM_POLICY])
                 )
-            self.widgets['subscriptionpolicy'].extra_hint_class = (
+            self.widgets['membership_policy'].extra_hint_class = (
                 'sprite info')
-            self.widgets['subscriptionpolicy'].extra_hint = e.message
+            self.widgets['membership_policy'].extra_hint = e.message
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -1002,7 +1003,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
     custom_widget('defaultrenewalperiod', IntWidget,
@@ -1024,11 +1025,11 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         teamdescription = data.get('teamdescription')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
-        subscriptionpolicy = data.get('subscriptionpolicy')
+        membership_policy = data.get('membership_policy')
         teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
             teamowner, name, displayname, teamdescription,
-            subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
+            membership_policy, defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
             team.transitionVisibility(visibility, self.user)
@@ -1067,13 +1068,13 @@ class SimpleTeamAddView(TeamAddView):
     next_url = None
 
     field_names = [
-        "name", "displayname", "visibility", "subscriptionpolicy",
+        "name", "displayname", "visibility", "membership_policy",
         "teamowner"]
 
     # Use a dropdown - Javascript will be used to change this to a choice
     # popup widget.
     custom_widget(
-        'subscriptionpolicy', LaunchpadDropdownWidget,
+        'membership_policy', LaunchpadDropdownWidget,
         orientation='vertical')
 
 
@@ -1514,8 +1515,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        restricted = TeamSubscriptionPolicy.RESTRICTED
-        if self.person.subscriptionpolicy == restricted:
+        restricted = TeamMembershipPolicy.RESTRICTED
+        if self.person.membership_policy == restricted:
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1597,8 +1598,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         person = self.person
         if userIsActiveTeamMember(person):
             enabled = False
-        elif (self.person.subscriptionpolicy ==
-              TeamSubscriptionPolicy.RESTRICTED):
+        elif (self.person.membership_policy ==
+              TeamMembershipPolicy.RESTRICTED):
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -1786,21 +1787,21 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     def join_allowed(self):
         """Is the logged in user allowed to join this team?
 
-        The answer is yes if this team's subscription policy is not RESTRICTED
+        The answer is yes if this team's membership policy is not RESTRICTED
         and this team's visibility is either None or PUBLIC.
         """
         # Joining a moderated team will put you on the proposed_members
         # list. If it is a private team, you are not allowed to view the
         # proposed_members attribute until you are an active member;
         # therefore, it would look like the join button is broken. Either
-        # private teams should always have a restricted subscription policy,
+        # private teams should always have a restricted membership policy,
         # or we need a more complicated permission model.
         if not (self.context.visibility is None
                 or self.context.visibility == PersonVisibility.PUBLIC):
             return False
 
-        restricted = TeamSubscriptionPolicy.RESTRICTED
-        return self.context.subscriptionpolicy != restricted
+        restricted = TeamMembershipPolicy.RESTRICTED
+        return self.context.membership_policy != restricted
 
     @property
     def user_can_request_to_join(self):
@@ -1824,10 +1825,10 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     def team_is_moderated(self):
         """Is this team a moderated team?
 
-        Return True if the team's subscription policy is MODERATED.
+        Return True if the team's membership policy is MODERATED.
         """
-        policy = self.context.subscriptionpolicy
-        return policy == TeamSubscriptionPolicy.MODERATED
+        policy = self.context.membership_policy
+        return policy == TeamMembershipPolicy.MODERATED
 
     @property
     def next_url(self):
@@ -1895,7 +1896,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
 
     def initialize(self):
         context = self.context
-        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+        if context.membership_policy == TeamMembershipPolicy.MODERATED:
             self.label = 'Propose these teams as members'
         else:
             self.label = 'Add these teams to %s' % context.displayname

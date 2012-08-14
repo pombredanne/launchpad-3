@@ -31,7 +31,7 @@ one for all team admins and another for the member.
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     TeamMembershipRenewalPolicy,
-    ...     TeamSubscriptionPolicy,
+    ...     TeamMembershipPolicy,
     ...     )
     >>> from lp.registry.interfaces.teammembership import (
     ...     ITeamMembershipSet,
@@ -44,7 +44,7 @@ one for all team admins and another for the member.
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> open_team = factory.makeTeam(
-    ...     subscription_policy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> admin_person = personset.getByEmail(ADMIN_EMAIL)
 

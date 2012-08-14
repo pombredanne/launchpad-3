@@ -9,13 +9,18 @@ __all__ = [
     'BugSharingPolicy',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
+    'EXCLUSIVE_TEAM_POLICY',
+    'INCLUSIVE_TEAM_POLICY',
     'InformationType',
     'PersonTransferJobType',
+    'PersonVisibility',
     'PRIVATE_INFORMATION_TYPES',
     'PUBLIC_INFORMATION_TYPES',
     'ProductJobType',
     'SECURITY_INFORMATION_TYPES',
     'SharingPermission',
+    'TeamMembershipPolicy',
+    'TeamMembershipRenewalPolicy',
     ]
 
 from lazr.enum import (
@@ -156,6 +161,94 @@ class BugSharingPolicy(DBEnumeratedType):
         Proprietary
 
         Bugs are always proprietary.
+        """)
+
+
+class TeamMembershipRenewalPolicy(DBEnumeratedType):
+    """TeamMembership Renewal Policy.
+
+    How Team Memberships can be renewed on a given team.
+    """
+
+    NONE = DBItem(10, """
+        invite them to apply for renewal
+
+        Memberships can be renewed only by team administrators or by going
+        through the normal workflow for joining the team.
+        """)
+
+    ONDEMAND = DBItem(20, """
+        invite them to renew their own membership
+
+        Memberships can be renewed by the members themselves a few days before
+        it expires. After it expires the member has to go through the normal
+        workflow for joining the team.
+        """)
+
+
+class TeamMembershipPolicy(DBEnumeratedType):
+    """Team Membership Policies
+
+    The policies that describe who can be a member. The choice of policy
+    reflects the need to build a community (inclusive) versus the need to
+    control Launchpad projects, branches, and PPAs (exclusive).
+    """
+
+    OPEN = DBItem(2, """
+        Open Team
+
+        Membership is inclusive; any user or team can join, and no
+        approval is required.
+        """)
+
+    DELEGATED = DBItem(4, """
+        Delegated Team
+
+        Membership is inclusive; any user or team can join, but team
+        administrators approve direct memberships.
+        """)
+
+    MODERATED = DBItem(1, """
+        Moderated Team
+
+        Membership is exclusive; users and exclusive teams may ask to join.
+        """)
+
+    RESTRICTED = DBItem(3, """
+        Restricted Team
+
+        Membership is exlusive; team administrators can invite users and
+        exclusive teams to join.
+        """)
+
+
+INCLUSIVE_TEAM_POLICY = (
+    TeamMembershipPolicy.OPEN, TeamMembershipPolicy.DELEGATED)
+
+
+EXCLUSIVE_TEAM_POLICY = (
+    TeamMembershipPolicy.RESTRICTED, TeamMembershipPolicy.MODERATED)
+
+
+class PersonVisibility(DBEnumeratedType):
+    """The visibility level of person or team objects.
+
+    Currently, only teams can have their visibility set to something
+    besides PUBLIC.
+    """
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can view all the attributes of this person.
+        """)
+
+    PRIVATE = DBItem(30, """
+        Private
+
+        Only Launchpad admins and team members can view the team's data.
+        Other users may only know of the team if it is placed
+        in a public relationship such as subscribing to a bug.
         """)
 
 
