@@ -9,6 +9,8 @@ __all__ = [
     'BugSharingPolicy',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
+    'FREE_INFORMATION_TYPES',
+    'FREE_PRIVATE_INFORMATION_TYPES',
     'InformationType',
     'PersonTransferJobType',
     'PRIVATE_INFORMATION_TYPES',
@@ -65,14 +67,18 @@ class InformationType(DBEnumeratedType):
 PUBLIC_INFORMATION_TYPES = (
     InformationType.PUBLIC, InformationType.PUBLICSECURITY)
 
-
 PRIVATE_INFORMATION_TYPES = (
     InformationType.PRIVATESECURITY, InformationType.USERDATA,
     InformationType.PROPRIETARY)
 
-
 SECURITY_INFORMATION_TYPES = (
     InformationType.PUBLICSECURITY, InformationType.PRIVATESECURITY)
+
+FREE_PRIVATE_INFORMATION_TYPES = (
+    InformationType.PRIVATESECURITY, InformationType.USERDATA)
+
+FREE_INFORMATION_TYPES = (
+    PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
 
 
 class SharingPermission(DBEnumeratedType):
