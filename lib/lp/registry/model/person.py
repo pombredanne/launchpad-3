@@ -1584,6 +1584,15 @@ class Person(
     # ITeam methods
     #
     @property
+    def subscription_policy(self):
+        """Obsolete API 1.0 property. See `IPerson`."""
+        return self.membership_policy
+
+    @subscription_policy.setter  # pyflakes:ignore
+    def subscription_policy(self, value):
+        self.membership_policy = value
+
+    @property
     def super_teams(self):
         """See `IPerson`."""
         return Store.of(self).using(
@@ -3292,12 +3301,16 @@ class PersonSet:
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
-                defaultmembershipperiod=None, defaultrenewalperiod=None):
+                defaultmembershipperiod=None, defaultrenewalperiod=None,
+                subscription_policy=None):
         """See `IPersonSet`."""
         assert teamowner
         if self.getByName(name, ignore_merged=False) is not None:
             raise NameAlreadyTaken(
                 "The name '%s' is already taken." % name)
+        if subscription_policy is not None:
+            # Support 1.0 API.
+            membership_policy = subscription_policy
         team = Person(teamowner=teamowner, name=name, displayname=displayname,
                 teamdescription=teamdescription,
                 defaultmembershipperiod=defaultmembershipperiod,

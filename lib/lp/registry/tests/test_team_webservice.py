@@ -73,6 +73,37 @@ class TestTeamJoining(TestCaseWithFactory):
         logout()
 
 
+class TeamObsoleteAPITestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_newTeam_obsolete_subscription_policy(self):
+        # The subscription_policy kwarg can be passed instead of
+        # membership_policy to suppport 1.0 API
+        owner = self.factory.makePerson()
+        launchpad = launchpadlib_for("test", owner)
+        team = launchpad.people.newTeam(
+            name='pting', display_name='Pting',
+            subscription_policy="Open Team")
+        self.assertEqual("Open Team", team.subscription_policy)
+        self.assertEqual("Open Team", team.membership_policy)
+
+    def test_subscription_policy_is_membership_policy(self):
+        # The subcription_policy property wraps membership_policy.
+        owner = self.factory.makePerson()
+        self.factory.makeTeam(
+            owner=owner, name='pting',
+            membership_policy=TeamMembershipPolicy.MODERATED)
+        launchpad = launchpadlib_for("test", owner)
+        team = launchpad.people['pting']
+        self.assertEqual("Moderated Team", team.subscription_policy)
+        self.assertEqual("Moderated Team", team.membership_policy)
+        team.subscription_policy = "Open Team"
+        team.lp_save()
+        self.assertEqual("Open Team", team.subscription_policy)
+        self.assertEqual("Open Team", team.membership_policy)
+
+
 class TestTeamLimitedViewAccess(TestCaseWithFactory):
     """Tests for team limitedView access via the webservice."""
 

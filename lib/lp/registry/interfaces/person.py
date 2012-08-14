@@ -1830,11 +1830,16 @@ class ITeamPublic(Interface):
 
     membership_policy = exported(
         TeamSubsciptionPolicyChoice(title=_('Membership policy'),
-               vocabulary=TeamMembershipPolicy,
-               default=TeamMembershipPolicy.RESTRICTED, required=True,
-               description=_(
-                TeamMembershipPolicy.__doc__.split('\n\n')[1])),
-        exported_as='membership_policy')
+            vocabulary=TeamMembershipPolicy,
+            default=TeamMembershipPolicy.RESTRICTED, required=True,
+            description=_(
+                TeamMembershipPolicy.__doc__.split('\n\n')[1])))
+
+    subscription_policy = exported(
+        TeamSubsciptionPolicyChoice(title=_('Membership policy'),
+            vocabulary=TeamMembershipPolicy,
+            description=_("Obsolete: use membership_policy"))
+        )
 
     renewal_policy = exported(
         Choice(title=_("When someone's membership is about to expire, "
@@ -2082,7 +2087,6 @@ class IPersonSet(Interface):
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
-        membership_policy='membership_policy',
         defaultmembershipperiod='default_membership_period',
         defaultrenewalperiod='default_renewal_period')
     @operation_parameters(
@@ -2091,11 +2095,13 @@ class IPersonSet(Interface):
             required=False, default=TeamMembershipPolicy.MODERATED))
     @export_factory_operation(
         ITeam, ['name', 'displayname', 'teamdescription',
-                'defaultmembershipperiod', 'defaultrenewalperiod'])
+                'defaultmembershipperiod', 'defaultrenewalperiod',
+                'subscription_policy'])
     @operation_for_version("beta")
     def newTeam(teamowner, name, displayname, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
-                defaultmembershipperiod=None, defaultrenewalperiod=None):
+                defaultmembershipperiod=None, defaultrenewalperiod=None,
+                subscription_policy=None):
         """Create and return a new Team with given arguments."""
 
     def get(personid):

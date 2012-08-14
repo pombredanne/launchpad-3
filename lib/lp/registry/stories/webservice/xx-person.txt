@@ -98,6 +98,7 @@ for teams (as they're defined in the ITeam interface).
     members_collection_link: u'http://.../~ubuntu-team/members'
     members_details_collection_link:
         u'http://.../~ubuntu-team/members_details'
+    membership_policy: u'Moderated Team'
     memberships_details_collection_link:
         u'http://.../~ubuntu-team/memberships_details'
     mugshot_link: u'http://.../~ubuntu-team/mugshot'
@@ -117,7 +118,7 @@ for teams (as they're defined in the ITeam interface).
     self_link: u'http://.../~ubuntu-team'
     sshkeys_collection_link: u'http://.../~ubuntu-team/sshkeys'
     sub_teams_collection_link: u'http://.../~ubuntu-team/sub_teams'
-    membership_policy: u'Moderated Team'
+    subscription_policy: u'Moderated Team'
     super_teams_collection_link: u'http://.../~ubuntu-team/super_teams'
     team_description: u'This Team is responsible for the Ubuntu Distribution'
     team_owner_link: u'http://.../~mark'
@@ -128,7 +129,8 @@ for teams (as they're defined in the ITeam interface).
 
     >>> sorted(set(ubuntu_team.keys()).difference(salgado.keys()))
     [u'default_membership_period', u'default_renewal_period',
-     u'renewal_policy', u'membership_policy', u'team_description']
+     u'membership_policy', u'renewal_policy', u'subscription_policy',
+     u'team_description']
 
     >>> sorted(set(salgado.keys()).difference(ubuntu_team.keys()))
     []
