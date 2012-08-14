@@ -289,15 +289,6 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertEqual(None, person.description)
 
-    def test_description_fallback_for_team(self):
-        # When the person does not have a description, but does have a
-        # teamdescription or homepage_content, they are used.
-        person = self.factory.makeTeam()
-        with person_logged_in(person.teamowner):
-            person.homepage_content = 'babble'
-            person.teamdescription = 'fish'
-        self.assertEqual('babble\nfish', person.description)
-
     def test_description_fallback_for_person(self):
         # When the person does not have a description, but does have a
         # teamdescription or homepage_content, they are used.
@@ -313,6 +304,18 @@ class TestPerson(TestCaseWithFactory):
         with person_logged_in(person):
             person.description = 'babble'
         self.assertEqual('babble', person.description)
+
+    def test_description_setting_reconciles_obsolete_sources(self):
+        # When the description is set, the homepage_content and teamdescription
+        # are set to None.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+            person.description = "What's this fish doing?"
+        self.assertEqual("What's this fish doing?", person.description)
+        self.assertEqual(None, person.homepage_content)
+        self.assertEqual(None, person.teamdescription)
 
     def test_getOwnedOrDrivenPillars(self):
         user = self.factory.makePerson()

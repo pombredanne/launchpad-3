@@ -645,6 +645,8 @@ class Person(
     @description.setter  # pyflakes:ignore
     def description(self, value):
         self._description = value
+        self.homepage_content = None
+        self.teamdescription = None
 
     @cachedproperty
     def ircnicknames(self):
