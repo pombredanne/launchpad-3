@@ -155,8 +155,8 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
-    TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
+    TeamMembershipRenewalPolicy,
     )
 from lp.registry.errors import (
     InvalidName,
@@ -194,8 +194,8 @@ from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonCreationRationale,
     TeamEmailAddressError,
-    validate_public_person,
     validate_membership_policy,
+    validate_public_person,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource

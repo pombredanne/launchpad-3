@@ -66,9 +66,7 @@ from lp.registry.enums import (
     InformationType,
     TeamMembershipPolicy,
     )
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url

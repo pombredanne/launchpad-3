@@ -70,9 +70,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackage import ISourcePackage

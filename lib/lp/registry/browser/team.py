@@ -47,8 +47,8 @@ import pytz
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
-from zope.component import getUtility
 from zope.app.form.browser.textwidgets import IntWidget
+from zope.component import getUtility
 from zope.formlib.form import (
     Fields,
     FormField,
@@ -113,8 +113,8 @@ from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
-    TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
+    TeamMembershipRenewalPolicy,
     )
 from lp.registry.errors import TeamMembershipPolicyError
 from lp.registry.interfaces.mailinglist import (

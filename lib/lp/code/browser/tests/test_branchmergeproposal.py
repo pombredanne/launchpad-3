@@ -55,8 +55,8 @@ from lp.code.tests.helpers import (
     )
 from lp.registry.enums import (
     InformationType,
-    TeamMembershipPolicy,
     PersonVisibility,
+    TeamMembershipPolicy,
     )
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
