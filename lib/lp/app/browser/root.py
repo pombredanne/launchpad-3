@@ -139,7 +139,10 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     @property
     def show_whatslaunchpad(self):
-        """True if introduction to Launchpad should be displayed."""
+        """True if introduction to Launchpad should be displayed.
+
+        Shown when not logged in or if blog is disabled.
+        """
         return self.user is None or not getFeatureFlag("app.root_blog.enabled")
 
     def getRecentBlogPosts(self):
