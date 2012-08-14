@@ -80,6 +80,9 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    )
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
@@ -1745,6 +1748,13 @@ class TeamIndexView(PersonIndexView, TeamJoinMixin):
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(self.context, 'ValidTeamMember')
         return vocabulary.step_title.replace("'", "\\'").replace('"', '\\"')
+
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ITeam['teamdescription'], title="",
+            edit_title='Edit description', hide_empty=False)
 
 
 class TeamJoinForm(Interface):

@@ -48,10 +48,10 @@
     tal:content="structure context/homepage_content/fmt:text-to-html"
   />
 
-  <div
-    class="description"
-    tal:content="structure context/teamdescription/fmt:text-to-html"
-  />
+  <div class="description">
+      <tal:widget replace="structure view/description_widget" />
+  </div>
+
   <ul class="horizontal">
     <tal:comment condition="nothing">
       This link name is different from the menu, since it refers
