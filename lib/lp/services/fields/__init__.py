@@ -105,6 +105,10 @@ from lp.app.validators.name import (
     )
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.errors import InvalidDuplicateValue
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.services.webapp.interfaces import ILaunchBag
 
@@ -814,7 +818,7 @@ class ProductNameField(PillarNameField):
 
 def is_public_person(person):
     """Return True if the person is public."""
-    from lp.registry.interfaces.person import IPerson, PersonVisibility
+    from lp.registry.interfaces.person import IPerson
     if not IPerson.providedBy(person):
         return False
     return person.visibility == PersonVisibility.PUBLIC
@@ -822,11 +826,7 @@ def is_public_person(person):
 
 def is_public_person_or_closed_team(person):
     """Return True if person is a Person or not an open or delegated team."""
-    from lp.registry.interfaces.person import (
-        IPerson,
-        PersonVisibility,
-        EXCLUSIVE_TEAM_POLICY,
-    )
+    from lp.registry.interfaces.person import IPerson
     if not IPerson.providedBy(person):
         return False
     if not person.is_team:
@@ -934,7 +934,8 @@ class WorkItemsText(Text):
         from lp.registry.interfaces.person import IPersonSet
         assignee = getUtility(IPersonSet).getByName(assignee_name)
         if assignee is None:
-            raise LaunchpadValidationError("Unknown person name: %s" % assignee_name)
+            raise LaunchpadValidationError(
+                "Unknown person name: %s" % assignee_name)
         return assignee
 
     def getMilestone(self, milestone_name):

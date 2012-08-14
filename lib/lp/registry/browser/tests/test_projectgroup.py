@@ -13,7 +13,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
 
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
-from lp.registry.emums import (
+from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     )
 from lp.registry.interfaces.person import (
