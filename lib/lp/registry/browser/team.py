@@ -269,8 +269,7 @@ class TeamFormMixin:
                 != TeamMembershipPolicy.RESTRICTED):
                 self.setFieldError(
                     'membership_policy',
-                    'Private teams must have a Restricted subscription '
-                    'policy.')
+                    'Private teams must have a Restricted membership policy.')
 
     def setUpVisibilityField(self, render_context=False):
         """Set the visibility field to read-write, or remove it."""
