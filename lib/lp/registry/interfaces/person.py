@@ -461,8 +461,8 @@ def team_membership_policy_can_transition(team, policy):
     policy, it is always allowed to transition to another closed policy.
 
     :param team: The team to change.
-    :param policy: The TeamSubsciptionPolicy to change to.
-    :raises TeamSubsciptionPolicyError: Raised when a membership constrain
+    :param policy: The TeamMembershipPolicy to change to.
+    :raises TeamMembershipPolicyError: Raised when a membership constrain
         or a team artifact prevents the policy from being set.
     """
     if team is None or policy == team.membership_policy:
@@ -477,7 +477,7 @@ def team_membership_policy_can_transition(team, policy):
     return True
 
 
-class TeamSubsciptionPolicyChoice(Choice):
+class TeamMembershipPolicyChoice(Choice):
     """A valid team membership policy."""
 
     def _getTeam(self):
@@ -497,7 +497,7 @@ class TeamSubsciptionPolicyChoice(Choice):
             return False
 
     def _validate(self, value):
-        """Ensure the TeamSubsciptionPolicy is valid for state of the team.
+        """Ensure the TeamMembershipPolicy is valid for state of the team.
 
         Returns True if the team can change its membership policy to the
         `TeamMembershipPolicy`, otherwise raise TeamMembershipPolicyError.
@@ -505,7 +505,7 @@ class TeamSubsciptionPolicyChoice(Choice):
         team = self._getTeam()
         policy = value
         team_membership_policy_can_transition(team, policy)
-        super(TeamSubsciptionPolicyChoice, self)._validate(value)
+        super(TeamMembershipPolicyChoice, self)._validate(value)
 
 
 class IPersonClaim(Interface):
@@ -1829,14 +1829,14 @@ class ITeamPublic(Interface):
         exported_as='team_description')
 
     membership_policy = exported(
-        TeamSubsciptionPolicyChoice(title=_('Membership policy'),
+        TeamMembershipPolicyChoice(title=_('Membership policy'),
             vocabulary=TeamMembershipPolicy,
             default=TeamMembershipPolicy.RESTRICTED, required=True,
             description=_(
                 TeamMembershipPolicy.__doc__.split('\n\n')[1])))
 
     subscription_policy = exported(
-        TeamSubsciptionPolicyChoice(title=_('Membership policy'),
+        TeamMembershipPolicyChoice(title=_('Membership policy'),
             vocabulary=TeamMembershipPolicy,
             description=_("Obsolete: use membership_policy"))
         )

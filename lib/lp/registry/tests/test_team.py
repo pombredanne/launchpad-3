@@ -301,7 +301,7 @@ class TestTeamMembershipPolicyError(TestCaseWithFactory):
 
 
 class TeamMembershipPolicyBase(TestCaseWithFactory):
-    """`TeamSubsciptionPolicyChoice` base test class."""
+    """`TeamMembershipPolicyChoice` base test class."""
 
     layer = DatabaseFunctionalLayer
     POLICY = None
@@ -317,7 +317,7 @@ class TeamMembershipPolicyBase(TestCaseWithFactory):
 
 
 class TestTeamMembershipPolicyChoiceCommon(TeamMembershipPolicyBase):
-    """Test `TeamSubsciptionPolicyChoice` constraints."""
+    """Test `TeamMembershipPolicyChoice` constraints."""
 
     # Any policy will work here, so we'll just pick one.
     POLICY = TeamMembershipPolicy.MODERATED
@@ -335,7 +335,7 @@ class TestTeamMembershipPolicyChoiceCommon(TeamMembershipPolicyBase):
 
 
 class TestTeamMembershipPolicyChoiceModerated(TeamMembershipPolicyBase):
-    """Test `TeamSubsciptionPolicyChoice` Moderated constraints."""
+    """Test `TeamMembershipPolicyChoice` Moderated constraints."""
 
     POLICY = TeamMembershipPolicy.MODERATED
 
@@ -446,13 +446,13 @@ class TestTeamMembershipPolicyChoiceModerated(TeamMembershipPolicyBase):
 
 class TestTeamMembershipPolicyChoiceRestrcted(
                                    TestTeamMembershipPolicyChoiceModerated):
-    """Test `TeamSubsciptionPolicyChoice` Restricted constraints."""
+    """Test `TeamMembershipPolicyChoice` Restricted constraints."""
 
     POLICY = TeamMembershipPolicy.RESTRICTED
 
 
 class TestTeamMembershipPolicyChoiceOpen(TeamMembershipPolicyBase):
-    """Test `TeamSubsciptionPolicyChoice` Open constraints."""
+    """Test `TeamMembershipPolicyChoice` Open constraints."""
 
     POLICY = TeamMembershipPolicy.OPEN
 
@@ -480,7 +480,7 @@ class TestTeamMembershipPolicyChoiceOpen(TeamMembershipPolicyBase):
 
 class TestTeamMembershipPolicyChoiceDelegated(
                                         TestTeamMembershipPolicyChoiceOpen):
-    """Test `TeamSubsciptionPolicyChoice` Delegated constraints."""
+    """Test `TeamMembershipPolicyChoice` Delegated constraints."""
 
     POLICY = TeamMembershipPolicy.DELEGATED
 
