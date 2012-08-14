@@ -296,7 +296,7 @@ flag_info = sorted([
      ''),
     ('app.root_blog.enabled',
      'boolean',
-     'If true, load posts from the launchpad for display on the root page.',
+     'If true, load posts from the Launchpad blog to show on the root page.',
      '',
      '',
      ''),
