@@ -233,13 +233,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.enhanced_choice_popup.enabled',
-     'boolean',
-     ('If true, will include any available descriptive text with each choice '
-      'item in the selection popup.'),
-     '',
-     '',
-     ''),
     ('disclosure.enhanced_sharing.enabled',
      'boolean',
      ('If true, will allow the use of the new sharing view and apis used '
@@ -278,13 +271,6 @@ flag_info = sorted([
      'boolean',
      ('If true, calculate and store bugchange notifications to reference '
       'information_type rather than private/security_related.'),
-     '',
-     '',
-     ''),
-    ('disclosure.branch_sharing_policy.show_to_admin',
-     'boolean',
-     ('If true, the branch sharing policy field is shown on '
-      'Product:+admin, letting BranchVisibilityPolicy be overridden.'),
      '',
      '',
      ''),

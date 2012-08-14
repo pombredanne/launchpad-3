@@ -229,14 +229,7 @@ Archive Permission Custom Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Permission collections can be retrieved with custom operations on the
-archive.
-
-`getPermissionsForPerson` returns all the permissions that a user has.
-
-    >>> ubuntu_team = user_webservice.get("/~ubuntu-team").jsonBody()
-    >>> permissions = user_webservice.named_get(
-    ...     ubuntutest['main_archive_link'], 'getPermissionsForPerson',
-    ...     person=ubuntu_team['self_link']).jsonBody()
+archive.  First, define some general helper functions.
 
     >>> def permission_entry_sort_key(entry):
     ...      return (entry['permission'],
@@ -254,6 +247,40 @@ archive.
     ...         print entry['source_package_name']
     ...         print entry['pocket']
     ...         print entry['distroseries_link']
+
+`getAllPermissions` returns all permissions on the archive.
+
+    >>> ubuntu_devel = user_webservice.get(
+    ...     '/distros', api_version='devel').jsonBody()['entries'][0]
+
+    >>> def show_all_permissions(archive):
+    ...     permissions = user_webservice.get(
+    ...         '%s?ws.op=getAllPermissions&ws.size=50' % archive,
+    ...         api_version='devel').jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_all_permissions(ubuntu_devel['main_archive_link'])
+    Archive Upload Rights ...~carlos None mozilla-firefox None None
+    Archive Upload Rights ...~ubuntu-team main None None None
+    Archive Upload Rights ...~ubuntu-team restricted None None None
+    Archive Upload Rights ...~ubuntu-team universe None None None
+    Queue Administration Rights ...~name12 main None None None
+    Queue Administration Rights ...~name12 multiverse None None None
+    Queue Administration Rights ...~name12 restricted None None None
+    Queue Administration Rights ...~name12 universe None None None
+    Queue Administration Rights ...~no-team-memberships multiverse None None None
+    Queue Administration Rights ...~no-team-memberships universe None None None
+    Queue Administration Rights ...~ubuntu-team main None None None
+    Queue Administration Rights ...~ubuntu-team partner None None None
+    Queue Administration Rights ...~ubuntu-team restricted None None None
+    Queue Administration Rights ...~ubuntu-team universe None None None
+
+`getPermissionsForPerson` returns all the permissions that a user has.
+
+    >>> ubuntu_team = user_webservice.get("/~ubuntu-team").jsonBody()
+    >>> permissions = user_webservice.named_get(
+    ...     ubuntutest['main_archive_link'], 'getPermissionsForPerson',
+    ...     person=ubuntu_team['self_link']).jsonBody()
 
     >>> show_permission_entries(permissions)
     Archive Upload Rights ...~ubuntu-team main None None None
@@ -588,9 +615,6 @@ And we can see that it's gone:
 
 getUploadersForPocket returns all the permissions where someone can upload
 to a particular pocket:
-
-    >>> ubuntu_devel = webservice.get(
-    ...     '/distros', api_version='devel').jsonBody()['entries'][0]
 
     >>> def show_pocket_permissions(pocket):
     ...     permissions = user_webservice.named_get(

@@ -420,19 +420,37 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             "Destination pocket must be 'release' for a PPA.",
             job.error_message)
 
+    def assertOopsRecorded(self, job):
+        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertThat(
+            job.error_message, MatchesRegex(
+                "Launchpad encountered an internal error while copying this"
+                " package.  It was logged with id .*.  Sorry for the"
+                " inconvenience."))
+
     def test_target_ppa_message_unexpected_error(self):
         # When copying to a PPA archive, unexpected errors are stored in the
         # job's metadata with an apologetic message.
         job = self.makePPAJob()
         removeSecurityProxy(job).attemptCopy = FakeMethod(failure=Exception())
         self.runJob(job)
-        self.assertEqual(JobStatus.FAILED, job.status)
-        self.assertThat(
-            job.error_message,
-            MatchesRegex(
-                "Launchpad encountered an internal error while copying this"
-                " package.  It was logged with id .*.  Sorry for the"
-                " inconvenience."))
+        self.assertOopsRecorded(job)
+
+    def test_target_ppa_message_integrity_error(self):
+        # Even database integrity errors (which cause exceptions on commit)
+        # reliably store an error message in the job's metadata.
+        job = self.makePPAJob()
+        spr = self.factory.makeSourcePackageRelease(archive=job.target_archive)
+
+        def copy_integrity_error():
+            """Force an integrity error."""
+            spr.requestDiffTo(job.requester, spr)
+
+        removeSecurityProxy(job).attemptCopy = copy_integrity_error
+        self.runJob(job)
+        # Abort the transaction to simulate the job runner script exiting.
+        transaction.abort()
+        self.assertOopsRecorded(job)
 
     def test_run(self):
         # A proper test run synchronizes packages.

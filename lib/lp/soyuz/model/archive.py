@@ -1058,6 +1058,11 @@ class Archive(SQLBase):
         return permission_set.checkAuthenticated(
             user, self, perm_type, item, distroseries=distroseries)
 
+    def getAllPermissions(self):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.permissionsForArchive(self)
+
     def getPermissionsForPerson(self, person):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
@@ -1648,6 +1653,10 @@ class Archive(SQLBase):
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
+        if source is None:
+            raise CannotCopy(
+                "%s is not published in %s." %
+                (source_name, from_archive.displayname))
         return source
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
@@ -1705,9 +1714,6 @@ class Archive(SQLBase):
 
         sources = self._collectLatestPublishedSources(
             from_archive, from_series, source_names)
-        if not sources:
-            raise CannotCopy(
-                "None of the supplied package names are published")
 
         # Now do a mass check of permissions.
         pocket = self._text_to_pocket(to_pocket)
@@ -1740,6 +1746,8 @@ class Archive(SQLBase):
 
         :raises NoSuchSourcePackageName: If any of the source_names do not
             exist.
+        :raises CannotCopy: If none of the source_names are published in
+            from_archive.
         """
         from_series_obj = self._text_to_series(
             from_series, distribution=from_archive.distribution)
@@ -1761,6 +1769,10 @@ class Archive(SQLBase):
             first_source = published_sources.first()
             if first_source is not None:
                 sources.append(first_source)
+        if not sources:
+            raise CannotCopy(
+                "None of the supplied package names are published in %s." %
+                from_archive.displayname)
         return sources
 
     def _text_to_series(self, to_series, distribution=None):

@@ -960,7 +960,8 @@ class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
         title_field = IProduct['title']
         title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            product, title_field, title, 'h1')
+            product, title_field, title, 'h1', max_width='95%',
+            truncate_lines=2)
         programming_lang = IProduct['programminglang']
         title = 'Edit programming languages'
         additional_arguments = {
@@ -1574,9 +1575,6 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         "private_bugs",
         ]
 
-    custom_widget(
-        'branch_sharing_policy', LaunchpadRadioWidgetWithDescription)
-
     @property
     def page_title(self):
         """The HTML page title."""
@@ -1594,8 +1592,6 @@ class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
         if not admin:
             self.field_names.remove('owner')
             self.field_names.remove('autoupdate')
-        if getFeatureFlag('disclosure.branch_sharing_policy.show_to_admin'):
-            self.field_names.append('branch_sharing_policy')
         super(ProductAdminView, self).setUpFields()
         self.form_fields = self._createAliasesField() + self.form_fields
         if admin:

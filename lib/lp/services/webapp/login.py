@@ -16,7 +16,10 @@ from openid.consumer.consumer import (
     FAILURE,
     SUCCESS,
     )
-from openid.extensions import sreg
+from openid.extensions import (
+    pape,
+    sreg,
+    )
 from openid.fetchers import (
     setDefaultFetcher,
     Urllib2Fetcher,
@@ -168,7 +171,10 @@ class OpenIDLogin(LaunchpadView):
         return Consumer(session, openid_store)
 
     def render(self):
-        if self.account is not None:
+        # Reauthentication is called for by a query string parameter.
+        reauth_qs = self.request.query_string_params.get('reauth', ['0'])
+        do_reauth = int(reauth_qs[0])
+        if self.account is not None and not do_reauth:
             return AlreadyLoggedInView(self.context, self.request)()
 
         # Allow unauthenticated users to have sessions for the OpenID
@@ -188,6 +194,11 @@ class OpenIDLogin(LaunchpadView):
             timeline_action.finish()
         self.openid_request.addExtension(
             sreg.SRegRequest(required=['email', 'fullname']))
+
+        # Force the Open ID handshake to re-authenticate, using
+        # pape extension's max_auth_age, if the URL indicates it.
+        if do_reauth:
+            self.openid_request.addExtension(pape.Request(max_auth_age=0))
 
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
@@ -216,7 +227,7 @@ class OpenIDLogin(LaunchpadView):
     def starting_url(self):
         starting_url = self.request.getURL(1)
         query_string = "&".join([arg for arg in self.form_args])
-        if query_string:
+        if query_string and query_string != 'reauth=1':
             starting_url += "?%s" % query_string
         return starting_url
 
@@ -301,13 +312,13 @@ class OpenIDCallbackView(OpenIDLogin):
         finally:
             timeline_action.finish()
 
-    def login(self, person):
+    def login(self, person, when=None):
         loginsource = getUtility(IPlacelessLoginSource)
         # We don't have a logged in principal, so we must remove the security
         # proxy of the account's preferred email.
         email = removeSecurityProxy(person.preferredemail).email
         logInPrincipal(
-            self.request, loginsource.getPrincipalByLogin(email), email)
+            self.request, loginsource.getPrincipalByLogin(email), email, when)
 
     @cachedproperty
     def sreg_response(self):
@@ -438,7 +449,18 @@ class AlreadyLoggedInView(LaunchpadView):
     template = ViewPageTemplateFile("templates/login-already.pt")
 
 
-def logInPrincipal(request, principal, email):
+def isFreshLogin(request):
+    """Return True if the principal login happened in the last 120 seconds."""
+    session = ISession(request)
+    authdata = session['launchpad.authenticateduser']
+    logintime = authdata.get('logintime', None)
+    if logintime is not None:
+        now = datetime.utcnow()
+        return logintime > now - timedelta(seconds=120)
+    return False
+
+
+def logInPrincipal(request, principal, email, when=None):
     """Log the principal in. Password validation must be done in callsites."""
     # Force a fresh session, per Bug #828638. Any changes to any
     # existing session made this request will be lost, but that should
@@ -451,8 +473,10 @@ def logInPrincipal(request, principal, email):
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
     request.setPrincipal(principal)
+    if when is None:
+        when = datetime.utcnow()
     authdata['accountid'] = principal.id
-    authdata['logintime'] = datetime.utcnow()
+    authdata['logintime'] = when
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
 

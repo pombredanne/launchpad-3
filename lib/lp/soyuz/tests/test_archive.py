@@ -2427,6 +2427,20 @@ class TestSyncSource(TestCaseWithFactory):
         self.assertEqual(1, copy_jobs.count())
         self.assertEqual(source.distroseries, copy_jobs[0].target_distroseries)
 
+    def test_copyPackage_unpublished_source(self):
+        # If the given source name is not published in the source archive,
+        # we get a CannotCopy exception.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        with person_logged_in(target_archive.owner):
+            expected_error = (
+                "%s is not published in %s." %
+                (source_name, target_archive.displayname))
+            self.assertRaisesWithContent(
+                CannotCopy, expected_error, target_archive.copyPackage,
+                source_name, version, target_archive, to_pocket.name,
+                target_archive.owner)
+
     def test_copyPackages_with_single_package(self):
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
@@ -2641,6 +2655,20 @@ class TestSyncSource(TestCaseWithFactory):
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
         self.assertEqual(source.distroseries, copy_job.target_distroseries)
+
+    def test_copyPackages_unpublished_source(self):
+        # If none of the given source names are published in the source
+        # archive, we get a CannotCopy exception.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        with person_logged_in(target_archive.owner):
+            expected_error = (
+                "None of the supplied package names are published in %s." %
+                target_archive.displayname)
+            self.assertRaisesWithContent(
+                CannotCopy, expected_error, target_archive.copyPackages,
+                [source_name], target_archive, to_pocket.name,
+                target_archive.owner)
 
 
 class TestgetAllPublishedBinaries(TestCaseWithFactory):
