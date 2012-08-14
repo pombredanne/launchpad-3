@@ -92,7 +92,10 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import BugSet
+from lp.bugs.interfaces.bugtarget import (
+    POLICY_ALLOWED_TYPES,
+    POLICY_DEFAULT_TYPES,
+    )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -592,13 +595,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
+        if self.bug_sharing_policy is not None:
+            return POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
+
         types = set(InformationType.items)
         types.discard(InformationType.PROPRIETARY)
         return types
 
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
-        if self.private_bugs:
+        if self.bug_sharing_policy is not None:
+            return POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
+        elif self.private_bugs:
             return InformationType.USERDATA
         else:
             return InformationType.PUBLIC

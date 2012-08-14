@@ -59,6 +59,12 @@ from lp.bugs.interfaces.bugtasksearch import (
     BugTagsSearchCombinator,
     IBugTaskSearch,
     )
+from lp.registry.enums import (
+    BugSharingPolicy,
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.services.fields import Tag
 
 
@@ -195,6 +201,21 @@ search_tasks_params_for_api_devel = dict(
             u"Search for bugs that are linked to blueprints or for "
             u"bugs that are not linked to blueprints."),
         vocabulary=BugBlueprintSearch, required=False))
+
+
+POLICY_ALLOWED_TYPES = {
+    BugSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
+    BugSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.items,
+    BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.items,
+    BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
+    }
+
+POLICY_DEFAULT_TYPES = {
+    BugSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    BugSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
+    BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BugSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    }
 
 
 class IHasBugs(Interface):
