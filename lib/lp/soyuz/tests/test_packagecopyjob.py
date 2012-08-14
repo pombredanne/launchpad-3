@@ -942,80 +942,78 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # the target archive.
         self.assertEqual('main', pcj.metadata['component_override'])
 
-    def createAutoApproveEnvironment(self, create_ancestry, component_names):
+    def createAutoApproveEnvironment(self, create_ancestry, component_names,
+                                     pocket_admin=False):
         """Create an environment for testing the auto_approve flag."""
         if create_ancestry:
             self.distroseries.status = SeriesStatus.FROZEN
-        target_archive = self.factory.makeArchive(
+        target = self.factory.makeArchive(
             self.distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
-        source_archive = self.factory.makeArchive()
+        source = self.factory.makeArchive()
         requester = self.factory.makePerson()
-        with person_logged_in(target_archive.owner):
+        with person_logged_in(target.owner):
             for component_name in component_names:
-                target_archive.newQueueAdmin(requester, component_name)
+                target.newQueueAdmin(requester, component_name)
+            if pocket_admin:
+                target.newPocketQueueAdmin(
+                    requester, PackagePublishingPocket.RELEASE)
         spph = self.publisher.getPubSource(
             distroseries=self.distroseries,
-            status=PackagePublishingStatus.PUBLISHED, archive=source_archive)
+            status=PackagePublishingStatus.PUBLISHED, archive=source)
         spr = spph.sourcepackagerelease
         if create_ancestry:
             self.publisher.getPubSource(
                 distroseries=self.distroseries, sourcename=spr.name,
                 version="%s~" % spr.version,
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=target_archive)
-        return target_archive, source_archive, requester, spph, spr
+                status=PackagePublishingStatus.PUBLISHED, archive=target)
+        return spph, source, target, requester
+
+    def assertCanAutoApprove(self, create_ancestry, component_names,
+                             pocket_admin=False):
+        spph, source, target, requester = self.createAutoApproveEnvironment(
+            create_ancestry, component_names, pocket_admin=pocket_admin)
+        job = self.createCopyJobForSPPH(
+            spph, source, target, requester=requester, auto_approve=True)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        spr = spph.sourcepackagerelease
+        new_publication = target.getPublishedSources(
+            name=spr.name, version=spr.version, exact_match=True).one()
+        self.assertEqual(target, new_publication.archive)
+
+    def assertCannotAutoApprove(self, create_ancestry, component_names,
+                                pocket_admin=False):
+        spph, source, target, requester = self.createAutoApproveEnvironment(
+            create_ancestry, component_names, pocket_admin=pocket_admin)
+        job = self.createCopyJobForSPPH(
+            spph, source, target, requester=requester, auto_approve=True)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
 
     def test_auto_approve(self):
         # The auto_approve flag causes the job to be processed immediately,
         # even if it would normally have required manual approval.
-        (target_archive, source_archive, requester,
-         spph, spr) = self.createAutoApproveEnvironment(True, ["main"])
-        job = self.createCopyJobForSPPH(
-            spph, source_archive, target_archive, requester=requester,
-            auto_approve=True)
-        self.runJob(job)
-        self.assertEqual(JobStatus.COMPLETED, job.status)
-        new_publication = target_archive.getPublishedSources(
-            name=spr.name, version=spr.version, exact_match=True).one()
-        self.assertEqual(target_archive, new_publication.archive)
+        self.assertCanAutoApprove(True, ["main"])
 
     def test_auto_approve_non_queue_admin(self):
         # The auto_approve flag is ignored for people without queue admin
         # permissions.
-        (target_archive, source_archive, requester,
-         spph, spr) = self.createAutoApproveEnvironment(True, [])
-        job = self.createCopyJobForSPPH(
-            spph, source_archive, target_archive, requester=requester,
-            auto_approve=True)
-        self.runJob(job)
-        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        self.assertCannotAutoApprove(True, [])
 
     def test_auto_approve_pocket_queue_admin(self):
         # The auto_approve flag is honoured for people with pocket queue
         # admin permissions.
-        (target_archive, source_archive, requester,
-         spph, spr) = self.createAutoApproveEnvironment(True, [])
-        with person_logged_in(target_archive.owner):
-            target_archive.newPocketQueueAdmin(
-                requester, PackagePublishingPocket.RELEASE)
-        job = self.createCopyJobForSPPH(
-            spph, source_archive, target_archive, requester=requester,
-            auto_approve=True)
-        self.runJob(job)
-        self.assertEqual(JobStatus.COMPLETED, job.status)
-        new_publication = target_archive.getPublishedSources(
-            name=spr.name, version=spr.version, exact_match=True).one()
-        self.assertEqual(target_archive, new_publication.archive)
+        self.assertCanAutoApprove(True, [], pocket_admin=True)
 
     def test_auto_approve_new(self):
         # The auto_approve flag causes copies to bypass the NEW queue.
-        (target_archive, source_archive, requester,
-         spph, spr) = self.createAutoApproveEnvironment(False, ["universe"])
+        spph, source, target, requester = self.createAutoApproveEnvironment(
+            False, ["universe"])
 
         # Without auto_approve, this job would be suspended and the upload
         # moved to the NEW queue.
         job = self.createCopyJobForSPPH(
-            spph, source_archive, target_archive, requester=requester)
+            spph, source, target, requester=requester)
         self.runJob(job)
         self.assertEqual(JobStatus.SUSPENDED, job.status)
         switch_dbuser("launchpad_main")
@@ -1025,41 +1023,23 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # With auto_approve, the job completes immediately.
         job = self.createCopyJobForSPPH(
-            spph, source_archive, target_archive, requester=requester,
-            auto_approve=True)
+            spph, source, target, requester=requester, auto_approve=True)
         self.runJob(job)
         self.assertEqual(JobStatus.COMPLETED, job.status)
-        new_publication = target_archive.getPublishedSources(
+        spr = spph.sourcepackagerelease
+        new_publication = target.getPublishedSources(
             name=spr.name, version=spr.version, exact_match=True).one()
-        self.assertEqual(target_archive, new_publication.archive)
+        self.assertEqual(target, new_publication.archive)
 
     def test_auto_approve_new_non_queue_admin(self):
         # For NEW packages, the auto_approve flag is ignored for people
         # without queue admin permissions.
-        (target_archive, source_archive, requester,
-         spph, spr) = self.createAutoApproveEnvironment(False, [])
-        job = self.createCopyJobForSPPH(
-            spph, source_archive, target_archive, requester=requester,
-            auto_approve=True)
-        self.runJob(job)
-        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        self.assertCannotAutoApprove(False, [])
 
     def test_auto_approve_new_pocket_queue_admin(self):
         # For NEW packages, the auto_approve flag is honoured for people
         # with pocket queue admin permissions.
-        (target_archive, source_archive, requester,
-         spph, spr) = self.createAutoApproveEnvironment(False, [])
-        with person_logged_in(target_archive.owner):
-            target_archive.newPocketQueueAdmin(
-                requester, PackagePublishingPocket.RELEASE)
-        job = self.createCopyJobForSPPH(
-            spph, source_archive, target_archive, requester=requester,
-            auto_approve=True)
-        self.runJob(job)
-        self.assertEqual(JobStatus.COMPLETED, job.status)
-        new_publication = target_archive.getPublishedSources(
-            name=spr.name, version=spr.version, exact_match=True).one()
-        self.assertEqual(target_archive, new_publication.archive)
+        self.assertCanAutoApprove(False, [], pocket_admin=True)
 
     def test_copying_after_job_released(self):
         # The first pass of the job may have created a PackageUpload and
