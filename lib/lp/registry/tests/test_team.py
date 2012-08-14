@@ -16,8 +16,8 @@ from lp.registry.enums import (
     InformationType,
     PersonTransferJobType,
     PersonVisibility,
-    TeamMembershipRenewalPolicy,
     TeamMembershipPolicy,
+    TeamMembershipRenewalPolicy,
     )
 from lp.registry.errors import (
     JoinNotAllowed,

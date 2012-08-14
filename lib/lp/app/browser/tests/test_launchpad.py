@@ -24,9 +24,7 @@ from lp.registry.enums import (
     InformationType,
     PersonVisibility,
     )
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import (

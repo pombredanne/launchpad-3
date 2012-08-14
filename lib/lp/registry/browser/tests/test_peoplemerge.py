@@ -10,9 +10,7 @@ from lp.registry.enums import (
     InformationType,
     TeamMembershipPolicy,
     )
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.testing import (
     login_celebrity,

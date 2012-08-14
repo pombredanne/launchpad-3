@@ -32,8 +32,8 @@ from lp.registry.enums import (
     InformationType,
     )
 from lp.registry.errors import (
-    NoSuchDistroSeries,
     InclusiveTeamLinkageError,
+    NoSuchDistroSeries,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
@@ -41,9 +41,7 @@ from lp.registry.interfaces.distribution import (
     IDistributionSet,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin
 from lp.services.propertycache import get_property_cache
