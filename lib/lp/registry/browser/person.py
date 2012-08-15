@@ -258,7 +258,6 @@ from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
     )
 from lp.services.webapp.login import (
-    isFreshLogin,
     logoutPerson,
     require_fresh_login,
     )
