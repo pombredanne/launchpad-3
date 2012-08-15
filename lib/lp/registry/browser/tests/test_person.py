@@ -61,9 +61,11 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
+    celebrity_logged_in,
     login,
     login_celebrity,
     login_person,
+    monkey_patch,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -165,6 +167,42 @@ class TestPersonIndexView(TestCaseWithFactory):
         view = create_initialized_view(person, '+index')
         self.assertIs(False, person.is_probationary)
         self.assertIs(True, view.description_widget.linkify_text)
+
+    @staticmethod
+    def get_markup(view, person):
+        def fake_method():
+            return canonical_url(person)
+        with monkey_patch(view, _getURL=fake_method):
+            markup = view.render()
+        return markup
+
+    def test_is_probationary_or_invalid_user_with_non_probationary(self):
+        team = self.factory.makeTeam()
+        view = create_initialized_view(
+            team, '+index', principal=team.teamowner)
+        self.assertIs(False, view.is_probationary_or_invalid_user)
+        markup = view.render()
+        self.assertFalse(
+            'name="robots" content="noindex,nofollow"' in markup)
+
+    def test_is_probationary_or_invalid_user_with_probationary(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index', principal=person)
+        self.assertIs(True, view.is_probationary_or_invalid_user)
+        markup = self.get_markup(view, person)
+        self.assertTrue(
+            'name="robots" content="noindex,nofollow"' in markup)
+
+    def test_is_probationary_or_invalid_user_with_invalid(self):
+        person = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            person.account.status = AccountStatus.NOACCOUNT
+        observer = self.factory.makePerson()
+        view = create_initialized_view(person, '+index', principal=observer)
+        self.assertIs(True, view.is_probationary_or_invalid_user)
+        markup = self.get_markup(view, person)
+        self.assertTrue(
+            'name="robots" content="noindex,nofollow"' in markup)
 
     def test_person_view_page_description(self):
         person_description = self.factory.getUniqueString()
