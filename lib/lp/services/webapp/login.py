@@ -52,6 +52,7 @@ from lp.services.identity.interfaces.account import AccountSuspendedError
 from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.propertycache import cachedproperty
 from lp.services.timeline.requesttimeline import get_request_timeline
+from lp.services.webapp import canonical_url
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.error import SystemErrorView
 from lp.services.webapp.interfaces import (
@@ -458,6 +459,14 @@ def isFreshLogin(request):
         now = datetime.utcnow()
         return logintime > now - timedelta(seconds=120)
     return False
+
+
+def require_fresh_login(request, context, view_name):
+    if not isFreshLogin(request):
+        reauth_query = '+login?reauth=1'
+        base_url = canonical_url(context, view_name=view_name)
+        login_url = '%s/%s' % (base_url, reauth_query)
+        request.response.redirect(login_url)
 
 
 def logInPrincipal(request, principal, email, when=None):
