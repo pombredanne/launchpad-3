@@ -462,6 +462,7 @@ def isFreshLogin(request):
 
 
 def require_fresh_login(request, context, view_name):
+    """Redirect request to login if the request is not recently logged in."""
     if not isFreshLogin(request):
         reauth_query = '+login?reauth=1'
         base_url = canonical_url(context, view_name=view_name)
