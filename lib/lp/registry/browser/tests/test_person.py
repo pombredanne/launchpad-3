@@ -152,6 +152,20 @@ class TestPersonIndexView(TestCaseWithFactory):
         self.assertEqual(
             'description', view.description_widget.exported_field.__name__)
 
+    def test_description_widget_is_probationary(self):
+        # Description text is not linkified when the user is probationary.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index')
+        self.assertIs(True, person.is_probationary)
+        self.assertIs(False, view.description_widget.linkify_text)
+
+    def test_description_widget_non_probationary(self):
+        # Description text is linkified when the user is non-probationary.
+        person = self.factory.makeTeam()
+        view = create_initialized_view(person, '+index')
+        self.assertIs(False, person.is_probationary)
+        self.assertIs(True, view.description_widget.linkify_text)
+
     def test_person_view_page_description(self):
         person_description = self.factory.getUniqueString()
         person = self.factory.makePerson(description=person_description)
