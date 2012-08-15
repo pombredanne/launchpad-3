@@ -3,9 +3,9 @@
 
 __metaclass__ = type
 
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
     )
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -29,10 +29,10 @@ class TestTeamActivatePPA(TestCaseWithFactory):
             return view()
 
     def test_closed_teams_has_link(self):
-        # Closed teams (a subscription policy of Moderated or Restricted)
+        # Exclusive teams (a membership policy of Moderated or Restricted)
         # have a link to create a new PPA.
-        for policy in CLOSED_TEAM_POLICY:
-            team = self.factory.makeTeam(subscription_policy=policy)
+        for policy in EXCLUSIVE_TEAM_POLICY:
+            team = self.factory.makeTeam(membership_policy=policy)
             html = self.create_view(team)
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
             self.assertEqual(
@@ -42,10 +42,10 @@ class TestTeamActivatePPA(TestCaseWithFactory):
             self.assertIs(None, message)
 
     def test_open_team_does_not_have_link(self):
-        # Open teams (a subscription policy of Open or Delegated) do not
+        # Open teams (a membership policy of Open or Delegated) do not
         # have a link to create a new PPA.
-        for policy in OPEN_TEAM_POLICY:
-            team = self.factory.makeTeam(subscription_policy=policy)
+        for policy in INCLUSIVE_TEAM_POLICY:
+            team = self.factory.makeTeam(membership_policy=policy)
             html = self.create_view(team)
             create_ppa = first_tag_by_class(html, 'menu-link-activate_ppa')
             self.assertIs(None, create_ppa)

@@ -82,9 +82,11 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.enums import (
+    PersonVisibility,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus

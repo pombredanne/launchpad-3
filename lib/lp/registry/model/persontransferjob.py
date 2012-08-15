@@ -27,12 +27,14 @@ from zope.interface import (
     )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import PersonTransferJobType
+from lp.registry.enums import (
+    PersonTransferJobType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,
@@ -312,7 +314,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         # teams are unrestricted, notifications on join/ leave do not help the
         # admins.
         if (len(admin_emails) != 0 and
-            self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN):
+            self.team.membership_policy != TeamMembershipPolicy.OPEN):
             admin_template = get_email_template(
                 "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:

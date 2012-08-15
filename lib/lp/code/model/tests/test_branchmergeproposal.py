@@ -62,10 +62,12 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
@@ -172,12 +174,12 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
             self.assertEqual([owner], subscriptions)
 
     def test_closed_reviewer_with_private_branch(self):
-        """If the reviewer is a closed team, they are subscribed."""
+        """If the reviewer is a exclusive team, they are subscribed."""
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         trunk = self.factory.makeBranch(product=product, owner=owner)
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA, owner=owner,
             product=product)
@@ -1570,7 +1572,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
 
     def test_nominate_team_grants_visibility(self):
         reviewer = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self._test_nominate_grants_visibility(reviewer)
 
     def test_comment_with_vote_creates_reference(self):

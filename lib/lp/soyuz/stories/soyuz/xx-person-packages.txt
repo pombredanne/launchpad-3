@@ -100,7 +100,6 @@ to the page that lists maintained packages in batches.
     ...
 
 The Maintained packages page only has data if the person or team has
-    Subscription policy:
 maintained packages to show. No-priv does not maintain packages.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv")

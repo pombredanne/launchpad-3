@@ -18,11 +18,11 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
-    'OpenTeamLinkageError',
+    'InclusiveTeamLinkageError',
     'PPACreationError',
     'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
-    'TeamSubscriptionPolicyError',
+    'TeamMembershipPolicyError',
     'UserCannotChangeMembershipSilently',
     'UserCannotSubscribePerson',
     ]
@@ -42,7 +42,7 @@ class PrivatePersonLinkageError(ValueError):
 
 
 @error_status(httplib.FORBIDDEN)
-class OpenTeamLinkageError(ValueError):
+class InclusiveTeamLinkageError(ValueError):
     """An attempt was made to link an open team to something."""
 
 
@@ -155,15 +155,15 @@ class TeamMembershipTransitionError(ValueError):
 
 
 @error_status(httplib.BAD_REQUEST)
-class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
-    """The team cannot have the specified TeamSubscriptionPolicy.
+class TeamMembershipPolicyError(ConstraintNotSatisfied):
+    """The team cannot have the specified TeamMembershipPolicy.
 
     The error can be raised because a super team or member team prevents
     this team from setting a specific policy. The error can also be
     raised if the team has an active PPA.
     """
 
-    _default_message = "Team Subscription Policy Error"
+    _default_message = "Team Membership Policy Error"
 
     def __init__(self, message=None):
         if message is None:

@@ -15,7 +15,7 @@ First of all, create some teams:
     >>> from datetime import datetime, timedelta
     >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipRenewalPolicy,
-    ...     TeamSubscriptionPolicy,
+    ...     TeamMembershipPolicy,
     ...     )
     >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
@@ -31,22 +31,22 @@ XXX: This doctest needs a lot of cleanups!
     >>> reviewer = nopriv
     >>> t1 = personset.newTeam(
     ...     jblack, 't1', 't1',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t2 = personset.newTeam(
     ...     nopriv, 't2', 't2',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t3 = personset.newTeam(
     ...     jdub, 't3', 't3',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> t4 = personset.newTeam(
     ...     nopriv, 't4', 't4',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t5 = personset.newTeam(
     ...     nopriv, 't5', 't5',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t6 = personset.newTeam(
     ...     jdub, 't6', 't6',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
 
     # Make sure the teams have predictable (and different) creation dates as
     # some of our tests depend on that.
@@ -85,12 +85,12 @@ member of that team --somebody has to approve his membership first:
     >>> [m.displayname for m in t3.allmembers]
     [u'Guilherme Salgado', u'Jeff Waugh']
 
-The join() method is not allowed for teams whose subscription policy is
+The join() method is not allowed for teams whose membership policy is
 RESTRICTED. And it'll be a no-op in case the user has already joined the
 given team.
 
     >>> launchpad = personset.getByName('launchpad')
-    >>> launchpad.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED
+    >>> launchpad.membership_policy == TeamMembershipPolicy.RESTRICTED
     True
     >>> ignored = login_person(salgado)
     >>> salgado.join(launchpad)
@@ -114,13 +114,13 @@ requester to the join() method.
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> ignored = login_person(ubuntu_team.teamowner)
     >>> ubuntu_team.join(t3, ubuntu_team.teamowner)
-    >>> t3.subscriptionpolicy
-    <DBItem TeamSubscriptionPolicy.MODERATED...
+    >>> t3.membership_policy
+    <DBItem TeamMembershipPolicy.MODERATED...
     >>> ubuntu_team in t3.proposedmembers
     True
 
-    >>> t2.subscriptionpolicy
-    <DBItem TeamSubscriptionPolicy.OPEN...
+    >>> t2.membership_policy
+    <DBItem TeamMembershipPolicy.OPEN...
     >>> ubuntu_team.join(t2, ubuntu_team.teamowner)
     >>> ubuntu_team in t2.activemembers
     True

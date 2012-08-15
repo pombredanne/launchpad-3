@@ -36,7 +36,7 @@ from lp.code.browser.sourcepackagerecipebuild import (
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -712,7 +712,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.user = self.factory.makePerson(name='eric')
         team = self.factory.makeTeam(
             name='vikings', members=[self.user],
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         with person_logged_in(team.teamowner):
             team.setMembershipData(
                 self.user, TeamMembershipStatus.ADMIN, team.teamowner)

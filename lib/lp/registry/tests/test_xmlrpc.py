@@ -10,12 +10,14 @@ import xmlrpclib
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.enums import (
+    PersonVisibility,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     ISoftwareCenterAgentAPI,
     ISoftwareCenterAgentApplication,
     PersonCreationRationale,
-    PersonVisibility,
     )
 from lp.registry.xmlrpc.softwarecenteragent import SoftwareCenterAgentAPI
 from lp.services.identity.interfaces.account import AccountStatus

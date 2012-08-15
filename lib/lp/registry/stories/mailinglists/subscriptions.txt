@@ -505,7 +505,7 @@ page.
 
     # We only need to check this once.
     >>> get_feedback_messages(carlos_browser.contents)
-    [u'Your auto-subscription policy has been updated.']
+    [u'Your auto-subscribe policy has been updated.']
 
     >>> set_autosubscribe_policy_and_submit('NEVER', carlos_browser)
     (*) Never subscribe to mailing lists
