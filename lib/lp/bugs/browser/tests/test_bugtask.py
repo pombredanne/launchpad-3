@@ -301,6 +301,25 @@ class TestBugTaskView(TestCaseWithFactory):
         view = create_initialized_view(bugtask, name="+index")
         self.assertEqual('Private', view.information_type)
 
+    def test_duplicate_message_for_inactive_dupes(self):
+        # A duplicate on an inactive project is not linked to.
+        inactive_project = self.factory.makeProduct()
+        inactive_bug = self.factory.makeBug(target=inactive_project)   
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.markAsDuplicate(inactive_bug)
+        removeSecurityProxy(inactive_project).active = False
+        browser = self.getUserBrowser(canonical_url(bug))
+        contents = browser.contents
+        self.assertIn(
+            "This bug report is a duplicate of a bug on an inactive project.",
+            contents)
+
+        # Confirm there is no link to the duplicate bug.
+        soup = BeautifulSoup(contents)
+        tag = soup.find('a', attrs={'id': "duplicate-of"})
+        self.assertIsNone(tag)
+
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
