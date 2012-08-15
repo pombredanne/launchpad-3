@@ -21,6 +21,8 @@ can see them
 Mark has a registered email address, and he has chosen to disclose it to
 anyone in Launchpad..
 
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
     >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
