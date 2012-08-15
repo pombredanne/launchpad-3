@@ -651,33 +651,6 @@ class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
             self.view.field_names)
 
 
-class TestTeamCreationView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestTeamCreationView, self).setUp()
-        person = self.factory.makePerson()
-        login_person(person)
-
-    def test_team_creation_good_data(self):
-        form = {
-            'field.actions.create': 'Create Team',
-            'field.displayname': 'liberty-land',
-            'field.name': 'libertyland',
-            'field.renewal_policy': 'NONE',
-            'field.renewal_policy-empty-marker': 1,
-            'field.membership_policy': 'RESTRICTED',
-            'field.membership_policy-empty-marker': 1,
-            }
-        person_set = getUtility(IPersonSet)
-        create_initialized_view(
-            person_set, '+newteam', form=form)
-        team = person_set.getByName('libertyland')
-        self.assertTrue(team is not None)
-        self.assertEqual('libertyland', team.name)
-
-
 class TestPersonParticipationView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

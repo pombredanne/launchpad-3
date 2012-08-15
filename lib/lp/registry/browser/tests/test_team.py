@@ -478,8 +478,26 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
 
 class TestTeamAddView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
     view_name = '+newteam'
+
+    def test_team_creation_good_data(self):
+        person = self.factory.makePerson()
+        form = {
+            'field.actions.create': 'Create Team',
+            'field.displayname': 'liberty-land',
+            'field.name': 'libertyland',
+            'field.renewal_policy': 'NONE',
+            'field.renewal_policy-empty-marker': 1,
+            'field.membership_policy': 'RESTRICTED',
+            'field.membership_policy-empty-marker': 1,
+            }
+        login_person(person)
+        person_set = getUtility(IPersonSet)
+        create_initialized_view(person_set, self.view_name, form=form)
+        team = person_set.getByName('libertyland')
+        self.assertTrue(team is not None)
+        self.assertEqual('libertyland', team.name)
 
     def test_random_does_not_see_visibility_field(self):
         personset = getUtility(IPersonSet)
@@ -561,7 +579,7 @@ class TestTeamAddView(TestCaseWithFactory):
 
 class TestSimpleTeamAddView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
     view_name = '+simplenewteam'
 
     def test_create_team(self):

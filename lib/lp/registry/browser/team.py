@@ -1005,7 +1005,6 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
-    custom_widget('description', TextAreaWidget, height=10, width=30)
     custom_widget('defaultrenewalperiod', IntWidget,
         widget_class='field subordinate')
 
@@ -1022,14 +1021,13 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
-        description = data.get('description')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         membership_policy = data.get('membership_policy')
         teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
-            teamowner, name, displayname, description,
-            membership_policy, defaultmembershipperiod, defaultrenewalperiod)
+            teamowner, name, displayname, None, membership_policy,
+            defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
             team.transitionVisibility(visibility, self.user)
