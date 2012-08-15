@@ -243,20 +243,7 @@ def main(options):
 
     con = connect()
 
-    if options.cluster:
-        nodes = replication.helpers.get_nodes(con, 1)
-        if nodes:
-            # If we have a replicated environment, reset permissions on all
-            # Nodes.
-            con.close()
-            for node in nodes:
-                log.info("Resetting permissions on %s (%s)" % (
-                    node.nickname, node.connection_string))
-                reset_permissions(
-                    psycopg2.connect(node.connection_string), config, options)
-            return 0
-        log.warning("--cluster requested, but not a Slony-I cluster.")
-    log.info("Resetting permissions on single database")
+    log.info("Resetting permissions.")
     reset_permissions(con, config, options)
     return 0
 
@@ -676,10 +663,6 @@ if __name__ == '__main__':
     parser.add_option(
         "-o", "--owner", dest="owner", default="postgres",
         help="Owner of PostgreSQL objects")
-    parser.add_option(
-        "-c", "--cluster", dest="cluster", default=False,
-        action="store_true",
-        help="Rebuild permissions on all nodes in the Slony-I cluster.")
     db_options(parser)
     logger_options(parser)
 
