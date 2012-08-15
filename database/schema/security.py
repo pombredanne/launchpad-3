@@ -23,7 +23,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-import replication.helpers
 
 # The 'read' group does not get given select permission on the following
 # tables. This is to stop the ro user being given access to secrurity
