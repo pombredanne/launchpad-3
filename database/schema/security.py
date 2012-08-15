@@ -14,8 +14,6 @@ from optparse import OptionParser
 import os
 import sys
 
-import psycopg2
-
 from fti import quote_identifier
 from lp.services.database.sqlbase import connect
 from lp.services.scripts import (
