@@ -57,12 +57,14 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.enums import (
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
-    OPEN_TEAM_POLICY,
-    PersonVisibility,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -343,7 +345,7 @@ class Archive(SQLBase):
     def private(self):
         return self._private
 
-    @private.setter
+    @private.setter  # pyflakes:ignore
     def private(self, private):
         self._private = private
         if private:
@@ -2135,7 +2137,7 @@ def validate_ppa(owner, proposed_name, private=False):
     elif owner.private:
         return 'Private teams may not have public archives.'
     if owner.is_team and (
-        owner.subscriptionpolicy in OPEN_TEAM_POLICY):
+        owner.membership_policy in INCLUSIVE_TEAM_POLICY):
         return "Open teams cannot have PPAs."
     if proposed_name is not None and proposed_name == ubuntu.name:
         return (

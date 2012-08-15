@@ -55,16 +55,16 @@ Mailing lists are not active when they are first registered.
     >>> carlos = personset.getByName('carlos')
     >>> from lp.registry.interfaces.mailinglist import (
     ...     IMailingListSet, MailingListStatus)
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> team_one = personset.newTeam(
     ...     ddaa, 'bass-players', 'Bass Players',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> team_two = personset.newTeam(
     ...     ddaa, 'guitar-players', 'Guitar Players',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> team_three = personset.newTeam(
     ...     ddaa, 'drummers', 'Drummers',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> listset = getUtility(IMailingListSet)
     >>> list_one = listset.new(team_one)
     >>> list_two = listset.new(team_two)
@@ -179,7 +179,7 @@ Non-ACTIVE mailing lists are also not contained in the vocabulary.
 
     >>> team_four = personset.newTeam(
     ...     ddaa, 'flautists', 'Flautists',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> list_four = listset.new(team_four)
     >>> list_four in list_vocabulary
     False
@@ -995,7 +995,7 @@ created earlier with an icr nickname of 'team':
 ValidPillarOwner
 ..........
 
-Valid persons and closed teams are valid pillar owners.
+Valid persons and exclusive teams are valid pillar owners.
 
     >>> login(ANONYMOUS)
     >>> vocab = get_naked_vocab(None, "ValidPillarOwner")

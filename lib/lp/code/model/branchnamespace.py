@@ -48,6 +48,7 @@ from lp.code.model.branch import Branch
 from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
+    PersonVisibility,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
@@ -62,7 +63,6 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
