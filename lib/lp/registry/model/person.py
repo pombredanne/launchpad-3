@@ -155,6 +155,7 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
+    TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
     )
 from lp.registry.errors import (
@@ -193,6 +194,7 @@ from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonCreationRationale,
     TeamEmailAddressError,
+    validate_membership_policy,
     validate_public_person,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet

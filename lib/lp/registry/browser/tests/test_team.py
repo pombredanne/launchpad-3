@@ -21,6 +21,7 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     InformationType,
     PersonVisibility,
+    TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
