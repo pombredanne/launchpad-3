@@ -29,9 +29,7 @@ from lp.registry.enums import (
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus

@@ -15,9 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enums import(
-    PersonVisibility,
-    )
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.mailinglist import (
     IMailingListAPIView,
     IMailingListSet,

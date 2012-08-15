@@ -22,12 +22,9 @@ from lp.registry.enums import (
     InformationType,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
-    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,

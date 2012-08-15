@@ -22,18 +22,14 @@ import xmlrpclib
 
 from zope.component import getUtility
 
+from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     IMessageApprovalSet,
     MailingListStatus,
     PostedMessageStatus,
     )
-from lp.registry.enums import (
-    TeamMembershipPolicy,
-    )
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates

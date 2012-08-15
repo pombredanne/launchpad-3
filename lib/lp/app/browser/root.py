@@ -39,11 +39,11 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.timeout import urlfetch

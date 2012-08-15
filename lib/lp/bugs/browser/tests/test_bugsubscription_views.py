@@ -24,9 +24,7 @@ from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
     )
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
