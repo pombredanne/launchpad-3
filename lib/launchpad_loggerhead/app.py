@@ -289,7 +289,8 @@ class RootApp:
                 bzr_branch.repository.revisions.clear_cache()
                 bzr_branch.repository.signatures.clear_cache()
                 bzr_branch.repository.inventories.clear_cache()
-                bzr_branch.repository.chk_bytes.clear_cache()
+                if bzr_branch.repository.chk_bytes is not None:
+                    bzr_branch.repository.chk_bytes.clear_cache()
                 bzr_branch.repository.texts.clear_cache()
                 bzr_branch.unlock()
         finally:
