@@ -2432,6 +2432,12 @@ class PersonEditSSHKeysView(LaunchpadView):
     error_message = None
 
     def initialize(self):
+        if not isFreshLogin(self.request):
+            reauth_query = '+login?reauth=1'
+            base_url = canonical_url(self.context, view_name='+editsshkeys')
+            login_url = '%s/%s' % (base_url, reauth_query)
+            self.request.response.redirect(login_url)
+
         if self.request.method != "POST":
             # Nothing to do
             return
