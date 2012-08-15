@@ -24,8 +24,7 @@
       tal:condition="duplicateof"
     >
       <li class="bug-duplicate-details"><a
-        tal:define="link context_menu/markduplicate;
-          dupe_target duplicateof/default_bugtask/target"
+        tal:define="link context_menu/markduplicate"
         tal:condition="python: link.enabled"
         id="change-duplicate-bug"
         title="Edit or remove linked duplicate bug"
@@ -33,7 +32,9 @@
         tal:attributes="href link/url"></a>
       <span id="mark-duplicate-text">Duplicate of
         <tal:bug_link
-          define="dupe_active python:getattr(dupe_target, 'active', True)">
+        define="dupe_active python:
+          getattr(
+            context.duplicateof.default_bugtask.target, 'active', True)">
 
           <tal:active condition="dupe_active">
             <a
