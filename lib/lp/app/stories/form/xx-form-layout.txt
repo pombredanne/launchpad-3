@@ -121,7 +121,6 @@ just the form content to be rendered for any URL corresponding to an
 LPFormView:
 
     >>> admin_browser.open('http://launchpad.dev/evolution/+edit/++form++')
-    >>> # Note: not the main content, but the whole page.
     >>> print admin_browser.contents
     <div...
     <table class="form" id="launchpad-form-widgets">
