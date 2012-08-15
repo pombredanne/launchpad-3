@@ -57,7 +57,7 @@ from lp.xmlrpc import faults
 
 robots_txt = '''\
 User-agent: *
-Disallow: /
+Allow: /
 '''
 
 robots_app = DataApp(robots_txt, content_type='text/plain')
@@ -286,6 +286,11 @@ class RootApp:
                     served_url=None, private=private)
                 return view.app(environ, start_response)
             finally:
+                bzr_branch.repository.revisions.clear_cache()
+                bzr_branch.repository.signatures.clear_cache()
+                bzr_branch.repository.inventories.clear_cache()
+                bzr_branch.repository.chk_bytes.clear_cache()
+                bzr_branch.repository.texts.clear_cache()
                 bzr_branch.unlock()
         finally:
             lp_server.stop_server()
