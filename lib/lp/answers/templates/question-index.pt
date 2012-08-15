@@ -24,7 +24,7 @@
             var first_comment = Y.one('.boardComment');
             if (first_comment !== null) {
               var cl = new Y.lp.app.comment.CommentList({
-                  comment_list_container: first_comment.get('parentNode') 
+                  comment_list_container: first_comment.get('parentNode')
               });
             cl.render();
             }
