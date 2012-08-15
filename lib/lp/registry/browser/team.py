@@ -1623,7 +1623,6 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
     links = [
         'edit',
         'branding',
-        'common_edithomepage',
         'members',
         'mugshots',
         'add_member',
@@ -2157,8 +2156,7 @@ class TeamEditMenu(TeamNavigationMenuBase):
     usedfor = ITeamEditMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
-             'editemail')
+    links = ('branding', 'editlanguages', 'reassign', 'editemail')
 
 
 class TeamMugshotView(LaunchpadView):
