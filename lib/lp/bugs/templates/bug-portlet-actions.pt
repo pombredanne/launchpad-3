@@ -46,7 +46,7 @@
             >bug #42</a>
             <span
               tal:condition="not:duplicateof/required:launchpad.View"
-              tal:replace="string:a private bug" />     
+              tal:replace="string:a private bug" />
           </tal:active>
 
           <tal:inactive condition="not: dupe_active">

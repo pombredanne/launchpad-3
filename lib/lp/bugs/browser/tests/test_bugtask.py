@@ -304,7 +304,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_duplicate_message_for_inactive_dupes(self):
         # A duplicate on an inactive project is not linked to.
         inactive_project = self.factory.makeProduct()
-        inactive_bug = self.factory.makeBug(target=inactive_project)   
+        inactive_bug = self.factory.makeBug(target=inactive_project)
         bug = self.factory.makeBug()
         with person_logged_in(bug.owner):
             bug.markAsDuplicate(inactive_bug)

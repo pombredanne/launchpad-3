@@ -123,6 +123,7 @@
           <span class="bug-duplicate-details ellipsis single-line wide">
             <span class="sprite info"></span>
             This bug report is a duplicate of a bug on an inactive project.
+          </span>
           </tal:inactive>
 
           <a id="change-duplicate-bug-bugtasks"
