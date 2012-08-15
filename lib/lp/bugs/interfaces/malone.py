@@ -77,8 +77,8 @@ class IMaloneApplication(ILaunchpadApplication):
                    "this bug."))
     @export_factory_operation(
         IBug, ['title', 'description', 'tags', 'security_related', 'private'])
-    def createBug(owner, title, description, target, security_related=False,
-                  private=False, tags=None):
+    def createBug(owner, title, description, target, security_related=None,
+                  private=None, tags=None):
         """Create a bug (with an appropriate bugtask) and return it.
 
         :param target: The Product, Distribution or DistributionSourcePackage

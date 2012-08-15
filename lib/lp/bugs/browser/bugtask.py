@@ -187,29 +187,31 @@ from lp.bugs.interfaces.bugnomination import (
     )
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
-    BugTagsSearchCombinator,
     BugTaskImportance,
     BugTaskStatus,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     CannotDeleteBugtask,
-    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
-    IBugTaskSearch,
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
-    IFrontPageBugTaskSearch,
     IllegalTarget,
     INominationsReviewTableBatchNavigator,
-    IPersonBugTaskSearch,
     IRemoveQuestionFromBugTaskForm,
-    IUpstreamProductBugTaskSearch,
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTagsSearchCombinator,
+    BugTaskSearchParams,
+    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
+    IBugTaskSearch,
+    IFrontPageBugTaskSearch,
+    IPersonBugTaskSearch,
+    IUpstreamProductBugTaskSearch,
+    )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IHasExternalBugTracker,
@@ -731,7 +733,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, IBug['title'], "Edit this summary", 'h1',
-            edit_url=canonical_url(self.context, view_name='+edit'))
+            edit_url=canonical_url(self.context, view_name='+edit'),
+            max_width='95%', truncate_lines=2)
 
         # XXX 2010-10-05 gmb bug=655597:
         # This line of code keeps the view's query count down,

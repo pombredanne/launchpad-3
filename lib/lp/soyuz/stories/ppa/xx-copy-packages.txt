@@ -44,7 +44,7 @@ access 'Copy package' page from any PPA.
     Unauthorized: ... 'launchpad.AnyPerson')
 
 James is a valid user, however he doesn't have access to any PPA, he
-is allowed to access the copy-package interface in Celso's PPA, but
+is allowed to access the copy-packages interface in Celso's PPA, but
 the form is not rendered, instead he is advised to activate his own
 PPA in order to be able to copy packages.
 
@@ -272,7 +272,8 @@ context.
     >>> jblack_extra_browser.open(expander_url)
     >>> print extract_text(jblack_extra_browser.contents)
     Publishing details
-      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
+      Copied from ubuntu hoary in Primary Archive for Ubuntu Linux by James
+      Blackwell
     Changelog
       pmount (0.1-1) hoary; urgency=low
       * Fix description (Malone #1)
@@ -581,7 +582,7 @@ really deleted.
 In the minute after James had deleted the package, he discovered that
 'pmount' might work correctly in warty.
 
-No problem, he goes back to the copy-package interface in his PPA and
+No problem, he goes back to the copy-packages interface in his PPA and
 still able to copy the deleted source to the warty series.
 
 By default the copy view presents only PUBLISHED or PENDING packages.
@@ -704,7 +705,7 @@ packages, thus he selects both.
     >>> jblack_browser.getControl(name='field.selected_sources').value = (
     ...     [iceweasel_pub_id, pmount_pub_id])
 
-Now that James have access to more than one PPA, the copy-package form
+Now that James have access to more than one PPA, the copy-packages form
 allows him to select one of them.
 
     >>> print jblack_browser.getControl(
@@ -891,7 +892,7 @@ even the 'warty' source, which was not denied.
 
     >>> print_ppa_packages(jblack_browser.contents)
 
-Not yet happy, James goes back to his PPA to check if the copy-package
+Not yet happy, James goes back to his PPA to check if the copy-packages
 interface can be used to resurrect deleted packages.
 
     >>> jblack_browser.open(

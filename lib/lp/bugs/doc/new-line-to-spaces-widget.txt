@@ -5,7 +5,7 @@ This custom widget is used to replace new line characters to spaces.
 
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
-    >>> from lp.bugs.interfaces.bugtask import IBugTaskSearch
+    >>> from lp.bugs.interfaces.bugtasksearch import IBugTaskSearch
 
 We pass a string with some new line characters to the widget
 

@@ -19,7 +19,6 @@ Regular users can create teams.
     >>> browser.getControl(
     ...     'Team Description').value = 'my own team description'
     >>> browser.getControl('Subscription period').value = '365'
-    >>> browser.getControl('Renewal period').value = '365'
     >>> browser.getControl('Open Team').selected = True
     >>> browser.getControl('Create').click()
 
@@ -36,60 +35,6 @@ The owner of a team is always added as an administrator of his team.
     [u'name12']
 
 
-== As an administrator ==
-
-Administrators can create teams in much the same manner but they will
-also be given the ability to set the team's visibility
-
-    >>> admin_browser.open('http://launchpad.dev/people/')
-    >>> admin_browser.getLink('Register a team').click()
-
-    >>> admin_browser.url
-    'http://launchpad.dev/people/+newteam'
-
-    >>> admin_browser.title
-    'Register a new team in Launchpad'
-
-    >>> admin_browser.getControl(name='field.name').value = 'super-secret'
-    >>> admin_browser.getControl('Visibility').value = ['PRIVATE']
-    >>> admin_browser.getControl('Display Name').value = 'Shhhh'
-    >>> admin_browser.getControl(
-    ...     'Team Description').value = 'my own team description'
-    >>> admin_browser.getControl('Subscription period').value = '365'
-    >>> admin_browser.getControl('Renewal period').value = '365'
-    >>> admin_browser.getControl('Open Team').selected = True
-    >>> admin_browser.getControl(
-    ...     name='field.subscriptionpolicy').value = ['RESTRICTED']
-    >>> admin_browser.getControl('Create').click()
-
-    >>> admin_browser.url
-    'http://launchpad.dev/~super-secret'
-
-    >>> admin_browser.title
-    'Shhhh in Launchpad'
-
-A team with Private visibility must be Restricted.
-
-    >>> admin_browser.open('http://launchpad.dev/people/')
-    >>> admin_browser.getLink('Register a team').click()
-
-    >>> admin_browser.getControl(name='field.name').value = (
-    ...     'super-duper-secret')
-    >>> admin_browser.getControl('Display Name').value = 'Shhhh'
-    >>> admin_browser.getControl(
-    ...     'Team Description').value = 'my own team description'
-    >>> admin_browser.getControl('Subscription period').value = '365'
-    >>> admin_browser.getControl('Renewal period').value = '365'
-    >>> admin_browser.getControl('Open Team').selected = True
-    >>> admin_browser.getControl(
-    ...     name='field.subscriptionpolicy').value = ['OPEN']
-    >>> admin_browser.getControl('Visibility').value = ['PRIVATE']
-    >>> admin_browser.getControl('Create').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    There is 1 error.
-    Private teams must have a Restricted subscription policy.
-
 = Joining a team =
 
 Karl will join the newly created team.
@@ -98,7 +43,7 @@ Karl will join the newly created team.
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Open Team
 
     >>> browser.getLink('Join the team').click()
@@ -138,10 +83,10 @@ the team's home page.
 If this was a moderated team, the membership would not have been automatically
 approved, though.
 
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> from lp.registry.model.person import Person
     >>> myemail = Person.selectOneBy(name='myemail')
-    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+    >>> myemail.membership_policy = TeamMembershipPolicy.MODERATED
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
@@ -149,7 +94,7 @@ approved, though.
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Moderated Team
 
     >>> browser.getLink('Join the team').click()
@@ -183,7 +128,7 @@ the 'Cancel' button, going back to the team's page...
 
 If it was a restricted team, users wouldn't even see a link to join the team.
 
-    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+    >>> myemail.membership_policy = TeamMembershipPolicy.RESTRICTED
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
@@ -193,7 +138,7 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     'http://launchpad.dev/~myemail'
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Restricted Team
 
     >>> browser.getLink('Join the team')

@@ -123,7 +123,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         super(TestBugSubscriptionInfo, self).setUp()
         self.target = self.factory.makeProduct(
             bug_supervisor=self.factory.makePerson())
-        self.bug = self.factory.makeBug(product=self.target)
+        self.bug = self.factory.makeBug(target=self.target)
         # Unsubscribe the bug filer to make the tests more readable.
         with person_logged_in(self.bug.owner):
             self.bug.unsubscribe(self.bug.owner, self.bug.owner)
@@ -230,7 +230,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             [sub1, sub2], info.direct_subscriptions_at_all_levels)
 
     def _create_duplicate_subscription(self):
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
             duplicate_bug_subscription = (
@@ -273,22 +273,10 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertContentEqual(
             [duplicate_bug_subscription], found_subscriptions)
 
-    def test_duplicate_for_private_bug(self):
-        # The set of subscribers from duplicate bugs is always empty when the
-        # master bug is private.
-        duplicate_bug = self.factory.makeBug(product=self.target)
-        with person_logged_in(duplicate_bug.owner):
-            duplicate_bug.markAsDuplicate(self.bug)
-        with person_logged_in(self.bug.owner):
-            self.bug.setPrivate(True, self.bug.owner)
-        found_subscriptions = self.getInfo().duplicate_subscriptions
-        self.assertContentEqual([], found_subscriptions)
-        self.assertContentEqual([], found_subscriptions.subscribers)
-
     def test_duplicate_only(self):
         # The set of duplicate subscriptions where the subscriber has no other
         # subscriptions.
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
             duplicate_bug_subscription = (
@@ -430,33 +418,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         found_subscribers = self.getInfo().also_notified_subscribers
         self.assertContentEqual([], found_subscribers)
 
-    def test_also_notified_subscribers_for_private_bug(self):
-        # The set of also notified subscribers is always empty when the master
-        # bug is private.
-        assignee = self.factory.makePerson()
-        bugtask = self.bug.default_bugtask
-        with person_logged_in(bugtask.pillar.bug_supervisor):
-            bugtask.transitionToAssignee(assignee)
-        with person_logged_in(self.bug.owner):
-            self.bug.setPrivate(True, self.bug.owner)
-        found_subscribers = self.getInfo().also_notified_subscribers
-        self.assertContentEqual([], found_subscribers)
-
-    def test_indirect_subscribers(self):
-        # The set of indirect subscribers is the union of also notified
-        # subscribers and subscribers to duplicates.
-        assignee = self.factory.makePerson()
-        bugtask = self.bug.default_bugtask
-        with person_logged_in(bugtask.pillar.bug_supervisor):
-            bugtask.transitionToAssignee(assignee)
-        duplicate_bug = self.factory.makeBug(product=self.target)
-        with person_logged_in(duplicate_bug.owner):
-            duplicate_bug.markAsDuplicate(self.bug)
-        found_subscribers = self.getInfo().indirect_subscribers
-        self.assertContentEqual(
-            [assignee, duplicate_bug.owner],
-            found_subscribers)
-
 
 class TestBugSubscriptionInfoPermissions(TestCaseWithFactory):
 
@@ -489,7 +450,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
     def setUp(self):
         super(TestBugSubscriptionInfoQueries, self).setUp()
         self.target = self.factory.makeProduct()
-        self.bug = self.factory.makeBug(product=self.target)
+        self.bug = self.factory.makeBug(target=self.target)
         self.info = BugSubscriptionInfo(
             self.bug, BugNotificationLevel.LIFECYCLE)
         # Get the Storm cache into a known state.
@@ -566,7 +527,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             "direct_subscriptions_at_all_levels")
 
     def make_duplicate_bug(self):
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
 
@@ -584,7 +545,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         self.make_duplicate_bug()
         with person_logged_in(self.bug.owner):
             self.bug.setPrivate(True, self.bug.owner)
-        with self.exactly_x_queries(0):
+        with self.exactly_x_queries(1):
             self.info.duplicate_subscriptions
         with self.exactly_x_queries(0):
             self.info.duplicate_subscriptions.subscribers

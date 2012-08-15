@@ -4,11 +4,6 @@
 __metaclass__ = type
 
 from lp.services.config import DatabaseConfig
-from lp.services.database.readonly import read_only_file_exists
-from lp.services.database.tests.readonly import (
-    remove_read_only_file,
-    touch_read_only_file,
-    )
 from lp.testing import TestCase
 from lp.testing.layers import DatabaseLayer
 
@@ -46,23 +41,3 @@ class TestDatabaseConfig(TestCase):
         self.assertEqual('not_launchpad', dbc.dbuser)
         dbc.reset()
         self.assertEqual('launchpad_main', dbc.dbuser)
-
-    def test_main_master_and_main_slave(self):
-        # DatabaseConfig provides two extra properties: main_master and
-        # main_slave, which return the value of either
-        # rw_main_master/rw_main_slave or ro_main_master/ro_main_slave,
-        # depending on whether or not we're in read-only mode.
-        dbc = DatabaseConfig()
-        self.assertFalse(read_only_file_exists())
-        self.assertEquals(dbc.rw_main_master, dbc.main_master)
-        self.assertEquals(dbc.rw_main_slave, dbc.main_slave)
-
-        touch_read_only_file()
-        try:
-            self.assertTrue(read_only_file_exists())
-            self.assertEquals(
-                dbc.ro_main_master, dbc.main_master)
-            self.assertEquals(
-                dbc.ro_main_slave, dbc.main_slave)
-        finally:
-            remove_read_only_file()

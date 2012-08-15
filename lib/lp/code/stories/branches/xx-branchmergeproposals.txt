@@ -717,7 +717,7 @@ If a branch with a merge proposal is linked to a bug, the merge proposal
 details are shown on the bug page under the branch link.
 
     >>> login('admin@canonical.com')
-    >>> bug = factory.makeBug(product=fooix)
+    >>> bug = factory.makeBug(target=fooix)
     >>> ignored = bug.linkBranch(proposed, fred)
     >>> bug_url = canonical_url(bug)
     >>> logout()

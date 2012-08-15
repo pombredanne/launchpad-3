@@ -16,9 +16,11 @@ from zope.security.checker import selectChecker
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
+    anonymous_logged_in,
     login_person,
     TestCaseWithFactory,
     )
@@ -138,3 +140,65 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
         logo = markup.find(True, id='launchpad-logo-and-name')
         self.assertIsNot(None, logo)
         self.assertEqual('/@@/launchpad-logo-and-name.png', logo['src'])
+
+    @staticmethod
+    def _make_blog_post(linkid, title, body, date):
+        return {
+            'title': title,
+            'description': body,
+            'link': "http://blog.invalid/%s" % (linkid,),
+            'date': date,
+            }
+
+    def test_blog_posts(self):
+        """Posts from the launchpad blog are shown when feature is enabled"""
+        self.useFixture(FeatureFixture({'app.root_blog.enabled': True}))
+        posts = [
+            self._make_blog_post(1, "A post", "Post contents.", "2002"),
+            self._make_blog_post(2, "Another post", "More contents.", "2003"),
+            ]
+        calls = []
+
+        def _get_blog_posts():
+            calls.append('called')
+            return posts
+
+        root = getUtility(ILaunchpadRoot)
+        with anonymous_logged_in() as user:
+            view = create_initialized_view(root, 'index.html', principle=user)
+            view.getRecentBlogPosts = _get_blog_posts
+            result = view()
+        markup = BeautifulSoup(result,
+            parseOnlyThese=SoupStrainer(id='homepage-blogposts'))
+        self.assertEqual(['called'], calls)
+        items = markup.findAll('li', 'news')
+        # Notice about launchpad being opened is always added at the end
+        self.assertEqual(3, len(items))
+        a = items[-1].find("a")
+        self.assertEqual("Launchpad now open source", a.string.strip())
+        for post, item in zip(posts, items):
+            a = item.find("a")
+            self.assertEqual(post['link'], a["href"])
+            self.assertEqual(post['title'], a.string)
+
+    def test_blog_disabled(self):
+        """Launchpad blog not queried for display without feature"""
+        calls = []
+
+        def _get_blog_posts():
+            calls.append('called')
+            return []
+
+        root = getUtility(ILaunchpadRoot)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(root, 'index.html', principal=user)
+        view.getRecentBlogPosts = _get_blog_posts
+        markup = BeautifulSoup(
+            view(), parseOnlyThese=SoupStrainer(id='homepage'))
+        self.assertEqual([], calls)
+        self.assertIs(None, markup.find(True, id='homepage-blogposts'))
+        # Even logged in users should get the launchpad intro text in the left
+        # column rather than blank space when the blog is not being displayed.
+        self.assertTrue(view.show_whatslaunchpad)
+        self.assertTrue(markup.find(True, 'homepage-whatslaunchpad'))

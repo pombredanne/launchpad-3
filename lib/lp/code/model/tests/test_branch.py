@@ -114,17 +114,15 @@ from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.enums import (
     InformationType,
+    PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
-    )
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
@@ -1255,8 +1253,8 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
         params = CreateBugParams(
-            owner=self.user, title='Firefox bug', comment='blah')
-        params.setBugTarget(product=self.product)
+            owner=self.user, title='Firefox bug', comment='blah',
+            target=self.product)
         bug = getUtility(IBugSet).createBug(params)
         bug.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
@@ -1948,8 +1946,8 @@ class BranchDateLastModified(TestCaseWithFactory):
         self.assertEqual(branch.date_last_modified, date_created)
 
         params = CreateBugParams(
-            owner=branch.owner, title='A bug', comment='blah')
-        params.setBugTarget(product=branch.product)
+            owner=branch.owner, title='A bug', comment='blah',
+            target=branch.product)
         bug = getUtility(IBugSet).createBug(params)
 
         bug.linkBranch(branch, branch.owner)
@@ -2389,7 +2387,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
 
     def test_personal_branches_for_private_teams_are_private(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)

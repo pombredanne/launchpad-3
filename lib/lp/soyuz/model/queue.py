@@ -646,7 +646,7 @@ class PackageUpload(SQLBase):
             'Source is mandatory for delayed copies.')
         self.setAccepted()
 
-    def rejectFromQueue(self, logger=None, dry_run=False):
+    def rejectFromQueue(self, logger=None, dry_run=False, user=None):
         """See `IPackageUpload`."""
         self.setRejected()
         if self.package_copy_job is not None:
@@ -671,6 +671,9 @@ class PackageUpload(SQLBase):
             logger=logger, dry_run=dry_run,
             changes_file_object=changes_file_object)
         self.syncUpdate()
+        if bool(getFeatureFlag('auditor.enabled')):
+            client = AuditorClient()
+            client.send(self, 'packageupload-rejected', user)
 
     @property
     def is_delayed_copy(self):

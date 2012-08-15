@@ -7,36 +7,49 @@ from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 import unittest
 
 import pytz
+from storm.expr import Or
 from testtools.matchers import Equals
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
     BugTaskImportance,
     BugTaskStatus,
     IBugTaskSet,
     )
-from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTaskSearchParams,
+    )
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugtasksearch import (
     _build_status_clause,
     _build_tag_search_clause,
     _process_order_by,
+    get_bug_bulk_privacy_filter_terms,
+    get_bug_privacy_filter_terms,
     )
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    SharingPermission,
+    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -51,7 +64,10 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.person import Person
+from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import convert_storm_clause_to_string
+from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
     any,
@@ -62,6 +78,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
+    admin_logged_in,
     login_person,
     logout,
     normalize_whitespace,
@@ -664,18 +681,17 @@ class TargetTests:
             ISourcePackage.providedBy(self.searchtarget) or
             IDistributionSourcePackage.providedBy(self.searchtarget)):
             if IDistribution.providedBy(self.searchtarget):
-                bug = self.factory.makeBug(distribution=self.searchtarget)
+                bug = self.factory.makeBug(target=self.searchtarget)
                 expected = [bug.default_bugtask]
             else:
-                bug = self.factory.makeBug(
-                    distribution=self.searchtarget.distribution,
-                    sourcepackagename=self.factory.makeSourcePackageName())
+                dsp = self.factory.makeDistributionSourcePackage(
+                    distribution=self.searchtarget.distribution)
+                bug = self.factory.makeBug(target=dsp)
                 bugtask = self.factory.makeBugTask(
                     bug=bug, target=self.searchtarget)
                 expected = [bugtask]
         elif IDistroSeries.providedBy(self.searchtarget):
-            bug = self.factory.makeBug(
-                distribution=self.searchtarget.distribution)
+            bug = self.factory.makeBug(target=self.searchtarget.distribution)
             bugtask = self.factory.makeBugTask(
                 bug=bug, target=self.searchtarget)
             expected = [bugtask]
@@ -733,8 +749,7 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
         self.active_product = self.factory.makeProduct()
         self.inactive_product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=self.active_product,
-            description="Monkeys are bad.")
+            target=self.active_product, description="Monkeys are bad.")
         self.active_bugtask = self.factory.makeBugTask(
             bug=bug,
             target=self.active_product)
@@ -2255,11 +2270,11 @@ class TestBugTaskSearch(TestCaseWithFactory):
         """Private bugs from a search know the user can see the bugs."""
         target = self.makeBugTarget()
         person = self.login()
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
         # Search style and parameters taken from the milestone index view
         # where the issue was discovered.
@@ -2347,6 +2362,97 @@ class BugTaskSetSearchTest(TestCaseWithFactory):
             user=None, linked_blueprints=blueprint1.id)
         tasks = set(getUtility(IBugTaskSet).search(params))
         self.assertContentEqual(bug1.bugtasks, tasks)
+
+
+class BaseGetBugPrivacyFilterTermsTests:
+
+    layer = DatabaseFunctionalLayer
+
+    def test_public(self):
+        bug = self.factory.makeBug()
+        people = [bug.owner, self.factory.makePerson()]
+        self.assertContentEqual(people, self.getVisiblePeople(bug, people))
+
+    def makePrivacyScenario(self):
+        self.owner = self.factory.makePerson()
+        login_person(self.owner)
+        self.bug = self.factory.makeBug(
+            owner=self.owner, information_type=InformationType.USERDATA)
+        self.grantee_member = self.factory.makePerson()
+        self.grantee_team = self.factory.makeTeam(
+            members=[self.grantee_member])
+        self.grantee_person = self.factory.makePerson()
+        self.other_person = self.factory.makePerson()
+
+        self.people = [
+            self.owner, self.grantee_team, self.grantee_member,
+            self.grantee_person, self.other_person]
+        self.expected_people = [
+            self.owner, self.grantee_team, self.grantee_member,
+            self.grantee_person]
+
+    def assertPrivacyRespected(self):
+        self.assertContentEqual(
+            [], self.getVisiblePeople(self.bug, [self.other_person]))
+        self.assertContentEqual(
+            self.expected_people, self.getVisiblePeople(self.bug, self.people))
+
+    def test_artifact_grant(self):
+        # People and teams with AccessArtifactGrants can see the bug.
+        self.makePrivacyScenario()
+
+        getUtility(IService, 'sharing').ensureAccessGrants(
+            [self.grantee_team, self.grantee_person], self.owner,
+            bugs=[self.bug], ignore_permissions=True)
+
+        self.assertPrivacyRespected()
+
+    def test_policy_grant(self):
+        # People and teams with AccessPolicyGrants can see the bug.
+        self.makePrivacyScenario()
+
+        self.useFixture(FeatureFixture(
+            {'disclosure.enhanced_sharing.writable': 'true'}))
+        with admin_logged_in():
+            for princ in (self.grantee_team, self.grantee_person):
+                getUtility(IService, 'sharing').sharePillarInformation(
+                    self.bug.default_bugtask.target, princ, self.owner,
+                    {InformationType.USERDATA: SharingPermission.ALL})
+
+        self.assertPrivacyRespected()
+
+    def test_admin(self):
+        # People and teams in the admin team can see the bug.
+        self.makePrivacyScenario()
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with admin_logged_in():
+            for princ in (self.grantee_team, self.grantee_person):
+                admins.addMember(princ, admins)
+            self.grantee_team.acceptInvitationToBeMemberOf(admins, None)
+
+        self.assertPrivacyRespected()
+
+
+class TestGetBugPrivacyFilterTerms(BaseGetBugPrivacyFilterTermsTests,
+                                   TestCaseWithFactory):
+
+    def getVisiblePeople(self, bug, people):
+        return IStore(Bug).find(
+            Person,
+            Person.id.is_in(map(attrgetter('id'), people)),
+            BugTaskFlat.bug_id == bug.id,
+            Or(*get_bug_privacy_filter_terms(Person.id)))
+
+
+class TestGetBugBulkPrivacyFilterTerms(BaseGetBugPrivacyFilterTermsTests,
+                                       TestCaseWithFactory):
+
+    def getVisiblePeople(self, bug, people):
+        return IStore(Bug).find(
+            Person,
+            Person.id.is_in(map(attrgetter('id'), people)),
+            get_bug_bulk_privacy_filter_terms(Person.id, bug.id))
 
 
 def test_suite():

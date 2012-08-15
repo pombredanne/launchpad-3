@@ -136,7 +136,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_also_notified_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -146,7 +146,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_indirect_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -156,7 +156,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_direct_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -261,7 +261,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         dupe_bug = self.factory.makeBug()
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
@@ -612,7 +612,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             driver=product_driver, security_contact=security_contact)
         if self.private_project:
             removeSecurityProxy(bug_product).private_bugs = True
-        bug = self.factory.makeBug(owner=bug_owner, product=bug_product)
+        bug = self.factory.makeBug(owner=bug_owner, target=bug_product)
         with person_logged_in(bug_owner):
             if private_security_related:
                 information_type = InformationType.PRIVATESECURITY
@@ -777,7 +777,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         bug_owner = self.factory.makePerson()
-        bug = self.factory.makeBug(owner=bug_owner, product=product)
+        bug = self.factory.makeBug(owner=bug_owner, target=product)
         with person_logged_in(product.owner):
             product.addSubscription(bug_supervisor, bug_supervisor)
 
@@ -874,25 +874,6 @@ class TestBugPrivacy(TestCaseWithFactory):
             bug.setPrivate(True, bug.owner)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
-    def test_information_type_does_not_leak(self):
-        # Make sure that bug notifications for private bugs do not leak to
-        # people with a subscription on the product.
-        product = self.factory.makeProduct()
-        with person_logged_in(product.owner):
-            product.addSubscription(product.owner, product.owner)
-        reporter = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            information_type=InformationType.USERDATA, product=product,
-            owner=reporter)
-        recipients = Store.of(bug).using(
-            BugNotificationRecipient,
-            Join(BugNotification, BugNotification.bugID == bug.id)).find(
-            BugNotificationRecipient,
-            BugNotificationRecipient.bug_notificationID ==
-                BugNotification.id)
-        self.assertEqual(
-            [reporter], [recipient.person for recipient in recipients])
-
     def test__reconcileAccess_handles_all_targets(self):
         # _reconcileAccess gets the pillar from any task
         # type.
@@ -909,7 +890,7 @@ class TestBugPrivacy(TestCaseWithFactory):
             dsp.distribution, sp.distribution]
 
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
         for target in targets[1:]:
             self.factory.makeBugTask(bug, target=target)
         [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
@@ -965,7 +946,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
             self.factory.makePerson(name='supervisor'), admin)
         bug = self.factory.makeBug(
             information_type=InformationType.PRIVATESECURITY,
-            distribution=ubuntu)
+            target=ubuntu)
         bug = removeSecurityProxy(bug)
         initial_subscribers = bug.getDirectSubscribers()
         self.assertTrue(ubuntu.bug_supervisor not in initial_subscribers)

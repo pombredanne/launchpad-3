@@ -11,14 +11,14 @@ from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    TeamMembershipPolicy,
+    )
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    OPEN_TEAM_POLICY,
-    PersonVisibility,
-    TeamSubscriptionPolicy,
-    )
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -242,28 +242,28 @@ class TestValidPersonOrTeamPreloading(VocabularyTestBase,
         self.assertThat(recorder, HasQueryCount(Equals(0)))
 
 
-class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
-                                            TestCaseWithFactory):
-    """Test that the ValidPersonOrClosedTeamVocabulary behaves as expected."""
+class TestValidPersonOrExclusiveTeamVocabulary(
+                    ValidPersonOrTeamVocabularyMixin, TestCaseWithFactory):
+    """Test that the ValidPersonOrExclusiveTeamVocabulary is correct."""
 
     layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPillarOwner'
 
     def test_team_filter(self):
-        # Test that the team filter only returns closed teams.
+        # Test that the team filter only returns exclusive teams.
         self.factory.makePerson(
             name="fredperson", email="fredperson@foo.com")
-        for policy in OPEN_TEAM_POLICY:
+        for policy in INCLUSIVE_TEAM_POLICY:
             self.factory.makeTeam(
                 name="fred%s" % policy.name.lower(),
                 email="team_%s@foo.com" % policy.name,
-                subscription_policy=policy)
+                membership_policy=policy)
         closed_teams = []
-        for policy in CLOSED_TEAM_POLICY:
+        for policy in EXCLUSIVE_TEAM_POLICY:
             closed_teams.append(self.factory.makeTeam(
                 name="fred%s" % policy.name.lower(),
                 email="team_%s@foo.com" % policy.name,
-                subscription_policy=policy))
+                membership_policy=policy))
         self._team_filter_tests(closed_teams)
 
 
@@ -271,13 +271,13 @@ class TeamMemberVocabularyTestBase(VocabularyTestBase):
 
     def test_open_team_cannot_be_a_member_of_a_closed_team(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         open_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         moderated_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         restricted_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         user = self.factory.makePerson()
         all_possible_members = self.searchVocabulary(context_team, '')
         self.assertNotIn(open_team, all_possible_members)
@@ -287,13 +287,13 @@ class TeamMemberVocabularyTestBase(VocabularyTestBase):
 
     def test_open_team_can_be_a_member_of_an_open_team(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         open_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         moderated_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         restricted_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         user = self.factory.makePerson()
         all_possible_members = self.searchVocabulary(context_team, '')
         self.assertIn(open_team, all_possible_members)
@@ -303,20 +303,20 @@ class TeamMemberVocabularyTestBase(VocabularyTestBase):
 
     def test_vocabulary_displayname(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         vocabulary = self.getVocabulary(context_team)
         self.assertEqual(
             'Select a Team or Person', vocabulary.displayname)
 
     def test_open_team_vocabulary_step_title(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         vocabulary = self.getVocabulary(context_team)
         self.assertEqual('Search', vocabulary.step_title)
 
     def test_closed_team_vocabulary_step_title(self):
         context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         vocabulary = self.getVocabulary(context_team)
         self.assertEqual(
             'Search for a restricted team, a moderated team, or a person',
@@ -422,11 +422,11 @@ class TestNewPillarGranteeVocabulary(VocabularyTestBase,
         self.assertEqual(newgrantee, person2)
 
     def test_open_teams_excluded(self):
-        # Only closed teams should be available for selection.
+        # Only exclusive teams should be available for selection.
         product = self.factory.makeProduct()
         self.factory.makeTeam(name='grantee1')
         closed_team = self.factory.makeTeam(
             name='grantee2',
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         [newgrantee] = self.searchVocabulary(product, 'grantee')
         self.assertEqual(newgrantee, closed_team)

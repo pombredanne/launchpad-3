@@ -41,8 +41,7 @@
           define="linkify_archive view/linkify_source_archive;
                   source context/sourcepackagerelease">
           <tal:message
-            define="archive source/upload_archive;
-                    series source/upload_distroseries;
+            define="series source/upload_distroseries;
                     distro series/distribution;
                     message string:${distro/name} ${series/name} in "
             replace="message" />
@@ -55,6 +54,12 @@
                     message string:${archive/displayname}"
             replace="message" />
         </tal:define>
+        <tal:source_creator condition="context/creator">
+          by <a tal:replace="structure context/creator/fmt:link"/>
+        </tal:source_creator>
+        <tal:source_sponsor condition="context/sponsor">
+          (sponsored by <a tal:replace="structure context/sponsor/fmt:link"/>)
+        </tal:source_sponsor>
       </tal:source_original_location>
       <tal:binary_build_location condition="view/is_binary">
         <tal:message

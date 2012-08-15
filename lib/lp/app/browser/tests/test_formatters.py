@@ -59,7 +59,7 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
 
     def test_pagetitle_last_breadcrumb_detail(self):
         project = self.factory.makeProduct(name='fnord')
-        bug = self.factory.makeBug(product=project, title='bang')
+        bug = self.factory.makeBug(target=project, title='bang')
         view = create_view(
             bug.bugtasks[0], name='+index', rootsite='bugs',
             current_request=True, server_url='https://bugs.launchpad.dev/')
@@ -72,7 +72,7 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
     def test_pagetitle_last_breadcrumb_detail_too_long(self):
         project = self.factory.makeProduct(name='fnord')
         title = 'Bang out go the lights ' * 4
-        bug = self.factory.makeBug(product=project, title=title)
+        bug = self.factory.makeBug(target=project, title=title)
         view = create_view(
             bug.bugtasks[0], name='+index', rootsite='bugs',
             current_request=True, server_url='https://bugs.launchpad.dev/')

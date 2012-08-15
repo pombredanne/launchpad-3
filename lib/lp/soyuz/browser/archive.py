@@ -82,10 +82,8 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonVisibility,
-    )
+from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
@@ -900,7 +898,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     def displayname_edit_widget(self):
         display_name = IArchive['displayname']
         title = "Edit the displayname"
-        return TextLineEditorWidget(self.context, display_name, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, display_name, title, 'h1', max_width='95%',
+            truncate_lines=1)
 
     @property
     def default_series_filter(self):
