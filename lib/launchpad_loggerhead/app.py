@@ -57,7 +57,7 @@ from lp.xmlrpc import faults
 
 robots_txt = '''\
 User-agent: *
-Allow: /
+Disallow: /
 '''
 
 robots_app = DataApp(robots_txt, content_type='text/plain')
