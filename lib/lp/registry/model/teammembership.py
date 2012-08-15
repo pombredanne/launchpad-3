@@ -28,9 +28,7 @@ from zope.interface import implements
 
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import (
-    TeamMembershipRenewalPolicy,
-    )
+from lp.registry.enums import TeamMembershipRenewalPolicy
 from lp.registry.errors import (
     TeamMembershipTransitionError,
     UserCannotChangeMembershipSilently,
