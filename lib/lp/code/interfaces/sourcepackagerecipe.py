@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401
@@ -159,6 +159,10 @@ class ISourcePackageRecipeView(Interface):
         :param pocket: the pocket that should be targeted.
         :raises: various specific upload errors if the requestor is not
             able to upload to the archive.
+        """
+
+    def containsUnbuildableSeries(archive):
+        """Does the recipe contain series that can not be built into.
         """
 
     @export_write_operation()
