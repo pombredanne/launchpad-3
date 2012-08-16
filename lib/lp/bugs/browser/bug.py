@@ -447,6 +447,14 @@ class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
     @cachedproperty
+    def is_duplicate_active(self):
+        active = True
+        if self.context.duplicateof is not None:
+            target = self.context.duplicateof.default_bugtask.target
+            active = getattr(target, 'active', True)
+        return active
+            
+    @cachedproperty
     def subscription_info(self):
         return IBug(self.context).getSubscriptionInfo()
 

@@ -101,10 +101,7 @@
           <tal:dupe-info
              condition="duplicateof|nothing"
              define="duplicateof context/bug/duplicateof;
-               dupe_active python:
-                 getattr(
-                   context.bug.duplicateof.default_bugtask.target,
-                   'active', True)">
+                     dupe_active view/is_duplicate_active">
 
           <tal:active condition="dupe_active">
           <span class="bug-duplicate-details ellipsis single-line wide">

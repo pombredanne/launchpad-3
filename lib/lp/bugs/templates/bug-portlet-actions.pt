@@ -31,11 +31,7 @@
         class="sprite edit change-duplicate-bug"
         tal:attributes="href link/url"></a>
       <span id="mark-duplicate-text">Duplicate of
-        <tal:bug_link
-        define="dupe_active python:
-          getattr(
-            context.duplicateof.default_bugtask.target, 'active', True)">
-
+        <tal:bug_link define="dupe_active view/is_duplicate_active">
           <tal:active condition="dupe_active">
             <a
               tal:condition="duplicateof/required:launchpad.View"

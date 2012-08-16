@@ -699,6 +699,15 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             cancel_url = canonical_url(self.context)
         return cancel_url
 
+
+    @cachedproperty
+    def is_duplicate_active(self):
+        active = True
+        if self.context.bug.duplicateof is not None:
+            target = self.context.bug.duplicateof.default_bugtask.target
+            active = getattr(target, 'active', True)
+        return active
+
     @cachedproperty
     def api_request(self):
         return IWebServiceClientRequest(self.request)
