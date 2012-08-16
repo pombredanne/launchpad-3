@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
+from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 __metaclass__ = type
 
@@ -35,9 +36,9 @@ from lp.code.enums import (
     BranchType,
     BranchVisibilityRule,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import InformationType, BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import PersonVisibility, IPersonSet
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.helpers import truncate_text
@@ -1072,6 +1073,37 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
              InformationType.PRIVATESECURITY, InformationType.USERDATA],
             branch)
+
+    def test_branch_for_project_with_embargoed_and_proprietary(self):
+        # Branches for commercial projects which have a policy of embargoed or
+        # proprietary allow only embargoed and proprietary types.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product=product)
+        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        product.setBranchSharingPolicy(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY, comadmin)
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes(
+            [InformationType.EMBARGOED, InformationType.PROPRIETARY], branch)
+
+    def test_branch_for_project_with_proprietary(self):
+        # Branches for commercial projects which have a policy of proprietary
+        # allow only the proprietary type.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product=product)
+        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        product.setBranchSharingPolicy(
+            BranchSharingPolicy.PROPRIETARY, comadmin)
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                product=product, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+        self.assertShownTypes([InformationType.PROPRIETARY], branch)
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):

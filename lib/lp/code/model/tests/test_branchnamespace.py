@@ -529,6 +529,26 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             InformationType.PROPRIETARY,
             namespace.getDefaultInformationType())
 
+    def test_embargoed_or_proprietary_anyone(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self.assertContentEqual([], namespace.getAllowedInformationTypes())
+        self.assertIs(None, namespace.getDefaultInformationType())
+
+    def test_embargoed_or_proprietary_grantee(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        with admin_logged_in():
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, namespace.owner, namespace.product.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            namespace.getAllowedInformationTypes())
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            namespace.getDefaultInformationType())
+
 
 class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `PackageNamespace`."""

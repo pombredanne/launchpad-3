@@ -91,6 +91,8 @@ POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.items,
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.items,
     BranchSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY:
+        [InformationType.PROPRIETARY, InformationType.EMBARGOED],
     }
 
 POLICY_DEFAULT_TYPES = {
@@ -98,6 +100,7 @@ POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
     }
 
 POLICY_REQUIRED_GRANTS = {
@@ -105,6 +108,7 @@ POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: None,
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
     BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.PROPRIETARY,
     }
 
 
