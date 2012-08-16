@@ -29,14 +29,16 @@ from lp.bugs.interfaces.bugtasksearch import (
     IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bug import Bug
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PersonVisibility,
+    TeamMembershipPolicy,
+    )
 from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     IPersonSet,
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
@@ -555,7 +557,7 @@ class TestPerson(TestCaseWithFactory):
     def test_has_current_commercial_subscription(self):
         # IPerson.hasCurrentCommercialSubscription() checks for one.
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
         self.factory.makeCommercialSubscription(product)
         self.assertTrue(team.teamowner.hasCurrentCommercialSubscription())
@@ -564,7 +566,7 @@ class TestPerson(TestCaseWithFactory):
         # IPerson.hasCurrentCommercialSubscription() is false if it has
         # expired.
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
         self.factory.makeCommercialSubscription(product, expired=True)
         self.assertFalse(team.teamowner.hasCurrentCommercialSubscription())
@@ -724,7 +726,7 @@ class TestPersonStates(TestCaseWithFactory):
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.membership_policy': 'RESTRICTED',
             'field.renewal_policy': 'NONE',
             'field.visibility': 'PUBLIC',
             'field.actions.save': 'Save',

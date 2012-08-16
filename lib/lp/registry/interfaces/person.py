@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'CLOSED_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'ICanonicalSSOAPI',
@@ -31,19 +30,15 @@ __all__ = [
     'ITeamReassignment',
     'ImmutableVisibilityError',
     'NoSuchPerson',
-    'OPEN_TEAM_POLICY',
     'PersonCreationRationale',
-    'PersonVisibility',
     'PersonalStanding',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamEmailAddressError',
-    'TeamMembershipRenewalPolicy',
-    'TeamSubscriptionPolicy',
     'validate_person',
     'validate_person_or_closed_team',
     'validate_public_person',
-    'validate_subscription_policy',
+    'validate_membership_policy',
     ]
 
 import httplib
@@ -119,10 +114,17 @@ from lp.code.interfaces.hasbranches import (
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    TeamMembershipPolicy,
+    TeamMembershipRenewalPolicy,
+    )
 from lp.registry.errors import (
-    OpenTeamLinkageError,
+    InclusiveTeamLinkageError,
     PrivatePersonLinkageError,
-    TeamSubscriptionPolicyError,
+    TeamMembershipPolicyError,
     )
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
@@ -214,26 +216,26 @@ def validate_person_or_closed_team(obj, attr, value):
         return is_public_person_or_closed_team(person)
 
     return validate_person_common(
-        obj, attr, value, validate, error_class=OpenTeamLinkageError)
+        obj, attr, value, validate, error_class=InclusiveTeamLinkageError)
 
 
-def validate_subscription_policy(obj, attr, value):
-    """Validate the team subscription_policy."""
+def validate_membership_policy(obj, attr, value):
+    """Validate the team membership_policy."""
     if value is None:
         return None
 
-    # If we are just creating a new team, it can have any subscription policy.
+    # If we are just creating a new team, it can have any membership policy.
     if getattr(obj, '_SO_creating', True):
         return value
 
     team = obj
-    existing_subscription_policy = getattr(team, 'subscriptionpolicy', None)
-    if value == existing_subscription_policy:
+    existing_membership_policy = getattr(team, 'membership_policy', None)
+    if value == existing_membership_policy:
         return value
-    if value in OPEN_TEAM_POLICY:
-        team.checkOpenSubscriptionPolicyAllowed(policy=value)
-    if value in CLOSED_TEAM_POLICY:
-        team.checkClosedSubscriptionPolicyAllowed(policy=value)
+    if value in INCLUSIVE_TEAM_POLICY:
+        team.checkInclusiveMembershipPolicyAllowed(policy=value)
+    if value in EXCLUSIVE_TEAM_POLICY:
+        team.checkExclusiveMembershipPolicyAllowed(policy=value)
     return value
 
 
@@ -402,108 +404,6 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
 
-class TeamMembershipRenewalPolicy(DBEnumeratedType):
-    """TeamMembership Renewal Policy.
-
-    How Team Memberships can be renewed on a given team.
-    """
-
-    NONE = DBItem(10, """
-        invite them to apply for renewal
-
-        Memberships can be renewed only by team administrators or by going
-        through the normal workflow for joining the team.
-        """)
-
-    ONDEMAND = DBItem(20, """
-        invite them to renew their own membership
-
-        Memberships can be renewed by the members themselves a few days before
-        it expires. After it expires the member has to go through the normal
-        workflow for joining the team.
-        """)
-
-
-class TeamSubscriptionPolicy(DBEnumeratedType):
-    """Team Subscription Policies
-
-    The policies that describe who can be a member and how new memberships
-    are handled. The choice of policy reflects the need to build a community
-    versus the need to control Launchpad assets.
-    """
-
-    OPEN = DBItem(2, """
-        Open Team
-
-        Membership is open, no approval required, and subteams can be open or
-        closed. Any user can be a member of the team and no approval is
-        required. Subteams can be Open, Delegated, Moderated, or Restricted.
-        Open is a good choice for encouraging a community of contributors.
-        Open teams cannot have PPAs.
-        """)
-
-    DELEGATED = DBItem(4, """
-        Delegated Team
-
-        Membership is open, requires approval, and subteams can be open or
-        closed. Any user can be a member of the team via a subteam, but team
-        administrators approve direct memberships. Subteams can be Open,
-        Delegated, Moderated, or Restricted. Delegated is a good choice for
-        managing a large community of contributors. Delegated teams cannot
-        have PPAs.
-        """)
-
-    MODERATED = DBItem(1, """
-        Moderated Team
-
-        Membership is closed, requires approval, and subteams must be closed.
-        Any user can propose a new member, but team administrators approve
-        membership. Subteams must be Moderated or Restricted. Moderated is a
-        good choice for teams that manage things that need to be secure, like
-        projects, branches, or PPAs, but want to encourage users to help.
-        """)
-
-    RESTRICTED = DBItem(3, """
-        Restricted Team
-
-        Membership is closed, requires approval, and subteams must be closed.
-        Only the team's administrators can invite a user to be a member.
-        Subteams must be Moderated or Restricted. Restricted is a good choice
-        for teams that manage things that need to be secure, like projects,
-        branches, or PPAs.
-        """)
-
-
-OPEN_TEAM_POLICY = (
-    TeamSubscriptionPolicy.OPEN, TeamSubscriptionPolicy.DELEGATED)
-
-
-CLOSED_TEAM_POLICY = (
-    TeamSubscriptionPolicy.RESTRICTED, TeamSubscriptionPolicy.MODERATED)
-
-
-class PersonVisibility(DBEnumeratedType):
-    """The visibility level of person or team objects.
-
-    Currently, only teams can have their visibility set to something
-    besides PUBLIC.
-    """
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Everyone can view all the attributes of this person.
-        """)
-
-    PRIVATE = DBItem(30, """
-        Private
-
-        Only Launchpad admins and team members can view the team's data.
-        Other users may only know of the team if it is placed
-        in a public relationship such as subscribing to a bug.
-        """)
-
-
 class PersonNameField(BlacklistableContentNameField):
     """A `Person` team name, which is unique and performs psuedo blacklisting.
 
@@ -548,37 +448,37 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
-def team_subscription_policy_can_transition(team, policy):
-    """Can the team can change its subscription policy?
+def team_membership_policy_can_transition(team, policy):
+    """Can the team can change its membership policy?
 
     Returns True when the policy can change. or raises an error. OPEN teams
     cannot be members of MODERATED or RESTRICTED teams. OPEN teams
     cannot have PPAs. Changes from between OPEN and the two closed states
     can be blocked by team membership and team artifacts.
 
-    We only perform the check if a subscription policy is transitioning from
+    We only perform the check if a membership policy is transitioning from
     open->closed or visa versa. So if a team already has a closed subscription
     policy, it is always allowed to transition to another closed policy.
 
     :param team: The team to change.
-    :param policy: The TeamSubsciptionPolicy to change to.
-    :raises TeamSubsciptionPolicyError: Raised when a membership constrain
+    :param policy: The TeamMembershipPolicy to change to.
+    :raises TeamMembershipPolicyError: Raised when a membership constrain
         or a team artifact prevents the policy from being set.
     """
-    if team is None or policy == team.subscriptionpolicy:
+    if team is None or policy == team.membership_policy:
         # The team is being initialized or the policy is not changing.
         return True
-    elif (policy in OPEN_TEAM_POLICY
-          and team.subscriptionpolicy in CLOSED_TEAM_POLICY):
-        team.checkOpenSubscriptionPolicyAllowed(policy)
-    elif (policy in CLOSED_TEAM_POLICY
-          and team.subscriptionpolicy in OPEN_TEAM_POLICY):
-        team.checkClosedSubscriptionPolicyAllowed(policy)
+    elif (policy in INCLUSIVE_TEAM_POLICY
+          and team.membership_policy in EXCLUSIVE_TEAM_POLICY):
+        team.checkInclusiveMembershipPolicyAllowed(policy)
+    elif (policy in EXCLUSIVE_TEAM_POLICY
+          and team.membership_policy in INCLUSIVE_TEAM_POLICY):
+        team.checkExclusiveMembershipPolicyAllowed(policy)
     return True
 
 
-class TeamSubsciptionPolicyChoice(Choice):
-    """A valid team subscription policy."""
+class TeamMembershipPolicyChoice(Choice):
+    """A valid team membership policy."""
 
     def _getTeam(self):
         """Return the context if it is a team or None."""
@@ -592,20 +492,20 @@ class TeamSubsciptionPolicyChoice(Choice):
         team = self._getTeam()
         policy = value
         try:
-            return team_subscription_policy_can_transition(team, policy)
-        except TeamSubscriptionPolicyError:
+            return team_membership_policy_can_transition(team, policy)
+        except TeamMembershipPolicyError:
             return False
 
     def _validate(self, value):
-        """Ensure the TeamSubsciptionPolicy is valid for state of the team.
+        """Ensure the TeamMembershipPolicy is valid for state of the team.
 
-        Returns True if the team can change its subscription policy to the
-        `TeamSubscriptionPolicy`, otherwise raise TeamSubscriptionPolicyError.
+        Returns True if the team can change its membership policy to the
+        `TeamMembershipPolicy`, otherwise raise TeamMembershipPolicyError.
         """
         team = self._getTeam()
         policy = value
-        team_subscription_policy_can_transition(team, policy)
-        super(TeamSubsciptionPolicyChoice, self)._validate(value)
+        team_membership_policy_can_transition(team, policy)
+        super(TeamMembershipPolicyChoice, self)._validate(value)
 
 
 class IPersonClaim(Interface):
@@ -1631,14 +1531,14 @@ class IPersonEditRestricted(Interface):
     @export_write_operation()
     @operation_for_version("beta")
     def join(team, requester=None, may_subscribe_to_list=True):
-        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+        """Join the given team if its membership_policy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
         team:
 
-        - If the team subscriptionpolicy is OPEN, the user is added as
+        - If the team membership_policy is OPEN, the user is added as
           an APPROVED member with a NULL TeamMembership.reviewer.
-        - If the team subscriptionpolicy is MODERATED, the user is added as
+        - If the team membership_policy is MODERATED, the user is added as
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
@@ -1721,7 +1621,7 @@ class IPersonEditRestricted(Interface):
         :return: A tuple containing a boolean indicating when the
             membership status changed and the current `TeamMembershipStatus`.
             This depends on the desired status passed as an argument, the
-            subscription policy and the user's privileges.
+            membership policy and the user's privileges.
         """
 
     @operation_parameters(
@@ -1928,13 +1828,18 @@ class ITeamPublic(Interface):
                 "preserved and URLs are linked in pages.")),
         exported_as='team_description')
 
-    subscriptionpolicy = exported(
-        TeamSubsciptionPolicyChoice(title=_('Subscription policy'),
-               vocabulary=TeamSubscriptionPolicy,
-               default=TeamSubscriptionPolicy.RESTRICTED, required=True,
-               description=_(
-                TeamSubscriptionPolicy.__doc__.split('\n\n')[1])),
-        exported_as='subscription_policy')
+    membership_policy = exported(
+        TeamMembershipPolicyChoice(title=_('Membership policy'),
+            vocabulary=TeamMembershipPolicy,
+            default=TeamMembershipPolicy.RESTRICTED, required=True,
+            description=_(
+                TeamMembershipPolicy.__doc__.split('\n\n')[1])))
+
+    subscription_policy = exported(
+        TeamMembershipPolicyChoice(title=_('Membership policy'),
+            vocabulary=TeamMembershipPolicy,
+            description=_("Obsolete: use membership_policy"))
+        )
 
     renewal_policy = exported(
         Choice(title=_("When someone's membership is about to expire, "
@@ -1966,12 +1871,12 @@ class ITeamPublic(Interface):
         "The date, according to team's default values, in "
         "which a just-renewed membership will expire.")
 
-    def checkOpenSubscriptionPolicyAllowed(policy='open'):
-        """ Check whether this team's subscription policy can be open.
+    def checkInclusiveMembershipPolicyAllowed(policy='open'):
+        """Check whether this team's membership policy can be open.
 
-        An open subscription policy is OPEN or DELEGATED.
-        A closed subscription policy is MODERATED or RESTRICTED.
-        An closed subscription policy is required when:
+        An inclusive membership policy is OPEN or DELEGATED.
+        A exclusive membership policy is MODERATED or RESTRICTED.
+        An exclusive membership policy is required when:
         - any of the team's super teams are closed.
         - the team has any active PPAs
         - it is subscribed or assigned to any private bugs
@@ -1983,16 +1888,16 @@ class ITeamPublic(Interface):
             just wants to know if any open policy is allowed without having a
             particular policy to check. In this case, the method is called
             without a policy parameter being required.
-        :raises TeamSubscriptionPolicyError: When the subscription policy is
+        :raises TeamMembershipPolicyError: When the membership policy is
             not allowed to be open.
         """
 
-    def checkClosedSubscriptionPolicyAllowed(policy='closed'):
-        """ Return true if this team's subscription policy must be open.
+    def checkExclusiveMembershipPolicyAllowed(policy='closed'):
+        """Return true if this team's membership policy must be open.
 
-        An open subscription policy is OPEN or DELEGATED.
-        A closed subscription policy is MODERATED or RESTRICTED.
-        An open subscription policy is required when:
+        An inclusive membership policy is OPEN or DELEGATED.
+        A exclusive membership policy is MODERATED or RESTRICTED.
+        An inclusive membership policy is required when:
         - any of the team's sub (member) teams are open.
 
         :param policy: The policy that is being checked for validity. This is
@@ -2001,7 +1906,7 @@ class ITeamPublic(Interface):
             just wants to know if any closed policy is allowed without having
             a particular policy to check. In this case, the method is called
             without a policy parameter being required.
-        :raises TeamSubscriptionPolicyError: When the subscription policy is
+        :raises TeamMembershipPolicyError: When the membership policy is
             not allowed to be closed.
         """
 
@@ -2182,20 +2087,21 @@ class IPersonSet(Interface):
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
-        subscriptionpolicy='subscription_policy',
         defaultmembershipperiod='default_membership_period',
         defaultrenewalperiod='default_renewal_period')
     @operation_parameters(
-        subscriptionpolicy=Choice(
-            title=_('Subscription policy'), vocabulary=TeamSubscriptionPolicy,
-            required=False, default=TeamSubscriptionPolicy.MODERATED))
+        membership_policy=Choice(
+            title=_('Membership policy'), vocabulary=TeamMembershipPolicy,
+            required=False, default=TeamMembershipPolicy.MODERATED))
     @export_factory_operation(
         ITeam, ['name', 'displayname', 'teamdescription',
-                'defaultmembershipperiod', 'defaultrenewalperiod'])
+                'defaultmembershipperiod', 'defaultrenewalperiod',
+                'subscription_policy'])
     @operation_for_version("beta")
     def newTeam(teamowner, name, displayname, teamdescription=None,
-                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
-                defaultmembershipperiod=None, defaultrenewalperiod=None):
+                membership_policy=TeamMembershipPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None,
+                subscription_policy=None):
         """Create and return a new Team with given arguments."""
 
     def get(personid):
