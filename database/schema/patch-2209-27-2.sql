@@ -4,8 +4,7 @@
 SET client_min_messages=ERROR;
 
 CREATE TABLE ProcessAcceptedBugsJob (
-    id serial PRIMARY KEY,
-    job integer REFERENCES Job ON DELETE CASCADE UNIQUE NOT NULL,
+    job integer PRIMARY KEY REFERENCES Job ON DELETE CASCADE UNIQUE NOT NULL,
     distroseries integer REFERENCES DistroSeries NOT NULL,
     sourcepackagerelease integer REFERENCES SourcePackageRelease NOT NULL,
     json_data text
