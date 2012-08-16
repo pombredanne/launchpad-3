@@ -30,6 +30,8 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     SharingPermission,
     )
@@ -245,6 +247,19 @@ class SharingService:
 
         return set(people).difference(set(result_set))
 
+    def _makeEnumData(self, enums):
+        # Make a dict of data for the a view request cache.
+        result_data = []
+        for x, enum in enumerate(enums):
+            item = dict(
+                index=x,
+                value=enum.name,
+                title=enum.title,
+                description=enum.description
+            )
+            result_data.append(item)
+        return result_data
+
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [
@@ -256,16 +271,37 @@ class SharingService:
                 pillar.has_current_commercial_subscription):
             allowed_types.append(InformationType.PROPRIETARY)
 
-        result_data = []
-        for x, policy in enumerate(allowed_types):
-            item = dict(
-                index=x,
-                value=policy.name,
-                title=policy.title,
-                description=policy.description
-            )
-            result_data.append(item)
-        return result_data
+        return self._makeEnumData(allowed_types)
+
+    def getBranchSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have branch sharing policies.
+        if not IProduct.providedBy(pillar):
+            return []
+        allowed_policies = [BranchSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary branches.
+        if pillar.has_current_commercial_subscription:
+            allowed_policies.extend([
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                BranchSharingPolicy.PROPRIETARY])
+
+        return self._makeEnumData(allowed_policies)
+
+    def getBugSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have bug sharing policies.
+        if not IProduct.providedBy(pillar):
+            return []
+        allowed_policies = [BugSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary bugs.
+        if pillar.has_current_commercial_subscription:
+            allowed_policies.extend([
+                BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                BugSharingPolicy.PROPRIETARY])
+
+        return self._makeEnumData(allowed_policies)
 
     def getSharingPermissions(self):
         """See `ISharingService`."""
