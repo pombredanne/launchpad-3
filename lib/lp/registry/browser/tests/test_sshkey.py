@@ -10,6 +10,7 @@ from zope.component import getUtility
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.services.webapp import canonical_url
 from lp.testing import (
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -18,6 +19,7 @@ from lp.testing.pages import (
     extract_text,
     find_tags_by_class,
     )
+from lp.testing.views import create_initialized_view
 
 
 class TestCanonicalUrl(TestCaseWithFactory):
@@ -55,3 +57,14 @@ class TestSSHKeyView(TestCaseWithFactory):
             self.assertEqual(
                 extract_text(find_tags_by_class(browser.contents, 'message')[0]),
                 msg)
+
+    def test_edit_ssh_keys_login_redirect(self):
+        """+editsshkeys should redirect to +login to force you to re-authenticate."""
+        person = self.factory.makePerson()
+        login_person(person)
+        view = create_initialized_view(person, "+editsshkeys")
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        expected_url = (
+            '%s/+editsshkeys/+login?reauth=1' % canonical_url(person))
+        self.assertEqual(expected_url, response.getHeader('location'))
