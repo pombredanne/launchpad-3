@@ -59,7 +59,7 @@ from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
-    admin_logged_in,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -499,7 +499,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     def test_proprietary_or_public_grantor(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
-        with admin_logged_in():
+        with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
@@ -518,7 +518,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     def test_proprietary_grantee(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY)
-        with admin_logged_in():
+        with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
@@ -538,7 +538,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     def test_embargoed_or_proprietary_grantee(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-        with admin_logged_in():
+        with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
