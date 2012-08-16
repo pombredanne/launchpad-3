@@ -113,6 +113,7 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.enums import (
+    BranchSharingPolicy,
     InformationType,
     PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
@@ -3231,3 +3232,23 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
+
+    def test_transitionToInformationType(self):
+        """Test transitionToInformationType() API arguments."""
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('commercial_admin') as admin:
+            # XXX sinzui 2012-08-16: setBranchSharingPolicy() is guarded
+            # at this moment.
+            product.setBranchSharingPolicy(
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY, admin)
+        with person_logged_in(product.owner):
+            db_branch = self.factory.makeBranch(product=product)
+            launchpad = launchpadlib_for('test', db_branch.owner,
+                service_root=self.layer.appserver_root_url('api'))
+
+        branch = ws_object(launchpad, db_branch)
+        branch.transitionToInformationType(information_type='Proprietary')
+
+        updated_branch = ws_object(launchpad, db_branch)
+        self.assertEqual('Proprietary', updated_branch.information_type)
