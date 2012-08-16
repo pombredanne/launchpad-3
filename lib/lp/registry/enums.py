@@ -12,6 +12,7 @@ __all__ = [
     'EXCLUSIVE_TEAM_POLICY',
     'INCLUSIVE_TEAM_POLICY',
     'InformationType',
+    'NON_EMBARGOED_INFORMATION_TYPES',
     'PersonTransferJobType',
     'PersonVisibility',
     'PRIVATE_INFORMATION_TYPES',
@@ -81,6 +82,10 @@ PRIVATE_INFORMATION_TYPES = (
     InformationType.PRIVATESECURITY, InformationType.USERDATA,
     InformationType.PROPRIETARY, InformationType.EMBARGOED)
 
+NON_EMBARGOED_INFORMATION_TYPES = (
+    PUBLIC_INFORMATION_TYPES +
+    (InformationType.PRIVATESECURITY, InformationType.USERDATA,
+     InformationType.PROPRIETARY))
 
 SECURITY_INFORMATION_TYPES = (
     InformationType.PUBLICSECURITY, InformationType.PRIVATESECURITY)

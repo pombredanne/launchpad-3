@@ -49,6 +49,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
     PersonVisibility,
+    NON_EMBARGOED_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
@@ -88,8 +89,9 @@ FREE_INFORMATION_TYPES = (
 
 POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
-    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.items,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.items,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        NON_EMBARGOED_INFORMATION_TYPES),
     BranchSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY:
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
