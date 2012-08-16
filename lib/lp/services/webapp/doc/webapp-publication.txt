@@ -911,9 +911,9 @@ be automatically reverted in a GET request.
     ...         Person.id == EmailAddress.personID,
     ...         EmailAddress.email == 'foo.bar@canonical.com').one()
     >>> foo_bar = get_foo_bar_person()
-    >>> print foo_bar.homepage_content
+    >>> print foo_bar.description
     None
-    >>> foo_bar.homepage_content = 'Montreal'
+    >>> foo_bar.description = 'Montreal'
 
     >>> request, publication = get_request_and_publication(method='GET')
 
@@ -925,13 +925,13 @@ be automatically reverted in a GET request.
     >>> publication.afterCall(request, None)
     >>> txn = transaction.begin()
     >>> foo_bar = get_foo_bar_person()
-    >>> print foo_bar.homepage_content
+    >>> print foo_bar.description
     None
 
 But not if the request uses POST, the changes will be preserved.
 
     >>> txn = transaction.begin()
-    >>> get_foo_bar_person().homepage_content = 'Darwin'
+    >>> get_foo_bar_person().description = 'Darwin'
 
     >>> request, publication = get_request_and_publication(method='POST')
 
@@ -942,7 +942,7 @@ But not if the request uses POST, the changes will be preserved.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
     >>> txn = transaction.begin()
-    >>> print get_foo_bar_person().homepage_content
+    >>> print get_foo_bar_person().description
     Darwin
 
 
