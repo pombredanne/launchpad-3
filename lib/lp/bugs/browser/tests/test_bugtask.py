@@ -251,13 +251,10 @@ class TestBugTaskView(TestCaseWithFactory):
         # and will instead receive an error in the UI.
         person = self.factory.makePerson()
         product = self.factory.makeProduct(
-            name='product1', owner=person, official_malone=True)
-        with person_logged_in(person):
-            product.bug_supervisor = person
+            name='product1', owner=person, official_malone=True,
+            bug_supervisor=person)
         product_2 = self.factory.makeProduct(
             name='product2', official_malone=True)
-        with person_logged_in(product_2.owner):
-            product_2.bug_supervisor = product_2.owner
         bug = self.factory.makeBug(target=product, owner=person)
         # We need to commit here, otherwise all the sample data we
         # created gets destroyed when the transaction is rolled back.

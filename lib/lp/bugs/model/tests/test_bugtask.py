@@ -934,13 +934,10 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
 
     def _setBugSupervisorData(self):
         """Helper function used by sub-classes to setup bug supervisors."""
-        self.supervisor_team = self.factory.makeTeam(
-            owner=self.target_owner_member)
         self.supervisor_member = self.factory.makePerson()
-        self.supervisor_team.addMember(
-            self.supervisor_member, self.target_owner_member)
-        self.target.setBugSupervisor(
-            self.supervisor_team, self.target_owner_member)
+        self.supervisor_team = self.factory.makeTeam(
+            owner=self.target_owner_member, members=[self.supervisor_member])
+        self.target.bug_supervisor = self.supervisor_team
 
     def _setBugSupervisorDataNone(self):
         """Helper for sub-classes to work around setting a bug supervisor."""
@@ -3199,9 +3196,8 @@ class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
 
     def test_pillar_bug_supervisor(self):
         # The pillar bug supervisor has privileges.
-        pillar = self.factory.makeProduct()
         bugsupervisor = self.factory.makePerson()
-        removeSecurityProxy(pillar).bug_supervisor = bugsupervisor
+        pillar = self.factory.makeProduct(bug_supervisor=bugsupervisor)
         bugtask = self.factory.makeBugTask(target=pillar)
         self.assertTrue(
             bugtask.userHasBugSupervisorPrivileges(bugsupervisor))

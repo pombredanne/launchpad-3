@@ -301,10 +301,6 @@ bug that aren't already subscribed.
 
     >>> mozilla_firefox = getUtility(IProductSet).get(4)
 
-Let's make Foo Bar a bug supervisor for upstream firefox:
-
-    >>> mozilla_firefox.bug_supervisor = foobar
-
 Then we'll reassign bug #2 in Ubuntu to be in Firefox:
 
     >>> bug_two_in_ubuntu = getUtility(IBugTaskSet).get(3)
