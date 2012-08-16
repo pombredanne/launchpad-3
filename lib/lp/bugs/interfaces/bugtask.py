@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,E0602
 
 """Bug task interfaces."""
 
@@ -785,7 +783,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userHasDriverPrivileges(user):
-        """Does the user have driver privledges on the current bugtask?
+        """Does the user have driver privileges on the current bugtask?
 
         :return: A boolean.
         """

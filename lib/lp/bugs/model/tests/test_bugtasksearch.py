@@ -936,7 +936,7 @@ class BugTargetWithBugSuperVisor:
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""
         with person_logged_in(self.owner):
-            self.searchtarget.setBugSupervisor(supervisor, self.owner)
+            self.searchtarget.bug_supervisor = supervisor
 
 
 class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
@@ -1103,7 +1103,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
         with person_logged_in(self.owner):
             # We must set the bug supervisor for each bug task target
             for bugtask in self.bugtasks:
-                bugtask.target.setBugSupervisor(supervisor, self.owner)
+                bugtask.target.bug_supervisor = supervisor
 
     def findBugtaskForOtherProduct(self, bugtask):
         # Return the bugtask for the product that not related to the
@@ -1613,8 +1613,7 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""
         with person_logged_in(self.owner):
-            self.searchtarget.distribution.setBugSupervisor(
-                supervisor, self.owner)
+            self.searchtarget.distribution.bug_supervisor = supervisor
 
     def targetToGroup(self, target):
         return target.sourcepackagename.id

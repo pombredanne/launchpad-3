@@ -20,7 +20,7 @@ Even when the product has a bug supervisor, see bug #49891.
     >>> firefox = IMasterObject(getUtility(IProductSet).getByName("firefox"))
     >>> sample_person = IMasterObject(
     ...     getUtility(IPersonSet).getByName("name12"))
-    >>> firefox.setBugSupervisor(sample_person, sample_person)
+    >>> firefox.bug_supervisor = sample_person
 
     >>> flush_database_updates()
 

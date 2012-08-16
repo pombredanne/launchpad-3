@@ -694,9 +694,13 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             description=_('The cached total karma for this person.')))
     homepage_content = exported(
         Text(title=_("Homepage Content"), required=False,
+            description=_("Obsolete. Use description.")))
+
+    description = exported(
+        Text(title=_("Description"), required=False,
             description=_(
-                "The content of your profile page. Use plain text, "
-                "paragraphs are preserved and URLs are linked in pages.")))
+                "Details about interests and goals. Use plain text, "
+                "paragraphs are preserved and URLs are linked.")))
 
     mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
@@ -1822,10 +1826,7 @@ class ITeamPublic(Interface):
 
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
-             description=_(
-                "Details about the team's work, highlights, goals, "
-                "and how to contribute. Use plain text, paragraphs are "
-                "preserved and URLs are linked in pages.")),
+             description=_("Obsolete. Use description.")),
         exported_as='team_description')
 
     membership_policy = exported(

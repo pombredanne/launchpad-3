@@ -233,7 +233,7 @@ class TeamFormMixin:
     """
     field_names = [
         "name", "visibility", "displayname",
-        "teamdescription", "membership_policy",
+        "description", "membership_policy",
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod", "teamowner",
         ]
@@ -304,7 +304,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     custom_widget(
         'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget('description', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
         """See `LaunchpadViewForm`."""
@@ -1005,7 +1005,6 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
     custom_widget('defaultrenewalperiod', IntWidget,
         widget_class='field subordinate')
 
@@ -1022,14 +1021,13 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
-        teamdescription = data.get('teamdescription')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         membership_policy = data.get('membership_policy')
         teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
-            teamowner, name, displayname, teamdescription,
-            membership_policy, defaultmembershipperiod, defaultrenewalperiod)
+            teamowner, name, displayname, None, membership_policy,
+            defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
             team.transitionVisibility(visibility, self.user)
@@ -1623,7 +1621,6 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
     links = [
         'edit',
         'branding',
-        'common_edithomepage',
         'members',
         'mugshots',
         'add_member',
@@ -2157,8 +2154,7 @@ class TeamEditMenu(TeamNavigationMenuBase):
     usedfor = ITeamEditMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
-             'editemail')
+    links = ('branding', 'editlanguages', 'reassign', 'editemail')
 
 
 class TeamMugshotView(LaunchpadView):

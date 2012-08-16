@@ -50,9 +50,7 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
         self.bug_team_member = self.factory.makePerson(name="bugteammember")
         with celebrity_logged_in('admin'):
             self.bug_team.addMember(self.bug_team_member, self.product.owner)
-            self.product.setBugSupervisor(
-                bug_supervisor=self.bug_team,
-                user=self.product.owner)
+            self.product.bug_supervisor = self.bug_team
         self.bug = self.factory.makeBug(
             owner=self.owner, target=self.product,
             information_type=InformationType.USERDATA)

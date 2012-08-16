@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Common classes to support bug roles."""
@@ -40,51 +40,6 @@ class BugRoleMixin:
             return self.OTHER_TEAM
         else:
             return self.OTHER_USER
-
-    def validateBugSupervisor(self, data):
-        """Validates the new bug supervisor.
-
-        Verify that the value is None, the user, or a team he administers,
-        otherwise, set a field error.
-        """
-        field_state = self._getFieldState(
-            self.context.bug_supervisor, 'bug_supervisor', data)
-        if field_state is self.INVALID_PERSON:
-            error = (
-                'You must choose a valid person or team to be the '
-                'bug supervisor for %s.' % self.context.displayname)
-        elif field_state is self.OTHER_TEAM:
-            supervisor = data['bug_supervisor']
-            team_url = canonical_url(
-                supervisor, rootsite='mainsite', view_name='+members')
-            error = structured(
-                'You cannot set %(team)s as the bug supervisor for '
-                '%(target)s because you are not an administrator of that '
-                'team.<br />If you believe that %(team)s should be the '
-                'bug supervisor for %(target)s, notify one of the '
-                '<a href="%(url)s">%(team)s administrators</a>. See '
-                '<a href="https://help.launchpad.net/BugSupervisors">'
-                'the help wiki</a> for information about setting a bug '
-                'supervisor.',
-                team=supervisor.displayname,
-                target=self.context.displayname,
-                url=team_url)
-        elif field_state is self.OTHER_USER:
-            error = structured(
-                'You cannot set another person as the bug supervisor for '
-                '%(target)s.<br />See '
-                '<a href="https://help.launchpad.net/BugSupervisors">'
-                'the help wiki</a> for information about setting a bug '
-                'supervisor.',
-                target=self.context.displayname)
-        else:
-            # field_state is self.OK.
-            return
-        self.setFieldError('bug_supervisor', error)
-
-    def changeBugSupervisor(self, bug_supervisor):
-        if self.context.bug_supervisor != bug_supervisor:
-            self.context.setBugSupervisor(bug_supervisor, self.user)
 
     def changeSecurityContact(self, security_contact):
         if self.context.security_contact != security_contact:
