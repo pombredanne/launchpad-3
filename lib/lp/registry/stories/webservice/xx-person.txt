@@ -74,7 +74,7 @@ for teams (as they're defined in the ITeam interface).
         u'http://.../~ubuntu-team/deactivated_members'
     default_membership_period: None
     default_renewal_period: None
-    description: None
+    description: u'This Team is responsible for the Ubuntu Distribution'
     display_name: u'Ubuntu Team'
     expired_members_collection_link:
         u'http://.../~ubuntu-team/expired_members'

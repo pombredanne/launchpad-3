@@ -29,7 +29,6 @@ from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.teammembership import (
@@ -1153,8 +1152,6 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
-        self.assertEqual(
-            None, view.page_description)
 
 
 class TestTeamInvitationView(TestCaseWithFactory):
