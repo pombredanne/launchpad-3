@@ -3201,8 +3201,7 @@ class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
         # The pillar bug supervisor has privileges.
         pillar = self.factory.makeProduct()
         bugsupervisor = self.factory.makePerson()
-        removeSecurityProxy(pillar).setBugSupervisor(
-            bugsupervisor, self.celebrities.admin)
+        removeSecurityProxy(pillar).bug_supervisor = bugsupervisor
         bugtask = self.factory.makeBugTask(target=pillar)
         self.assertTrue(
             bugtask.userHasBugSupervisorPrivileges(bugsupervisor))

@@ -172,7 +172,7 @@ Here are some examples of the three types of indirect subscribers:
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
 
-    >>> linux_source.distribution.setBugSupervisor(ubuntu_team, ubuntu_team)
+    >>> linux_source.distribution.bug_supervisor = ubuntu_team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -195,7 +195,7 @@ supervisor is also an indirect subscriber.
     <BugTask ...>
 
     >>> lifeless = personset.getByName("lifeless")
-    >>> firefox.setBugSupervisor(lifeless, lifeless)
+    >>> firefox.bug_supervisor = lifeless
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -210,7 +210,7 @@ supervisor is also an indirect subscriber.
 If there were no upstream product bug subscribers, the product owner
 would be used instead.
 
-    >>> firefox.setBugSupervisor(None, None)
+    >>> firefox.bug_supervisor = None
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -237,7 +237,7 @@ would be used instead.
     Ubuntu Team
 
     >>> firefox.owner = previous_owner
-    >>> firefox.setBugSupervisor(lifeless, lifeless)
+    >>> firefox.bug_supervisor = lifeless
 
 IBug.getAlsoNotifiedSubscribers() and IBug.getIndirectSubscribers() take
 an optional parameter `level` allowing us to filter the result by
@@ -631,7 +631,7 @@ Define a function that get subscriber email addresses back conveniently:
 
 Let's have a look at an example for a distribution bug:
 
-    >>> ubuntu.setBugSupervisor(sample_person, sample_person)
+    >>> ubuntu.bug_supervisor = sample_person
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -678,7 +678,7 @@ to new subscribers.
 
 Another example, this time for an upstream:
 
-    >>> firefox.setBugSupervisor(mark, mark)
+    >>> firefox.bug_supervisor = mark
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -718,7 +718,7 @@ When an upstream does *not* have a specific bug supervisor set, the
 product.owner is used instead. So, if Firefox's bug supervisor is unset,
 Sample Person, the Firefox "owner" will get subscribed instead:
 
-    >>> firefox.setBugSupervisor(None, None)
+    >>> firefox.bug_supervisor = None
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",

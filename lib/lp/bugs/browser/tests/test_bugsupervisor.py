@@ -72,7 +72,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual(expected, notifications.pop().message)
 
     def test_owner_appoint_self_from_another(self):
-        self.product.setBugSupervisor(self.team, self.owner)
+        self.product.bug_supervisor = self.team
         form = self._makeForm(self.owner)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
@@ -80,7 +80,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual(self.owner, self.product.bug_supervisor)
 
     def test_owner_appoint_none(self):
-        self.product.setBugSupervisor(self.owner, self.owner)
+        self.product.bug_supervisor = self.owner
         form = self._makeForm(None)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)

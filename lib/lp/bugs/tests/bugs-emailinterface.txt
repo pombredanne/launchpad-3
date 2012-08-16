@@ -1440,7 +1440,7 @@ Bug supervisors can set some restricted statuses:
 
     >>> with lp_dbuser():
     ...     login('foo.bar@canonical.com')
-    ...     upstream_task.pillar.setBugSupervisor(email_user, email_user)
+    ...     upstream_task.pillar.bug_supervisor = email_user
 
     >>> ignored = login_person(email_user)
 
@@ -1459,7 +1459,7 @@ Everyone else gets an explanatory error message:
 
     >>> with lp_dbuser():
     ...     login('foo.bar@canonical.com')
-    ...     upstream_task.pillar.setBugSupervisor(None, None)
+    ...     upstream_task.pillar.bug_supervisor = None
 
     >>> login('no-priv@canonical.com')
 

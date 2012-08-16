@@ -152,7 +152,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         owning_team.addMember(weak_owner, self.owner)
         bug_team.addMember(weak_owner, self.owner)
         self.product.owner = owning_team
-        self.product.setBugSupervisor(bug_team, self.owner)
+        self.product.bug_supervisor = bug_team
         self.product.security_contact = bug_team
         login_person(weak_owner)
         form = self._makeForm()

@@ -1577,10 +1577,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                  bugs_with_upstream_patches))
         return results
 
-    def setBugSupervisor(self, bug_supervisor, user):
-        """See `IHasBugSupervisor`."""
-        self.bug_supervisor = bug_supervisor
-
     def getAllowedBugInformationTypes(self):
         """See `IDistribution.`"""
         types = set(InformationType.items)

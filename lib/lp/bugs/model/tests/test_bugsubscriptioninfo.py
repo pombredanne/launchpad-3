@@ -371,7 +371,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             bugtask.transitionToAssignee(assignee)
         supervisor = self.factory.makePerson()
         with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(supervisor, supervisor)
+            bugtask.target.bug_supervisor = supervisor
         structural_subscriber = self.factory.makePerson()
         with person_logged_in(structural_subscriber):
             bugtask.target.addSubscription(

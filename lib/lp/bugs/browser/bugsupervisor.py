@@ -63,9 +63,8 @@ class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
     @action('Change', name='change')
     def change_action(self, action, data):
         """Redirect to the target page with a success message."""
-        bug_supervisor = data['bug_supervisor']
-        self.changeBugSupervisor(bug_supervisor)
-        if bug_supervisor is None:
+        self.updateContextFromData(data)
+        if self.context.bug_supervisor is None:
             message = (
                 "Successfully cleared the bug supervisor. "
                 "You can set the bug supervisor again at any time.")

@@ -815,8 +815,7 @@ class BugSupervisorTestCase(TestCaseWithFactory):
     def testPersonCanSetSelfAsSupervisor(self):
         # A person can set themselves as bug supervisor for a product.
         # This is a regression test for bug 438985.
-        self.product.setBugSupervisor(
-            bug_supervisor=self.person, user=self.person)
+        self.product.bug_supervisor = self.person
 
         self.assertEqual(
             self.product.bug_supervisor, self.person,

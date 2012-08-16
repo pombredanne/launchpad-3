@@ -389,7 +389,7 @@ class TestBugTaskStatusTransitionBugSupervisorPerson(
         self.product = self.factory.makeProduct(owner=self.owner)
         self.task = self.factory.makeBugTask(target=self.product)
         with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.person, self.person)
+            self.product.bug_supervisor = self.person
 
 
 class TestBugTaskStatusTransitionBugSupervisorTeamMember(
@@ -403,7 +403,7 @@ class TestBugTaskStatusTransitionBugSupervisorTeamMember(
         self.product = self.factory.makeProduct(owner=self.owner)
         self.task = self.factory.makeBugTask(target=self.product)
         with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.team, self.team)
+            self.product.bug_supervisor = self.team
 
 
 class TestBugTaskStatusTransitionBugWatchUpdater(

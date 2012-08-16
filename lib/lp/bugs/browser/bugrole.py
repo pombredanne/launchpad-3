@@ -41,10 +41,6 @@ class BugRoleMixin:
         else:
             return self.OTHER_USER
 
-    def changeBugSupervisor(self, bug_supervisor):
-        if self.context.bug_supervisor != bug_supervisor:
-            self.context.setBugSupervisor(bug_supervisor, self.user)
-
     def changeSecurityContact(self, security_contact):
         if self.context.security_contact != security_contact:
             self.context.security_contact = security_contact

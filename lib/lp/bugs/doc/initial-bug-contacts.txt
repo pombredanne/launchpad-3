@@ -303,7 +303,7 @@ bug that aren't already subscribed.
 
 Let's make Foo Bar a bug supervisor for upstream firefox:
 
-    >>> mozilla_firefox.setBugSupervisor(foobar, foobar)
+    >>> mozilla_firefox.bug_supervisor = foobar
 
 Then we'll reassign bug #2 in Ubuntu to be in Firefox:
 

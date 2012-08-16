@@ -253,11 +253,11 @@ class TestBugTaskView(TestCaseWithFactory):
         product = self.factory.makeProduct(
             name='product1', owner=person, official_malone=True)
         with person_logged_in(person):
-            product.setBugSupervisor(person, person)
+            product.bug_supervisor = person
         product_2 = self.factory.makeProduct(
             name='product2', official_malone=True)
         with person_logged_in(product_2.owner):
-            product_2.setBugSupervisor(product_2.owner, product_2.owner)
+            product_2.bug_supervisor = product_2.owner
         bug = self.factory.makeBug(target=product, owner=person)
         # We need to commit here, otherwise all the sample data we
         # created gets destroyed when the transaction is rolled back.
@@ -1241,7 +1241,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         # For regular users, the assignee vocabulary is
         # AllUserTeamsParticipation if there is a bug supervisor defined.
         login_person(self.owner)
-        self.product.setBugSupervisor(self.owner, self.owner)
+        self.product.bug_supervisor = self.owner
         login(USER_EMAIL)
         view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
         view.initialize()
@@ -1253,7 +1253,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         # For regular users, the assignee vocabulary is
         # ValidAssignee is there is not a bug supervisor defined.
         login_person(self.owner)
-        self.product.setBugSupervisor(None, self.owner)
+        self.product.bug_supervisor = None
         login(USER_EMAIL)
         view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
         view.initialize()
