@@ -1367,8 +1367,7 @@
                 bug_supervisor"/>
         <require
             permission="launchpad.Edit"
-            attributes="
-                setBugSupervisor"/>
+            set_attributes="bug_supervisor"/>
     </class>
 
     <!-- ProductWithLicenses
@@ -1642,8 +1641,7 @@
                 bug_supervisor"/>
         <require
             permission="launchpad.Edit"
-            attributes="
-                setBugSupervisor"/>
+            set_attributes="bug_supervisor"/>
     </class>
     <adapter
         for="lp.registry.interfaces.distribution.IDistribution"

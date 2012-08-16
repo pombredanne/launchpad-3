@@ -292,7 +292,7 @@ class TestBugCreation(TestCaseWithFactory):
         # canTransitionToAssignee() will return False for `person` if
         # another Person is passed as `assignee`.
         with person_logged_in(target.owner):
-            target.setBugSupervisor(target.owner, target.owner)
+            target.bug_supervisor = target.owner
         with person_logged_in(person):
             params = CreateBugParams(
                 owner=person, title="A bug", comment="Nothing important.",
