@@ -31,6 +31,7 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    FREE_INFORMATION_TYPES,
     InformationType,
     )
 from lp.registry.errors import (
@@ -380,22 +381,27 @@ class TestProduct(TestCaseWithFactory):
         grantees = set([grant.grantee for grant in grants])
         self.assertEqual(expected_grantess, grantees)
 
-    def test_getAllowedBugInformationTypes(self):
-        # All projects currently support just the non-proprietary
-        # information types.
+
+class TestProductBugInformationTypes(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getAllowedBugInformationTypes_no_policy(self):
+        # New projects can only use the non-proprietary information
+        # types.
         self.assertContentEqual(
-            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            FREE_INFORMATION_TYPES,
             self.factory.makeProduct().getAllowedBugInformationTypes())
 
-    def test_getDefaultBugInformationType_public(self):
+    def test_getDefaultBugInformationType_no_policy(self):
         # The default information type for normal projects is PUBLIC.
         product = self.factory.makeProduct()
         self.assertEqual(
             InformationType.PUBLIC, product.getDefaultBugInformationType())
 
-    def test_getDefaultBugInformationType_private(self):
-        # private_bugs overrides the default information type to USERDATA.
+    def test_getDefaultBugInformationType_legacy_private_bugs(self):
+        # The deprecated private_bugs attribute overrides the default
+        # information type to USERDATA.
         product = self.factory.makeProduct(private_bugs=True)
         self.assertEqual(
             InformationType.USERDATA, product.getDefaultBugInformationType())

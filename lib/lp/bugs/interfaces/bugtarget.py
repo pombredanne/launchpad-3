@@ -18,6 +18,8 @@ __all__ = [
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
     'ISeriesBugTarget',
+    'POLICY_ALLOWED_TYPES',
+    'POLICY_DEFAULT_TYPES',
     ]
 
 
@@ -63,7 +65,6 @@ from lp.registry.enums import (
     BugSharingPolicy,
     FREE_INFORMATION_TYPES,
     InformationType,
-    PUBLIC_INFORMATION_TYPES,
     )
 from lp.services.fields import Tag
 
