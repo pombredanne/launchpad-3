@@ -59,7 +59,7 @@ class TestSSHKeyView(TestCaseWithFactory):
                 msg)
 
     def test_edit_ssh_keys_login_redirect(self):
-        """+editsshkeys should redirect to +login to force you to re-authenticate."""
+        """+editsshkeys should redirect to force you to re-authenticate."""
         person = self.factory.makePerson()
         login_person(person)
         view = create_initialized_view(person, "+editsshkeys")

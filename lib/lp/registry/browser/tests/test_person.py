@@ -571,7 +571,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self._assertEmailAndError(xss_email, expected_msg)
 
     def test_edit_email_login_redirect(self):
-        """+editemails should redirect to +login to force you to re-authenticate."""
+        """+editemails should redirect to force you to re-authenticate."""
         view = create_initialized_view(self.person, "+editemails")
         response = view.request.response
         self.assertEqual(302, response.getStatus())
