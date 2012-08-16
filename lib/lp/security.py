@@ -2430,9 +2430,6 @@ class AppendArchive(AuthorizationBase):
     PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
-
-    Appending to ubuntu main archives can also be done by the
-    'ubuntu-security' celebrity.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
@@ -2445,12 +2442,6 @@ class AppendArchive(AuthorizationBase):
             return True
 
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
-            return True
-
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (self.obj.is_main and
-            self.obj.distribution == celebrities.ubuntu and
-            user.in_ubuntu_security):
             return True
 
         return False
