@@ -1,6 +1,5 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401,E1002
 
 """Tests for the source package recipe view classes and templates."""
 
@@ -1415,6 +1414,24 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         harness.submit('build', {})
         self.assertEqual(
             "Secret PPA is disabled.",
+            harness.view.request.notifications[0].message)
+
+    def test_request_daily_builds_obsolete_series(self):
+        # Requesting a daily build with an obsolete series gives a warning.
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            name=u'julia', is_stale=True, build_daily=True)
+        warty = self.factory.makeSourcePackageRecipeDistroseries()
+        hoary = self.factory.makeSourcePackageRecipeDistroseries(name='hoary')
+        with person_logged_in(self.chef):
+            recipe.updateSeries((warty, hoary))
+        removeSecurityProxy(warty).status = SeriesStatus.OBSOLETE
+        harness = LaunchpadFormHarness(
+            recipe, SourcePackageRecipeRequestDailyBuildView)
+        harness.submit('build', {})
+        self.assertEqual(
+            '1 new recipe build has been queued.<p>The recipe contains an '
+            'obsolete distroseries, which has been skipped.</p>',
             harness.view.request.notifications[0].message)
 
     def test_request_builds_page(self):
