@@ -92,17 +92,6 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             self.product.bug_reported_acknowledgement)
         self.assertFalse(self.product.enable_bugfiling_duplicate_search)
 
-    def test_bug_supervisor_invalid(self):
-        # Verify that invalid bug_supervisor states are reported.
-        # This is a sanity check. The bug_supervisor is rigorously tested
-        # in its own test.
-        other_person = self.factory.makePerson()
-        form = self._makeForm()
-        form['field.bug_supervisor'] = other_person.name
-        view = create_initialized_view(
-            self.product, name='+configure-bugtracker', form=form)
-        self.assertEqual(1, len(view.errors))
-
     def test_security_contact_invalid(self):
         # Verify that invalid security_contact states are reported.
         # This is a sanity check. The security_contact is rigorously tested

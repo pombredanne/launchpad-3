@@ -218,7 +218,6 @@ class ProductConfigureBugTrackerView(BugRoleMixin,
         """Constrain bug expiration to Launchpad Bugs tracker."""
         super(ProductConfigureBugTrackerView, self).validate(data)
         if check_permission("launchpad.Edit", self.context):
-            self.validateBugSupervisor(data)
             self.validateSecurityContact(data)
         # enable_bug_expiration is disabled by JavaScript when bugtracker
         # is not 'In Launchpad'. The constraint is enforced here in case the

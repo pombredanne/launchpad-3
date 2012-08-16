@@ -199,13 +199,11 @@ supervisor is also an indirect subscriber.
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
@@ -216,13 +214,11 @@ would be used instead.
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
@@ -232,13 +228,11 @@ would be used instead.
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
@@ -267,28 +261,24 @@ parameter values of level.
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
     ...     level=BugNotificationLevel.COMMENTS))
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
@@ -305,26 +295,22 @@ level set to LIFECYCLE, he will not be included, if the parameter
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
     ...     level=BugNotificationLevel.LIFECYCLE))
     No Privileges Person
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers(
     ...     level=BugNotificationLevel.METADATA))
-    Robert Collins
     Sample Person
     Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers(
     ...     level=BugNotificationLevel.METADATA))
-    Robert Collins
     Sample Person
     Ubuntu Team
 
@@ -357,7 +343,6 @@ subscribed to the dupe target.
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
-    Robert Collins
     Sample Person
     Scott James Remnant
     Ubuntu Team
@@ -710,7 +695,7 @@ But the upstream Firefox bug supervisor, mark, is implicitly added to the
 recipients list.
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'mark@example.com', 'robertc@robertcollins.net']
+    ['foo.bar@canonical.com']
 
 If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
 supervisor will be subscribed:
@@ -720,8 +705,6 @@ supervisor will be subscribed:
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
-    mark@example.com
-    robertc@robertcollins.net
     support@ubuntu.com
     test@canonical.com
 
@@ -753,8 +736,6 @@ recipient list:
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
-    mark@example.com
-    robertc@robertcollins.net
 
 The upstream maintainer will be subscribed to security-related private
 bugs, because upstream has no security contact, in this case.
@@ -769,8 +750,6 @@ bugs, because upstream has no security contact, in this case.
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
-    mark@example.com
-    robertc@robertcollins.net
     test@canonical.com
 
 Now let's create a bug on a specific package, which has no package bug

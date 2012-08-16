@@ -114,7 +114,6 @@ from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
-    LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.product import (
@@ -612,8 +611,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         return Link('+branchvisibility', text, icon='edit')
 
 
-class ProductBugsMenu(PillarBugsMenu,
-                      ProductEditLinksMixin):
+class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -1543,10 +1541,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         else:
             return canonical_url(getUtility(IProductSet))
 
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return self.next_url
+    cancel_url = next_url
 
 
 class ProductValidationMixin:

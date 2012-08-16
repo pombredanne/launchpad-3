@@ -60,10 +60,6 @@ class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
 
     cancel_url = next_url
 
-    def validate(self, data):
-        """See `LaunchpadFormView`."""
-        self.validateBugSupervisor(data)
-
     @action('Change', name='change')
     def change_action(self, action, data):
         """Redirect to the target page with a success message."""
@@ -74,9 +70,5 @@ class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
                 "Successfully cleared the bug supervisor. "
                 "You can set the bug supervisor again at any time.")
         else:
-            message = structured(
-                'A bug mail subscription was created for the bug supervisor. '
-                'You can <a href="%s">edit bug mail</a> '
-                'to change which notifications will be sent.',
-                canonical_url(self.context, view_name='+subscriptions'))
+            message = structured('Bug supervisor privilege granted.')
         self.request.response.addNotification(message)

@@ -785,7 +785,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userHasDriverPrivileges(user):
-        """Does the user have driver privledges on the current bugtask?
+        """Does the user have driver privileges on the current bugtask?
 
         :return: A boolean.
         """
