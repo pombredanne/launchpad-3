@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 __metaclass__ = type
 
@@ -36,9 +35,15 @@ from lp.code.enums import (
     BranchType,
     BranchVisibilityRule,
     )
-from lp.registry.enums import InformationType, BranchSharingPolicy
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    InformationType,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.registry.interfaces.person import PersonVisibility, IPersonSet
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.helpers import truncate_text
@@ -67,6 +72,7 @@ from lp.testing.pages import (
     setupBrowser,
     setupBrowserForUser,
     )
+from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
