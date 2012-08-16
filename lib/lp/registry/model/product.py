@@ -92,7 +92,6 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import BugSet
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -1383,12 +1382,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Packaging.distroseriesID == DistroSeries.id,
             DistroSeries.distributionID == Distribution.id,
             ).config(distinct=True).order_by(Distribution.name)
-
-    def setBugSupervisor(self, bug_supervisor, user):
-        """See `IHasBugSupervisor`."""
-        self.bug_supervisor = bug_supervisor
-        if bug_supervisor is not None:
-            self.addBugSubscription(bug_supervisor, user)
 
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""

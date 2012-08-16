@@ -19,6 +19,9 @@ import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -26,7 +29,6 @@ from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.teammembership import (
@@ -54,9 +56,11 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
+    celebrity_logged_in,
     login,
     login_celebrity,
     login_person,
+    monkey_patch,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -137,22 +141,69 @@ class TestPersonIndexView(TestCaseWithFactory):
             "... Asia/Kolkata (UTC+0530) ..."), doctest.ELLIPSIS
             | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
 
+    def test_description_widget(self):
+        # The view provides a widget to render ond edit the person description.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index')
+        self.assertIsInstance(view.description_widget, TextAreaEditorWidget)
+        self.assertEqual(
+            'description', view.description_widget.exported_field.__name__)
+
+    def test_description_widget_is_probationary(self):
+        # Description text is not linkified when the user is probationary.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index')
+        self.assertIs(True, person.is_probationary)
+        self.assertIs(False, view.description_widget.linkify_text)
+
+    def test_description_widget_non_probationary(self):
+        # Description text is linkified when the user is non-probationary.
+        person = self.factory.makeTeam()
+        view = create_initialized_view(person, '+index')
+        self.assertIs(False, person.is_probationary)
+        self.assertIs(True, view.description_widget.linkify_text)
+
+    @staticmethod
+    def get_markup(view, person):
+        def fake_method():
+            return canonical_url(person)
+        with monkey_patch(view, _getURL=fake_method):
+            markup = view.render()
+        return markup
+
+    def test_is_probationary_or_invalid_user_with_non_probationary(self):
+        team = self.factory.makeTeam()
+        view = create_initialized_view(
+            team, '+index', principal=team.teamowner)
+        self.assertIs(False, view.is_probationary_or_invalid_user)
+        markup = view.render()
+        self.assertFalse(
+            'name="robots" content="noindex,nofollow"' in markup)
+
+    def test_is_probationary_or_invalid_user_with_probationary(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index', principal=person)
+        self.assertIs(True, view.is_probationary_or_invalid_user)
+        markup = self.get_markup(view, person)
+        self.assertTrue(
+            'name="robots" content="noindex,nofollow"' in markup)
+
+    def test_is_probationary_or_invalid_user_with_invalid(self):
+        person = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            person.account.status = AccountStatus.NOACCOUNT
+        observer = self.factory.makePerson()
+        view = create_initialized_view(person, '+index', principal=observer)
+        self.assertIs(True, view.is_probationary_or_invalid_user)
+        markup = self.get_markup(view, person)
+        self.assertTrue(
+            'name="robots" content="noindex,nofollow"' in markup)
+
     def test_person_view_page_description(self):
         person_description = self.factory.getUniqueString()
-        person = self.factory.makePerson(
-            homepage_content=person_description)
+        person = self.factory.makePerson(description=person_description)
         view = create_initialized_view(person, '+index')
-        self.assertThat(view.page_description,
-            Equals(person_description))
-
-    def test_team_page_description(self):
-        description = self.factory.getUniqueString()
-        person = self.factory.makeTeam(
-            description=description)
-        view = create_initialized_view(person, '+index')
-        self.assertThat(
-            view.page_description,
-            Equals(description))
+        self.assertThat(view.page_description, Equals(person_description))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -597,33 +648,6 @@ class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
         self.assertEqual(
             ['name', 'personal_standing', 'personal_standing_reason'],
             self.view.field_names)
-
-
-class TestTeamCreationView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestTeamCreationView, self).setUp()
-        person = self.factory.makePerson()
-        login_person(person)
-
-    def test_team_creation_good_data(self):
-        form = {
-            'field.actions.create': 'Create Team',
-            'field.displayname': 'liberty-land',
-            'field.name': 'libertyland',
-            'field.renewal_policy': 'NONE',
-            'field.renewal_policy-empty-marker': 1,
-            'field.membership_policy': 'RESTRICTED',
-            'field.membership_policy-empty-marker': 1,
-            }
-        person_set = getUtility(IPersonSet)
-        create_initialized_view(
-            person_set, '+newteam', form=form)
-        team = person_set.getByName('libertyland')
-        self.assertTrue(team is not None)
-        self.assertEqual('libertyland', team.name)
 
 
 class TestPersonParticipationView(TestCaseWithFactory):
@@ -1128,8 +1152,6 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
-        self.assertEqual(
-            None, view.page_description)
 
 
 class TestTeamInvitationView(TestCaseWithFactory):

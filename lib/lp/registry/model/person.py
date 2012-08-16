@@ -542,6 +542,7 @@ class Person(
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
+    _description = StringCol(dbName='description', default=None)
     icon = ForeignKey(
         dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
@@ -626,6 +627,26 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @property
+    def description(self):
+        """See `IPerson`."""
+        if self._description is not None:
+            return self._description
+        else:
+            # Fallback to obsolete sources.
+            texts = [
+                val for val in [self.homepage_content, self.teamdescription]
+                if val is not None]
+            if len(texts) > 0:
+                return '\n'.join(texts)
+            return None
+
+    @description.setter  # pyflakes:ignore
+    def description(self, value):
+        self._description = value
+        self.homepage_content = None
+        self.teamdescription = None
 
     @cachedproperty
     def ircnicknames(self):
@@ -3312,7 +3333,7 @@ class PersonSet:
             # Support 1.0 API.
             membership_policy = subscription_policy
         team = Person(teamowner=teamowner, name=name, displayname=displayname,
-                teamdescription=teamdescription,
+                description=teamdescription,
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 membership_policy=membership_policy)

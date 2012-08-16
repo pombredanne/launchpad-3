@@ -1,6 +1,5 @@
-= Creating a new team =
-
-== As a regular user ==
+Creating a new team
+-------------------
 
 Regular users can create teams.
 
@@ -16,8 +15,6 @@ Regular users can create teams.
 
     >>> browser.getControl(name='field.name').value = 'myemail'
     >>> browser.getControl('Display Name').value = 'your own team'
-    >>> browser.getControl(
-    ...     'Team Description').value = 'my own team description'
     >>> browser.getControl('Subscription period').value = '365'
     >>> browser.getControl('Open Team').selected = True
     >>> browser.getControl('Create').click()
@@ -35,7 +32,8 @@ The owner of a team is always added as an administrator of his team.
     [u'name12']
 
 
-= Joining a team =
+Joining a team
+--------------
 
 Karl will join the newly created team.
 
@@ -183,7 +181,9 @@ James Blackwell as a proposed one and Jeff Waugh won't be there at all.
     ...     print link.renderContents()
     James Blackwell
 
-= Managing team members =
+
+Managing team members
+---------------------
 
 On a team's +members page we can see all active members of that team, as
 well as the former members and the ones which proposed themselves or that
@@ -261,7 +261,8 @@ without bounds, so they are paginated.
     >>> config_data = config.pop('default-batch-size')
 
 
-== Approving a proposed member ==
+Approving a proposed member
+---------------------------
 
 James Blackwell wants to join the team and we know he made some contributions
 in the past, so we'll approve his membership.
@@ -287,7 +288,9 @@ in the past, so we'll approve his membership.
     Karl Tilbury
     Sample Person
 
-== Promoting/Demoting an existing member ==
+
+Promoting/Demoting an existing member
+-------------------------------------
 
 We'll now promote jblack to an administrator of this team.
 
@@ -313,7 +316,9 @@ We can also demote him if he doesn't behave himself.
     >>> browser.getControl(name='admin').value
     ['no']
 
-== Deactivating an existing member ==
+
+Deactivating an existing member
+-------------------------------
 
 Karl Tilbury has made no contributions lately, so we'll deactivate his
 membership for now.
@@ -336,11 +341,13 @@ membership for now.
 Attempt to deactivate the user again using our original browser2
 instance. No crashes in sight:
 
-  >>> browser2.getControl('Deactivate').click()
-  >>> browser2.url
-  'http://launchpad.dev/~myemail/+members'
+    >>> browser2.getControl('Deactivate').click()
+    >>> browser2.url
+    'http://launchpad.dev/~myemail/+members'
 
-== Reactivating a deactivated member ==
+
+Reactivating a deactivated member
+---------------------------------
 
 Later we may decide to reactivate Karl Tilbury's membership, so this must be
 possible.

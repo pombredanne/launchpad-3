@@ -19,7 +19,6 @@ __all__ = [
     'PersonCodeOfConductEditView',
     'PersonDeactivateAccountView',
     'PersonEditEmailsView',
-    'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
     'PersonEditTimeZoneView',
@@ -125,7 +124,9 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    )
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,
@@ -637,12 +638,6 @@ class CommonMenuLinks:
         return self.context
 
     @enabled_with_permission('launchpad.Edit')
-    def common_edithomepage(self):
-        target = '+edithomepage'
-        text = 'Change home page'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
         text = 'Create a new PPA'
@@ -731,7 +726,6 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     links = [
         'edit',
         'branding',
-        'common_edithomepage',
         'editemailaddresses',
         'editlanguages',
         'editircnicknames',
@@ -1663,25 +1657,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         return user.is_probationary or not user.is_valid_person_or_team
 
     @cachedproperty
-    def homepage_content(self):
-        """The user's HTML formatted homepage content.
-
-        The markup is simply escaped for probationary or invalid users.
-        The homepage content is reformatted as HTML and linkified if the user
-        is active.
-        """
-        content = self.context.homepage_content
-        if content is None:
-            return None
-        elif self.is_probationary_or_invalid_user:
-            # XXX: Is this really useful?  They can post links in many other
-            # places. -- mbp 2011-11-20.
-            return cgi.escape(content)
-        else:
-            formatter = FormattersAPI
-            return formatter(content).markdown()
-
-    @cachedproperty
     def recently_approved_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.APPROVED,
@@ -2238,13 +2213,19 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
         else:
             return "%s does not use Launchpad" % context.displayname
 
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        non_probationary = not self.context.is_probationary
+        return TextAreaEditorWidget(
+            self.context, IPerson['description'], title="",
+            edit_title='Edit description', hide_empty=False,
+            linkify_text=non_probationary)
+
     @cachedproperty
     def page_description(self):
-        context = self.context
-        if context.is_valid_person_or_team:
-            return (
-                self.context.homepage_content
-                or self.context.teamdescription)
+        if self.context.is_valid_person_or_team:
+            return self.context.description
         else:
             return None
 
@@ -2710,24 +2691,10 @@ class BasePersonEditView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
-class PersonEditHomePageView(BasePersonEditView):
-
-    field_names = ['homepage_content']
-    custom_widget(
-        'homepage_content', TextAreaWidget, height=30, width=30)
-
-    @property
-    def label(self):
-        """The form label."""
-        return 'Change home page for %s' % self.context.displayname
-
-    page_title = label
-
-
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
+    field_names = ['displayname', 'name', 'mugshot', 'description',
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
