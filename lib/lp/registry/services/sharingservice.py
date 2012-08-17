@@ -285,6 +285,9 @@ class SharingService:
                 BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
                 BranchSharingPolicy.PROPRIETARY])
+        if (pillar.branch_sharing_policy and
+            not pillar.branch_sharing_policy in allowed_policies):
+            allowed_policies.append(pillar.branch_sharing_policy)
 
         return self._makeEnumData(allowed_policies)
 
