@@ -1000,13 +1000,6 @@ class IBranchModerate(Interface):
             with the `IBranchNamespacePolicy`.
         """
 
-
-class IBranchEditableAttributes(Interface):
-    """IBranch attributes that can be edited.
-
-    These attributes need launchpad.View to see, and launchpad.Edit to change.
-    """
-
     name = exported(
         TextLine(
             title=_('Name'), required=True, constraint=branch_name_validator,
@@ -1023,6 +1016,24 @@ class IBranchEditableAttributes(Interface):
             description=_("The reviewer of a branch is the person or team "
                           "that is responsible for reviewing proposals and "
                           "merging into this branch.")))
+
+    description = exported(
+        Text(
+            title=_('Description'), required=False,
+            description=_(
+                'A short description of the changes in this branch.')))
+
+    lifecycle_status = exported(
+        Choice(
+            title=_('Status'), vocabulary=BranchLifecycleStatus,
+            default=BranchLifecycleStatus.DEVELOPMENT))
+
+
+class IBranchEditableAttributes(Interface):
+    """IBranch attributes that can be edited.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    """
 
     url = exported(
         BranchURIField(
@@ -1046,17 +1057,6 @@ class IBranchEditableAttributes(Interface):
         Choice(
             title=_("Branch Type"), required=True, readonly=True,
             vocabulary=BranchType))
-
-    description = exported(
-        Text(
-            title=_('Description'), required=False,
-            description=_(
-                'A short description of the changes in this branch.')))
-
-    lifecycle_status = exported(
-        Choice(
-            title=_('Status'), vocabulary=BranchLifecycleStatus,
-            default=BranchLifecycleStatus.DEVELOPMENT))
 
     branch_format = exported(
         Choice(

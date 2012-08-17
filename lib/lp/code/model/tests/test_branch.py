@@ -2598,8 +2598,8 @@ class BranchModerateTestCase(TestCaseWithFactory):
             self.assertTrue(
                 check_permission('launchpad.Moderate', branch))
 
-    def test_moderate_smoketest(self):
-        # Users with launchpad.Moderate and call methods and set attrs.
+    def test_transitionToInformationType_smoketest(self):
+        # Users with launchpad.Moderate can call transitionToInformationType.
         branch = self.factory.makeProductBranch()
         with celebrity_logged_in('commercial_admin') as admin:
             branch.product.setBranchSharingPolicy(
@@ -2610,9 +2610,23 @@ class BranchModerateTestCase(TestCaseWithFactory):
         self.assertEqual(
             InformationType.PRIVATESECURITY, branch.information_type)
 
+    def test_attribute_smoketest(self):
+        # Users with launchpad.Moderate can set attrs.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.name = 'not-secret'
+            branch.description = 'redacted'
+            branch.reviewer = branch.product.owner
+            branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
+        self.assertEqual('not-secret', branch.name)
+        self.assertEqual('redacted', branch.description)
+        self.assertEqual(branch.product.owner, branch.reviewer)
+        self.assertEqual(
+            BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
+
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
-    """Tests for `Branch.commitsForDays`."""
+    """Tests for `Branch.commitsFornDays`."""
 
     layer = DatabaseFunctionalLayer
 
