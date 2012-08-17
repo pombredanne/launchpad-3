@@ -419,6 +419,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
                         pass
             except KeyError:
                 pass
+        else:
+            the_item = None
 
         if the_item is not None:
             result_set = getUtility(IArchivePermissionSet).checkAuthenticated(
