@@ -18,6 +18,7 @@ from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import (
     extract_text,
     find_tags_by_class,
+    setupBrowserFreshLogin,
     )
 from lp.testing.views import create_initialized_view
 
@@ -44,14 +45,15 @@ class TestSSHKeyView(TestCaseWithFactory):
     def test_escaped_message_when_removing_key(self):
         """Confirm that messages are escaped when removing keys."""
         person = self.factory.makePerson()
+        url = '%s/+editsshkeys' % canonical_url(person)
+        public_key = "ssh-rsa %s x<script>alert()</script>example.com" % (
+            self.getUniqueString())
         with person_logged_in(person):
-            public_key = "ssh-rsa %s x<script>alert()</script>example.com" % (
-                self.getUniqueString())
             # Add the key for the user here,
             # since we only care about testing removal.
             getUtility(ISSHKeySet).new(person, public_key)
-            browser = self.getUserBrowser(
-                canonical_url(person) + '/+editsshkeys', user=person)
+            browser = setupBrowserFreshLogin(person)
+            browser.open(url)
             browser.getControl('Remove').click()
             msg = 'Key "x&lt;script&gt;alert()&lt;/script&gt;example.com" removed'
             self.assertEqual(
