@@ -53,6 +53,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -1131,6 +1132,12 @@ class IBranchEdit(Interface):
         :raise: CannotDeleteBranch if the branch cannot be deleted.
         """
 
+    @operation_parameters(
+        information_type=copy_field(IBranchPublic['information_type']),
+        )
+    @call_with(who=REQUEST_USER, verify_policy=True)
+    @export_write_operation()
+    @operation_for_version("devel")
     def transitionToInformationType(information_type, who,
                                     verify_policy=True):
         """Set the information type for this branch.
