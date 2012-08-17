@@ -981,24 +981,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
 
-class IBranchModerate(Interface):
+class IBranchModerateAttributes(Interface):
     """IBranch attributes that can be edited by a more than one community."""
-
-    @operation_parameters(
-        information_type=copy_field(IBranchPublic['information_type']),
-        )
-    @call_with(who=REQUEST_USER, verify_policy=True)
-    @export_write_operation()
-    @operation_for_version("devel")
-    def transitionToInformationType(information_type, who,
-                                    verify_policy=True):
-        """Set the information type for this branch.
-
-        :param information_type: The `InformationType` to transition to.
-        :param who: The `IPerson` who is making the change.
-        :param verify_policy: Check if the new information type complies
-            with the `IBranchNamespacePolicy`.
-        """
 
     name = exported(
         TextLine(
@@ -1027,6 +1011,26 @@ class IBranchModerate(Interface):
         Choice(
             title=_('Status'), vocabulary=BranchLifecycleStatus,
             default=BranchLifecycleStatus.DEVELOPMENT))
+
+
+class IBranchModerate(Interface):
+    """IBranch methods that can be edited by a more than one community."""
+
+    @operation_parameters(
+        information_type=copy_field(IBranchPublic['information_type']),
+        )
+    @call_with(who=REQUEST_USER, verify_policy=True)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def transitionToInformationType(information_type, who,
+                                    verify_policy=True):
+        """Set the information type for this branch.
+
+        :param information_type: The `InformationType` to transition to.
+        :param who: The `IPerson` who is making the change.
+        :param verify_policy: Check if the new information type complies
+            with the `IBranchNamespacePolicy`.
+        """
 
 
 class IBranchEditableAttributes(Interface):
@@ -1200,8 +1204,9 @@ class IMergeQueueable(Interface):
         """
 
 
-class IBranch(IBranchPublic, IBranchView, IBranchModerate, IBranchEdit,
-              IBranchEditableAttributes, IBranchAnyone, IMergeQueueable):
+class IBranch(IBranchPublic, IBranchView, IBranchEdit,
+              IBranchEditableAttributes, IBranchModerate,
+              IBranchModerateAttributes, IBranchAnyone, IMergeQueueable):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
