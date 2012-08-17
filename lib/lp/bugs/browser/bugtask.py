@@ -704,8 +704,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def is_duplicate_active(self):
         active = True
         if self.context.bug.duplicateof is not None:
-            target = self.context.bug.duplicateof.default_bugtask.target
-            active = getattr(target, 'active', True)
+            naked_duplicate = removeSecurityProxy(
+                self.context.bug.duplicateof)
+            active = getattr(
+                naked_duplicate.default_bugtask.target, 'active', True)
         return active
 
     @cachedproperty

@@ -57,6 +57,7 @@ from zope.interface import (
     )
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
@@ -450,8 +451,9 @@ class BugViewMixin:
     def is_duplicate_active(self):
         active = True
         if self.context.duplicateof is not None:
-            target = self.context.duplicateof.default_bugtask.target
-            active = getattr(target, 'active', True)
+            naked_duplicate = removeSecurityProxy(self.context.duplicateof)
+            active = getattr(
+                naked_duplicate.default_bugtask.target, 'active', True)
         return active
             
     @cachedproperty
