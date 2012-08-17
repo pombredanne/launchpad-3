@@ -3283,12 +3283,9 @@ class TestWebservice(TestCaseWithFactory):
         """Test transitionToInformationType() API arguments."""
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
-        with celebrity_logged_in('commercial_admin') as admin:
-            # XXX sinzui 2012-08-16: setBranchSharingPolicy() is guarded
-            # at this moment.
-            product.setBranchSharingPolicy(
-                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY, admin)
         with person_logged_in(product.owner):
+            product.setBranchSharingPolicy(
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY, product.owner)
             db_branch = self.factory.makeBranch(product=product)
             launchpad = launchpadlib_for('test', db_branch.owner,
                 service_root=self.layer.appserver_root_url('api'))
