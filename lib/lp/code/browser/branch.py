@@ -737,6 +737,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                 InformationType.PUBLIC,
                 InformationType.USERDATA,
                 InformationType.PROPRIETARY,
+                InformationType.EMBARGOED,
                 )
 
             # We only show Private Security and Public Security

@@ -2430,6 +2430,9 @@ class TestBranchGetAllowedInformationTypes(TestCaseWithFactory):
         self.assertNotIn(
             InformationType.PROPRIETARY,
             branch.getAllowedInformationTypes(branch.owner))
+        self.assertNotIn(
+            InformationType.EMBARGOED,
+            branch.getAllowedInformationTypes(branch.owner))
 
     def test_admin_sees_namespace_types(self):
         # An admin sees all the types, since they occasionally need to
