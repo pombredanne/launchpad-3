@@ -520,6 +520,14 @@ class Publisher(object):
         with open(os.path.join(location, "Release"), "w") as release_file:
             release_data.dump(release_file, "utf-8")
 
+    def _syncTimestamps(self, suite, all_files):
+        """Make sure the timestamps on all files in a suite match."""
+        location = os.path.join(self._config.distsroot, suite)
+        paths = [os.path.join(location, path) for path in all_files]
+        latest_timestamp = max(os.stat(path).st_mtime for path in paths)
+        for path in paths:
+            os.utime(path, (latest_timestamp, latest_timestamp))
+
     def _writeSuite(self, distroseries, pocket):
         """Write out the Release files for the provided suite."""
         # XXX: kiko 2006-08-24: Untested method.
@@ -592,6 +600,7 @@ class Publisher(object):
                 "size": len(entry)})
 
         self._writeReleaseFile(suite, release_file)
+        all_files.add("Release")
 
         # Skip signature if the archive signing key is undefined.
         if self.archive.signing_key is None:
@@ -601,6 +610,11 @@ class Publisher(object):
         # Sign the repository.
         archive_signer = IArchiveSigningKey(self.archive)
         archive_signer.signRepository(suite)
+        all_files.add("Release.gpg")
+
+        # Make sure all the timestamps match, to make it easier to insert
+        # caching headers on mirrors.
+        self._syncTimestamps(suite, all_files)
 
     def _writeSuiteArchOrSource(self, distroseries, pocket, component,
                                 file_stub, arch_name, arch_path,
