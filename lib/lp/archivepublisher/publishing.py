@@ -159,8 +159,7 @@ class I18nIndex(_multivalued):
         return fixed_field_lengths
 
     def _get_size_field_length(self, key):
-        lengths = [len(str(item['size'])) for item in self[key]]
-        return max(lengths)
+        return max(len(str(item['size'])) for item in self[key])
 
 
 class Publisher(object):
@@ -572,8 +571,7 @@ class Publisher(object):
         release_file["Codename"] = distroseries.name
         release_file["Date"] = datetime.utcnow().strftime(
             "%a, %d %b %Y %k:%M:%S UTC")
-        release_file["Architectures"] = " ".join(
-            sorted(list(all_architectures)))
+        release_file["Architectures"] = " ".join(sorted(all_architectures))
         release_file["Components"] = " ".join(
             reorder_components(all_components))
         release_file["Description"] = drsummary
@@ -582,7 +580,7 @@ class Publisher(object):
             release_file["NotAutomatic"] = "yes"
             release_file["ButAutomaticUpgrades"] = "yes"
 
-        for filename in sorted(list(all_files), key=os.path.dirname):
+        for filename in sorted(all_files, key=os.path.dirname):
             entry = self._readIndexFileContents(suite, filename)
             if entry is None:
                 continue
@@ -641,12 +639,9 @@ class Publisher(object):
         release_file["Label"] = self._getLabel()
         release_file["Architecture"] = arch_name
 
-        f = open(os.path.join(self._config.distsroot, suite,
-                              component, arch_path, "Release"), "w")
-        try:
+        with open(os.path.join(self._config.distsroot, suite,
+                               component, arch_path, "Release"), "w") as f:
             release_file.dump(f, "utf-8")
-        finally:
-            f.close()
 
     def _writeSuiteSource(self, distroseries, pocket, component,
                           all_series_files):
@@ -732,11 +727,8 @@ class Publisher(object):
             self.log.debug("Failed to find " + full_name)
             return None
 
-        in_file = open(full_name, 'r')
-        try:
+        with open(full_name, 'r') as in_file:
             return in_file.read()
-        finally:
-            in_file.close()
 
     def deleteArchive(self):
         """Delete the archive.
