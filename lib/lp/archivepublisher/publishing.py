@@ -49,6 +49,10 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 # Use this as the lock file name for all scripts that may manipulate
 # archives in the filesystem.  In a Launchpad(Cron)Script, set
@@ -280,9 +284,6 @@ class Publisher(object):
         OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
         dirty, to ensure that they are processed in death row.
         """
-        from lp.soyuz.model.publishing import (
-            SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-
         self.log.debug("* Step A2: Mark pockets with deletions as dirty")
 
         # Query part that is common to both queries below.
