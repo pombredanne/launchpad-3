@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
-from lp.code.enums import BranchVisibilityRule
-from lp.code.model.branchvisibilitypolicy import BranchVisibilityTeamPolicy
 
 __metaclass__ = type
 __all__ = [
@@ -56,7 +54,9 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
     )
+from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchvisibilitypolicy import BranchVisibilityTeamPolicy
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -1106,28 +1106,26 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         if self.options.experimental:
             tunable_loops.extend(self.experimental_tunable_loops)
 
-#        threads = set()
-#        for count in range(0, self.options.threads):
-#            thread = threading.Thread(
-#                target=self.run_tasks_in_thread,
-#                name='Worker-%d' % (count + 1,),
-#                args=(tunable_loops,))
-#            thread.start()
-#            threads.add(thread)
-#
-#        # Block until all the worker threads have completed. We block
-#        # until the script timeout is hit, plus 60 seconds. We wait the
-#        # extra time because the loops are supposed to shut themselves
-#        # down when the script timeout is hit, and the extra time is to
-#        # give them a chance to clean up.
-#        for thread in threads:
-#            time_to_go = self.get_remaining_script_time() + 60
-#            if time_to_go > 0:
-#                thread.join(time_to_go)
-#            else:
-#                break
+        threads = set()
+        for count in range(0, self.options.threads):
+            thread = threading.Thread(
+                target=self.run_tasks_in_thread,
+                name='Worker-%d' % (count + 1,),
+                args=(tunable_loops,))
+            thread.start()
+            threads.add(thread)
 
-        self.run_tasks_in_thread(tunable_loops)
+        # Block until all the worker threads have completed. We block
+        # until the script timeout is hit, plus 60 seconds. We wait the
+        # extra time because the loops are supposed to shut themselves
+        # down when the script timeout is hit, and the extra time is to
+        # give them a chance to clean up.
+        for thread in threads:
+            time_to_go = self.get_remaining_script_time() + 60
+            if time_to_go > 0:
+                thread.join(time_to_go)
+            else:
+                break
 
         # If the script ran out of time, warn.
         if self.get_remaining_script_time() < 0:

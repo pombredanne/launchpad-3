@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
-from lp.registry.interfaces.product import IProductSet
 
 __metaclass__ = type
 __all__ = []
@@ -61,6 +60,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -1058,8 +1058,9 @@ class TestGarbo(TestCaseWithFactory):
         # Check only the expected projects have been migrated.
         # landscape and launchpad are projects in the test database which have
         # non public branch visibility policies so are also not migrated.
-        landscape = getUtility(IProductSet).getByName('landscape')
-        launchpad = getUtility(IProductSet).getByName('launchpad')
+        product_set = getUtility(IProductSet)
+        landscape = product_set.getByName('landscape')
+        launchpad = product_set.getByName('launchpad')
         self.assertContentEqual(
             [commercial_project, configured_project, private_project,
              project_with_bvp, landscape, launchpad],
