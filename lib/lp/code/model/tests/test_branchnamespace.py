@@ -41,6 +41,7 @@ from lp.code.model.branchnamespace import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
     PersonVisibility,
     PUBLIC_INFORMATION_TYPES,
     SharingPermission,
@@ -486,7 +487,8 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertContentEqual(
-            InformationType.items, namespace.getAllowedInformationTypes())
+            NON_EMBARGOED_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.PUBLIC, namespace.getDefaultInformationType())
 
@@ -504,7 +506,8 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
                 namespace.product, namespace.owner, namespace.product.owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
         self.assertContentEqual(
-            InformationType.items, namespace.getAllowedInformationTypes())
+            NON_EMBARGOED_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.PROPRIETARY,
             namespace.getDefaultInformationType())

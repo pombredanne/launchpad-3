@@ -597,6 +597,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct.`"""
         types = set(InformationType.items)
         types.discard(InformationType.PROPRIETARY)
+        types.discard(InformationType.EMBARGOED)
         return types
 
     def getDefaultBugInformationType(self):
