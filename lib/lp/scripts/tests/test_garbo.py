@@ -19,6 +19,7 @@ from storm.expr import (
     In,
     Min,
     Not,
+    Or,
     SQL,
     )
 from storm.locals import (
@@ -51,7 +52,12 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -102,7 +108,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -1015,6 +1024,45 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(old_update, naked_bug.heat_last_updated)
         self.runHourly()
         self.assertNotEqual(old_update, naked_bug.heat_last_updated)
+
+    def test_PopulateProjectSharingPolicies(self):
+        # Non commercial projects have their bug and branch sharing policies
+        # set.
+        with dbuser('testadmin'):
+            non_commercial_products = [
+                self.factory.makeProduct()
+                for i in range(10)]
+            commercial_project = self.factory.makeProduct()
+            self.factory.makeCommercialSubscription(commercial_project)
+            configured_project = self.factory.makeProduct(
+                bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+
+        def get_non_migrated_products():
+            return IMasterStore(Product).find(
+                Product,
+                Or(
+                    Product.bug_sharing_policy == None,
+                    Product.branch_sharing_policy == None))
+
+        self.runHourly()
+
+        # Check only the expected projects have been migrated.
+        self.assertContentEqual(
+            [commercial_project, configured_project],
+            get_non_migrated_products())
+        # The non migrated projects still have their original policies.
+        self.assertIsNone(commercial_project.bug_sharing_policy)
+        self.assertIsNone(commercial_project.branch_sharing_policy)
+        self.assertIsNone(configured_project.branch_sharing_policy)
+        self.assertEquals(
+            BugSharingPolicy.PROPRIETARY,
+            configured_project.bug_sharing_policy)
+        # The migrated projects have the expected policies.
+        for product in non_commercial_products:
+            self.assertEqual(
+                BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+            self.assertEqual(
+                BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
 
 
 class TestGarboTasks(TestCaseWithFactory):
