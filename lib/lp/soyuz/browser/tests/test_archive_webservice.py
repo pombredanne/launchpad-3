@@ -31,7 +31,7 @@ from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
     person_logged_in,
-    StormStatementRecorder,
+    record_two_runs,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
@@ -92,20 +92,19 @@ class TestArchiveWebservice(TestCaseWithFactory):
     def test_getAllPermissions_constant_query_count(self):
         # getAllPermissions has a query count constant in the number of
         # permissions and people.
-        with celebrity_logged_in('admin'):
-            main = getUtility(IComponentSet)["main"]
-            ArchivePermission(
-                archive=self.archive, person=self.factory.makePerson(),
-                component=main, permission=ArchivePermissionType.UPLOAD)
-        with StormStatementRecorder() as recorder_one:
+        def create_permission():
+            with celebrity_logged_in('admin'):
+                ArchivePermission(
+                    archive=self.archive, person=self.factory.makePerson(),
+                    component=getUtility(IComponentSet)["main"],
+                    permission=ArchivePermissionType.UPLOAD)
+
+        def get_permissions():
             list(self.main_archive.getAllPermissions())
-        with celebrity_logged_in('admin'):
-            ArchivePermission(
-                archive=self.archive, person=self.factory.makePerson(),
-                component=main, permission=ArchivePermissionType.UPLOAD)
-        with StormStatementRecorder() as recorder:
-            list(self.main_archive.getAllPermissions())
-        self.assertThat(recorder, HasQueryCount(Equals(recorder_one.count)))
+
+        recorder1, recorder2 = record_two_runs(
+            get_permissions, create_permission, 1)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestExternalDependencies(WebServiceTestCase):
