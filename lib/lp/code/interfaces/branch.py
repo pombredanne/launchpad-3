@@ -981,6 +981,26 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
 
+class IBranchModerate(Interface):
+    """IBranch attributes that can be edited by a more than one community."""
+
+    @operation_parameters(
+        information_type=copy_field(IBranchPublic['information_type']),
+        )
+    @call_with(who=REQUEST_USER, verify_policy=True)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def transitionToInformationType(information_type, who,
+                                    verify_policy=True):
+        """Set the information type for this branch.
+
+        :param information_type: The `InformationType` to transition to.
+        :param who: The `IPerson` who is making the change.
+        :param verify_policy: Check if the new information type complies
+            with the `IBranchNamespacePolicy`.
+        """
+
+
 class IBranchEditableAttributes(Interface):
     """IBranch attributes that can be edited.
 
@@ -1132,22 +1152,6 @@ class IBranchEdit(Interface):
         :raise: CannotDeleteBranch if the branch cannot be deleted.
         """
 
-    @operation_parameters(
-        information_type=copy_field(IBranchPublic['information_type']),
-        )
-    @call_with(who=REQUEST_USER, verify_policy=True)
-    @export_write_operation()
-    @operation_for_version("devel")
-    def transitionToInformationType(information_type, who,
-                                    verify_policy=True):
-        """Set the information type for this branch.
-
-        :param information_type: The `InformationType` to transition to.
-        :param who: The `IPerson` who is making the change.
-        :param verify_policy: Check if the new information type complies
-            with the `IBranchNamespacePolicy`.
-        """
-
 
 class IMergeQueueable(Interface):
     """An interface for branches that can be queued."""
@@ -1196,7 +1200,7 @@ class IMergeQueueable(Interface):
         """
 
 
-class IBranch(IBranchPublic, IBranchView, IBranchEdit,
+class IBranch(IBranchPublic, IBranchView, IBranchModerate, IBranchEdit,
               IBranchEditableAttributes, IBranchAnyone, IMergeQueueable):
     """A Bazaar branch."""
 

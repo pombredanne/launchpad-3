@@ -451,6 +451,9 @@
                    lp.code.interfaces.branch.IBranchView"
         attributes="merge_queue merge_queue_config"/>
     <require
+        permission="launchpad.Moderate"
+        interface="lp.code.interfaces.branch.IBranchModerate" />
+    <require
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branch.IBranchEdit"
         set_schema="lp.code.interfaces.branch.IBranchEditableAttributes"
