@@ -2,6 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
+from lp.code.enums import BranchVisibilityRule
+from lp.code.model.branchvisibilitypolicy import BranchVisibilityTeamPolicy
 
 __metaclass__ = type
 __all__ = [
@@ -33,7 +35,7 @@ from storm.expr import (
     Not,
     Select,
     Update,
-    )
+    Or)
 from storm.locals import (
     Max,
     Min,
@@ -1009,16 +1011,30 @@ class PopulateProjectSharingPolicies(TunableLoop):
         self.store = IMasterStore(Product)
 
     def getProducts(self):
-        # We only want non-commercial products which have neither bug nor
-        # branch sharing policy set.
+        """ Load the products to process.
+
+        We only want products which:
+            - are non-commercial products which have neither bug nor
+              branch sharing policy set
+            - have private_bugs = false
+            - have no branch visibility policies other than public
+        """
         return self.store.find(
             Product.id,
             Not(
-                Exists(Select(1, tables=[CommercialSubscription],
-                where=And(
-                    CommercialSubscription.product == Product.id,
-                    CommercialSubscription.date_expires > datetime.now(
-                    pytz.UTC))))),
+                Or(
+                    Exists(Select(1, tables=[CommercialSubscription],
+                        where=And(
+                            CommercialSubscription.product == Product.id,
+                            CommercialSubscription.date_expires > datetime.now(
+                            pytz.UTC)))),
+                    Product.private_bugs == True,
+                    Exists(Select(1, tables=[BranchVisibilityTeamPolicy],
+                        where=And(
+                            BranchVisibilityTeamPolicy.product == Product.id,
+                            BranchVisibilityTeamPolicy.rule !=
+                                BranchVisibilityRule.PUBLIC))),
+                )),
             And(Product.bug_sharing_policy == None,
                 Product.branch_sharing_policy == None)).order_by(Product.id)
 
@@ -1090,26 +1106,28 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         if self.options.experimental:
             tunable_loops.extend(self.experimental_tunable_loops)
 
-        threads = set()
-        for count in range(0, self.options.threads):
-            thread = threading.Thread(
-                target=self.run_tasks_in_thread,
-                name='Worker-%d' % (count + 1,),
-                args=(tunable_loops,))
-            thread.start()
-            threads.add(thread)
+#        threads = set()
+#        for count in range(0, self.options.threads):
+#            thread = threading.Thread(
+#                target=self.run_tasks_in_thread,
+#                name='Worker-%d' % (count + 1,),
+#                args=(tunable_loops,))
+#            thread.start()
+#            threads.add(thread)
+#
+#        # Block until all the worker threads have completed. We block
+#        # until the script timeout is hit, plus 60 seconds. We wait the
+#        # extra time because the loops are supposed to shut themselves
+#        # down when the script timeout is hit, and the extra time is to
+#        # give them a chance to clean up.
+#        for thread in threads:
+#            time_to_go = self.get_remaining_script_time() + 60
+#            if time_to_go > 0:
+#                thread.join(time_to_go)
+#            else:
+#                break
 
-        # Block until all the worker threads have completed. We block
-        # until the script timeout is hit, plus 60 seconds. We wait the
-        # extra time because the loops are supposed to shut themselves
-        # down when the script timeout is hit, and the extra time is to
-        # give them a chance to clean up.
-        for thread in threads:
-            time_to_go = self.get_remaining_script_time() + 60
-            if time_to_go > 0:
-                thread.join(time_to_go)
-            else:
-                break
+        self.run_tasks_in_thread(tunable_loops)
 
         # If the script ran out of time, warn.
         if self.get_remaining_script_time() < 0:

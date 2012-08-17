@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
+from lp.registry.interfaces.product import IProductSet
 
 __metaclass__ = type
 __all__ = []
@@ -44,7 +45,10 @@ from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
     )
-from lp.code.enums import CodeImportResultStatus
+from lp.code.enums import (
+    BranchVisibilityRule,
+    CodeImportResultStatus,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.model.branchjob import (
     BranchJob,
@@ -1036,6 +1040,11 @@ class TestGarbo(TestCaseWithFactory):
             self.factory.makeCommercialSubscription(commercial_project)
             configured_project = self.factory.makeProduct(
                 bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+            private_project = self.factory.makeProduct(private_bugs=True)
+            project_with_bvp = self.factory.makeProduct()
+            project_with_bvp.setBranchVisibilityTeamPolicy(
+                None, BranchVisibilityRule.FORBIDDEN)
+
 
         def get_non_migrated_products():
             return IMasterStore(Product).find(
@@ -1047,12 +1056,21 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
 
         # Check only the expected projects have been migrated.
+        # landscape and launchpad are projects in the test database which have
+        # non public branch visibility policies so are also not migrated.
+        landscape = getUtility(IProductSet).getByName('landscape')
+        launchpad = getUtility(IProductSet).getByName('launchpad')
         self.assertContentEqual(
-            [commercial_project, configured_project],
+            [commercial_project, configured_project, private_project,
+             project_with_bvp, landscape, launchpad],
             get_non_migrated_products())
         # The non migrated projects still have their original policies.
         self.assertIsNone(commercial_project.bug_sharing_policy)
         self.assertIsNone(commercial_project.branch_sharing_policy)
+        self.assertIsNone(private_project.bug_sharing_policy)
+        self.assertIsNone(private_project.branch_sharing_policy)
+        self.assertIsNone(project_with_bvp.bug_sharing_policy)
+        self.assertIsNone(project_with_bvp.branch_sharing_policy)
         self.assertIsNone(configured_project.branch_sharing_policy)
         self.assertEquals(
             BugSharingPolicy.PROPRIETARY,
