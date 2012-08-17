@@ -138,6 +138,7 @@ from lp.services.job.tests import (
     )
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     admin_logged_in,
@@ -2580,6 +2581,22 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             InformationType.PRIVATESECURITY, owner, verify_policy=False)
         self.assertEqual(
             InformationType.PRIVATESECURITY, branch.information_type)
+
+
+class TBranchModerateTestCase(TestCaseWithFactory):
+    """Test that product owners and commercial admins can moderate branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_moderate_permission(self):
+        # Test the ModerateBranch security checker.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            self.assertTrue(
+                check_permission('launchpad.Moderate', branch))
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(
+                check_permission('launchpad.Moderate', branch))
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
