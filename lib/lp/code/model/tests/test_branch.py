@@ -2601,10 +2601,9 @@ class BranchModerateTestCase(TestCaseWithFactory):
     def test_methods_smoketest(self):
         # Users with launchpad.Moderate can call transitionToInformationType.
         branch = self.factory.makeProductBranch()
-        with celebrity_logged_in('commercial_admin') as admin:
-            branch.product.setBranchSharingPolicy(
-                BranchSharingPolicy.PUBLIC, admin)
         with person_logged_in(branch.product.owner):
+            branch.product.setBranchSharingPolicy(
+                BranchSharingPolicy.PUBLIC, branch.product.owner)
             branch.transitionToInformationType(
                 InformationType.PRIVATESECURITY, branch.product.owner)
         self.assertEqual(
