@@ -915,6 +915,39 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertEqual('multiverse', pcj.metadata['component_override'])
 
+    def test_double_copy(self):
+        # Copying a package already in the target successfully does nothing.
+        job = create_proper_job(self.factory)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        published_sources = job.target_archive.getPublishedSources(
+            name=job.package_name)
+        self.assertEqual(2, len(list(published_sources)))
+        switch_dbuser("launchpad_main")
+        second_job = getUtility(IPlainPackageCopyJobSource).create(
+            job.package_name, job.source_archive, job.target_archive,
+            job.target_distroseries, job.target_pocket,
+            include_binaries=job.include_binaries,
+            package_version=job.package_version, requester=job.requester)
+        self.runJob(second_job)
+        self.assertEqual(JobStatus.COMPLETED, second_job.status)
+        published_sources = job.target_archive.getPublishedSources(
+            name=job.package_name)
+        self.assertEqual(2, len(list(published_sources)))
+
+    def test_copying_resurrects_deleted_package(self):
+        # A copy job can be used to resurrect previously-deleted packages.
+        archive = self.factory.makeArchive(self.distroseries.distribution)
+        spph = self.publisher.getPubSource(
+            distroseries=self.distroseries, sourcename="copyme",
+            status=PackagePublishingStatus.DELETED, archive=archive)
+        job = self.createCopyJobForSPPH(
+            spph, archive, archive, requester=archive.owner)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        published_sources = archive.getPublishedSources(name="copyme")
+        self.assertIsNotNone(published_sources.any())
+
     def test_copying_to_main_archive_unapproved(self):
         # Uploading to a series that is in a state that precludes auto
         # approval will cause the job to suspend and a packageupload

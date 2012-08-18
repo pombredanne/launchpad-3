@@ -596,7 +596,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # The package is free to go right in, so just copy it now.
         ancestry = self.target_archive.getPublishedSources(
             name=name, distroseries=self.target_distroseries,
-            pocket=self.target_pocket, exact_match=True).first()
+            pocket=self.target_pocket, exact_match=True)
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
         send_email = copy_policy.send_email(self.target_archive)
@@ -610,14 +610,16 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             unembargo=self.unembargo)
 
         # Add a PackageDiff for this new upload if it has ancestry.
-        if ancestry is not None:
-            to_sourcepackagerelease = ancestry.sourcepackagerelease
-            copied_source = copied_sources[0]
-            try:
-                to_sourcepackagerelease.requestDiffTo(
-                    self.requester, copied_source.sourcepackagerelease)
-            except PackageDiffAlreadyRequested:
-                pass
+        if copied_sources and not ancestry.is_empty():
+            from_spr = copied_sources[0].sourcepackagerelease
+            for ancestor in ancestry:
+                to_spr = ancestor.sourcepackagerelease
+                if from_spr != to_spr:
+                    try:
+                        to_spr.requestDiffTo(self.requester, from_spr)
+                    except PackageDiffAlreadyRequested:
+                        pass
+                    break
 
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be
