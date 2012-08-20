@@ -20,6 +20,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     SharingPermission,
     )
@@ -111,18 +113,21 @@ class TestSharingService(TestCaseWithFactory):
         for x, permission in enumerate(expected_permissions):
             self.assertEqual(permissions[x]['value'], permission.name)
 
-    def _assert_getInformationTypes(self, pillar, expected_policies):
-        policy_data = self.service.getInformationTypes(pillar)
+    def _assert_enumData(self, expected_enums, enum_data):
         expected_data = []
-        for x, policy in enumerate(expected_policies):
+        for x, enum in enumerate(expected_enums):
             item = dict(
                 index=x,
-                value=policy.name,
-                title=policy.title,
-                description=policy.description
+                value=enum.name,
+                title=enum.title,
+                description=enum.description
             )
             expected_data.append(item)
-        self.assertContentEqual(expected_data, policy_data)
+        self.assertContentEqual(expected_data, enum_data)
+
+    def _assert_getInformationTypes(self, pillar, expected_policies):
+        policy_data = self.service.getInformationTypes(pillar)
+        self._assert_enumData(expected_policies, policy_data)
 
     def test_getInformationTypes_product(self):
         product = self.factory.makeProduct()
@@ -151,6 +156,76 @@ class TestSharingService(TestCaseWithFactory):
         self._assert_getInformationTypes(
             distro,
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
+
+    def _assert_getBranchSharingPolicies(self, pillar, expected_policies):
+        policy_data = self.service.getBranchSharingPolicies(pillar)
+        self._assert_enumData(expected_policies, policy_data)
+
+    def test_getBranchSharingPolicies_product(self):
+        product = self.factory.makeProduct()
+        self._assert_getBranchSharingPolicies(
+            product, [BranchSharingPolicy.PUBLIC])
+
+    def test_getBranchSharingPolicies_expired_commercial_product(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product, expired=True)
+        self._assert_getBranchSharingPolicies(
+            product, [BranchSharingPolicy.PUBLIC])
+
+    def test_getBranchSharingPolicies_commercial_product(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        self._assert_getBranchSharingPolicies(
+            product,
+            [BranchSharingPolicy.PUBLIC,
+             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+             BranchSharingPolicy.PROPRIETARY])
+
+    def test_getBranchSharingPolicies_product_with_embargoed(self):
+        # The sharing policies will contain the product's sharing policy even
+        # if it is not in the nominally allowed policy list.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self.factory.makeCommercialSubscription(product)
+        self._assert_getBranchSharingPolicies(
+            product,
+            [BranchSharingPolicy.PUBLIC,
+             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+             BranchSharingPolicy.PROPRIETARY,
+             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY])
+
+    def test_getBranchSharingPolicies_distro(self):
+        distro = self.factory.makeDistribution()
+        self._assert_getBranchSharingPolicies(distro, [])
+
+    def _assert_getBugSharingPolicies(self, pillar, expected_policies):
+        policy_data = self.service.getBugSharingPolicies(pillar)
+        self._assert_enumData(expected_policies, policy_data)
+
+    def test_getBugSharingPolicies_product(self):
+        product = self.factory.makeProduct()
+        self._assert_getBugSharingPolicies(product, [BugSharingPolicy.PUBLIC])
+
+    def test_getBugSharingPolicies_expired_commercial_product(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product, expired=True)
+        self._assert_getBugSharingPolicies(product, [BugSharingPolicy.PUBLIC])
+
+    def test_getBugSharingPolicies_commercial_product(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        self._assert_getBugSharingPolicies(
+            product,
+            [BugSharingPolicy.PUBLIC,
+             BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
+             BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
+             BugSharingPolicy.PROPRIETARY])
+
+    def test_getBugSharingPolicies_distro(self):
+        distro = self.factory.makeDistribution()
+        self._assert_getBugSharingPolicies(distro, [])
 
     def test_jsonGranteeData_with_Some(self):
         # jsonGranteeData returns the expected data for a grantee with
@@ -784,13 +859,13 @@ class TestSharingService(TestCaseWithFactory):
             self.assertIn(another, bug.getDirectSubscribers())
 
     def test_granteeUnsubscribedWhenDeleted(self):
-        # The grantee is unsubscribed from any inaccessible artifacts when their
-        # access is revoked.
+        # The grantee is unsubscribed from any inaccessible artifacts when
+        # their access is revoked.
         self._assert_deleteGranteeRemoveSubscriptions()
 
     def test_granteeUnsubscribedWhenDeletedSelectedPolicies(self):
-        # The grantee is unsubscribed from any inaccessible artifacts when their
-        # access to selected policies is revoked.
+        # The grantee is unsubscribed from any inaccessible artifacts when
+        # their access to selected policies is revoked.
         self._assert_deleteGranteeRemoveSubscriptions(
             [InformationType.USERDATA])
 

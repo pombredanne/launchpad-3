@@ -131,6 +131,14 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             self.bug.unmute(None, self.person)
             self.assertFalse(self.bug.isMuted(self.person))
 
+    def test_double_unmute(self):
+        # If unmute is called when not muted, it is a no-op.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            subscriptions = self.bug.unmute(self.person, self.person)
+            sec_subscriptions = self.bug.unmute(self.person, self.person)
+            self.assertEqual(sec_subscriptions, subscriptions)
+
 
 class TestBugSnapshotting(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -284,7 +292,7 @@ class TestBugCreation(TestCaseWithFactory):
         # canTransitionToAssignee() will return False for `person` if
         # another Person is passed as `assignee`.
         with person_logged_in(target.owner):
-            target.setBugSupervisor(target.owner, target.owner)
+            target.bug_supervisor = target.owner
         with person_logged_in(person):
             params = CreateBugParams(
                 owner=person, title="A bug", comment="Nothing important.",

@@ -59,7 +59,6 @@ from lp.testing import (
     admin_logged_in,
     celebrity_logged_in,
     login,
-    login_person,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -765,6 +764,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
         BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
         BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
         BranchSharingPolicy.PROPRIETARY,
+        BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
         )
 
     def setSharingPolicy(self, policy, user):
@@ -772,6 +772,30 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
 
     def getSharingPolicy(self):
         return self.product.branch_sharing_policy
+
+    def test_setting_embargoed_creates_access_policy(self):
+        # Setting a policy that allows Embargoed creates a
+        # corresponding access policy and shares it with the the
+        # maintainer.
+        self.factory.makeCommercialSubscription(product=self.product)
+        self.assertEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            [policy.type for policy in
+             getUtility(IAccessPolicySource).findByPillar([self.product])])
+        self.setSharingPolicy(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            self.commercial_admin)
+        self.assertEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            [policy.type for policy in
+             getUtility(IAccessPolicySource).findByPillar([self.product])])
+        self.assertTrue(
+            getUtility(IService, 'sharing').checkPillarAccess(
+                self.product, InformationType.PROPRIETARY, self.product.owner))
+        self.assertTrue(
+            getUtility(IService, 'sharing').checkPillarAccess(
+                self.product, InformationType.EMBARGOED, self.product.owner))
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
@@ -799,31 +823,6 @@ class ProductSnapshotTestCase(TestCaseWithFactory):
             'releases',
             ]
         self.assertThat(self.product, DoesNotSnapshot(omitted, IProduct))
-
-
-class BugSupervisorTestCase(TestCaseWithFactory):
-    """A TestCase for bug supervisor management."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(BugSupervisorTestCase, self).setUp()
-        self.person = self.factory.makePerson()
-        self.product = self.factory.makeProduct(owner=self.person)
-        login_person(self.person)
-
-    def testPersonCanSetSelfAsSupervisor(self):
-        # A person can set themselves as bug supervisor for a product.
-        # This is a regression test for bug 438985.
-        self.product.setBugSupervisor(
-            bug_supervisor=self.person, user=self.person)
-
-        self.assertEqual(
-            self.product.bug_supervisor, self.person,
-            "%s should be bug supervisor for %s. "
-            "Instead, bug supervisor for firefox is %s" % (
-            self.person.name, self.product.name,
-            self.product.bug_supervisor.name))
 
 
 class TestProductTranslations(TestCaseWithFactory):

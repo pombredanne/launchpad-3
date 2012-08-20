@@ -41,6 +41,7 @@ from lp.code.model.branchnamespace import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
     PersonVisibility,
     PUBLIC_INFORMATION_TYPES,
     SharingPermission,
@@ -59,7 +60,7 @@ from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
-    admin_logged_in,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -486,7 +487,8 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertContentEqual(
-            InformationType.items, namespace.getAllowedInformationTypes())
+            NON_EMBARGOED_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.PUBLIC, namespace.getDefaultInformationType())
 
@@ -499,12 +501,13 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     def test_proprietary_or_public_grantor(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
-        with admin_logged_in():
+        with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
         self.assertContentEqual(
-            InformationType.items, namespace.getAllowedInformationTypes())
+            NON_EMBARGOED_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.PROPRIETARY,
             namespace.getDefaultInformationType())
@@ -518,7 +521,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     def test_proprietary_grantee(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY)
-        with admin_logged_in():
+        with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
@@ -527,6 +530,26 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.PROPRIETARY,
+            namespace.getDefaultInformationType())
+
+    def test_embargoed_or_proprietary_anyone(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self.assertContentEqual([], namespace.getAllowedInformationTypes())
+        self.assertIs(None, namespace.getDefaultInformationType())
+
+    def test_embargoed_or_proprietary_grantee(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        with person_logged_in(namespace.product.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, namespace.owner, namespace.product.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            namespace.getAllowedInformationTypes())
+        self.assertEqual(
+            InformationType.EMBARGOED,
             namespace.getDefaultInformationType())
 
 
