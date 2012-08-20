@@ -621,6 +621,15 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             " doesn't seem to be a valid email address.")
         self._assertEmailAndError(xss_email, expected_msg)
 
+    def test_edit_email_login_redirect(self):
+        """+editemails should redirect to force you to re-authenticate."""
+        view = create_initialized_view(self.person, "+editemails")
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        expected_url = (
+            '%s/+editemails/+login?reauth=1' % canonical_url(self.person))
+        self.assertEqual(expected_url, response.getHeader('location'))
+
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
                                    TestCaseWithFactory):
