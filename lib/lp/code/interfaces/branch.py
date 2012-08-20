@@ -982,7 +982,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
 
 class IBranchModerateAttributes(Interface):
-    """IBranch attributes that can be edited by a more than one community."""
+    """IBranch attributes that can be edited by more than one community."""
 
     name = exported(
         TextLine(
@@ -1014,7 +1014,7 @@ class IBranchModerateAttributes(Interface):
 
 
 class IBranchModerate(Interface):
-    """IBranch methods that can be edited by a more than one community."""
+    """IBranch methods that can be edited by more than one community."""
 
     @operation_parameters(
         information_type=copy_field(IBranchPublic['information_type']),

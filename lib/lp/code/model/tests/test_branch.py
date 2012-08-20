@@ -2626,7 +2626,7 @@ class BranchModerateTestCase(TestCaseWithFactory):
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
-    """Tests for `Branch.commitsFornDays`."""
+    """Tests for `Branch.commitsForDays`."""
 
     layer = DatabaseFunctionalLayer
 
