@@ -20,11 +20,11 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enums import BugNotificationLevel
-from lp.registry.interfaces.person import (
-    IPersonSet,
+from lp.registry.enums import (
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -66,12 +66,12 @@ class BugsubscriptionPrivacyTests(TestCaseWithFactory):
 
     def test_open_team_cannot_be_subscribed_to_private_bug(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.OPEN)
+            membership_policy=TeamMembershipPolicy.OPEN)
         self._assert_subscription_fails(team)
 
     def test_delegated_team_cannot_be_subscribed_to_private_bug(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+            membership_policy=TeamMembershipPolicy.DELEGATED)
         self._assert_subscription_fails(team)
 
 

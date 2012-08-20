@@ -55,7 +55,7 @@ i18n:domain="malone"
       </p>
 
       <a id="getting-started-help"
-         class="sprite maybe action-icon"
+         class="sprite maybe"
          href="https://help.launchpad.net/Bugs">
         Getting started with bug tracking in Launchpad</a>.
 
@@ -96,7 +96,7 @@ i18n:domain="malone"
               </strong>
             </p>
             <p id="getting-started-help">
-              <a class="sprite maybe action-icon"
+              <a class="sprite maybe"
                  href="https://help.launchpad.net/Bugs">Getting started
                 with bug tracking in Launchpad</a>.
             </p>

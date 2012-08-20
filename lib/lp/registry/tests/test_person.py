@@ -29,14 +29,16 @@ from lp.bugs.interfaces.bugtasksearch import (
     IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bug import Bug
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PersonVisibility,
+    TeamMembershipPolicy,
+    )
 from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     IPersonSet,
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
@@ -280,6 +282,40 @@ class TestPerson(TestCaseWithFactory):
         team = self.factory.makeTeam(name='pting')
         title = smartquote('"%s" team') % team.displayname
         self.assertEqual(title, team.title)
+
+    def test_description_not_exists(self):
+        # When the person does not have a description, teamdescription or
+        # homepage_content, the value is None.
+        person = self.factory.makePerson()
+        self.assertEqual(None, person.description)
+
+    def test_description_fallback_for_person(self):
+        # When the person does not have a description, but does have a
+        # teamdescription or homepage_content, they are used.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+        self.assertEqual('babble\nfish', person.description)
+
+    def test_description_exists(self):
+        # When the person has a description, it is returned.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.description = 'babble'
+        self.assertEqual('babble', person.description)
+
+    def test_description_setting_reconciles_obsolete_sources(self):
+        # When the description is set, the homepage_content and teamdescription
+        # are set to None.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+            person.description = "What's this fish doing?"
+        self.assertEqual("What's this fish doing?", person.description)
+        self.assertEqual(None, person.homepage_content)
+        self.assertEqual(None, person.teamdescription)
 
     def test_getOwnedOrDrivenPillars(self):
         user = self.factory.makePerson()
@@ -555,7 +591,7 @@ class TestPerson(TestCaseWithFactory):
     def test_has_current_commercial_subscription(self):
         # IPerson.hasCurrentCommercialSubscription() checks for one.
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
         self.factory.makeCommercialSubscription(product)
         self.assertTrue(team.teamowner.hasCurrentCommercialSubscription())
@@ -564,7 +600,7 @@ class TestPerson(TestCaseWithFactory):
         # IPerson.hasCurrentCommercialSubscription() is false if it has
         # expired.
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
         self.factory.makeCommercialSubscription(product, expired=True)
         self.assertFalse(team.teamowner.hasCurrentCommercialSubscription())
@@ -724,7 +760,7 @@ class TestPersonStates(TestCaseWithFactory):
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.membership_policy': 'RESTRICTED',
             'field.renewal_policy': 'NONE',
             'field.visibility': 'PUBLIC',
             'field.actions.save': 'Save',

@@ -31,23 +31,21 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    EXCLUSIVE_TEAM_POLICY,
     FREE_INFORMATION_TYPES,
+    INCLUSIVE_TEAM_POLICY,
     InformationType,
     )
 from lp.registry.errors import (
     CommercialSubscribersOnly,
-    OpenTeamLinkageError,
+    InclusiveTeamLinkageError,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    IPersonSet,
-    OPEN_TEAM_POLICY,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -63,7 +61,6 @@ from lp.testing import (
     admin_logged_in,
     celebrity_logged_in,
     login,
-    login_person,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -256,30 +253,30 @@ class TestProduct(TestCaseWithFactory):
 
     def test_owner_cannot_be_open_team(self):
         """Product owners cannot be open teams."""
-        for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
+        for policy in INCLUSIVE_TEAM_POLICY:
+            open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeProduct,
+                InclusiveTeamLinkageError, self.factory.makeProduct,
                 owner=open_team)
 
     def test_owner_can_be_closed_team(self):
-        """Product owners can be closed teams."""
-        for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
+        """Product owners can be exclusive teams."""
+        for policy in EXCLUSIVE_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProduct(owner=closed_team)
 
     def test_security_contact_cannot_be_open_team(self):
         """Product security contacts cannot be open teams."""
-        for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
+        for policy in INCLUSIVE_TEAM_POLICY:
+            open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeProduct,
+                InclusiveTeamLinkageError, self.factory.makeProduct,
                 security_contact=open_team)
 
     def test_security_contact_can_be_closed_team(self):
-        """Product security contacts can be closed teams."""
-        for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
+        """Product security contacts can be exclusive teams."""
+        for policy in EXCLUSIVE_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProduct(security_contact=closed_team)
 
     def test_private_bugs_on_not_allowed_for_anonymous(self):
@@ -821,6 +818,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
         BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
         BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
         BranchSharingPolicy.PROPRIETARY,
+        BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
         )
 
     def setSharingPolicy(self, policy, user):
@@ -828,6 +826,30 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
 
     def getSharingPolicy(self):
         return self.product.branch_sharing_policy
+
+    def test_setting_embargoed_creates_access_policy(self):
+        # Setting a policy that allows Embargoed creates a
+        # corresponding access policy and shares it with the the
+        # maintainer.
+        self.factory.makeCommercialSubscription(product=self.product)
+        self.assertEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            [policy.type for policy in
+             getUtility(IAccessPolicySource).findByPillar([self.product])])
+        self.setSharingPolicy(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            self.commercial_admin)
+        self.assertEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            [policy.type for policy in
+             getUtility(IAccessPolicySource).findByPillar([self.product])])
+        self.assertTrue(
+            getUtility(IService, 'sharing').checkPillarAccess(
+                self.product, InformationType.PROPRIETARY, self.product.owner))
+        self.assertTrue(
+            getUtility(IService, 'sharing').checkPillarAccess(
+                self.product, InformationType.EMBARGOED, self.product.owner))
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
@@ -855,31 +877,6 @@ class ProductSnapshotTestCase(TestCaseWithFactory):
             'releases',
             ]
         self.assertThat(self.product, DoesNotSnapshot(omitted, IProduct))
-
-
-class BugSupervisorTestCase(TestCaseWithFactory):
-    """A TestCase for bug supervisor management."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(BugSupervisorTestCase, self).setUp()
-        self.person = self.factory.makePerson()
-        self.product = self.factory.makeProduct(owner=self.person)
-        login_person(self.person)
-
-    def testPersonCanSetSelfAsSupervisor(self):
-        # A person can set themselves as bug supervisor for a product.
-        # This is a regression test for bug 438985.
-        self.product.setBugSupervisor(
-            bug_supervisor=self.person, user=self.person)
-
-        self.assertEqual(
-            self.product.bug_supervisor, self.person,
-            "%s should be bug supervisor for %s. "
-            "Instead, bug supervisor for firefox is %s" % (
-            self.person.name, self.product.name,
-            self.product.bug_supervisor.name))
 
 
 class TestProductTranslations(TestCaseWithFactory):

@@ -142,6 +142,7 @@ from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     InformationType,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -188,7 +189,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     PersonCreationRationale,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.poll import (
@@ -604,7 +604,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePerson(
         self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
-        time_zone=None, latitude=None, longitude=None, homepage_content=None,
+        time_zone=None, latitude=None, longitude=None, description=None,
         selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
@@ -633,8 +633,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
-        if homepage_content is not None:
-            naked_person.homepage_content = homepage_content
+        if description is not None:
+            naked_person.description = description
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
@@ -745,7 +745,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  description=None, icon=None, logo=None,
-                 subscription_policy=TeamSubscriptionPolicy.OPEN,
+                 membership_policy=TeamMembershipPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
 
@@ -760,8 +760,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :type email: string
         :param icon: The team's icon.
         :param logo: The team's logo.
-        :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamSubscriptionPolicy`
+        :param membership_policy: The membership policy of the team.
+        :type membership_policy: `TeamMembershipPolicy`
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
@@ -782,8 +782,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname, teamdescription=description,
-            subscriptionpolicy=subscription_policy)
+            owner, name, displayname, description,
+            membership_policy=membership_policy)
         naked_team = removeSecurityProxy(team)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
@@ -955,7 +955,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, private_bugs=False,
-        driver=None, security_contact=None, icon=None):
+        driver=None, security_contact=None, icon=None,
+        bug_sharing_policy=None, branch_sharing_policy=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -998,6 +999,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.security_contact = security_contact
         if private_bugs:
             naked_product.private_bugs = private_bugs
+        if branch_sharing_policy:
+            naked_product.branch_sharing_policy = branch_sharing_policy
+        if bug_sharing_policy:
+            naked_product.bug_sharing_policy = bug_sharing_policy
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -3306,7 +3311,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
-        subscription_policy=TeamSubscriptionPolicy.OPEN):
+        membership_policy=TeamMembershipPolicy.OPEN):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -3316,8 +3321,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
-        :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamSubscriptionPolicy`
+        :param membership_policy: The membership policy of the team.
+        :type membership_policy: `TeamMembershipPolicy`
         :return: The new team and mailing list.
         :rtype: (`ITeam`, `IMailingList`)
         """
@@ -3329,7 +3334,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             team = self.makeTeam(
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
-                subscription_policy=subscription_policy)
+                membership_policy=membership_policy)
         team_list = self.makeMailingList(team, owner)
         return team, team_list
 

@@ -25,10 +25,7 @@ from lp.bugs.scripts.debbugs import (
     SummaryParseError,
     SummaryVersionError,
     )
-
-from lp.testing import (
-    TestCase,
-    )
+from lp.testing import TestCase
 
 
 class TestDebBugs(TestCase):

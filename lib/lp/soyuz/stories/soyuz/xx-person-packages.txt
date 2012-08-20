@@ -100,7 +100,6 @@ to the page that lists maintained packages in batches.
     ...
 
 The Maintained packages page only has data if the person or team has
-    Subscription policy:
 maintained packages to show. No-priv does not maintain packages.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv")
@@ -166,14 +165,11 @@ Create some new source packages, source1 and source2, both created by cprov
 so that they appear in his +packages page.
 
     >>> from zope.component import getUtility
-    >>> from lp.testing import login, logout
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.enums import (
-    ...     PackagePublishingStatus)
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -296,7 +292,6 @@ public archives.
 Now we'll publish it in the primary archive.
 
     >>> login("foo.bar@canonical.com")
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

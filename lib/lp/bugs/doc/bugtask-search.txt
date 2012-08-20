@@ -96,7 +96,7 @@ If No Privileges is specified as Firefox's bug supervisor, searching for his
 bugs return all of Firefox's bugs.
 
     >>> login('foo.bar@canonical.com')
-    >>> firefox.setBugSupervisor(no_priv, no_priv)
+    >>> firefox.bug_supervisor = no_priv
 
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count()
@@ -121,7 +121,7 @@ twice.
     >>> ubuntu_bugs.count() > 0
     True
 
-    >>> ubuntu.setBugSupervisor(no_priv, no_priv)
+    >>> ubuntu.bug_supervisor = no_priv
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True

@@ -1,22 +1,18 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for bug supervisor views."""
 
 __metaclass__ = type
 
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonVisibility,
-    )
+from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
-    login,
     login_person,
     TestCaseWithFactory,
     )
@@ -72,14 +68,11 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual(self.product.bug_supervisor, self.owner)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected = (
-            'A bug mail subscription was created for the bug supervisor. '
-            'You can <a href="http://launchpad.dev/boing/+subscriptions">'
-            'edit bug mail</a> to change which notifications will be sent.')
+        expected = 'Bug supervisor privilege granted.'
         self.assertEqual(expected, notifications.pop().message)
 
     def test_owner_appoint_self_from_another(self):
-        self.product.setBugSupervisor(self.team, self.owner)
+        self.product.bug_supervisor = self.team
         form = self._makeForm(self.owner)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
@@ -87,7 +80,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual(self.owner, self.product.bug_supervisor)
 
     def test_owner_appoint_none(self):
-        self.product.setBugSupervisor(self.owner, self.owner)
+        self.product.bug_supervisor = self.owner
         form = self._makeForm(None)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
@@ -111,77 +104,6 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         private_team = self.factory.makeTeam(
             owner=self.owner,
             visibility=PersonVisibility.PRIVATE)
-        form = self._makeForm(private_team)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertEqual([], view.errors)
-        self.assertEqual(private_team, self.product.bug_supervisor)
-
-    def test_owner_cannot_appoint_another_team(self):
-        team = self.factory.makeTeam(name='smack', displayname='<smack />')
-        form = self._makeForm(team)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertEqual(1, len(view.errors))
-        expected = (
-            'You cannot set &lt;smack /&gt; as the bug supervisor for '
-            '&lt;boing /&gt; because you are not an administrator of that '
-            'team.<br />If you believe that &lt;smack /&gt; should be the '
-            'bug supervisor for &lt;boing /&gt;, notify one of the '
-            '<a href="http://launchpad.dev/~smack/+members">&lt;smack /&gt; '
-            'administrators</a>. See '
-            '<a href="https://help.launchpad.net/BugSupervisors">the '
-            'help wiki</a> for information about setting a bug supervisor.')
-        self.assertEqual(expected, view.errors.pop())
-
-    def test_owner_cannot_appoint_a_nonvalid_user(self):
-        # The vocabulary only accepts valid users.
-        form = self._makeForm(None)
-        form['field.bug_supervisor'] = 'fnord'
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertEqual(2, len(view.errors))
-        expected = (
-            'You must choose a valid person or team to be the bug supervisor '
-            'for &lt;boing /&gt;.')
-        self.assertEqual(expected, view.errors.pop())
-        self.assertTrue(isinstance(view.errors.pop(), ConversionError))
-
-    def test_owner_cannot_appoint_another_user(self):
-        another_user = self.factory.makePerson()
-        form = self._makeForm(another_user)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertEqual(1, len(view.errors))
-        expected = (
-            'You cannot set another person as the bug supervisor for '
-            '&lt;boing /&gt;.<br />See '
-            '<a href="https://help.launchpad.net/BugSupervisors">the help '
-            'wiki</a> for information about setting a bug supervisor.')
-        self.assertEqual(expected, view.errors.pop())
-
-    def test_admin_appoint_another_user(self):
-        another_user = self.factory.makePerson()
-        login('admin@canonical.com')
-        form = self._makeForm(another_user)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertEqual([], view.errors)
-        self.assertEqual(another_user, self.product.bug_supervisor)
-
-    def test_admin_appoint_another_team(self):
-        another_team = self.factory.makeTeam()
-        login('admin@canonical.com')
-        form = self._makeForm(another_team)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertEqual([], view.errors)
-        self.assertEqual(another_team, self.product.bug_supervisor)
-
-    def test_admin_appoint_private_team(self):
-        private_team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
-        login('admin@canonical.com')
         form = self._makeForm(private_team)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)

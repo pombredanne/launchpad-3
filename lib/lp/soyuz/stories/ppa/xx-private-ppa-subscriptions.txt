@@ -124,9 +124,9 @@ explanation if they try to view their archive subscriptions:
 First, create a subscription for Joe Smith's team to mark's archive
 so that Joe has multiple subscriptions:
 
-    >>> mark_browser = setupBrowser(
-    ...     auth="Basic mark@example.com:test")
-    >>> mark_browser.open("http://launchpad.dev/~mark/+archive/p3a/+subscriptions")
+    >>> mark_browser = setupBrowser(auth="Basic mark@example.com:test")
+    >>> mark_browser.open(
+    ...     "http://launchpad.dev/~mark/+archive/p3a/+subscriptions")
     >>> mark_browser.getControl(name='field.subscriber').value = 'joesmith'
     >>> mark_browser.getControl(
     ...     name='field.description').value = "Joe is also my friend"
@@ -178,9 +178,7 @@ displaying their subscription.
 This page will include information about the signing key, if the archive
 has a signing key:
 
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.gpg import IGPGKeySet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> a_key = getUtility(IGPGKeySet).get(1)
@@ -227,4 +225,3 @@ subscriptions page.
     Traceback (most recent call last):
     ...
     NotFound...
-

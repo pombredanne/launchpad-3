@@ -9,7 +9,6 @@ from datetime import (
     )
 
 from pytz import UTC
-from storm.expr import Join
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -29,7 +28,6 @@ from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
-from lp.bugs.model.bugnotification import BugNotificationRecipient
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
@@ -940,10 +938,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
         # This is to protect ubuntu's workflow, which differs from the
         # Launchpad norm.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        admin = getUtility(ILaunchpadCelebrities).admin
         ubuntu = removeSecurityProxy(ubuntu)
-        ubuntu.setBugSupervisor(
-            self.factory.makePerson(name='supervisor'), admin)
+        ubuntu.bug_supervisor = self.factory.makePerson(name='supervisor')
         bug = self.factory.makeBug(
             information_type=InformationType.PRIVATESECURITY,
             target=ubuntu)
@@ -954,7 +950,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
             InformationType.USERDATA, who=bug.owner)
         subscribers = bug.getDirectSubscribers()
         self.assertContentEqual(initial_subscribers, subscribers)
-        ubuntu.setBugSupervisor(None, ubuntu.owner)
+        ubuntu.bug_supervisor = None
 
 
 class TestBugActivityMethods(TestCaseWithFactory):

@@ -576,7 +576,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 raise CommercialSubscribersOnly(
                     "A current commercial subscription is required to use "
                     "proprietary branches.")
-            self._ensurePolicies([InformationType.PROPRIETARY])
+            required_policies = [InformationType.PROPRIETARY]
+            if (branch_sharing_policy ==
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY):
+                required_policies.append(InformationType.EMBARGOED)
+            self._ensurePolicies(required_policies)
         self.branch_sharing_policy = branch_sharing_policy
 
     def setBugSharingPolicy(self, bug_sharing_policy, user):
@@ -600,6 +604,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         types = set(InformationType.items)
         types.discard(InformationType.PROPRIETARY)
+        types.discard(InformationType.EMBARGOED)
         return types
 
     def getDefaultBugInformationType(self):
@@ -1391,12 +1396,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Packaging.distroseriesID == DistroSeries.id,
             DistroSeries.distributionID == Distribution.id,
             ).config(distinct=True).order_by(Distribution.name)
-
-    def setBugSupervisor(self, bug_supervisor, user):
-        """See `IHasBugSupervisor`."""
-        self.bug_supervisor = bug_supervisor
-        if bug_supervisor is not None:
-            self.addBugSubscription(bug_supervisor, user)
 
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""

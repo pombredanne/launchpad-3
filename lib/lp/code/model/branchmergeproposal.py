@@ -639,7 +639,7 @@ class BranchMergeProposal(SQLBase):
                     branch.stacked_on, user, checked_branches)
 
     def _acceptable_to_give_visibility(self, branch, reviewer):
-        # If the branch is private, only closed teams can be subscribed to
+        # If the branch is private, only exclusive teams can be subscribed to
         # prevent leaks.
         if (branch.information_type in PRIVATE_INFORMATION_TYPES and
             reviewer.is_team and reviewer.anyone_can_join()):

@@ -580,9 +580,7 @@ def vocabulary_to_choice_edit_items(
         if description_fn is None:
             description_fn = lambda item: getattr(item, 'description', '')
         description = ''
-        feature_flag = getFeatureFlag(
-            'disclosure.enhanced_choice_popup.enabled')
-        if include_description and feature_flag:
+        if include_description:
             description = description_fn(item)
         new_item = {
             'name': name,

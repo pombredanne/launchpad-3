@@ -104,7 +104,7 @@ project used in these tests.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> jokosher = getUtility(IProductSet).getByName('jokosher')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> jokosher.setBugSupervisor(foobar, foobar)
+    >>> jokosher.bug_supervisor = foobar
 
 To avoid any confusion, the option to assign somebody else is only
 shown if the user has sufficient privileges to assign anybody or if

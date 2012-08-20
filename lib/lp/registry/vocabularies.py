@@ -103,6 +103,10 @@ from zope.security.proxy import (
 
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -124,11 +128,9 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
     IPerson,
     IPersonSet,
     ITeam,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import (
     IPillar,
@@ -893,7 +895,7 @@ class TeamVocabularyMixin:
 
     @property
     def is_closed_team(self):
-        return self.team.subscriptionpolicy in CLOSED_TEAM_POLICY
+        return self.team.membership_policy in EXCLUSIVE_TEAM_POLICY
 
     @property
     def step_title(self):
@@ -905,11 +907,11 @@ class TeamVocabularyMixin:
             return 'Search'
 
 
-class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
+class ValidPersonOrExclusiveTeamVocabulary(TeamVocabularyMixin,
                                 ValidPersonOrTeamVocabulary):
-    """The set of people and closed teams in Launchpad.
+    """The set of people and exclusive teams in Launchpad.
 
-    A closed team is one for which the subscription policy is either
+    A exclusive team is one for which the membership policy is either
     RESTRICTED or MODERATED.
     """
 
@@ -919,7 +921,7 @@ class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
 
     @property
     def extra_clause(self):
-        return Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY)
+        return Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY)
 
 
 class ValidTeamMemberVocabulary(TeamVocabularyMixin,
@@ -954,7 +956,7 @@ class ValidTeamMemberVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
+                Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY))
         return clause
 
 
@@ -992,7 +994,7 @@ class ValidTeamOwnerVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
+                Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY))
         return clause
 
 
@@ -1059,7 +1061,7 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarGranteeVocabulary(ValidPersonOrClosedTeamVocabulary):
+class NewPillarGranteeVocabulary(ValidPersonOrExclusiveTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an

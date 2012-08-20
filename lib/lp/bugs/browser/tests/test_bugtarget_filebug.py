@@ -31,7 +31,6 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
@@ -594,12 +593,6 @@ class TestFileBugRequestCache(TestCaseWithFactory):
     # file bug views.
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestFileBugRequestCache, self).setUp()
-        self.useFixture(FeatureFixture({
-            'disclosure.enhanced_choice_popup.enabled': 'true'
-        }))
 
     def _assert_cache_values(self, view, duplicate_search, private_bugs=False):
         cache = IJSONRequestCache(view.request).objects
