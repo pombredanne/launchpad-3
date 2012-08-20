@@ -403,6 +403,11 @@ class ProductPermissionTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_owner_can_edit(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            self.assertTrue(check_permission('launchpad.Edit', product))
+
     def test_commercial_admin_cannot_edit_non_commercial(self):
         product = self.factory.makeProduct()
         with celebrity_logged_in('commercial_admin'):
@@ -413,6 +418,19 @@ class ProductPermissionTestCase(TestCaseWithFactory):
         self.factory.makeCommercialSubscription(product)
         with celebrity_logged_in('commercial_admin'):
             self.assertTrue(check_permission('launchpad.Edit', product))
+
+    def test_owner_can_driver(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            self.assertTrue(check_permission('launchpad.Driver', product))
+
+    def test_driver_can_driver(self):
+        product = self.factory.makeProduct()
+        driver = self.factory.makePerson()
+        with person_logged_in(product.owner):
+            product.driver = driver
+        with person_logged_in(driver):
+            self.assertTrue(check_permission('launchpad.Driver', product))
 
     def test_commercial_admin_cannot_drive_non_commercial(self):
         product = self.factory.makeProduct()
