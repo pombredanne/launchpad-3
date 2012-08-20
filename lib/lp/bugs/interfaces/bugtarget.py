@@ -206,8 +206,10 @@ search_tasks_params_for_api_devel = dict(
 
 POLICY_ALLOWED_TYPES = {
     BugSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
-    BugSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.items,
-    BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.items,
+    BugSharingPolicy.PUBLIC_OR_PROPRIETARY:
+        FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+    BugSharingPolicy.PROPRIETARY_OR_PUBLIC:
+        FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
     BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
     }
 
