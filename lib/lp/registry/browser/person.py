@@ -259,8 +259,8 @@ from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
     )
 from lp.services.webapp.login import (
-    isFreshLogin,
     logoutPerson,
+    require_fresh_login,
     )
 from lp.services.webapp.menu import get_current_view
 from lp.services.webapp.publisher import LaunchpadView
@@ -2413,6 +2413,8 @@ class PersonEditSSHKeysView(LaunchpadView):
     error_message = None
 
     def initialize(self):
+        require_fresh_login(self.request, self.context, '+editsshkeys')
+
         if self.request.method != "POST":
             # Nothing to do
             return
@@ -2780,11 +2782,7 @@ class PersonEditEmailsView(LaunchpadFormView):
     label = 'Change your e-mail settings'
 
     def initialize(self):
-        if not isFreshLogin(self.request):
-            reauth_query = '+login?reauth=1'
-            base_url = canonical_url(self.context, view_name='+editemails')
-            login_url = '%s/%s' % (base_url, reauth_query)
-            self.request.response.redirect(login_url)
+        require_fresh_login(self.request, self.context, '+editemails')
         if self.context.is_team:
             # +editemails is not available on teams.
             name = self.request['PATH_INFO'].split('/')[-1]

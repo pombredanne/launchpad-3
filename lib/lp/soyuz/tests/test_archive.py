@@ -2158,38 +2158,9 @@ class TestGetPublishedSources(TestCaseWithFactory):
         self.assertEqual('universe', filtered.component.name)
 
 
-class TestSyncSource(TestCaseWithFactory):
+class TestCopyPackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def test_security_team_can_copy_to_primary(self):
-        # A member of ubuntu-security can use syncSource on any package
-        # in the Ubuntu primary archive, regardless of their normal
-        # upload permissions.
-        # This is until we can open syncSource up more widely and sort
-        # out the permissions that everyone needs.
-        with celebrity_logged_in('admin'):
-            security_person = self.factory.makePerson()
-            getUtility(ILaunchpadCelebrities).ubuntu_security.addMember(
-                security_person, security_person)
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        source = self.factory.makeSourcePackagePublishingHistory(
-            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA),
-            distroseries=ubuntu.currentseries)
-        self.assertEqual(
-            0,
-            ubuntu.main_archive.getPublishedSources(
-                name=source.source_package_name).count())
-        with person_logged_in(security_person):
-            ubuntu.main_archive.syncSource(
-                source_name=source.source_package_name,
-                version=source.source_package_version,
-                from_archive=source.archive,
-                to_pocket='Security')
-        self.assertEqual(
-            1,
-            ubuntu.main_archive.getPublishedSources(
-                name=source.source_package_name).count())
 
     def _setup_copy_data(self, source_private=False, target_purpose=None,
                          target_status=SeriesStatus.DEVELOPMENT):

@@ -1882,42 +1882,6 @@ Re-enable Celso's PPA.
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.enable()
 
-Another important aspect of the upload permission for ubuntu main
-archives (PRIMARY, PARTNER and DEBUG) is that in addition to owners
-and users which were specifically granted permissions, members of the
-ubuntu-security' team also have 'launchpad.Append' on them.
-
-In the sampledata, Carlos does not have permission to append contents
-to the Ubuntu main archives.
-
-    >>> primary, partner, debug = ubuntu.all_distro_archives
-
-    >>> login('carlos@canonical.com')
-    >>> check_permission('launchpad.Append', primary)
-    False
-    >>> check_permission('launchpad.Append', partner)
-    False
-    >>> check_permission('launchpad.Append', debug)
-    False
-
-When Carlos becomes a member of the 'ubuntu-security' team he is
-allowed to append to ubuntu main archives. In practice it means that
-Carlos can now *copy* packages directly to ubuntu.
-
-    # Make Carlos a member of the ubuntu-security team.
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu_security = getUtility(IPersonSet).getByName(
-    ...     'ubuntu-security')
-    >>> ignored = ubuntu_security.addMember(carlos, cprov)
-
-    >>> login('carlos@canonical.com')
-    >>> check_permission('launchpad.Append', primary)
-    True
-    >>> check_permission('launchpad.Append', partner)
-    True
-    >>> check_permission('launchpad.Append', debug)
-    True
-
 
 Rebuild archives
 ----------------

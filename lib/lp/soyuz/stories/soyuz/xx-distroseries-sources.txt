@@ -24,8 +24,7 @@ published packages. We will do the last:
 
 Starting from distribution page:
 
-  >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu')
+  >>> browser.open('http://launchpad.dev/ubuntu')
 
 Search for mozilla in the packages:
 
@@ -42,7 +41,8 @@ Click the "See full publishing history" link to see specific information
 about Firefox's publishing history.
 
   >>> browser.getLink("View full publishing history").click()
-  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing-summary'))
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'publishing-summary'))
   Date                                              Status     Target   Pocket   Component   Section   Version
   2006-02-13 12:19:00 UTC                           Published  Warty    release  main        web       0.9
   Published on 2006-02-13 2004-09-27 11:57:13 UTC   Pending    Warty   release   main        editors   0.9
@@ -198,12 +198,10 @@ Back to the SourcePackage page:
 
 Any user can see the copyright for the most recent source package release.
 
-    >>> # Add copyright info for the object under test.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> from lp.testing import login, logout
 
     >>> login('admin@canonical.com')
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
