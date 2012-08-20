@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces including and related to IProduct."""
 
 __metaclass__ = type
@@ -641,7 +639,7 @@ class IProductPublic(
     branch_sharing_policy = exported(Choice(
         title=_('Branch sharing policy'),
         description=_("Sharing policy for this project's branches."),
-        required=False, readonly=False, vocabulary=BranchSharingPolicy),
+        required=False, readonly=True, vocabulary=BranchSharingPolicy),
         as_of='devel')
     bug_sharing_policy = exported(Choice(
         title=_('Bug sharing policy'),
@@ -792,6 +790,29 @@ class IProductPublic(
     @operation_for_version("devel")
     def setPrivateBugs(private_bugs, user):
         """Mutator for private_bugs that checks entitlement."""
+
+    @mutator_for(bug_sharing_policy)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(bug_sharing_policy=copy_field(bug_sharing_policy))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setBugSharingPolicy(bug_sharing_policy, user):
+        """Mutator for bug_sharing_policy.
+
+        Checks authorization and entitlement.
+        """
+
+    @mutator_for(branch_sharing_policy)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        branch_sharing_policy=copy_field(branch_sharing_policy))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setBranchSharingPolicy(branch_sharing_policy, user):
+        """Mutator for branch_sharing_policy.
+
+        Checks authorization and entitlement.
+        """
 
     def getAllowedBugInformationTypes():
         """Get the information types that a bug in this project can have.

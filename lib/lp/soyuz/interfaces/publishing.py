@@ -429,6 +429,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=False,
             ),
         exported_as="date_removed")
+    removed_byID = Attribute("DB ID for removed_by.")
     removed_by = exported(
         Reference(
             IPerson,
@@ -500,6 +501,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         description=_('The previous release of this source package.'),
         required=False, readonly=True)
 
+    creatorID = Attribute("DB ID for creator.")
     creator = exported(
         Reference(
             IPerson,
@@ -508,6 +510,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=True
         ))
 
+    sponsorID = Attribute("DB ID for sponsor.")
     sponsor = exported(
         Reference(
             IPerson,

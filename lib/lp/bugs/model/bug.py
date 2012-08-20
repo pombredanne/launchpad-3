@@ -929,7 +929,8 @@ class Bug(SQLBase):
             # This may be a webservice request.
             person = unmuted_by
         mutes = self._getMutes(person)
-        store.remove(mutes.one())
+        if not mutes.is_empty():
+            store.remove(mutes.one())
         return self.getSubscriptionForPerson(person)
 
     @property

@@ -681,18 +681,17 @@ class TargetTests:
             ISourcePackage.providedBy(self.searchtarget) or
             IDistributionSourcePackage.providedBy(self.searchtarget)):
             if IDistribution.providedBy(self.searchtarget):
-                bug = self.factory.makeBug(distribution=self.searchtarget)
+                bug = self.factory.makeBug(target=self.searchtarget)
                 expected = [bug.default_bugtask]
             else:
-                bug = self.factory.makeBug(
-                    distribution=self.searchtarget.distribution,
-                    sourcepackagename=self.factory.makeSourcePackageName())
+                dsp = self.factory.makeDistributionSourcePackage(
+                    distribution=self.searchtarget.distribution)
+                bug = self.factory.makeBug(target=dsp)
                 bugtask = self.factory.makeBugTask(
                     bug=bug, target=self.searchtarget)
                 expected = [bugtask]
         elif IDistroSeries.providedBy(self.searchtarget):
-            bug = self.factory.makeBug(
-                distribution=self.searchtarget.distribution)
+            bug = self.factory.makeBug(target=self.searchtarget.distribution)
             bugtask = self.factory.makeBugTask(
                 bug=bug, target=self.searchtarget)
             expected = [bugtask]
@@ -750,8 +749,7 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
         self.active_product = self.factory.makeProduct()
         self.inactive_product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=self.active_product,
-            description="Monkeys are bad.")
+            target=self.active_product, description="Monkeys are bad.")
         self.active_bugtask = self.factory.makeBugTask(
             bug=bug,
             target=self.active_product)
@@ -938,7 +936,7 @@ class BugTargetWithBugSuperVisor:
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""
         with person_logged_in(self.owner):
-            self.searchtarget.setBugSupervisor(supervisor, self.owner)
+            self.searchtarget.bug_supervisor = supervisor
 
 
 class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
@@ -1105,7 +1103,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
         with person_logged_in(self.owner):
             # We must set the bug supervisor for each bug task target
             for bugtask in self.bugtasks:
-                bugtask.target.setBugSupervisor(supervisor, self.owner)
+                bugtask.target.bug_supervisor = supervisor
 
     def findBugtaskForOtherProduct(self, bugtask):
         # Return the bugtask for the product that not related to the
@@ -1615,8 +1613,7 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""
         with person_logged_in(self.owner):
-            self.searchtarget.distribution.setBugSupervisor(
-                supervisor, self.owner)
+            self.searchtarget.distribution.bug_supervisor = supervisor
 
     def targetToGroup(self, target):
         return target.sourcepackagename.id
@@ -2272,11 +2269,11 @@ class TestBugTaskSearch(TestCaseWithFactory):
         """Private bugs from a search know the user can see the bugs."""
         target = self.makeBugTarget()
         person = self.login()
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
-        self.factory.makeBug(product=target, owner=person,
+        self.factory.makeBug(target=target, owner=person,
             information_type=InformationType.USERDATA)
         # Search style and parameters taken from the milestone index view
         # where the issue was discovered.

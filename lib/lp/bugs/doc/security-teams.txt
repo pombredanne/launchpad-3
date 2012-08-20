@@ -294,7 +294,7 @@ affects are subscribed to it.
     >>> distribution.security_contact = factory.makePerson(
     ...     displayname='Distribution Security Contact')
     >>> reporter = factory.makePerson(displayname=u'Bug Reporter')
-    >>> bug = factory.makeBug(product=product, owner=reporter)
+    >>> bug = factory.makeBug(target=product, owner=reporter)
     >>> bug.addTask(owner=reporter, target=distribution)
     <BugTask ...>
     >>> old_state = Snapshot(bug, providing=IBug)

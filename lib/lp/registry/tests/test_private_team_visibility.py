@@ -20,10 +20,10 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
+from lp.registry.enums import (
+    InformationType,
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
@@ -58,7 +58,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         self.priv_team = self.factory.makeTeam(
             owner=self.priv_owner, name="priv-team",
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         login_person(self.priv_owner)
         self.priv_team.addMember(self.priv_member, reviewer=self.priv_owner)
 
@@ -309,7 +309,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         else:
             information_type = InformationType.PUBLIC
         bug = self.factory.makeBug(
-            owner=bug_owner, product=product,
+            owner=bug_owner, target=product,
             information_type=information_type)
         # Initially no visibility.
         some_person = self.factory.makePerson()
@@ -343,7 +343,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         else:
             information_type = InformationType.PUBLIC
         bug = self.factory.makeBug(
-            owner=bug_owner, product=product,
+            owner=bug_owner, target=product,
             information_type=information_type)
         # Initially no visibility.
         some_person = self.factory.makePerson()

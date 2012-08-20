@@ -105,7 +105,7 @@ class QueueBuildAcceptError(Exception):
 class IPackageUploadQueue(Interface):
     """Used to establish permission to a group of package uploads.
 
-    Recieves an IDistroSeries and a PackageUploadStatus dbschema
+    Receives an IDistroSeries and a PackageUploadStatus dbschema
     on initialization.
     No attributes exposed via interface, only used to check permissions.
     """
@@ -369,8 +369,9 @@ class IPackageUpload(Interface):
         """
 
     @export_write_operation()
+    @call_with(user=REQUEST_USER)
     @operation_for_version("devel")
-    def rejectFromQueue(logger=None, dry_run=False):
+    def rejectFromQueue(logger=None, dry_run=False, user=None):
         """Call setRejected, do a syncUpdate, and send notification email."""
 
     def realiseUpload(logger=None):
@@ -812,4 +813,4 @@ class IHasQueueItems(Interface):
     """An Object that has queue items"""
 
     def getPackageUploadQueue(state):
-        """Return an IPackageUploadeQueue occording the given state."""
+        """Return an IPackageUploadQueue according to the given state."""

@@ -142,6 +142,7 @@ from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     InformationType,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -188,7 +189,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     PersonCreationRationale,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.poll import (
@@ -532,17 +532,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     @with_celebrity_logged_in('admin')
     def makeAdministrator(self, name=None, email=None):
-        user = self.makePerson(name=name, email=email)
-        administrators = getUtility(ILaunchpadCelebrities).admin
-        administrators.addMember(user, administrators.teamowner)
-        return user
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).admin])
 
     @with_celebrity_logged_in('admin')
     def makeRegistryExpert(self, name=None, email='expert@example.com'):
-        user = self.makePerson(name=name, email=email)
-        registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-        registry_team.addMember(user, registry_team.teamowner)
-        return user
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).registry_experts])
+
+    @with_celebrity_logged_in('admin')
+    def makeCommercialAdmin(self, name=None, email=None):
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -600,7 +604,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePerson(
         self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
-        time_zone=None, latitude=None, longitude=None, homepage_content=None,
+        time_zone=None, latitude=None, longitude=None, description=None,
         selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
@@ -629,8 +633,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
-        if homepage_content is not None:
-            naked_person.homepage_content = homepage_content
+        if description is not None:
+            naked_person.description = description
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
@@ -741,7 +745,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  description=None, icon=None, logo=None,
-                 subscription_policy=TeamSubscriptionPolicy.OPEN,
+                 membership_policy=TeamMembershipPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
 
@@ -756,8 +760,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :type email: string
         :param icon: The team's icon.
         :param logo: The team's logo.
-        :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamSubscriptionPolicy`
+        :param membership_policy: The membership policy of the team.
+        :type membership_policy: `TeamMembershipPolicy`
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
@@ -778,8 +782,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname, teamdescription=description,
-            subscriptionpolicy=subscription_policy)
+            owner, name, displayname, description,
+            membership_policy=membership_policy)
         naked_team = removeSecurityProxy(team)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
@@ -951,7 +955,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, private_bugs=False,
-        driver=None, security_contact=None, icon=None):
+        driver=None, security_contact=None, icon=None,
+        bug_sharing_policy=None, branch_sharing_policy=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -994,6 +999,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.security_contact = security_contact
         if private_bugs:
             naked_product.private_bugs = private_bugs
+        if branch_sharing_policy:
+            naked_product.branch_sharing_policy = branch_sharing_policy
+        if bug_sharing_policy:
+            naked_product.bug_sharing_policy = bug_sharing_policy
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1655,60 +1664,44 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeBug(self, product=None, owner=None, bug_watch_url=None,
+    def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
-                status=None, distribution=None, milestone=None, series=None,
-                tags=None, sourcepackagename=None):
+                status=None, milestone=None, series=None, tags=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
 
-        :param product: If the product is not set, and if the parameter
-            distribution, milestone, and series are not set, a product
-            is created and this is used as the primary bug target.
+        :param target: The initial bug target. If not specified, falls
+            back to the milestone target, then the series target, then a
+            new product.
         :param owner: The reporter of the bug. If not set, one is created.
         :param bug_watch_url: If specified, create a bug watch pointing
             to this URL.
-        :param distribution: If set, the distribution is used as the
-            default bug target.
-        :param milestone: If set, the milestone.target must match the product
-            or distribution parameters, or the those parameters must be None.
-        :param series: If set, the series.product must match the product
-            parameter, or the series.distribution must match the distribution
-            parameter, or those parameters must be None.
+        :param milestone: If set, the milestone.target must match the
+            target parameter's pillar.
+        :param series: If set, the series's pillar must match the target
+            parameter's.
         :param tags: If set, the tags to be added with the bug.
-        :param distribution: If set, the sourcepackagename is used as the
-            default bug target.
-        At least one of the parameters distribution and product must be
-        None, otherwise, an assertion error will be raised.
         """
-        if product is None and distribution is None:
+        if target is None:
             if milestone is not None:
-                # One of these will be None.
-                product = milestone.product
-                distribution = milestone.distribution
+                target = milestone.target
             elif series is not None:
-                if IProductSeries.providedBy(series):
-                    product = series.product
-                else:
-                    distribution = series.distribution
+                target = series.pillar
             else:
-                product = self.makeProduct()
+                target = self.makeProduct()
+        if IDistributionSourcePackage.providedBy(target):
+            self.makeSourcePackagePublishingHistory(
+                distroseries=target.distribution.currentseries,
+                sourcepackagename=target.sourcepackagename)
         if owner is None:
             owner = self.makePerson()
         if title is None:
             title = self.getUniqueString('bug-title')
         if comment is None:
             comment = self.getUniqueString()
-        if sourcepackagename is not None:
-            self.makeSourcePackagePublishingHistory(
-                distroseries=distribution.currentseries,
-                sourcepackagename=sourcepackagename)
-        target = product or distribution
-        if sourcepackagename is not None:
-            target = target.getSourcePackage(sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
@@ -3318,7 +3311,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
-        subscription_policy=TeamSubscriptionPolicy.OPEN):
+        membership_policy=TeamMembershipPolicy.OPEN):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -3328,8 +3321,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
-        :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamSubscriptionPolicy`
+        :param membership_policy: The membership policy of the team.
+        :type membership_policy: `TeamMembershipPolicy`
         :return: The new team and mailing list.
         :rtype: (`ITeam`, `IMailingList`)
         """
@@ -3341,7 +3334,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             team = self.makeTeam(
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
-                subscription_policy=subscription_policy)
+                membership_policy=membership_policy)
         team_list = self.makeMailingList(team, owner)
         return team, team_list
 
@@ -3883,15 +3876,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source package as `bpph`, published into the same distroseries,
             pocket, and archive.
         """
-        # JeroenVermeulen 2011-08-25, bug=834370: Julian says this isn't
-        # very complete, and ignores architectures.  Improve so we can
-        # remove more of our reliance on the SoyuzTestPublisher.
         bpr = bpph.binarypackagerelease
-        spph = self.makeSourcePackagePublishingHistory(
+        return self.makeSourcePackagePublishingHistory(
             distroseries=bpph.distroarchseries.distroseries,
             sourcepackagerelease=bpr.build.source_package_release,
             pocket=bpph.pocket, archive=bpph.archive)
-        return spph
 
     def makeBinaryPackageName(self, name=None):
         """Make an `IBinaryPackageName`."""

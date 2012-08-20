@@ -32,6 +32,8 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/lp.js"></script>
       <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/errors.js"></script>
+      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/confirmationoverlay/confirmationoverlay.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/mustache.js"></script>
@@ -79,7 +81,28 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script id="test-fixture" type="text/x-template">
           <div id="sharing-header"></div>
           <table id='grantee-table'></table>
-          <a id='add-grantee-link' class='sprite add js-action' href="#">Share</a>
+          <a id='add-grantee-link'
+             class='sprite add js-action hidden' href="#">Share</a>
+          <table>
+            <tr id="branch-sharing-policy-row">
+               <td id="branch-sharing-policy">
+                 Branches sharing policy:&nbsp;
+                 <strong><span class="value"></span></strong>
+                 <a class="editicon sprite edit action-icon"
+                     style="padding-bottom: 0;">Edit</a>
+                 <div id="branch-sharing-policy-description" class="formHelp"></div>
+               </td>
+            </tr>
+            <tr id="bug-sharing-policy-row">
+               <td id="bug-sharing-policy">
+                 Bugs sharing policy:&nbsp;
+                 <strong><span class="value"></span></strong>
+                 <a class="editicon sprite edit action-icon"
+                     style="padding-bottom: 0;">Edit</a>
+                 <div id="bug-sharing-policy-description" class="formHelp"></div>
+               </td>
+            </tr>
+          </table>
       </script>
     </head>
     <body class="yui3-skin-sam">

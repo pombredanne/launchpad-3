@@ -31,7 +31,7 @@ one for all team admins and another for the member.
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     TeamMembershipRenewalPolicy,
-    ...     TeamSubscriptionPolicy,
+    ...     TeamMembershipPolicy,
     ...     )
     >>> from lp.registry.interfaces.teammembership import (
     ...     ITeamMembershipSet,
@@ -44,7 +44,7 @@ one for all team admins and another for the member.
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> open_team = factory.makeTeam(
-    ...     subscription_policy=TeamSubscriptionPolicy.OPEN)
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> admin_person = personset.getByEmail(ADMIN_EMAIL)
 
@@ -596,96 +596,6 @@ his memberhip page, where he can extend it.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
-    ----------------------------------------
-
-
-Membership expiration notification
-----------------------------------
-
-For teams with a renewal policy other than AUTOMATIC, if a membership is
-not renewed before its expiration date it'll be flagged as expired and a
-notification is sent to the team admins and to the member whose
-membership expired. If the renewal policy is AUTOMATIC, though, the
-memberships that should expire will retain their status and have their
-dateexpires update. A notification is also sent to the member and to
-team admins when a membership is automatically renewed.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> utc_now = datetime.now(pytz.timezone('UTC'))
-    >>> lp_admins = personset.getByName('admins')
-    >>> print lp_admins.renewal_policy.title
-    invite them to apply for renewal
-
-    >>> mark_on_admins = membershipset.getByPersonAndTeam(mark, lp_admins)
-
-    # Need to cheat here and set the expiry date manually because the expiry
-    # date given to setExpirationDate() must be in the future.
-
-    >>> removeSecurityProxy(mark_on_admins).dateexpires = utc_now
-
-    >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
-    >>> ubuntu_team.defaultrenewalperiod = 365
-    >>> jdub = personset.getByName('jdub')
-    >>> jdub_on_ubuntu_team = membershipset.getByPersonAndTeam(
-    ...     jdub, ubuntu_team)
-    >>> removeSecurityProxy(jdub_on_ubuntu_team).dateexpires = utc_now
-    >>> flush_database_updates()
-
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> membershipset.handleMembershipsExpiringToday(
-    ...     reviewer=getUtility(ILaunchpadCelebrities).janitor)
-    >>> flush_database_updates()
-    >>> run_mail_jobs()
-
-    >>> len(stub.test_emails)
-    8
-
-    >>> print_distinct_emails()
-    From: Ubuntu Team <noreply@launchpad.net>
-    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
-        limi@plone.org, mark@example.com
-    Subject: jdub renewed automatically
-    <BLANKLINE>
-    The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
-    team has been automatically renewed until ...
-    <http://launchpad.dev/~ubuntu-team>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-    ----------------------------------------
-    From: Launchpad Administrators <noreply@launchpad.net>
-    To: foo.bar@canonical.com, guilherme.salgado@canonical.com
-    Subject: mark expired from team
-    <BLANKLINE>
-    The membership of Mark Shuttleworth (mark) in the Launchpad
-    Administrators (admins) team has expired.
-    <http://launchpad.dev/~admins>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-    ----------------------------------------
-    From: Launchpad Administrators <noreply@launchpad.net>
-    To: mark@example.com
-    Subject: mark expired from team
-    <BLANKLINE>
-    Your membership in the Launchpad Administrators (admins) team has
-    expired.
-    <http://launchpad.dev/~admins>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-    ----------------------------------------
-    From: Ubuntu Team <noreply@launchpad.net>
-    To: jeff.waugh@ubuntulinux.com
-    Subject: jdub renewed automatically
-    <BLANKLINE>
-    Your membership in the Ubuntu Team (ubuntu-team) team has been
-    automatically renewed until ...
-    <http://launchpad.dev/~ubuntu-team>
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
     ----------------------------------------
 
 

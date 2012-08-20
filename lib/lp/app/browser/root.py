@@ -39,6 +39,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
@@ -135,6 +136,14 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     def answer_count(self):
         """The total blueprint count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('question_count')
+
+    @property
+    def show_whatslaunchpad(self):
+        """True if introduction to Launchpad should be displayed.
+
+        Shown when not logged in or if blog is disabled.
+        """
+        return self.user is None or not getFeatureFlag("app.root_blog.enabled")
 
     def getRecentBlogPosts(self):
         """Return the parsed feed of the most recent blog posts.

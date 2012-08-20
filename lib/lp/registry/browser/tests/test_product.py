@@ -16,9 +16,9 @@ from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
     )
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    TeamSubscriptionPolicy,
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.product import (
     IProductSet,
@@ -150,7 +150,7 @@ class TestProductAddView(TestCaseWithFactory):
         # An owner can be any valid user or team selected.
         registrant = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         transaction.commit()
         login_person(registrant)
         form = self.makeForm(action=2)
@@ -326,13 +326,13 @@ class TestProductView(TestCaseWithFactory):
         # The view's json request cache contains the expected data.
         view = create_initialized_view(self.product, '+index')
         cache = IJSONRequestCache(view.request)
-        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
-        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
             SimpleVocabulary.fromItems(policy_items),
             value_fn=lambda item: item.name)
         self.assertContentEqual(
-            team_subscriptionpolicy_data,
-            cache.objects['team_subscriptionpolicy_data'])
+            team_membership_policy_data,
+            cache.objects['team_membership_policy_data'])
 
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):

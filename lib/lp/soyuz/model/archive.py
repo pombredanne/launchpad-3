@@ -57,12 +57,14 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.enums import (
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
-    OPEN_TEAM_POLICY,
-    PersonVisibility,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -343,7 +345,7 @@ class Archive(SQLBase):
     def private(self):
         return self._private
 
-    @private.setter
+    @private.setter  # pyflakes:ignore
     def private(self, private):
         self._private = private
         if private:
@@ -1052,10 +1054,16 @@ class Archive(SQLBase):
                 raise ComponentNotFound(e)
         return self.addArchiveDependency(dependency, pocket, component)
 
-    def getPermissions(self, user, item, perm_type):
+    def getPermissions(self, user, item, perm_type, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.checkAuthenticated(user, self, perm_type, item)
+        return permission_set.checkAuthenticated(
+            user, self, perm_type, item, distroseries=distroseries)
+
+    def getAllPermissions(self):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.permissionsForArchive(self)
 
     def getPermissionsForPerson(self, person):
         """See `IArchive`."""
@@ -1086,6 +1094,17 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
+
+    def getQueueAdminsForPocket(self, pocket, distroseries=None):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.queueAdminsForPocket(
+            self, pocket, distroseries=distroseries)
+
+    def getPocketsForQueueAdmin(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.pocketsForQueueAdmin(self, person)
 
     def hasAnyPermission(self, person):
         """See `IArchive`."""
@@ -1347,24 +1366,33 @@ class Archive(SQLBase):
 
         return None
 
-    def canAdministerQueue(self, user, components):
+    def canAdministerQueue(self, user, components=None, pocket=None,
+                           distroseries=None):
         """See `IArchive`."""
         if components is None:
             components = []
         elif IComponent.providedBy(components):
             components = [components]
-        permissions = self.getComponentsForQueueAdmin(user)
-        if permissions.count() == 0:
-            return False
-        allowed_components = set(
-            permission.component for permission in permissions)
-        # The intersection of allowed_components and components must be
-        # equal to components to allow the operation to go ahead.
-        return allowed_components.intersection(components) == set(components)
+        component_permissions = self.getComponentsForQueueAdmin(user)
+        if not component_permissions.is_empty():
+            allowed_components = set(
+                permission.component for permission in component_permissions)
+            # The intersection of allowed_components and components must be
+            # equal to components to allow the operation to go ahead.
+            if allowed_components.intersection(components) == set(components):
+                return True
+        if pocket is not None:
+            pocket_permissions = self.getPocketsForQueueAdmin(user)
+            for permission in pocket_permissions:
+                if (permission.pocket == pocket and
+                    permission.distroseries in (None, distroseries)):
+                    return True
+        return False
 
-    def _authenticate(self, user, item, permission):
+    def _authenticate(self, user, item, permission, distroseries=None):
         """Private helper method to check permissions."""
-        permissions = self.getPermissions(user, item, permission)
+        permissions = self.getPermissions(
+            user, item, permission, distroseries=distroseries)
         return bool(permissions)
 
     def newPackageUploader(self, person, source_package_name):
@@ -1416,6 +1444,12 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newQueueAdmin(self, person, component_name)
 
+    def newPocketQueueAdmin(self, person, pocket, distroseries=None):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPocketQueueAdmin(
+            self, person, pocket, distroseries=distroseries)
+
     def deletePackageUploader(self, person, source_package_name):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
@@ -1437,6 +1471,12 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.deleteQueueAdmin(self, person, component_name)
+
+    def deletePocketQueueAdmin(self, person, pocket, distroseries=None):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deletePocketQueueAdmin(
+            self, person, pocket, distroseries=distroseries)
 
     def getUploadersForPackageset(self, packageset, direct_permissions=True):
         """See `IArchive`."""
@@ -1615,6 +1655,10 @@ class Archive(SQLBase):
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
+        if source is None:
+            raise CannotCopy(
+                "%s is not published in %s." %
+                (source_name, from_archive.displayname))
         return source
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
@@ -1672,9 +1716,6 @@ class Archive(SQLBase):
 
         sources = self._collectLatestPublishedSources(
             from_archive, from_series, source_names)
-        if not sources:
-            raise CannotCopy(
-                "None of the supplied package names are published")
 
         # Now do a mass check of permissions.
         pocket = self._text_to_pocket(to_pocket)
@@ -1707,6 +1748,8 @@ class Archive(SQLBase):
 
         :raises NoSuchSourcePackageName: If any of the source_names do not
             exist.
+        :raises CannotCopy: If none of the source_names are published in
+            from_archive.
         """
         from_series_obj = self._text_to_series(
             from_series, distribution=from_archive.distribution)
@@ -1728,6 +1771,10 @@ class Archive(SQLBase):
             first_source = published_sources.first()
             if first_source is not None:
                 sources.append(first_source)
+        if not sources:
+            raise CannotCopy(
+                "None of the supplied package names are published in %s." %
+                from_archive.displayname)
         return sources
 
     def _text_to_series(self, to_series, distribution=None):
@@ -2090,7 +2137,7 @@ def validate_ppa(owner, proposed_name, private=False):
     elif owner.private:
         return 'Private teams may not have public archives.'
     if owner.is_team and (
-        owner.subscriptionpolicy in OPEN_TEAM_POLICY):
+        owner.membership_policy in INCLUSIVE_TEAM_POLICY):
         return "Open teams cannot have PPAs."
     if proposed_name is not None and proposed_name == ubuntu.name:
         return (

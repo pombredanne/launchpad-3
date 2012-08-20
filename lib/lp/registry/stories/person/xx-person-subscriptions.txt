@@ -25,12 +25,12 @@ those.
     >>> login('foo.bar@canonical.com')
     >>> scofflaw = factory.makeProduct(name='scofflaw')
     >>> subscriber = factory.makePerson(name='webster')
-    >>> bugA = factory.makeBug(product=scofflaw,
+    >>> bugA = factory.makeBug(target=scofflaw,
     ...     title='Word needs more popularity')
     >>> affluenza = factory.makeProduct(name='affluenza')
     >>> subscriptionA = bugA.subscribe(subscriber, subscriber)
     >>> transaction.commit()
-    >>> bugB = factory.makeBug(product=affluenza,
+    >>> bugB = factory.makeBug(target=affluenza,
     ...     title='A terrible affliction')
     >>> subscriptionB = bugB.subscribe(subscriber, subscriber)
     >>> logout()
@@ -108,7 +108,7 @@ member.
 
     >>> login('foo.bar@canonical.com')
     >>> team = factory.makeTeam(name='america')
-    >>> bugC = factory.makeBug(product=scofflaw,
+    >>> bugC = factory.makeBug(target=scofflaw,
     ...     title="Word came from a contest")
     >>> membership = team.addMember(subscriber, subscriber)
     >>> subscriptionC = bugC.subscribe(team, subscriber)

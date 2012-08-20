@@ -32,10 +32,10 @@ from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
-    PersonVisibility,
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket

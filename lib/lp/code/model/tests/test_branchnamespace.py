@@ -41,8 +41,11 @@ from lp.code.model.branchnamespace import (
 from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
+    PersonVisibility,
     PUBLIC_INFORMATION_TYPES,
     SharingPermission,
+    TeamMembershipPolicy,
     )
 from lp.registry.errors import (
     NoSuchDistroSeries,
@@ -50,18 +53,18 @@ from lp.registry.errors import (
     )
 from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.person import (
+    IPersonSet,
     NoSuchPerson,
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
-    admin_logged_in,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
 class NamespaceMixin:
@@ -397,7 +400,7 @@ class TestProductNamespacePrivacyWithBranchVisibility(TestCaseWithFactory):
         # the correct information type.
         person = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             owner=person)
         product = self.factory.makeProduct()
         namespace = ProductNamespace(team, product)
@@ -466,8 +469,9 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         if person is None:
             person = self.factory.makePerson()
         product = self.factory.makeProduct()
-        removeSecurityProxy(product).branch_sharing_policy = (
-            sharing_policy)
+        self.factory.makeCommercialSubscription(product=product)
+        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        product.setBranchSharingPolicy(sharing_policy, comadmin)
         namespace = ProductNamespace(person, product)
         return namespace
 
@@ -475,7 +479,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PUBLIC)
         self.assertContentEqual(
-            PUBLIC_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
+            FREE_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.PUBLIC, namespace.getDefaultInformationType())
 
@@ -483,7 +487,8 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertContentEqual(
-            FREE_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
+            NON_EMBARGOED_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
         self.assertEqual(
             InformationType.PUBLIC, namespace.getDefaultInformationType())
 
@@ -496,14 +501,16 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     def test_proprietary_or_public_grantor(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
-        with admin_logged_in():
+        with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,
-                {InformationType.USERDATA: SharingPermission.ALL})
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
         self.assertContentEqual(
-            FREE_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
+            NON_EMBARGOED_INFORMATION_TYPES,
+            namespace.getAllowedInformationTypes())
         self.assertEqual(
-            InformationType.USERDATA, namespace.getDefaultInformationType())
+            InformationType.PROPRIETARY,
+            namespace.getDefaultInformationType())
 
     def test_proprietary_anyone(self):
         namespace = self.makeProductNamespace(
@@ -514,15 +521,36 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     def test_proprietary_grantee(self):
         namespace = self.makeProductNamespace(
             BranchSharingPolicy.PROPRIETARY)
-        with admin_logged_in():
+        with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
                 namespace.product, namespace.owner, namespace.product.owner,
-                {InformationType.USERDATA: SharingPermission.ALL})
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
         self.assertContentEqual(
-            FREE_PRIVATE_INFORMATION_TYPES,
+            [InformationType.PROPRIETARY],
             namespace.getAllowedInformationTypes())
         self.assertEqual(
-            InformationType.USERDATA, namespace.getDefaultInformationType())
+            InformationType.PROPRIETARY,
+            namespace.getDefaultInformationType())
+
+    def test_embargoed_or_proprietary_anyone(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self.assertContentEqual([], namespace.getAllowedInformationTypes())
+        self.assertIs(None, namespace.getDefaultInformationType())
+
+    def test_embargoed_or_proprietary_grantee(self):
+        namespace = self.makeProductNamespace(
+            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        with person_logged_in(namespace.product.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, namespace.owner, namespace.product.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            namespace.getAllowedInformationTypes())
+        self.assertEqual(
+            InformationType.EMBARGOED,
+            namespace.getDefaultInformationType())
 
 
 class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
@@ -1293,13 +1321,13 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
         # And create some test teams.
         self.xray = self.factory.makeTeam(
             name='xray', members=[self.albert],
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.yankee = self.factory.makeTeam(
             name='yankee', members=[self.albert, self.bob],
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.zulu = self.factory.makeTeam(
             name='zulu', members=[self.albert, self.charlie],
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.teams = (self.xray, self.yankee, self.zulu)
 
     def defineTeamPolicies(self, team_policies):

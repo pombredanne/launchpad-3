@@ -21,7 +21,11 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    InformationType,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
@@ -68,7 +72,9 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner=self.owner, driver=self.driver)
         elif self.pillar_type == 'product':
             self.pillar = self.factory.makeProduct(
-                owner=self.owner, driver=self.driver)
+                owner=self.owner, driver=self.driver,
+                bug_sharing_policy=BugSharingPolicy.PUBLIC,
+                branch_sharing_policy=BranchSharingPolicy.PUBLIC)
         self.access_policy = self.factory.makeAccessPolicy(
             pillar=self.pillar, type=InformationType.PROPRIETARY)
         self.grantees = []
@@ -101,11 +107,11 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner = self.pillar.owner
             if self.pillar_type == 'product':
                 bug = self.factory.makeBug(
-                    product=self.pillar, owner=owner,
+                    target=self.pillar, owner=owner,
                     information_type=InformationType.USERDATA)
             elif self.pillar_type == 'distribution':
                 bug = self.factory.makeBug(
-                    distribution=self.pillar, owner=owner,
+                    target=self.pillar, owner=owner,
                     information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=bug))
@@ -333,6 +339,9 @@ class PillarSharingViewTestMixin:
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)
             self.assertIsNotNone(cache.objects.get('information_types'))
+            self.assertIsNotNone(
+                cache.objects.get('branch_sharing_policies'))
+            self.assertIsNotNone(cache.objects.get('bug_sharing_policies'))
             self.assertIsNotNone(cache.objects.get('sharing_permissions'))
             batch_size = config.launchpad.default_batch_size
             apgfs = getUtility(IAccessPolicyGrantFlatSource)

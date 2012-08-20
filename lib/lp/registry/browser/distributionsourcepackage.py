@@ -598,6 +598,16 @@ class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
 
     page_title = 'Publishing history'
 
+    def initialize(self):
+        """Preload relevant `IPerson` objects."""
+        ids = set()
+        for spph in self.context.publishing_history:
+            ids.update((spph.removed_byID, spph.creatorID, spph.sponsorID))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
+
     @property
     def label(self):
         return 'Publishing history of %s' % self.context.title

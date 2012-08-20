@@ -24,12 +24,12 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import (
-    IPersonSet,
+from lp.registry.enums import (
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -1801,7 +1801,7 @@ class TestValidatePPA(TestCaseWithFactory):
 
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.makeArchive(owner=team, name='ppa')
         self.assertEqual(
             "%s already has a PPA named 'ppa'." % team.displayname,
@@ -1817,7 +1817,7 @@ class TestValidatePPA(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
             owner=team_owner, visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         team_admin = self.factory.makePerson()
         with person_logged_in(team_owner):
             private_team.addMember(
@@ -1831,7 +1831,7 @@ class TestValidatePPA(TestCaseWithFactory):
         team_owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
             owner=team_owner, visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         team_admin = self.factory.makePerson()
         with person_logged_in(team_owner):
             private_team.addMember(
@@ -2427,6 +2427,20 @@ class TestSyncSource(TestCaseWithFactory):
         self.assertEqual(1, copy_jobs.count())
         self.assertEqual(source.distroseries, copy_jobs[0].target_distroseries)
 
+    def test_copyPackage_unpublished_source(self):
+        # If the given source name is not published in the source archive,
+        # we get a CannotCopy exception.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        with person_logged_in(target_archive.owner):
+            expected_error = (
+                "%s is not published in %s." %
+                (source_name, target_archive.displayname))
+            self.assertRaisesWithContent(
+                CannotCopy, expected_error, target_archive.copyPackage,
+                source_name, version, target_archive, to_pocket.name,
+                target_archive.owner)
+
     def test_copyPackages_with_single_package(self):
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
@@ -2641,6 +2655,20 @@ class TestSyncSource(TestCaseWithFactory):
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
         self.assertEqual(source.distroseries, copy_job.target_distroseries)
+
+    def test_copyPackages_unpublished_source(self):
+        # If none of the given source names are published in the source
+        # archive, we get a CannotCopy exception.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        with person_logged_in(target_archive.owner):
+            expected_error = (
+                "None of the supplied package names are published in %s." %
+                target_archive.displayname)
+            self.assertRaisesWithContent(
+                CannotCopy, expected_error, target_archive.copyPackages,
+                [source_name], target_archive, to_pocket.name,
+                target_archive.owner)
 
 
 class TestgetAllPublishedBinaries(TestCaseWithFactory):

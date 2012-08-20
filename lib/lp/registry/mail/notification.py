@@ -17,11 +17,9 @@ from zope.component import (
     getUtility,
     )
 
+from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -180,7 +178,7 @@ def notify_team_join(event):
         return
 
     # Open teams do not notify admins about new members.
-    if team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+    if team.membership_policy == TeamMembershipPolicy.OPEN:
         return
 
     replacements = {

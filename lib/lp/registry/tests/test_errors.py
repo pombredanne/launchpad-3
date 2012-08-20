@@ -19,13 +19,13 @@ from lp.registry.errors import (
     CommercialSubscribersOnly,
     DeleteSubscriptionError,
     DistroSeriesDifferenceError,
+    InclusiveTeamLinkageError,
     JoinNotAllowed,
     NameAlreadyTaken,
-    OpenTeamLinkageError,
     PPACreationError,
     PrivatePersonLinkageError,
+    TeamMembershipPolicyError,
     TeamMembershipTransitionError,
-    TeamSubscriptionPolicyError,
     UserCannotChangeMembershipSilently,
     UserCannotSubscribePerson,
     )
@@ -40,8 +40,8 @@ class TestWebServiceErrors(TestCase):
 
     layer = FunctionalLayer
 
-    def test_OpenTeamLinkageError_forbidden(self):
-        error_view = create_webservice_error_view(OpenTeamLinkageError())
+    def test_InclusiveTeamLinkageError_forbidden(self):
+        error_view = create_webservice_error_view(InclusiveTeamLinkageError())
         self.assertEqual(FORBIDDEN, error_view.status)
 
     def test_PersonLinkageError_forbidden(self):
@@ -56,9 +56,9 @@ class TestWebServiceErrors(TestCase):
         error_view = create_webservice_error_view(JoinNotAllowed())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
-    def test_TeamSubscriptionPolicyError_bad_request(self):
+    def test_TeamMembershipPolicyError_bad_request(self):
         error_view = create_webservice_error_view(
-            TeamSubscriptionPolicyError())
+            TeamMembershipPolicyError())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
     def test_TeamMembershipTransitionError_bad_request(self):
