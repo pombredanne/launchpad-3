@@ -101,9 +101,12 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -125,11 +128,9 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
     IPerson,
     IPersonSet,
     ITeam,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import (
     IPillar,
@@ -141,6 +142,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
@@ -569,10 +571,10 @@ class ValidPersonOrTeamVocabulary(
         tables = []
         logged_in_user = getUtility(ILaunchBag).user
         if logged_in_user is not None:
-            celebrities = getUtility(ILaunchpadCelebrities)
-            if logged_in_user.inTeam(celebrities.admin):
-                # If the user is a LP admin we allow all private teams to be
-                # visible.
+            roles = IPersonRoles(logged_in_user)
+            if roles.in_admin or roles.in_commercial_admin:
+                # If the user is a LP admin or commercial admin we allow
+                # all private teams to be visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
                     Person.visibility == PersonVisibility.PRIVATE)
@@ -893,7 +895,7 @@ class TeamVocabularyMixin:
 
     @property
     def is_closed_team(self):
-        return self.team.subscriptionpolicy in CLOSED_TEAM_POLICY
+        return self.team.membership_policy in EXCLUSIVE_TEAM_POLICY
 
     @property
     def step_title(self):
@@ -905,11 +907,11 @@ class TeamVocabularyMixin:
             return 'Search'
 
 
-class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
+class ValidPersonOrExclusiveTeamVocabulary(TeamVocabularyMixin,
                                 ValidPersonOrTeamVocabulary):
-    """The set of people and closed teams in Launchpad.
+    """The set of people and exclusive teams in Launchpad.
 
-    A closed team is one for which the subscription policy is either
+    A exclusive team is one for which the membership policy is either
     RESTRICTED or MODERATED.
     """
 
@@ -919,7 +921,7 @@ class ValidPersonOrClosedTeamVocabulary(TeamVocabularyMixin,
 
     @property
     def extra_clause(self):
-        return Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY)
+        return Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY)
 
 
 class ValidTeamMemberVocabulary(TeamVocabularyMixin,
@@ -954,7 +956,7 @@ class ValidTeamMemberVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
+                Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY))
         return clause
 
 
@@ -992,7 +994,7 @@ class ValidTeamOwnerVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
+                Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY))
         return clause
 
 
@@ -1059,7 +1061,7 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarGranteeVocabulary(ValidPersonOrClosedTeamVocabulary):
+class NewPillarGranteeVocabulary(ValidPersonOrExclusiveTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an

@@ -48,7 +48,6 @@ from lp.registry.interfaces.person import (
     TeamEmailAddressError,
     )
 from lp.services.config import config
-from lp.services.database.readonly import is_read_only
 from lp.services.identity.interfaces.account import AccountSuspendedError
 from lp.services.openid.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.services.propertycache import cachedproperty
@@ -62,7 +61,6 @@ from lp.services.webapp.interfaces import (
     IPlacelessLoginSource,
     LoggedOutEvent,
     )
-from lp.services.webapp.metazcml import ILaunchpadPermission
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
@@ -71,33 +69,9 @@ from lp.services.webapp.vhosts import allvhosts
 class UnauthorizedView(SystemErrorView):
 
     response_code = None
-
-    forbidden_page = ViewPageTemplateFile(
-        '../../../lp/app/templates/launchpad-forbidden.pt')
-
-    read_only_page = ViewPageTemplateFile(
-        '../../../lp/app/templates/launchpad-readonlyfailure.pt')
-
-    def page_title(self):
-        if is_read_only():
-            return super(UnauthorizedView, self).page_title
-        else:
-            return 'Forbidden'
+    page_title = 'Forbidden'
 
     def __call__(self):
-        # In read only mode, Unauthorized exceptions get raised by the
-        # security policy when write permissions are requested. We need
-        # to render the read-only failure screen so the user knows their
-        # request failed for operational reasons rather than a genuine
-        # permission problem.
-        if is_read_only():
-            # Our context is an Unauthorized exception, which acts like
-            # a tuple containing (object, attribute_requested, permission).
-            lp_permission = getUtility(ILaunchpadPermission, self.context[2])
-            if lp_permission.access_level != "read":
-                self.request.response.setStatus(503)  # Service Unavailable
-                return self.read_only_page()
-
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
                 target = '%s?loggingout=1' % self.request.URL[-2]
@@ -136,7 +110,7 @@ class UnauthorizedView(SystemErrorView):
             return ''
         else:
             self.request.response.setStatus(403)  # Forbidden
-            return self.forbidden_page()
+            return self.template()
 
     def getRedirectURL(self, current_url, query_string):
         """Get the URL to redirect to.
@@ -593,4 +567,4 @@ class FeedsUnauthorizedView(UnauthorizedView):
         assert IUnauthenticatedPrincipal.providedBy(self.request.principal), (
             "Feeds user should always be anonymous.")
         self.request.response.setStatus(403)  # Forbidden
-        return self.forbidden_page()
+        return self.template()

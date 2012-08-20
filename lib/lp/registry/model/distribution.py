@@ -81,7 +81,6 @@ from lp.bugs.interfaces.bugtask import (
     DB_UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import BugSet
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
@@ -1578,16 +1577,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                  bugs_with_upstream_patches))
         return results
 
-    def setBugSupervisor(self, bug_supervisor, user):
-        """See `IHasBugSupervisor`."""
-        self.bug_supervisor = bug_supervisor
-        if bug_supervisor is not None:
-            self.addBugSubscription(bug_supervisor, user)
-
     def getAllowedBugInformationTypes(self):
         """See `IDistribution.`"""
         types = set(InformationType.items)
         types.discard(InformationType.PROPRIETARY)
+        types.discard(InformationType.EMBARGOED)
         return types
 
     def getDefaultBugInformationType(self):

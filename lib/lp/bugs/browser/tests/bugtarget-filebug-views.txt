@@ -685,7 +685,7 @@ Privileged users are offered several extra options when filing bugs.
     >>> ignored = login_person(owner)
     >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> owner_fields = set(filebug_view.field_names)
-    >>> product.setBugSupervisor(owner, owner)
+    >>> product.bug_supervisor = owner
     >>> supervisor_fields = set(filebug_view.field_names)
 
 Privileged users get most of the same fields as normal users, plus a few

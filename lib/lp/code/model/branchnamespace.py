@@ -48,6 +48,8 @@ from lp.code.model.branch import Branch
 from lp.registry.enums import (
     BranchSharingPolicy,
     InformationType,
+    PersonVisibility,
+    NON_EMBARGOED_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
@@ -62,7 +64,6 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -87,24 +88,29 @@ FREE_INFORMATION_TYPES = (
     PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
 
 POLICY_ALLOWED_TYPES = {
-    BranchSharingPolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
-    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: FREE_INFORMATION_TYPES,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: FREE_INFORMATION_TYPES,
-    BranchSharingPolicy.PROPRIETARY: FREE_PRIVATE_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        NON_EMBARGOED_INFORMATION_TYPES),
+    BranchSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY:
+        [InformationType.PROPRIETARY, InformationType.EMBARGOED],
     }
 
 POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.PUBLIC: InformationType.PUBLIC,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
-    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
     }
 
 POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PUBLIC: None,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: None,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
-    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.PROPRIETARY,
     }
 
 

@@ -64,7 +64,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.services import features
 from lp.services.config import config
-from lp.services.database.readonly import is_read_only
 from lp.services.features.flags import NullFeatureController
 from lp.services.oauth.interfaces import IOAuthSignedRequest
 from lp.services.osutils import open_for_writing
@@ -74,7 +73,6 @@ from lp.services.webapp.interfaces import (
     FinishReadOnlyRequestEvent,
     IDatabasePolicy,
     ILaunchpadRoot,
-    INotificationResponse,
     IOpenLaunchBag,
     IPlacelessAuthUtility,
     IPrimaryContext,
@@ -84,7 +82,6 @@ from lp.services.webapp.interfaces import (
     OffsiteFormPostError,
     StartRequestEvent,
     )
-from lp.services.webapp.menu import structured
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.vhosts import allvhosts
 
@@ -267,32 +264,9 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
-        db_policy = IDatabasePolicy(request)
-
-        # If we have switched to or from read-only mode, we need to
-        # disconnect all Stores for this thread. We don't want the
-        # appserver to leave dangling connections as this will interfere
-        # with database maintenance.
-        # We don't disconnect Stores for threads currently handling
-        # requests. That would generate unreproducable OOPSes. This
-        # isn't a problem, as our requests should complete soon or
-        # timeout. Unfortunately, there is no way to disconnect Stores
-        # for idle threads. This means connections are left dangling
-        # until the appserver has processed as many requests as there
-        # are worker threads. We will be able to handle this better
-        # when we have a connection pool.
-        was_read_only = getattr(self.thread_locals, 'was_read_only', None)
-        if was_read_only is not None and was_read_only != is_read_only():
-            zstorm = getUtility(IZStorm)
-            for name, store in list(zstorm.iterstores()):
-                zstorm.remove(store)
-                store.close()
-        # is_read_only() is cached for the entire request, so there
-        # is no race condition here.
-        self.thread_locals.was_read_only = is_read_only()
-
         # Now we are logged in, install the correct IDatabasePolicy for
         # this request.
+        db_policy = IDatabasePolicy(request)
         getUtility(IStoreSelector).push(db_policy)
 
         getUtility(IOpenLaunchBag).clear()
@@ -308,21 +282,6 @@ class LaunchpadBrowserPublication(
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         maybe_block_offsite_form_post(request)
-        self.maybeNotifyReadOnlyMode(request)
-
-    def maybeNotifyReadOnlyMode(self, request):
-        """Hook to notify about read-only mode."""
-        if is_read_only():
-            notification_response = INotificationResponse(request, None)
-            if notification_response is not None:
-                notification_response.addWarningNotification(
-                    structured("""
-                        Launchpad is undergoing maintenance and is in
-                        read-only mode. <i>You cannot make any
-                        changes.</i> You can find more information on the
-                        <a href="http://identi.ca/launchpadstatus">Launchpad
-                        system status</a> page.
-                        """))
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.

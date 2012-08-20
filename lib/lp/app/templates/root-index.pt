@@ -67,7 +67,7 @@
         <div class="yui-g">
           <div class="yui-u first" style="margin-top: 1.5em;">
             <div class="homepage-whatslaunchpad"
-                 tal:condition="not:view/user">
+                 tal:condition="view/show_whatslaunchpad">
               <h2><span class="launchpad-gold">Launchpad</span> is a software collaboration platform that provides:</h2>
               <ul tal:define="apphomes view/apphomes">
               <li>
@@ -109,7 +109,8 @@
                </div>
             </div>
 
-            <div id="homepage-blogposts" class="homepage-portlet">
+            <div id="homepage-blogposts" class="homepage-portlet"
+                 tal:condition="features/app.root_blog.enabled">
               <h2>Recent Launchpad blog posts</h2>
               <ul tal:define="posts view/getRecentBlogPosts">
                 <li class="news"
@@ -188,15 +189,15 @@
                     <a class="sprite add"
                       href="/people/+newteam">Register a team</a>
                   </li>
-                  <li>
+                  <li tal:condition="not:view/show_whatslaunchpad">
                     <a class="sprite bug"
                       tal:attributes="href apphomes/bugs">Browse bugs</a>
                   </li>
-                  <li>
+                  <li tal:condition="not:view/show_whatslaunchpad">
                     <a class="sprite translate-icon"
                       tal:attributes="href apphomes/translations">Help translate</a>
                   </li>
-                  <li>
+                  <li tal:condition="not:view/show_whatslaunchpad">
                     <a class="sprite question"
                       tal:attributes="href apphomes/answers">Find answers</a>
                   </li>
@@ -204,7 +205,7 @@
                     <a class="sprite ppa-icon"
                       href="/ubuntu/+ppas">Browse Ubuntu PPAs</a>
                   </li>
-                  <li>
+                  <li tal:condition="not:view/show_whatslaunchpad">
                      <a class="sprite tour" href="/+tour">Take the tour</a>
                    </li>
                 </ul>

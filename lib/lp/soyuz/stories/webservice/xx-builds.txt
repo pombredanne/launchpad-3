@@ -101,7 +101,6 @@ same library file, so both can be verified.
 
     >>> login('foo.bar@canonical.com')
 
-    >>> from zope.component import getUtility
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
 
@@ -145,7 +144,6 @@ Set up some more webservice users:
 
     >>> from lp.testing.pages import webservice_for_person
     >>> from lp.services.webapp.interfaces import OAuthPermission
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> admin_person = getUtility(IPersonSet).getByName('mark')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')

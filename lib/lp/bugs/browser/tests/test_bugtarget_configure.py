@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for bug configuration views."""
@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from lp.app.enums import ServiceUsage
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -92,17 +92,6 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             self.product.bug_reported_acknowledgement)
         self.assertFalse(self.product.enable_bugfiling_duplicate_search)
 
-    def test_bug_supervisor_invalid(self):
-        # Verify that invalid bug_supervisor states are reported.
-        # This is a sanity check. The bug_supervisor is rigorously tested
-        # in its own test.
-        other_person = self.factory.makePerson()
-        form = self._makeForm()
-        form['field.bug_supervisor'] = other_person.name
-        view = create_initialized_view(
-            self.product, name='+configure-bugtracker', form=form)
-        self.assertEqual(1, len(view.errors))
-
     def test_security_contact_invalid(self):
         # Verify that invalid security_contact states are reported.
         # This is a sanity check. The security_contact is rigorously tested
@@ -154,16 +143,16 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         # reporting guidelines.
         owning_team = self.factory.makeTeam(
             owner=self.owner,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         bug_team = self.factory.makeTeam(
             owner=self.owner,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         weak_owner = self.factory.makePerson()
         login_person(self.owner)
         owning_team.addMember(weak_owner, self.owner)
         bug_team.addMember(weak_owner, self.owner)
         self.product.owner = owning_team
-        self.product.setBugSupervisor(bug_team, self.owner)
+        self.product.bug_supervisor = bug_team
         self.product.security_contact = bug_team
         login_person(weak_owner)
         form = self._makeForm()

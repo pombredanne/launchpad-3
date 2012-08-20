@@ -95,7 +95,7 @@ class TestSearchByInformationType(TestCaseWithFactory):
         with person_logged_in(self.owner):
             self.product = self.factory.makeProduct()
         self.bug = self.factory.makeBug(
-            product=self.product,
+            target=self.product,
             information_type=InformationType.PRIVATESECURITY)
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
@@ -128,7 +128,7 @@ class TestGetBugData(TestCaseWithFactory):
         with person_logged_in(self.owner):
             self.product = self.factory.makeProduct()
         self.bug = self.factory.makeBug(
-            product=self.product,
+            target=self.product,
             information_type=InformationType.PRIVATESECURITY)
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')

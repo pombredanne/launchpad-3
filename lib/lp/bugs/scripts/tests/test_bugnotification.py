@@ -648,7 +648,7 @@ class EmailNotificationTestBase(TestCaseWithFactory):
         self.bug_subscriber = self.factory.makePerson(name="bug-subscriber")
         self.bug_owner = self.factory.makePerson(name="bug-owner")
         self.bug = self.factory.makeBug(
-            product=self.product, owner=self.bug_owner,
+            target=self.product, owner=self.bug_owner,
             information_type=InformationType.USERDATA)
         self.reporter = self.bug.owner
         self.bug.subscribe(self.bug_subscriber, self.reporter)

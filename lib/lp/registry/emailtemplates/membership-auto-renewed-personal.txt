@@ -1,7 +1,0 @@
-Hello %(recipient_name)s,
-
-Your membership in the %(team_name)s team has been automatically renewed until %(dateexpires)s.
-<%(team_url)s>
-
-Regards,
-The Launchpad team

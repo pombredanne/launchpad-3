@@ -1601,9 +1601,9 @@ First we create four copy archives for ubuntu:
 One of the new copy archives will be owned by a team:
 
     >>> from lp.registry.interfaces.person import (
-    ...     TeamSubscriptionPolicy)
+    ...     TeamMembershipPolicy)
     >>> team = getUtility(IPersonSet).newTeam(mark, 't1', 't1',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
     ...                                        name="team-archive",
     ...                                        owner=team)
@@ -2092,6 +2092,14 @@ all result in a NotFound exception:
     ...
     NoSuchDistroSeries: No such distribution series: 'badseries'.
 
+If a package exists but not in the source archive, we get an error:
+
+    >>> mark.archive.syncSources(["pack"], mark.archive, "release")
+    Traceback (most recent call last):
+    ...
+    CannotCopy: None of the supplied package names are published in PPA for
+    Mark Shuttleworth.
+
 If a package exists in multiple distroseries, we can use the `from_series`
 parameter to select the distroseries to synchronise from:
 
@@ -2150,6 +2158,13 @@ Login as mark to continue.
     ...     name="pack", exact_match=True).one()
     >>> print pack.sourcepackagerelease.version
     1.0
+
+If the supplied package exists but not in the source archive, we get an error:
+
+    >>> mark.archive.syncSource("package3", "1.0", mark.archive, "release")
+    Traceback (most recent call last):
+    ...
+    CannotCopy: package3 is not published in PPA for Mark Shuttleworth.
 
 Copy package3 1.0 explicitly:
 

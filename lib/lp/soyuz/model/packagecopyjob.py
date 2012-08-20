@@ -480,7 +480,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self.addSourceOverride(defaults[0])
             if auto_approve:
                 auto_approve = self.target_archive.canAdministerQueue(
-                    self.requester, self.getSourceOverride().component)
+                    self.requester, self.getSourceOverride().component,
+                    self.target_pocket, self.target_distroseries)
 
             approve_new = auto_approve or copy_policy.autoApproveNew(
                 self.target_archive, self.target_distroseries,
@@ -496,7 +497,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self.addSourceOverride(ancestry[0])
             if auto_approve:
                 auto_approve = self.target_archive.canAdministerQueue(
-                    self.requester, self.getSourceOverride().component)
+                    self.requester, self.getSourceOverride().component,
+                    self.target_pocket, self.target_distroseries)
 
         # The package is not new (it has ancestry) so check the copy
         # policy for existing packages.
@@ -513,6 +515,17 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if pu is not None:
             pu.setRejected()
 
+    def notifyOops(self, oops):
+        """See `IRunnableJob`."""
+        if not self.error_message:
+            transaction.abort()
+            self.reportFailure(
+                "Launchpad encountered an internal error while copying this"
+                " package.  It was logged with id %s.  Sorry for the"
+                " inconvenience." % oops["id"])
+            transaction.commit()
+        super(PlainPackageCopyJob, self).notifyOops(oops)
+
     def run(self):
         """See `IRunnableJob`."""
         try:
@@ -524,7 +537,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             logger = logging.getLogger()
             logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
             self.abort()  # Abort the txn.
-            self.reportFailure(e)
+            self.reportFailure(unicode(e))
 
             # If there is an associated PackageUpload we need to reject it,
             # else it will sit in ACCEPTED forever.
@@ -636,9 +649,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             for dsd in candidates
                 if dsd.parent_series.distributionID == source_distro_id]
 
-    def reportFailure(self, cannotcopy_exception):
+    def reportFailure(self, message):
         """Attempt to report failure to the user."""
-        message = unicode(cannotcopy_exception)
         if self.target_archive.purpose != ArchivePurpose.PPA:
             dsds = self.findMatchingDSDs()
             comment_source = getUtility(IDistroSeriesDifferenceCommentSource)

@@ -6,11 +6,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.testing import (
     login_celebrity,
@@ -188,7 +188,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
     def test_cannot_merge_team_with_ppa(self):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
-        self.dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.dupe_team.membership_policy = TeamMembershipPolicy.MODERATED
         self.dupe_team.createPPA()
         login_celebrity('registry_experts')
         view = self.getView()

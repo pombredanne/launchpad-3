@@ -9,7 +9,6 @@ from datetime import (
     )
 
 from pytz import UTC
-from storm.expr import Join
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -29,7 +28,6 @@ from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
-from lp.bugs.model.bugnotification import BugNotificationRecipient
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
@@ -136,7 +134,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_also_notified_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -146,7 +144,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_indirect_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -156,7 +154,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_direct_subscribers_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
@@ -261,7 +259,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         dupe_bug = self.factory.makeBug()
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
@@ -612,7 +610,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             driver=product_driver, security_contact=security_contact)
         if self.private_project:
             removeSecurityProxy(bug_product).private_bugs = True
-        bug = self.factory.makeBug(owner=bug_owner, product=bug_product)
+        bug = self.factory.makeBug(owner=bug_owner, target=bug_product)
         with person_logged_in(bug_owner):
             if private_security_related:
                 information_type = InformationType.PRIVATESECURITY
@@ -777,7 +775,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         bug_owner = self.factory.makePerson()
-        bug = self.factory.makeBug(owner=bug_owner, product=product)
+        bug = self.factory.makeBug(owner=bug_owner, target=product)
         with person_logged_in(product.owner):
             product.addSubscription(bug_supervisor, bug_supervisor)
 
@@ -890,7 +888,7 @@ class TestBugPrivacy(TestCaseWithFactory):
             dsp.distribution, sp.distribution]
 
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.USERDATA)
+            target=product, information_type=InformationType.USERDATA)
         for target in targets[1:]:
             self.factory.makeBugTask(bug, target=target)
         [artifact] = getUtility(IAccessArtifactSource).ensure([bug])
@@ -940,13 +938,11 @@ class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
         # This is to protect ubuntu's workflow, which differs from the
         # Launchpad norm.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        admin = getUtility(ILaunchpadCelebrities).admin
         ubuntu = removeSecurityProxy(ubuntu)
-        ubuntu.setBugSupervisor(
-            self.factory.makePerson(name='supervisor'), admin)
+        ubuntu.bug_supervisor = self.factory.makePerson(name='supervisor')
         bug = self.factory.makeBug(
             information_type=InformationType.PRIVATESECURITY,
-            distribution=ubuntu)
+            target=ubuntu)
         bug = removeSecurityProxy(bug)
         initial_subscribers = bug.getDirectSubscribers()
         self.assertTrue(ubuntu.bug_supervisor not in initial_subscribers)
@@ -954,7 +950,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
             InformationType.USERDATA, who=bug.owner)
         subscribers = bug.getDirectSubscribers()
         self.assertContentEqual(initial_subscribers, subscribers)
-        ubuntu.setBugSupervisor(None, ubuntu.owner)
+        ubuntu.bug_supervisor = None
 
 
 class TestBugActivityMethods(TestCaseWithFactory):

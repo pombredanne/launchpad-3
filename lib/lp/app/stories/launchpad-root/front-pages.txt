@@ -1,9 +1,11 @@
 Launchpad front pages
 ---------------------
 
-Visit our home page:
+Visit our home page with the typical configuration:
 
-    >>> browser.open('http://launchpad.dev/')
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> with FeatureFixture({"app.root_blog.enabled": True}):
+    ...     browser.open('http://launchpad.dev/')
     >>> browser.url
     'http://launchpad.dev/'
 

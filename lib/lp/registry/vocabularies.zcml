@@ -369,13 +369,13 @@
 
   <securedutility
     name="ValidPillarOwner"
-    component="lp.registry.vocabularies.ValidPersonOrClosedTeamVocabulary"
+    component="lp.registry.vocabularies.ValidPersonOrExclusiveTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class="lp.registry.vocabularies.ValidPersonOrClosedTeamVocabulary">
+  <class class="lp.registry.vocabularies.ValidPersonOrExclusiveTeamVocabulary">
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 

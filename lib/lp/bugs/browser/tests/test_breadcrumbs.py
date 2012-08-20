@@ -17,7 +17,7 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         super(TestBugTaskBreadcrumb, self).setUp()
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
-        self.bug = self.factory.makeBug(product=product, title='borked')
+        self.bug = self.factory.makeBug(target=product, title='borked')
         self.bugtask = self.bug.default_bugtask
         self.bugtask_url = canonical_url(self.bugtask, rootsite='bugs')
 

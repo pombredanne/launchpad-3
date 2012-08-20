@@ -112,12 +112,26 @@ div.beta img {
     height: 10px;
     }
 
-.ellipsis {
+.ellipsis.single-line {
+    display: inline-block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     -o-text-overflow: ellipsis;
     -ms-text-overflow: ellipsis;
+    }
+
+.ellipsis.wide {
+    max-width: 60em;
+    }
+
+.ellipsis:before {
+    content: attr(data-ellipsis-original-text);
+    position: absolute;
+    display: block;
+    }
+.ellipsis:hover:before {
+    display: block;
     }
 
 .exception {
@@ -211,6 +225,10 @@ table.diff,
 
 .action-icon + .action-icon {
     margin-left: 0px;
+    }
+
+.action-icon.standalone {
+    margin-top: -6px;
     }
 
 th .action-icon {
