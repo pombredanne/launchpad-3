@@ -684,7 +684,7 @@ First, some set-up.
 
     >>> login('foo.bar@canonical.com')
     >>> product = factory.makeProduct(name='testproduct')
-    >>> bug = factory.makeBug(title="A bug title", product=product)
+    >>> bug = factory.makeBug(title="A bug title", target=product)
     >>> title_change = BugTitleChange(
     ...     when=nowish, person=foo_bar, what_changed='title',
     ...     old_value=bug.title, new_value="A new bug title")

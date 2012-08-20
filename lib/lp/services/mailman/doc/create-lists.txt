@@ -11,7 +11,7 @@ starts by registering a team for her mailing list.
     >>> browser.open('%s/people/+newteam' % root_url)
     >>> browser.getControl(name='field.name').value = 'itest-one'
     >>> browser.getControl('Display Name').value = 'ITest One'
-    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    >>> browser.getControl(name='field.membership_policy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
     >>> print browser.title

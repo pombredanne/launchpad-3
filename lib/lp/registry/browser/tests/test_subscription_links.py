@@ -281,10 +281,7 @@ class DistroView(BrowserTestCase, _TestResultsMixin):
 
     def test_subscribe_link_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            supervisor = self.factory.makePerson()
-            self.target.setBugSupervisor(
-                supervisor, admin)
+            self.target.bug_supervisor = self.factory.makePerson()
         self._create_scenario(self.regular_user)
         self.assertLinksMissing()
 
@@ -294,9 +291,7 @@ class DistroView(BrowserTestCase, _TestResultsMixin):
 
     def test_subscribe_link_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            self.target.setBugSupervisor(
-                self.regular_user, admin)
+            self.target.bug_supervisor = self.regular_user
         self._create_scenario(self.regular_user)
         self.assertLinksPresent()
 
@@ -322,10 +317,7 @@ class DistroBugs(DistroView):
 
     def test_subscribe_link_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            supervisor = self.factory.makePerson()
-            self.target.setBugSupervisor(
-                supervisor, admin)
+            self.target.bug_supervisor = self.factory.makePerson()
         self._create_scenario(self.regular_user)
         self.assertLinksMissing()
 
@@ -335,9 +327,7 @@ class DistroBugs(DistroView):
 
     def test_subscribe_link_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            self.target.setBugSupervisor(
-                self.regular_user, admin)
+            self.target.bug_supervisor = self.regular_user
         self._create_scenario(self.regular_user)
         self.assertLinksPresent()
 
@@ -366,10 +356,7 @@ class DistroMilestoneView(DistroView):
 
     def test_subscribe_link_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            supervisor = self.factory.makePerson()
-            self.distro.setBugSupervisor(
-                supervisor, admin)
+            self.distro.bug_supervisor = self.factory.makePerson()
         self._create_scenario(self.regular_user)
         self.assertLinksPresent()
 
@@ -379,9 +366,7 @@ class DistroMilestoneView(DistroView):
 
     def test_subscribe_link_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            self.distro.setBugSupervisor(
-                self.regular_user, admin)
+            self.distro.bug_supervisor = self.regular_user
         self._create_scenario(self.regular_user)
         self.assertLinksPresent()
 
@@ -561,9 +546,7 @@ class DistroDoesNotUseLPView(DistroView):
 
     def test_subscribe_link_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            self.target.setBugSupervisor(
-                self.regular_user, admin)
+            self.target.bug_supervisor = self.regular_user
         self._create_scenario(self.regular_user)
         self.assertLinksMissing()
 
@@ -605,9 +588,7 @@ class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):
 
     def test_subscribe_link_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            self.distro.setBugSupervisor(
-                self.regular_user, admin)
+            self.distro.bug_supervisor = self.regular_user
         self._create_scenario(self.regular_user)
         self.assertLinksMissing()
 
@@ -631,10 +612,7 @@ class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):
 
     def test_subscribe_link_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
-            admin = getUtility(ILaunchBag).user
-            supervisor = self.factory.makePerson()
-            self.distro.setBugSupervisor(
-                supervisor, admin)
+            self.distro.bug_supervisor = self.factory.makePerson()
         self._create_scenario(self.regular_user)
         self.assertLinksMissing()
 

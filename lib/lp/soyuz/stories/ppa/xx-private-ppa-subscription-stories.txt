@@ -142,7 +142,8 @@ modifies the description field and clicks Update,
     ...     "a different description")
     >>> cprov_browser.getControl(name="field.actions.update").click()
 
-then the browser is redirected back to the subscriptions page, the updated subscription for the launchpad team is displayed as well as a notification
+then the browser is redirected back to the subscriptions page, the updated
+subscription for the launchpad team is displayed as well as a notification
 about the update.
 
     >>> print cprov_browser.url
@@ -272,8 +273,6 @@ Given a subscription for Celso's private PPA for the Launchpad Team and
 a user Mark who is a member of the Launchpad team,
 
     >>> login('celso.providelo@canonical.com')
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> launchpad = getUtility(IPersonSet).getByName('launchpad')
     >>> ignore = private_ppa.newSubscription(launchpad, cprov)
@@ -350,5 +349,3 @@ Given a cancelled subscription for Celso's private PPA
 When Andrew visits his subscriptions
 Then the page clearly identifies the subscription as no longer valid
 And there is no entry in the sources.list for the expired subscription.
-
-

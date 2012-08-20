@@ -1526,7 +1526,7 @@ And we can't subscribe someone who does not have a preferred email address.
     False
 
 
-Auto-subscription policy settings
+Auto-membership policy settings
 ---------------------------------
 
 Mary's auto-subscription settings are taken into account when signing

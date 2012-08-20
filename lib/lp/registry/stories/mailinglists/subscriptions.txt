@@ -111,7 +111,8 @@ it's currently the team contact method.
 However, testing-spanish-team's list doesn't show up because its creation has
 not been completed (specifically, Mailman hasn't constructed it yet).
 
-    >>> carlos_browser.getControl(name='field.subscription.testing-spanish-team')
+    >>> carlos_browser.getControl(
+    ...     name='field.subscription.testing-spanish-team')
     Traceback (most recent call last):
     ...
     LookupError: name 'field.subscription.testing-spanish-team'
@@ -408,7 +409,8 @@ because his membership on Rosetta Admins hasn't been approved)
     >>> print carlos_browser.title
     Mailing list subscribers for the Rosetta Administrators team...
 
-    >>> print extract_text(find_tag_by_id(carlos_browser.contents, 'subscribers'))
+    >>> print extract_text(
+    ...     find_tag_by_id(carlos_browser.contents, 'subscribers'))
     Nobody has subscribed to this team's mailing list yet.
 
 If it had subscribers, though, they'd be shown on that page, in a batched
@@ -434,13 +436,15 @@ list.
     >>> rosetta_admins.mailing_list.subscribe(jordi)
     >>> logout()
     >>> carlos_browser.reload()
-    >>> print extract_text(find_tag_by_id(carlos_browser.contents, 'subscribers'))
+    >>> print extract_text(
+    ...     find_tag_by_id(carlos_browser.contents, 'subscribers'))
     The following people are subscribed...
     Guilherme Salgado
     1 of 2 results...
 
     >>> carlos_browser.getLink('Next').click()
-    >>> print extract_text(find_tag_by_id(carlos_browser.contents, 'subscribers'))
+    >>> print extract_text(
+    ...    find_tag_by_id(carlos_browser.contents, 'subscribers'))
     The following people are subscribed...
     Jordi Mallach
     2 of 2 results...
@@ -501,7 +505,7 @@ page.
 
     # We only need to check this once.
     >>> get_feedback_messages(carlos_browser.contents)
-    [u'Your auto-subscription policy has been updated.']
+    [u'Your auto-subscribe policy has been updated.']
 
     >>> set_autosubscribe_policy_and_submit('NEVER', carlos_browser)
     (*) Never subscribe to mailing lists

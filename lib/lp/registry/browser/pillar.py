@@ -47,15 +47,15 @@ from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    InformationType,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
@@ -264,15 +264,15 @@ class PillarViewMixin():
     """A mixin for pillar views to populate the json request cache."""
 
     def initialize(self):
-        # Insert close team subscription policy data into the json cache.
+        # Insert close team membership policy data into the json cache.
         # This data is used for the maintainer and driver pickers.
         cache = IJSONRequestCache(self.request)
-        policy_items = [(item.name, item) for item in CLOSED_TEAM_POLICY]
-        team_subscriptionpolicy_data = vocabulary_to_choice_edit_items(
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
             SimpleVocabulary.fromItems(policy_items),
             value_fn=lambda item: item.name)
-        cache.objects['team_subscriptionpolicy_data'] = (
-            team_subscriptionpolicy_data)
+        cache.objects['team_membership_policy_data'] = (
+            team_membership_policy_data)
 
 
 class PillarSharingView(LaunchpadView):
@@ -295,6 +295,14 @@ class PillarSharingView(LaunchpadView):
     @property
     def information_types(self):
         return self._getSharingService().getInformationTypes(self.context)
+
+    @property
+    def bug_sharing_policies(self):
+        return self._getSharingService().getBugSharingPolicies(self.context)
+
+    @property
+    def branch_sharing_policies(self):
+        return self._getSharingService().getBranchSharingPolicies(self.context)
 
     @property
     def sharing_permissions(self):
@@ -356,6 +364,9 @@ class PillarSharingView(LaunchpadView):
             and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
+        cache.objects['bug_sharing_policies'] = self.bug_sharing_policies
+        cache.objects['branch_sharing_policies'] = (
+            self.branch_sharing_policies)
 
         view_names = set(reg.name for reg
             in iter_view_registrations(self.__class__))

@@ -79,7 +79,6 @@ def run_security(options, log):
     options.dryrun = False
     options.revoke = True
     options.owner = 'postgres'
-    options.cluster = True
     security.options = options
     security.log = log
     # Invoke the database security reset process.

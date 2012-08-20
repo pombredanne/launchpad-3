@@ -52,7 +52,7 @@ Ubuntu's bug supervisor doesn't get automatically redirected either.
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> ubuntu.setBugSupervisor(foobar, foobar)
+    >>> ubuntu.bug_supervisor = foobar
     >>> transaction.commit()
     >>> logout()
 

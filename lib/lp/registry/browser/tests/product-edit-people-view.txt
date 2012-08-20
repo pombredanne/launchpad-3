@@ -47,9 +47,9 @@ Ownership can not be transferred to an open team.
     >>> owner = factory.makePerson()
     >>> ignored = login_person(owner)
     >>> product = factory.makeProduct(owner=owner)
-    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> from lp.registry.interfaces.person import TeamMembershipPolicy
     >>> team = factory.makeTeam(
-    ...     name='open', subscription_policy=TeamSubscriptionPolicy.OPEN)
+    ...     name='open', membership_policy=TeamMembershipPolicy.OPEN)
     >>> form = {
     ...     'field.owner': 'open',
     ...     'field.actions.save': 'Save changes',
