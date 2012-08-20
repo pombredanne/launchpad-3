@@ -65,6 +65,7 @@ from lp.registry.enums import (
     BugSharingPolicy,
     FREE_INFORMATION_TYPES,
     InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
     )
 from lp.services.fields import Tag
 
@@ -206,10 +207,8 @@ search_tasks_params_for_api_devel = dict(
 
 POLICY_ALLOWED_TYPES = {
     BugSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
-    BugSharingPolicy.PUBLIC_OR_PROPRIETARY:
-        FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
-    BugSharingPolicy.PROPRIETARY_OR_PUBLIC:
-        FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+    BugSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
+    BugSharingPolicy.PROPRIETARY_OR_PUBLIC: NON_EMBARGOED_INFORMATION_TYPES,
     BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
     }
 
