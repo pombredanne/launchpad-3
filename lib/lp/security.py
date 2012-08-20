@@ -2095,6 +2095,19 @@ class EditBranch(AuthorizationBase):
                 and user.inTeam(code_import.registrant)))
 
 
+class ModerateBranch(EditBranch):
+    """The owners, product owners, and admins can moderate branches."""
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        if super(ModerateBranch, self).checkAuthenticated(user):
+            return True
+        branch = self.obj
+        if branch.product is not None and user.inTeam(branch.product.owner):
+            return True
+        return user.in_commercial_admin
+
+
 def can_upload_linked_package(person_role, branch):
     """True if person may upload the package linked to `branch`."""
     # No associated `ISuiteSourcePackage` data -> not an official branch.
