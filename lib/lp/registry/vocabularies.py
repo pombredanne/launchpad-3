@@ -20,6 +20,7 @@ class IFoo(Interface):
 
 The binding of name -> class is done in the configure.zcml
 """
+from lp.code.interfaces.branch import IBranch
 
 __metaclass__ = type
 
@@ -379,6 +380,8 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
 
     INCLUDE_PRIVATE_TEAM = False
 
+    EXCLUSIVE_TEAMS_ONLY = False
+
     def toTerm(self, obj):
         """See `IVocabulary`."""
         return SimpleTerm(obj, obj.name, obj.unique_displayname)
@@ -391,8 +394,10 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         if launchbag.user:
             user = launchbag.user
             for team in user.teams_participated_in:
-                if (team.visibility == PersonVisibility.PUBLIC
-                    or self.INCLUDE_PRIVATE_TEAM):
+                if ((team.visibility == PersonVisibility.PUBLIC
+                    or self.INCLUDE_PRIVATE_TEAM) and
+                    (team.membership_policy in EXCLUSIVE_TEAM_POLICY
+                    or not self.EXCLUSIVE_TEAMS_ONLY)):
                     yield self.toTerm(team)
 
     def getTermByToken(self, token):
@@ -1224,6 +1229,13 @@ class AllUserTeamsParticipationPlusSelfVocabulary(
     """
 
     INCLUDE_PRIVATE_TEAM = True
+
+    def __init__(self, context=None):
+        super_class = super(AllUserTeamsParticipationPlusSelfVocabulary, self)
+        super_class.__init__(context)
+        if IBranch.providedBy(context):
+            self.EXCLUSIVE_TEAMS_ONLY = (
+                len(list(context.associatedProductSeries())) > 0)
 
 
 class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(

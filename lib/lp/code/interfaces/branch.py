@@ -999,10 +999,10 @@ class IBranchEditableAttributes(Interface):
         PublicPersonChoice(
             title=_('Review Team'),
             required=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for reviewing proposals and "
-                          "merging into this branch.")))
+            vocabulary='ValidBranchReviewer',
+            description=_("The reviewer of a branch is the person or "
+                          "exclusive team that is responsible for reviewing "
+                          "proposals and merging into this branch.")))
 
     url = exported(
         BranchURIField(

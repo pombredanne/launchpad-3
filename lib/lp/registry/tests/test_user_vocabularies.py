@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the user vocabularies."""
+from lp.registry.enums import TeamMembershipPolicy
 
 __metaclass__ = type
 
@@ -86,11 +87,11 @@ class TestAllUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _vocabTermValues(self):
+    def _vocabTermValues(self, context=None):
         """Return the token values for the vocab."""
         vocabulary_registry = getVocabularyRegistry()
         vocab = vocabulary_registry.get(
-            None, 'AllUserTeamsParticipationPlusSelf')
+            context, 'AllUserTeamsParticipationPlusSelf')
         return [term.value for term in vocab]
 
     def test_user_no_private_teams(self):
@@ -100,6 +101,32 @@ class TestAllUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
             owner=team_owner, visibility=PersonVisibility.PRIVATE)
         login_person(team_owner)
         self.assertEqual([team_owner, team], self._vocabTermValues())
+
+    def test_only_exclusive_teams_for_series_branches(self):
+        # For series branches, only exclusive teams are permitted in the vocab.
+        branch = self.factory.makeBranch()
+        self.factory.makeProductSeries(branch=branch)
+        team_owner = self.factory.makePerson()
+        inclusive_team = self.factory.makeTeam(
+            owner=team_owner, membership_policy=TeamMembershipPolicy.OPEN)
+        exclusive_team = self.factory.makeTeam(
+            owner=team_owner, membership_policy=TeamMembershipPolicy.MODERATED)
+        login_person(team_owner)
+        self.assertEqual(
+            [team_owner, exclusive_team], self._vocabTermValues(branch))
+
+    def test_all_teams_for_non_series_branches(self):
+        # For non series branches, all teams are permitted in the vocab.
+        branch = self.factory.makeBranch()
+        team_owner = self.factory.makePerson()
+        inclusive_team = self.factory.makeTeam(
+            owner=team_owner, membership_policy=TeamMembershipPolicy.OPEN)
+        exclusive_team = self.factory.makeTeam(
+            owner=team_owner, membership_policy=TeamMembershipPolicy.MODERATED)
+        login_person(team_owner)
+        self.assertContentEqual(
+            [team_owner, exclusive_team, inclusive_team],
+            self._vocabTermValues(branch))
 
 
 class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
