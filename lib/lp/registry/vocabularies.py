@@ -20,7 +20,6 @@ class IFoo(Interface):
 
 The binding of name -> class is done in the configure.zcml
 """
-from lp.code.interfaces.branch import IBranch
 
 __metaclass__ = type
 
@@ -104,6 +103,7 @@ from zope.security.proxy import (
 
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     PersonVisibility,

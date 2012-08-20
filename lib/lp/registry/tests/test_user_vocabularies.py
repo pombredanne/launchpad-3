@@ -2,13 +2,13 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the user vocabularies."""
-from lp.registry.enums import TeamMembershipPolicy
 
 __metaclass__ = type
 
 from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from lp.registry.enums import TeamMembershipPolicy
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.model.person import Person
 from lp.services.webapp.interfaces import (
@@ -107,7 +107,7 @@ class TestAllUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         self.factory.makeProductSeries(branch=branch)
         team_owner = self.factory.makePerson()
-        inclusive_team = self.factory.makeTeam(
+        self.factory.makeTeam(
             owner=team_owner, membership_policy=TeamMembershipPolicy.OPEN)
         exclusive_team = self.factory.makeTeam(
             owner=team_owner, membership_policy=TeamMembershipPolicy.MODERATED)
