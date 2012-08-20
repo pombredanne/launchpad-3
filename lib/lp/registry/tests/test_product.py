@@ -55,6 +55,7 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
+from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     admin_logged_in,
     celebrity_logged_in,
@@ -396,6 +397,33 @@ class TestProduct(TestCaseWithFactory):
         product = self.factory.makeProduct(private_bugs=True)
         self.assertEqual(
             InformationType.USERDATA, product.getDefaultBugInformationType())
+
+
+class ProductPermissionTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_commercial_admin_cannot_edit_non_commercial(self):
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('commercial_admin'):
+            self.assertFalse(check_permission('launchpad.Edit', product))
+
+    def test_commercial_admin_can_edit_commercial(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(check_permission('launchpad.Edit', product))
+
+    def test_commercial_admin_cannot_drive_non_commercial(self):
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('commercial_admin'):
+            self.assertFalse(check_permission('launchpad.Driver', product))
+
+    def test_commercial_admin_can_drive_commercial(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(check_permission('launchpad.Driver', product))
 
 
 class TestProductFiles(TestCase):

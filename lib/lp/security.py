@@ -242,6 +242,11 @@ from lp.translations.interfaces.translator import (
     )
 
 
+def is_commercial_case(obj, user):
+    """Is this a commercial project and the user is a commercial admin?"""
+    return obj.has_current_commercial_subscription and user.in_commercial_admin
+
+
 class ViewByLoggedInUser(AuthorizationBase):
     """The default ruleset for the launchpad.View permission.
 
@@ -359,7 +364,7 @@ class PillarPersonSharingDriver(AuthorizationBase):
     permission = 'launchpad.Driver'
 
     def checkAuthenticated(self, user):
-        """The Admins & Commercial Admins can see inactive pillars."""
+        """Maintainers, drivers, and admins can drive projects."""
         return (user.in_admin or
                 user.isOwner(self.obj.pillar) or
                 user.isOneOfDrivers(self.obj.pillar))
@@ -426,6 +431,13 @@ class EditByOwnersOrAdmins(AuthorizationBase):
 
 class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        # Commercial admins may help setup commercial projects.
+        return (
+            super(EditProduct, self).checkAuthenticated(user)
+            or is_commercial_case(self.obj, user)
+            or False)
 
 
 class EditPackaging(EditByOwnersOrAdmins):
@@ -1220,6 +1232,19 @@ class SeriesDrivers(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return self.obj.personHasDriverRights(user)
+
+
+class DriveProduct(SeriesDrivers):
+
+    permission = 'launchpad.Driver'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        # Commercial admins may help setup commercial projects.
+        return (
+            super(DriveProduct, self).checkAuthenticated(user)
+            or is_commercial_case(self.obj, user)
+            or False)
 
 
 class ViewProductSeries(AnonymousAuthorization):
