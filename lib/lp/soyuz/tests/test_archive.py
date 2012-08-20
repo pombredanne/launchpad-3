@@ -34,7 +34,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.sqlbase import sqlvalues
-from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import (
@@ -60,7 +59,6 @@ from lp.soyuz.interfaces.archive import (
     CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
-    ForbiddenByFeatureFlag,
     IArchiveSet,
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
@@ -2160,38 +2158,9 @@ class TestGetPublishedSources(TestCaseWithFactory):
         self.assertEqual('universe', filtered.component.name)
 
 
-class TestCopyPackageFeatureFlag(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_copyPackage_to_ppa_requires_feature_flag(self):
-        # Ensure feature is off.
-        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertRaises(
-            ForbiddenByFeatureFlag,
-            archive.copyPackage,
-            None, None, None, None, None)
-
-    def test_copyPackages_to_ppa_requires_feature_flag(self):
-        # Ensure feature is off.
-        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertRaises(
-            ForbiddenByFeatureFlag,
-            archive.copyPackages,
-            None, None, None, None, None)
-
-
 class TestCopyPackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestCopyPackage, self).setUp()
-        self.useFixture(FeatureFixture({
-            u"soyuz.copypackageppa.enabled": 'on',
-            }))
 
     def _setup_copy_data(self, source_private=False, target_purpose=None,
                          target_status=SeriesStatus.DEVELOPMENT):
