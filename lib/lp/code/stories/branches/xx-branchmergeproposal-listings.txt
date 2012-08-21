@@ -110,9 +110,11 @@ reviews.
 The requested reviews for a team will only ever show pending reviews, as a
 team cannot approve a review, only a person can.
 
+    >>> from lp.registry.enums import TeamMembershipPolicy
     >>> login('foo.bar@canonical.com')
     >>> team = factory.makeTeam(
-    ...     owner=albert, name="a-team", displayname="A-Team")
+    ...     owner=albert, name="a-team", displayname="A-Team",
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> logout()
 
     >>> browser = setupBrowser(auth='Basic albert@example.com:test')
