@@ -625,11 +625,7 @@ will be implicitly added to the notification recipients.
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com']
 
-The distro contact will also be subscribed to private bugs, because
-there is no security contact:
-
-    >>> ubuntu.security_contact is None
-    True
+The distro contact will also be subscribed to private bugs.
 
     >>> from lp.services.mail import stub
     >>> transaction.commit()
@@ -711,10 +707,7 @@ recipient list:
     foo.bar@canonical.com
 
 The upstream maintainer will be subscribed to security-related private
-bugs, because upstream has no security contact, in this case.
-
-    >>> firefox.security_contact is None
-    True
+bugs.
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
@@ -777,10 +770,7 @@ And the Ubuntu team will be implicitly subscribed to future bugs:
     ['foo.bar@canonical.com', 'support@ubuntu.com']
 
 The distribution maintainer, Ubuntu Team, gets subscribed to the private
-security bug filed on a package, because Ubuntu has no security contact:
-
-    >>> ubuntu.security_contact is None
-    True
+security bug filed on a package.
 
     >>> params = CreateBugParams(
     ...     title="yet another test bug",

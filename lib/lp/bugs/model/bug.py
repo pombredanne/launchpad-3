@@ -1763,8 +1763,6 @@ class Bug(SQLBase):
             for pillar in pillars:
                 if pillar.driver in subscribers:
                     required_subscribers.add(pillar.driver)
-                if pillar.security_contact is not None:
-                    required_subscribers.add(pillar.security_contact)
                 else:
                     required_subscribers.add(pillar.owner)
 
@@ -2655,10 +2653,7 @@ class BugSet:
 
         if params.information_type in SECURITY_INFORMATION_TYPES:
             pillar = params.target.pillar
-            if pillar.security_contact:
-                bug.subscribe(pillar.security_contact, params.owner)
-            else:
-                bug.subscribe(pillar.owner, params.owner)
+            bug.subscribe(pillar.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.

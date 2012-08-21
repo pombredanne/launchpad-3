@@ -52,11 +52,6 @@ class IRealSubscriptionInfo(IAbstractSubscriptionInfo):
        description=_("Is the principal the bug reporter."),
        default=False, readonly=True)
 
-    security_contact_tasks = Attribute(
-        """A collection of targets of the info's bug for which the
-        principal is a security contact (which causes direct subscriptions for
-        security related bugs at this time).""")
-
     bug_supervisor_tasks = Attribute(
         """A collection of targets of the info's bug for which the
         principal is a bug supervisor (which causes direct subscriptions for

@@ -26,10 +26,7 @@ from zope.schema import Bool
 from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasDrivers
-from lp.services.fields import (
-    PublicPersonChoice,
-    Summary,
-    )
+from lp.services.fields import Summary
 
 
 class SeriesStatus(DBEnumeratedType):
@@ -129,9 +126,3 @@ class ISeriesMixin(IHasDrivers):
                 'supervisor.'),
         readonly=True,
         value_type=Reference(schema=IPerson))
-
-    security_contact = PublicPersonChoice(
-        title=_('Security Contact'),
-        description=_('Currently just a reference to the parent '
-                      'security contact.'),
-        required=False, vocabulary='ValidPersonOrTeam')

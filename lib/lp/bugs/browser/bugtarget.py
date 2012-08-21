@@ -206,7 +206,7 @@ class ProductConfigureBugTrackerView(ProductPrivateBugsMixin,
             "private_bugs"
             ]
         if check_permission("launchpad.Edit", self.context):
-            field_names.extend(["bug_supervisor", "security_contact"])
+            field_names.append("bug_supervisor")
 
         return field_names
 
