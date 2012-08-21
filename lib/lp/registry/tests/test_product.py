@@ -58,7 +58,6 @@ from lp.registry.model.product import (
 from lp.registry.model.productlicense import ProductLicense
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
-    admin_logged_in,
     celebrity_logged_in,
     login,
     person_logged_in,
@@ -761,13 +760,16 @@ class BaseSharingPolicyTests:
     def setUp(self):
         super(BaseSharingPolicyTests, self).setUp()
         self.product = self.factory.makeProduct()
-        self.commercial_admin = self.factory.makePerson()
-        with admin_logged_in():
-            commercials = getUtility(ILaunchpadCelebrities).commercial_admin
-            commercials.addMember(self.commercial_admin, commercials)
+        self.commercial_admin = self.factory.makeCommercialAdmin()
+
+    def test_owner_can_set_policy(self):
+        # Project maintainers can set sharing policies.
+        self.setSharingPolicy(self.public_policy, self.product.owner)
+        self.assertEqual(self.public_policy, self.getSharingPolicy())
 
     def test_commercial_admin_can_set_policy(self):
-        # Commercial admins can set sharing policies.
+        # Commercial admins can set sharing policies for commercial projects.
+        self.factory.makeCommercialSubscription(product=self.product)
         self.setSharingPolicy(self.public_policy, self.commercial_admin)
         self.assertEqual(self.public_policy, self.getSharingPolicy())
 
@@ -776,13 +778,6 @@ class BaseSharingPolicyTests:
         person = self.factory.makePerson()
         self.assertRaises(
             Unauthorized, self.setSharingPolicy, self.public_policy, person)
-
-    def test_owner_cannot_set_policy(self):
-        # The project owner can't yet set sharing policies. This will
-        # change once they're stable.
-        self.assertRaises(
-            Unauthorized, self.setSharingPolicy,
-            self.public_policy, self.product.owner)
 
     def test_anonymous_cannot_set_policy(self):
         # An anonymous user can't set sharing policies.
@@ -843,7 +838,9 @@ class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
         )
 
     def setSharingPolicy(self, policy, user):
-        return self.product.setBugSharingPolicy(policy, user)
+        with person_logged_in(user):
+            result = self.product.setBugSharingPolicy(policy, user)
+        return result
 
     def getSharingPolicy(self):
         return self.product.bug_sharing_policy
@@ -865,7 +862,9 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
         )
 
     def setSharingPolicy(self, policy, user):
-        return self.product.setBranchSharingPolicy(policy, user)
+        with person_logged_in(user):
+            result = self.product.setBranchSharingPolicy(policy, user)
+        return result
 
     def getSharingPolicy(self):
         return self.product.branch_sharing_policy

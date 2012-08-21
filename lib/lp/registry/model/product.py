@@ -177,6 +177,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -567,6 +568,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def setBranchSharingPolicy(self, branch_sharing_policy, user):
         """See `IProductPublic`."""
+        if not check_permission('launchpad.Edit', self):
+            raise Unauthorized(
+                "Only maintainers and commercial admins can "
+                "configure sharing.")
         if branch_sharing_policy != BranchSharingPolicy.PUBLIC:
             if not self.has_current_commercial_subscription:
                 raise CommercialSubscribersOnly(
@@ -581,6 +586,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def setBugSharingPolicy(self, bug_sharing_policy, user):
         """See `IProductPublic`."""
+        if not check_permission('launchpad.Edit', self):
+            raise Unauthorized(
+                "Only maintainers and commercial admins can "
+                "configure sharing.")
         if bug_sharing_policy != BugSharingPolicy.PUBLIC:
             if not self.has_current_commercial_subscription:
                 raise CommercialSubscribersOnly(
