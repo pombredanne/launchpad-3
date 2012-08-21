@@ -45,7 +45,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -81,7 +80,6 @@ from lp.testing.pages import (
     get_feedback_messages,
     setupBrowser,
     )
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -388,8 +386,7 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
     def makeProductWithPolicy(self, bug_sharing_policy, private_bugs=False):
         product = self.factory.makeProduct(private_bugs=private_bugs)
         self.factory.makeCommercialSubscription(product=product)
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        product.setBugSharingPolicy(bug_sharing_policy, comadmin)
+        product.setBugSharingPolicy(bug_sharing_policy, product.owner)
         return product
 
     def test_no_policy(self):

@@ -581,10 +581,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def setBugSharingPolicy(self, bug_sharing_policy, user):
         """See `IProductPublic`."""
-        if not user or not IPersonRoles(user).in_commercial_admin:
-            raise Unauthorized(
-                "Only commercial admins can configure sharing policies right "
-                "now.")
         if bug_sharing_policy != BugSharingPolicy.PUBLIC:
             if not self.has_current_commercial_subscription:
                 raise CommercialSubscribersOnly(
