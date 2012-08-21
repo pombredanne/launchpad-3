@@ -32,7 +32,6 @@ from lp.registry.enums import (
     BugSharingPolicy,
     InformationType,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import stub
@@ -52,7 +51,6 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
 class TestMaloneHandler(TestCaseWithFactory):
@@ -261,8 +259,8 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
     def test_new_bug_with_sharing_policy_proprietary(self):
         project = self.factory.makeProduct(name='fnord')
         self.factory.makeCommercialSubscription(product=project)
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        project.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY, comadmin)
+        project.setBugSharingPolicy(
+            BugSharingPolicy.PROPRIETARY, project.owner)
         transaction.commit()
         handler = MaloneHandler()
         with person_logged_in(project.owner):
