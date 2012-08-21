@@ -93,7 +93,6 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
@@ -429,11 +428,10 @@ class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMergeProposals, IHasMilestones,
-    IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
-    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IHasOOPSReferences, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports, IServiceUsage):
+    IHasMugshot, IHasOwner, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IHasOOPSReferences, IPillar,
+    ISpecificationTarget, IHasRecipes, IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))

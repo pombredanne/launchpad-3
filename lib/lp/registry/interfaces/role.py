@@ -130,9 +130,6 @@ class IPersonRoles(Interface):
     def isBugSupervisor(obj):
         """Is this person the bug supervisor of the object?"""
 
-    def isSecurityContact(obj):
-        """Is this person the security contact of the object?"""
-
     def isOneOfDrivers(obj):
         """Is this person on of the drivers of the object?
 

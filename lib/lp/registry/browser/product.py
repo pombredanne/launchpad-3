@@ -619,12 +619,7 @@ class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):
 
     @cachedproperty
     def links(self):
-        links = [
-            'filebug',
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            ]
+        links = ['filebug', 'bugsupervisor', 'cve']
         add_subscribe_link(links)
         links.append('configure_bugtracker')
         return links

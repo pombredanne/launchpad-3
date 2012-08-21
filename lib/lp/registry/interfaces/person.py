@@ -1146,9 +1146,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     def isAnyPillarOwner():
         """Is this person the owner of any pillar?"""
 
-    def isAnySecurityContact():
-        """Is this person the security contact of any pillar?"""
-
     def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
 

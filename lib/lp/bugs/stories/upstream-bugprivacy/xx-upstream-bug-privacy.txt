@@ -58,37 +58,6 @@ bug listing.
     ...BUG-ID...
     ...Undecided...
 
-When the upstream has a security contact, the upstream will be
-subscribed instead.
-
-    >>> browser.open("http://launchpad.dev/firefox/+securitycontact")
-
-    >>> browser.getControl("Security Contact").value = "mark"
-    >>> browser.getControl("Change").click()
-
-    >>> browser.open("http://localhost:9000/firefox/+filebug")
-    >>> browser.getControl('Summary', index=0).value = (
-    ...     "this is a newly created private bug")
-    >>> browser.getControl("Continue").click()
-
-    >>> browser.getControl(name="field.comment").value = (
-    ...     "very secret info here")
-    >>> browser.getControl("Private Security").selected = True
-    >>> browser.getControl("Submit Bug Report").click()
-
-    >>> other_bug_id = browser.url.split("/")[-1]
-    >>> print browser.url.replace(other_bug_id, "BUG-ID")
-    http://bugs.launchpad.dev/firefox/+bug/BUG-ID
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> bug = getUtility(IBugSet).get(other_bug_id)
-
-    >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'mark', u'name16']
-
-    >>> logout()
-
 == Checking basic access to the private bug pages ==
 
 Trying to access the task edit page of a task on a private bug

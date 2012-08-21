@@ -27,8 +27,7 @@ redirected to the bug page.
     >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
 
-Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
-will be subscribed instead.
+The Ubuntu maintainer, Ubuntu Team, will be subscribed.
 
     >>> browser.getControl(name="field.title", index=0).value = (
     ...     "a private bug")
@@ -69,41 +68,6 @@ Foo Bar and the Ubuntu Team are subscribed to the bug.
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name16', u'ubuntu-team']
-
-    >>> logout()
-
-Now let's set an Ubuntu security team, and see how the filebug page and
-subscriptions differ.
-
-    >>> browser.open("http://launchpad.dev/ubuntu/+securitycontact")
-    >>> browser.getControl("Security Contact").value = "name12"
-    >>> browser.getControl("Change").click()
-
-    >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
-
-    >>> browser.getControl(name="field.title", index=0).value = (
-    ...     "a private bug")
-    >>> browser.getControl('Continue').click()
-
-    >>> browser.getControl(name="packagename_option").value = ["choose"]
-    >>> browser.getControl(name="field.packagename").value = "evolution"
-    >>> browser.getControl(name="field.comment").value = "secret info"
-    >>> browser.getControl("Private Security").selected = True
-    >>> browser.getControl("Submit Bug Report").click()
-
-    >>> other_bug_id = browser.url.split("/")[-1]
-    >>> print browser.url.replace(other_bug_id, "BUG-ID")
-    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/BUG-ID
-
-
-Now only the reporter and /security contact/ are subscribed.
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> bug = getUtility(IBugSet).get(other_bug_id)
-
-    >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'name12', u'name16']
 
     >>> logout()
 
