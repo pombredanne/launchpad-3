@@ -98,7 +98,6 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -1405,9 +1404,9 @@ class TestBuildDebugSymbols(TestCaseWithFactory):
 
     def test_commercial_admin_can_set_build_debug_symbols(self):
         # A commercial admin can set it.
-        login(COMMERCIAL_ADMIN_EMAIL)
-        self.setBuildDebugSymbols(self.archive, True)
-        self.assertTrue(self.archive.build_debug_symbols)
+        with celebrity_logged_in('commercial_admin'):
+            self.setBuildDebugSymbols(self.archive, True)
+            self.assertTrue(self.archive.build_debug_symbols)
 
 
 class TestAddArchiveDependencies(TestCaseWithFactory):
