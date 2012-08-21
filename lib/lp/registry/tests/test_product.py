@@ -32,6 +32,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     EXCLUSIVE_TEAM_POLICY,
+    FREE_INFORMATION_TYPES,
     INCLUSIVE_TEAM_POLICY,
     InformationType,
     )
@@ -378,25 +379,75 @@ class TestProduct(TestCaseWithFactory):
         grantees = set([grant.grantee for grant in grants])
         self.assertEqual(expected_grantess, grantees)
 
-    def test_getAllowedBugInformationTypes(self):
-        # All projects currently support just the non-proprietary
-        # information types.
-        self.assertContentEqual(
-            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY, InformationType.USERDATA],
-            self.factory.makeProduct().getAllowedBugInformationTypes())
 
-    def test_getDefaultBugInformationType_public(self):
-        # The default information type for normal projects is PUBLIC.
+class TestProductBugInformationTypes(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeProductWithPolicy(self, bug_sharing_policy, private_bugs=False):
+        product = self.factory.makeProduct(private_bugs=private_bugs)
+        self.factory.makeCommercialSubscription(product=product)
+        product.setBugSharingPolicy(bug_sharing_policy, product.owner)
+        return product
+
+    def test_no_policy(self):
+        # New projects can only use the non-proprietary information
+        # types.
         product = self.factory.makeProduct()
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
             InformationType.PUBLIC, product.getDefaultBugInformationType())
 
-    def test_getDefaultBugInformationType_private(self):
-        # private_bugs overrides the default information type to USERDATA.
+    def test_legacy_private_bugs(self):
+        # The deprecated private_bugs attribute overrides the default
+        # information type to USERDATA.
         product = self.factory.makeProduct(private_bugs=True)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
             InformationType.USERDATA, product.getDefaultBugInformationType())
+
+    def test_sharing_policy_overrides_private_bugs(self):
+        # bug_sharing_policy overrides private_bugs.
+        product = self.makeProductWithPolicy(
+            BugSharingPolicy.PUBLIC, private_bugs=True)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC, product.getDefaultBugInformationType())
+
+    def test_sharing_policy_public_or_proprietary(self):
+        # bug_sharing_policy can enable Proprietary.
+        product = self.makeProductWithPolicy(
+            BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+            product.getAllowedBugInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultBugInformationType())
+
+    def test_sharing_policy_proprietary_or_public(self):
+        # bug_sharing_policy can enable and default to Proprietary.
+        product = self.makeProductWithPolicy(
+            BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+            product.getAllowedBugInformationTypes())
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            product.getDefaultBugInformationType())
+
+    def test_sharing_policy_proprietary(self):
+        # bug_sharing_policy can enable only Proprietary.
+        product = self.makeProductWithPolicy(BugSharingPolicy.PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY],
+            product.getAllowedBugInformationTypes())
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            product.getDefaultBugInformationType())
 
 
 class ProductPermissionTestCase(TestCaseWithFactory):

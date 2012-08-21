@@ -29,11 +29,16 @@ from lp.services.webapp.interfaces import (
     )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.files import BinaryPackageFile
-from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackageFilePublishing,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
@@ -243,9 +248,6 @@ class FTPArchiveHandler:
         :return: a `DecoratedResultSet` with the source override information
             tuples
         """
-        # Avoid cicular imports.
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
             SourcePackagePublishingHistory,
@@ -291,9 +293,6 @@ class FTPArchiveHandler:
         :return: a `DecoratedResultSet` with the binary override information
             tuples
         """
-        # Avoid cicular imports.
-        from lp.soyuz.model.binarypackagename import BinaryPackageName
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
             BinaryPackagePublishingHistory,
@@ -524,10 +523,6 @@ class FTPArchiveHandler:
         :return: a `DecoratedResultSet` with the source files information
             tuples.
         """
-
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import SourcePackageFilePublishing
-
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.using(SourcePackageFilePublishing).find(
             (SourcePackageFilePublishing.sourcepackagename,
