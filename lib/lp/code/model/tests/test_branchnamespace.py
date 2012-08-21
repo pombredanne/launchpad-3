@@ -32,14 +32,14 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branchnamespace import (
-    FREE_INFORMATION_TYPES,
-    FREE_PRIVATE_INFORMATION_TYPES,
     PackageNamespace,
     PersonalNamespace,
     ProductNamespace,
     )
 from lp.registry.enums import (
     BranchSharingPolicy,
+    FREE_INFORMATION_TYPES,
+    FREE_PRIVATE_INFORMATION_TYPES,
     InformationType,
     NON_EMBARGOED_INFORMATION_TYPES,
     PersonVisibility,

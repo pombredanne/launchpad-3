@@ -28,8 +28,14 @@ users.
 
 Salgado sees a message explaining that he can register his ssh key.
 
-    >>> browser = setupBrowser(
-    ...     auth='Basic guilherme.salgado@canonical.com:test')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.testing.pages import setupBrowserFreshLogin
+    >>> login(ANONYMOUS)
+    >>> salgado = getUtility(IPersonSet).getByEmail(
+    ...     'guilherme.salgado@canonical.com')
+    >>> logout()
+    >>> browser = setupBrowserFreshLogin(salgado)
     >>> browser.open('http://launchpad.dev/~salgado')
     >>> print browser.title
     Guilherme Salgado in Launchpad
@@ -97,6 +103,10 @@ format.
 
 Launchpad administrators are not allowed to poke at other user's ssh keys.
 
+    >>> login(ANONYMOUS)
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> logout()
+    >>> admin_browser = setupBrowserFreshLogin(foo_bar)
     >>> admin_browser.open('http://launchpad.dev/~salgado/+editsshkeys')
     Traceback (most recent call last):
     ...

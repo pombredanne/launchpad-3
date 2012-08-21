@@ -57,6 +57,7 @@ from zope.interface import (
     )
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
@@ -446,6 +447,15 @@ class MaloneView(LaunchpadFormView):
 class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
+    @cachedproperty
+    def is_duplicate_active(self):
+        active = True
+        if self.context.duplicateof is not None:
+            naked_duplicate = removeSecurityProxy(self.context.duplicateof)
+            active = getattr(
+                naked_duplicate.default_bugtask.target, 'active', True)
+        return active
+            
     @cachedproperty
     def subscription_info(self):
         return IBug(self.context).getSubscriptionInfo()
