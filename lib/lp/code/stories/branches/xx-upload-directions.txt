@@ -9,7 +9,13 @@ shows contextual directions on how to upload to it.
 We will need multiple browsers, logged in with different users. Set them up
 now.
 
-    >>> name12_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.testing.pages import setupBrowserFreshLogin
+    >>> login(ANONYMOUS)
+    >>> name12 = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> name12_browser = setupBrowserFreshLogin(name12)
     >>> ddaa_browser = setupBrowser(
     ...     auth='Basic david.allouche@canonical.com:test')
 

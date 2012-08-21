@@ -32,6 +32,7 @@ from lp.services.osutils import (
     write_file,
     )
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.tests import run_script
 from lp.services.utils import file_exists
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import TestCaseWithFactory
@@ -651,7 +652,6 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
 
     def test_run_script(self):
         # The script will run stand-alone.
-        from lp.services.scripts.tests import run_script
         distro = self.makeDistro()
         self.factory.makeDistroSeries(distro)
         transaction.commit()
