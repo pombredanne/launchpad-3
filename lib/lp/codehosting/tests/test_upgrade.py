@@ -19,6 +19,7 @@ from bzrlib.repofmt.groupcompress_repo import (
     )
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
+from bzrlib.upgrade import upgrade
 from fixtures import TempDir
 
 from lp.code.bzr import (
@@ -280,8 +281,6 @@ class TestUpgrader(TestCaseWithFactory):
         target, target_tree = self.create_branch_and_tree(format='1.6')
         trunk, trunk_tree = self.create_branch_and_tree(format='1.6')
         target_tree.branch.set_stacked_on_url(trunk_tree.branch.base)
-        trunk_upgrader = self.getUpgrader(trunk_tree.branch, trunk)
-        trunk_upgrader.start_upgrade()
-        trunk_upgrader.finish_upgrade()
+        upgrade(trunk_tree.branch.base)
         target_upgrader = Upgrader(
             target, self.getTargetDir(target_tree.branch), logging.getLogger())
