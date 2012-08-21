@@ -146,7 +146,7 @@
   </div>
 
   <script type="text/javascript">
-    LPJS.use('io-base', 'lp.deprecated', 'lp.code.requestbuild_overlay', function(Y) {
+    LPJS.use('io-base', 'lp.deprecated-ui', 'lp.code.requestbuild_overlay', function(Y) {
 
         Y.on('lp:context:deb_version_template:changed', function(e) {
             Y.lp.deprecated.update_field('#debian-version dd', e.new_value);

@@ -310,7 +310,7 @@
     </div>
 
   <script type="text/javascript">
-    LPJS.use('lp.anim', 'lp.deprecated', 'node', 'widget', function(Y) {
+    LPJS.use('lp.anim', 'lp.deprecated-ui', 'node', 'widget', function(Y) {
 
         Y.on('lp:context:implementation_status:changed', function(e) {
             var icon = Y.one('#informational-icon');
