@@ -367,7 +367,8 @@ class TestFileBugViewBase(TestCaseWithFactory):
             removeSecurityProxy(product).private_bugs = True
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
-            product.setBugSharingPolicy(bug_sharing_policy, product.owner)
+            with person_logged_in(product.owner):
+                product.setBugSharingPolicy(bug_sharing_policy, product.owner)
         with person_logged_in(product.owner):
             view = create_view(
                 product, '+filebug', method='POST', form=form,
@@ -443,9 +444,9 @@ class TestFileBugViewBase(TestCaseWithFactory):
         # correctly for a project with a proprietary sharing policy.
         product = self.factory.makeProduct(official_malone=True)
         self.factory.makeCommercialSubscription(product=product)
-        product.setBugSharingPolicy(
-            BugSharingPolicy.PROPRIETARY, product.owner)
         with person_logged_in(product.owner):
+            product.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY, product.owner)
             view = create_initialized_view(
                 product, '+filebug', principal=product.owner)
             html = view.render()
@@ -495,7 +496,8 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
             removeSecurityProxy(product).private_bugs = True
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
-            product.setBugSharingPolicy(bug_sharing_policy, product.owner)
+            with person_logged_in(product.owner):
+                product.setBugSharingPolicy(bug_sharing_policy, product.owner)
         anyone = self.factory.makePerson()
         with person_logged_in(anyone):
             view = create_initialized_view(

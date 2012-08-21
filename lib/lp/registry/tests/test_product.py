@@ -386,7 +386,8 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
     def makeProductWithPolicy(self, bug_sharing_policy, private_bugs=False):
         product = self.factory.makeProduct(private_bugs=private_bugs)
         self.factory.makeCommercialSubscription(product=product)
-        product.setBugSharingPolicy(bug_sharing_policy, product.owner)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(bug_sharing_policy, product.owner)
         return product
 
     def test_no_policy(self):
@@ -787,12 +788,12 @@ class BaseSharingPolicyTests:
     def test_proprietary_forbidden_without_commercial_sub(self):
         # No policy that allows Proprietary can be configured without a
         # commercial subscription.
-        self.setSharingPolicy(self.public_policy, self.commercial_admin)
+        self.setSharingPolicy(self.public_policy, self.product.owner)
         self.assertEqual(self.public_policy, self.getSharingPolicy())
         for policy in self.commercial_policies:
             self.assertRaises(
                 CommercialSubscribersOnly,
-                self.setSharingPolicy, policy, self.commercial_admin)
+                self.setSharingPolicy, policy, self.product.owner)
 
     def test_proprietary_allowed_with_commercial_sub(self):
         # All policies are valid when there's a current commercial

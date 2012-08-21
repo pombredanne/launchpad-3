@@ -411,8 +411,9 @@ class BugSetTestCase(TestCaseWithFactory):
         # to the project's bug sharing policy.
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        project.setBugSharingPolicy(
-            BugSharingPolicy.PROPRIETARY_OR_PUBLIC, project.owner)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC, project.owner)
         webservice = launchpadlib_for('test', 'salgado')
         bugs_collection = webservice.load('/bugs')
         bug = bugs_collection.createBug(

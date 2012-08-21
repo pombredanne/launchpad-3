@@ -259,8 +259,9 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
     def test_new_bug_with_sharing_policy_proprietary(self):
         project = self.factory.makeProduct(name='fnord')
         self.factory.makeCommercialSubscription(product=project)
-        project.setBugSharingPolicy(
-            BugSharingPolicy.PROPRIETARY, project.owner)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY, project.owner)
         transaction.commit()
         handler = MaloneHandler()
         with person_logged_in(project.owner):

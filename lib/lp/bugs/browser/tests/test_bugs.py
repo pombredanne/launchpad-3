@@ -182,8 +182,9 @@ class TestMaloneView(TestCaseWithFactory):
         # createBug() does not adapt the default kwargs when they are none.
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        project.setBugSharingPolicy(
-            BugSharingPolicy.PROPRIETARY_OR_PUBLIC, project.owner)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC, project.owner)
         bug = self.application.createBug(
             project.owner, 'title', 'description', project)
         self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
@@ -192,8 +193,9 @@ class TestMaloneView(TestCaseWithFactory):
         # createBug() adapts a kwarg to InformationType if one is is not None.
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        project.setBugSharingPolicy(
-            BugSharingPolicy.PROPRIETARY_OR_PUBLIC, project.owner)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC, project.owner)
         bug = self.application.createBug(
             project.owner, 'title', 'description', project, private=False)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
