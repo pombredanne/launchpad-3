@@ -21,6 +21,7 @@ from bzrlib.errors import NotBranchError
 from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack1
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import chroot
+from bzrlib.upgrade import upgrade
 from lazr.uri import URI
 
 from lp.codehosting.safe_open import (
@@ -306,6 +307,23 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         self.assertEquals(
             set(TrackingProber.seen_urls), set([b.base, a.base]))
 
+    def test_ignore_fallbacks(self):
+        """"Cross-format stacking doesn't error with ignore_fallbacks."""
+        def get_chrooted_url(relpath):
+            return self.get_transport('inside').clone(relpath).base
+        stacked, stacked_on = make_cross_format_stacked(self, get_chrooted_url)
+        opener = self.makeBranchOpener([stacked.base, stacked_on.base])
+        opener.open(stacked.base, ignore_fallbacks=True)
+
+
+def make_cross_format_stacked(test_case, get_chrooted_url):
+    test_case.get_transport().mkdir('inside')
+    stacked = test_case.make_branch('inside/stacked', format='1.6')
+    stacked_on = test_case.make_branch('inside/stacked-on', format='1.6')
+    stacked.set_stacked_on_url(get_chrooted_url('stacked-on'))
+    upgrade(stacked_on.base)
+    return stacked, stacked_on
+
 
 class TestSafeOpen(TestCaseWithTransport):
     """Tests for `safe_open`."""
@@ -361,3 +379,9 @@ class TestSafeOpen(TestCaseWithTransport):
             self.get_url('outside/stacked-on'))
         self.assertRaises(
             BadUrl, safe_open, scheme, get_chrooted_url('stacked'))
+
+    def test_ignore_fallbacks(self):
+        """"Cross-format stacking doesn't error with ignore_fallbacks."""
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        make_cross_format_stacked(self, get_chrooted_url)
+        safe_open(scheme, get_chrooted_url('stacked'), ignore_fallbacks=True)
