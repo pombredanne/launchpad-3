@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'DailyDatabaseGarbageCollector',
+    'FrequentDatabaseGarbageCollector',
     'HourlyDatabaseGarbageCollector',
     ]
 
@@ -46,6 +47,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtarget import (
+    POLICY_ALLOWED_TYPES as BUG_POLICY_ALLOWED_TYPES,
+    )
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
@@ -56,6 +60,9 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     )
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchnamespace import (
+    POLICY_ALLOWED_TYPES as BRANCH_POLICY_ALLOWED_TYPES,
+    )
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityTeamPolicy
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
@@ -64,6 +71,11 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -1054,6 +1066,45 @@ class PopulateProjectSharingPolicies(TunableLoop):
         transaction.commit()
 
 
+class UnusedSharingPolicyPruner(TunableLoop):
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(UnusedSharingPolicyPruner, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(Product)
+
+    def findProducts(self):
+        return self.store.find(
+            Product, Product.id >= self.start_at).order_by(Product.id)
+
+    def isDone(self):
+        return self.findProducts().is_empty()
+
+    def __call__(self, chunk_size):
+        products = list(self.findProducts()[:chunk_size])
+        for product in products:
+            allowed_bug_policies = set(
+                BUG_POLICY_ALLOWED_TYPES.get(product.bug_sharing_policy, []))
+            allowed_branch_policies = set(
+                BRANCH_POLICY_ALLOWED_TYPES.get(
+                    product.branch_sharing_policy, []))
+            access_polices = set(
+                getUtility(IAccessPolicySource).findByPillar([product]))
+            candidate_aps = access_polices.difference(
+                allowed_bug_policies, allowed_branch_policies)
+            apas = getUtility(IAccessPolicyArtifactSource).findByPolicy(
+                candidate_aps)
+            used_aps = set([apa.policy for apa in apas])
+            unused_aps = candidate_aps - used_aps
+            getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
+            for ap in unused_aps:
+                self.store.remove(ap)
+        self.start_at = products[-1].id + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1340,8 +1391,9 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
-        UnusedPOTMsgSetPruner,
         UnlinkedAccountPruner,
+        UnusedPOTMsgSetPruner,
+        UnusedSharingPolicyPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,
