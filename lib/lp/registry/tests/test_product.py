@@ -45,7 +45,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -57,8 +56,8 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
+from lp.services.webapp.authorization import check_permission
 from lp.testing import (
-    admin_logged_in,
     celebrity_logged_in,
     login,
     person_logged_in,
@@ -81,7 +80,6 @@ from lp.testing.pages import (
     get_feedback_messages,
     setupBrowser,
     )
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -388,8 +386,8 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
     def makeProductWithPolicy(self, bug_sharing_policy, private_bugs=False):
         product = self.factory.makeProduct(private_bugs=private_bugs)
         self.factory.makeCommercialSubscription(product=product)
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        product.setBugSharingPolicy(bug_sharing_policy, comadmin)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(bug_sharing_policy)
         return product
 
     def test_no_policy(self):
@@ -450,6 +448,51 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
         self.assertEqual(
             InformationType.PROPRIETARY,
             product.getDefaultBugInformationType())
+
+
+class ProductPermissionTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_owner_can_edit(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            self.assertTrue(check_permission('launchpad.Edit', product))
+
+    def test_commercial_admin_cannot_edit_non_commercial(self):
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('commercial_admin'):
+            self.assertFalse(check_permission('launchpad.Edit', product))
+
+    def test_commercial_admin_can_edit_commercial(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(check_permission('launchpad.Edit', product))
+
+    def test_owner_can_driver(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            self.assertTrue(check_permission('launchpad.Driver', product))
+
+    def test_driver_can_driver(self):
+        product = self.factory.makeProduct()
+        driver = self.factory.makePerson()
+        with person_logged_in(product.owner):
+            product.driver = driver
+        with person_logged_in(driver):
+            self.assertTrue(check_permission('launchpad.Driver', product))
+
+    def test_commercial_admin_cannot_drive_non_commercial(self):
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('commercial_admin'):
+            self.assertFalse(check_permission('launchpad.Driver', product))
+
+    def test_commercial_admin_can_drive_commercial(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(check_permission('launchpad.Driver', product))
 
 
 class TestProductFiles(TestCase):
@@ -718,13 +761,16 @@ class BaseSharingPolicyTests:
     def setUp(self):
         super(BaseSharingPolicyTests, self).setUp()
         self.product = self.factory.makeProduct()
-        self.commercial_admin = self.factory.makePerson()
-        with admin_logged_in():
-            commercials = getUtility(ILaunchpadCelebrities).commercial_admin
-            commercials.addMember(self.commercial_admin, commercials)
+        self.commercial_admin = self.factory.makeCommercialAdmin()
+
+    def test_owner_can_set_policy(self):
+        # Project maintainers can set sharing policies.
+        self.setSharingPolicy(self.public_policy, self.product.owner)
+        self.assertEqual(self.public_policy, self.getSharingPolicy())
 
     def test_commercial_admin_can_set_policy(self):
-        # Commercial admins can set sharing policies.
+        # Commercial admins can set sharing policies for commercial projects.
+        self.factory.makeCommercialSubscription(product=self.product)
         self.setSharingPolicy(self.public_policy, self.commercial_admin)
         self.assertEqual(self.public_policy, self.getSharingPolicy())
 
@@ -734,13 +780,6 @@ class BaseSharingPolicyTests:
         self.assertRaises(
             Unauthorized, self.setSharingPolicy, self.public_policy, person)
 
-    def test_owner_cannot_set_policy(self):
-        # The project owner can't yet set sharing policies. This will
-        # change once they're stable.
-        self.assertRaises(
-            Unauthorized, self.setSharingPolicy,
-            self.public_policy, self.product.owner)
-
     def test_anonymous_cannot_set_policy(self):
         # An anonymous user can't set sharing policies.
         self.assertRaises(
@@ -749,12 +788,12 @@ class BaseSharingPolicyTests:
     def test_proprietary_forbidden_without_commercial_sub(self):
         # No policy that allows Proprietary can be configured without a
         # commercial subscription.
-        self.setSharingPolicy(self.public_policy, self.commercial_admin)
+        self.setSharingPolicy(self.public_policy, self.product.owner)
         self.assertEqual(self.public_policy, self.getSharingPolicy())
         for policy in self.commercial_policies:
             self.assertRaises(
                 CommercialSubscribersOnly,
-                self.setSharingPolicy, policy, self.commercial_admin)
+                self.setSharingPolicy, policy, self.product.owner)
 
     def test_proprietary_allowed_with_commercial_sub(self):
         # All policies are valid when there's a current commercial
@@ -800,7 +839,9 @@ class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
         )
 
     def setSharingPolicy(self, policy, user):
-        return self.product.setBugSharingPolicy(policy, user)
+        with person_logged_in(user):
+            result = self.product.setBugSharingPolicy(policy)
+        return result
 
     def getSharingPolicy(self):
         return self.product.bug_sharing_policy
@@ -822,7 +863,9 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
         )
 
     def setSharingPolicy(self, policy, user):
-        return self.product.setBranchSharingPolicy(policy, user)
+        with person_logged_in(user):
+            result = self.product.setBranchSharingPolicy(policy)
+        return result
 
     def getSharingPolicy(self):
         return self.product.branch_sharing_policy

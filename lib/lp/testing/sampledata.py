@@ -13,7 +13,6 @@ __all__ = [
     'BOB_THE_BUILDER_NAME',
     'BUILDD_ADMIN_USERNAME',
     'CHROOT_LIBRARYFILEALIAS',
-    'COMMERCIAL_ADMIN_EMAIL',
     'FROG_THE_BUILDER_NAME',
     'HOARY_DISTROSERIES_NAME',
     'I386_ARCHITECTURE_NAME',
@@ -25,7 +24,6 @@ __all__ = [
     'UBUNTU_DEVELOPER_ADMIN_NAME',
     'UBUNTU_DISTRIBUTION_NAME',
     'UBUNTU_UPLOAD_TEAM_NAME',
-    'UBUNTUTEST_DISTRIBUTION_NAME',
     'USER_EMAIL',
     'WARTY_DISTROSERIES_NAME',
     'WARTY_ONLY_SOURCEPACKAGENAME',
@@ -57,7 +55,6 @@ MAIN_COMPONENT_NAME = 'main'
 NO_PRIVILEGE_EMAIL = 'no-priv@canonical.com'
 USER_EMAIL = 'test@canonical.com'
 VCS_IMPORTS_MEMBER_EMAIL = 'david.allouche@canonical.com'
-COMMERCIAL_ADMIN_EMAIL = 'commercial-member@canonical.com'
 SAMPLE_PERSON_EMAIL = USER_EMAIL
 # A user that is an admin of ubuntu-team, which has upload rights
 # to Ubuntu.
