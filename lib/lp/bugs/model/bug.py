@@ -1742,9 +1742,9 @@ class Bug(SQLBase):
 
         # We have to capture subscribers that must exist after transition. In
         # the case of a transition to USERDATA, we want the bug supervisor or
-        # maintainer. For SECURITY types, we want the security contact or
-        # maintainer. In either case, if the driver is already subscribed,
-        # then the driver is also required.
+        # maintainer. For SECURITY types, we want the maintainer. In either
+        # case, if the driver is already subscribed, then the driver is also
+        # required.
         # Ubuntu is special: we don't want to add required subscribers in that
         # case.
         if information_type == InformationType.USERDATA:
@@ -1761,8 +1761,7 @@ class Bug(SQLBase):
             for pillar in pillars:
                 if pillar.driver in subscribers:
                     required_subscribers.add(pillar.driver)
-                else:
-                    required_subscribers.add(pillar.owner)
+                required_subscribers.add(pillar.owner)
 
         # If we've made the bug private, we need to do some cleanup.
         # Required subscribers must be given access.

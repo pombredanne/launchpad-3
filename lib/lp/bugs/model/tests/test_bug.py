@@ -699,7 +699,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.transitionToInformationType(
                 InformationType.PUBLICSECURITY, who)
             subscribers = bug.getDirectSubscribers()
-        expected_subscribers = set((default_bugtask.pillar.driver, bug_owner))
+        pillar = default_bugtask.pillar
+        expected_subscribers = set((pillar.owner, pillar.driver, bug_owner))
         expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
 

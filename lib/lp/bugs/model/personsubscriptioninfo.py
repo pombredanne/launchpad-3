@@ -137,15 +137,13 @@ class RealSubscriptionInfoCollection(
                 info.principal_is_reporter = True
 
     def annotateBugTaskResponsibilities(self, bugtask, pillar, bug_supervisor):
-        for principal, collection_name in (
-            (bug_supervisor, 'bug_supervisor_tasks')):
-            if principal is not None:
-                key = (principal, bugtask.bug)
-                infos = self._principal_bug_to_infos.get(key)
-                if infos is not None:
-                    value = {'task': bugtask, 'pillar': pillar}
-                    for info in infos:
-                        getattr(info, collection_name).append(value)
+        if bug_supervisor is not None:
+            key = (bug_supervisor, bugtask.bug)
+            infos = self._principal_bug_to_infos.get(key)
+            if infos is not None:
+                value = {'task': bugtask, 'pillar': pillar}
+                for info in infos:
+                    getattr(info, 'bug_supervisor_tasks').append(value)
 
 
 class PersonSubscriptions(object):
