@@ -16,7 +16,6 @@ from lp.registry.enums import (
     BugSharingPolicy,
     InformationType,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -28,7 +27,6 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import find_tag_by_id
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -184,9 +182,9 @@ class TestMaloneView(TestCaseWithFactory):
         # createBug() does not adapt the default kwargs when they are none.
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        project.setBugSharingPolicy(
-            BugSharingPolicy.PROPRIETARY_OR_PUBLIC, comadmin)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.application.createBug(
             project.owner, 'title', 'description', project)
         self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
@@ -195,9 +193,9 @@ class TestMaloneView(TestCaseWithFactory):
         # createBug() adapts a kwarg to InformationType if one is is not None.
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        project.setBugSharingPolicy(
-            BugSharingPolicy.PROPRIETARY_OR_PUBLIC, comadmin)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.application.createBug(
             project.owner, 'title', 'description', project, private=False)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)

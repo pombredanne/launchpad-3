@@ -53,7 +53,6 @@ from lp.registry.errors import (
     )
 from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.person import (
-    IPersonSet,
     NoSuchPerson,
     )
 from lp.registry.interfaces.product import NoSuchProduct
@@ -64,7 +63,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
 class NamespaceMixin:
@@ -470,8 +468,8 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             person = self.factory.makePerson()
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        product.setBranchSharingPolicy(sharing_policy, comadmin)
+        with person_logged_in(product.owner):
+            product.setBranchSharingPolicy(sharing_policy)
         namespace = ProductNamespace(person, product)
         return namespace
 
