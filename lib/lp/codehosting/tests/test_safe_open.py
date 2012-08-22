@@ -33,6 +33,9 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     WhitelistPolicy,
     )
+from lp.codehosting.tests.helpers import (
+    force_stacked_on_url,
+    )
 from lp.testing import TestCase
 
 
@@ -263,10 +266,7 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         # checkSource raises StackingLoopError if a branch is stacked on
         # itself. This avoids infinite recursion errors.
         a = self.make_branch('a')
-        # Bazaar 1.17 and up make it harder to create branches like this.
-        # It's still worth testing that we don't blow up in the face of them,
-        # so we grovel around a bit to create one anyway.
-        a.get_config().set_user_option('stacked_on_location', a.base)
+        force_stacked_on_url(a, a.base)
         opener = self.makeBranchOpener([a.base])
         self.assertRaises(BranchLoopError, opener.open, a.base)
 
@@ -309,19 +309,16 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
 
     def test_ignore_fallbacks(self):
         """"Cross-format stacking doesn't error with ignore_fallbacks."""
-        def get_chrooted_url(relpath):
-            return self.get_transport('inside').clone(relpath).base
-        stacked, stacked_on = make_cross_format_stacked(self, get_chrooted_url)
+        stacked, stacked_on = make_cross_format_stacked(self)
         opener = self.makeBranchOpener([stacked.base, stacked_on.base])
         opener.open(stacked.base, ignore_fallbacks=True)
 
 
-def make_cross_format_stacked(test_case, get_chrooted_url):
+def make_cross_format_stacked(test_case):
     test_case.get_transport().mkdir('inside')
     stacked = test_case.make_branch('inside/stacked', format='1.6')
-    stacked_on = test_case.make_branch('inside/stacked-on', format='1.6')
-    stacked.set_stacked_on_url(get_chrooted_url('stacked-on'))
-    upgrade(stacked_on.base)
+    stacked_on = test_case.make_branch('inside/stacked-on', format='2a')
+    force_stacked_on_url(stacked, stacked_on.base)
     return stacked, stacked_on
 
 
@@ -383,5 +380,6 @@ class TestSafeOpen(TestCaseWithTransport):
     def test_ignore_fallbacks(self):
         """"Cross-format stacking doesn't error with ignore_fallbacks."""
         scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        make_cross_format_stacked(self, get_chrooted_url)
+        stacked, stacked_on = make_cross_format_stacked(self)
+        force_stacked_on_url(stacked, get_chrooted_url('stacked-on'))
         safe_open(scheme, get_chrooted_url('stacked'), ignore_fallbacks=True)

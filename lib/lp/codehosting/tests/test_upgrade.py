@@ -30,6 +30,7 @@ from lp.code.bzr import (
     )
 from lp.codehosting.bzrutils import read_locked
 from lp.codehosting.upgrade import Upgrader
+from lp.codehosting.tests.helpers import force_stacked_on_url
 from lp.services.config import config
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
@@ -279,8 +280,7 @@ class TestUpgrader(TestCaseWithFactory):
         """Upgrade tolerates branches stacked on different-format branches."""
         self.useBzrBranches(direct_database=True)
         target, target_tree = self.create_branch_and_tree(format='1.6')
-        trunk, trunk_tree = self.create_branch_and_tree(format='1.6')
-        target_tree.branch.set_stacked_on_url(trunk_tree.branch.base)
-        upgrade(trunk_tree.branch.base)
+        trunk, trunk_tree = self.create_branch_and_tree(format='2a')
+        force_stacked_on_url(target_tree.branch, trunk_tree.branch.base)
         target_upgrader = Upgrader(
             target, self.getTargetDir(target_tree.branch), logging.getLogger())
