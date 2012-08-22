@@ -624,9 +624,6 @@ will be implicitly added to the notification recipients.
 
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com']
-
-The distro contact will also be subscribed to private bugs.
-
     >>> from lp.services.mail import stub
     >>> transaction.commit()
     >>> stub.test_emails = []
@@ -637,7 +634,7 @@ The distro contact will also be subscribed to private bugs.
     >>> new_bug = ubuntu.createBug(params)
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'support@ubuntu.com']
+    ['foo.bar@canonical.com']
 
 Even though support@ubuntu.com got subscribed while filing the bug, no
 "You have been subscribed" notification was sent, which is normally sent
@@ -705,10 +702,6 @@ recipient list:
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
-
-The upstream maintainer will be subscribed to security-related private
-bugs.
-
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
@@ -716,7 +709,6 @@ bugs.
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
-    test@canonical.com
 
 Now let's create a bug on a specific package, which has no package bug
 contacts:
@@ -768,10 +760,6 @@ And the Ubuntu team will be implicitly subscribed to future bugs:
 
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'support@ubuntu.com']
-
-The distribution maintainer, Ubuntu Team, gets subscribed to the private
-security bug filed on a package.
-
     >>> params = CreateBugParams(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
@@ -779,7 +767,7 @@ security bug filed on a package.
     >>> new_bug = evolution.createBug(params)
 
     >>> getSubscribers(new_bug)
-    ['foo.bar@canonical.com', 'support@ubuntu.com']
+    ['foo.bar@canonical.com']
 
 
 Subscribed by
