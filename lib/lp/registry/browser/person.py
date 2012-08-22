@@ -2495,6 +2495,10 @@ class PersonGPGView(LaunchpadView):
     error_message = None
     info_message = None
 
+    def initialize(self):
+        require_fresh_login(self.request, self.context, '+editpgpkeys')
+        super(PersonGPGView, self).initialize()
+
     @property
     def cancel_url(self):
         return canonical_url(self.context, view_name="+edit")
