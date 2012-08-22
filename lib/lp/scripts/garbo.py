@@ -1068,6 +1068,7 @@ class PopulateProjectSharingPolicies(TunableLoop):
 
 
 class UnusedSharingPolicyPruner(TunableLoop):
+    """Deletes unused AccessPolicy and AccessPolicyGrants for products."""
 
     maximum_chunk_size = 5000
 
@@ -1092,6 +1093,9 @@ class UnusedSharingPolicyPruner(TunableLoop):
             allowed_branch_policies = set(
                 BRANCH_POLICY_ALLOWED_TYPES.get(
                     product.branch_sharing_policy, FREE_INFORMATION_TYPES))
+            # Fetch all APs, and after filtering out ones that are forbidden
+            # by the bug and branch policies, the APs that have no APAs are
+            # unused and can be deleted.
             access_policies = set(
                 getUtility(IAccessPolicySource).findByPillar([product]))
             candidate_aps = access_policies.difference(
