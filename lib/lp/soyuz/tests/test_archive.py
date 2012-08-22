@@ -34,7 +34,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.sqlbase import sqlvalues
-from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import (
@@ -60,7 +59,6 @@ from lp.soyuz.interfaces.archive import (
     CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
-    ForbiddenByFeatureFlag,
     IArchiveSet,
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
@@ -2160,67 +2158,9 @@ class TestGetPublishedSources(TestCaseWithFactory):
         self.assertEqual('universe', filtered.component.name)
 
 
-class TestSyncSourceFeatureFlag(TestCaseWithFactory):
+class TestCopyPackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def test_copyPackage_to_ppa_requires_feature_flag(self):
-        # Ensure feature is off.
-        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertRaises(
-            ForbiddenByFeatureFlag,
-            archive.copyPackage,
-            None, None, None, None, None)
-
-    def test_copyPackages_to_ppa_requires_feature_flag(self):
-        # Ensure feature is off.
-        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertRaises(
-            ForbiddenByFeatureFlag,
-            archive.copyPackages,
-            None, None, None, None, None)
-
-
-class TestSyncSource(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestSyncSource, self).setUp()
-        self.useFixture(FeatureFixture({
-            u"soyuz.copypackageppa.enabled": 'on',
-            }))
-
-    def test_security_team_can_copy_to_primary(self):
-        # A member of ubuntu-security can use syncSource on any package
-        # in the Ubuntu primary archive, regardless of their normal
-        # upload permissions.
-        # This is until we can open syncSource up more widely and sort
-        # out the permissions that everyone needs.
-        with celebrity_logged_in('admin'):
-            security_person = self.factory.makePerson()
-            getUtility(ILaunchpadCelebrities).ubuntu_security.addMember(
-                security_person, security_person)
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        source = self.factory.makeSourcePackagePublishingHistory(
-            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA),
-            distroseries=ubuntu.currentseries)
-        self.assertEqual(
-            0,
-            ubuntu.main_archive.getPublishedSources(
-                name=source.source_package_name).count())
-        with person_logged_in(security_person):
-            ubuntu.main_archive.syncSource(
-                source_name=source.source_package_name,
-                version=source.source_package_version,
-                from_archive=source.archive,
-                to_pocket='Security')
-        self.assertEqual(
-            1,
-            ubuntu.main_archive.getPublishedSources(
-                name=source.source_package_name).count())
 
     def _setup_copy_data(self, source_private=False, target_purpose=None,
                          target_status=SeriesStatus.DEVELOPMENT):

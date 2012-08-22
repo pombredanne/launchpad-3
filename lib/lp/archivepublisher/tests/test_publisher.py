@@ -15,6 +15,7 @@ import shutil
 import stat
 import tempfile
 from textwrap import dedent
+import time
 
 from debian.deb822 import Release
 import transaction
@@ -1505,3 +1506,24 @@ class TestPublisherLite(TestCaseWithFactory):
         self.makePublisher(series)._writeReleaseFile(suite, release_data)
 
         self.assertTrue(file_exists(release_path))
+
+    def test_syncTimestamps_makes_timestamps_match_latest(self):
+        root = unicode(self.makeTemporaryDirectory())
+        series = self.makePublishableSeries(root)
+        location = self.getReleaseFileDir(root, series, series.name)
+        os.makedirs(location)
+        now = time.time()
+        path_times = (("a", now), ("b", now - 1), ("c", now - 2))
+        for path, timestamp in path_times:
+            with open(os.path.join(location, path), "w"):
+                pass
+            os.utime(os.path.join(location, path), (timestamp, timestamp))
+
+        paths = [path for path, _ in path_times]
+        self.makePublisher(series)._syncTimestamps(series.name, set(paths))
+
+        timestamps = set(
+            os.stat(os.path.join(location, path)).st_mtime for path in paths)
+        self.assertEqual(1, len(timestamps))
+        # The filesystem may round off subsecond parts of timestamps.
+        self.assertEqual(int(now), int(list(timestamps)[0]))
