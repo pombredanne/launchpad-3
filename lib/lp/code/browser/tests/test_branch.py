@@ -1086,7 +1086,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         self.factory.makeCommercialSubscription(product=product)
         with person_logged_in(owner):
             product.setBranchSharingPolicy(
-                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY, owner)
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
             branch = self.factory.makeBranch(
                 product=product, owner=owner,
                 information_type=InformationType.PROPRIETARY)
@@ -1100,8 +1100,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=owner)
         self.factory.makeCommercialSubscription(product=product)
         with person_logged_in(owner):
-            product.setBranchSharingPolicy(
-                BranchSharingPolicy.PROPRIETARY, owner)
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
             branch = self.factory.makeBranch(
                 product=product, owner=owner,
                 information_type=InformationType.PROPRIETARY)

@@ -2602,8 +2602,7 @@ class BranchModerateTestCase(TestCaseWithFactory):
         # Users with launchpad.Moderate can call transitionToInformationType.
         branch = self.factory.makeProductBranch()
         with person_logged_in(branch.product.owner):
-            branch.product.setBranchSharingPolicy(
-                BranchSharingPolicy.PUBLIC, branch.product.owner)
+            branch.product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
             branch.transitionToInformationType(
                 InformationType.PRIVATESECURITY, branch.product.owner)
         self.assertEqual(
@@ -3284,7 +3283,7 @@ class TestWebservice(TestCaseWithFactory):
         self.factory.makeCommercialSubscription(product)
         with person_logged_in(product.owner):
             product.setBranchSharingPolicy(
-                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY, product.owner)
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
             db_branch = self.factory.makeBranch(product=product)
             launchpad = launchpadlib_for('test', db_branch.owner,
                 service_root=self.layer.appserver_root_url('api'))

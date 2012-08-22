@@ -878,25 +878,23 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
     @mutator_for(IProductPublic['bug_sharing_policy'])
-    @call_with(user=REQUEST_USER)
     @operation_parameters(bug_sharing_policy=copy_field(
         IProductPublic['bug_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
-    def setBugSharingPolicy(bug_sharing_policy, user):
+    def setBugSharingPolicy(bug_sharing_policy):
         """Mutator for bug_sharing_policy.
 
         Checks authorization and entitlement.
         """
 
     @mutator_for(IProductPublic['branch_sharing_policy'])
-    @call_with(user=REQUEST_USER)
     @operation_parameters(
         branch_sharing_policy=copy_field(
             IProductPublic['branch_sharing_policy']))
     @export_write_operation()
     @operation_for_version("devel")
-    def setBranchSharingPolicy(branch_sharing_policy, user):
+    def setBranchSharingPolicy(branch_sharing_policy):
         """Mutator for branch_sharing_policy.
 
         Checks authorization and entitlement.

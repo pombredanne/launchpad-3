@@ -368,7 +368,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
             with person_logged_in(product.owner):
-                product.setBugSharingPolicy(bug_sharing_policy, product.owner)
+                product.setBugSharingPolicy(bug_sharing_policy)
         with person_logged_in(product.owner):
             view = create_view(
                 product, '+filebug', method='POST', form=form,
@@ -445,8 +445,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
         product = self.factory.makeProduct(official_malone=True)
         self.factory.makeCommercialSubscription(product=product)
         with person_logged_in(product.owner):
-            product.setBugSharingPolicy(
-                BugSharingPolicy.PROPRIETARY, product.owner)
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
             view = create_initialized_view(
                 product, '+filebug', principal=product.owner)
             html = view.render()
@@ -497,7 +496,7 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
             with person_logged_in(product.owner):
-                product.setBugSharingPolicy(bug_sharing_policy, product.owner)
+                product.setBugSharingPolicy(bug_sharing_policy)
         anyone = self.factory.makePerson()
         with person_logged_in(anyone):
             view = create_initialized_view(

@@ -469,7 +469,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
         with person_logged_in(product.owner):
-            product.setBranchSharingPolicy(sharing_policy, product.owner)
+            product.setBranchSharingPolicy(sharing_policy)
         namespace = ProductNamespace(person, product)
         return namespace
 

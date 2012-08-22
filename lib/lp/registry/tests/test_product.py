@@ -387,7 +387,7 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
         product = self.factory.makeProduct(private_bugs=private_bugs)
         self.factory.makeCommercialSubscription(product=product)
         with person_logged_in(product.owner):
-            product.setBugSharingPolicy(bug_sharing_policy, product.owner)
+            product.setBugSharingPolicy(bug_sharing_policy)
         return product
 
     def test_no_policy(self):
@@ -840,7 +840,7 @@ class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
 
     def setSharingPolicy(self, policy, user):
         with person_logged_in(user):
-            result = self.product.setBugSharingPolicy(policy, user)
+            result = self.product.setBugSharingPolicy(policy)
         return result
 
     def getSharingPolicy(self):
@@ -864,7 +864,7 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
 
     def setSharingPolicy(self, policy, user):
         with person_logged_in(user):
-            result = self.product.setBranchSharingPolicy(policy, user)
+            result = self.product.setBranchSharingPolicy(policy)
         return result
 
     def getSharingPolicy(self):

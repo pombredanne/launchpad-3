@@ -184,7 +184,7 @@ class TestMaloneView(TestCaseWithFactory):
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(project.owner):
             project.setBugSharingPolicy(
-                BugSharingPolicy.PROPRIETARY_OR_PUBLIC, project.owner)
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.application.createBug(
             project.owner, 'title', 'description', project)
         self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
@@ -195,7 +195,7 @@ class TestMaloneView(TestCaseWithFactory):
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(project.owner):
             project.setBugSharingPolicy(
-                BugSharingPolicy.PROPRIETARY_OR_PUBLIC, project.owner)
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.application.createBug(
             project.owner, 'title', 'description', project, private=False)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)

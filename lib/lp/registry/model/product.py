@@ -565,7 +565,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
-    def setBranchSharingPolicy(self, branch_sharing_policy, user):
+    def setBranchSharingPolicy(self, branch_sharing_policy):
         """See `IProductEditRestricted`."""
         if branch_sharing_policy != BranchSharingPolicy.PUBLIC:
             if not self.has_current_commercial_subscription:
@@ -579,7 +579,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self._ensurePolicies(required_policies)
         self.branch_sharing_policy = branch_sharing_policy
 
-    def setBugSharingPolicy(self, bug_sharing_policy, user):
+    def setBugSharingPolicy(self, bug_sharing_policy):
         """See `IProductEditRestricted`."""
         if bug_sharing_policy != BugSharingPolicy.PUBLIC:
             if not self.has_current_commercial_subscription:
