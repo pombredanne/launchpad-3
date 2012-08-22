@@ -10,7 +10,7 @@ __all__ = [
     'CodeHostingTestProviderAdapter',
     'create_branch_with_one_revision',
     'deferToThread',
-    'force_stacked_on',
+    'force_stacked_on_url',
     'LoomTestMixin',
     'make_bazaar_branch_and_tree',
     'TestResultWrapper',

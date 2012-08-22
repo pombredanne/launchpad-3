@@ -21,7 +21,6 @@ from bzrlib.errors import NotBranchError
 from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack1
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import chroot
-from bzrlib.upgrade import upgrade
 from lazr.uri import URI
 
 from lp.codehosting.safe_open import (
