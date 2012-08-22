@@ -69,8 +69,7 @@ class TestProduct(TestCaseWithFactory):
         # on a non-commercial project returns Forbidden.
         product = self.factory.makeProduct()
         webservice = webservice_for_person(
-            self.factory.makeCommercialAdmin(),
-            permission=OAuthPermission.WRITE_PRIVATE)
+            product.owner, permission=OAuthPermission.WRITE_PRIVATE)
         response = self.patch(
             webservice, product, branch_sharing_policy='Proprietary')
         self.assertThat(response, MatchesStructure.byEquality(
@@ -96,8 +95,7 @@ class TestProduct(TestCaseWithFactory):
         # on a non-commercial project returns Forbidden.
         product = self.factory.makeProduct()
         webservice = webservice_for_person(
-            self.factory.makeCommercialAdmin(),
-            permission=OAuthPermission.WRITE_PRIVATE)
+            product.owner, permission=OAuthPermission.WRITE_PRIVATE)
         response = self.patch(
             webservice, product, bug_sharing_policy='Proprietary')
         self.assertThat(response, MatchesStructure.byEquality(
