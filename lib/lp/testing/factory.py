@@ -789,6 +789,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
             naked_team.visibility = visibility
+            naked_team._ensurePolicies()
         if email is not None:
             removeSecurityProxy(team).setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))

@@ -134,12 +134,14 @@ from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
 from lp.registry.enums import (
     InformationType,
+    PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.person import (
     validate_person,
@@ -222,13 +224,24 @@ class Branch(SQLBase, BzrIdentityMixin):
         Takes the information_type and target and makes the related
         AccessArtifact and AccessPolicyArtifacts match.
         """
-        # We haven't yet quite worked out how distribution privacy
-        # works, so only work for products for now.
-        if self.product is not None:
-            pillars = [self.product]
+        wanted_links = None
+        pillars = []
+        # For private +junk branches, we calculate the wanted grants.
+        if (not self.product and
+            not self.sourcepackagename and
+            not self.information_type in PUBLIC_INFORMATION_TYPES):
+            aasource = getUtility(IAccessArtifactSource)
+            [abstract_artifact] = aasource.ensure([self])
+            wanted_links = set(
+                (abstract_artifact, policy) for policy in
+                getUtility(IAccessPolicySource).findByTeam([self.owner]))
         else:
-            pillars = []
-        reconcile_access_for_artifact(self, self.information_type, pillars)
+            # We haven't yet quite worked out how distribution privacy
+            # works, so only work for products for now.
+            if self.product is not None:
+                pillars = [self.product]
+        reconcile_access_for_artifact(
+            self, self.information_type, pillars, wanted_links)
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
@@ -360,7 +373,11 @@ class Branch(SQLBase, BzrIdentityMixin):
                     source_package)
         else:
             target = IBranchTarget(self.owner)
-            # Person targets are always valid.
+            if (self.information_type in PRIVATE_INFORMATION_TYPES and
+                (not self.owner.is_team or
+                 self.owner.visibility != PersonVisibility.PRIVATE)):
+                raise BranchTargetError(
+                    'Only private teams may have personal private branches.')
         namespace = target.getNamespace(self.owner)
         namespace.moveBranch(self, user, rename_if_necessary=True)
         self._reconcileAccess()

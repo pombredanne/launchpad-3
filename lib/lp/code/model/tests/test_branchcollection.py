@@ -32,7 +32,7 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.tests.helpers import remove_all_sample_data_branches
-from lp.registry.enums import InformationType
+from lp.registry.enums import InformationType, PersonVisibility
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.interfaces import (
@@ -731,6 +731,30 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         branches = self.all_branches.visibleByUser(team_owner)
         self.assertEqual(
             sorted([self.public_branch, private_branch]),
+            sorted(branches.getBranches()))
+
+    def test_private_teams_see_own_private_junk_branches(self):
+        # Private teams are given an acess grant to see their private +junk
+        # branches.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE,
+            membership_policy=TeamMembershipPolicy.MODERATED,
+            owner=team_owner)
+        with person_logged_in(team_owner):
+            personal_branch = self.factory.makePersonalBranch(
+                owner=team,
+                information_type=InformationType.USERDATA)
+            # The team is automatically subscribed to the branch since they are
+            # the owner. We want to unsubscribe them so that they lose access
+            # conferred via subscription and rely instead on the APG.
+            personal_branch.unsubscribe(team, team_owner, True)
+            # Make another junk branch the team can't see.
+            self.factory.makePersonalBranch(
+                information_type=InformationType.USERDATA)
+            branches = self.all_branches.visibleByUser(team)
+        self.assertEqual(
+            sorted([self.public_branch, personal_branch]),
             sorted(branches.getBranches()))
 
 

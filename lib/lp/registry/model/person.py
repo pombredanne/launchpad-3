@@ -165,6 +165,10 @@ from lp.registry.errors import (
     PPACreationError,
     TeamMembershipPolicyError,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -3159,6 +3163,22 @@ class Person(
         if not user.checkAllowVisibility():
             raise ImmutableVisibilityError()
         self.visibility = visibility
+        self._ensurePolicies()
+
+    def _ensurePolicies(self):
+        # Ensure that private teams have an access policy grant enabling them
+        # to see any private +junk branches.
+        if self.visibility == PersonVisibility.PUBLIC or not self.is_team:
+            return
+        aps = getUtility(IAccessPolicySource)
+        existing_policy = list(aps.findByTeam([self]))
+        if existing_policy:
+            return
+        # Create the personal access policy.
+        [policy] = getUtility(IAccessPolicySource).createForTeams([self])
+        # Create the required access policy grant.
+        grants = [(policy, self, self)]
+        getUtility(IAccessPolicyGrantSource).grant(grants)
 
 
 class PersonSet:
