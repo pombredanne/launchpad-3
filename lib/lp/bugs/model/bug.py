@@ -1761,7 +1761,6 @@ class Bug(SQLBase):
             for pillar in pillars:
                 if pillar.driver in subscribers:
                     required_subscribers.add(pillar.driver)
-                required_subscribers.add(pillar.owner)
 
         # If we've made the bug private, we need to do some cleanup.
         # Required subscribers must be given access.

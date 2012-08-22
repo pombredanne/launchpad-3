@@ -143,7 +143,7 @@ class RealSubscriptionInfoCollection(
             if infos is not None:
                 value = {'task': bugtask, 'pillar': pillar}
                 for info in infos:
-                    getattr(info, 'bug_supervisor_tasks').append(value)
+                    info.bug_supervisor_tasks.append(value)
 
 
 class PersonSubscriptions(object):
