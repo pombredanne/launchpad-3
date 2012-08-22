@@ -148,7 +148,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    private = BoolCol(notNull=True, default=False)
     product = ForeignKey(dbName='product', foreignKey='Product',
         notNull=False, default=None)
     productseries = ForeignKey(dbName='productseries',
