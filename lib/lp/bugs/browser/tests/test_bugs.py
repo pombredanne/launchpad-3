@@ -12,7 +12,11 @@ from zope.component import getUtility
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.publisher import BugsLayer
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BugSharingPolicy,
+    InformationType,
+    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -24,6 +28,7 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import find_tag_by_id
+from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -174,6 +179,28 @@ class TestMaloneView(TestCaseWithFactory):
             bug = self.application.createBug(
                 project.owner, 'title', 'description', project, private=False)
             self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_createBug_default_sharing_policy_proprietary(self):
+        # createBug() does not adapt the default kwargs when they are none.
+        project = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        project.setBugSharingPolicy(
+            BugSharingPolicy.PROPRIETARY_OR_PUBLIC, comadmin)
+        bug = self.application.createBug(
+            project.owner, 'title', 'description', project)
+        self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
+
+    def test_createBug_public_bug_sharing_policy_proprietary(self):
+        # createBug() adapts a kwarg to InformationType if one is is not None.
+        project = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        project.setBugSharingPolicy(
+            BugSharingPolicy.PROPRIETARY_OR_PUBLIC, comadmin)
+        bug = self.application.createBug(
+            project.owner, 'title', 'description', project, private=False)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
 
     def test_createBug_default_private_bugs_false(self):
         # createBug() does not adapt the default kwargs when they are none.
