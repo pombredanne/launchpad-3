@@ -9,9 +9,10 @@ __metaclass__ = type
 
 __all__ = [
     'ISpecification',
+    'ISpecificationDelta',
     'ISpecificationPublic',
     'ISpecificationSet',
-    'ISpecificationDelta',
+    'ISpecificationView',
     ]
 
 
@@ -47,6 +48,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (
@@ -148,7 +150,7 @@ class SpecURLField(TextLine):
                         specification.title))
 
 
-class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
+class ISpecificationPublic(IPrivacy):
     """Specification's public attributes and methods."""
 
     id = Int(title=_("Database ID"), required=True, readonly=True)
@@ -159,6 +161,16 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             required=True, readonly=True, default=InformationType.PUBLIC,
             description=_(
                 'The type of information contained in this specification.')))
+
+    def userCanView(user):
+        """Return True if `user` can see this ISpecification, false otherwise.
+        """
+
+
+class ISpecificationView(IHasOwner, IHasLinkedBranches):
+    """Specification's attributes and methods that require
+    the permission launchpad.LimitedView.
+    """
 
     name = exported(
         SpecNameField(
@@ -558,21 +570,21 @@ class ISpecificationEditRestricted(Interface):
     """Specification's attributes and methods protected with launchpad.Edit.
     """
 
-    @mutator_for(ISpecificationPublic['definition_status'])
+    @mutator_for(ISpecificationView['definition_status'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         definition_status=copy_field(
-            ISpecificationPublic['definition_status']))
+            ISpecificationView['definition_status']))
     @export_write_operation()
     @operation_for_version("devel")
     def setDefinitionStatus(definition_status, user):
         """Mutator for definition_status that calls updateLifeCycle."""
 
-    @mutator_for(ISpecificationPublic['implementation_status'])
+    @mutator_for(ISpecificationView['implementation_status'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         implementation_status=copy_field(
-            ISpecificationPublic['implementation_status']))
+            ISpecificationView['implementation_status']))
     @export_write_operation()
     @operation_for_version("devel")
     def setImplementationStatus(implementation_status, user):
@@ -610,13 +622,13 @@ class ISpecificationEditRestricted(Interface):
         """
 
 
-class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
-                     IBugLinkTarget):
+class ISpecification(ISpecificationPublic, ISpecificationView,
+                     ISpecificationEditRestricted, IBugLinkTarget):
     """A Specification."""
 
     export_as_webservice_entry(as_of="beta")
 
-    @mutator_for(ISpecificationPublic['workitems_text'])
+    @mutator_for(ISpecificationView['workitems_text'])
     @operation_parameters(new_work_items=WorkItemsText())
     @export_write_operation()
     @operation_for_version('devel')
