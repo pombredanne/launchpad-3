@@ -108,6 +108,18 @@ class TestProductAddView(TestCaseWithFactory):
                 'field.disclaim_maintainer': 'off',
                 }
 
+    def test_view_data_model(self):
+        # The view's json request cache contains the expected data.
+        view = create_initialized_view(self.product_set, '+new')
+        cache = IJSONRequestCache(view.request)
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        self.assertContentEqual(
+            team_membership_policy_data,
+            cache.objects['team_membership_policy_data'])
+
     def test_staging_message_is_not_demo(self):
         view = create_initialized_view(self.product_set, '+new')
         message = find_tag_by_id(view.render(), 'staging-message')
