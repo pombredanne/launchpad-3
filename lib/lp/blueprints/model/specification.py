@@ -126,7 +126,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
     _defaultOrder = ['-priority', 'definition_status', 'name', 'id']
 
     # db field names
-
     name = StringCol(unique=True, notNull=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
