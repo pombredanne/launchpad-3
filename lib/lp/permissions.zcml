@@ -20,6 +20,11 @@
     access_level="write" />
 
   <permission
+    id="launchpad.AnyAllowedPerson"
+    title="Any Authenticated Person for public data; any person having grants on restricted objects."
+    access_level="write" />
+
+  <permission
     id="launchpad.Edit" title="Editing something" access_level="write" />
 
   <!-- Request large downloads, or other heavyweight jobs that are not

@@ -2601,10 +2601,8 @@ class BranchModerateTestCase(TestCaseWithFactory):
     def test_methods_smoketest(self):
         # Users with launchpad.Moderate can call transitionToInformationType.
         branch = self.factory.makeProductBranch()
-        with celebrity_logged_in('commercial_admin') as admin:
-            branch.product.setBranchSharingPolicy(
-                BranchSharingPolicy.PUBLIC, admin)
         with person_logged_in(branch.product.owner):
+            branch.product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
             branch.transitionToInformationType(
                 InformationType.PRIVATESECURITY, branch.product.owner)
         self.assertEqual(
@@ -3283,12 +3281,9 @@ class TestWebservice(TestCaseWithFactory):
         """Test transitionToInformationType() API arguments."""
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
-        with celebrity_logged_in('commercial_admin') as admin:
-            # XXX sinzui 2012-08-16: setBranchSharingPolicy() is guarded
-            # at this moment.
-            product.setBranchSharingPolicy(
-                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY, admin)
         with person_logged_in(product.owner):
+            product.setBranchSharingPolicy(
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
             db_branch = self.factory.makeBranch(product=product)
             launchpad = launchpadlib_for('test', db_branch.owner,
                 service_root=self.layer.appserver_root_url('api'))
