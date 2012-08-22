@@ -28,7 +28,11 @@ from lp.bugs.mail.handler import (
     MaloneHandler,
     )
 from lp.bugs.model.bugnotification import BugNotification
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BugSharingPolicy,
+    InformationType,
+    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import stub
@@ -48,6 +52,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
 class TestMaloneHandler(TestCaseWithFactory):
@@ -252,6 +257,24 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         self.assertEqual('borked\n affects fnord', bug.description)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
+
+    def test_new_bug_with_sharing_policy_proprietary(self):
+        project = self.factory.makeProduct(name='fnord')
+        self.factory.makeCommercialSubscription(product=project)
+        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        project.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY, comadmin)
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='borked\n affects fnord',
+                subject='subject borked',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual([project.owner], list(bug.getDirectSubscribers()))
+        self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
 
     def test_new_bug_with_one_misplaced_affects_line(self):
         # Affects commands in the wrong position are processed as the user

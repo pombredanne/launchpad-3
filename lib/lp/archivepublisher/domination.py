@@ -86,8 +86,13 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.publishing import inactive_publishing_status
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 # Days before a package will be removed from disk.
@@ -100,9 +105,6 @@ apt_pkg.init_system()
 
 def join_spph_spn():
     """Join condition: SourcePackagePublishingHistory/SourcePackageName."""
-    # Avoid circular imports.
-    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
     SPPH = SourcePackagePublishingHistory
     SPN = SourcePackageName
 
@@ -112,9 +114,6 @@ def join_spph_spn():
 def join_spph_spr():
     """Join condition: SourcePackageRelease/SourcePackagePublishingHistory.
     """
-    # Avoid circular imports.
-    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
     SPPH = SourcePackagePublishingHistory
     SPR = SourcePackageRelease
 
@@ -325,9 +324,6 @@ def find_live_binary_versions_pass_2(sorted_pubs, cache):
         has active arch-specific publications.
     :return: A list of live versions.
     """
-    # Avoid circular imports
-    from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-
     sorted_pubs = list(sorted_pubs)
     latest = sorted_pubs.pop(0)
     is_arch_specific = attrgetter('architecture_specific')
@@ -499,12 +495,6 @@ class Dominator:
         'scheduled deletion date' of now plus the defined 'stay of execution'
         time provided in the configuration parameter.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-            BinaryPackagePublishingHistory,
-            SourcePackagePublishingHistory,
-            )
-
         self.logger.debug("Beginning superseded processing...")
 
         for pub_record in binary_records:
@@ -572,9 +562,6 @@ class Dominator:
         publication is always kept published.  It will ignore publications
         that have no other publications competing for the same binary package.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
-
         BPPH = BinaryPackagePublishingHistory
         BPR = BinaryPackageRelease
 
@@ -666,9 +653,6 @@ class Dominator:
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
         """Compose ORM condition for restricting relevant source pubs."""
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
         SPPH = SourcePackagePublishingHistory
 
         return And(
@@ -689,9 +673,6 @@ class Dominator:
         publications that have no other publications competing for the same
         binary package.  There'd be nothing to do for those cases.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
         SPPH = SourcePackagePublishingHistory
         SPR = SourcePackageRelease
 
@@ -749,9 +730,6 @@ class Dominator:
         Returns an iterable of tuples: (name of source package, number of
         publications in Published state).
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
         looking_for = (
             SourcePackageName.name,
             Count(SourcePackagePublishingHistory.id),
@@ -765,9 +743,6 @@ class Dominator:
 
     def findPublishedSPPHs(self, distroseries, pocket, package_name):
         """Find currently published source publications for given package."""
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
         SPPH = SourcePackagePublishingHistory
         SPR = SourcePackageRelease
 
@@ -806,12 +781,6 @@ class Dominator:
 
     def judge(self, distroseries, pocket):
         """Judge superseded sources and binaries."""
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-             BinaryPackagePublishingHistory,
-             SourcePackagePublishingHistory,
-             )
-
         sources = SourcePackagePublishingHistory.select("""
             sourcepackagepublishinghistory.distroseries = %s AND
             sourcepackagepublishinghistory.archive = %s AND

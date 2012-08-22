@@ -19,6 +19,7 @@ from lp.archivepublisher.scripts.generate_contents_files import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.tests import run_script
 from lp.services.utils import file_exists
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
@@ -319,7 +320,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
 
     def test_run_script(self):
         # The script will run stand-alone.
-        from lp.services.scripts.tests import run_script
         self.layer.force_dirty_database()
         retval, out, err = run_script(
             'cronscripts/generate-contents-files.py', ['-d', 'ubuntu', '-q'])

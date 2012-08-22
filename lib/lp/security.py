@@ -45,6 +45,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationPublic,
+    ISpecificationView,
     )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
@@ -517,6 +518,27 @@ class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
 
     permission = 'launchpad.View'
     usedfor = ISpecificationPublic
+
+
+class ViewSpecification(AuthorizationBase):
+
+    permission = 'launchpad.LimitedView'
+    usedfor = ISpecificationView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class EditWhiteboardSpecification(ViewSpecification):
+
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = ISpecificationView
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditSpecificationByRelatedPeople(AuthorizationBase):
@@ -2095,6 +2117,19 @@ class EditBranch(AuthorizationBase):
                 and user.inTeam(code_import.registrant)))
 
 
+class ModerateBranch(EditBranch):
+    """The owners, product owners, and admins can moderate branches."""
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        if super(ModerateBranch, self).checkAuthenticated(user):
+            return True
+        branch = self.obj
+        if branch.product is not None and user.inTeam(branch.product.owner):
+            return True
+        return user.in_commercial_admin
+
+
 def can_upload_linked_package(person_role, branch):
     """True if person may upload the package linked to `branch`."""
     # No associated `ISuiteSourcePackage` data -> not an official branch.
@@ -2430,9 +2465,6 @@ class AppendArchive(AuthorizationBase):
     PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
-
-    Appending to ubuntu main archives can also be done by the
-    'ubuntu-security' celebrity.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
@@ -2445,12 +2477,6 @@ class AppendArchive(AuthorizationBase):
             return True
 
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
-            return True
-
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (self.obj.is_main and
-            self.obj.distribution == celebrities.ubuntu and
-            user.in_ubuntu_security):
             return True
 
         return False
