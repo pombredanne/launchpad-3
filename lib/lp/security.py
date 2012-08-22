@@ -45,6 +45,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationPublic,
+    ISpecificationView,
     )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
@@ -517,6 +518,27 @@ class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
 
     permission = 'launchpad.View'
     usedfor = ISpecificationPublic
+
+
+class ViewSpecification(AuthorizationBase):
+
+    permission = 'launchpad.LimitedView'
+    usedfor = ISpecificationView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class EditWhiteboardSpecification(ViewSpecification):
+
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = ISpecificationView
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditSpecificationByRelatedPeople(AuthorizationBase):
