@@ -71,6 +71,7 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.registry.enums import FREE_INFORMATION_TYPES
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
     IAccessPolicyGrantSource,
@@ -1086,18 +1087,19 @@ class UnusedSharingPolicyPruner(TunableLoop):
         products = list(self.findProducts()[:chunk_size])
         for product in products:
             allowed_bug_policies = set(
-                BUG_POLICY_ALLOWED_TYPES.get(product.bug_sharing_policy, []))
+                BUG_POLICY_ALLOWED_TYPES.get(
+                    product.bug_sharing_policy, FREE_INFORMATION_TYPES))
             allowed_branch_policies = set(
                 BRANCH_POLICY_ALLOWED_TYPES.get(
-                    product.branch_sharing_policy, []))
-            access_polices = set(
+                    product.branch_sharing_policy, FREE_INFORMATION_TYPES))
+            access_policies = set(
                 getUtility(IAccessPolicySource).findByPillar([product]))
-            candidate_aps = access_polices.difference(
+            candidate_aps = access_policies.difference(
                 allowed_bug_policies, allowed_branch_policies)
-            apas = getUtility(IAccessPolicyArtifactSource).findByPolicy(
-                candidate_aps)
-            used_aps = set([apa.policy for apa in apas])
-            unused_aps = candidate_aps - used_aps
+            apa_source = getUtility(IAccessPolicyArtifactSource)
+            unused_aps = [
+                ap for ap in candidate_aps
+                if apa_source.findByPolicy([ap]).is_empty()]
             getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
             for ap in unused_aps:
                 self.store.remove(ap)
