@@ -2925,6 +2925,16 @@ class TestBranchSetTarget(TestCaseWithFactory):
         branch.setTarget(user=branch.owner)
         self.assertEqual(branch.owner, branch.target.context)
 
+    def test_private_junk_branches_forbidden_for_public_teams(self):
+        # Only private teams can have private junk branches.
+        owner = self.factory.makeTeam()
+        branch = self.factory.makeBranch(
+            owner=owner,
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            self.assertRaises(
+                BranchTargetError, branch.setTarget, branch.owner)
+
     def test_reconciles_access(self):
         # setTarget calls _reconcileAccess to make the sharing schema
         # match the new target.
