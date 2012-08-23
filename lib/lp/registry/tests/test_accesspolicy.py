@@ -737,5 +737,5 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
             IStore(ap).remove(ap)
         bug = self.factory.makeBug(target=product)
         self.assertRaises(
-            ValueError, reconcile_access_for_artifact, bug,
+            AssertionError, reconcile_access_for_artifact, bug,
             InformationType.USERDATA, [product])

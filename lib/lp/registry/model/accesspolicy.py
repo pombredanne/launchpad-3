@@ -68,7 +68,7 @@ def reconcile_access_for_artifact(artifact, information_type, pillars):
     aps = getUtility(IAccessPolicySource).find(
         (pillar, information_type) for pillar in pillars)
     if len(pillars) != aps.count():
-        raise ValueError("All pillars require access policies.")
+        raise AssertionError("All pillars require access policies.")
 
     # Now determine the existing and desired links, and make them
     # match.
