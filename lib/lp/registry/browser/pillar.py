@@ -266,6 +266,7 @@ class PillarViewMixin():
     def initialize(self):
         # Insert close team membership policy data into the json cache.
         # This data is used for the maintainer and driver pickers.
+        super(PillarViewMixin, self).initialize()
         cache = IJSONRequestCache(self.request)
         policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
         team_membership_policy_data = vocabulary_to_choice_edit_items(

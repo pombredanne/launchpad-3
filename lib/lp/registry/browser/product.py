@@ -2214,7 +2214,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             self.next_url = self._return_url
 
 
-class ProductAddView(MultiStepView):
+class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title
