@@ -19,8 +19,6 @@ ALTER TABLE accesspolicy ADD CONSTRAINT has_target
 ALTER TABLE ONLY accesspolicy
     ADD CONSTRAINT accesspolicy_person_fkey FOREIGN KEY (person) REFERENCES person(id);
 
-CREATE UNIQUE INDEX accesspolicy__person__key ON accesspolicy USING btree (person) WHERE (person IS NOT NULL);
-
 COMMENT ON TABLE AccessPolicy IS 'An access policy used to manage a project, distribution or private team''s artifacts.';
 COMMENT ON COLUMN AccessPolicy.person IS 'The private team that this policy is used on.';
 
