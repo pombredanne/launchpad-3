@@ -451,18 +451,6 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         self.assertRaises(
             EmailProcessingError, command.execute, bug_params, dummy_event)
 
-    def test_execute_bug_params_with_proprietary(self):
-        user = self.factory.makePerson()
-        login_person(user)
-        bug_params = CreateBugParams(title='bug title', owner=user)
-        command = InformationTypeEmailCommand(
-            'informationtype', ['proprietary'])
-        dummy_event = object()
-        self.assertRaisesWithContent(
-            EmailProcessingError, 'Proprietary bugs are forbidden to be '
-            'filed via the mail interface.', command.execute, bug_params,
-            dummy_event)
-
 
 class SubscribeEmailCommandTestCase(TestCaseWithFactory):
 
