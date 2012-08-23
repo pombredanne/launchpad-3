@@ -21,7 +21,6 @@ from testtools.matchers import (
     )
 from zope.component import (
     getMultiAdapter,
-    getUtility,
     )
 
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
@@ -30,7 +29,6 @@ from lp.registry.enums import (
     BugSharingPolicy,
     InformationType,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
 from lp.services.webapp import snapshot
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -52,7 +50,6 @@ from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
-    COMMERCIAL_ADMIN_EMAIL,
     USER_EMAIL,
     )
 
@@ -414,9 +411,9 @@ class BugSetTestCase(TestCaseWithFactory):
         # to the project's bug sharing policy.
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        project.setBugSharingPolicy(
-            BugSharingPolicy.PROPRIETARY_OR_PUBLIC, comadmin)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         webservice = launchpadlib_for('test', 'salgado')
         bugs_collection = webservice.load('/bugs')
         bug = bugs_collection.createBug(

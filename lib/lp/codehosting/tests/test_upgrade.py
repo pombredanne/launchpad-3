@@ -29,6 +29,7 @@ from lp.code.bzr import (
     )
 from lp.codehosting.bzrutils import read_locked
 from lp.codehosting.upgrade import Upgrader
+from lp.codehosting.tests.helpers import force_stacked_on_url
 from lp.services.config import config
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
@@ -55,16 +56,19 @@ class TestUpgrader(TestCaseWithFactory):
             bzr_branch = tree.branch
         return self.getUpgrader(bzr_branch, branch)
 
+    def getTargetDir(self, bzr_branch):
+        return self.useFixture(TempDir(
+            rootdir=dirname(config.codehosting.mirrored_branches_root))).path
+
     def getUpgrader(self, bzr_branch, branch):
         """Return an upgrader for the specified branches.
 
         :param bzr_branch: the bzr branch to use.
         :param branch: The DB branch to use.
         """
-        target_dir = self.useFixture(TempDir(
-            rootdir=dirname(config.codehosting.mirrored_branches_root))).path
         return Upgrader(
-            branch, target_dir, logging.getLogger(), bzr_branch)
+            branch, self.getTargetDir(bzr_branch), logging.getLogger(),
+            bzr_branch)
 
     def addTreeReference(self, tree):
         """Add a tree reference to a tree and commit.
@@ -270,3 +274,12 @@ class TestUpgrader(TestCaseWithFactory):
             upgraded.repository._format.__class__)
         self.assertEqual(
             'foo', upgraded.repository.get_revision('prepare-commit').message)
+
+    def test_invalid_stacking(self):
+        """Upgrade tolerates branches stacked on different-format branches."""
+        self.useBzrBranches(direct_database=True)
+        target, target_tree = self.create_branch_and_tree(format='1.6')
+        trunk, trunk_tree = self.create_branch_and_tree(format='2a')
+        force_stacked_on_url(target_tree.branch, trunk_tree.branch.base)
+        Upgrader(target, self.getTargetDir(target_tree.branch),
+                 logging.getLogger())

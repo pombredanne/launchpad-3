@@ -29,7 +29,6 @@ from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -43,7 +42,6 @@ from lp.testing.pages import (
     find_main_content,
     find_tag_by_id,
     )
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -369,9 +367,8 @@ class TestFileBugViewBase(TestCaseWithFactory):
             removeSecurityProxy(product).private_bugs = True
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
-            comadmin = getUtility(IPersonSet).getByEmail(
-                COMMERCIAL_ADMIN_EMAIL)
-            product.setBugSharingPolicy(bug_sharing_policy, comadmin)
+            with person_logged_in(product.owner):
+                product.setBugSharingPolicy(bug_sharing_policy)
         with person_logged_in(product.owner):
             view = create_view(
                 product, '+filebug', method='POST', form=form,
@@ -447,9 +444,8 @@ class TestFileBugViewBase(TestCaseWithFactory):
         # correctly for a project with a proprietary sharing policy.
         product = self.factory.makeProduct(official_malone=True)
         self.factory.makeCommercialSubscription(product=product)
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY, comadmin)
         with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
             view = create_initialized_view(
                 product, '+filebug', principal=product.owner)
             html = view.render()
@@ -499,9 +495,8 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
             removeSecurityProxy(product).private_bugs = True
         if bug_sharing_policy:
             self.factory.makeCommercialSubscription(product=product)
-            comadmin = getUtility(IPersonSet).getByEmail(
-                COMMERCIAL_ADMIN_EMAIL)
-            product.setBugSharingPolicy(bug_sharing_policy, comadmin)
+            with person_logged_in(product.owner):
+                product.setBugSharingPolicy(bug_sharing_policy)
         anyone = self.factory.makePerson()
         with person_logged_in(anyone):
             view = create_initialized_view(

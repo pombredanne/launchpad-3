@@ -556,16 +556,6 @@ class TestBug(TestCaseWithFactory):
         self.assertThat(
             recorder2, HasQueryCount(Equals(recorder1.count)))
 
-    def test_transitionToInformationType_forbids_proprietary(self):
-        # Calling IBug.transitionToInformationType(PROPRIETARY) over the API
-        # is forbidden currently.
-        bug = self.factory.makeBug()
-        with person_logged_in(bug.owner):
-            self.assertRaisesWithContent(
-                BugCannotBePrivate, "Cannot transition the information type "
-                "to proprietary.", bug.transitionToInformationType,
-                InformationType.PROPRIETARY, bug.owner, True)
-
 
 class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
