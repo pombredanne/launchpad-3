@@ -17,8 +17,6 @@ A product with private bugs by default must always have a bug supervisor
     >>> landscape.private_bugs
     True
 
-    >>> login('foo.bar@canonical.com')
-    >>> landscape.security_contact = name16
     >>> login('no-priv@canonical.com')
 
     >>> bug_params = CreateBugParams(
@@ -47,7 +45,7 @@ related bug.
     >>> security_bug_params = CreateBugParams(
     ...     owner=no_priv, title='Security bug',
     ...     comment='A monkey took my GPG keys.',
-    ...     information_type=InformationType.EMBARGOEDSECURITY)
+    ...     information_type=InformationType.PRIVATESECURITY)
     >>> security_bug = landscape.createBug(security_bug_params)
     >>> [security_bug_task] = security_bug.bugtasks
     >>> security_bug_task.bug.private
@@ -59,9 +57,6 @@ For a security related bug, the security contact or the product owner
     >>> security_bug_task.bug.security_related
     True
 
-    >>> landscape.security_contact.name
-    u'name16'
-
     >>> sorted(
     ...     sub.name for sub in security_bug_task.bug.getDirectSubscribers())
-    [u'name16', u'no-priv']
+    [u'no-priv']

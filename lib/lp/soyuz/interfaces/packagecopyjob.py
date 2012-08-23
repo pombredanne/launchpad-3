@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -128,7 +128,7 @@ class IPlainPackageCopyJobSource(IJobSource):
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
-               sponsored=None):
+               sponsored=None, unembargo=False, auto_approve=False):
         """Create a new `IPlainPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -146,11 +146,16 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param requester: The user requesting the copy.
         :param sponsored: The user who is being sponsored to make the copy.
             The person who is making this request then becomes the sponsor.
+        :param unembargo: See `do_copy`.
+        :param auto_approve: if True and the user requesting the sync has
+            queue admin permissions on the target, accept the copy
+            immediately rather than setting it to unapproved.
         """
 
     def createMultiple(target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
-                       include_binaries=False):
+                       include_binaries=False, unembargo=False,
+                       auto_approve=False):
         """Create multiple new `IPlainPackageCopyJob`s at once.
 
         :param target_distroseries: The `IDistroSeries` to which to copy the
@@ -161,7 +166,11 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param requester: The user requesting the copy.
         :param copy_policy: Applicable `PackageCopyPolicy`.
         :param include_binaries: As in `do_copy`.
+        :param unembargo: As in `do_copy`.
         :return: An iterable of `PackageCopyJob` ids.
+        :param auto_approve: if True and the user requesting the sync has
+            queue admin permissions on the target, accept the copy
+            immediately rather than setting it to unapproved.
         """
 
     def getActiveJobs(target_archive):
@@ -210,6 +219,14 @@ class IPlainPackageCopyJob(IRunnableJob):
         schema=IPerson, title=_('Sponsored Person'),
         required=False, readonly=True)
 
+    unembargo = Bool(
+        title=_("Unembargo restricted files"),
+        required=False, readonly=True)
+
+    auto_approve = Bool(
+        title=_("Automatic approval"),
+        required=False, readonly=True)
+
     def addSourceOverride(override):
         """Add an `ISourceOverride` to the metadata."""
 
@@ -222,3 +239,9 @@ class IPlainPackageCopyJob(IRunnableJob):
     copy_policy = Choice(
         title=_("Applicable copy policy"),
         values=PackageCopyPolicy, required=True, readonly=True)
+
+    def getOperationDescription():
+        """Return a description of the copy operation."""
+
+    def getErrorRecipients():
+        """Return a list of email-ids to notify about copy errors."""

@@ -43,7 +43,7 @@ The page contains a few interesting details about team membership.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
-    Subscription policy:
+    Membership policy:
     Moderated Team
 
     >>> print extract_text(
@@ -94,20 +94,20 @@ join a team.
     Show received invitations
 
 If the team does not have any recently approved, proposed, or invited
-members, the empty lists are hidden using the "unseen" css class:
+members, the empty lists are hidden using the "hidden" css class:
 
     >>> browser.open('http://launchpad.dev/~launchpad')
     >>> tag = find_tag_by_id(browser.contents, 'recently-approved')
     >>> print tag['class']
-    unseen
+    hidden
 
     >>> tag = find_tag_by_id(browser.contents, 'recently-proposed')
     >>> print tag['class']
-    unseen
+    hidden
 
     >>> tag = find_tag_by_id(browser.contents, 'recently-invited')
     >>> print tag['class']
-    unseen
+    hidden
 
 In the above case there's no user logged in, so it doesn't actually show
 what's the user's involvement with the team. If the user logs in, he'll see
@@ -142,7 +142,7 @@ address:
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'contact-email'))
     Email:
-    No contact email
+    None, members emailed directly
     Set contact address
     >>> print extract_text(
     ...     find_tag_by_id(sample_browser.contents, 'contact-user'))

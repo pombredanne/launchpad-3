@@ -106,9 +106,6 @@ dev: test
 # database schema, full text indexes and grants into it.
 # It will also create session DBs for the test and dev environments.
 # No sample data is added at this point.
-# NB. PG 9.1 has plpgsql installed in the template databases.
-# We can remove the stanzas that install plpgsql when we no longer support
-# PG 8.4.
 create:
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
@@ -129,18 +126,10 @@ create:
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template0 ${SESSION_DBNAME} ; \
-	    if [ "$$((`createlang -l ${SESSION_DBNAME} \
-		| grep plpgsql | wc -l`))" = '0' ]; \
-		then createlang plpgsql ${SESSION_DBNAME}; \
-	    fi; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
 	@ ${CREATEDB} template0 ${TEST_SESSION_DBNAME}
-	@if [ "$$((`createlang -l ${TEST_SESSION_DBNAME} \
-	    | grep plpgsql | wc -l`))" = '0' ]; \
-	    then createlang plpgsql ${TEST_SESSION_DBNAME}; \
-	fi
 	@ psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file

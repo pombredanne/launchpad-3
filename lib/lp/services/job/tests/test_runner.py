@@ -4,6 +4,7 @@
 """Tests for job-running facilities."""
 
 import logging
+import re
 import sys
 from textwrap import dedent
 from time import sleep
@@ -375,6 +376,16 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertEqual(JobStatus.SUSPENDED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
+
+    def test_taskId(self):
+        # BaseRunnableJob.taskId() creates a task ID that consists
+        # of the Job's class name, the job ID and a UUID.
+        job = NullJob(completion_message="doesn't matter")
+        task_id = job.taskId()
+        uuid_expr = (
+            '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+        mo = re.search('^NullJob_%s_%s$' % (job.job_id, uuid_expr), task_id)
+        self.assertIsNot(None, mo)
 
 
 class StaticJobSource(BaseRunnableJob):

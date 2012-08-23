@@ -446,10 +446,15 @@
         permission="launchpad.View"
         interface="lp.app.interfaces.launchpad.IPrivacy
                    lp.code.interfaces.branch.IBranchAnyone
+                   lp.code.interfaces.branch.IBranchModerateAttributes
                    lp.code.interfaces.branch.IBranchEditableAttributes
                    lp.code.interfaces.branch.IBranchPublic
                    lp.code.interfaces.branch.IBranchView"
         attributes="merge_queue merge_queue_config"/>
+    <require
+        permission="launchpad.Moderate"
+        interface="lp.code.interfaces.branch.IBranchModerate"
+        set_schema="lp.code.interfaces.branch.IBranchModerateAttributes" />
     <require
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branch.IBranchEdit"

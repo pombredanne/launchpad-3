@@ -27,7 +27,7 @@
               <input type="submit" id="tryagain.actions.tryagain"
                  name="tryagain.actions.tryagain" value="Try Again"
                  class="button"  />
-              <a href="#" class="unseen sprite retry"
+              <a href="#" class="hidden sprite retry"
                 id="tryagainlink">Try again</a>
               <script type="text/javascript">
                   LPJS.use('lp.code.util', function(Y) {
@@ -164,7 +164,7 @@
             tal:define="link context_menu/edit_import"
             tal:condition="link/enabled"
             >
-            <a id="linkbug"
+            <a id="edit-import"
                class="sprite add"
                tal:attributes="href link/url"
                tal:content="link/text" />

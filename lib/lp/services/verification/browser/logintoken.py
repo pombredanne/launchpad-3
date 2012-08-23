@@ -206,14 +206,14 @@ class ClaimTeamView(
 
     schema = ITeam
     field_names = [
-        'teamowner', 'displayname', 'teamdescription', 'subscriptionpolicy',
+        'teamowner', 'displayname', 'description', 'membership_policy',
         'defaultmembershipperiod', 'renewal_policy', 'defaultrenewalperiod']
     label = 'Claim Launchpad team'
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget('description', TextAreaWidget, height=10, width=30)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'membership_policy', LaunchpadRadioWidget, orientation='vertical')
 
     expected_token_types = (LoginTokenType.TEAMCLAIM,)
 
@@ -246,7 +246,7 @@ class ClaimTeamView(
         try:
             self.claimed_profile.convertToTeam(
                 team_owner=self.context.requester)
-        except AlreadyConvertedException, e:
+        except AlreadyConvertedException as e:
             self.request.response.addErrorNotification(e)
             self.context.consume()
             return
@@ -316,7 +316,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
         try:
             signature = getUtility(IGPGHandler).getVerifiedSignature(
                 signedcontent.encode('ASCII'))
-        except (GPGVerificationError, UnicodeEncodeError), e:
+        except (GPGVerificationError, UnicodeEncodeError) as e:
             self.addError(_(
                 'Launchpad could not verify your signature: ${err}',
                 mapping=dict(err=str(e))))
@@ -401,7 +401,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 'YOU</kdb>). Try later or <a href="${url}/+editpgpkeys"> '
                 'cancel your request</a>.',
                 mapping=dict(fingerprint=fingerprint, url=person_url))))
-        except GPGKeyRevoked, e:
+        except GPGKeyRevoked as e:
             # If key is globally revoked, skip the import and consume the
             # token.
             self.addError(
@@ -412,7 +412,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 'process to <a href="${url}/+editpgpkeys">find and '
                 'import</a> the new key.',
                 mapping=dict(key=e.key.keyid, url=person_url))))
-        except GPGKeyExpired, e:
+        except GPGKeyExpired as e:
             self.addError(
                         structured(_(
                 'The key ${key} cannot be validated because it has expired. '
@@ -600,7 +600,7 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
             self.mergeCompleted = False
             return
         getUtility(IPersonSet).mergeAsync(
-            self.dupe, requester, reviewer=requester)
+            self.dupe, requester, requester, reviewer=requester)
         merge_message = _(
             'A merge is queued and is expected to complete in a few minutes.')
         self.request.response.addInfoNotification(merge_message)

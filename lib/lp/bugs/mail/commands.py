@@ -39,6 +39,7 @@ from lp.bugs.interfaces.bug import (
     IBugAddForm,
     IBugSet,
     )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -46,18 +47,17 @@ from lp.bugs.interfaces.bugtask import (
     IllegalTarget,
     )
 from lp.bugs.interfaces.cve import ICveSet
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.mail.commands import (
     EditEmailCommand,
     EmailCommand,
@@ -185,12 +185,14 @@ class PrivateEmailCommand(EmailCommand):
                 stop_processing=True)
 
         if isinstance(context, CreateBugParams):
-            if private and (
-                context.information_type == InformationType.PUBLIC):
-                context.information_type = InformationType.USERDATA
-            elif (
-                context.information_type !=
-                InformationType.EMBARGOEDSECURITY):
+            if private:
+                # "private yes" forces it to Private if it isn't already.
+                if (context.information_type is None
+                    or context.information_type in PUBLIC_INFORMATION_TYPES):
+                    context.information_type = InformationType.USERDATA
+            elif context.information_type != InformationType.PRIVATESECURITY:
+                # "private no" forces it to Public, except we always
+                # force new security bugs to be private.
                 context.information_type = InformationType.PUBLIC
             return context, current_event
 
@@ -245,7 +247,7 @@ class SecurityEmailCommand(EmailCommand):
 
         if isinstance(context, CreateBugParams):
             if security_related:
-                context.information_type = InformationType.EMBARGOEDSECURITY
+                context.information_type = InformationType.PRIVATESECURITY
             return context, current_event
 
         # Take a snapshot.
@@ -371,6 +373,7 @@ class SummaryEmailCommand(EditEmailCommand):
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
     RANK = 1
+    case_insensitive_args = False
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -432,7 +435,7 @@ class DuplicateEmailCommand(EmailCommand):
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
-        except ValidationError, error:
+        except ValidationError as error:
             raise EmailProcessingError(error.doc())
 
         context_snapshot = Snapshot(
@@ -451,6 +454,7 @@ class CVEEmailCommand(EmailCommand):
 
     _numberOfArguments = 1
     RANK = 5
+    case_insensitive_args = False
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -590,18 +594,19 @@ class AffectsEmailCommand(EmailCommand):
                 stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
-        except BugTargetNotFound, error:
+        except BugTargetNotFound as error:
             raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
 
         if isinstance(bug, CreateBugParams):
             # Enough information has been gathered to create a new bug.
-            kwargs = {
-                'product': IProduct(bug_target, None),
-                'distribution': IDistribution(bug_target, None),
-                'sourcepackagename': ISourcePackageName(bug_target, None),
-                }
-            bug.setBugTarget(**kwargs)
+            # If a series task is requested, create the non-series
+            # equivalent here. The series will be nominated/targeted in
+            # the remainder of the method.
+            if ISeriesBugTarget.providedBy(bug_target):
+                bug.target = bug_target.bugtarget_parent
+            else:
+                bug.target = bug_target
             bug, bug_event = getUtility(IBugSet).createBug(
                 bug, notify_event=False)
             event = ObjectCreatedEvent(bug.bugtasks[0])
@@ -636,28 +641,13 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event, bug_event
 
-    def _targetBug(self, user, bug, series, sourcepackagename=None):
+    def _targetBug(self, user, bug, target):
         """Try to target the bug the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.
         """
-        product = None
-        distribution = None
-        if IDistroSeries.providedBy(series):
-            distribution = series.distribution
-            if sourcepackagename:
-                general_target = distribution.getSourcePackage(
-                    sourcepackagename)
-            else:
-                general_target = distribution
-        else:
-            assert IProductSeries.providedBy(series), (
-                "Unknown series target: %r" % series)
-            assert sourcepackagename is None, (
-                "A product series can't have a source package.")
-            product = series.product
-            general_target = product
+        general_target = target.bugtarget_parent
         general_task = bug.getBugTask(general_target)
         if general_task is None:
             # A series task has to have a corresponding
@@ -667,22 +657,18 @@ class AffectsEmailCommand(EmailCommand):
         # We know the target is of the right type, and we just created
         # a pillar task, so if canBeNominatedFor == False then a task or
         # nomination must already exist.
-        if not bug.canBeNominatedFor(series):
+        if not bug.canBeNominatedFor(target.series):
             # A nomination has already been created.
-            nomination = bug.getNominationFor(series)
+            nomination = bug.getNominationFor(target.series)
         else:
-            nomination = bug.addNomination(target=series, owner=user)
+            nomination = bug.addNomination(target=target.series, owner=user)
 
         # Automatically approve an existing or new nomination if possible.
         if not nomination.isApproved() and nomination.canApprove(user):
             nomination.approve(user)
 
         if nomination.isApproved():
-            if sourcepackagename:
-                return bug.getBugTask(
-                    series.getSourcePackage(sourcepackagename))
-            else:
-                return bug.getBugTask(series)
+            return bug.getBugTask(target)
         else:
             # We can't return a nomination, so return the
             # distribution/product bugtask instead.
@@ -691,13 +677,8 @@ class AffectsEmailCommand(EmailCommand):
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
         user = getUtility(ILaunchBag).user
-        if (IProductSeries.providedBy(bug_target) or
-            IDistroSeries.providedBy(bug_target)):
+        if ISeriesBugTarget.providedBy(bug_target):
             return self._targetBug(user, bug, bug_target)
-        elif ISourcePackage.providedBy(bug_target):
-            return self._targetBug(
-                user, bug, bug_target.distroseries,
-                bug_target.sourcepackagename)
         else:
             return bug.addTask(user, bug_target)
 
@@ -830,10 +811,6 @@ class InformationTypeEmailCommand(DBSchemaEditEmailCommand):
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
         user = getUtility(ILaunchBag).user
-        if attr_value == InformationType.PROPRIETARY:
-            raise EmailProcessingError(
-                'Proprietary bugs are forbidden to be filed via the mail '
-                'interface.')
         if isinstance(context, CreateBugParams):
             context.information_type = attr_value
         else:

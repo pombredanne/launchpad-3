@@ -5,8 +5,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 """Testing infrastructure for the Launchpad application.
 
 This module should not contain tests (but it should be tested).
@@ -43,6 +41,7 @@ from StringIO import StringIO
 import sys
 from textwrap import dedent
 from types import InstanceType
+import uuid
 import warnings
 
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
@@ -76,6 +75,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -90,6 +90,7 @@ from lp.bugs.interfaces.cve import (
     CveStatus,
     ICveSet,
     )
+from lp.bugs.model.bug import FileBugData
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -139,6 +140,7 @@ from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     InformationType,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -185,7 +187,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     PersonCreationRationale,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.poll import (
@@ -244,6 +245,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
+from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
 from lp.services.utils import AutoDecorate
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import (
@@ -528,17 +530,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     @with_celebrity_logged_in('admin')
     def makeAdministrator(self, name=None, email=None):
-        user = self.makePerson(name=name, email=email)
-        administrators = getUtility(ILaunchpadCelebrities).admin
-        administrators.addMember(user, administrators.teamowner)
-        return user
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).admin])
 
     @with_celebrity_logged_in('admin')
     def makeRegistryExpert(self, name=None, email='expert@example.com'):
-        user = self.makePerson(name=name, email=email)
-        registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-        registry_team.addMember(user, registry_team.teamowner)
-        return user
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).registry_experts])
+
+    @with_celebrity_logged_in('admin')
+    def makeCommercialAdmin(self, name=None, email=None):
+        return self.makePerson(
+            name=name, email=email,
+            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -596,7 +602,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePerson(
         self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
-        time_zone=None, latitude=None, longitude=None, homepage_content=None,
+        time_zone=None, latitude=None, longitude=None, description=None,
         selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
@@ -625,8 +631,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
-        if homepage_content is not None:
-            naked_person.homepage_content = homepage_content
+        if description is not None:
+            naked_person.description = description
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
@@ -737,7 +743,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  description=None, icon=None, logo=None,
-                 subscription_policy=TeamSubscriptionPolicy.OPEN,
+                 membership_policy=TeamMembershipPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
 
@@ -752,8 +758,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :type email: string
         :param icon: The team's icon.
         :param logo: The team's logo.
-        :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamSubscriptionPolicy`
+        :param membership_policy: The membership policy of the team.
+        :type membership_policy: `TeamMembershipPolicy`
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
@@ -774,8 +780,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname, teamdescription=description,
-            subscriptionpolicy=subscription_policy)
+            owner, name, displayname, description,
+            membership_policy=membership_policy)
         naked_team = removeSecurityProxy(team)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
@@ -947,7 +953,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, private_bugs=False,
-        driver=None, security_contact=None, icon=None):
+        driver=None, icon=None, bug_sharing_policy=None,
+        branch_sharing_policy=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -986,10 +993,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:
             naked_product.driver = driver
-        if security_contact is not None:
-            naked_product.security_contact = security_contact
         if private_bugs:
             naked_product.private_bugs = private_bugs
+        if branch_sharing_policy:
+            naked_product.branch_sharing_policy = branch_sharing_policy
+        if bug_sharing_policy:
+            naked_product.bug_sharing_policy = bug_sharing_policy
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1441,9 +1450,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 product=None, initial_comment=None,
                                 source_branch=None, preview_diff=None,
                                 date_created=None, description=None,
-                                reviewer=None):
+                                reviewer=None, merged_revno=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
+            target_branch = removeSecurityProxy(target_branch)
             target = target_branch.target
         elif source_branch is not None:
             target = source_branch.target
@@ -1475,6 +1485,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
+        unsafe_proposal.merged_revno = merged_revno
         if preview_diff is not None:
             unsafe_proposal.preview_diff = preview_diff
         if (set_state is None or
@@ -1638,71 +1649,59 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id=None, sequence=None,
+    def makeBranchRevision(self, branch=None, revision_id=None, sequence=None,
                            parent_ids=None, revision_date=None):
+        if branch is None:
+            branch = self.makeBranch()
+        else:
+            branch = removeSecurityProxy(branch)
         revision = self.makeRevision(
             rev_id=revision_id, parent_ids=parent_ids,
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                information_type=InformationType.PUBLIC, date_closed=None,
-                title=None, date_created=None, description=None,
-                comment=None, status=None, distribution=None, milestone=None,
-                series=None, tags=None, sourcepackagename=None):
+    def makeBug(self, target=None, owner=None, bug_watch_url=None,
+                information_type=None, date_closed=None, title=None,
+                date_created=None, description=None, comment=None,
+                status=None, milestone=None, series=None, tags=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
 
-        :param product: If the product is not set, and if the parameter
-            distribution, milestone, and series are not set, a product
-            is created and this is used as the primary bug target.
+        :param target: The initial bug target. If not specified, falls
+            back to the milestone target, then the series target, then a
+            new product.
         :param owner: The reporter of the bug. If not set, one is created.
         :param bug_watch_url: If specified, create a bug watch pointing
             to this URL.
-        :param distribution: If set, the distribution is used as the
-            default bug target.
-        :param milestone: If set, the milestone.target must match the product
-            or distribution parameters, or the those parameters must be None.
-        :param series: If set, the series.product must match the product
-            parameter, or the series.distribution must match the distribution
-            parameter, or those parameters must be None.
+        :param milestone: If set, the milestone.target must match the
+            target parameter's pillar.
+        :param series: If set, the series's pillar must match the target
+            parameter's.
         :param tags: If set, the tags to be added with the bug.
-        :param distribution: If set, the sourcepackagename is used as the
-            default bug target.
-        At least one of the parameters distribution and product must be
-        None, otherwise, an assertion error will be raised.
         """
-        if product is None and distribution is None:
+        if target is None:
             if milestone is not None:
-                # One of these will be None.
-                product = milestone.product
-                distribution = milestone.distribution
+                target = milestone.target
             elif series is not None:
-                if IProductSeries.providedBy(series):
-                    product = series.product
-                else:
-                    distribution = series.distribution
+                target = series.pillar
             else:
-                product = self.makeProduct()
+                target = self.makeProduct()
+        if IDistributionSourcePackage.providedBy(target):
+            self.makeSourcePackagePublishingHistory(
+                distroseries=target.distribution.currentseries,
+                sourcepackagename=target.sourcepackagename)
         if owner is None:
             owner = self.makePerson()
         if title is None:
             title = self.getUniqueString('bug-title')
         if comment is None:
             comment = self.getUniqueString()
-        if sourcepackagename is not None:
-            self.makeSourcePackagePublishingHistory(
-                distroseries=distribution.currentseries,
-                sourcepackagename=sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
-            status=status, tags=tags)
-        create_bug_params.setBugTarget(
-            product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            status=status, tags=tags, target=target)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
@@ -2412,9 +2411,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          registrant=None, members=None, title=None,
                          aliases=None, bug_supervisor=None, driver=None,
-                         security_contact=None, publish_root_dir=None,
-                         publish_base_url=None, publish_copy_base_url=None,
-                         no_pubconf=False, icon=None, summary=None):
+                         publish_root_dir=None, publish_base_url=None,
+                         publish_copy_base_url=None, no_pubconf=False,
+                         icon=None, summary=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2442,8 +2441,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_distro.driver = driver
         if bug_supervisor is not None:
             naked_distro.bug_supervisor = bug_supervisor
-        if security_contact is not None:
-            naked_distro.security_contact = security_contact
         if not no_pubconf:
             self.makePublisherConfig(
                 distro, publish_root_dir, publish_base_url,
@@ -3308,7 +3305,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
-        subscription_policy=TeamSubscriptionPolicy.OPEN):
+        membership_policy=TeamMembershipPolicy.OPEN):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
@@ -3318,8 +3315,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param visibility: The team's visibility. If it's None, the default
             (public) will be used.
         :type visibility: `PersonVisibility`
-        :param subscription_policy: The subscription policy of the team.
-        :type subscription_policy: `TeamSubscriptionPolicy`
+        :param membership_policy: The membership policy of the team.
+        :type membership_policy: `TeamMembershipPolicy`
         :return: The new team and mailing list.
         :rtype: (`ITeam`, `IMailingList`)
         """
@@ -3331,7 +3328,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             team = self.makeTeam(
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
-                subscription_policy=subscription_policy)
+                membership_policy=membership_policy)
         team_list = self.makeMailingList(team, owner)
         return team, team_list
 
@@ -3493,28 +3490,33 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             sourcepackagename=sourcepackagename, component=component))
         return upload
 
-    def makeBuildPackageUpload(self, distroseries=None,
-                               binarypackagename=None):
+    def makeBuildPackageUpload(self, distroseries=None, pocket=None,
+                               binarypackagename=None,
+                               source_package_release=None, component=None):
         """Make a `PackageUpload` with a `PackageUploadBuild` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         upload = self.makePackageUpload(
-            distroseries=distroseries, archive=distroseries.main_archive)
-        build = self.makeBinaryPackageBuild()
+            distroseries=distroseries, archive=distroseries.main_archive,
+            pocket=pocket)
+        build = self.makeBinaryPackageBuild(
+            source_package_release=source_package_release, pocket=pocket)
         upload.addBuild(build)
         self.makeBinaryPackageRelease(
-            binarypackagename=binarypackagename, build=build)
+            binarypackagename=binarypackagename, build=build,
+            component=component)
         return upload
 
-    def makeCustomPackageUpload(self, distroseries=None, custom_type=None,
-                                filename=None):
+    def makeCustomPackageUpload(self, distroseries=None, pocket=None,
+                                custom_type=None, filename=None):
         """Make a `PackageUpload` with a `PackageUploadCustom` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         if custom_type is None:
             custom_type = PackageUploadCustomFormat.DEBIAN_INSTALLER
         upload = self.makePackageUpload(
-            distroseries=distroseries, archive=distroseries.main_archive)
+            distroseries=distroseries, archive=distroseries.main_archive,
+            pocket=pocket)
         file_alias = self.makeLibraryFileAlias(filename=filename)
         upload.addCustom(file_alias, custom_type)
         return upload
@@ -3868,15 +3870,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source package as `bpph`, published into the same distroseries,
             pocket, and archive.
         """
-        # JeroenVermeulen 2011-08-25, bug=834370: Julian says this isn't
-        # very complete, and ignores architectures.  Improve so we can
-        # remove more of our reliance on the SoyuzTestPublisher.
         bpr = bpph.binarypackagerelease
-        spph = self.makeSourcePackagePublishingHistory(
+        return self.makeSourcePackagePublishingHistory(
             distroseries=bpph.distroarchseries.distroseries,
             sourcepackagerelease=bpr.build.source_package_release,
             pocket=bpph.pocket, archive=bpph.archive)
-        return spph
 
     def makeBinaryPackageName(self, name=None):
         """Make an `IBinaryPackageName`."""
@@ -4143,6 +4141,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
+
+    def makeProcessedApportBlob(self, metadata):
+        """Create a processed ApportJob with the specified metadata dict.
+
+        It doesn't actually run the job. It fakes it, and uses a fake
+        librarian file so as to work without the librarian.
+        """
+        blob = TemporaryBlobStorage(uuid=str(uuid.uuid1()), file_alias=1)
+        job = getUtility(IProcessApportBlobJobSource).create(blob)
+        job.job.start()
+        removeSecurityProxy(job).metadata = {
+            'processed_data': FileBugData(**metadata).asDict()}
+        job.job.complete()
+        return blob
 
     def makeLaunchpadService(self, person=None, version="devel"):
         if person is None:

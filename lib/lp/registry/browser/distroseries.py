@@ -289,7 +289,6 @@ class DistroSeriesOverviewMenu(
     @enabled_with_permission('launchpad.Edit')
     def initseries(self):
         enabled = (
-             getFeatureFlag('soyuz.derived_series_ui.enabled') is not None and
              not self.context.isInitializing() and
              not self.context.isInitialized())
         text = 'Initialize series'
@@ -760,17 +759,8 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         """Stub for the Javascript in the page to use."""
 
     @cachedproperty
-    def is_derived_series_feature_enabled(self):
-        return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
-
-    @cachedproperty
-    def show_derivation_not_yet_available(self):
-        return not self.is_derived_series_feature_enabled
-
-    @cachedproperty
     def show_derivation_form(self):
         return (
-            self.is_derived_series_feature_enabled and
             not self.show_previous_series_empty_message and
             not self.show_already_initializing_message and
             not self.show_already_initialized_message and
@@ -783,30 +773,23 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         # The distribution already has initialized series and this
         # distroseries has no previous_series.
         return (
-            self.is_derived_series_feature_enabled and
             self.context.distribution.has_published_sources and
             self.context.previous_series is None)
 
     @cachedproperty
     def show_already_initialized_message(self):
-        return (
-            self.is_derived_series_feature_enabled and
-            self.context.isInitialized())
+        return self.context.isInitialized()
 
     @cachedproperty
     def show_already_initializing_message(self):
-        return (
-            self.is_derived_series_feature_enabled and
-            self.context.isInitializing())
+        return self.context.isInitializing()
 
     @cachedproperty
     def show_no_publisher_message(self):
         distribution = self.context.distribution
         publisherconfigset = getUtility(IPublisherConfigSet)
         pub_config = publisherconfigset.getByDistribution(distribution)
-        return (
-            self.is_derived_series_feature_enabled and
-            pub_config is None)
+        return pub_config is None
 
     @property
     def next_url(self):
@@ -909,13 +892,6 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     show_packagesets = False
     # Search vocabulary.
     search_higher_parent_option = False
-
-    def initialize(self):
-        """Redirect to the derived series if the feature is not enabled."""
-        if not getFeatureFlag('soyuz.derived_series_ui.enabled'):
-            self.request.response.redirect(canonical_url(self.context))
-            return
-        super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
         # Owing to the design of Action/Actions in zope.formlib.form - actions
@@ -1293,12 +1269,12 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 dsd.parent_source_version,
                 dsd.parent_series.main_archive,
                 target_distroseries.main_archive,
+                target_distroseries,
                 PackagePublishingPocket.RELEASE,
             )
             for dsd in self.getUpgrades()]
         getUtility(IPlainPackageCopyJobSource).createMultiple(
-            target_distroseries, copies, self.user,
-            copy_policy=PackageCopyPolicy.MASS_SYNC)
+            copies, self.user, copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "

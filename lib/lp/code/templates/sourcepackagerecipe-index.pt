@@ -98,7 +98,7 @@
                       id="field.actions.build" value="Build now" />
               </form>
               <a id="request-daily-build"
-                 class="sprite source-package-recipe js-action unseen"
+                 class="sprite source-package-recipe js-action hidden"
                  tal:attributes="href link/url"
                  tal:content="link/text"/>
             </dd>
@@ -146,13 +146,13 @@
   </div>
 
   <script type="text/javascript">
-    LPJS.use('io-base', 'lp.ui', 'lp.code.requestbuild_overlay', function(Y) {
+    LPJS.use('io-base', 'lp.deprecated.ui', 'lp.code.requestbuild_overlay', function(Y) {
 
         Y.on('lp:context:deb_version_template:changed', function(e) {
-            Y.lp.ui.update_field('#debian-version dd', e.new_value);
+            Y.lp.deprecated.ui.update_field('#debian-version dd', e.new_value);
         });
         Y.on('lp:context:base_branch_link:changed', function(e) {
-            Y.lp.ui.update_field('#base-branch dd', e.new_value_html);
+            Y.lp.deprecated.ui.update_field('#base-branch dd', e.new_value_html);
         });
         Y.on('load', function() {
             Y.lp.code.requestbuild_overlay.hookUpDailyBuildsSchedule();

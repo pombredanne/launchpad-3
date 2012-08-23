@@ -251,6 +251,35 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         spr = spph.sourcepackagerelease
         self.assertEqual(spr.sourcepackagename.name, job.package_name)
         self.assertEqual(spr.version, job.package_version)
+        self.assertEqual(dest_series, job.target_distroseries)
+
+    def test_copy_asynchronously_handles_no_dest_series(self):
+        # If dest_series is None, copy_asynchronously creates jobs that will
+        # copy each source into the same distroseries in the target archive.
+        distribution = self.makeDistribution()
+        series_one = self.factory.makeDistroSeries(
+            distribution=distribution, registrant=self.person)
+        series_two = self.factory.makeDistroSeries(
+            distribution=distribution, registrant=self.person)
+        spph_one = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series_one, sourcepackagename="one",
+            maintainer=self.person, creator=self.person)
+        spph_two = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series_two, sourcepackagename="two",
+            maintainer=self.person, creator=self.person)
+        pocket = self.factory.getAnyPocket()
+        target_archive = self.factory.makeArchive(
+            owner=self.person, distribution=distribution)
+        copy_asynchronously(
+            [spph_one, spph_two], target_archive, None, pocket,
+            include_binaries=False, check_permissions=False,
+            person=self.person)
+        jobs = list(getUtility(IPlainPackageCopyJobSource).getActiveJobs(
+            target_archive))
+        self.assertEqual(2, len(jobs))
+        self.assertContentEqual(
+            [("one", spph_one.distroseries), ("two", spph_two.distroseries)],
+            [(job.package_name, job.target_distroseries) for job in jobs])
 
     def test_do_copy_goes_async_if_canCopySynchronously_says_so(self):
         # The view opts for asynchronous copying if canCopySynchronously

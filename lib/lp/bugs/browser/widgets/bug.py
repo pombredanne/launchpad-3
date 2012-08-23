@@ -11,6 +11,7 @@ __all__ = [
 
 import re
 
+from simplejson import dumps
 from zope.app.form.browser.textwidgets import (
     IntWidget,
     TextAreaWidget,
@@ -26,6 +27,8 @@ from zope.schema.interfaces import ConstraintNotSatisfied
 from lp.app.errors import NotFoundError
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
 
 
 class BugWidget(IntWidget):
@@ -101,7 +104,7 @@ class BugTagsWidgetBase:
     def getInputValue(self):
         try:
             return self._getInputValue()
-        except WidgetInputError, input_error:
+        except WidgetInputError as input_error:
             # The standard error message isn't useful at all. We look to
             # see if it's a ConstraintNotSatisfied error and change it
             # to a better one. For simplicity, we care only about the
@@ -134,6 +137,37 @@ class BugTagsWidget(BugTagsWidgetBase, TextWidget):
 
     def _getInputValue(self):
         return TextWidget.getInputValue(self)
+
+    def __call__(self):
+        """Return the input with a script."""
+        input_markup = super(BugTagsWidget, self).__call__()
+        script_markup = """
+            <a href="/+help-bugs/tag-search.html"
+               class="sprite maybe action-icon"
+               target="help">Tag search help</a>
+            <script type="text/javascript">
+            LPJS.use('event', 'lp.bugs.tags_entry', function(Y) {
+                %s
+                Y.on('domready', function(e) {
+                     Y.lp.bugs.tags_entry.setup_tag_complete(
+                         'input[id="field.%s"][type="text"]', official_tags);
+                     });
+                });
+            </script>
+            """ % (self.official_tags_js, self.context.__name__)
+        return input_markup + script_markup
+
+    @property
+    def official_tags_js(self):
+        """Return the JavaScript of bug tags used by the bug tag completer."""
+        bug_target = self.context.context
+        pillar_target = (
+            IProduct(bug_target, None) or IDistribution(bug_target, None))
+        if pillar_target is not None:
+            official_tags = list(pillar_target.official_bug_tags)
+        else:
+            official_tags = []
+        return 'var official_tags = %s;' % dumps(official_tags)
 
 
 class BugTagsFrozenSetWidget(BugTagsWidget):

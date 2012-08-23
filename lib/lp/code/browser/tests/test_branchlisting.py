@@ -32,10 +32,10 @@ from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
-    PersonVisibility,
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -46,6 +46,7 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
+    celebrity_logged_in,
     login_person,
     normalize_whitespace,
     person_logged_in,
@@ -66,7 +67,6 @@ from lp.testing.pages import (
     )
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
-    COMMERCIAL_ADMIN_EMAIL,
     )
 from lp.testing.views import (
     create_initialized_view,
@@ -752,8 +752,8 @@ class TestProjectGroupBranches(TestCaseWithFactory,
     def test_branch_visibility_link_commercial_admin(self):
         # A commercial admin will be displayed a link to define branch
         # visibility in the action portlet.
-        admin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        self._testBranchVisibilityLink(admin)
+        with celebrity_logged_in('commercial_admin') as admin:
+            self._testBranchVisibilityLink(admin)
 
     def test_branch_visibility_link_non_admin(self):
         # A non-admin will not see the action portlet.

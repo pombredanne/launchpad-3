@@ -12,13 +12,11 @@ __all__ = [
 
 
 from lazr.restful.interfaces import IJSONRequestCache
-from zope.publisher.interfaces import NotFound
 
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.productseries import ProductSeriesOverviewMenu
 from lp.registry.browser.sourcepackage import SourcePackageOverviewMenu
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -120,8 +118,6 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
         return check_permission('launchpad.Edit', self.context.productseries)
 
     def initialize(self):
-        if not getFeatureFlag('translations.sharing_information.enabled'):
-            raise NotFound(self.context, '+sharing-details')
         super(SourcePackageTranslationSharingDetailsView, self).initialize()
         if self.is_configuration_complete and not self.is_sharing():
             self.request.response.addInfoNotification(
@@ -165,7 +161,7 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
         else:
             classes = ['sprite', 'no']
         if disable:
-            classes.append('unseen')
+            classes.append('hidden')
         if lowlight:
             classes.append("lowlight")
         return ' '.join(classes)
@@ -174,13 +170,13 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     def configuration_complete_class(self):
         if self.is_configuration_complete:
             return ""
-        return "unseen"
+        return "hidden"
 
     @property
     def configuration_incomplete_class(self):
         if not self.is_configuration_complete:
             return ""
-        return "unseen"
+        return "hidden"
 
     @property
     def packaging_incomplete_class(self):

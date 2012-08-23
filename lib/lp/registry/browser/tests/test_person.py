@@ -19,16 +19,16 @@ import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonVisibility,
-    )
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.teammembership import (
@@ -56,9 +56,11 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
+    celebrity_logged_in,
     login,
     login_celebrity,
     login_person,
+    monkey_patch,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -119,11 +121,13 @@ class TestPersonIndexView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_is_merge_pending(self):
+    def test_isMergePending(self):
         dupe_person = self.factory.makePerson(name='finch')
         target_person = self.factory.makePerson()
+        requester = self.factory.makePerson()
         job_source = getUtility(IPersonMergeJobSource)
-        job_source.create(from_person=dupe_person, to_person=target_person)
+        job_source.create(from_person=dupe_person, to_person=target_person,
+                          requester=requester)
         view = create_initialized_view(dupe_person, name="+index")
         notifications = view.request.response.notifications
         message = 'Finch is queued to be merged in a few minutes.'
@@ -137,22 +141,69 @@ class TestPersonIndexView(TestCaseWithFactory):
             "... Asia/Kolkata (UTC+0530) ..."), doctest.ELLIPSIS
             | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
 
+    def test_description_widget(self):
+        # The view provides a widget to render ond edit the person description.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index')
+        self.assertIsInstance(view.description_widget, TextAreaEditorWidget)
+        self.assertEqual(
+            'description', view.description_widget.exported_field.__name__)
+
+    def test_description_widget_is_probationary(self):
+        # Description text is not linkified when the user is probationary.
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index')
+        self.assertIs(True, person.is_probationary)
+        self.assertIs(False, view.description_widget.linkify_text)
+
+    def test_description_widget_non_probationary(self):
+        # Description text is linkified when the user is non-probationary.
+        person = self.factory.makeTeam()
+        view = create_initialized_view(person, '+index')
+        self.assertIs(False, person.is_probationary)
+        self.assertIs(True, view.description_widget.linkify_text)
+
+    @staticmethod
+    def get_markup(view, person):
+        def fake_method():
+            return canonical_url(person)
+        with monkey_patch(view, _getURL=fake_method):
+            markup = view.render()
+        return markup
+
+    def test_is_probationary_or_invalid_user_with_non_probationary(self):
+        team = self.factory.makeTeam()
+        view = create_initialized_view(
+            team, '+index', principal=team.teamowner)
+        self.assertIs(False, view.is_probationary_or_invalid_user)
+        markup = view.render()
+        self.assertFalse(
+            'name="robots" content="noindex,nofollow"' in markup)
+
+    def test_is_probationary_or_invalid_user_with_probationary(self):
+        person = self.factory.makePerson()
+        view = create_initialized_view(person, '+index', principal=person)
+        self.assertIs(True, view.is_probationary_or_invalid_user)
+        markup = self.get_markup(view, person)
+        self.assertTrue(
+            'name="robots" content="noindex,nofollow"' in markup)
+
+    def test_is_probationary_or_invalid_user_with_invalid(self):
+        person = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            person.account.status = AccountStatus.NOACCOUNT
+        observer = self.factory.makePerson()
+        view = create_initialized_view(person, '+index', principal=observer)
+        self.assertIs(True, view.is_probationary_or_invalid_user)
+        markup = self.get_markup(view, person)
+        self.assertTrue(
+            'name="robots" content="noindex,nofollow"' in markup)
+
     def test_person_view_page_description(self):
         person_description = self.factory.getUniqueString()
-        person = self.factory.makePerson(
-            homepage_content=person_description)
+        person = self.factory.makePerson(description=person_description)
         view = create_initialized_view(person, '+index')
-        self.assertThat(view.page_description,
-            Equals(person_description))
-
-    def test_team_page_description(self):
-        description = self.factory.getUniqueString()
-        person = self.factory.makeTeam(
-            description=description)
-        view = create_initialized_view(person, '+index')
-        self.assertThat(
-            view.page_description,
-            Equals(description))
+        self.assertThat(view.page_description, Equals(person_description))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -570,6 +621,15 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             " doesn't seem to be a valid email address.")
         self._assertEmailAndError(xss_email, expected_msg)
 
+    def test_edit_email_login_redirect(self):
+        """+editemails should redirect to force you to re-authenticate."""
+        view = create_initialized_view(self.person, "+editemails")
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        expected_url = (
+            '%s/+editemails/+login?reauth=1' % canonical_url(self.person))
+        self.assertEqual(expected_url, response.getHeader('location'))
+
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
                                    TestCaseWithFactory):
@@ -597,60 +657,6 @@ class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
         self.assertEqual(
             ['name', 'personal_standing', 'personal_standing_reason'],
             self.view.field_names)
-
-
-class TestTeamCreationView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestTeamCreationView, self).setUp()
-        person = self.factory.makePerson()
-        login_person(person)
-
-    def test_team_creation_good_data(self):
-        form = {
-            'field.actions.create': 'Create Team',
-            'field.contactemail': 'contactemail@example.com',
-            'field.displayname': 'liberty-land',
-            'field.name': 'libertyland',
-            'field.renewal_policy': 'NONE',
-            'field.renewal_policy-empty-marker': 1,
-            'field.subscriptionpolicy': 'RESTRICTED',
-            'field.subscriptionpolicy-empty-marker': 1,
-            }
-        person_set = getUtility(IPersonSet)
-        create_initialized_view(
-            person_set, '+newteam', form=form)
-        team = person_set.getByName('libertyland')
-        self.assertTrue(team is not None)
-        self.assertEqual('libertyland', team.name)
-
-    def test_validate_email_catches_taken_emails(self):
-        email_address = self.factory.getUniqueEmailAddress()
-        self.factory.makePerson(
-            name='libertylandaccount',
-            displayname='libertylandaccount',
-            email=email_address,
-            account_status=AccountStatus.NOACCOUNT)
-        form = {
-            'field.actions.create': 'Create Team',
-            'field.contactemail': email_address,
-            'field.displayname': 'liberty-land',
-            'field.name': 'libertyland',
-            'field.renewal_policy': 'NONE',
-            'field.renewal_policy-empty-marker': 1,
-            'field.subscriptionpolicy': 'RESTRICTED',
-            'field.subscriptionpolicy-empty-marker': 1,
-            }
-        person_set = getUtility(IPersonSet)
-        view = create_initialized_view(person_set, '+newteam', form=form)
-        expected_msg = (
-            '%s is already registered in Launchpad and is associated with '
-            '<a href="http://launchpad.dev/~libertylandaccount">'
-            'libertylandaccount</a>.' % email_address)
-        error_msg = view.errors[0].errors[0]
-        self.assertEqual(expected_msg, error_msg)
 
 
 class TestPersonParticipationView(TestCaseWithFactory):
@@ -1155,8 +1161,6 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
-        self.assertEqual(
-            None, view.page_description)
 
 
 class TestTeamInvitationView(TestCaseWithFactory):

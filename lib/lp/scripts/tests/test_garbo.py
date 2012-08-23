@@ -12,7 +12,6 @@ from datetime import (
     )
 import logging
 from StringIO import StringIO
-from textwrap import dedent
 import time
 
 from pytz import UTC
@@ -20,6 +19,7 @@ from storm.expr import (
     In,
     Min,
     Not,
+    Or,
     SQL,
     )
 from storm.locals import (
@@ -30,24 +30,24 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
-    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
-from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
     )
-from lp.code.enums import CodeImportResultStatus
+from lp.code.enums import (
+    BranchVisibilityRule,
+    CodeImportResultStatus,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.model.branchjob import (
     BranchJob,
@@ -55,8 +55,14 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.model.product import Product
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -77,7 +83,6 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.lpstorm import IMasterStore
-from lp.services.features import getFeatureFlag
 from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -1025,129 +1030,74 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertNotEqual(old_update, naked_bug.heat_last_updated)
 
-    def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):
-        self.assertFalse(getFeatureFlag('garbo.workitem_migrator.enabled'))
-        switch_dbuser('testadmin')
-        whiteboard = dedent("""
-            Work items:
-            A single work item: TODO
-            """)
-        spec = self.factory.makeSpecification(whiteboard=whiteboard)
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
-    def test_SpecificationWorkitemMigrator(self):
-        # When the migration is successful we remove all work-items from the
-        # whiteboard.
-        switch_dbuser('testadmin')
-        product = self.factory.makeProduct(name='linaro')
-        milestone = self.factory.makeMilestone(product=product)
-        person = self.factory.makePerson()
-        whiteboard = dedent("""
-            Work items for %s:
-            [%s] A single work item: TODO
-
-            Work items:
-            Another work item: DONE
-            """ % (milestone.name, person.name))
-        spec = self.factory.makeSpecification(
-            product=product, whiteboard=whiteboard)
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual('', spec.whiteboard.strip())
-        self.assertEqual(2, spec.work_items.count())
-        self.assertThat(spec.work_items[0], MatchesStructure.byEquality(
-            assignee=person, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            milestone=milestone, specification=spec))
-        self.assertThat(spec.work_items[1], MatchesStructure.byEquality(
-            assignee=None, title="Another work item",
-            status=SpecificationWorkItemStatus.DONE,
-            milestone=None, specification=spec))
-
-    def test_SpecificationWorkitemMigrator_skips_ubuntu_blueprints(self):
-        switch_dbuser('testadmin')
-        whiteboard = "Work items:\nA work item: TODO"
-        spec = self.factory.makeSpecification(
-            whiteboard=whiteboard,
-            distribution=getUtility(IDistributionSet)['ubuntu'])
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
-    def test_SpecificationWorkitemMigrator_parse_error(self):
-        # When we fail to parse any work items in the whiteboard we leave it
-        # untouched and don't create any SpecificationWorkItem entries.
-        switch_dbuser('testadmin')
-        whiteboard = dedent("""
-            Work items:
-            A work item: TODO
-            Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
-            """)
-        product = self.factory.makeProduct(name='linaro')
-        spec = self.factory.makeSpecification(
-            product=product, whiteboard=whiteboard)
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
-    def test_BugTaskFlattener(self):
-        # Bugs without a record in BugTaskFlat get mirrored.
-        # Remove the existing mirrored data.
+    def test_PopulateProjectSharingPolicies(self):
+        # Non commercial projects have their bug and branch sharing policies
+        # set.
         with dbuser('testadmin'):
-            task = self.factory.makeBugTask()
-            IMasterStore(BugTask).execute(
-                'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
+            non_commercial_products = [
+                self.factory.makeProduct()
+                for i in range(10)]
+            commercial_project = self.factory.makeProduct()
+            self.factory.makeCommercialSubscription(commercial_project)
+            configured_project = self.factory.makeProduct(
+                bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+            private_project = self.factory.makeProduct(private_bugs=True)
+            project_with_bvp = self.factory.makeProduct()
+            project_with_bvp.setBranchVisibilityTeamPolicy(
+                None, BranchVisibilityRule.FORBIDDEN)
 
-        def get_flat():
-            return IMasterStore(BugTask).execute(
-                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
-                (task.id,)).get_one()
 
-        # Nothing is done until the feature flag is set.
+        def get_non_migrated_products():
+            return IMasterStore(Product).find(
+                Product,
+                Or(
+                    Product.bug_sharing_policy == None,
+                    Product.branch_sharing_policy == None))
+
         self.runHourly()
-        self.assertIs(None, get_flat())
 
-        # If we set the generation flag, the bug will be mirrored.
-        with dbuser('testadmin'):
-            IMasterStore(FeatureFlag).add(FeatureFlag(
-                u'default', 0, u'bugs.bugtaskflattener.generation', u'1'))
-        self.runHourly()
-        self.assertEqual((task.id,), get_flat())
+        # Check only the expected projects have been migrated.
+        # landscape and launchpad are projects in the test database which have
+        # non public branch visibility policies so are also not migrated.
+        product_set = getUtility(IProductSet)
+        landscape = product_set.getByName('landscape')
+        launchpad = product_set.getByName('launchpad')
+        self.assertContentEqual(
+            [commercial_project, configured_project, private_project,
+             project_with_bvp, landscape, launchpad],
+            get_non_migrated_products())
+        # The non migrated projects still have their original policies.
+        self.assertIsNone(commercial_project.bug_sharing_policy)
+        self.assertIsNone(commercial_project.branch_sharing_policy)
+        self.assertIsNone(private_project.bug_sharing_policy)
+        self.assertIsNone(private_project.branch_sharing_policy)
+        self.assertIsNone(project_with_bvp.bug_sharing_policy)
+        self.assertIsNone(project_with_bvp.branch_sharing_policy)
+        self.assertIsNone(configured_project.branch_sharing_policy)
+        self.assertEquals(
+            BugSharingPolicy.PROPRIETARY,
+            configured_project.bug_sharing_policy)
+        # The migrated projects have the expected policies.
+        for product in non_commercial_products:
+            self.assertEqual(
+                BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+            self.assertEqual(
+                BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
 
-        # A watermark is kept in memcache, so a second run doesn't
-        # consider the same task.
-        with dbuser('testadmin'):
-            IMasterStore(BugTask).execute(
-                'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
-        self.runHourly()
-        self.assertIs(None, get_flat())
-
-        # Incrementing the generation feature flag causes a fresh pass.
-        with dbuser('testadmin'):
-            IMasterStore(FeatureFlag).find(
-                FeatureFlag, flag=u'bugs.bugtaskflattener.generation').remove()
-            IMasterStore(FeatureFlag).add(FeatureFlag(
-                u'default', 1, u'bugs.bugtaskflattener.generation', u'2'))
-        self.runHourly()
-        self.assertEqual((task.id,), get_flat())
+    def test_UnusedSharingPolicyPruner(self):
+        # UnusedSharingPolicyPruner destroys the unused sharing details.
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        ap = self.factory.makeAccessPolicy(pillar=product)
+        self.factory.makeAccessPolicyArtifact(policy=ap)
+        self.factory.makeAccessPolicyGrant(policy=ap)
+        all_aps = getUtility(IAccessPolicySource).findByPillar([product])
+        # There are 3 because two are created implicitly when the product is.
+        self.assertEqual(3, all_aps.count())
+        self.runDaily()
+        all_aps = getUtility(IAccessPolicySource).findByPillar([product])
+        self.assertEqual([ap], list(all_aps))
 
 
 class TestGarboTasks(TestCaseWithFactory):

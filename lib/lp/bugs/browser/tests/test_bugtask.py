@@ -145,7 +145,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(90)))
+        self.assertThat(recorder, HasQueryCount(LessThan(94)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -161,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                92, self.factory.makePerson())
+                97, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -206,7 +206,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(111)))
+        self.assertThat(recorder, HasQueryCount(LessThan(114)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -251,15 +251,11 @@ class TestBugTaskView(TestCaseWithFactory):
         # and will instead receive an error in the UI.
         person = self.factory.makePerson()
         product = self.factory.makeProduct(
-            name='product1', owner=person, official_malone=True)
-        with person_logged_in(person):
-            product.setBugSupervisor(person, person)
+            name='product1', owner=person, official_malone=True,
+            bug_supervisor=person)
         product_2 = self.factory.makeProduct(
             name='product2', official_malone=True)
-        with person_logged_in(product_2.owner):
-            product_2.setBugSupervisor(product_2.owner, product_2.owner)
-        bug = self.factory.makeBug(
-            product=product, owner=person)
+        bug = self.factory.makeBug(target=product, owner=person)
         # We need to commit here, otherwise all the sample data we
         # created gets destroyed when the transaction is rolled back.
         transaction.commit()
@@ -281,7 +277,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_bugtag_urls_are_encoded(self):
         # The link to bug tags are encoded to protect against special chars.
         product = self.factory.makeProduct(name='foobar')
-        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        bug = self.factory.makeBug(target=product, tags=['depends-on+987'])
         getUtility(ILaunchBag).add(bug.default_bugtask)
         view = create_initialized_view(bug.default_bugtask, name=u'+index')
         expected = [(u'depends-on+987',
@@ -292,21 +288,35 @@ class TestBugTaskView(TestCaseWithFactory):
             'href="/foobar/+bugs?field.tag=depends-on%2B987"',
             browser.contents)
 
-    def test_information_type_with_flags(self):
+    def test_information_type(self):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
             owner=owner,
             information_type=InformationType.USERDATA)
         login_person(owner)
         bugtask = self.factory.makeBugTask(bug=bug)
-        features = {'disclosure.show_information_type_in_ui.enabled': True}
-        with FeatureFixture(features):
-            view = create_initialized_view(bugtask, name="+index")
-            self.assertEqual('User Data', view.information_type)
-        features['disclosure.display_userdata_as_private.enabled'] = True
-        with FeatureFixture(features):
-            view = create_initialized_view(bugtask, name="+index")
-            self.assertEqual('Private', view.information_type)
+        view = create_initialized_view(bugtask, name="+index")
+        self.assertEqual('Private', view.information_type)
+
+    def test_duplicate_message_for_inactive_dupes(self):
+        # A duplicate on an inactive project is not linked to.
+        inactive_project = self.factory.makeProduct()
+        inactive_bug = self.factory.makeBug(target=inactive_project)
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.markAsDuplicate(inactive_bug)
+        removeSecurityProxy(inactive_project).active = False
+        browser = self.getUserBrowser(canonical_url(bug))
+        contents = browser.contents
+        self.assertIn(
+            "This bug report is a duplicate of a bug on an inactive project.",
+            contents)
+
+        # Confirm there is no link to the duplicate bug.
+        soup = BeautifulSoup(contents)
+        tag = soup.find('a', attrs={'id': "duplicate-of"})
+        self.assertIsNone(tag)
+
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
@@ -721,7 +731,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         product_foo = self.factory.makeProduct(name="foo")
         product_bar = self.factory.makeProduct(name="bar")
-        foo_bug = self.factory.makeBug(product=product_foo)
+        foo_bug = self.factory.makeBug(target=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
         bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
         removeSecurityProxy(product_bar).active = False
@@ -747,7 +757,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         # Test the situation when there are no bugtasks to show.
 
         product_foo = self.factory.makeProduct(name="foo")
-        foo_bug = self.factory.makeBug(product=product_foo)
+        foo_bug = self.factory.makeBug(target=product_foo)
         removeSecurityProxy(product_foo).active = False
 
         request = LaunchpadTestRequest()
@@ -788,7 +798,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
         # Create a bugtask with a private assignee.
         product_foo = self.factory.makeProduct(name="foo")
-        foo_bug = self.factory.makeBug(product=product_foo)
+        foo_bug = self.factory.makeBug(target=product_foo)
         assignee = self.factory.makeTeam(
             name="assignee",
             visibility=PersonVisibility.PRIVATE)
@@ -1111,7 +1121,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, owner=owner,
+            target=distro, owner=owner,
             information_type=InformationType.PROPRIETARY)
         with person_logged_in(owner):
             view = self._createView(bug)
@@ -1127,11 +1137,11 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         sp_name = self.factory.getOrMakeSourcePackageName()
-        self.factory.makeSourcePackage(
+        sp = self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, sourcepackagename=sp_name, owner=owner,
+            target=sp.distribution_sourcepackage, owner=owner,
             information_type=InformationType.PROPRIETARY)
         with person_logged_in(owner):
             view = self._createView(bug)
@@ -1155,7 +1165,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
         bug_supervisor = self.factory.makePerson(name='bug-supervisor')
         product = self.factory.makeProduct(
             owner=product_owner, bug_supervisor=bug_supervisor)
-        self.bug = self.factory.makeBug(product=product)
+        self.bug = self.factory.makeBug(target=product)
 
     def getWidgetOptionTitles(self, widget):
         """Return the titles of options of the given choice widget."""
@@ -1241,13 +1251,13 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         self.owner = self.factory.makePerson()
         self.product = self.factory.makeProduct(owner=self.owner)
         self.bugtask = self.factory.makeBug(
-            product=self.product).default_bugtask
+            target=self.product).default_bugtask
 
     def test_assignee_vocabulary_regular_user_with_bug_supervisor(self):
         # For regular users, the assignee vocabulary is
         # AllUserTeamsParticipation if there is a bug supervisor defined.
         login_person(self.owner)
-        self.product.setBugSupervisor(self.owner, self.owner)
+        self.product.bug_supervisor = self.owner
         login(USER_EMAIL)
         view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
         view.initialize()
@@ -1259,7 +1269,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         # For regular users, the assignee vocabulary is
         # ValidAssignee is there is not a bug supervisor defined.
         login_person(self.owner)
-        self.product.setBugSupervisor(None, self.owner)
+        self.product.bug_supervisor = None
         login(USER_EMAIL)
         view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
         view.initialize()
@@ -1323,7 +1333,7 @@ class TestBugTaskEditView(TestCaseWithFactory):
         first_product = self.factory.makeProduct(name='bunny')
         with person_logged_in(first_product.owner):
             first_product.official_malone = True
-            bug = self.factory.makeBug(product=first_product)
+            bug = self.factory.makeBug(target=first_product)
             bug_task = bug.bugtasks[0]
             milestone = self.factory.makeMilestone(
                 productseries=first_product.development_focus, name='1.0')
@@ -1758,6 +1768,66 @@ class TestBugActivityItem(TestCaseWithFactory):
             BugActivityItem(bug.activity[-1]).change_details)
 
 
+class TestCommentCollapseVisibility(TestCaseWithFactory):
+    """Test for the conditions around display of collapsed/hidden comments."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeBugWithComments(self, num_comments):
+        """Create and return a bug with a lot of comments and activity."""
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            for i in range(num_comments):
+                msg = self.factory.makeMessage(
+                    owner=bug.owner, content="Message %i." % i)
+                bug.linkMessage(msg, user=bug.owner)
+        return bug
+
+    def test_comments_hidden_message_truncation_only(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in contents)
+        self.assertEqual(1, contents.count('comments hidden'))
+
+    def test_comments_hidden_message_truncation_and_hidden(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+
+        #Hide a comment
+        comments = list(bug.messages)
+        removeSecurityProxy(comments[-5]).visible = False
+
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in browser.contents)
+        self.assertTrue("1 comments hidden" in browser.contents)
+        self.assertEqual(2, contents.count('comments hidden'))
+
+    def test_comments_hidden_message_truncation_and_hidden_out_of_order(self):
+        bug = self.makeBugWithComments(20)
+        url = canonical_url(bug.default_bugtask)
+
+        #Hide a comment
+        comments = list(bug.messages)
+        hidden_comment = comments[-5]
+        removeSecurityProxy(hidden_comment).visible = False
+
+        #Mess with ordering. This requires a transaction since the view will
+        #re-fetch the comments.
+        last_comment = comments[-1]
+        removeSecurityProxy(hidden_comment).datecreated += timedelta(1)
+        removeSecurityProxy(last_comment).datecreated += timedelta(2)
+        transaction.commit()
+
+        browser = self.getUserBrowser(url=url)
+        contents = browser.contents
+        self.assertTrue("10 comments hidden" in browser.contents)
+        self.assertTrue("1 comments hidden" in browser.contents)
+        self.assertEqual(2, contents.count('comments hidden'))
+
+
 class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     """Tests for the BugTaskBatchedCommentsAndActivityView class."""
 
@@ -1877,11 +1947,15 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory, bugtask=None):
+no_target_specified = object()
+
+
+def make_bug_task_listing_item(
+    factory, bugtask=None, target_context=no_target_specified):
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
-            owner=owner, information_type=InformationType.EMBARGOEDSECURITY)
+            owner=owner, information_type=InformationType.PRIVATESECURITY)
         with person_logged_in(owner):
             bugtask = bug.default_bugtask
     else:
@@ -1895,6 +1969,8 @@ def make_bug_task_listing_item(factory, bugtask=None):
     if tags != {}:
         tags = tags[bugtask.id]
     people = bug_task_set.getBugTaskPeople([bugtask])
+    if target_context is no_target_specified:
+        target_context = bugtask.target
     return owner, BugTaskListingItem(
         bugtask,
         badge_property['has_branch'],
@@ -1902,7 +1978,7 @@ def make_bug_task_listing_item(factory, bugtask=None):
         badge_property['has_patch'],
         tags,
         people,
-        target_context=bugtask.target)
+        target_context=target_context)
 
 
 @contextmanager
@@ -1962,10 +2038,10 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     def test_rendered_query_counts_constant_with_many_bugtasks(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         buggy_product = self.factory.makeProduct()
         for _ in range(10):
-            self.factory.makeBug(product=buggy_product)
+            self.factory.makeBug(target=buggy_product)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
@@ -1998,9 +2074,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             cache = IJSONRequestCache(view.request)
             items = cache.objects['mustache_model']['items']
             self.assertEqual(1, len(items))
-            combined = dict(item.model)
-            combined.update(view.search().field_visibility)
-        self.assertEqual(combined, items[0])
+            self.assertEqual(item.model, items[0])
 
     def test_no_next_prev_for_single_batch(self):
         """The IJSONRequestCache should contain data about ajacent batches.
@@ -2126,7 +2200,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
-            '&show_importance=true&show_status=true')
+            '&show_importance=true&show_status=true'
+            '&show_information_type=true')
         with dynamic_listings():
             view = self.makeView(
                 task, memo=1, forwards=False, size=1, cookie=cookie)
@@ -2142,7 +2217,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
-            '&show_importance=true&show_status=true&show_title=true')
+            '&show_importance=true&show_status=true'
+            '&show_information_type=true&show_title=true')
         with dynamic_listings():
             view = self.makeView(
                 task, memo=1, forwards=False, size=1, cookie=cookie)
@@ -2158,7 +2234,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             '&show_id=true&show_targetname=true'
             '&show_milestone_name=true&show_date_last_updated=true'
             '&show_assignee=true&show_heat=true&show_tag=true'
-            '&show_importance=true&show_title=true')
+            '&show_importance=true&show_title=true'
+            '&show_information_type=true')
         with dynamic_listings():
             view = self.makeView(
                 task, memo=1, forwards=False, size=1, cookie=cookie)
@@ -2234,6 +2311,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             'id': '3.14159',
             'importance': 'importance1',
             'importance_class': 'importance_class1',
+            'information_type': 'User Data',
             'last_updated': 'updated1',
             'milestone_name': 'milestone_name1',
             'status': 'status1',
@@ -2271,6 +2349,13 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         mustache_model['items'][0]['show_importance'] = False
         self.assertNotIn('importance1', navigator.mustache)
         self.assertNotIn('importance_class1', navigator.mustache)
+
+    def test_show_information_type(self):
+        """Showing information_type adds the text."""
+        navigator, mustache_model = self.getNavigator()
+        self.assertNotIn('User Data', navigator.mustache)
+        mustache_model['items'][0]['show_information_type'] = True
+        self.assertIn('User Data', navigator.mustache)
 
     def test_hiding_bugtarget(self):
         """Hiding bugtarget removes the text and CSS."""
@@ -2371,7 +2456,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
     def test_tags_encoded_in_model(self):
         # The tag name is encoded properly in the JSON.
         product = self.factory.makeProduct(name='foobar')
-        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        bug = self.factory.makeBug(target=product, tags=['depends-on+987'])
         with dynamic_listings():
             view = self.makeView(bugtask=bug.default_bugtask)
         cache = IJSONRequestCache(view.request)
@@ -2394,7 +2479,7 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
         with person_logged_in(product.owner):
             product.enable_bug_expiration = True
         bug = self.factory.makeBug(
-            product=product,
+            target=product,
             status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
         with dynamic_listings():
@@ -2428,20 +2513,51 @@ class TestBugTaskListingItem(TestCaseWithFactory):
             self.assertEqual('importanceUNDECIDED', model['importance_class'])
             self.assertEqual('New', model['status'])
             self.assertEqual('statusNEW', model['status_class'])
+            self.assertEqual(
+                item.bug.information_type.title, model['information_type'])
             self.assertEqual(item.bug.title, model['title'])
             self.assertEqual(item.bug.id, model['id'])
             self.assertEqual(canonical_url(item.bugtask), model['bug_url'])
             self.assertEqual(item.bugtargetdisplayname, model['bugtarget'])
             self.assertEqual('sprite product', model['bugtarget_css'])
             self.assertEqual(item.bug_heat_html, model['bug_heat_html'])
-            self.assertEqual(
-                '<span alt="private" title="Private" class="sprite private">'
-                '</span>', model['badges'])
+            expected = ('<span alt="%s" title="%s" class="sprite private">'
+                        '</span>') % (
+                           InformationType.PRIVATESECURITY.title,
+                           InformationType.PRIVATESECURITY.description,
+                            )
+            self.assertTextMatchesExpressionIgnoreWhitespace(
+                expected, model['badges'])
             self.assertEqual(None, model['milestone_name'])
             item.bugtask.milestone = self.factory.makeMilestone(
                 product=item.bugtask.target)
             milestone_name = item.milestone.displayname
             self.assertEqual(milestone_name, item.model['milestone_name'])
+
+    def test_tag_urls_use_view_context(self):
+        """urls contain the correct project group if target_context is None"""
+        project_group = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project_group)
+        bug = self.factory.makeBug(target=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=project_group)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(project_group, view_name="+bugs")))
+
+    def test_urls_without_target_context(self):
+        """urls contain the project if target_context is not None"""
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(target=product)
+        with person_logged_in(bug.owner):
+            bug.tags = ['foo']
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask, target_context=None)
+        url = item.model['tags'][0]['url']
+        self.assertTrue(url.startswith(
+            canonical_url(product, view_name="+bugs")))
 
     def test_model_assignee(self):
         """Model contains expected fields with expected values."""

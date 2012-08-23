@@ -93,7 +93,6 @@ COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scan
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 COMMENT ON COLUMN Branch.next_mirror_time IS 'The time when we will next mirror this branch (NULL means never). This will be set automatically by pushing to a hosted branch, which, once mirrored, will be set back to NULL.';
-COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a user updates something using a view, a new revision for the branch is scanned, or the branch is linked to a bug, blueprint or merge proposal.';
 COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
 COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be removed soon.';
@@ -106,7 +105,6 @@ COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a bran
 COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
 COMMENT ON COLUMN Branch.merge_queue IS 'A reference to the BranchMergeQueue record that manages merges.';
 COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
-COMMENT ON COLUMN Branch.transitively_private IS 'A branch is transitively private if it is explicitly private or is stacked on a transitively private branch.';
 COMMENT ON COLUMN Branch.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- BranchMergeQueue
@@ -1153,6 +1151,7 @@ COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export langua
 COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
+COMMENT ON COLUMN DistroSeries.proposed_not_automatic IS 'Whether the -proposed pocket is set NotAutomatic and ButAutomaticUpgrades so that apt does not offer users upgrades into -proposed, but does offer upgrades within it.';
 
 
 -- PackageCopyJob
@@ -1532,6 +1531,7 @@ COMMENT ON COLUMN SourcePackageRecipeBuildJob.sourcepackage_recipe_build IS 'The
 -- Specification
 
 COMMENT ON TABLE Specification IS 'A feature specification. At the moment we do not store the actual specification, we store a URL for the spec, which is managed in a wiki somewhere else. We store the overall state of the spec, as well as queueing information about who needs to review the spec, and why.';
+COMMENT ON COLUMN Specification.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 COMMENT ON COLUMN Specification.assignee IS 'The person who has been assigned to implement this specification.';
 COMMENT ON COLUMN Specification.drafter IS 'The person who has been asked to draft this specification. They are responsible for getting the spec to "approved" state.';
 COMMENT ON COLUMN Specification.approver IS 'The person who is responsible for approving the specification in due course, and who will probably be required to review the code itself when it is being implemented.';
@@ -1556,12 +1556,6 @@ COMMENT ON COLUMN Specification.date_completed IS 'The date this specification w
 -- COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
 COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
 COMMENT ON COLUMN Specification.private IS 'Specification is private.';
-
--- SpecificationFeedback
-COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
-COMMENT ON COLUMN SpecificationFeedback.reviewer IS 'The person who has been asked to do the review.';
-COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the request.';
-COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
 
 -- SpecificationBranch
 COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
@@ -2088,6 +2082,7 @@ COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this up
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 COMMENT ON COLUMN ArchivePermission.packageset IS 'The package set to which this permission applies.';
 COMMENT ON COLUMN ArchivePermission.explicit IS 'This flag is set for package sets containing high-profile packages that must not break and/or require specialist skills for proper handling e.g. the kernel.';
+COMMENT ON COLUMN ArchivePermission.distroseries IS 'An optional distroseries to which this permission applies.';
 
 -- ArchiveSubscriber
 

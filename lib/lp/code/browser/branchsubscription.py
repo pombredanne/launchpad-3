@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 from lazr.restful.utils import smartquote
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.browser.launchpadform import (
@@ -20,7 +21,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.errors import SubscriptionPrivacyViolation
+from lp.app.interfaces.services import IService
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.services.webapp import (
@@ -212,6 +213,15 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
 
     page_title = label = "Subscribe to branch"
 
+    def validate(self, data):
+        if data.has_key('person'):
+            person = data['person']
+            subscription = self.context.getSubscription(person)
+            if (subscription is None and person.is_team and 
+                person.anyone_can_join()):
+                self.setFieldError('person', "Open and delegated teams "
+                "cannot be subscribed to private branches.")
+
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):
         """Subscribe the specified user to the branch.
@@ -227,17 +237,13 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         person = data['person']
         subscription = self.context.getSubscription(person)
         if subscription is None:
-            try:
-                self.context.subscribe(
-                    person, notification_level, max_diff_lines, review_level,
-                    self.user)
-            except SubscriptionPrivacyViolation as error:
-                self.setFieldError('person', unicode(error))
-            else:
-                self.add_notification_message(
-                    '%s has been subscribed to this branch with: '
-                    % person.displayname, notification_level, max_diff_lines,
-                    review_level)
+            self.context.subscribe(
+                person, notification_level, max_diff_lines, review_level,
+                self.user)
+            self.add_notification_message(
+                '%s has been subscribed to this branch with: '
+                % person.displayname, notification_level, max_diff_lines,
+                review_level)
         else:
             self.add_notification_message(
                 '%s was already subscribed to this branch with: '
@@ -285,6 +291,13 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
-        return canonical_url(self.branch)
+        url = canonical_url(self.branch)
+        # If the subscriber can no longer see the branch, redirect them away.
+        service = getUtility(IService, 'sharing')
+        ignored, branches = service.getVisibleArtifacts(
+            self.person, branches=[self.branch])
+        if not branches:
+            url = canonical_url(self.branch.target)
+        return url
 
     cancel_url = next_url

@@ -25,7 +25,7 @@
         please use the <code>initDerivedDistroSeries</code> API call via the
         web service.
       </p>
-      <div class="unseen" id="initseries-form-container">
+      <div class="hidden" id="initseries-form-container">
         <metal:form use-macro="context/@@launchpad_form/form" />
       </div>
       <script type="text/javascript">
@@ -38,16 +38,6 @@
         many thousands of packages is likely to take hours to complete.
       </p>
       </tal:enabled>
-
-      <tal:disabled condition="view/show_derivation_not_yet_available">
-      <p class="error message">
-        The Derivative Distributions feature is under development
-        and is not yet generally available. You can read more about
-        this feature on its <a
-        href="https://dev.launchpad.net/LEP/DerivativeDistributions">proposal
-        page</a>.
-      </p>
-      </tal:disabled>
 
       <tal:previous_series_none
         condition="view/show_previous_series_empty_message">

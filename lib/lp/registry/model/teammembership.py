@@ -28,13 +28,13 @@ from zope.interface import implements
 
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enums import TeamMembershipRenewalPolicy
 from lp.registry.errors import (
     TeamMembershipTransitionError,
     UserCannotChangeMembershipSilently,
     )
 from lp.registry.interfaces.person import (
     IPersonSet,
-    TeamMembershipRenewalPolicy,
     validate_person,
     validate_public_person,
     )
@@ -43,7 +43,7 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sharingjob import (
-    IRemoveBugSubscriptionsJobSource,
+    IRemoveArtifactSubscriptionsJobSource,
     )
 from lp.registry.interfaces.teammembership import (
     ACTIVE_STATES,
@@ -157,45 +157,6 @@ class TeamMembership(SQLBase):
                 template % replacements, force_wrap=True)
             simple_sendmail(from_addr, address, subject, msg)
 
-    def sendAutoRenewalNotification(self):
-        """See `ITeamMembership`."""
-        team = self.team
-        member = self.person
-        assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
-
-        from_addr = format_address(
-            team.displayname, config.canonical.noreply_from_address)
-        replacements = {'member_name': member.unique_displayname,
-                        'team_name': team.unique_displayname,
-                        'team_url': canonical_url(team),
-                        'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
-        subject = '%s renewed automatically' % member.name
-
-        if member.is_team:
-            member_addrs = get_contact_email_addresses(member.teamowner)
-            template_name = 'membership-auto-renewed-bulk.txt'
-        else:
-            template_name = 'membership-auto-renewed-personal.txt'
-            member_addrs = get_contact_email_addresses(member)
-        template = get_email_template(template_name, app='registry')
-        for address in member_addrs:
-            recipient = getUtility(IPersonSet).getByEmail(address)
-            replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(
-                template % replacements, force_wrap=True)
-            simple_sendmail(from_addr, address, subject, msg)
-
-        template_name = 'membership-auto-renewed-bulk.txt'
-        admins_addrs = self.team.getTeamAdminsEmailAddresses()
-        admins_addrs = set(admins_addrs).difference(member_addrs)
-        template = get_email_template(template_name, app='registry')
-        for address in admins_addrs:
-            recipient = getUtility(IPersonSet).getByEmail(address)
-            replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(
-                template % replacements, force_wrap=True)
-            simple_sendmail(from_addr, address, subject, msg)
-
     def canChangeStatusSilently(self, user):
         """Ensure that the user is in the Launchpad Administrators group.
 
@@ -232,12 +193,6 @@ class TeamMembership(SQLBase):
             raise AssertionError(
                 '%s in team %s has no membership expiration date.' %
                 (self.person.name, self.team.name))
-        if self.team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
-            # An email will be sent later by handleMembershipsExpiringToday()
-            # when the membership is automatically renewed.
-            raise AssertionError(
-                'Team %s with automatic renewals should not send expiration '
-                'warnings.' % self.team.name)
         if self.dateexpires < datetime.now(pytz.timezone('UTC')):
             # The membership has reached expiration. Silently return because
             # there is nothing to do. The member will have received emails
@@ -393,7 +348,7 @@ class TeamMembership(SQLBase):
                 # A person has left the team so they may no longer have access
                 # to some artifacts shared with the team. We need to run a job
                 # to remove any subscriptions to such artifacts.
-                getUtility(IRemoveBugSubscriptionsJobSource).create(
+                getUtility(IRemoveArtifactSubscriptionsJobSource).create(
                     user, grantee=self.person)
         else:
             # Changed from an inactive state to another inactive one, so no
@@ -461,25 +416,13 @@ class TeamMembershipSet:
         """See `ITeamMembershipSet`."""
         memberships = self.getMembershipsToExpire()
         for membership in memberships:
-            team = membership.team
-            if team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
-                # Keep the same status, change the expiration date and send a
-                # notification explaining the membership has been renewed.
-                assert (team.defaultrenewalperiod is not None
-                        and team.defaultrenewalperiod > 0), (
-                    'Teams with a renewal policy of AUTOMATIC must specify '
-                    'a default renewal period greater than 0.')
-                membership.dateexpires += timedelta(
-                    days=team.defaultrenewalperiod)
-                membership.sendAutoRenewalNotification()
-            else:
-                membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
+            membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
 
     def getByPersonAndTeam(self, person, team):
         """See `ITeamMembershipSet`."""
         return TeamMembership.selectOneBy(person=person, team=team)
 
-    def getMembershipsToExpire(self, when=None, exclude_autorenewals=False):
+    def getMembershipsToExpire(self, when=None):
         """See `ITeamMembershipSet`."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
@@ -488,13 +431,6 @@ class TeamMembershipSet:
             TeamMembership.status.is_in(
                 [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]),
             ]
-        if exclude_autorenewals:
-            # Avoid circular import.
-            from lp.registry.model.person import Person
-            conditions.append(TeamMembership.team == Person.id)
-            conditions.append(
-                Person.renewal_policy !=
-                    TeamMembershipRenewalPolicy.AUTOMATIC)
         return IStore(TeamMembership).find(TeamMembership, *conditions)
 
     def deactivateActiveMemberships(self, team, comment, reviewer):

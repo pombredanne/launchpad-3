@@ -194,11 +194,8 @@
       <tal:warning-for-owner
         condition="view/show_commercial_subscription_info">
         <div
-          tal:condition="view/requires_commercial_subscription"
+          tal:condition="context/commercial_subscription_is_due"
           tal:content="structure context/@@+portlet-requires-subscription"/>
-        <div
-          tal:condition="not: context/licenses"
-          tal:content="structure context/@@+portlet-license-missing" />
       </tal:warning-for-owner>
 
       <div class="yui-g">

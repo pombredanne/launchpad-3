@@ -15,10 +15,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
+from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
+from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
@@ -85,12 +89,6 @@ class ArchivePopulator(SoyuzScript):
         :param packageset_tags: list of packagesets to limit the packages
             copied to.
         """
-        # Avoid circular imports.
-        from lp.registry.interfaces.person import IPersonSet
-        from lp.soyuz.interfaces.archive import IArchiveSet
-        from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-        from lp.soyuz.interfaces.packagecopyrequest import (
-            IPackageCopyRequestSet)
 
         def loadProcessorFamilies(arch_tags):
             """Load processor families for specified arch tags."""
@@ -325,8 +323,6 @@ class ArchivePopulator(SoyuzScript):
         """Parse command line arguments for copy archive creation/population.
         """
         SoyuzScript.add_my_options(self)
-
-        self.parser.remove_option('-a')
 
         self.parser.add_option(
             "-a", "--architecture", dest="arch_tags", action="append",

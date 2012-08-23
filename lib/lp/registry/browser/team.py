@@ -21,6 +21,7 @@ __all__ = [
     'TeamMailingListSubscribersView',
     'TeamMailingListArchiveView',
     'TeamMemberAddView',
+    'TeamMembershipSelfRenewalView',
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamNavigation',
@@ -46,6 +47,7 @@ import pytz
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser.textwidgets import IntWidget
 from zope.component import getUtility
 from zope.formlib.form import (
     Fields,
@@ -84,11 +86,13 @@ from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.validation import validate_new_team_email
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.app.widgets.popup import PersonPickerWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
@@ -105,7 +109,14 @@ from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
     )
-from lp.registry.errors import TeamSubscriptionPolicyError
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    TeamMembershipPolicy,
+    TeamMembershipRenewalPolicy,
+    )
+from lp.registry.errors import TeamMembershipPolicyError
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
     IMailingListSet,
@@ -117,19 +128,13 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
     ITeamContactAddressForm,
-    ITeamCreation,
     ITeamReassignment,
-    OPEN_TEAM_POLICY,
-    PersonVisibility,
     PRIVATE_TEAM_PREFIX,
     TeamContactMethod,
-    TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.poll import IPollSet
 from lp.registry.interfaces.role import IPersonRoles
@@ -143,7 +148,7 @@ from lp.registry.interfaces.teammembership import (
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.fields import PublicPersonChoice
+from lp.services.fields import PersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import cachedproperty
@@ -227,8 +232,8 @@ class TeamFormMixin:
     * The user has a current commercial subscription.
     """
     field_names = [
-        "name", "visibility", "displayname", "contactemail",
-        "teamdescription", "subscriptionpolicy",
+        "name", "visibility", "displayname",
+        "description", "membership_policy",
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod", "teamowner",
         ]
@@ -260,12 +265,11 @@ class TeamFormMixin:
                 warning = self._validateVisibilityConsistency(visibility)
                 if warning is not None:
                     self.setFieldError('visibility', warning)
-            if (data['subscriptionpolicy']
-                != TeamSubscriptionPolicy.RESTRICTED):
+            if (data['membership_policy']
+                != TeamMembershipPolicy.RESTRICTED):
                 self.setFieldError(
-                    'subscriptionpolicy',
-                    'Private teams must have a Restricted subscription '
-                    'policy.')
+                    'membership_policy',
+                    'Private teams must have a Restricted membership policy.')
 
     def setUpVisibilityField(self, render_context=False):
         """Set the visibility field to read-write, or remove it."""
@@ -295,20 +299,18 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
 
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget('defaultrenewalperiod', StrippedTextWidget,
+        widget_class='field subordinate')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget('description', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
-        """See `LaunchpadViewForm`.
-
-        When editing a team the contactemail field is not displayed.
-        """
+        """See `LaunchpadViewForm`."""
         # Make an instance copy of field_names so as to not modify the single
         # class list.
         self.field_names = list(self.field_names)
-        self.field_names.remove('contactemail')
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.setUpVisibilityField(render_context=True)
@@ -316,35 +318,35 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
         team = self.context
-        # Do we need to only show open subscription policy choices?
+        # Do we need to only show open membership policy choices?
         try:
-            team.checkClosedSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError as e:
+            team.checkExclusiveMembershipPolicyAllowed()
+        except TeamMembershipPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
-            self.widgets['subscriptionpolicy'].vocabulary = (
+            self.widgets['membership_policy'].vocabulary = (
                 SimpleVocabulary([SimpleVocabulary.createTerm(
                     policy, policy.name, policy.title)
-                    for policy in OPEN_TEAM_POLICY])
+                    for policy in INCLUSIVE_TEAM_POLICY])
                 )
-            self.widgets['subscriptionpolicy'].extra_hint_class = (
+            self.widgets['membership_policy'].extra_hint_class = (
                 'sprite info')
-            self.widgets['subscriptionpolicy'].extra_hint = e.message
+            self.widgets['membership_policy'].extra_hint = e.message
 
-        # Do we need to only show closed subscription policy choices?
+        # Do we need to only show closed membership policy choices?
         try:
-            team.checkOpenSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError as e:
+            team.checkInclusiveMembershipPolicyAllowed()
+        except TeamMembershipPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
-            self.widgets['subscriptionpolicy'].vocabulary = (
+            self.widgets['membership_policy'].vocabulary = (
                 SimpleVocabulary([SimpleVocabulary.createTerm(
                     policy, policy.name, policy.title)
-                    for policy in CLOSED_TEAM_POLICY])
+                    for policy in EXCLUSIVE_TEAM_POLICY])
                 )
-            self.widgets['subscriptionpolicy'].extra_hint_class = (
+            self.widgets['membership_policy'].extra_hint_class = (
                 'sprite info')
-            self.widgets['subscriptionpolicy'].extra_hint = e.message
+            self.widgets['membership_policy'].extra_hint = e.message
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -354,7 +356,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                 self.context.transitionVisibility(visibility, self.user)
                 del data['visibility']
             self.updateContextFromData(data)
-        except ImmutableVisibilityError, error:
+        except ImmutableVisibilityError as error:
             self.request.response.addErrorNotification(str(error))
             # Abort must be called or changes to fields before the one causing
             # the error will be committed.  If we have a database validation
@@ -512,7 +514,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             if email is None or email.person != self.context:
                 try:
                     validate_new_team_email(data['contact_address'])
-                except LaunchpadValidationError, error:
+                except LaunchpadValidationError as error:
                     # We need to wrap this in structured, so that the
                     # markup is preserved.  Note that this puts the
                     # responsibility for security on the exception thrower.
@@ -993,7 +995,7 @@ class TeamMailingListArchiveView(LaunchpadView):
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
 
-    schema = ITeamCreation
+    schema = ITeam
     page_title = 'Register a new team in Launchpad'
     label = page_title
 
@@ -1001,9 +1003,10 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        'membership_policy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget('defaultrenewalperiod', IntWidget,
+        widget_class='field subordinate')
 
     def setUpFields(self):
         """See `LaunchpadViewForm`.
@@ -1013,33 +1016,25 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         super(TeamAddView, self).setUpFields()
         self.setUpVisibilityField()
 
-    @action('Create Team', name='create')
+    @action('Create Team', name='create',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
-        teamdescription = data.get('teamdescription')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
-        subscriptionpolicy = data.get('subscriptionpolicy')
+        membership_policy = data.get('membership_policy')
         teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
-            teamowner, name, displayname, teamdescription,
-            subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
+            teamowner, name, displayname, None, membership_policy,
+            defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
             team.transitionVisibility(visibility, self.user)
             del data['visibility']
-        email = data.get('contactemail')
-        if email is not None:
-            generateTokenAndValidationEmail(email, team)
-            self.request.response.addNotification(
-                "A confirmation message has been sent to '%s'. Follow the "
-                "instructions in that message to confirm the new "
-                "contact address for this team. "
-                "(If the message doesn't arrive in a few minutes, your mail "
-                "provider might use 'greylisting', which could delay the "
-                "message for up to an hour or two.)" % email)
 
+        if self.request.is_ajax:
+            return ''
         self.next_url = canonical_url(team)
 
     def _validateVisibilityConsistency(self, value):
@@ -1057,6 +1052,28 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     @property
     def _name(self):
         return None
+
+
+class SimpleTeamAddView(TeamAddView):
+    """View for adding a new team using a Javascript form.
+
+    This view is used to render a form used to create a new team. The form is
+    displayed in a popup overlay and submission is done using an XHR call.
+    """
+
+    for_input = True
+    schema = ITeam
+    next_url = None
+
+    field_names = [
+        "name", "displayname", "visibility", "membership_policy",
+        "teamowner"]
+
+    # Use a dropdown - Javascript will be used to change this to a choice
+    # popup widget.
+    custom_widget(
+        'membership_policy', LaunchpadDropdownWidget,
+        orientation='vertical')
 
 
 class ProposedTeamMembersEditView(LaunchpadFormView):
@@ -1130,7 +1147,7 @@ class TeamBrandingView(BrandingChangeView):
 class ITeamMember(Interface):
     """The interface used in the form to add a new member to a team."""
 
-    newmember = PublicPersonChoice(
+    newmember = PersonChoice(
         title=_('New member'), required=True,
         vocabulary='ValidTeamMember',
         description=_("The user or team which is going to be "
@@ -1496,8 +1513,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+add-my-teams'
         text = 'Add one of my teams'
         enabled = True
-        restricted = TeamSubscriptionPolicy.RESTRICTED
-        if self.person.subscriptionpolicy == restricted:
+        restricted = TeamMembershipPolicy.RESTRICTED
+        if self.person.membership_policy == restricted:
             # This is a restricted team; users can't join.
             enabled = False
         return Link(target, text, icon='add', enabled=enabled)
@@ -1579,8 +1596,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         person = self.person
         if userIsActiveTeamMember(person):
             enabled = False
-        elif (self.person.subscriptionpolicy ==
-              TeamSubscriptionPolicy.RESTRICTED):
+        elif (self.person.membership_policy ==
+              TeamMembershipPolicy.RESTRICTED):
             # This is a restricted team; users can't join.
             enabled = False
         target = '+join'
@@ -1604,7 +1621,6 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
     links = [
         'edit',
         'branding',
-        'common_edithomepage',
         'members',
         'mugshots',
         'add_member',
@@ -1703,7 +1719,7 @@ class TeamIndexView(PersonIndexView, TeamJoinMixin):
             return (len(self.super_teams) > 0
                     or (self.context.open_membership_invitations
                         and check_permission('launchpad.Edit', self.context)))
-        except AttributeError, e:
+        except AttributeError as e:
             raise AssertionError(e)
 
     @property
@@ -1768,21 +1784,21 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     def join_allowed(self):
         """Is the logged in user allowed to join this team?
 
-        The answer is yes if this team's subscription policy is not RESTRICTED
+        The answer is yes if this team's membership policy is not RESTRICTED
         and this team's visibility is either None or PUBLIC.
         """
         # Joining a moderated team will put you on the proposed_members
         # list. If it is a private team, you are not allowed to view the
         # proposed_members attribute until you are an active member;
         # therefore, it would look like the join button is broken. Either
-        # private teams should always have a restricted subscription policy,
+        # private teams should always have a restricted membership policy,
         # or we need a more complicated permission model.
         if not (self.context.visibility is None
                 or self.context.visibility == PersonVisibility.PUBLIC):
             return False
 
-        restricted = TeamSubscriptionPolicy.RESTRICTED
-        return self.context.subscriptionpolicy != restricted
+        restricted = TeamMembershipPolicy.RESTRICTED
+        return self.context.membership_policy != restricted
 
     @property
     def user_can_request_to_join(self):
@@ -1806,10 +1822,10 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     def team_is_moderated(self):
         """Is this team a moderated team?
 
-        Return True if the team's subscription policy is MODERATED.
+        Return True if the team's membership policy is MODERATED.
         """
-        policy = self.context.subscriptionpolicy
-        return policy == TeamSubscriptionPolicy.MODERATED
+        policy = self.context.membership_policy
+        return policy == TeamMembershipPolicy.MODERATED
 
     @property
     def next_url(self):
@@ -1877,7 +1893,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
 
     def initialize(self):
         context = self.context
-        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+        if context.membership_policy == TeamMembershipPolicy.MODERATED:
             self.label = 'Propose these teams as members'
         else:
             self.label = 'Add these teams to %s' % context.displayname
@@ -2138,8 +2154,7 @@ class TeamEditMenu(TeamNavigationMenuBase):
     usedfor = ITeamEditMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
-             'editemail')
+    links = ('branding', 'editlanguages', 'reassign', 'editemail')
 
 
 class TeamMugshotView(LaunchpadView):

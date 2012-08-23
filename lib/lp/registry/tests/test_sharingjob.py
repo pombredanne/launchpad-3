@@ -12,21 +12,24 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.enums import (
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
-    IAccessArtifactSource,
     IAccessPolicySource,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.sharingjob import (
-    IRemoveBugSubscriptionsJobSource,
+    IRemoveArtifactSubscriptionsJobSource,
     ISharingJob,
     ISharingJobSource,
     )
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.sharingjob import (
-    RemoveBugSubscriptionsJob,
+    RemoveArtifactSubscriptionsJob,
     SharingJob,
     SharingJobDerived,
     SharingJobType,
@@ -42,7 +45,6 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
-from lp.testing.fixture import DisableTriggerFixture
 from lp.testing.layers import (
     CeleryJobLayer,
     DatabaseFunctionalLayer,
@@ -93,17 +95,27 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
     def _makeJob(self):
         self.bug = self.factory.makeBug()
         self.requestor = self.factory.makePerson()
-        job = getUtility(IRemoveBugSubscriptionsJobSource).create(
-            self.requestor, bugs=[self.bug])
+        job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            self.requestor, artifacts=[self.bug])
         return job
 
-    def test_repr(self):
+    def test_repr_bugs(self):
         job = self._makeJob()
         self.assertEqual(
-            '<REMOVE_BUG_SUBSCRIPTIONS job reconciling subscriptions for '
-            'bug_ids=[%d], requestor=%s>'
+            '<REMOVE_ARTIFACT_SUBSCRIPTIONS job reconciling subscriptions '
+            'for bug_ids=[%d], requestor=%s>'
             % (self.bug.id, self.requestor.name),
             repr(job))
+
+    def test_repr_branches(self):
+        requestor = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            requestor, artifacts=[branch])
+        self.assertEqual(
+            '<REMOVE_ARTIFACT_SUBSCRIPTIONS job reconciling subscriptions '
+            'for branch_ids=[%d], requestor=%s>'
+            % (branch.id, requestor.name), repr(job))
 
     def test_create_success(self):
         # Create an instance of SharingJobDerived that delegates to SharingJob.
@@ -126,48 +138,33 @@ class SharingJobDerivedTestCase(TestCaseWithFactory):
         job_1 = self._makeJob()
         job_2 = self._makeJob()
         job_2.start()
-        jobs = list(RemoveBugSubscriptionsJob.iterReady())
+        jobs = list(RemoveArtifactSubscriptionsJob.iterReady())
         self.assertEqual(1, len(jobs))
         self.assertEqual(job_1, jobs[0])
 
     def test_log_name(self):
         # The log_name is the name of the implementing class.
         job = self._makeJob()
-        self.assertEqual('RemoveBugSubscriptionsJob', job.log_name)
+        self.assertEqual('RemoveArtifactSubscriptionsJob', job.log_name)
 
     def test_getOopsVars(self):
         # The pillar and grantee name are added to the oops vars.
         bug = self.factory.makeBug()
         requestor = self.factory.makePerson()
-        job = getUtility(IRemoveBugSubscriptionsJobSource).create(
-            requestor, bugs=[bug])
+        job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            requestor, artifacts=[bug])
         oops_vars = job.getOopsVars()
         self.assertIs(True, len(oops_vars) >= 3)
         self.assertIn(
             ('sharing_job_type',
-            'Remove subscriptions for users who can no longer access bugs.'),
-            oops_vars)
-
-
-def disable_trigger_fixture():
-    # XXX 2012-05-22 wallyworld bug=1002596
-    # No need to use this fixture when triggers are removed.
-    return DisableTriggerFixture(
-            {'bugsubscription':
-                 'bugsubscription_mirror_legacy_access_t',
-             'bug': 'bug_mirror_legacy_access_t',
-             'bugtask': 'bugtask_mirror_legacy_access_t',
-        })
+            'Remove subscriptions for users who can no longer access '
+            'artifacts.'), oops_vars)
 
 
 class TestRunViaCron(TestCaseWithFactory):
     """Sharing jobs run via cron."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        self.useFixture(disable_trigger_fixture())
-        super(TestRunViaCron, self).setUp()
 
     def _assert_run_cronscript(self, create_job):
         # The cronscript is configured: schema-lazr.conf and security.cfg.
@@ -177,17 +174,16 @@ class TestRunViaCron(TestCaseWithFactory):
         grantee = self.factory.makePerson()
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            owner=owner, distribution=distro,
+            owner=owner, target=distro,
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
+        job, job_type = create_job(distro, bug, grantee, owner)
         # Subscribing grantee has created an artifact grant so we need to
         # revoke that to test the job.
+        artifact = self.factory.makeAccessArtifact(concrete=bug)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-            getUtility(IAccessArtifactSource).find(
-                [bug]), [grantee])
-
-        job, job_type = create_job(distro, bug, grantee, owner)
+            [artifact], [grantee])
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -209,44 +205,42 @@ class TestRunViaCron(TestCaseWithFactory):
         # removed.
 
         def create_job(distro, bug, grantee, owner):
-            job = getUtility(IRemoveBugSubscriptionsJobSource).create(
+            job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
                 owner, [bug])
             with person_logged_in(owner):
                 bug.transitionToInformationType(
-                            InformationType.EMBARGOEDSECURITY, owner)
-            return job, IRemoveBugSubscriptionsJobSource.getName()
+                            InformationType.PRIVATESECURITY, owner)
+            return job, IRemoveArtifactSubscriptionsJobSource.getName()
 
         self._assert_run_cronscript(create_job)
 
 
-class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
-    """Test case for the RemoveBugSubscriptionsJob class."""
+class RemoveArtifactSubscriptionsJobTestCase(TestCaseWithFactory):
+    """Test case for the RemoveArtifactSubscriptionsJob class."""
 
     layer = CeleryJobLayer
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes':
-                'RemoveBugSubscriptionsJob',
+            'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
-        self.useFixture(disable_trigger_fixture())
-        super(RemoveBugSubscriptionsJobTestCase, self).setUp()
+        super(RemoveArtifactSubscriptionsJobTestCase, self).setUp()
 
     def test_create(self):
-        # Create an instance of RemoveBugSubscriptionsJob.
+        # Create an instance of RemoveArtifactSubscriptionsJob.
         self.assertIs(
             True,
-            IRemoveBugSubscriptionsJobSource.providedBy(
-                RemoveBugSubscriptionsJob))
+            IRemoveArtifactSubscriptionsJobSource.providedBy(
+                RemoveArtifactSubscriptionsJob))
         self.assertEqual(
-            SharingJobType.REMOVE_BUG_SUBSCRIPTIONS,
-            RemoveBugSubscriptionsJob.class_job_type)
+            SharingJobType.REMOVE_ARTIFACT_SUBSCRIPTIONS,
+            RemoveArtifactSubscriptionsJob.class_job_type)
         requestor = self.factory.makePerson()
         bug = self.factory.makeBug()
-        job = getUtility(IRemoveBugSubscriptionsJobSource).create(
+        job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             requestor, [bug])
         naked_job = removeSecurityProxy(job)
-        self.assertIsInstance(job, RemoveBugSubscriptionsJob)
+        self.assertIsInstance(job, RemoveArtifactSubscriptionsJob)
         self.assertEqual(requestor.id, naked_job.requestor_id)
         self.assertContentEqual([bug.id], naked_job.bug_ids)
 
@@ -254,8 +248,8 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         # The pillar owner and job requestor are the error recipients.
         requestor = self.factory.makePerson()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-        job = getUtility(IRemoveBugSubscriptionsJobSource).create(
+        bug = self.factory.makeBug(target=product)
+        job = getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             requestor, [bug], pillar=product)
         expected_emails = [
             format_address_for_person(person)
@@ -273,43 +267,50 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         # The policy grantees will lose access.
         policy_indirect_grantee = self.factory.makePerson()
         policy_team_grantee = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[policy_indirect_grantee])
 
         self.factory.makeAccessPolicyGrant(policy, policy_team_grantee, owner)
         login_person(owner)
         bug = self.factory.makeBug(
+            owner=owner, target=product,
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(
             owner=owner, product=product,
             information_type=InformationType.USERDATA)
 
         # The artifact grantees will not lose access when the job is run.
         artifact_indirect_grantee = self.factory.makePerson()
         artifact_team_grantee = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             members=[artifact_indirect_grantee])
 
         bug.subscribe(policy_team_grantee, owner)
         bug.subscribe(policy_indirect_grantee, owner)
         bug.subscribe(artifact_team_grantee, owner)
         bug.subscribe(artifact_indirect_grantee, owner)
+        branch.subscribe(artifact_indirect_grantee,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, owner)
         # Subscribing policy_team_grantee has created an artifact grant so we
         # need to revoke that to test the job.
+        artifact = self.factory.makeAccessArtifact(concrete=bug)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-            getUtility(IAccessArtifactSource).find(
-                [bug]), [policy_team_grantee])
+            [artifact], [policy_team_grantee])
 
         # policy grantees are subscribed because the job has not been run yet.
         subscribers = removeSecurityProxy(bug).getDirectSubscribers()
         self.assertIn(policy_team_grantee, subscribers)
         self.assertIn(policy_indirect_grantee, subscribers)
 
-        # Change bug bug attributes so that it can become inaccessible for
+        # Change bug attributes so that it can become inaccessible for
         # some users.
         change_callback(bug)
         reconcile_access_for_artifact(
             bug, bug.information_type, bug.affected_pillars)
 
-        getUtility(IRemoveBugSubscriptionsJobSource).create(owner, [bug])
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            owner, [bug])
         with block_on_job(self):
             transaction.commit()
 
@@ -319,6 +320,85 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertNotIn(policy_indirect_grantee, subscribers)
         self.assertIn(artifact_team_grantee, subscribers)
         self.assertIn(artifact_indirect_grantee, subscribers)
+        self.assertIn(artifact_indirect_grantee, branch.subscribers)
+
+    def _assert_branch_change_unsubscribes(self, change_callback):
+        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        # The policy grantees will lose access.
+        policy_indirect_grantee = self.factory.makePerson()
+        policy_team_grantee = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
+            members=[policy_indirect_grantee])
+
+        self.factory.makeAccessPolicyGrant(policy, policy_team_grantee, owner)
+        login_person(owner)
+        bug = self.factory.makeBug(
+            owner=owner, target=product,
+            information_type=InformationType.USERDATA)
+        branch = self.factory.makeBranch(
+            owner=owner, product=product,
+            information_type=InformationType.USERDATA)
+
+        # The artifact grantees will not lose access when the job is run.
+        artifact_indirect_grantee = self.factory.makePerson()
+        artifact_team_grantee = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
+            members=[artifact_indirect_grantee])
+
+        branch.subscribe(
+            policy_team_grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+            None, CodeReviewNotificationLevel.NOEMAIL, owner)
+        branch.subscribe(
+            policy_indirect_grantee,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, owner)
+        branch.subscribe(
+            artifact_team_grantee,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, owner)
+        branch.subscribe(
+            artifact_indirect_grantee,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, owner)
+        bug.subscribe(artifact_indirect_grantee, owner)
+        # Subscribing policy_team_grantee has created an artifact grant so we
+        # need to revoke that to test the job.
+        artifact = self.factory.makeAccessArtifact(concrete=branch)
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            [artifact], [policy_team_grantee])
+
+        # policy grantees are subscribed because the job has not been run yet.
+        #subscribers = removeSecurityProxy(branch).subscribers
+        self.assertIn(policy_team_grantee, branch.subscribers)
+        self.assertIn(policy_indirect_grantee, branch.subscribers)
+
+        # Change branch attributes so that it can become inaccessible for
+        # some users.
+        change_callback(branch)
+        reconcile_access_for_artifact(
+            branch, branch.information_type, [branch.product])
+
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            owner, [branch])
+        with block_on_job(self):
+            transaction.commit()
+
+        # Check the result. Policy grantees will be unsubscribed.
+        self.assertNotIn(policy_team_grantee, branch.subscribers)
+        self.assertNotIn(policy_indirect_grantee, branch.subscribers)
+        self.assertIn(artifact_team_grantee, branch.subscribers)
+        self.assertIn(artifact_indirect_grantee, branch.subscribers)
+        self.assertIn(artifact_indirect_grantee, bug.getDirectSubscribers())
+
+    def test_change_information_type_branch(self):
+        def change_information_type(branch):
+            removeSecurityProxy(branch).information_type = (
+                InformationType.PRIVATESECURITY)
+
+        self._assert_branch_change_unsubscribes(change_information_type)
 
     def test_change_information_type(self):
         # Changing the information type of a bug unsubscribes users who can no
@@ -327,7 +407,7 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
             # Set the info_type attribute directly since
             # transitionToInformationType queues a job.
             removeSecurityProxy(bug).information_type = (
-                InformationType.EMBARGOEDSECURITY)
+                InformationType.PRIVATESECURITY)
 
         self._assert_bug_change_unsubscribes(change_information_type)
 
@@ -341,20 +421,18 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
 
         self._assert_bug_change_unsubscribes(change_target)
 
-    def _make_subscribed_bug(self, grantee, product=None, distribution=None,
+    def _make_subscribed_bug(self, grantee, target,
                              information_type=InformationType.USERDATA):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            owner=owner, product=product, distribution=distribution,
-            information_type=information_type)
+            owner=owner, target=target, information_type=information_type)
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
         # Subscribing grantee to bug creates an access grant so we need to
         # revoke that for our test.
-        accessartifact_source = getUtility(IAccessArtifactSource)
-        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
-        accessartifact_grant_source.revokeByArtifact(
-            accessartifact_source.find([bug]), [grantee])
+        artifact = self.factory.makeAccessArtifact(concrete=bug)
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            [artifact], [grantee])
 
         return bug, owner
 
@@ -368,15 +446,15 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
 
         # Make bugs the person_grantee is subscribed to.
         bug1, ignored = self._make_subscribed_bug(
-            person_grantee, product=pillar,
+            person_grantee, pillar,
             information_type=InformationType.USERDATA)
 
         bug2, ignored = self._make_subscribed_bug(
-            person_grantee, product=pillar,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            person_grantee, pillar,
+            information_type=InformationType.PRIVATESECURITY)
 
         # Now run the job, removing access to userdata artifacts.
-        getUtility(IRemoveBugSubscriptionsJobSource).create(
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             pillar.owner, pillar=pillar,
             information_types=[InformationType.USERDATA])
         with block_on_job(self):
@@ -396,11 +474,11 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
 
         login_person(owner)
         bug = self.factory.makeBug(
-            owner=owner, product=product,
+            owner=owner, target=product,
             information_type=InformationType.USERDATA)
 
         bug.subscribe(admin, owner)
-        getUtility(IRemoveBugSubscriptionsJobSource).create(
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
             owner, [bug], pillar=product)
         with block_on_job(self):
             transaction.commit()

@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces including and related to IDistribution."""
 
 __metaclass__ = type
@@ -72,7 +70,6 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
@@ -135,10 +132,10 @@ class IDistributionDriverRestricted(Interface):
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBuildRecords, IHasDrivers, IHasMilestones,
-    IHasOOPSReferences, IHasOwner, IHasSecurityContact, IHasSprints,
-    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IPillar, IServiceUsage, ISpecificationTarget):
+    IHasOOPSReferences, IHasOwner, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
+    ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -617,6 +614,18 @@ class IDistributionPublic(
             - open bugs with an upstream task
             - open bugs with upstream tasks that are either linked to
               bug watches or to products that use_malone.
+        """
+
+    def getAllowedBugInformationTypes():
+        """Get the information types that a bug in this distribution can have.
+
+        :return: A sequence of `InformationType`s.
+        """
+
+    def getDefaultBugInformationType():
+        """Get the default information type of a new bug in this distro.
+
+        :return: The `InformationType`.
         """
 
     def userCanEdit(user):

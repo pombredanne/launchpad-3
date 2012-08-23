@@ -22,33 +22,21 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
-from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator,
-    BugTaskImportance,
-    BugTaskSearchParams,
-    BugTaskStatus,
-    RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,
-    )
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTagsSearchCombinator,
+    BugTaskSearchParams,
+    )
 from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
-    )
-from lp.services.searchbuilder import (
-    any,
-    not_equals,
-    NULL,
-    )
-from lp.services.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
+    IStore,
     )
 
 
@@ -81,7 +69,8 @@ class HasBugsBase:
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, modified_since=None,
-                    created_since=None, created_before=None):
+                    created_since=None, created_before=None,
+                    information_type=None):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -113,85 +102,6 @@ class HasBugsBase:
         """
         raise NotImplementedError(self.getBugSummaryContextWhereClause)
 
-    @property
-    def closed_bugtasks(self):
-        """See `IHasBugs`."""
-        closed_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*RESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(closed_tasks_query)
-
-    @property
-    def open_bugtasks(self):
-        """See `IHasBugs`."""
-        return self.searchTasks(BugTaskSet().open_bugtask_search)
-
-    @property
-    def new_bugtasks(self):
-        """See `IHasBugs`."""
-        open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.NEW,
-            omit_dupes=True)
-
-        return self.searchTasks(open_tasks_query)
-
-    @property
-    def high_bugtasks(self):
-        """See `IHasBugs`."""
-        high_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            importance=BugTaskImportance.HIGH,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(high_tasks_query)
-
-    @property
-    def critical_bugtasks(self):
-        """See `IHasBugs`."""
-        critical_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            importance=BugTaskImportance.CRITICAL,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(critical_tasks_query)
-
-    @property
-    def inprogress_bugtasks(self):
-        """See `IHasBugs`."""
-        inprogress_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=BugTaskStatus.INPROGRESS,
-            omit_dupes=True)
-
-        return self.searchTasks(inprogress_tasks_query)
-
-    @property
-    def unassigned_bugtasks(self):
-        """See `IHasBugs`."""
-        unassigned_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, assignee=NULL,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES), omit_dupes=True)
-
-        return self.searchTasks(unassigned_tasks_query)
-
-    @property
-    def all_bugtasks(self):
-        """See `IHasBugs`."""
-        all_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=not_equals(BugTaskStatus.UNKNOWN))
-
-        return self.searchTasks(all_tasks_query)
-
-    @property
-    def has_bugtasks(self):
-        """See `IHasBugs`."""
-        return not self.all_bugtasks.is_empty()
-
     def getBugTaskWeightFunction(self):
         """Default weight function is the simple one."""
         return simple_weight_calculator
@@ -214,6 +124,13 @@ class BugTargetBase(HasBugsBase):
         return get_bug_tags_open_count(
             self.getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
+
+    def createBug(self, params):
+        """See IBugTarget."""
+        # createBug will raise IllegalTarget for ISeriesBugTargets and
+        # IProjectGroup.
+        params.target = self
+        return getUtility(IBugSet).createBug(params)
 
 
 class OfficialBugTagTargetMixin:
@@ -241,9 +158,8 @@ class OfficialBugTagTargetMixin:
 
     def _getOfficialTags(self):
         """Get the official bug tags as a sorted list of strings."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         target_clause = self._getOfficialTagClause()
-        return list(store.find(
+        return list(IStore(OfficialBugTag).find(
             OfficialBugTag.tag, target_clause).order_by(OfficialBugTag.tag))
 
     def _setOfficialTags(self, tags):
@@ -264,9 +180,8 @@ class OfficialBugTagTargetMixin:
 
         If the tag is not defined for this target, None is returned.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         target_clause = self._getOfficialTagClause()
-        return store.find(
+        return IStore(OfficialBugTag).find(
             OfficialBugTag, OfficialBugTag.tag == tag, target_clause).one()
 
     def addOfficialBugTag(self, tag):
@@ -281,10 +196,9 @@ class OfficialBugTagTargetMixin:
 
     def removeOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         tag = self._getTag(tag)
         if tag is not None:
-            store.remove(tag)
+            IStore(OfficialBugTag).remove(tag)
 
 
 class OfficialBugTag(Storm):

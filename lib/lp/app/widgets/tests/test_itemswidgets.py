@@ -3,9 +3,7 @@
 
 __metaclass__ = type
 
-
 import doctest
-from unittest import TestCase
 
 from lazr.enum import (
     EnumeratedType,
@@ -22,18 +20,24 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.lazrjs import (
+    EnumChoiceWidget,
+    vocabulary_to_choice_edit_items,
+    )
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     PlainMultiCheckBoxWidget,
     )
-from lp.registry.vocabularies import InformationTypeVocabulary
-from lp.services.features.testing import FeatureFixture
+from lp.code.interfaces.branch import IBranch
 from lp.services.webapp.menu import structured
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -222,27 +226,9 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
         hint_html = self.widget.renderExtraHint()
         self.assertEqual(expected, hint_html)
 
-    def test_renderDescription(self):
-        # If the vocabulary provides a description property, it is used over
-        # the one provided by the enum.
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            vocab = InformationTypeVocabulary()
-            widget = LaunchpadRadioWidgetWithDescription(
-                self.field, vocab, self.request)
-            self.assertRenderItem(
-                "...has shared private information...", widget.renderItem,
-                vocab.getTermByToken('USERDATA'))
 
-
-class TestVocabularyToChoiceEditItems(TestCase):
-    """Tests for vocabulary_to_choice_edit_items.
-
-    This function is tested implicitly in lazr-js-widgets.txt.
-    Here we are adding some explicit tests for the behaviour enabled by
-    feature flag disclosure.enhanced_choice_popup.enabled.
-    """
+class TestEnumChoiceWidget(TestCaseWithFactory):
+    """Tests for EnumChoiceWidget and vocabulary_to_choice_edit_items."""
 
     layer = DatabaseFunctionalLayer
 
@@ -281,21 +267,17 @@ class TestVocabularyToChoiceEditItems(TestCase):
         self.assertEqual(expected, items)
 
     def test_vocabulary_to_choice_edit_items_no_description(self):
-        # Even if feature flag is on, there are no descriptions unless wanted.
-        feature_flag = {'disclosure.enhanced_choice_popup.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            overrides = {'description': ''}
-            items = vocabulary_to_choice_edit_items(self.ChoiceEnum)
+        # There are no descriptions unless wanted.
+        overrides = {'description': ''}
+        items = vocabulary_to_choice_edit_items(self.ChoiceEnum)
         expected = [self._makeItemDict(e.value, overrides)
                     for e in self.ChoiceEnum]
         self.assertEqual(expected, items)
 
     def test_vocabulary_to_choice_edit_items_with_description(self):
-        # The items list is as expected with the feature flag.
-        feature_flag = {'disclosure.enhanced_choice_popup.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            items = vocabulary_to_choice_edit_items(
-                self.ChoiceEnum, include_description=True)
+        # The items list is as expected.
+        items = vocabulary_to_choice_edit_items(
+            self.ChoiceEnum, include_description=True)
         expected = [self._makeItemDict(e.value) for e in self.ChoiceEnum]
         self.assertEqual(expected, items)
 
@@ -304,6 +286,50 @@ class TestVocabularyToChoiceEditItems(TestCase):
         items = vocabulary_to_choice_edit_items(
             self.ChoiceEnum, include_description=True,
             excluded_items=[self.ChoiceEnum.ITEM_B])
-        overrides = {'description': ''}
-        expected = [self._makeItemDict(self.ChoiceEnum.ITEM_A, overrides)]
+        expected = [self._makeItemDict(self.ChoiceEnum.ITEM_A)]
         self.assertEqual(expected, items)
+
+    def test_widget_with_anonymous_user(self):
+        # When the user is anonymous, the widget outputs static text.
+        branch = self.factory.makeAnyBranch()
+        widget = EnumChoiceWidget(
+            branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
+        with person_logged_in(ANONYMOUS):
+            markup = widget()
+        expected = """
+        <span id="edit-lifecycle_status">
+            <span class="value branchstatusDEVELOPMENT">Development</span>
+        </span>
+        """
+        expected_matcher = DocTestMatches(
+            expected, (doctest.NORMALIZE_WHITESPACE |
+                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+        self.assertThat(markup, expected_matcher)
+
+    def test_widget_with_user(self):
+        # When the user has edit permission, the widget allows changes via JS.
+        branch = self.factory.makeAnyBranch()
+        widget = EnumChoiceWidget(
+            branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
+        with person_logged_in(branch.owner):
+            markup = widget()
+        expected = """
+        <span id="edit-lifecycle_status">
+            <span class="value branchstatusDEVELOPMENT">Development</span>
+            <span>
+            <a class="editicon sprite edit action-icon"
+                href="http://.../+edit"
+                title="">Edit</a>
+            </span>
+        </span>
+        <script>
+        LPJS.use('lp.app.choice', function(Y) {
+        ...
+        </script>
+        """
+        expected_matcher = DocTestMatches(
+            expected, (doctest.NORMALIZE_WHITESPACE |
+                       doctest.REPORT_NDIFF | doctest.ELLIPSIS))
+        self.assertThat(markup, expected_matcher)

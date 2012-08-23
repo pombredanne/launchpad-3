@@ -8,11 +8,7 @@ Foo Bar, an LP admin, is about to make bug #2 private.
 Foo Bar is not Cc'd on this bug, but is able to set the bug private
 anyway, because he is an admin.
 
-    >>> browser.open(
-    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
-    ...     "+bug/2/+secrecy")
-    >>> browser.getControl("This bug report should be private").selected = (
-    ...     True)
+    >>> browser.getControl("Private", index=1).selected = True
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
@@ -22,7 +18,7 @@ When we go back to the secrecy form, the previously set value is pre-selected.
     >>> browser.open(
     ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
     ...     "+bug/2/+secrecy")
-    >>> browser.getControl("This bug report should be private").selected
+    >>> browser.getControl("Private", index=1).selected
     True
 
 Foo Bar files a security (private) bug on Ubuntu Linux. He gets
@@ -31,23 +27,16 @@ redirected to the bug page.
     >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
 
-Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
-will be subscribed instead.
+The Ubuntu maintainer, Ubuntu Team, will be subscribed.
 
     >>> browser.getControl(name="field.title", index=0).value = (
     ...     "a private bug")
     >>> browser.getControl('Continue').click()
 
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...The maintainer of...Ubuntu...Ubuntu Team...will be notified...
-    ...
-
     >>> browser.getControl(name="packagename_option").value = ["choose"]
     >>> browser.getControl(name="field.packagename").value = "evolution"
     >>> browser.getControl(name="field.comment").value = "secret info"
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Private Security").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> bug_id = browser.url.split("/")[-1]
@@ -67,7 +56,7 @@ Foo Bar sees the private bug he filed.
     ...Ubuntu Linux...
     ...<a...>...BUG-ID...</a>...
 
-Foo Bar and the Ubuntu Team are subscribed to the bug.
+Foo Bar is subscribed to the bug.
 
     >>> from zope.component import getUtility
     >>> from lp.testing import login, logout
@@ -78,48 +67,7 @@ Foo Bar and the Ubuntu Team are subscribed to the bug.
     >>> bug = getUtility(IBugSet).get(bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'name16', u'ubuntu-team']
-
-    >>> logout()
-
-Now let's set an Ubuntu security team, and see how the filebug page and
-subscriptions differ.
-
-    >>> browser.open("http://launchpad.dev/ubuntu/+securitycontact")
-    >>> browser.getControl("Security Contact").value = "name12"
-    >>> browser.getControl("Change").click()
-
-    >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
-
-    >>> browser.getControl(name="field.title", index=0).value = (
-    ...     "a private bug")
-    >>> browser.getControl('Continue').click()
-
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...The security contact for...Ubuntu...Sample Person...will be notified...
-    ...
-
-    >>> browser.getControl(name="packagename_option").value = ["choose"]
-    >>> browser.getControl(name="field.packagename").value = "evolution"
-    >>> browser.getControl(name="field.comment").value = "secret info"
-    >>> browser.getControl(
-    ...     "This bug is a security vulnerability").selected = True
-    >>> browser.getControl("Submit Bug Report").click()
-
-    >>> other_bug_id = browser.url.split("/")[-1]
-    >>> print browser.url.replace(other_bug_id, "BUG-ID")
-    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/BUG-ID
-
-
-Now only the reporter and /security contact/ are subscribed.
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> bug = getUtility(IBugSet).get(other_bug_id)
-
-    >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'name12', u'name16']
+    [u'name16']
 
     >>> logout()
 
@@ -160,7 +108,7 @@ Ubuntu evolution is, so we can avoid hardcoding its ID here:
 
     >>> from zope.component import getUtility
     >>> from lp.services.webapp.interfaces import ILaunchBag
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet,

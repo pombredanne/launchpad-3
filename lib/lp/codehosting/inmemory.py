@@ -33,11 +33,11 @@ from lp.code.bzr import (
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlookup import get_first_path_result
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
     branch_id_alias,
-    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
@@ -58,7 +58,6 @@ from lp.registry.enums import (
 from lp.registry.errors import InvalidName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
-from lp.services.utils import iter_split
 from lp.services.xmlrpc import LaunchpadFault
 from lp.testing.factory import ObjectFactory
 from lp.xmlrpc import faults
@@ -701,9 +700,9 @@ class FakeCodehosting:
         registrant = self._person_set.get(requester_id)
         try:
             return self._createBranch(registrant, escaped_path)
-        except LaunchpadFault, e:
+        except LaunchpadFault as e:
             return e
-        except LaunchpadValidationError, e:
+        except LaunchpadValidationError as e:
             msg = e.args[0]
             if isinstance(msg, unicode):
                 msg = msg.encode('utf-8')
@@ -801,13 +800,13 @@ class FakeCodehosting:
         return self._factory.makeSourcePackage(
             distroseries, sourcepackagename)
 
-    def _serializeControlDirectory(self, requester, product_path,
-                                   trailing_path):
+    def _serializeControlDirectory(self, requester, lookup):
+        trailing_path = lookup['trailing'].lstrip('/')
         if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
             return
-        target = self._get_product_target(product_path)
+        target = self._get_product_target(lookup['control_name'])
         if target is None:
-            target = self._get_package_target(product_path)
+            target = self._get_package_target(lookup['control_name'])
         if target is None:
             return
         default_branch = IBranchTarget(target).default_stacked_on_branch
@@ -836,59 +835,51 @@ class FakeCodehosting:
             {'id': branch.id, 'writable': writable},
             trailing_path)
 
-    def _translateBranchIdAlias(self, requester, path):
-        # If the path isn't a branch id alias, nothing more to do.
-        stripped_path = unescape(path.strip('/'))
-        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+    def performLookup(self, requester_id, lookup, branch_name_only=False):
+        branch = None
+        if branch_name_only and lookup['type'] != 'branch_name':
+            return
+        if lookup['type'] == 'control_name':
+            return self._serializeControlDirectory(requester_id,
+                                                   lookup)
+        elif lookup['type'] == 'id':
+            branch = self._branch_set.get(lookup['branch_id'])
+            if branch is None:
+                return None
+            trailing = lookup['trailing']
+        elif lookup['type'] == 'alias':
+            result = get_first_path_result(lookup['lp_path'],
+                lambda l: self.performLookup(requester_id, l,
+                    branch_name_only=True), None)
+            if result is not None:
+                return result
+            product_name = lookup['lp_path'].split('/', 2)[0]
+            product = self._product_set.getByName(product_name)
+            if product is None:
+                return None
+            branch = product.development_focus.branch
+            trailing = lookup['lp_path'][len(product_name):]
+        elif lookup['type'] == 'branch_name':
+            branch = self._branch_set._find(
+                unique_name=lookup['unique_name'])
+            trailing = escape(lookup['trailing'])
+        else:
             return None
-        try:
-            parts = stripped_path.split('/', 2)
-            branch_id = int(parts[1])
-        except (ValueError, IndexError):
-            return faults.PathTranslationError(path)
-        branch = self._branch_set.get(branch_id)
-        if branch is None:
-            return faults.PathTranslationError(path)
-        try:
-            trailing = parts[2]
-        except IndexError:
-            trailing = ''
-        return self._serializeBranch(requester, branch, trailing, True)
+        if branch is not None:
+            serialized = self._serializeBranch(requester_id, branch,
+                trailing.lstrip('/'), lookup['type'] == 'id')
+            if serialized is not None:
+                return serialized
 
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
-        branch = self._translateBranchIdAlias(requester_id, path)
-        if branch is not None:
-            return branch
-        stripped_path = path.strip('/')
-        for first, second in iter_split(stripped_path, '/'):
-            first = unescape(first).encode('utf-8')
-            # Is it a branch?
-            if first.startswith('+branch/'):
-                component_name = first[len('+branch/'):]
-                product = self._product_set.getByName(component_name)
-                if product:
-                    branch = product.development_focus.branch
-                else:
-                    branch = self._branch_set._find(
-                        unique_name=component_name)
-            else:
-                branch = self._branch_set._find(unique_name=first)
-            if branch is not None:
-                branch = self._serializeBranch(requester_id, branch, second)
-                if isinstance(branch, Fault):
-                    return branch
-                elif branch is None:
-                    break
-                return branch
-
-            # Is it a product?
-            product = self._serializeControlDirectory(
-                requester_id, first, second)
-            if product:
-                return product
-        return faults.PathTranslationError(path)
+        result = get_first_path_result(unescape(path.strip('/')),
+            lambda l: self.performLookup(requester_id, l), None)
+        if result is not None:
+            return result
+        else:
+            return faults.PathTranslationError(path)
 
 
 class InMemoryFrontend:

@@ -21,7 +21,11 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
+    InformationType,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
@@ -31,6 +35,7 @@ from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
+    logout,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -67,7 +72,9 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner=self.owner, driver=self.driver)
         elif self.pillar_type == 'product':
             self.pillar = self.factory.makeProduct(
-                owner=self.owner, driver=self.driver)
+                owner=self.owner, driver=self.driver,
+                bug_sharing_policy=BugSharingPolicy.PUBLIC,
+                branch_sharing_policy=BranchSharingPolicy.PUBLIC)
         self.access_policy = self.factory.makeAccessPolicy(
             pillar=self.pillar, type=InformationType.PROPRIETARY)
         self.grantees = []
@@ -77,9 +84,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
         return grantee
 
-    def makeArtifactGrantee(
-            self, grantee=None, with_bug=True,
-            with_branch=False, security=False):
+    def makeArtifactGrantee(self, grantee=None, with_bug=True,
+                            with_branch=False, security=False):
         if grantee is None:
             grantee = self.factory.makePerson()
 
@@ -101,11 +107,11 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner = self.pillar.owner
             if self.pillar_type == 'product':
                 bug = self.factory.makeBug(
-                    product=self.pillar, owner=owner,
+                    target=self.pillar, owner=owner,
                     information_type=InformationType.USERDATA)
             elif self.pillar_type == 'distribution':
                 bug = self.factory.makeBug(
-                    distribution=self.pillar, owner=owner,
+                    target=self.pillar, owner=owner,
                     information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=bug))
@@ -119,14 +125,14 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 grantor=self.pillar.owner)
         return grantee
 
-    def setupSharing(self, sharees):
+    def setupSharing(self, grantees):
         with person_logged_in(self.owner):
             # Make grants in ascending order so we can slice off the first
             # elements in the pillar observer results to check batching.
             for x in range(10):
                 self.makeArtifactGrantee()
                 grantee = self.makeGrantee('name%s' % x)
-                sharees.append(grantee)
+                grantees.append(grantee)
 
 
 class PillarSharingDetailsMixin:
@@ -142,10 +148,12 @@ class PillarSharingDetailsMixin:
         # able to see.
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             pillarperson = self.getPillarPerson(security=True)
+            logout()
+            login_person(self.driver)
             view = create_initialized_view(pillarperson, '+index')
             # The page loads
             self.assertEqual(pillarperson.person.displayname, view.page_title)
-            # The bug, which is not shared with the owner, is not included.
+            # The bug, which is not shared with the driver, is not included.
             self.assertEqual(0, view.shared_bugs_count)
 
     def test_view_traverses_plus_sharingdetails(self):
@@ -203,7 +211,7 @@ class PillarSharingDetailsMixin:
             self.assertEqual({
                 'self_link': absoluteURL(pillarperson.person, request),
                 'displayname': pillarperson.person.displayname
-            }, cache.objects.get('sharee'))
+            }, cache.objects.get('grantee'))
             self.assertEqual({
                 'self_link': absoluteURL(pillarperson.pillar, request),
             }, cache.objects.get('pillar'))
@@ -323,7 +331,7 @@ class PillarSharingViewTestMixin:
                 'Search for user or exclusive team with whom to share',
                 picker_config['steptitle'])
             self.assertEqual(
-                'NewPillarSharee', picker_config['vocabulary'])
+                'NewPillarGrantee', picker_config['vocabulary'])
 
     def test_view_data_model(self):
         # Test that the json request cache contains the view data model.
@@ -331,15 +339,18 @@ class PillarSharingViewTestMixin:
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)
             self.assertIsNotNone(cache.objects.get('information_types'))
+            self.assertIsNotNone(
+                cache.objects.get('branch_sharing_policies'))
+            self.assertIsNotNone(cache.objects.get('bug_sharing_policies'))
             self.assertIsNotNone(cache.objects.get('sharing_permissions'))
             batch_size = config.launchpad.default_batch_size
             apgfs = getUtility(IAccessPolicyGrantFlatSource)
-            sharees = apgfs.findGranteePermissionsByPolicy(
+            grantees = apgfs.findGranteePermissionsByPolicy(
                 [self.access_policy], self.grantees[:batch_size])
             sharing_service = getUtility(IService, 'sharing')
-            sharee_data = sharing_service.jsonShareeData(sharees)
+            grantee_data = sharing_service.jsonGranteeData(grantees)
             self.assertContentEqual(
-                sharee_data, cache.objects.get('sharee_data'))
+                grantee_data, cache.objects.get('grantee_data'))
 
     def test_view_batch_data(self):
         # Test the expected batching data is in the json request cache.
@@ -347,7 +358,7 @@ class PillarSharingViewTestMixin:
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)
             # Test one expected data value (there are many).
-            next_batch = view.sharees().batch.nextBatch()
+            next_batch = view.grantees().batch.nextBatch()
             self.assertContentEqual(
                 next_batch.range_memo, cache.objects.get('next')['memo'])
 
@@ -355,7 +366,7 @@ class PillarSharingViewTestMixin:
         # Test the view range factory is properly configured.
         with FeatureFixture(ENABLED_FLAG):
             view = create_initialized_view(self.pillar, name='+sharing')
-            range_factory = view.sharees().batch.range_factory
+            range_factory = view.grantees().batch.range_factory
 
             def test_range_factory():
                 row = range_factory.resultset.get_plain_result_set()[0]
@@ -371,7 +382,7 @@ class PillarSharingViewTestMixin:
             view = create_view(self.pillar, name='+sharing')
             with StormStatementRecorder() as recorder:
                 view.initialize()
-            self.assertThat(recorder, HasQueryCount(LessThan(7)))
+            self.assertThat(recorder, HasQueryCount(LessThan(9)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
@@ -391,6 +402,19 @@ class PillarSharingViewTestMixin:
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)
             self.assertTrue(cache.objects.get('sharing_write_enabled'))
+
+    def test_view_invisible_information_types(self):
+        # Test the expected invisible information type  data is in the
+        # json request cache.
+        with FeatureFixture(WRITE_FLAG):
+            with person_logged_in(self.pillar.owner):
+                getUtility(IService, 'sharing').deletePillarGrantee(
+                    self.pillar, self.pillar.owner, self.pillar.owner)
+            view = create_initialized_view(self.pillar, name='+sharing')
+            cache = IJSONRequestCache(view.request)
+            self.assertContentEqual(
+                ['Private Security', 'Private'],
+                cache.objects.get('invisible_information_types'))
 
 
 class TestProductSharingView(PillarSharingViewTestMixin,

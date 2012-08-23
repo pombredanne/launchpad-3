@@ -49,6 +49,10 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 # Use this as the lock file name for all scripts that may manipulate
 # archives in the filesystem.  In a Launchpad(Cron)Script, set
@@ -159,8 +163,7 @@ class I18nIndex(_multivalued):
         return fixed_field_lengths
 
     def _get_size_field_length(self, key):
-        lengths = [len(str(item['size'])) for item in self[key]]
-        return max(lengths)
+        return max(len(str(item['size'])) for item in self[key])
 
 
 class Publisher(object):
@@ -281,9 +284,6 @@ class Publisher(object):
         OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
         dirty, to ensure that they are processed in death row.
         """
-        from lp.soyuz.model.publishing import (
-            SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-
         self.log.debug("* Step A2: Mark pockets with deletions as dirty")
 
         # Query part that is common to both queries below.
@@ -520,6 +520,14 @@ class Publisher(object):
         with open(os.path.join(location, "Release"), "w") as release_file:
             release_data.dump(release_file, "utf-8")
 
+    def _syncTimestamps(self, suite, all_files):
+        """Make sure the timestamps on all files in a suite match."""
+        location = os.path.join(self._config.distsroot, suite)
+        paths = [os.path.join(location, path) for path in all_files]
+        latest_timestamp = max(os.stat(path).st_mtime for path in paths)
+        for path in paths:
+            os.utime(path, (latest_timestamp, latest_timestamp))
+
     def _writeSuite(self, distroseries, pocket):
         """Write out the Release files for the provided suite."""
         # XXX: kiko 2006-08-24: Untested method.
@@ -564,8 +572,7 @@ class Publisher(object):
         release_file["Codename"] = distroseries.name
         release_file["Date"] = datetime.utcnow().strftime(
             "%a, %d %b %Y %k:%M:%S UTC")
-        release_file["Architectures"] = " ".join(
-            sorted(list(all_architectures)))
+        release_file["Architectures"] = " ".join(sorted(all_architectures))
         release_file["Components"] = " ".join(
             reorder_components(all_components))
         release_file["Description"] = drsummary
@@ -574,7 +581,7 @@ class Publisher(object):
             release_file["NotAutomatic"] = "yes"
             release_file["ButAutomaticUpgrades"] = "yes"
 
-        for filename in sorted(list(all_files), key=os.path.dirname):
+        for filename in sorted(all_files, key=os.path.dirname):
             entry = self._readIndexFileContents(suite, filename)
             if entry is None:
                 continue
@@ -592,6 +599,7 @@ class Publisher(object):
                 "size": len(entry)})
 
         self._writeReleaseFile(suite, release_file)
+        all_files.add("Release")
 
         # Skip signature if the archive signing key is undefined.
         if self.archive.signing_key is None:
@@ -601,6 +609,11 @@ class Publisher(object):
         # Sign the repository.
         archive_signer = IArchiveSigningKey(self.archive)
         archive_signer.signRepository(suite)
+        all_files.add("Release.gpg")
+
+        # Make sure all the timestamps match, to make it easier to insert
+        # caching headers on mirrors.
+        self._syncTimestamps(suite, all_files)
 
     def _writeSuiteArchOrSource(self, distroseries, pocket, component,
                                 file_stub, arch_name, arch_path,
@@ -627,12 +640,9 @@ class Publisher(object):
         release_file["Label"] = self._getLabel()
         release_file["Architecture"] = arch_name
 
-        f = open(os.path.join(self._config.distsroot, suite,
-                              component, arch_path, "Release"), "w")
-        try:
+        with open(os.path.join(self._config.distsroot, suite,
+                               component, arch_path, "Release"), "w") as f:
             release_file.dump(f, "utf-8")
-        finally:
-            f.close()
 
     def _writeSuiteSource(self, distroseries, pocket, component,
                           all_series_files):
@@ -718,11 +728,8 @@ class Publisher(object):
             self.log.debug("Failed to find " + full_name)
             return None
 
-        in_file = open(full_name, 'r')
-        try:
+        with open(full_name, 'r') as in_file:
             return in_file.read()
-        finally:
-            in_file.close()
 
     def deleteArchive(self):
         """Delete the archive.
@@ -747,7 +754,7 @@ class Publisher(object):
                 continue
             try:
                 shutil.rmtree(directory)
-            except (shutil.Error, OSError), e:
+            except (shutil.Error, OSError) as e:
                 self.log.warning(
                     "Failed to delete directory '%s' for archive "
                     "'%s/%s'\n%s" % (

@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'IRemoveBugSubscriptionsJob',
-    'IRemoveBugSubscriptionsJobSource',
+    'IRemoveArtifactSubscriptionsJob',
+    'IRemoveArtifactSubscriptionsJobSource',
     'ISharingJob',
     'ISharingJobSource',
     ]
@@ -66,7 +66,7 @@ class ISharingJob(IRunnableJob):
         """The person who initiated the job."""
 
 
-class IRemoveBugSubscriptionsJob(ISharingJob):
+class IRemoveArtifactSubscriptionsJob(ISharingJob):
     """Job to remove subscriptions to artifacts for which access is revoked.
 
     Invalid subscriptions for a specific bug are removed.
@@ -80,13 +80,14 @@ class ISharingJobSource(IJobSource):
         """Create a new ISharingJob."""
 
 
-class IRemoveBugSubscriptionsJobSource(ISharingJobSource):
-    """An interface for acquiring IRemoveBugSubscriptionsJobs."""
+class IRemoveArtifactSubscriptionsJobSource(ISharingJobSource):
+    """An interface for acquiring IRemoveArtifactSubscriptionsJobs."""
 
     def create(requestor, bugs=None, grantee=None, pillar=None,
                information_types=None):
-        """Create a new job to remove subscriptions for the specified bugs.
+        """Create a new job to remove subscriptions for the specified
+        artifacts.
 
-        Subscriptions for users who no longer have access to the bugs are
-        removed.
+        Subscriptions for users who no longer have access to the artifacts
+        are removed.
         """

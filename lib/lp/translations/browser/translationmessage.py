@@ -39,7 +39,6 @@ from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.app.errors import UnexpectedFormData
-from lp.services.database.readonly import is_read_only
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -382,11 +381,6 @@ class BaseTranslationView(LaunchpadView):
             principle the user should not have been given the option to
             submit the current request.
         """
-        if is_read_only():
-            raise UnexpectedFormData(
-                "Launchpad is currently in read-only mode for maintenance.  "
-                "Please try again later.")
-
         if self.user is None:
             raise UnexpectedFormData("You are not logged in.")
 
@@ -454,7 +448,7 @@ class BaseTranslationView(LaunchpadView):
         """
         try:
             self._storeTranslations(potmsgset)
-        except GettextValidationError, e:
+        except GettextValidationError as e:
             return unicode(e)
         except TranslationConflict:
             # The translations are demoted to suggestions, but they may

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database implementation of the branch lookup utility."""
@@ -8,6 +8,8 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
+
+from bzrlib.urlutils import escape
 from lazr.enum import DBItem
 from lazr.uri import (
     InvalidURIError,
@@ -26,6 +28,7 @@ from zope.component import (
     )
 from zope.interface import implements
 
+from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import valid_name
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -34,15 +37,14 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import (
+    get_first_path_result,
     IBranchLookup,
     ILinkedBranchTraversable,
     ILinkedBranchTraverser,
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -66,11 +68,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
-    )
-from lp.services.utils import iter_split
+from lp.services.database.lpstorm import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -224,7 +222,7 @@ class BranchLookup:
             return default
 
     @staticmethod
-    def uriToUniqueName(uri):
+    def uriToHostingPath(uri):
         """See `IBranchLookup`."""
         schemes = ('http', 'sftp', 'bzr+ssh')
         codehosting_host = URI(config.codehosting.supermirror_root).host
@@ -251,9 +249,11 @@ class BranchLookup:
         except InvalidURIError:
             return None
 
-        unique_name = self.uriToUniqueName(uri)
-        if unique_name is not None:
-            return self.getByUniqueName(unique_name)
+        path = self.uriToHostingPath(uri)
+        if path is not None:
+            branch, trailing = self.getByHostingPath(path)
+            if branch is not None:
+                return branch
 
         if uri.scheme == 'lp':
             if not self._uriHostAllowed(uri):
@@ -268,6 +268,27 @@ class BranchLookup:
                 return None
 
         return Branch.selectOneBy(url=url)
+
+    def performLookup(self, lookup):
+        if lookup['type'] == 'id':
+            return (self.get(lookup['branch_id']), lookup['trailing'])
+        elif lookup['type'] == 'alias':
+            try:
+                return self.getByLPPath(lookup['lp_path'])
+            except (InvalidProductName, NoLinkedBranch,
+                    CannotHaveLinkedBranch, NameLookupFailed,
+                    InvalidNamespace):
+                pass
+        elif lookup['type'] == 'branch_name':
+            store = IStore(Branch)
+            result = store.find(Branch,
+                                Branch.unique_name == lookup['unique_name'])
+            for branch in result:
+                return (branch, escape(lookup['trailing']))
+        return None, ''
+
+    def getByHostingPath(self, path):
+        return get_first_path_result(path, self.performLookup, (None, ''))
 
     def getByUrls(self, urls):
         """See `IBranchLookup`."""
@@ -293,53 +314,6 @@ class BranchLookup:
         except InvalidNamespace:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
-
-    def _getIdAndTrailingPathByIdAlias(self, store, path):
-        """Query by the integer id."""
-        parts = path.split('/', 2)
-        try:
-            branch_id = int(parts[1])
-        except (ValueError, IndexError):
-            return None, None
-        result = store.find(
-            (Branch.id),
-            Branch.id == branch_id,
-            Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES)).one()
-        if result is None:
-            return None, None
-        else:
-            try:
-                return branch_id, '/' + parts[2]
-            except IndexError:
-                return branch_id, ''
-
-    def _getIdAndTrailingPathByUniqueName(self, store, path):
-        """Query based on the unique name."""
-        prefixes = []
-        for first, second in iter_split(path, '/'):
-            prefixes.append(first)
-        result = store.find(
-            (Branch.id, Branch.unique_name),
-            Branch.unique_name.is_in(prefixes),
-            Branch.information_type.is_in(PUBLIC_INFORMATION_TYPES)).one()
-        if result is None:
-            return None, None
-        else:
-            branch_id, unique_name = result
-            trailing = path[len(unique_name):]
-            return branch_id, trailing
-
-    def getIdAndTrailingPath(self, path, from_slave=False):
-        """See `IBranchLookup`. """
-        if from_slave:
-            store = ISlaveStore(Branch)
-        else:
-            store = IMasterStore(Branch)
-        path = path.lstrip('/')
-        if path.startswith(BRANCH_ID_ALIAS_PREFIX):
-            return self._getIdAndTrailingPathByIdAlias(store, path)
-        else:
-            return self._getIdAndTrailingPathByUniqueName(store, path)
 
     def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':
@@ -421,13 +395,17 @@ class BranchLookup:
         else:
             # If the first element doesn't start with a tilde, then maybe
             # 'path' is a shorthand notation for a branch.
-            object_with_branch_link = getUtility(
-                ILinkedBranchTraverser).traverse(path)
+            try:
+                object_with_branch_link = getUtility(
+                    ILinkedBranchTraverser).traverse(path)
+            except NoSuchProductSeries as e:
+                # If ProductSeries lookup failed, the segment after product
+                # name referred to a location under a Product development
+                # focus branch.
+                object_with_branch_link = e.product
             branch, bzr_path = self._getLinkedBranchAndPath(
                 object_with_branch_link)
             suffix = path[len(bzr_path) + 1:]
-        if suffix == '':
-            suffix = None
         return branch, suffix
 
     def _getLinkedBranchAndPath(self, provided):

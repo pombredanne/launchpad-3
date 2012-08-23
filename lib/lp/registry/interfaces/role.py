@@ -1,7 +1,6 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213,W0611
 """Interfaces that define common roles associated with objects."""
 
 __metaclass__ = type
@@ -107,9 +106,6 @@ class IPersonRoles(Interface):
     in_rosetta_experts = Bool(
         title=_("True if this person is a rosetta expert."),
         required=True, readonly=True)
-    in_ubuntu_security = Bool(
-        title=_("True if this person is on the Ubuntu security team."),
-        required=True, readonly=True)
     in_ubuntu_techboard = Bool(
         title=_("True if this person is on the Ubuntu tech board."),
         required=True, readonly=True)
@@ -132,9 +128,6 @@ class IPersonRoles(Interface):
 
     def isBugSupervisor(obj):
         """Is this person the bug supervisor of the object?"""
-
-    def isSecurityContact(obj):
-        """Is this person the security contact of the object?"""
 
     def isOneOfDrivers(obj):
         """Is this person on of the drivers of the object?

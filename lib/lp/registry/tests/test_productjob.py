@@ -11,9 +11,9 @@ from datetime import (
     )
 
 import pytz
-import transaction
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+import transaction
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -26,7 +26,7 @@ from lp.registry.enums import (
     InformationType,
     ProductJobType,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.product import License
 from lp.registry.interfaces.productjob import (
     ICommercialExpiredJob,
@@ -326,7 +326,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
     def make_maintainer_team(self, product):
         team = self.factory.makeTeam(
             owner=product.owner,
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         team_admin = self.factory.makePerson()
         with person_logged_in(team.teamowner):
             team.addMember(
@@ -574,9 +574,12 @@ class CommericialExpirationMixin(CommercialHelpers):
             product.development_focus.branch = private_branch
         self.expire_commercial_subscription(product)
         job = self.JOB_CLASS.create(product, reviewer)
-        # Create a proprietary project which will have different DB relations.
+        # Create a proprietary project owned by a team which will have
+        # different DB relations.
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         proprietary_product = self.factory.makeProduct(
-            licenses=[License.OTHER_PROPRIETARY])
+            owner=team, licenses=[License.OTHER_PROPRIETARY])
         self.expire_commercial_subscription(proprietary_product)
         proprietary_job = self.JOB_CLASS.create(proprietary_product, reviewer)
         transaction.commit()
@@ -712,6 +715,8 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             public_series.branch = public_branch
             private_series = product.newSeries(
                 product.owner, 'special', 'testing', branch=private_branch)
+            # Verify that branchless series do not raise an error.
+            product.newSeries(product.owner, 'unused', 'no branch')
         self.expire_commercial_subscription(product)
         job = CommercialExpiredJob.create(product, reviewer)
         job._deactivateCommercialFeatures()

@@ -325,7 +325,7 @@ class LaunchpadView(UserAttributeCache):
         # infrastructure.
         try:
             cache = IJSONRequestCache(self.request).objects
-        except TypeError, error:
+        except TypeError as error:
             if error.args[0] == 'Could not adapt':
                 cache = None
         return cache

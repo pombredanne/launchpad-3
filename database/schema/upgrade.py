@@ -11,21 +11,17 @@ __metaclass__ = type
 
 import _pythonpath
 
-from cStringIO import StringIO
 import glob
 from optparse import OptionParser
 import os.path
 import re
-from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
 from bzrlib.branch import Branch
 from bzrlib.errors import NotBranchError
 
-from lp.services.database.postgresql import fqn
 from lp.services.database.sqlbase import (
     connect,
-    ISOLATION_LEVEL_AUTOCOMMIT,
     sqlvalues,
     )
 from lp.services.scripts import (
@@ -34,7 +30,6 @@ from lp.services.scripts import (
     logger_options,
     )
 from lp.services.utils import total_seconds
-import replication.helpers
 
 
 SCHEMA_DIR = os.path.dirname(__file__)
@@ -44,16 +39,8 @@ def main():
     con = connect()
     patches = get_patchlist(con)
 
-    if replication.helpers.slony_installed(con):
-        con.close()
-        if options.commit is False:
-            parser.error("--dry-run does not make sense with replicated db")
-        log.info("Applying patches to Slony-I environment.")
-        apply_patches_replicated()
-        con = connect()
-    else:
-        log.info("Applying patches to unreplicated environment.")
-        apply_patches_normal(con)
+    log.info("Applying patches.")
+    apply_patches_normal(con)
 
     report_patch_times(con, patches)
 
@@ -179,334 +166,6 @@ def apply_patches_normal(con):
     apply_comments(con)
 
 
-def apply_patches_replicated():
-    """Update a Slony-I cluster."""
-
-    # Get an autocommit connection. We use autocommit so we don't have to
-    # worry about blocking locks needed by Slony-I.
-    con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
-
-    # We use three slonik scripts to apply our DB patches.
-    # The first script applies the DB patches to all nodes.
-
-    # First make sure the cluster is synced.
-    log.info("Waiting for cluster to sync, pre-update.")
-    replication.helpers.sync(timeout=600)
-
-    # Slonik script we are generating.
-    outf = StringIO()
-
-    # Start a transaction block.
-    print >> outf, "try {"
-
-    # All the SQL we need to run, combined into one file. This minimizes
-    # Slony-I syncs and downtime.
-    combined_sql = NamedTemporaryFile(prefix='dbupdate', suffix='.sql')
-
-    def add_sql(sql):
-        sql = sql.strip()
-        if sql != '':
-            assert sql.endswith(';'), "SQL not terminated with ';': %s" % sql
-            print >> combined_sql, sql
-            # Flush or we might lose statements from buffering.
-            combined_sql.flush()
-
-    # Apply trusted.sql
-    add_sql(open(os.path.join(SCHEMA_DIR, 'trusted.sql'), 'r').read())
-
-    # Prepare to repair the start timestamps in
-    # LaunchpadDatabaseRevision.
-    add_sql(FIX_PATCH_TIMES_PRE_SQL)
-
-    patches = get_patchlist(con)
-    for (major, minor, patch), patch_file in patches:
-        add_sql(open(patch_file, 'r').read())
-
-        # Trigger a failure if the patch neglected to update
-        # LaunchpadDatabaseRevision.
-        add_sql(
-            "SELECT assert_patch_applied(%d, %d, %d);"
-            % (major, minor, patch))
-
-    # Fix the start timestamps in LaunchpadDatabaseRevision.
-    add_sql(FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_bzr_details()))
-
-    print >> outf, dedent("""\
-        execute script (
-            set id = @lpmain_set, event node = @master_node,
-            filename='%s'
-            );
-        """ % combined_sql.name)
-
-    # Close transaction block and abort on error.
-    print >> outf, dedent("""\
-        }
-        on error {
-            echo 'Failed! Slonik script aborting. Patches rolled back.';
-            exit 1;
-            }
-        """)
-
-    # Execute the script with slonik.
-    log.info("slonik(1) schema upgrade script generated. Invoking.")
-    if not replication.helpers.execute_slonik(outf.getvalue()):
-        log.fatal("Aborting.")
-        raise SystemExit(4)
-    log.info("slonik(1) schema upgrade script completed.")
-
-    # Wait for replication to sync.
-    log.info("Waiting for patches to apply to slaves and cluster to sync.")
-    replication.helpers.sync(timeout=0)
-
-    # The db patches have now been applied to all nodes, and we are now
-    # committed to completing the upgrade (!). If any of the later stages
-    # fail, it will likely involve manual cleanup.
-
-    # We now scan for new tables and add them to the lpmain
-    # replication set using a second script. Note that upgrade.py only
-    # deals with the lpmain replication set.
-
-    # Detect new tables and sequences.
-    # Everything else that isn't replicated should go in the lpmain
-    # replication set.
-    cur = con.cursor()
-    unrepl_tabs, unrepl_seqs = replication.helpers.discover_unreplicated(cur)
-
-    # But warn if we are going to replicate something not in the calculated
-    # set, as *_SEED in replication.helpers needs to be updated. We don't want
-    # abort unless absolutely necessary to avoid manual cleanup.
-    lpmain_tabs, lpmain_seqs = replication.helpers.calculate_replication_set(
-            cur, replication.helpers.LPMAIN_SEED)
-
-    assumed_tabs = unrepl_tabs.difference(lpmain_tabs)
-    assumed_seqs = unrepl_seqs.difference(lpmain_seqs)
-    for obj in (assumed_tabs.union(assumed_seqs)):
-        log.warn(
-            "%s not in calculated lpmain replication set. "
-            "Update *_SEED in replication/helpers.py" % obj)
-
-    if unrepl_tabs or unrepl_seqs:
-        # TODO: Or if the holding set already exists - catch an aborted run.
-        log.info(
-            "New stuff needs replicating: %s"
-            % ', '.join(sorted(unrepl_tabs.union(unrepl_seqs))))
-        # Create a new replication set to hold new tables and sequences
-        # TODO: Only create set if it doesn't already exist.
-        outf = StringIO()
-        print >> outf, dedent("""\
-            try {
-                create set (
-                    id = @holding_set, origin = @master_node,
-                    comment = 'Temporary set to merge'
-                    );
-            """)
-
-        # Add the new tables and sequences to the holding set.
-        cur.execute("""
-            SELECT max(tab_id) FROM %s
-            """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_table'))
-        next_id = cur.fetchone()[0] + 1
-        for tab in unrepl_tabs:
-            print >> outf, dedent("""\
-                echo 'Adding %s to holding set for lpmain merge.';
-                set add table (
-                    set id = @holding_set, origin = @master_node, id=%d,
-                    fully qualified name = '%s',
-                    comment = '%s'
-                    );
-                """ % (tab, next_id, tab, tab))
-            next_id += 1
-        cur.execute("""
-            SELECT max(seq_id) FROM %s
-            """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_sequence'))
-        next_id = cur.fetchone()[0] + 1
-        for seq in  unrepl_seqs:
-            print >> outf, dedent("""\
-                echo 'Adding %s to holding set for lpmain merge.';
-                set add sequence (
-                    set id = @holding_set, origin = @master_node, id=%d,
-                    fully qualified name = '%s',
-                    comment = '%s'
-                    );
-                """ % (seq, next_id, seq, seq))
-            next_id += 1
-
-        print >> outf, dedent("""\
-            } on error {
-                echo 'Failed to create holding set! Aborting.';
-                exit 1;
-                }
-            """)
-
-        # Subscribe the holding set to all replicas.
-        # TODO: Only subscribe the set if not already subscribed.
-        # Close the transaction and sync. Important, or MERGE SET will fail!
-        # Merge the sets.
-        # Sync.
-        # Drop the holding set.
-        for slave_node in replication.helpers.get_slave_nodes(con):
-            print >> outf, dedent("""\
-                echo 'Subscribing holding set to @node%d_node.';
-                subscribe set (
-                    id=@holding_set, provider=@master_node,
-                    receiver=@node%d_node, forward=yes);
-                wait for event (
-                    origin=@master_node, confirmed=all,
-                    wait on=@master_node, timeout=0);
-                echo 'Waiting for sync';
-                sync (id=@master_node);
-                wait for event (
-                    origin=@master_node, confirmed=ALL,
-                    wait on=@master_node, timeout=0);
-                """ % (slave_node.node_id, slave_node.node_id))
-
-        print >> outf, dedent("""\
-            echo 'Merging holding set to lpmain';
-            merge set (
-                id=@lpmain_set, add id=@holding_set, origin=@master_node);
-            """)
-
-        # Execute the script and sync.
-        log.info(
-            "Generated slonik(1) script to replicate new objects. Invoking.")
-        if not replication.helpers.execute_slonik(outf.getvalue()):
-            log.fatal("Aborting.")
-        log.info(
-            "slonik(1) script to replicate new objects completed.")
-        log.info("Waiting for sync.")
-        replication.helpers.sync(timeout=0)
-    else:
-        log.info("No new tables or sequences to replicate.")
-
-    # We also scan for tables and sequences we want to drop and do so using
-    # a final slonik script. Instead of dropping tables in the DB patch,
-    # we rename them into the ToDrop namespace.
-    #
-    # First, remove all todrop.* sequences from replication.
-    cur.execute("""
-        SELECT seq_nspname, seq_relname, seq_id from %s
-        WHERE seq_nspname='todrop'
-        """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_sequence'))
-    seqs_to_unreplicate = set(
-        (fqn(nspname, relname), tab_id)
-        for nspname, relname, tab_id in cur.fetchall())
-    if seqs_to_unreplicate:
-        log.info("Unreplicating sequences: %s" % ', '.join(
-            name for name, id in seqs_to_unreplicate))
-        # Generate a slonik script to remove sequences from the
-        # replication set.
-        sk = StringIO()
-        print >> sk, "try {"
-        for seq_name, seq_id in seqs_to_unreplicate:
-            if seq_id is not None:
-                print >> sk, dedent("""\
-                    echo 'Removing %s from replication';
-                    set drop sequence (origin=@master_node, id=%d);
-                    """ % (seq_name, seq_id))
-        print >> sk, dedent("""\
-            }
-            on error {
-                echo 'Failed to unreplicate sequences. Aborting.';
-                exit 1;
-                }
-            """)
-        log.info(
-            "Generated slonik(1) script to unreplicate sequences. Invoking.")
-        if not replication.helpers.execute_slonik(sk.getvalue()):
-            log.fatal("Aborting.")
-        log.info("slonik(1) script to drop sequences completed.")
-
-    # Generate a slonik script to remove tables from the replication set,
-    # and a DROP TABLE/DROP SEQUENCE sql script to run after.
-    cur.execute("""
-        SELECT nspname, relname, tab_id
-        FROM pg_class
-        JOIN pg_namespace ON relnamespace = pg_namespace.oid
-        LEFT OUTER JOIN %s ON pg_class.oid = tab_reloid
-        WHERE nspname='todrop' AND relkind='r'
-        """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_table'))
-    tabs_to_drop = set(
-        (fqn(nspname, relname), tab_id)
-        for nspname, relname, tab_id in cur.fetchall())
-    if tabs_to_drop:
-        log.info("Dropping tables: %s" % ', '.join(
-            name for name, id in tabs_to_drop))
-        sk = StringIO()
-        sql = NamedTemporaryFile(prefix="drop", suffix=".sql")
-        print >> sk, "try {"
-        for tab_name, tab_id in tabs_to_drop:
-            if tab_id is not None:
-                print >> sk, dedent("""\
-                    echo 'Removing %s from replication';
-                    set drop table (origin=@master_node, id=%d);
-                    """ % (tab_name, tab_id))
-            print >> sql, "DROP TABLE %s;" % tab_name
-        sql.flush()
-        print >> sk, dedent("""\
-            execute script (
-                set id=@lpmain_set, event node=@master_node,
-                filename='%s'
-                );
-            }
-            on error {
-                echo 'Failed to drop tables. Aborting.';
-                exit 1;
-                }
-            """ % sql.name)
-        log.info("Generated slonik(1) script to drop tables. Invoking.")
-        if not replication.helpers.execute_slonik(sk.getvalue()):
-            log.fatal("Aborting.")
-        log.info("slonik(1) script to drop tables completed.")
-        sql.close()
-
-    # Now drop any remaining sequences. Most sequences will be dropped
-    # implicitly with the table drop.
-    cur.execute("""
-        SELECT nspname, relname, seq_id
-        FROM pg_class
-        JOIN pg_namespace ON relnamespace = pg_namespace.oid
-        LEFT OUTER JOIN %s ON pg_class.oid = seq_reloid
-        WHERE nspname='todrop' AND relkind='S'
-        """ % fqn(replication.helpers.CLUSTER_NAMESPACE, 'sl_sequence'))
-    seqs_to_drop = set(
-        (fqn(nspname, relname), tab_id)
-        for nspname, relname, tab_id in cur.fetchall())
-
-    if seqs_to_drop:
-        log.info("Dropping sequences: %s" % ', '.join(
-            name for name, id in seqs_to_drop))
-        # Generate a slonik script to remove sequences from the
-        # replication set, DROP SEQUENCE sql script to run after.
-        sk = StringIO()
-        sql = NamedTemporaryFile(prefix="drop", suffix=".sql")
-        print >> sk, "try {"
-        for seq_name, seq_id in seqs_to_drop:
-            if seq_id is not None:
-                print >> sk, dedent("""\
-                    echo 'Removing %s from replication';
-                    set drop sequence (origin=@master_node, id=%d);
-                    """ % (seq_name, seq_id))
-            print >> sql, "DROP SEQUENCE %s;" % seq_name
-        sql.flush()
-        print >> sk, dedent("""\
-            execute script (
-                set id=@lpmain_set, event node=@master_node,
-                filename='%s'
-                );
-            }
-            on error {
-                echo 'Failed to drop sequences. Aborting.';
-                exit 1;
-                }
-            """ % sql.name)
-        log.info("Generated slonik(1) script to drop sequences. Invoking.")
-        if not replication.helpers.execute_slonik(sk.getvalue()):
-            log.fatal("Aborting.")
-        log.info("slonik(1) script to drop sequences completed.")
-    log.info("Waiting for final sync.")
-    replication.helpers.sync(timeout=0)
-
-
 def get_patchlist(con):
     """Return a patches that need to be applied to the connected database
     in [((major, minor, patch), patch_file)] format.
@@ -609,14 +268,11 @@ if __name__ == '__main__':
     db_options(parser)
     logger_options(parser)
     parser.add_option(
-            "-n", "--dry-run", dest="commit", default=True,
-            action="store_false", help="Don't actually commit changes"
-            )
+        "-n", "--dry-run", dest="commit", default=True,
+        action="store_false", help="Don't actually commit changes")
     parser.add_option(
-            "--partial", dest="partial", default=False,
-            action="store_true",
-            help="Commit after applying each patch",
-            )
+        "--partial", dest="partial", default=False,
+        action="store_true", help="Commit after applying each patch")
     (options, args) = parser.parse_args()
 
     if args:

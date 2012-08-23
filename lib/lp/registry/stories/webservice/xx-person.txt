@@ -16,6 +16,7 @@ for teams (as they're defined in the ITeam interface).
     date_created: u'2005-06-06T08:59:51.596025+00:00'
     deactivated_members_collection_link:
         u'http://.../~salgado/deactivated_members'
+    description: None
     display_name: u'Guilherme Salgado'
     expired_members_collection_link: u'http://.../~salgado/expired_members'
     gpg_keys_collection_link: u'http://.../~salgado/gpg_keys'
@@ -25,7 +26,6 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~salgado/invited_members'
     irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
-    is_merge_pending: False
     is_probationary: True
     is_team: False
     is_ubuntu_coc_signer: False
@@ -74,6 +74,7 @@ for teams (as they're defined in the ITeam interface).
         u'http://.../~ubuntu-team/deactivated_members'
     default_membership_period: None
     default_renewal_period: None
+    description: u'This Team is responsible for the Ubuntu Distribution'
     display_name: u'Ubuntu Team'
     expired_members_collection_link:
         u'http://.../~ubuntu-team/expired_members'
@@ -85,7 +86,6 @@ for teams (as they're defined in the ITeam interface).
     invited_members_collection_link:
         u'http://.../~ubuntu-team/invited_members'
     irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
-    is_merge_pending: False
     is_probationary: False
     is_team: True
     is_ubuntu_coc_signer: False
@@ -100,6 +100,7 @@ for teams (as they're defined in the ITeam interface).
     members_collection_link: u'http://.../~ubuntu-team/members'
     members_details_collection_link:
         u'http://.../~ubuntu-team/members_details'
+    membership_policy: u'Moderated Team'
     memberships_details_collection_link:
         u'http://.../~ubuntu-team/memberships_details'
     mugshot_link: u'http://.../~ubuntu-team/mugshot'
@@ -130,7 +131,8 @@ for teams (as they're defined in the ITeam interface).
 
     >>> sorted(set(ubuntu_team.keys()).difference(salgado.keys()))
     [u'default_membership_period', u'default_renewal_period',
-     u'renewal_policy', u'subscription_policy', u'team_description']
+     u'membership_policy', u'renewal_policy', u'subscription_policy',
+     u'team_description']
 
     >>> sorted(set(salgado.keys()).difference(ubuntu_team.keys()))
     []
@@ -184,7 +186,8 @@ People have SSH keys which we can manipulate over the API.
 The sample person "ssh-user" doesn't have any keys to begin with:
 
     >>> login('test@canonical.com')
-    >>> person = factory.makePerson(name="ssh-user", email='ssh@launchpad.net')
+    >>> person = factory.makePerson(
+    ...     name="ssh-user", email='ssh@launchpad.net')
     >>> logout()
     >>> sample_person = webservice.get("/~ssh-user").jsonBody()
     >>> sshkeys = sample_person['sshkeys_collection_link']
@@ -241,7 +244,6 @@ The sample person "name12" doesn't have any keys to begin with:
 
 Let's give "name12" a key via the back door of our internal Python APIs:
 
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> gpg_user = getUtility(IPersonSet).getByName('name12')
@@ -745,10 +747,8 @@ Though it is not possible through the Launchpad UI, some users of the
 REST API propose other people (as opposed to teams) as part of a
 mentoring process (Bug 498181).
 
-    >>> from zope.component import getUtility
     >>> from lp.testing.pages import webservice_for_person
     >>> from lp.services.webapp.interfaces import OAuthPermission
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> owner = getUtility(IPersonSet).getByName('owner')
     >>> logout()

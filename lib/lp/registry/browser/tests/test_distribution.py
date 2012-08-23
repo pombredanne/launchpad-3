@@ -6,12 +6,16 @@
 __metaclass__ = type
 
 from fixtures import FakeLogger
+from lazr.restful.interfaces import IJSONRequestCache
 import soupmatchers
 from testtools.matchers import (
     MatchesAny,
     Not,
     )
+from zope.schema.vocabulary import SimpleVocabulary
 
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -76,7 +80,7 @@ class TestDistributionPage(TestCaseWithFactory):
 
     def test_distributionpage_series_list_noadmin(self):
         # A non-admin does see the series list when there is a series.
-        series = self.factory.makeDistroSeries(distribution=self.distro,
+        self.factory.makeDistroSeries(distribution=self.distro,
             status=SeriesStatus.CURRENT)
         login_person(self.simple_user)
         view = create_initialized_view(
@@ -93,3 +97,26 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Active series and milestones'))
         self.assertThat(view.render(), series_header_match)
         self.assertThat(view.render(), Not(add_series_match))
+
+
+class TestDistributionView(TestCaseWithFactory):
+    """Tests the DistributionView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionView, self).setUp()
+        self.distro = self.factory.makeDistribution(
+            name="distro", displayname=u'distro')
+
+    def test_view_data_model(self):
+        # The view's json request cache contains the expected data.
+        view = create_initialized_view(self.distro, '+index')
+        cache = IJSONRequestCache(view.request)
+        policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
+        team_membership_policy_data = vocabulary_to_choice_edit_items(
+            SimpleVocabulary.fromItems(policy_items),
+            value_fn=lambda item: item.name)
+        self.assertContentEqual(
+            team_membership_policy_data,
+            cache.objects['team_membership_policy_data'])

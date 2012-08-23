@@ -301,6 +301,7 @@
       name="index.html"
       permission="zope.Public"
       class="lp.services.webapp.login.UnauthorizedView"
+      template="../templates/launchpad-forbidden.pt"
       attribute="__call__"
       />
 
@@ -419,15 +420,6 @@
       permission="zope.Public"
       template="../templates/launchpad-translationunavailable.pt"
       class="lp.services.webapp.error.TranslationUnavailableView"
-      />
-
-  <!-- ReadOnlyModeViolation -->
-  <browser:page
-      for="lp.services.webapp.interfaces.ReadOnlyModeViolation"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-readonlyfailure.pt"
-      class="lp.services.webapp.error.ReadOnlyErrorView"
       />
 
   <!-- Vocabularies -->

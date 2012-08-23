@@ -11,15 +11,15 @@
               tal:content="view/available_official_tags_js" />
       <script type="text/javascript">
         LPJS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
-                  'lp.bugs.subscribers',
-                  'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
-                  function(Y) {
+                  'lp.bugs.subscribers', 'lp.code.branchmergeproposal.diff',
+                  'lp.app.comment', function(Y) {
             Y.on('domready', function() {
                 Y.lp.code.branchmergeproposal.diff.connect_diff_links();
                 Y.lp.bugs.bugtask_index.setup_bugtask_index();
                 Y.lp.bugs.bugtask_index.setup_bugtask_table();
                 LP.cache.comment_context = LP.cache.bug;
-                Y.lp.comments.hide.setup_hide_controls();
+                var cl = new Y.lp.app.comment.CommentList();
+                cl.render();
                 var sl = new Y.lp.bugs.subscribers.createBugSubscribersLoader({
                     container_box: '#other-bug-subscribers',
                     subscribers_details_view:
@@ -84,10 +84,6 @@
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-      <div id="tags-autocomplete">
-        <div id="tags-autocomplete-content"></div>
-      </div>
-
       <p class="informational message"
          tal:condition="view/notices"
          tal:repeat="notice view/notices"
@@ -101,6 +97,42 @@
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
       </p>
 
+      <div id="bug-is-duplicate">
+          <tal:dupe-info
+             condition="duplicateof|nothing"
+             define="duplicateof context/bug/duplicateof;
+                     dupe_active view/is_duplicate_active">
+
+          <tal:active condition="dupe_active">
+          <span class="bug-duplicate-details ellipsis single-line wide">
+            <span class="sprite info"></span>
+            This bug report is a duplicate of:&nbsp;
+                <a
+                  tal:condition="duplicateof/required:launchpad.View"
+                  tal:attributes="href duplicateof/fmt:url; title
+                     duplicateof/title;
+                     id string:duplicate-of-warning-link-bugtasks;"
+                  tal:content="string:Bug #${duplicateof/id}: ${duplicateof/title}."
+                >bug #42</a>
+          </span>
+          </tal:active>
+          <tal:inactive condition="not: dupe_active">
+          <span class="bug-duplicate-details ellipsis single-line wide">
+            <span class="sprite info"></span>
+            This bug report is a duplicate of a bug on an inactive project.
+          </span>
+          </tal:inactive>
+
+          <a id="change-duplicate-bug-bugtasks"
+            href="+duplicate"
+            title="Edit or remove linked duplicate bug"
+            class="sprite edit action-icon standalone change-duplicate-bug">Edit</a>
+          <a id="remove-duplicate-bug-bugtasks"
+            href="+duplicate"
+            title="Remove linked duplicate bug"
+            class="sprite remove action-icon standalone remove-duplicate-bug">Remove</a>
+          </tal:dupe-info>
+      </div>
       <p id="bug-is-question"
          tal:condition="context/bug/getQuestionCreatedFromBug"
          tal:define="question context/bug/getQuestionCreatedFromBug">
@@ -132,54 +164,40 @@
           >See <a href="comments/0">original description</a></span>
         </div>
 
-          <div id="bug-tags"
-               tal:attributes="class python: (context.bug.tags and
-                                             'tags-show' or 'tags-hide')">
-            Tags:
-            <span id="tag-list">
-              <a tal:repeat="tag view/official_tags"
-                 tal:content="python: tag[0]"
-                 class="official-tag"
-                 tal:attributes="href python: tag[1]">tag</a>
-              <a tal:repeat="tag view/unofficial_tags"
-                 tal:content="python: tag[0]"
-                 class="unofficial-tag"
-                 tal:attributes="href python: tag[1]">tag</a>
-            </span>
-            <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
-                <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
-                <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit action-icon">Edit</a>
+        <div id="bug-tags">
+          <span id="tags-heading">
+            <tal:heading condition="context/bug/tags">Tags:</tal:heading>
+          </span>
+          <span id="tag-list">
+            <a tal:repeat="tag view/official_tags"
+               tal:content="python: tag[0]"
+               class="official-tag"
+               tal:attributes="href python: tag[1]">tag</a>
+            <a tal:repeat="tag view/unofficial_tags"
+               tal:content="python: tag[0]"
+               class="unofficial-tag"
+               tal:attributes="href python: tag[1]">tag</a>
+          </span>
+          <a href="+edit" title="Add tags" id="tags-trigger"
+            class="sprite add"
+            tal:condition="not: context/bug/tags">Add tags</a>
+          <a href="+edit" title="Edit tags" id="tags-trigger"
+            class="sprite edit action-icon"
+            tal:condition="context/bug/tags">Edit</a>
+          <a href="/+help-bugs/tag-help.html" target="help"
+            class="sprite maybe action-icon">Tag help</a>
+        </div>
 
-              <button class="lazr-pos lazr-btn yui-ieditor-submit_button hidden"
-                      id="edit-tags-ok"
-                      type="button">Ok</button>
-              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button hidden"
-                      id="edit-tags-cancel"
-                      type="button">Cancel</button>
-           </form>
-           <a href="/+help-bugs/tag-help.html" target="help"
-              class="sprite maybe action-icon">Tag help</a>
-          </div>
-          <div id="add-bug-tags"
-               tal:attributes="class python: (not(context.bug.tags) and
-                                             'tags-show' or 'tags-hide')">
-            <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
-              Add tags
-            </a>
-            <a href="/+help-bugs/tag-help.html" target="help"
-               class="sprite maybe action-icon">Tag help</a>
-            <script type="text/javascript">
-                LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
-                    Y.on('domready',
-                         function(e) {
-                             Y.lp.bugs.bug_tags_entry.setup_tag_entry(
-                                 available_official_tags);
-                         },
-                         window);
-                });
-            </script>
-          </div>
+        <script type="text/javascript">
+          LPJS.use('event', 'node', 'lp.bugs.tags_entry', function(Y) {
+              Y.on('domready',
+                   function(e) {
+                       Y.lp.bugs.tags_entry.setup_tag_entry(
+                           available_official_tags);
+                   },
+                   window);
+          });
+        </script>
 
         <div class="clearfix"></div>
       </div>

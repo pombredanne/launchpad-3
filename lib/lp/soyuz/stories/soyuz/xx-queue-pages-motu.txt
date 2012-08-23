@@ -38,7 +38,7 @@ component:
 
     >>> motu_browser.open(
     ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
-    >>> motu_browser.getLink("Show uploads").click()
+    >>> motu_browser.getLink("All uploads").click()
     >>> print_queue(motu_browser.contents)
     Package             Version     Component Section Priority Sets Pocket  When
     netapplet...ddtp... -                                           Release 2006...
@@ -70,7 +70,6 @@ Let's change the components on some uploads so that the user has
 permission to manipulate them.
 
     >>> from zope.component import getUtility
-    >>> from lp.testing import login, logout
     >>> login('foo.bar@canonical.com')
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
@@ -82,15 +81,13 @@ permission to manipulate them.
     >>> universe = getUtility(IComponentSet)['universe']
     >>> alsa_utils = getUtility(
     ...     ISourcePackageNameSet).queryByName("alsa-utils")
-    >>> pmount = getUtility(
-    ...     IBinaryPackageNameSet).queryByName("pmount")
+    >>> pmount = getUtility(IBinaryPackageNameSet).queryByName("pmount")
     >>> mozilla = getUtility(
     ...     IBinaryPackageNameSet).queryByName("mozilla-firefox")
     >>> for source in SourcePackageRelease.selectBy(
     ...     sourcepackagename=alsa_utils):
     ...     source.component = universe
-    >>> for binary in BinaryPackageRelease.selectBy(
-    ...     binarypackagename=pmount):
+    >>> for binary in BinaryPackageRelease.selectBy(binarypackagename=pmount):
     ...     binary.component = universe
     >>> for binary in BinaryPackageRelease.selectBy(
     ...     binarypackagename=mozilla):
@@ -158,5 +155,3 @@ will be left alone.
     ...     print message
     FAILED: netapplet (You have no rights to accept component(s) 'main')
     OK: mozilla-firefox(multiverse/(unchanged)/(unchanged))
-
-

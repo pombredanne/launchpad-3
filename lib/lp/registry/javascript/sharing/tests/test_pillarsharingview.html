@@ -32,6 +32,8 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/lp.js"></script>
       <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/errors.js"></script>
+      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/confirmationoverlay/confirmationoverlay.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/mustache.js"></script>
@@ -64,11 +66,11 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/extras/extras.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/registry/sharing/shareetable.js"></script>
+          src="../../../../../../build/js/lp/registry/sharing/granteetable.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/registry/sharing/shareepicker.js"></script>
+          src="../../../../../../build/js/lp/registry/sharing/granteepicker.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/registry/sharing/shareelisting_navigator.js"></script>
+          src="../../../../../../build/js/lp/registry/sharing/granteelisting_navigator.js"></script>
 
       <!-- The module under test. -->
       <script type="text/javascript" src="../pillarsharingview.js"></script>
@@ -77,8 +79,30 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript" src="test_pillarsharingview.js"></script>
 
       <script id="test-fixture" type="text/x-template">
-          <table id='sharee-table'></table>
-          <a id='add-sharee-link' class='sprite add js-action' href="#">Share</a>
+          <div id="sharing-header"></div>
+          <table id='grantee-table'></table>
+          <a id='add-grantee-link'
+             class='sprite add js-action hidden' href="#">Share</a>
+          <table>
+            <tr id="branch-sharing-policy-row">
+               <td id="branch-sharing-policy">
+                 Branches sharing policy:&nbsp;
+                 <strong><span class="value"></span></strong>
+                 <a class="editicon sprite edit action-icon"
+                     style="padding-bottom: 0;">Edit</a>
+                 <div id="branch-sharing-policy-description" class="formHelp"></div>
+               </td>
+            </tr>
+            <tr id="bug-sharing-policy-row">
+               <td id="bug-sharing-policy">
+                 Bugs sharing policy:&nbsp;
+                 <strong><span class="value"></span></strong>
+                 <a class="editicon sprite edit action-icon"
+                     style="padding-bottom: 0;">Edit</a>
+                 <div id="bug-sharing-policy-description" class="formHelp"></div>
+               </td>
+            </tr>
+          </table>
       </script>
     </head>
     <body class="yui3-skin-sam">

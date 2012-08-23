@@ -17,12 +17,17 @@
     </style>
     <script type="text/javascript">
         LPJS.use('base', 'node', 'event',
-                'lp.comments.hide', 'lp.answers.subscribers',
+                'lp.app.comment', 'lp.answers.subscribers',
             function(Y) {
         Y.on('domready', function() {
             LP.cache.comment_context = LP.cache.context;
-            Y.lp.comments.hide.setup_hide_controls();
-
+            var first_comment = Y.one('.boardComment');
+            if (first_comment !== null) {
+              var cl = new Y.lp.app.comment.CommentList({
+                  comment_list_container: first_comment.get('parentNode')
+              });
+            cl.render();
+            }
             new Y.lp.answers.subscribers.createQuestionSubscribersLoader();
         });
       });
@@ -95,7 +100,7 @@
               <h3>Related FAQ:</h3>
 
               <p>
-                <a class="sprite question"
+                <a class="sprite faq"
                   tal:condition="context/faq"
                   tal:attributes="href context/faq/fmt:url"
                   tal:content="context/faq/title">FAQ Title</a>

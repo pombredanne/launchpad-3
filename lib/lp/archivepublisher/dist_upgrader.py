@@ -34,7 +34,7 @@ class DistUpgraderUpload(CustomUpload):
     Dist-Upgrader is a tarball containing files for performing automatic
     distroseries upgrades, driven by architecture.
 
-    The tarball should be name as:
+    The tarball filename must be of the form:
 
       <NAME>_<VERSION>_<ARCH>.tar.gz
 
@@ -57,19 +57,24 @@ class DistUpgraderUpload(CustomUpload):
     """
     custom_type = "dist-upgrader"
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+    @staticmethod
+    def parsePath(tarfile_path):
         tarfile_base = os.path.basename(tarfile_path)
-        name, self.version, self.arch = tarfile_base.split("_")
-        self.arch = self.arch.split(".")[0]
+        bits = tarfile_base.split("_")
+        if len(bits) != 3:
+            raise ValueError("%s is not NAME_VERSION_ARCH" % tarfile_base)
+        return bits[0], bits[1], bits[2].split(".")[0]
 
-        self.targetdir = os.path.join(archive_root, 'dists', distroseries,
-                                      'main', 'dist-upgrader-%s' % self.arch)
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+        _, self.version, self.arch = self.parsePath(tarfile_path)
+        self.targetdir = os.path.join(
+            pubconf.archiveroot, 'dists', distroseries, 'main',
+            'dist-upgrader-%s' % self.arch)
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
-            _, _, arch = os.path.basename(tarfile_path).split("_")
-            return arch.split(".")[0]
+            return cls.parsePath(tarfile_path)[2]
         except ValueError:
             return None
 
@@ -90,12 +95,12 @@ class DistUpgraderUpload(CustomUpload):
         directory_name = filename.split(os.path.sep)[0]
         try:
             version = make_version(directory_name)
-        except BadUpstreamError, exc:
+        except BadUpstreamError as exc:
             raise DistUpgraderBadVersion(self.tarfile_path, exc)
         return version and not filename.startswith('current')
 
 
-def process_dist_upgrader(archive_root, tarfile_path, distroseries):
+def process_dist_upgrader(pubconf, tarfile_path, distroseries):
     """Process a raw-dist-upgrader tarfile.
 
     Unpacking it into the given archive for the given distroseries.
@@ -103,4 +108,4 @@ def process_dist_upgrader(archive_root, tarfile_path, distroseries):
     wrong.
     """
     upload = DistUpgraderUpload()
-    upload.process(archive_root, tarfile_path, distroseries)
+    upload.process(pubconf, tarfile_path, distroseries)

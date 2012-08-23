@@ -11,6 +11,7 @@ __all__ = [
     'SourcePackageRecipeEditView',
     'SourcePackageRecipeNavigationMenu',
     'SourcePackageRecipeRequestBuildsView',
+    'SourcePackageRecipeRequestDailyBuildView',
     'SourcePackageRecipeView',
     ]
 
@@ -301,7 +302,9 @@ class SourcePackageRecipeView(LaunchpadView):
     def name_widget(self):
         name = ISourcePackageRecipe['name']
         title = "Edit the recipe name"
-        return TextLineEditorWidget(self.context, name, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, name, title, 'h1', max_width='95%',
+            truncate_lines=1)
 
     @property
     def distroseries_widget(self):
@@ -364,7 +367,8 @@ def builds_for_recipe(recipe):
         return builds
 
 
-def new_builds_notification_text(builds, already_pending=None):
+def new_builds_notification_text(builds, already_pending=None,
+                                 contains_unbuildable=False):
     nr_builds = len(builds)
     if not nr_builds:
         builds_text = "All requested recipe builds are already queued."
@@ -374,6 +378,9 @@ def new_builds_notification_text(builds, already_pending=None):
         builds_text = "%d new recipe builds have been queued." % nr_builds
     if nr_builds > 0 and already_pending:
         builds_text = "<p>%s</p>%s" % (builds_text, already_pending)
+    if contains_unbuildable:
+        builds_text = ("%s<p>The recipe contains an obsolete distroseries, "
+            "which has been skipped.</p>" % builds_text)
     return structured(builds_text)
 
 
@@ -434,7 +441,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                 build = self.context.requestBuild(
                     data['archive'], self.user, distroseries, manual=True)
                 builds.append(build)
-            except BuildAlreadyPending, e:
+            except BuildAlreadyPending as e:
                 existing_message = informational.get("already_pending")
                 if existing_message:
                     new_message = existing_message[:-1] + (
@@ -552,9 +559,12 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
                     "../templates/sourcepackagerecipe-builds.pt")
             return template(self)
         else:
+            contains_unbuildable = recipe.containsUnbuildableSeries(
+                recipe.daily_build_archive)
             self.next_url = canonical_url(recipe)
             self.request.response.addNotification(
-                    new_builds_notification_text(builds))
+                new_builds_notification_text(
+                    builds, contains_unbuildable=contains_unbuildable))
 
     @property
     def builds(self):
@@ -636,7 +646,7 @@ class RecipeTextValidatorMixin:
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
-        except RecipeParseError, error:
+        except RecipeParseError as error:
             self.setFieldError('recipe_text', str(error))
 
     def error_handler(self, callable, *args, **kwargs):
@@ -646,15 +656,15 @@ class RecipeTextValidatorMixin:
             self.setFieldError(
                 'recipe_text',
                 'The recipe format version specified is not available.')
-        except ForbiddenInstructionError, e:
+        except ForbiddenInstructionError as e:
             self.setFieldError(
                 'recipe_text',
                 'The bzr-builder instruction "%s" is not permitted '
                 'here.' % e.instruction_name)
-        except NoSuchBranch, e:
+        except NoSuchBranch as e:
             self.setFieldError(
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
-        except PrivateBranchRecipe, e:
+        except PrivateBranchRecipe as e:
             self.setFieldError('recipe_text', str(e))
         raise ErrorHandled()
 

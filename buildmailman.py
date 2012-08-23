@@ -34,29 +34,33 @@ def build_mailman():
     mailman_bin = os.path.join(mailman_path, 'bin')
     var_dir = os.path.abspath(config.mailman.build_var_dir)
 
-    # If we can import the package, we assume Mailman is properly built and
-    # installed.  This does not catch re-installs that might be necessary
+    # If we can import the package, we assume Mailman is properly built at
+    # the least.  This does not catch re-installs that might be necessary
     # should our copy in sourcecode be updated.  Do that manually.
     sys.path.append(mailman_path)
     try:
         import Mailman
+    except ImportError:
+        # sys.path_importer_cache is a mapping of elements of sys.path to
+        # importer objects used to handle them. In Python2.5+ when an element
+        # of sys.path is found to not exist on disk, a NullImporter is created
+        # and cached - this causes Python to never bother re-inspecting the
+        # disk for that path element. We must clear that cache element so that
+        # our second attempt to import MailMan after building it will actually
+        # check the disk.
+        del sys.path_importer_cache[mailman_path]
+        need_build = need_install = True
+    else:
+        need_build = need_install = False
         # Also check for Launchpad-specific bits stuck into the source tree by
         # monkey_patch(), in case this is half-installed.  See
         # <https://bugs.launchpad.net/launchpad-registry/+bug/683486>.
-        from Mailman.Queue import XMLRPCRunner
-        from Mailman.Handlers import LPModerate
-    except ImportError:
-        pass
-    else:
-        return 0
-
-    # sys.path_importer_cache is a mapping of elements of sys.path to importer
-    # objects used to handle them. In Python2.5+ when an element of sys.path
-    # is found to not exist on disk, a NullImporter is created and cached -
-    # this causes Python to never bother re-inspecting the disk for that path
-    # element. We must clear that cache element so that our second attempt to
-    # import MailMan after building it will actually check the disk.
-    del sys.path_importer_cache[mailman_path]
+        try:
+            from Mailman.Queue import XMLRPCRunner
+            from Mailman.Handlers import LPModerate
+        except ImportError:
+            # Monkey patches not present, redo install and patch steps.
+            need_install = True
 
     # Make sure the target directories exist and have the correct
     # permissions, otherwise configure will complain.
@@ -79,11 +83,18 @@ def build_mailman():
     # I think Linux does not ignore it -- better safe than sorry).
     try:
         os.makedirs(var_dir)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+    else:
+        # Just created the var directory, will need to install mailmain bits.
+        need_install = True
     os.chown(var_dir, uid, gid)
     os.chmod(var_dir, 02775)
+
+    # Skip mailman setup if nothing so far has shown a reinstall needed.
+    if not need_install:
+        return 0
 
     mailman_source = os.path.join('sourcecode', 'mailman')
     if config.mailman.build_host_name:
@@ -105,40 +116,17 @@ def build_mailman():
         '--with-mailhost=' + build_host_name,
         '--with-urlhost=' + build_host_name,
         )
-    # Configure.
-    retcode = subprocess.call(configure_args, cwd=mailman_source)
-    if retcode:
-        print >> sys.stderr, 'Could not configure Mailman:'
-        sys.exit(retcode)
-    # Make.
-    retcode = subprocess.call(('make', ), cwd=mailman_source)
-    if retcode:
-        print >> sys.stderr, 'Could not make Mailman.'
-        sys.exit(retcode)
-    # We have a brief interlude before we install.  Hardy will not
-    # accept a script as the executable for the shebang line--it will
-    # treat the file as a shell script instead. The ``bin/by``
-    # executable that we specified in '--with-python' above is a script
-    # so this behavior causes problems for us. Our work around is to
-    # prefix the ``bin/py`` script with ``/usr/bin/env``, which makes
-    # Hardy happy.  We need to do this before we install because the
-    # installation will call Mailman's ``bin/update``, which is a script
-    # that needs this fix.
-    build_dir = os.path.join(mailman_source, 'build')
-    original = '#! %s\n' % (executable, )
-    modified = '#! /usr/bin/env %s\n' % (executable, )
-    for (dirpath, dirnames, filenames) in os.walk(build_dir):
-        for filename in filenames:
-            filename = os.path.join(dirpath, filename)
-            f = open(filename, 'r')
-            if f.readline() == original:
-                rest = f.read()
-                f.close()
-                f = open(filename, 'w')
-                f.write(modified)
-                f.write(rest)
-            f.close()
-    # Now we actually install.
+    if need_build:
+        # Configure.
+        retcode = subprocess.call(configure_args, cwd=mailman_source)
+        if retcode:
+            print >> sys.stderr, 'Could not configure Mailman:'
+            sys.exit(retcode)
+        # Make.
+        retcode = subprocess.call(('make', ), cwd=mailman_source)
+        if retcode:
+            print >> sys.stderr, 'Could not make Mailman.'
+            sys.exit(retcode)
     retcode = subprocess.call(('make', 'install'), cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not install Mailman.'
@@ -190,7 +178,7 @@ def build_mailman():
     # deactivated lists.
     try:
         os.mkdir(os.path.join(Mailman.mm_cfg.VAR_PREFIX, 'backups'))
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 

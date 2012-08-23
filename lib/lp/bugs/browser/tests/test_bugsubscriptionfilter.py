@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bug subscription filter browser code."""
@@ -22,6 +22,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
+from lp.registry.enums import InformationType
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -320,6 +321,17 @@ class TestBugSubscriptionFilterView(
             [u"the bug is tagged with *, bar, and foo"],
             self.view.conditions)
 
+    def test_conditions_for_information_types(self):
+        # If no information types have been specified nothing is returned.
+        self.assertEqual([], self.view.conditions)
+        # If set, a description of the information type is returned.
+        with person_logged_in(self.owner):
+            self.subscription_filter.information_types = [
+                InformationType.PRIVATESECURITY, InformationType.USERDATA]
+        self.assertEqual(
+            [u"the information type is Private Security or Private"],
+            self.view.conditions)
+
     def assertRender(self, dt_content=None, dd_content=None):
         root = html.fromstring(self.view.render())
         if dt_content is not None:
@@ -435,6 +447,7 @@ class TestBugSubscriptionFilterEditView(
             "field.description": "New description",
             "field.statuses": ["NEW", "INCOMPLETE"],
             "field.importances": ["LOW", "MEDIUM"],
+            "field.information_types": ["USERDATA"],
             "field.tags": u"foo bar",
             "field.find_all_tags": "on",
             "field.actions.update": "Update",
@@ -445,8 +458,7 @@ class TestBugSubscriptionFilterEditView(
             self.assertEqual([], view.errors)
         # The subscription filter has been updated.
         self.assertEqual(
-            u"New description",
-            self.subscription_filter.description)
+            u"New description", self.subscription_filter.description)
         self.assertEqual(
             frozenset([BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE]),
             self.subscription_filter.statuses)
@@ -454,10 +466,11 @@ class TestBugSubscriptionFilterEditView(
             frozenset([BugTaskImportance.LOW, BugTaskImportance.MEDIUM]),
             self.subscription_filter.importances)
         self.assertEqual(
-            frozenset([u"foo", u"bar"]),
-            self.subscription_filter.tags)
-        self.assertTrue(
-            self.subscription_filter.find_all_tags)
+            frozenset([InformationType.USERDATA]),
+            self.subscription_filter.information_types)
+        self.assertEqual(
+            frozenset([u"foo", u"bar"]), self.subscription_filter.tags)
+        self.assertTrue(self.subscription_filter.find_all_tags)
 
     def test_delete(self):
         # The filter can be deleted by using the delete action.
@@ -551,6 +564,7 @@ class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
             "field.description": "New description",
             "field.statuses": ["NEW", "INCOMPLETE"],
             "field.importances": ["LOW", "MEDIUM"],
+            "field.information_types": ["PRIVATESECURITY"],
             "field.tags": u"foo bar",
             "field.find_all_tags": "on",
             "field.actions.create": "Create",
@@ -573,7 +587,8 @@ class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
             frozenset([BugTaskImportance.LOW, BugTaskImportance.MEDIUM]),
             subscription_filter.importances)
         self.assertEqual(
-            frozenset([u"foo", u"bar"]),
-            subscription_filter.tags)
-        self.assertTrue(
-            subscription_filter.find_all_tags)
+            frozenset([InformationType.PRIVATESECURITY]),
+            subscription_filter.information_types)
+        self.assertEqual(
+            frozenset([u"foo", u"bar"]), subscription_filter.tags)
+        self.assertTrue(subscription_filter.find_all_tags)

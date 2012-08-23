@@ -128,10 +128,10 @@ class ITeamMembership(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     team = exported(
         Reference(title=_("Team"), required=True, readonly=True,
-                  schema=Interface)) # Specified in interfaces/person.py.
+                  schema=Interface))  # Specified in interfaces/person.py.
     person = exported(
         Reference(title=_("Member"), required=True, readonly=True,
-                  schema=Interface), # Specified in interfaces/person.py.
+                  schema=Interface),  # Specified in interfaces/person.py.
         exported_as='member')
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
@@ -142,7 +142,7 @@ class ITeamMembership(Interface):
     last_changed_by = exported(
         Reference(title=_('Last person who change this'),
                   required=False, readonly=True,
-                  schema=Interface)) # Specified in interfaces/person.py.
+                  schema=Interface))  # Specified in interfaces/person.py.
 
     datejoined = exported(
         Datetime(title=_("Date joined"), required=False, readonly=True,
@@ -221,14 +221,6 @@ class ITeamMembership(Interface):
 
         This method must not be called if the team's renewal policy is not
         ONDEMAND.
-        """
-
-    def sendAutoRenewalNotification():
-        """Send an email to the member and to team admins notifying that this
-        membership has been automatically renewed.
-
-        This method must not be called if the team's renewal policy is not
-        AUTOMATIC.
         """
 
     def sendExpirationWarningEmail():
@@ -328,10 +320,10 @@ class ITeamParticipation(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Reference(
         title=_("The team"), required=True, readonly=True,
-        schema=Interface) # Specified in interfaces/person.py.
+        schema=Interface)  # Specified in interfaces/person.py.
     person = Reference(
         title=_("The member"), required=True, readonly=True,
-        schema=Interface) # Specified in interfaces/person.py.
+        schema=Interface)  # Specified in interfaces/person.py.
 
 
 class CyclicalTeamMembershipError(Exception):

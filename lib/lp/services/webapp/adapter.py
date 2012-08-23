@@ -21,7 +21,6 @@ from lazr.restful.utils import (
     get_current_browser_request,
     safe_hasattr,
     )
-import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT,
     ISOLATION_LEVEL_READ_COMMITTED,
@@ -36,7 +35,6 @@ from storm.database import (
     )
 from storm.databases.postgres import (
     Postgres,
-    PostgresConnection,
     PostgresTimeoutTracer,
     )
 from storm.exceptions import TimeoutError
@@ -65,7 +63,6 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     )
 from lp.services.database.postgresql import ConnectionString
-from lp.services.database.readonly import is_read_only
 from lp.services.log.loglevels import DEBUG2
 from lp.services.stacktrace import (
     extract_stack,
@@ -84,8 +81,6 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
-    ReadOnlyModeDisallowedStore,
-    ReadOnlyModeViolation,
     SLAVE_FLAVOR,
     )
 from lp.services.webapp.opstats import OpStats
@@ -473,23 +468,6 @@ isolation_level_map = {
     }
 
 
-class ReadOnlyModeConnection(PostgresConnection):
-    """storm.database.Connection for read-only mode Launchpad."""
-
-    def execute(self, statement, params=None, noresult=False):
-        """See storm.database.Connection."""
-        try:
-            return super(ReadOnlyModeConnection, self).execute(
-                statement, params, noresult)
-        except psycopg2.InternalError, exception:
-            # Error 25006 is 'ERROR:  transaction is read-only'. This
-            # is raised when an attempt is made to make changes when
-            # the connection has been put in read-only mode.
-            if exception.pgcode == '25006':
-                raise ReadOnlyModeViolation(None, sys.exc_info()[2])
-            raise
-
-
 class LaunchpadDatabase(Postgres):
 
     _dsn_user_re = re.compile('user=[^ ]*')
@@ -571,17 +549,6 @@ class LaunchpadDatabase(Postgres):
             "Connected to %s backend %d, as user %s, at isolation level %s.",
             flavor, raw_connection.get_backend_pid(), dbuser, self._isolation)
         return raw_connection
-
-    @property
-    def connection_factory(self):
-        """Return the correct connection factory for the current mode.
-
-        If we are running in read-only mode, returns a
-        ReadOnlyModeConnection. Otherwise it returns the Storm default.
-        """
-        if is_read_only():
-            return ReadOnlyModeConnection
-        return super(LaunchpadDatabase, self).connection_factory
 
 
 class LaunchpadSessionDatabase(Postgres):
@@ -828,20 +795,6 @@ class StoreSelector:
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
-        if is_read_only():
-            # If we are in read-only mode, override the default to the
-            # slave no matter what the existing policy says (it might
-            # work), and raise an exception if the master was explicitly
-            # requested. Most of the time, this doesn't matter as when
-            # we are in read-only mode we have a suitable database
-            # policy installed. However, code can override the policy so
-            # we still need to catch disallowed requests here.
-            if flavor == DEFAULT_FLAVOR:
-                flavor = SLAVE_FLAVOR
-            elif flavor == MASTER_FLAVOR:
-                raise ReadOnlyModeDisallowedStore(name, flavor)
-            else:
-                pass
         db_policy = StoreSelector.get_current()
         if db_policy is None:
             db_policy = MasterDatabasePolicy(None)

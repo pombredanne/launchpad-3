@@ -4,10 +4,8 @@ BugTasks are usually searched through an IBugTarget's searchTasks()
 method, but they all delegate the search to IBugTaskSet.search(). That
 method accepts a single parameter; an BugTaskSearchParams instance.
 
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskSearchParams,
-    ...     IBugTaskSet,
-    ...     )
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> all_public = BugTaskSearchParams(user=None)
     >>> found_bugtasks = bugtask_set.search(all_public)
@@ -98,7 +96,7 @@ If No Privileges is specified as Firefox's bug supervisor, searching for his
 bugs return all of Firefox's bugs.
 
     >>> login('foo.bar@canonical.com')
-    >>> firefox.setBugSupervisor(no_priv, no_priv)
+    >>> firefox.bug_supervisor = no_priv
 
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count()
@@ -123,7 +121,7 @@ twice.
     >>> ubuntu_bugs.count() > 0
     True
 
-    >>> ubuntu.setBugSupervisor(no_priv, no_priv)
+    >>> ubuntu.bug_supervisor = no_priv
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
@@ -138,7 +136,7 @@ expensive search on other related information.
 
 For example, there are no bugs with the word 'Fnord' in Firefox.
 
-    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext=u'Fnord')
+    >>> text_search = BugTaskSearchParams(user=None, searchtext=u'Fnord')
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> found_bugtasks.count()
     0
@@ -155,6 +153,63 @@ But if we put that word in the bug #4 description, it will be found.
     >>> for bugtask in found_bugtasks:
     ...     print "#%s" % bugtask.bug.id
     #4
+
+=== BugTaskSearchParams' parameters searchtext and fast_searchtext ===
+
+Normally, the parameter searchtext should be used. The alternative
+parameter fast_searchtext requires a syntactically correct tsquery
+expression containing stemmed words.
+
+A simple phrase can be passed as searchtext, but not as fast_searchtext,
+see below.
+
+    >>> good_search = BugTaskSearchParams(
+    ...     user=None, searchtext=u'happens pretty often')
+    >>> found_bugtasks = firefox.searchTasks(good_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #4
+
+The unstemmed word "happens" does not yield any results when used
+as fast_textsearch.
+
+    >>> bad_search = BugTaskSearchParams(
+    ...     user=None, fast_searchtext=u'happens')
+    >>> found_bugtasks = firefox.searchTasks(bad_search)
+    >>> print found_bugtasks.count()
+    0
+
+If the stem of "happens" is used, we get results.
+
+    >>> good_search = BugTaskSearchParams(
+    ...     user=None, fast_searchtext=u'happen')
+    >>> found_bugtasks = firefox.searchTasks(good_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #4
+    #6
+
+Stemmed words may be combined into a valid tsquery expression.
+
+    >>> good_search = BugTaskSearchParams(
+    ...     user=None, fast_searchtext=u'happen&pretti&often')
+    >>> found_bugtasks = firefox.searchTasks(good_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #4
+
+Passing invalid tsquery expressions as fast_searchtext raises an exception.
+
+    >>> bad_search = BugTaskSearchParams(
+    ...     user=None, fast_searchtext=u'happens pretty often')
+    >>> list(firefox.searchTasks(bad_search))
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: syntax error in tsquery: "happens pretty often"
+    ...
+
+    >>> import transaction
+    >>> transaction.abort()
 
 
 == Searching by bug reporter ==
@@ -340,7 +395,6 @@ person has commented. No Privileges Person hasn't commented on any bugs, so no
 bugs are found for him:
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> import transaction
     >>> transaction.abort()
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -648,12 +702,12 @@ closed after a certain date.
     >>> from lp.services.searchbuilder import greater_than
     >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
-    >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
+    >>> not_closed_bug = factory.makeBug(target=product, title="Not closed")
     >>> bug_closed_a_day_ago = factory.makeBug(
-    ...     product=product, date_closed=utc_now-timedelta(days=1),
+    ...     target=product, date_closed=utc_now-timedelta(days=1),
     ...     title="Closed a day ago")
     >>> bug_closed_a_week_ago = factory.makeBug(
-    ...     product=product, date_closed=utc_now-timedelta(days=7),
+    ...     target=product, date_closed=utc_now-timedelta(days=7),
     ...     title="Closed a week ago")
 
     >>> search_params = BugTaskSearchParams(
@@ -680,8 +734,7 @@ It's possible to search for bugs with an attachment of a certain type.
     ...     IBugAttachmentSet,
     ...     )
     >>> product = factory.makeProduct()
-    >>> patch_bug = factory.makeBug(
-    ...     product=product)
+    >>> patch_bug = factory.makeBug(target=product)
     >>> filecontent = 'Some diff data'
     >>> filealias = getUtility(ILibraryFileAliasSet).create(
     ...     name='patch.diff', size=len(filecontent),
@@ -921,7 +974,7 @@ return True for isUserAffected(foo_bar).
 
 We can search for bugs having branches linked to them.
 
-    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> from lp.bugs.interfaces.bugtasksearch import BugBranchSearch
     >>> search_params = BugTaskSearchParams(
     ...     user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
     >>> for task in firefox.searchTasks(search_params):
@@ -931,7 +984,6 @@ We can search for bugs having branches linked to them.
 
 Similarly, we can search for bugs that do not have any linked branches.
 
-    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
     >>> search_params = BugTaskSearchParams(
     ...     user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
     >>> for task in firefox.searchTasks(search_params):
@@ -1204,7 +1256,7 @@ of the bug reports about the project. Search for bug tasks that this new
 person is subscribed.
 
     >>> product = factory.makeProduct()
-    >>> bug = factory.makeBug(product=product)
+    >>> bug = factory.makeBug(target=product)
     >>> project = factory.makeProject()
     >>> product.project = project
     >>> project_struct_subber = factory.makePerson(
@@ -1223,7 +1275,7 @@ the project and ensure that duplicate bug tasks do not appear in the search
 results.
 
     >>> product2 = factory.makeProduct()
-    >>> bug = factory.makeBug(product=product2)
+    >>> bug = factory.makeBug(target=product2)
     >>> product2.project = project
     >>> product2.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)

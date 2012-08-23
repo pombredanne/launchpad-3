@@ -167,7 +167,7 @@ class GenerateExtraOverrides(LaunchpadScript):
                     self.logger.warning(
                         "Skipping empty seed structure for %s.%s",
                         flavour, series_name)
-            except SeedError, e:
+            except SeedError as e:
                 self.logger.warning(
                     "Failed to fetch seeds for %s.%s: %s",
                     flavour, series_name, e)

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadCustomFormat,
@@ -108,20 +109,26 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
     # Alas, PackageUploadCustom relies on the Librarian.
     layer = LaunchpadZopelessLayer
 
-    def makeUpload(self, distroseries=None,
+    def makeUpload(self, distroseries=None, pocket=None,
                    custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
-                   version=None, arch=None):
+                   version=None, arch=None, component=None):
         """Create a `PackageUploadCustom`."""
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         package_name = self.factory.getUniqueString("package")
         if version is None:
             version = self.makeVersion()
-        if arch is None:
-            arch = self.factory.getUniqueString()
-        filename = "%s.tar.gz" % '_'.join([package_name, version, arch])
+        if custom_type == PackageUploadCustomFormat.DDTP_TARBALL:
+            if component is None:
+                component = self.factory.getUniqueString()
+            filename = "%s.tar.gz" % "_".join(
+                [package_name, component, version])
+        else:
+            if arch is None:
+                arch = self.factory.getUniqueString()
+            filename = "%s.tar.gz" % "_".join([package_name, version, arch])
         package_upload = self.factory.makeCustomPackageUpload(
-            distroseries=distroseries, custom_type=custom_type,
+            distroseries=distroseries, pocket=pocket, custom_type=custom_type,
             filename=filename)
         return package_upload.customfiles[0]
 
@@ -213,20 +220,44 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
             upload.id for upload in copier.getCandidateUploads(source_series)]
         self.assertEqual(sorted(candidate_ids, reverse=True), candidate_ids)
 
+    def test_getCandidateUploads_filters_by_pocket(self):
+        # getCandidateUploads ignores uploads for other pockets.
+        source_series = self.factory.makeDistroSeries()
+        matching_upload = self.makeUpload(
+            source_series, pocket=PackagePublishingPocket.PROPOSED)
+        nonmatching_upload = self.makeUpload(
+            source_series, pocket=PackagePublishingPocket.BACKPORTS)
+        copier = CustomUploadsCopier(FakeDistroSeries())
+        candidate_uploads = copier.getCandidateUploads(
+            source_series, PackagePublishingPocket.PROPOSED)
+        self.assertContentEqual([matching_upload], candidate_uploads)
+        self.assertNotIn(nonmatching_upload, candidate_uploads)
+
     def test_getKey_includes_format_and_architecture(self):
         # The key returned by getKey consists of custom upload type,
         # and architecture.
-        # XXX JeroenVermeulen 2011-08-17, bug=827941: To support
-        # ddtp-translations uploads, this will have to include the
-        # component name as well.
         source_series = self.factory.makeDistroSeries()
         upload = self.makeUpload(
-            source_series, PackageUploadCustomFormat.DIST_UPGRADER,
+            source_series, custom_type=PackageUploadCustomFormat.DIST_UPGRADER,
             arch='mips')
         copier = CustomUploadsCopier(FakeDistroSeries())
         expected_key = (
             PackageUploadCustomFormat.DIST_UPGRADER,
             'mips',
+            )
+        self.assertEqual(expected_key, copier.getKey(upload))
+
+    def test_getKey_ddtp_includes_format_and_component(self):
+        # The key returned by getKey for a ddtp-tarball upload consists of
+        # custom upload type, and component.
+        source_series = self.factory.makeDistroSeries()
+        upload = self.makeUpload(
+            source_series, custom_type=PackageUploadCustomFormat.DDTP_TARBALL,
+            component='restricted')
+        copier = CustomUploadsCopier(FakeDistroSeries())
+        expected_key = (
+            PackageUploadCustomFormat.DDTP_TARBALL,
+            'restricted',
             )
         self.assertEqual(expected_key, copier.getKey(upload))
 
@@ -379,13 +410,28 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         # copyUpload copies the original upload into the release pocket,
         # even though the original is more likely to be in another
         # pocket.
-        original_upload = self.makeUpload()
-        original_upload.packageupload.pocket = PackagePublishingPocket.UPDATES
+        original_upload = self.makeUpload(
+            pocket=PackagePublishingPocket.UPDATES)
         target_series = self.factory.makeDistroSeries()
         copier = CustomUploadsCopier(target_series)
         copied_upload = copier.copyUpload(original_upload)
         self.assertEqual(
             PackagePublishingPocket.RELEASE,
+            copied_upload.packageupload.pocket)
+
+    def test_copyUpload_to_updates_pocket(self):
+        # copyUpload copies an upload between pockets in the same series if
+        # requested.
+        source_series = self.factory.makeDistroSeries(
+            status=SeriesStatus.CURRENT)
+        original_upload = self.makeUpload(
+            distroseries=source_series,
+            pocket=PackagePublishingPocket.PROPOSED)
+        copier = CustomUploadsCopier(
+            source_series, target_pocket=PackagePublishingPocket.UPDATES)
+        copied_upload = copier.copyUpload(original_upload)
+        self.assertEqual(
+            PackagePublishingPocket.UPDATES,
             copied_upload.packageupload.pocket)
 
     def test_copyUpload_accepts_upload(self):

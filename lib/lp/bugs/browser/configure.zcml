@@ -103,12 +103,6 @@
             template="../templates/bugtarget-filebug-inline-form.pt"
             permission="launchpad.AnyPerson"/>
         <browser:page
-            for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtarget.FileBugReportingGuidelines"
-            template="../templates/bugtarget-filebug-guidelines.pt"
-            permission="launchpad.AnyPerson"
-            name="+filebug-reporting-guidelines"/>
-        <browser:page
             name="+manage-official-tags"
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
             class="lp.bugs.browser.bugtarget.OfficialBugTagsManageView"
@@ -385,12 +379,6 @@
         class="lp.bugs.browser.bugtask.BugNominationsView"
         permission="zope.Public"
         template="../templates/series-bug-nominations.pt"/>
-    <browser:page
-        name="+securitycontact"
-        for="lp.bugs.interfaces.securitycontact.IHasSecurityContact"
-        class="lp.bugs.browser.securitycontact.SecurityContactEditView"
-        permission="launchpad.Edit"
-        template="../templates/securitycontact-edit.pt"/>
     <adapter
         for="lp.registry.interfaces.product.IProduct"
         provides=".bugtarget.IProductBugConfiguration"
@@ -428,7 +416,8 @@
     <browser:page
         name="+filebug"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
+        class="lp.bugs.browser.bugtarget.ProjectGroupFileBugGuidedView"
+        template="../templates/bugtarget-filebug-search.pt"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
@@ -525,12 +514,12 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+bugtask-macros-listing"
             template="../templates/bugtask-macros-listing.pt"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
         <browser:page
             name="+edit"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bug.BugEditView"
-            template="../templates/bug-edit.pt"
+            template="../../app/templates/generic-edit.pt"
             permission="launchpad.Edit"/>
         <browser:page
             name="+delete"
@@ -554,7 +543,7 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+text"
             class="lp.bugs.browser.bugtask.BugTaskTextView"
-            permission="zope.Public"
+            permission="launchpad.View"
             attribute="__call__"/>
         <browser:page
             name="+affectsmetoo"
@@ -972,20 +961,23 @@
             for="lp.bugs.interfaces.bug.IBug"
             name="+text"
             class="lp.bugs.browser.bug.BugTextView"
-            permission="zope.Public"
+            permission="launchpad.View"
             attribute="__call__"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             name="+listing-detailed"
             template="../templates/bug-listing-detailed.pt"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            name="+portlet-privacy"
+            class="lp.bugs.browser.bug.BugInformationTypePortletView"
+            template="../templates/bug-portlet-privacy.pt"
+            permission="launchpad.View"/>
         <browser:pages
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bug.BugView"
-            permission="zope.Public">
-            <browser:page
-                name="+portlet-privacy"
-                template="../templates/bug-portlet-privacy.pt"/>
+            permission="launchpad.View">
             <browser:page
                 name="+portlet-watch"
                 template="../templates/bug-portlet-watch.pt"/>
@@ -1013,13 +1005,13 @@
             name="+bug-portlet-subscribers-details"
             class="
               lp.bugs.browser.bugsubscription.BugPortletSubscribersWithDetails"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+bug-portlet-subscribers-details"
             class="
               lp.bugs.browser.bugsubscription.BugPortletSubscribersWithDetails"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
         <browser:navigation
             module="lp.bugs.browser.bug"
             classes="

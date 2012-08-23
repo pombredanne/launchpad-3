@@ -156,7 +156,7 @@ Projects are available at their canonical URL on the API virtual host.
     bug_reporting_guidelines: None
     bug_supervisor_link: None
     bug_tracker_link: None
-    commercial_subscription_is_due: True
+    commercial_subscription_is_due: False
     commercial_subscription_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     date_next_suggest_packaging: None
@@ -168,10 +168,10 @@ Projects are available at their canonical URL on the API virtual host.
     freshmeat_project: None
     homepage_url: None
     icon_link: u'http://.../firefox/icon'
-    is_permitted: False
+    is_permitted: True
     license_approved: False
     license_info: None
-    licenses: []
+    licenses: [u'MIT / X / Expat Licence']
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
     official_bug_tags: []
@@ -180,7 +180,7 @@ Projects are available at their canonical URL on the API virtual host.
     programming_language: None
     project_group_link: u'http://.../mozilla'
     project_reviewed: False
-    qualifies_for_free_hosting: False
+    qualifies_for_free_hosting: True
     recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
@@ -188,7 +188,6 @@ Projects are available at their canonical URL on the API virtual host.
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard: None
     screenshots_url: None
-    security_contact_link: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'
     sourceforge_project: None
@@ -215,54 +214,14 @@ several that are not available to non-privileged users marked as
     >>> firefox = user_webservice.get('/firefox').jsonBody()
     >>> pprint_entry(firefox)
     active: True
-    active_milestones_collection_link: u'http://.../firefox/active_milestones'
-    all_milestones_collection_link: u'http://.../firefox/all_milestones'
-    brand_link: u'http://.../firefox/brand'
-    bug_reported_acknowledgement: None
-    bug_reporting_guidelines: None
-    bug_supervisor_link: None
-    bug_tracker_link: None
-    commercial_subscription_is_due: True
-    commercial_subscription_link: None
-    date_created: u'2004-09-24T20:58:02.185708+00:00'
-    date_next_suggest_packaging: None
-    description: u'The Mozilla Firefox web browser'
-    development_focus_link: u'http://.../firefox/trunk'
-    display_name: u'Mozilla Firefox'
-    download_url: None
-    driver_link: None
-    freshmeat_project: None
-    homepage_url: None
-    icon_link: u'http://.../firefox/icon'
+    ...
     is_permitted:...redacted...
     license_approved:...redacted...
-    license_info: None
-    licenses: []
-    logo_link: u'http://.../firefox/logo'
-    name: u'firefox'
-    official_bug_tags: []
-    owner_link: u'http://.../~name12'
-    private_bugs: False
-    programming_language: None
-    project_group_link: u'http://.../mozilla'
+    ...
     project_reviewed:...redacted...
-    qualifies_for_free_hosting: False
-    recipes_collection_link: u'http://.../firefox/recipes'
-    registrant_link: u'http://.../~name12'
-    releases_collection_link: u'http://.../firefox/releases'
-    remote_product: None
-    resource_type_link: u'http://.../#project'
+    ...
     reviewer_whiteboard:...redacted...
-    screenshots_url: None
-    security_contact_link: None
-    self_link: u'http://.../firefox'
-    series_collection_link: u'http://.../firefox/series'
-    sourceforge_project: None
-    summary: u'The Mozilla Firefox web browser'
-    title: u'Mozilla Firefox'
-    translation_focus_link: None
-    web_link: u'http://launchpad.../firefox'
-    wiki_url: None
+    ...
 
 The milestones can be accessed through the
 active_milestones_collection_link and the
@@ -549,34 +508,6 @@ The entire collection has 24 entries.
     >>> project_collection['total_size']
     24
 
-But the batch has only 5.  (The batch size is 5 for testing but larger
-in production.)
-
-    >>> project_entries = project_collection['entries']
-    >>> len(project_entries)
-    5
-
-The batch size can be changed through the ws.size argument.
-
-    >>> project_collection = webservice.get("/projects?ws.size=75").jsonBody()
-
-    >>> project_entries = sorted(
-    ...     project_collection['entries'],
-    ...     key=itemgetter('display_name', 'name'))
-    >>> len(project_entries)
-    24
-
-    >>> project_entries[0]['self_link']
-    u'http://.../aptoncd'
-
-    >>> for project in project_entries[:5]:
-    ...   print "%s (%s)" % (project['display_name'], project['name'])
-    APTonCD (aptoncd)
-    Arch mirrors (arch-mirrors)
-    Bazaar (bazaar)
-    Bazaar (bzr)
-    Derby (derby)
-
 It's possible to search the list and get a subset of the project groups.
 
     >>> project_collection = webservice.named_get(
@@ -630,84 +561,7 @@ licensing.  We can find all projects with unreviewed licenses.
     ...    unreviewed['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    Arch mirrors
-    ...
-
-Or those that are reviewed.
-
-    >>> reviewed = webservice.named_get(
-    ...     "/projects", "licensing_search",
-    ...     project_reviewed=True).jsonBody()
-
-    >>> entries = sorted(
-    ...    reviewed['entries'], key=itemgetter('display_name'))
-    >>> for project in entries:
-    ...     print project['display_name']
-    Obsolete Junk
-    alsa-utils
-    python gnome2 dev
-    unassigned syncs
-
-We can also find all projects with no licensing information.
-
-    >>> no_licenses = webservice.named_get(
-    ...     "/projects", "licensing_search",
-    ...     has_zero_license=True).jsonBody()
-
-    >>> entries = sorted(
-    ...    no_licenses['entries'], key=itemgetter('display_name'))
-    >>> for project in entries:
-    ...     print project['display_name']
-    Arch mirrors
-    ...
-
-We can find projects based on creation date.
-
-    >>> old = webservice.named_get(
-    ...     "/projects", "licensing_search",
-    ...     created_before="2006-01-01").jsonBody()
-
-    >>> entries = sorted(
-    ...    old['entries'], key=itemgetter('display_name'))
-    >>> for project in entries:
-    ...     print project['display_name']
-    Arch mirrors
-    ...
-
-Similarly we can find new projects.
-
-    >>> new = webservice.named_get(
-    ...     "/projects", "licensing_search",
-    ...     created_after="2006-01-01").jsonBody()
-
-    >>> entries = sorted(
-    ...    new['entries'], key=itemgetter('display_name'))
-    >>> for project in entries:
-    ...     print project['display_name']
-    APTonCD
-    ...
-
-All of the projects of a given licence can be found.
-
-    >>> proprietary = webservice.named_get(
-    ...     "/projects", "licensing_search",
-    ...     licenses=["Other/Proprietary"]).jsonBody()
-
-    >>> entries = sorted(
-    ...    proprietary['entries'], key=itemgetter('display_name'))
-    >>> for project in entries:
-    ...     print project['display_name']
-    Mega Money Maker
-
-The use of "licensing_search" is restricted to commercial admins.
-Attempting to access it as a normal users is unauthorized.
-
-    >>> print user_webservice.named_get(
-    ...     "/projects", "licensing_search",
-    ...     licenses=["Other/Proprietary"])
-    HTTP/1.1 401 Unauthorized
-    ...
-    (<...>, 'forReview', 'launchpad.Moderate')
+    Arch mirrors ...
 
 The project collection has a method for creating a new project.
 

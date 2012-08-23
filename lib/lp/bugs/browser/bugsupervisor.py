@@ -16,7 +16,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.services.webapp.menu import structured
 from lp.services.webapp.publisher import canonical_url
@@ -32,7 +31,7 @@ class BugSupervisorEditSchema(Interface):
         IHasBugSupervisor['bug_supervisor'], readonly=False)
 
 
-class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
+class BugSupervisorEditView(LaunchpadEditFormView):
     """Browser view class for editing the bug supervisor."""
 
     schema = BugSupervisorEditSchema
@@ -60,23 +59,14 @@ class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
 
     cancel_url = next_url
 
-    def validate(self, data):
-        """See `LaunchpadFormView`."""
-        self.validateBugSupervisor(data)
-
     @action('Change', name='change')
     def change_action(self, action, data):
         """Redirect to the target page with a success message."""
-        bug_supervisor = data['bug_supervisor']
-        self.changeBugSupervisor(bug_supervisor)
-        if bug_supervisor is None:
+        self.updateContextFromData(data)
+        if self.context.bug_supervisor is None:
             message = (
                 "Successfully cleared the bug supervisor. "
                 "You can set the bug supervisor again at any time.")
         else:
-            message = structured(
-                'A bug mail subscription was created for the bug supervisor. '
-                'You can <a href="%s">edit bug mail</a> '
-                'to change which notifications will be sent.',
-                canonical_url(self.context, view_name='+subscriptions'))
+            message = structured('Bug supervisor privilege granted.')
         self.request.response.addNotification(message)

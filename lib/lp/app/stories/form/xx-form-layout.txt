@@ -2,13 +2,8 @@ Form layout
 ===========
 
 LaunchpadFormView based forms use a tabular layout for the widgets.
-In most cases, the label is shown to the left of the actual widget,
+In most cases, the label is shown above the actual widget,
 but there are some exceptions:
-
- * multiline text widgets have the label shown above, and take up the
-   full width of the form.
-
- * checkbox widgets have the label shown to the right.
 
 
 Normal widgets
@@ -40,55 +35,14 @@ If the text field is optional, then that is noted after the widget.
     <tr>
     <td colspan="2">
     <div>
-    <label for="field.contactemail">Contact Email Address:</label>
+    <label for="field.defaultmembershipperiod">Subscription period:</label>
     <span class="fieldRequired">(Optional)</span>
     <div>
-    <input ... id="field.contactemail" ... />
+    <input ... id="field.defaultmembershipperiod" ... />
     </div>
     <p class="formHelp">...</p>
     </div>
     </td>
-    </tr>
-    ...
-
-
-Multi-line text widgets
------------------------
-
-A multi-line text widget is displayed with the label above it:
-
-    >>> print content
-    <...
-    <tr>
-      <td colspan="2" style="text-align: left">
-        <div>
-        <label for="field.teamdescription">Team Description:</label>
-        <span ...
-        <div><textarea ... name="field.teamdescription" ...></textarea></div>
-        <p class="formHelp">Details about the team's work, highlights, goals,
-          and how to contribute. Use plain text, paragraphs are preserved and
-          URLs are linked in pages.</p>
-        </div>
-      </td>
-    </tr>
-    ...
-
-If the multi-line text widget is optional, this is mentioned to the
-right of the label:
-
-    >>> print content
-    <...
-    <tr>
-      <td colspan="2" style="text-align: left">
-        <div>
-        <label for="field.teamdescription">Team Description:</label>
-        <span class="fieldRequired">(Optional)</span>
-        <div><textarea ... name="field.teamdescription" ...></textarea></div>
-        <p class="formHelp">Details about the team's work, highlights, goals,
-          and how to contribute. Use plain text, paragraphs are preserved and
-          URLs are linked in pages.</p>
-        </div>
-      </td>
     </tr>
     ...
 
@@ -121,7 +75,6 @@ just the form content to be rendered for any URL corresponding to an
 LPFormView:
 
     >>> admin_browser.open('http://launchpad.dev/evolution/+edit/++form++')
-    >>> # Note: not the main content, but the whole page.
     >>> print admin_browser.contents
     <div...
     <table class="form" id="launchpad-form-widgets">

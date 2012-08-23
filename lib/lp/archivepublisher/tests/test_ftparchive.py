@@ -16,7 +16,6 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.model.ftparchive import (
     AptFTPArchiveFailure,
-    f_touch,
     FTPArchiveHandler,
     )
 from lp.archivepublisher.publishing import Publisher
@@ -27,10 +26,8 @@ from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
     )
-from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
-    )
+from lp.soyuz.enums import PackagePublishingPriority
+from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
@@ -141,23 +138,20 @@ class TestFTPArchive(TestCaseWithFactory):
             self._publisher)
 
     def _publishDefaultOverrides(self, fa, component):
-        source_overrides = FakeSelectResult(
-            [('foo', 'hoary-test', component, 'misc')])
+        source_overrides = FakeSelectResult([('foo', component, 'misc')])
         binary_overrides = FakeSelectResult(
-            [('foo', 'hoary-test', component, 'misc', 'extra')])
-        fa.publishOverrides(source_overrides, binary_overrides)
+            [('foo', component, 'misc', PackagePublishingPriority.EXTRA)])
+        fa.publishOverrides('hoary-test', source_overrides, binary_overrides)
 
     def _publishDefaultFileLists(self, fa, component):
-        source_files = FakeSelectResult(
-            [('foo', 'hoary-test', 'foo_1.dsc', component)])
+        source_files = FakeSelectResult([('foo', 'foo_1.dsc', component)])
         binary_files = FakeSelectResult(
-            [('foo', 'hoary-test', 'foo_1_i386.deb', component,
-             'binary-i386')])
-        fa.publishFileLists(source_files, binary_files)
+            [('foo', 'foo_1_i386.deb', component, 'binary-i386')])
+        fa.publishFileLists('hoary-test', source_files, binary_files)
 
     def test_getSourcesForOverrides(self):
         # getSourcesForOverrides returns a list of tuples containing:
-        # (sourcename, suite, component, section)
+        # (sourcename, component, section)
 
         # Reconfigure FTPArchiveHandler to retrieve sampledata overrides.
         fa = self._setUpFTPArchiveHandler()
@@ -169,21 +163,21 @@ class TestFTPArchive(TestCaseWithFactory):
             hoary, PackagePublishingPocket.RELEASE)
 
         # For the above query, we are depending on the sample data to
-        # contain seven rows of SourcePackagePublishghistory data.
+        # contain seven rows of SourcePackagePublishingHistory data.
         expectedSources = [
-            ('linux-source-2.6.15', 'hoary', 'main', 'base'),
-            ('libstdc++', 'hoary', 'main', 'base'),
-            ('cnews', 'hoary', 'universe', 'base'),
-            ('alsa-utils', 'hoary', 'main', 'base'),
-            ('pmount', 'hoary', 'main', 'editors'),
-            ('netapplet', 'hoary', 'main', 'web'),
-            ('evolution', 'hoary', 'main', 'editors'),
+            ('linux-source-2.6.15', 'main', 'base'),
+            ('libstdc++', 'main', 'base'),
+            ('cnews', 'universe', 'base'),
+            ('alsa-utils', 'main', 'base'),
+            ('pmount', 'main', 'editors'),
+            ('netapplet', 'main', 'web'),
+            ('evolution', 'main', 'editors'),
             ]
         self.assertEqual(expectedSources, list(published_sources))
 
     def test_getBinariesForOverrides(self):
         # getBinariesForOverrides returns a list of tuples containing:
-        # (sourcename, suite, component, section, priority)
+        # (sourcename, component, section, priority)
 
         # Reconfigure FTPArchiveHandler to retrieve sampledata overrides.
         fa = self._setUpFTPArchiveHandler()
@@ -194,8 +188,9 @@ class TestFTPArchive(TestCaseWithFactory):
         published_binaries = fa.getBinariesForOverrides(
             hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
-            ('pmount', 'hoary', 'main', 'base', 'extra'),
-            ('pmount', 'hoary', 'universe', 'editors', 'important'),
+            ('pmount', 'main', 'base', PackagePublishingPriority.EXTRA),
+            ('pmount', 'universe', 'editors',
+             PackagePublishingPriority.IMPORTANT),
             ]
         self.assertEqual(expectedBinaries, list(published_binaries))
 
@@ -240,7 +235,7 @@ class TestFTPArchive(TestCaseWithFactory):
 
     def test_getSourceFiles(self):
         # getSourceFiles returns a list of tuples containing:
-        # (sourcename, suite, filename, component)
+        # (sourcename, filename, component)
 
         # Reconfigure FTPArchiveHandler to retrieve sampledata records.
         fa = self._setUpFTPArchiveHandler()
@@ -252,15 +247,15 @@ class TestFTPArchive(TestCaseWithFactory):
         sources_files = fa.getSourceFiles(
             hoary, PackagePublishingPocket.RELEASE)
         expected_files = [
-            ('alsa-utils', 'hoary', 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'main'),
-            ('evolution', 'hoary', 'evolution-1.0.tar.gz', 'main'),
-            ('netapplet', 'hoary', 'netapplet_1.0.0.orig.tar.gz', 'main'),
+            ('alsa-utils', 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'main'),
+            ('evolution', 'evolution-1.0.tar.gz', 'main'),
+            ('netapplet', 'netapplet_1.0.0.orig.tar.gz', 'main'),
             ]
         self.assertEqual(expected_files, list(sources_files))
 
     def test_getBinaryFiles(self):
         # getBinaryFiles returns a list of tuples containing:
-        # (sourcename, suite, filename, component, architecture)
+        # (sourcename, filename, component, architecture)
 
         # Reconfigure FTPArchiveHandler to retrieve sampledata records.
         fa = self._setUpFTPArchiveHandler()
@@ -272,7 +267,7 @@ class TestFTPArchive(TestCaseWithFactory):
         binary_files = fa.getBinaryFiles(
             hoary, PackagePublishingPocket.RELEASE)
         expected_files = [
-            ('pmount', 'hoary', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
+            ('pmount', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
             ]
         self.assertEqual(expected_files, list(binary_files))
 
@@ -493,26 +488,3 @@ class TestFTPArchiveRunApt(TestCaseWithFactory):
         distro = distroarchseries.distroseries.distribution
         fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
         self.assertRaises(AptFTPArchiveFailure, fa.runApt, "bogus-config")
-
-
-class TestFTouch(TestCase):
-    """Tests for f_touch function."""
-
-    def setUp(self):
-        TestCase.setUp(self)
-        self.test_folder = self.useTempDir()
-
-    def test_f_touch_new_file(self):
-        # Test f_touch correctly creates a new file.
-        f_touch(self.test_folder, "file_to_touch")
-        self.assertTrue(os.path.exists("%s/file_to_touch" % self.test_folder))
-
-    def test_f_touch_existing_file(self):
-        # Test f_touch truncates existing files.
-        with open("%s/file_to_truncate" % self.test_folder, "w") as f:
-            f.write("I'm some test contents")
-
-        f_touch(self.test_folder, "file_to_leave_alone")
-
-        with open("%s/file_to_leave_alone" % self.test_folder, "r") as f:
-            self.assertEqual("", f.read())

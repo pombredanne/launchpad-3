@@ -6,10 +6,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.testing import (
     login_celebrity,
@@ -33,6 +34,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
         self.person_set = getUtility(IPersonSet)
         self.dupe = self.factory.makePerson(name='dupe')
         self.target = self.factory.makePerson(name='target')
+        self.requester = self.factory.makePerson(name='requester')
 
     def getForm(self, dupe_name=None):
         if dupe_name is None:
@@ -46,7 +48,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
     def test_cannot_merge_person_with_ppas(self):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
-        archive = self.dupe.createPPA()
+        self.dupe.createPPA()
         login_celebrity('registry_experts')
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
@@ -54,6 +56,18 @@ class TestValidatingMergeView(TestCaseWithFactory):
             [u"dupe has a PPA that must be deleted before it can be "
               "merged. It may take ten minutes to remove the deleted PPA's "
               "files."],
+            view.errors)
+
+    def test_cannot_merge_person_with_private_branches(self):
+        # A team or user with a private branches cannot be merged.
+        self.factory.makeBranch(
+            owner=self.dupe, information_type=InformationType.USERDATA)
+        login_celebrity('registry_experts')
+        view = create_initialized_view(
+            self.person_set, '+requestmerge', form=self.getForm())
+        self.assertEqual(
+            [u"dupe owns private branches that must be deleted or "
+              "transferred to another owner first."],
             view.errors)
 
     def test_cannot_merge_person_with_itself(self):
@@ -69,8 +83,9 @@ class TestValidatingMergeView(TestCaseWithFactory):
         # A merge cannot be requested for an IPerson if it there is a job
         # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
-        duplicate_job = job_source.create(
-            from_person=self.dupe, to_person=self.target)
+        job_source.create(
+            from_person=self.dupe, to_person=self.target,
+            requester=self.requester)
         login_person(self.target)
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
@@ -81,8 +96,9 @@ class TestValidatingMergeView(TestCaseWithFactory):
         # A merge cannot be requested for an IPerson if it there is a job
         # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
-        duplicate_job = job_source.create(
-            from_person=self.target, to_person=self.dupe)
+        job_source.create(
+            from_person=self.target, to_person=self.dupe,
+            requester=self.requester)
         login_person(self.target)
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
@@ -172,8 +188,8 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
     def test_cannot_merge_team_with_ppa(self):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
-        self.dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
-        archive = self.dupe_team.createPPA()
+        self.dupe_team.membership_policy = TeamMembershipPolicy.MODERATED
+        self.dupe_team.createPPA()
         login_celebrity('registry_experts')
         view = self.getView()
         self.assertEqual(
@@ -209,7 +225,7 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
     def test_cannot_merge_person_with_ppa(self):
         # A person with a PPA cannot be merged.
         login_celebrity('admin')
-        archive = self.dupe_person.createPPA()
+        self.dupe_person.createPPA()
         view = self.getView()
         self.assertEqual(
             [u"dupe-person has a PPA that must be deleted before it can be "

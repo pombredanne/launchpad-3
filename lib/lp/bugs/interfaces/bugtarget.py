@@ -18,6 +18,8 @@ __all__ = [
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
     'ISeriesBugTarget',
+    'POLICY_ALLOWED_TYPES',
+    'POLICY_DEFAULT_TYPES',
     ]
 
 
@@ -52,12 +54,18 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.bugs.interfaces.bugtask import (
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtasksearch import (
     BugBlueprintSearch,
     BugBranchSearch,
     BugTagsSearchCombinator,
-    IBugTask,
     IBugTaskSearch,
+    )
+from lp.registry.enums import (
+    BugSharingPolicy,
+    FREE_INFORMATION_TYPES,
+    InformationType,
+    NON_EMBARGOED_INFORMATION_TYPES,
     )
 from lp.services.fields import Tag
 
@@ -70,6 +78,7 @@ search_tasks_params_common = {
     "search_text": copy_field(IBugTaskSearch['searchtext']),
     "status": copy_field(IBugTaskSearch['status']),
     "importance": copy_field(IBugTaskSearch['importance']),
+    "information_type": copy_field(IBugTaskSearch['information_type']),
     "assignee": Reference(schema=Interface),
     "bug_reporter": Reference(schema=Interface),
     "bug_supervisor": Reference(schema=Interface),
@@ -196,31 +205,25 @@ search_tasks_params_for_api_devel = dict(
         vocabulary=BugBlueprintSearch, required=False))
 
 
+POLICY_ALLOWED_TYPES = {
+    BugSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
+    BugSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
+    BugSharingPolicy.PROPRIETARY_OR_PUBLIC: NON_EMBARGOED_INFORMATION_TYPES,
+    BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
+    }
+
+POLICY_DEFAULT_TYPES = {
+    BugSharingPolicy.PUBLIC: InformationType.PUBLIC,
+    BugSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
+    BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BugSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    }
+
+
 class IHasBugs(Interface):
     """An entity which has a collection of bug tasks."""
 
     export_as_webservice_entry()
-
-    # XXX Tom Berger 2008-09-26, Bug #274735
-    # The following are attributes, rather than fields, and must remain
-    # so, to make sure that they are not being copied into snapshots.
-    # Eventually, we'd like to remove these attributes from the content
-    # class altogether.
-    open_bugtasks = Attribute("A list of open bugTasks for this target.")
-    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
-    inprogress_bugtasks = Attribute(
-        "A list of in-progress bugTasks for this target.")
-    high_bugtasks = Attribute(
-        "A list of high importance BugTasks for this target.")
-    critical_bugtasks = Attribute(
-        "A list of critical BugTasks for this target.")
-    new_bugtasks = Attribute("A list of New BugTasks for this target.")
-    unassigned_bugtasks = Attribute(
-        "A list of unassigned BugTasks for this target.")
-    all_bugtasks = Attribute(
-        "A list of all BugTasks ever reported for this target.")
-    has_bugtasks = Attribute(
-        "True if a BugTask has ever been reported for this target.")
 
     # searchTasks devel API declaration.
     @call_with(search_params=None, user=REQUEST_USER)
@@ -258,7 +261,7 @@ class IHasBugs(Interface):
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, structural_subscriber=None,
                     modified_since=None, created_since=None,
-                    created_before=None):
+                    created_before=None, information_type=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -380,9 +383,6 @@ class IHasOfficialBugTags(Interface):
         value_type=Tag(),
         readonly=True))
 
-    def getUsedBugTags():
-        """Return the tags used by the context as a sorted list of strings."""
-
     def getUsedBugTagsWithOpenCounts(user, tag_limit=0, include_tags=None):
         """Return name and bug count of tags having open bugs.
 
@@ -450,5 +450,7 @@ class IOfficialBugTag(Interface):
 class ISeriesBugTarget(Interface):
     """An `IBugTarget` which is a series."""
 
+    series = Attribute(
+        "The product or distribution series of this series bug target.")
     bugtarget_parent = Attribute(
         "Non-series parent of this series bug target.")

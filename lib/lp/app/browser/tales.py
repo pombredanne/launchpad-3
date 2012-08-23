@@ -64,6 +64,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
 from lp.layers import LaunchpadLayer
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -322,7 +323,7 @@ class MenuAPI:
             except NoCanonicalUrl:
                 menu = None
             return self._getMenuLinksAndAttributes(menu)
-        except AttributeError, e:
+        except AttributeError as e:
             # If this method gets an AttributeError, we rethrow it as a
             # AssertionError. Otherwise, zope will hide the root cause
             # of the error and just say that "navigation" can't be traversed.
@@ -956,9 +957,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def badges(self):
         badges = []
-        if self._context.bug.private:
+        information_type = self._context.bug.information_type
+        if information_type in PRIVATE_INFORMATION_TYPES:
             badges.append(self.icon_template % (
-                "private", "Private", "sprite private"))
+                information_type.title, information_type.description,
+                "sprite private"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (
@@ -2721,8 +2724,8 @@ class CSSFormatter:
     """A tales path adapter used for CSS rules.
 
     Using an expression like this:
-        value/css:select/visible/unseen
-    You will get "visible" if value evaluates to true, and "unseen" if the
+        value/css:select/visible/hidden
+    You will get "visible" if value evaluates to true, and "hidden" if the
     value evaluates to false.
     """
 

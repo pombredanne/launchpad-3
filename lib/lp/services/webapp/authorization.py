@@ -40,7 +40,6 @@ from zope.security.simplepolicies import (
 
 from lp.app.interfaces.security import IAuthorization
 from lp.registry.interfaces.role import IPersonRoles
-from lp.services.database.readonly import is_read_only
 from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.webapp.canonicalurl import nearest_adapter
@@ -144,15 +143,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
-        # Shortcut in read-only mode. We have to do this now to avoid
-        # accidentally using cached results. This will be important when
-        # Launchpad automatically fails over to read-only mode when the
-        # master database is unavailable.
-        if is_read_only():
-            lp_permission = getUtility(ILaunchpadPermission, permission)
-            if lp_permission.access_level != "read":
-                return False
-
         # If we have a view, get its context and use that to get an
         # authorization adapter.
         if IView.providedBy(object):

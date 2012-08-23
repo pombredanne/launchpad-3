@@ -1601,9 +1601,9 @@ First we create four copy archives for ubuntu:
 One of the new copy archives will be owned by a team:
 
     >>> from lp.registry.interfaces.person import (
-    ...     TeamSubscriptionPolicy)
+    ...     TeamMembershipPolicy)
     >>> team = getUtility(IPersonSet).newTeam(mark, 't1', 't1',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu,
     ...                                        name="team-archive",
     ...                                        owner=team)
@@ -1882,42 +1882,6 @@ Re-enable Celso's PPA.
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.enable()
 
-Another important aspect of the upload permission for ubuntu main
-archives (PRIMARY, PARTNER and DEBUG) is that in addition to owners
-and users which were specifically granted permissions, members of the
-ubuntu-security' team also have 'launchpad.Append' on them.
-
-In the sampledata, Carlos does not have permission to append contents
-to the Ubuntu main archives.
-
-    >>> primary, partner, debug = ubuntu.all_distro_archives
-
-    >>> login('carlos@canonical.com')
-    >>> check_permission('launchpad.Append', primary)
-    False
-    >>> check_permission('launchpad.Append', partner)
-    False
-    >>> check_permission('launchpad.Append', debug)
-    False
-
-When Carlos becomes a member of the 'ubuntu-security' team he is
-allowed to append to ubuntu main archives. In practice it means that
-Carlos can now *copy* packages directly to ubuntu.
-
-    # Make Carlos a member of the ubuntu-security team.
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu_security = getUtility(IPersonSet).getByName(
-    ...     'ubuntu-security')
-    >>> ignored = ubuntu_security.addMember(carlos, cprov)
-
-    >>> login('carlos@canonical.com')
-    >>> check_permission('launchpad.Append', primary)
-    True
-    >>> check_permission('launchpad.Append', partner)
-    True
-    >>> check_permission('launchpad.Append', debug)
-    True
-
 
 Rebuild archives
 ----------------
@@ -2092,6 +2056,14 @@ all result in a NotFound exception:
     ...
     NoSuchDistroSeries: No such distribution series: 'badseries'.
 
+If a package exists but not in the source archive, we get an error:
+
+    >>> mark.archive.syncSources(["pack"], mark.archive, "release")
+    Traceback (most recent call last):
+    ...
+    CannotCopy: None of the supplied package names are published in PPA for
+    Mark Shuttleworth.
+
 If a package exists in multiple distroseries, we can use the `from_series`
 parameter to select the distroseries to synchronise from:
 
@@ -2150,6 +2122,13 @@ Login as mark to continue.
     ...     name="pack", exact_match=True).one()
     >>> print pack.sourcepackagerelease.version
     1.0
+
+If the supplied package exists but not in the source archive, we get an error:
+
+    >>> mark.archive.syncSource("package3", "1.0", mark.archive, "release")
+    Traceback (most recent call last):
+    ...
+    CannotCopy: package3 is not published in PPA for Mark Shuttleworth.
 
 Copy package3 1.0 explicitly:
 

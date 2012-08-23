@@ -8,6 +8,7 @@ __all__ = [
     'DatabasePreflight',
     'KillConnectionsPreflight',
     'NoConnectionCheckPreflight',
+    'streaming_sync',
     ]
 
 import _pythonpath
@@ -16,8 +17,6 @@ from datetime import timedelta
 from optparse import OptionParser
 import os.path
 import time
-
-import psycopg2
 
 from lp.services.database.sqlbase import (
     connect,
@@ -29,7 +28,7 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-import replication.helpers
+from replication.helpers import Node
 import upgrade
 
 # Ignore connections by these users.
@@ -69,47 +68,42 @@ MAX_LAG = timedelta(seconds=60)
 
 
 class DatabasePreflight:
-    def __init__(self, log):
+    def __init__(self, log, standbys):
         master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
-        self.is_replicated = replication.helpers.slony_installed(master_con)
-        if self.is_replicated:
-            self.nodes = set(
-                replication.helpers.get_all_cluster_nodes(master_con))
-            for node in self.nodes:
-                node.con = psycopg2.connect(node.connection_string)
-                node.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        node = Node(None, None, None, True)
+        node.con = master_con
+        self.nodes = set([node])
+        self.lpmain_nodes = self.nodes
+        self.lpmain_master_node = node
 
-            # Create a list of nodes subscribed to the replicated sets we
-            # are modifying.
-            cur = master_con.cursor()
-            cur.execute("""
-                WITH subscriptions AS (
-                    SELECT *
-                    FROM _sl.sl_subscribe
-                    WHERE sub_set = 1 AND sub_active IS TRUE)
-                SELECT sub_provider FROM subscriptions
-                UNION
-                SELECT sub_receiver FROM subscriptions
-                """)
-            lpmain_node_ids = set(row[0] for row in cur.fetchall())
-            self.lpmain_nodes = set(
-                node for node in self.nodes
-                if node.node_id in lpmain_node_ids)
+        # Add streaming replication standbys, which unfortunately cannot be
+        # detected reliably and has to be passed in via the command line.
+        self._num_standbys = len(standbys)
+        for standby in standbys:
+            standby_node = Node(None, None, standby, False)
+            standby_node.con = standby_node.connect(
+                ISOLATION_LEVEL_AUTOCOMMIT)
+            self.nodes.add(standby_node)
+            self.lpmain_nodes.add(standby_node)
 
-            # Store a reference to the lpmain origin.
-            lpmain_master_node_id = replication.helpers.get_master_node(
-                master_con, 1).node_id
-            self.lpmain_master_node = [
-                node for node in self.lpmain_nodes
-                    if node.node_id == lpmain_master_node_id][0]
+    def check_standby_count(self):
+        # We sanity check the options as best we can to protect against
+        # operator error.
+        cur = self.lpmain_master_node.con.cursor()
+        cur.execute("SELECT COUNT(*) FROM pg_stat_replication")
+        required_standbys = cur.fetchone()[0]
+
+        if required_standbys != self._num_standbys:
+            self.log.fatal(
+                "%d streaming standbys connected, but %d provided on cli"
+                % (required_standbys, self._num_standbys))
+            return False
         else:
-            node = replication.helpers.Node(None, None, None, True)
-            node.con = master_con
-            self.nodes = set([node])
-            self.lpmain_nodes = self.nodes
-            self.lpmain_master_node = node
+            self.log.info(
+                "%d streaming standby servers streaming", required_standbys)
+            return True
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
@@ -232,30 +226,48 @@ class DatabasePreflight:
 
     def check_replication_lag(self):
         """Return False if the replication cluster is badly lagged."""
-        if not self.is_replicated:
-            self.log.debug("Not replicated - no replication lag.")
-            return True
+        # Do something harmless to force changes to be streamed in case
+        # system is idle.
+        self.lpmain_master_node.con.cursor().execute(
+            'ANALYZE LaunchpadDatabaseRevision')
+        start_time = time.time()
+        # Keep looking for low lag for 30 seconds, in case the system
+        # was idle and streaming needs time to kick in.
+        while time.time() < start_time + 30:
+            max_lag = timedelta(seconds=-1)
+            for node in self.nodes:
+                cur = node.con.cursor()
+                # streaming replication only works with 9.1 or later.
+                # Remove this guard when SSO nodes are migrated to 9.1.
+                cur.execute("""
+                    select current_setting('server_version') >= '9.1'
+                    """)
+                is_pg91 = cur.fetchone()[0]
+                if is_pg91:
+                    cur.execute("""
+                        SELECT current_setting('hot_standby') = 'on',
+                        now() - pg_last_xact_replay_timestamp()
+                        """)
+                    is_standby, lag = cur.fetchone()
+                    if is_standby:
+                        self.log.debug2('streaming lag %s', lag)
+                        max_lag = max(max_lag, lag)
+            if max_lag < MAX_LAG:
+                break
+            time.sleep(0.2)
 
-        # Check replication lag on every node just in case there are
-        # disagreements.
-        max_lag = timedelta(seconds=-1)
-        for node in self.nodes:
-            cur = node.con.cursor()
-            cur.execute("""
-                SELECT current_database(),
-                max(st_lag_time) AS lag FROM _sl.sl_status
-            """)
-            dbname, lag = cur.fetchone()
-            if lag > max_lag:
-                max_lag = lag
-            self.log.debug(
-                "%s reports database lag of %s.", dbname, lag)
-        if max_lag <= MAX_LAG:
-            self.log.info("Database cluster lag is ok (%s)", max_lag)
-            return True
+        if max_lag < timedelta(0):
+            streaming_lagged = False
+            self.log.debug("No streaming replication")
+        elif max_lag > MAX_LAG:
+            streaming_lagged = True
+            self.log.fatal("Streaming replication lag is high (%s)", max_lag)
         else:
-            self.log.fatal("Database cluster lag is high (%s)", max_lag)
-            return False
+            streaming_lagged = False
+            self.log.debug(
+                "Streaming replication lag is not high (%s)", max_lag)
+
+        return not streaming_lagged
 
     def check_can_sync(self):
         """Return True if a sync event is acknowledged by all nodes.
@@ -263,21 +275,14 @@ class DatabasePreflight:
         We only wait 30 seconds for the sync, because we require the
         cluster to be quiescent.
         """
-        if self.is_replicated:
-            success = replication.helpers.sync(30, exit_on_fail=False)
-            if success:
-                self.log.info(
-                    "Replication events are being propagated.")
-            else:
-                self.log.fatal(
-                    "Replication events are not being propagated.")
-                self.log.fatal(
-                    "One or more replication daemons may be down.")
-                self.log.fatal(
-                    "Bounce the replication daemons and check the logs.")
-            return success
+        # PG 9.1 streaming replication, or no replication.
+        streaming_success = streaming_sync(self.lpmain_master_node.con, 30)
+        if streaming_success:
+            self.log.info("Streaming replicas syncing.")
         else:
-            return True
+            self.log.fatal("Streaming replicas not syncing.")
+
+        return streaming_success
 
     def report_patches(self):
         """Report what patches are due to be applied from this tree."""
@@ -299,6 +304,8 @@ class DatabasePreflight:
         self.report_patches()
 
         success = True
+        if not self.check_standby_count():
+            success = False
         if not self.check_replication_lag():
             success = False
         if not self.check_can_sync():
@@ -368,6 +375,32 @@ class KillConnectionsPreflight(DatabasePreflight):
         return all_clear
 
 
+def streaming_sync(con, timeout=None):
+    """Wait for streaming replicas to synchronize with master as of now.
+
+    :param timeout: seconds to wait, None for no timeout.
+
+    :returns: True if sync happened or no streaming replicas
+              False if the timeout was passed.
+    """
+    cur = con.cursor()
+
+    # Force a WAL switch, returning the current position.
+    cur.execute('SELECT pg_switch_xlog()')
+    wal_point = cur.fetchone()[0]
+    start_time = time.time()
+    while timeout is None or time.time() < start_time + timeout:
+        cur.execute("""
+            SELECT FALSE FROM pg_stat_replication
+            WHERE replay_location < %s LIMIT 1
+            """, (wal_point,))
+        if cur.fetchone() is None:
+            # All slaves, possibly 0, are in sync.
+            return True
+        time.sleep(0.2)
+    return False
+
+
 def main():
     parser = OptionParser()
     db_options(parser)
@@ -380,6 +413,10 @@ def main():
         "--kill-connections", dest='kill_connections',
         default=False, action="store_true",
         help="Kill non-system connections instead of reporting an error.")
+    parser.add_option(
+        '--standby', dest='standbys', default=[], action="append",
+        metavar='CONN_STR',
+        help="libpq connection string to a hot standby database")
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many arguments")
@@ -391,11 +428,11 @@ def main():
     log = logger(options)
 
     if options.kill_connections:
-        preflight_check = KillConnectionsPreflight(log)
+        preflight_check = KillConnectionsPreflight(log, options.standbys)
     elif options.skip_connection_check:
-        preflight_check = NoConnectionCheckPreflight(log)
+        preflight_check = NoConnectionCheckPreflight(log, options.standbys)
     else:
-        preflight_check = DatabasePreflight(log)
+        preflight_check = DatabasePreflight(log, options.standbys)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')

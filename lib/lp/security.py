@@ -11,21 +11,22 @@ __all__ = [
     'ModerateByRegistryExpertsOrAdmins',
     ]
 
-from zope.component import (
-    getUtility,
-    queryAdapter,
-    )
-from zope.interface import Interface
+from operator import methodcaller
 
 from storm.expr import (
-    Exists,
     And,
+    Exists,
     Or,
     Select,
     SQL,
     Union,
     With,
     )
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.interface import Interface
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -44,6 +45,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationPublic,
+    ISpecificationView,
     )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
@@ -57,8 +59,8 @@ from lp.blueprints.model.specificationsubscription import (
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.bugs.model.bugtaskflat import BugTaskFlat
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -106,6 +108,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDevice,
     IHWVendorID,
     )
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
@@ -136,7 +139,6 @@ from lp.registry.interfaces.person import (
     IPersonLimitedView,
     IPersonSet,
     ITeam,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import (
     IPillar,
@@ -239,6 +241,11 @@ from lp.translations.interfaces.translator import (
     IEditTranslator,
     ITranslator,
     )
+
+
+def is_commercial_case(obj, user):
+    """Is this a commercial project and the user is a commercial admin?"""
+    return obj.has_current_commercial_subscription and user.in_commercial_admin
 
 
 class ViewByLoggedInUser(AuthorizationBase):
@@ -358,7 +365,7 @@ class PillarPersonSharingDriver(AuthorizationBase):
     permission = 'launchpad.Driver'
 
     def checkAuthenticated(self, user):
-        """The Admins & Commercial Admins can see inactive pillars."""
+        """Maintainers, drivers, and admins can drive projects."""
         return (user.in_admin or
                 user.isOwner(self.obj.pillar) or
                 user.isOneOfDrivers(self.obj.pillar))
@@ -425,6 +432,13 @@ class EditByOwnersOrAdmins(AuthorizationBase):
 
 class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        # Commercial admins may help setup commercial projects.
+        return (
+            super(EditProduct, self).checkAuthenticated(user)
+            or is_commercial_case(self.obj, user)
+            or False)
 
 
 class EditPackaging(EditByOwnersOrAdmins):
@@ -516,6 +530,27 @@ class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
 
     permission = 'launchpad.View'
     usedfor = ISpecificationPublic
+
+
+class ViewSpecification(AuthorizationBase):
+
+    permission = 'launchpad.LimitedView'
+    usedfor = ISpecificationView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class EditWhiteboardSpecification(ViewSpecification):
+
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = ISpecificationView
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditSpecificationByRelatedPeople(AuthorizationBase):
@@ -1221,6 +1256,19 @@ class SeriesDrivers(AuthorizationBase):
         return self.obj.personHasDriverRights(user)
 
 
+class DriveProduct(SeriesDrivers):
+
+    permission = 'launchpad.Driver'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        # Commercial admins may help setup commercial projects.
+        return (
+            super(DriveProduct, self).checkAuthenticated(user)
+            or is_commercial_case(self.obj, user)
+            or False)
+
+
 class ViewProductSeries(AnonymousAuthorization):
 
     usedfor = IProductSeries
@@ -1658,10 +1706,18 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
             return True
 
         permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
+        component_permissions = permission_set.componentsForQueueAdmin(
             self.obj.distroseries.distribution.all_distro_archives,
             user.person)
-        return not permissions.is_empty()
+        if not component_permissions.is_empty():
+            return True
+        pocket_permissions = permission_set.pocketsForQueueAdmin(
+            self.obj.distroseries.distribution.all_distro_archives,
+            user.person)
+        for permission in pocket_permissions:
+            if permission.distroseries in (None, self.obj.distroseries):
+                return True
+        return False
 
 
 class EditPlainPackageCopyJob(AuthorizationBase):
@@ -1677,6 +1733,39 @@ class EditPlainPackageCopyJob(AuthorizationBase):
         permissions = permission_set.componentsForQueueAdmin(
             archive, user.person)
         return not permissions.is_empty()
+
+
+class ViewPackageUpload(AuthorizationBase):
+    """Restrict viewing of package uploads.
+
+    Anyone who can see the archive or the sourcepackagerelease can see the
+    upload.  The SPR may be visible without the archive being visible if the
+    source package has been copied from a private archive.
+    """
+    permission = 'launchpad.View'
+    usedfor = IPackageUpload
+
+    def iter_adapters(self):
+        yield ViewArchive(self.obj.archive)
+        # We cannot use self.obj.sourcepackagerelease, as that causes
+        # interference with the property cache if we are called in the
+        # process of adding a source or a build.
+        if not self.obj._sources.is_empty():
+            spr = self.obj._sources[0].sourcepackagerelease
+        elif not self.obj._builds.is_empty():
+            spr = self.obj._builds[0].build.source_package_release
+        else:
+            spr = None
+        if spr is not None:
+            yield ViewSourcePackageRelease(spr)
+
+    def checkAuthenticated(self, user):
+        return any(map(
+            methodcaller("checkAuthenticated", user), self.iter_adapters()))
+
+    def checkUnauthenticated(self):
+        return any(map(
+            methodcaller("checkUnauthenticated"), self.iter_adapters()))
 
 
 class EditPackageUpload(AdminByAdminsTeam):
@@ -1696,19 +1785,9 @@ class EditPackageUpload(AdminByAdminsTeam):
             archive_append = AppendArchive(self.obj.archive)
             return archive_append.checkAuthenticated(user)
 
-        permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
-            self.obj.archive, user.person)
-        if permissions.count() == 0:
-            return False
-        allowed_components = set(
-            permission.component for permission in permissions)
-        existing_components = self.obj.components
-        # The intersection of allowed_components and
-        # existing_components must be equal to existing_components
-        # to allow the operation to go ahead.
-        return (allowed_components.intersection(existing_components)
-                == existing_components)
+        return self.obj.archive.canAdministerQueue(
+            user.person, self.obj.components, self.obj.pocket,
+            self.obj.distroseries)
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
@@ -1808,8 +1887,8 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         # If the permission check on the sourcepackagerelease for this
         # build passes then it means the build can be released from
         # privacy since the source package is published publicly.
-        # This happens when copy-package is used to re-publish a private
-        # package in the primary archive.
+        # This happens when Archive.copyPackage is used to re-publish a
+        # private package in the primary archive.
         auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         if auth_spr.checkAuthenticated(user):
             return True
@@ -2023,8 +2102,8 @@ class AccessBranch(AuthorizationBase):
     """Controls visibility of branches.
 
     A person can see the branch if the branch is public, they are the owner
-    of the branch, they are in the team that owns the branch, subscribed to
-    the branch, or a launchpad administrator.
+    of the branch, they are in the team that owns the branch, they have an
+    access grant to the branch, or a launchpad administrator.
     """
     permission = 'launchpad.View'
     usedfor = IBranch
@@ -2061,6 +2140,19 @@ class EditBranch(AuthorizationBase):
             user.in_vcs_imports
             or (self.obj.owner == vcs_imports
                 and user.inTeam(code_import.registrant)))
+
+
+class ModerateBranch(EditBranch):
+    """The owners, product owners, and admins can moderate branches."""
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        if super(ModerateBranch, self).checkAuthenticated(user):
+            return True
+        branch = self.obj
+        if branch.product is not None and user.inTeam(branch.product.owner):
+            return True
+        return user.in_commercial_admin
 
 
 def can_upload_linked_package(person_role, branch):
@@ -2398,9 +2490,6 @@ class AppendArchive(AuthorizationBase):
     PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
-
-    Appending to ubuntu main archives can also be done by the
-    'ubuntu-security' celebrity.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
@@ -2413,12 +2502,6 @@ class AppendArchive(AuthorizationBase):
             return True
 
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
-            return True
-
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (self.obj.is_main and
-            self.obj.distribution == celebrities.ubuntu and
-            user.in_ubuntu_security):
             return True
 
         return False

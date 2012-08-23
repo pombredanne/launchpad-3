@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AccessArtifact',
+    'AccessArtifactGrant',
     'AccessPolicy',
     'AccessPolicyArtifact',
     'AccessPolicyGrant',
@@ -15,11 +16,9 @@ __all__ = [
 from collections import defaultdict
 
 import pytz
-from storm import Undef
 from storm.expr import (
     And,
     In,
-    Join,
     Or,
     Select,
     SQL,
@@ -335,7 +334,7 @@ class AccessArtifactGrant(StormBase):
 
     @classmethod
     def revokeByArtifact(cls, artifacts, grantees=None):
-        """See `IAccessPolicyGrantSource`."""
+        """See `IAccessArtifactGrantSource`."""
         cls.findByArtifact(artifacts, grantees).remove()
 
 
@@ -378,6 +377,11 @@ class AccessPolicyGrant(StormBase):
     def revoke(cls, grants):
         """See `IAccessPolicyGrantSource`."""
         cls.find(grants).remove()
+
+    @classmethod
+    def revokeByPolicy(cls, policies):
+        """See `IAccessPolicyGrantSource`."""
+        cls.findByPolicy(policies).remove()
 
 
 class AccessPolicyGrantFlat(StormBase):

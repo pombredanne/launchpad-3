@@ -28,14 +28,19 @@ over, and the tag that surrounds the text.
     ...     name='widget', title='Widgets > important')
     >>> title_field = IProduct['title']
     >>> title = 'Edit the title'
-    >>> widget = TextLineEditorWidget(product, title_field, title, 'h1')
+    >>> widget = TextLineEditorWidget(
+    ...     product, title_field, title, 'h1', max_width='90%',
+    ...     truncate_lines=2)
 
 The widget is rendered by executing it, it prints out the attribute
 content.
 
     >>> print widget()
-    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt;
-        important</span>
+    <h1 id="edit-title">
+    <span style="max-width: 90%;"
+          class="yui3-editable_text-text ellipsis">
+        Widgets &gt; important
+    </span>
     </h1>
 
 In addition, when the logged in user can edit the value, there is a link to
@@ -44,8 +49,11 @@ link into an AJAX control when JS is available:
 
     >>> ignored = login_person(product.owner)
     >>> print widget()
-    <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets
-        &gt; important</span>
+    <h1 id="edit-title">
+    <span style="max-width: 90%;"
+          class="yui3-editable_text-text ellipsis">
+        Widgets &gt; important
+    </span>
         <a class="yui3-editable_text-trigger sprite edit action-icon"
            href="http://launchpad.dev/widget/+edit"
            title="">Edit</a>
@@ -193,7 +201,7 @@ description or the commit message.  This uses links when there is no content.
 Ideally the interaction with the links would be encoded as part of the widget
 itself, but that is an exercise left for another yak shaver.
 
-Hiding the widget is done by appending the "unseen" CSS class to the outer
+Hiding the widget is done by appending the "hidden" CSS class to the outer
 tag.
 
     >>> archive.description = None
@@ -201,7 +209,7 @@ tag.
     >>> clear_property_cache(widget)
     >>> print widget()
     <div>
-    <div id="edit-description" class="lazr-multiline-edit unseen">
+    <div id="edit-description" class="lazr-multiline-edit hidden">
     ...
 
 This behaviour can be overridden by setting the "hide_empty" parameter to
@@ -334,65 +342,6 @@ rendered to hook up the widget.
         <a class="editicon sprite edit action-icon"
            href="http://launchpad.dev/~eric/+edit" title="">Edit</a>
       </span>
-    </span>
-    <script>
-    LPJS.use('lp.app.choice', function(Y) {
-    ...
-    </script>
-
-
-Changing the edit link
-**********************
-
-The edit link can be changed in exactly the same way as for the
-TextLineEditorWidget above.
-
-
-EnumChoiceWidget
-----------------
-
-This widget is primarily there allow setting of enum fields easily
-using the popup chooser.
-
-    >>> from lp.app.browser.lazrjs import EnumChoiceWidget
-
-As with the other widgets, this one requires a context object and a Choice
-type field.  The rendering of the widget hooks up to the lazr ChoiceSource
-with the standard patch plugin.
-
-One of the different things about this widget is the styles that are added.
-Many enums have specific colour styles.  Generally these are the names of
-the enum values (the upper-case bit) with a defined prefix.  This prefix
-is passed in to the constructor of the widget.
-
-A list of items is generated from the vocabulary.
-
-If the user does not have edit rights, the widget just renders the text based
-on the current value of the field on the object:
-
-    >>> login(ANONYMOUS)
-    >>> from lp.code.interfaces.branch import IBranch
-    >>> branch = factory.makeAnyBranch()
-    >>> widget = EnumChoiceWidget(
-    ...     branch, IBranch['lifecycle_status'],
-    ...     header='Change status to', css_class_prefix='branchstatus')
-    >>> print widget()
-    <span id="edit-lifecycle_status">
-       <span class="value branchstatusDEVELOPMENT">Development</span>
-    </span>
-
-If the user has edit rights, an edit icon is rendered and some javascript is
-rendered to hook up the widget.
-
-    >>> ignored = login_person(branch.owner)
-    >>> print widget()
-    <span id="edit-lifecycle_status">
-        <span class="value branchstatusDEVELOPMENT">Development</span>
-        <span>
-          <a class="editicon sprite edit action-icon"
-             href="http://.../+edit"
-             title="">Edit</a>
-        </span>
     </span>
     <script>
     LPJS.use('lp.app.choice', function(Y) {

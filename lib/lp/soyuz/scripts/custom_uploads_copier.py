@@ -16,8 +16,10 @@ from operator import attrgetter
 
 from zope.component import getUtility
 
+from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
+from lp.archivepublisher.uefi import UefiUpload
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
 from lp.soyuz.enums import PackageUploadCustomFormat
@@ -40,19 +42,24 @@ class CustomUploadsCopier:
     copyable_types = {
         PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
         PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
+        PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
+        PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
-    def __init__(self, target_series):
+    def __init__(self, target_series,
+                 target_pocket=PackagePublishingPocket.RELEASE):
         self.target_series = target_series
+        self.target_pocket = target_pocket
 
     def isCopyable(self, upload):
         """Is `upload` the kind of `PackageUploadCustom` that we can copy?"""
         return upload.customformat in self.copyable_types
 
-    def getCandidateUploads(self, source_series):
+    def getCandidateUploads(self, source_series,
+                            source_pocket=PackagePublishingPocket.RELEASE):
         """Find custom uploads that may need copying."""
         uploads = source_series.getPackageUploads(
-            custom_type=self.copyable_types.keys())
+            pocket=source_pocket, custom_type=self.copyable_types.keys())
         load_referencing(PackageUploadCustom, uploads, ['packageuploadID'])
         customs = sum([list(upload.customfiles) for upload in uploads], [])
         customs = filter(self.isCopyable, customs)
@@ -65,9 +72,6 @@ class CustomUploadsCopier:
 
     def getKey(self, upload):
         """Get an indexing key for `upload`."""
-        # XXX JeroenVermeulen 2011-08-17, bug=827941: For ddtp
-        # translations tarballs, we'll have to include the component
-        # name as well.
         custom_format = upload.customformat
         series_key = self.extractSeriesKey(
             self.copyable_types[custom_format],
@@ -77,15 +81,19 @@ class CustomUploadsCopier:
         else:
             return (custom_format, series_key)
 
-    def getLatestUploads(self, source_series):
+    def getLatestUploads(self, source_series,
+                         source_pocket=PackagePublishingPocket.RELEASE):
         """Find the latest uploads.
 
         :param source_series: The `DistroSeries` whose uploads to get.
+        :param source_pocket: The `PackagePublishingPocket` to inspect.
         :return: A dict containing the latest uploads, indexed by keys as
             returned by `getKey`.
         """
+        candidate_uploads = self.getCandidateUploads(
+            source_series, source_pocket=source_pocket)
         latest_uploads = {}
-        for upload in self.getCandidateUploads(source_series):
+        for upload in candidate_uploads:
             key = self.getKey(upload)
             if key is not None:
                 latest_uploads.setdefault(key, upload)
@@ -120,16 +128,20 @@ class CustomUploadsCopier:
         if target_archive is None:
             return None
         package_upload = self.target_series.createQueueEntry(
-            PackagePublishingPocket.RELEASE, target_archive,
+            self.target_pocket, target_archive,
             changes_file_alias=original_upload.packageupload.changesfile)
         custom = package_upload.addCustom(
             original_upload.libraryfilealias, original_upload.customformat)
         package_upload.setAccepted()
         return custom
 
-    def copy(self, source_series):
-        """Copy uploads from `source_series`."""
-        target_uploads = self.getLatestUploads(self.target_series)
-        for upload in self.getLatestUploads(source_series).itervalues():
+    def copy(self, source_series,
+             source_pocket=PackagePublishingPocket.RELEASE):
+        """Copy uploads from `source_series`-`source_pocket`."""
+        target_uploads = self.getLatestUploads(
+            self.target_series, source_pocket=self.target_pocket)
+        source_uploads = self.getLatestUploads(
+            source_series, source_pocket=source_pocket)
+        for upload in source_uploads.itervalues():
             if not self.isObsolete(upload, target_uploads):
                 self.copyUpload(upload)

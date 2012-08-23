@@ -16,16 +16,16 @@ from lp.registry.browser.team import (
     TeamMailingListArchiveView,
     TeamOverviewMenu,
     )
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.mailinglist import MailingListStatus
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    IPersonSet,
-    OPEN_TEAM_POLICY,
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    InformationType,
     PersonVisibility,
+    TeamMembershipPolicy,
     TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy,
     )
+from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
@@ -76,7 +76,7 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
             name=name,
             owner=self.owner,
             displayname=displayname,
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
 
     def inviteToJoin(self, joinee, joiner):
         """Invite the joiner team into the joinee team."""
@@ -278,21 +278,21 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         team = self.factory.makeTeam(
             name="team", displayname='A Team',
             description="A great team", owner=owner,
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertEqual('team', view.widgets['name']._data)
             self.assertEqual(
                 'A Team', view.widgets['displayname']._data)
             self.assertEqual(
-                'A great team', view.widgets['teamdescription']._data)
+                'A great team', view.widgets['description']._data)
             self.assertEqual(
-                TeamSubscriptionPolicy.MODERATED,
-                view.widgets['subscriptionpolicy']._data)
+                TeamMembershipPolicy.MODERATED,
+                view.widgets['membership_policy']._data)
             self.assertEqual(
-                TeamSubscriptionPolicy,
-                view.widgets['subscriptionpolicy'].vocabulary)
-            self.assertIsNone(view.widgets['subscriptionpolicy'].extra_hint)
+                TeamMembershipPolicy,
+                view.widgets['membership_policy'].vocabulary)
+            self.assertIsNone(view.widgets['membership_policy'].extra_hint)
             self.assertEqual(
                 TeamMembershipRenewalPolicy.NONE,
                 view.widgets['renewal_policy']._data)
@@ -305,42 +305,32 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         # the setup performed by fn_setup occurs.
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            owner=owner, subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            owner=owner, membership_policy=TeamMembershipPolicy.MODERATED)
         fn_setup(team)
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertContentEqual(
                 expected_items,
                 [term.value
-                 for term in view.widgets['subscriptionpolicy'].vocabulary])
+                 for term in view.widgets['membership_policy'].vocabulary])
             self.assertEqual(
                 'sprite info',
-                view.widgets['subscriptionpolicy'].extra_hint_class)
+                view.widgets['membership_policy'].extra_hint_class)
             self.assertIsNotNone(
-                view.widgets['subscriptionpolicy'].extra_hint)
+                view.widgets['membership_policy'].extra_hint)
 
     def test_edit_team_view_pillar_owner(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team is a pillar owner.
 
         def setup_team(team):
             self.factory.makeProduct(owner=team)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
-
-    def test_edit_team_view_pillar_security_contact(self):
-        # The edit view renders only closed subscription policy choices when
-        # the team is a pillar security contact.
-
-        def setup_team(team):
-            self.factory.makeProduct(security_contact=team)
-
-        self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_ppas(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team has any ppas.
 
         def setup_team(team):
@@ -348,25 +338,25 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
                 team.createPPA()
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_closed_super_team(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team has any closed super teams.
 
         def setup_team(team):
             super_team = self.factory.makeTeam(
                 owner=team.teamowner,
-                subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+                membership_policy=TeamMembershipPolicy.RESTRICTED)
             with person_logged_in(team.teamowner):
                 super_team.addMember(
                     team, team.teamowner, force_team_add=True)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_subscribed_private_bug(self):
-        # The edit view renders only closed subscription policy choices when
+        # The edit view renders only closed membership policy choices when
         # the team is subscribed to a private bug.
 
         def setup_team(team):
@@ -377,22 +367,22 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
                 bug.default_bugtask.transitionToAssignee(team)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, CLOSED_TEAM_POLICY)
+            setup_team, EXCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_has_open_member(self):
-        # The edit view renders open closed subscription policy choices when
+        # The edit view renders open closed membership policy choices when
         # the team has any open sub teams.
 
         def setup_team(team):
             team_member = self.factory.makeTeam(
                 owner=team.teamowner,
-                subscription_policy=TeamSubscriptionPolicy.DELEGATED)
+                membership_policy=TeamMembershipPolicy.DELEGATED)
             with person_logged_in(team.teamowner):
                 team.addMember(
                     team_member, team.teamowner, force_team_add=True)
 
         self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, OPEN_TEAM_POLICY)
+            setup_team, INCLUSIVE_TEAM_POLICY)
 
     def test_edit_team_view_save(self):
         # A team can be edited and saved, including a name change, even if it
@@ -402,7 +392,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             name="team", displayname='A Team',
             description="A great team", owner=owner,
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
 
         with person_logged_in(owner):
             team_list = self.factory.makeMailingList(team, owner)
@@ -414,7 +404,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         browser.getLink('Change details').click()
         browser.getControl('Name', index=0).value = 'ubuntuteam'
         browser.getControl('Display Name').value = 'Ubuntu Team'
-        browser.getControl('Team Description').value = ''
+        browser.getControl('Description').value = ''
         browser.getControl('Restricted Team').selected = True
         browser.getControl('Save').click()
 
@@ -429,7 +419,7 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(
             'Ubuntu Team', browser.getControl('Display Name', index=0).value)
         self.assertEqual(
-            '', browser.getControl('Team Description', index=0).value)
+            '', browser.getControl('Description', index=0).value)
         self.assertTrue(
             browser.getControl('Restricted Team', index=0).selected)
 
@@ -478,8 +468,26 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
 
 class TestTeamAddView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
     view_name = '+newteam'
+
+    def test_team_creation_good_data(self):
+        person = self.factory.makePerson()
+        form = {
+            'field.actions.create': 'Create Team',
+            'field.displayname': 'liberty-land',
+            'field.name': 'libertyland',
+            'field.renewal_policy': 'NONE',
+            'field.renewal_policy-empty-marker': 1,
+            'field.membership_policy': 'RESTRICTED',
+            'field.membership_policy-empty-marker': 1,
+            }
+        login_person(person)
+        person_set = getUtility(IPersonSet)
+        create_initialized_view(person_set, self.view_name, form=form)
+        team = person_set.getByName('libertyland')
+        self.assertTrue(team is not None)
+        self.assertEqual('libertyland', team.name)
 
     def test_random_does_not_see_visibility_field(self):
         personset = getUtility(IPersonSet)
@@ -500,7 +508,7 @@ class TestTeamAddView(TestCaseWithFactory):
     def test_person_with_cs_sees_visibility_field(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.grantCommercialSubscription(team)
         with person_logged_in(team.teamowner):
             view = create_initialized_view(
@@ -512,13 +520,13 @@ class TestTeamAddView(TestCaseWithFactory):
     def test_person_with_cs_can_create_private_team(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         self.factory.grantCommercialSubscription(team)
         team_name = self.factory.getUniqueString()
         form = {
             'field.name': team_name,
             'field.displayname': 'New Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.membership_policy': 'RESTRICTED',
             'field.visibility': 'PRIVATE',
             'field.actions.create': 'Create',
             }
@@ -533,7 +541,7 @@ class TestTeamAddView(TestCaseWithFactory):
     def test_person_with_expired_cs_does_not_see_visibility(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
         self.factory.makeCommercialSubscription(product, expired=True)
         with person_logged_in(team.teamowner):
@@ -546,7 +554,7 @@ class TestTeamAddView(TestCaseWithFactory):
     def test_visibility_is_correct_during_edit(self):
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            membership_policy=TeamMembershipPolicy.RESTRICTED,
             visibility=PersonVisibility.PRIVATE, owner=owner)
         product = self.factory.makeProduct(owner=owner)
         self.factory.makeCommercialSubscription(product)
@@ -557,6 +565,32 @@ class TestTeamAddView(TestCaseWithFactory):
         self.assertEqual(
             ['PRIVATE'],
             browser.getControl(name="field.visibility").value)
+
+
+class TestSimpleTeamAddView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+    view_name = '+simplenewteam'
+
+    def test_create_team(self):
+        personset = getUtility(IPersonSet)
+        team_name = self.factory.getUniqueString()
+        form = {
+            'field.name': team_name,
+            'field.displayname': 'New Team',
+            'field.visibility': 'PRIVATE',
+            'field.membership_policy': 'RESTRICTED',
+            'field.actions.create': 'Create',
+            }
+        login_celebrity('admin')
+        create_initialized_view(
+            personset, name=self.view_name, form=form)
+        team = personset.getByName(team_name)
+        self.assertIsNotNone(team)
+        self.assertEqual('New Team', team.displayname)
+        self.assertEqual(PersonVisibility.PRIVATE, team.visibility)
+        self.assertEqual(
+            TeamMembershipPolicy.RESTRICTED, team.membership_policy)
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -716,6 +750,15 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.assertEqual(
             None, view.widgets['newmember']._getCurrentValue())
 
+    def test_add_private_team_member_success(self):
+        member = self.factory.makeTeam(
+            name="a-member", owner=self.team.teamowner,
+            visibility=PersonVisibility.PRIVATE)
+        form = self.getForm(member)
+        view = create_initialized_view(self.team, "+addmember", form=form)
+        self.assertEqual([], view.errors)
+        self.assertTrue(member.inTeam(self.team))
+
     def test_add_former_member_success(self):
         member = self.factory.makePerson(name="a-member")
         self.team.addMember(member, self.team.teamowner)
@@ -788,12 +831,12 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, '+index')
         self.assertEqual('Search', view.add_member_step_title)
 
-    def test_is_merge_pending(self):
+    def test_isMergePending(self):
         target_team = self.factory.makeTeam()
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(
             from_person=self.team, to_person=target_team,
-            reviewer=target_team.teamowner)
+            reviewer=target_team.teamowner, requester=target_team.teamowner)
         view = create_initialized_view(self.team, name="+index")
         notifications = view.request.response.notifications
         message = (
@@ -835,7 +878,7 @@ class TestPersonIndexVisibilityView(TestCaseWithFactory):
 
     def createTeams(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+            membership_policy=TeamMembershipPolicy.MODERATED)
         private = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE, name='private-team',
             members=[team])

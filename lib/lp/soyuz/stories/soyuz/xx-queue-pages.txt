@@ -17,7 +17,6 @@ rights to administer the queue for the four main components.  This
 permissioning data has no web UI to administer it yet, so we'll create
 a Zope interaction to show it:
 
-    >>> from lp.testing import login, logout
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -56,7 +55,7 @@ Viewing the current queue, by default the NEW queue.
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
-    >>> anon_browser.getLink("Show uploads").click()
+    >>> anon_browser.getLink("All uploads").click()
 
     >>> anon_browser.getControl(
     ...     name="queue_state", index=0).displayValue
@@ -140,10 +139,8 @@ the sample data, we'll first add some.
     >>> pss = getUtility(IPackagesetSet)
     >>> desktop = pss.new(
     ...     u'desktop', u'Ubuntu Desktop', name12, breezy_autotest)
-    >>> server = pss.new(
-    ...     u'server', u'Ubuntu Server', name12, breezy_autotest)
-    >>> core = pss.new(
-    ...     u'core', u'Ubuntu Core', name12, breezy_autotest)
+    >>> server = pss.new(u'server', u'Ubuntu Server', name12, breezy_autotest)
+    >>> core = pss.new(u'core', u'Ubuntu Core', name12, breezy_autotest)
     >>> desktop.add([core])
     >>> desktop.addSources(['alsa-utils'])
     >>> server.addSources(['alsa-utils'])
@@ -218,8 +215,7 @@ image:
 The 'filelist' is expanded as one or more table rows, right below the
 clicked item:
 
-    >>> filelist_body = first_tag_by_class(
-    ...     anon_browser.contents, 'queue-4')
+    >>> filelist_body = first_tag_by_class(anon_browser.contents, 'queue-4')
     >>> filelist = filelist_body.findAll('tr')
 
 It contains a list of files related to the queue item clicked, followed
@@ -277,9 +273,6 @@ First, we need to add fake librarian files so that email notifications work:
 And store a chroot for ubuntu breezy-autotest/i386 architectures, so
 the builds can be created.
 
-    >>> from zope.component import getUtility
-    >>> from lp.testing import login, logout
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
     >>> login('foo.bar@canonical.com')
@@ -503,8 +496,7 @@ overridden values.
 The user can drill down into the file list to see the overridden binary
 values:
 
-    >>> filelist = find_tags_by_class(
-    ...     anon_browser.contents, 'queue-2')
+    >>> filelist = find_tags_by_class(anon_browser.contents, 'queue-2')
     >>> for row in filelist:
     ...     print extract_text(row)
     pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 restricted admin extra
@@ -597,4 +589,3 @@ Clean up
 
     >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.librarian_fixture.clear()
-

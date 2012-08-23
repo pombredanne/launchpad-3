@@ -187,28 +187,30 @@ from lp.bugs.interfaces.bugnomination import (
     )
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
-    BugBlueprintSearch,
-    BugBranchSearch,
-    BugTagsSearchCombinator,
     BugTaskImportance,
-    BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
     BugTaskStatusSearchDisplay,
     CannotDeleteBugtask,
-    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
     IBugTask,
-    IBugTaskSearch,
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
-    IFrontPageBugTaskSearch,
     IllegalTarget,
     INominationsReviewTableBatchNavigator,
-    IPersonBugTaskSearch,
     IRemoveQuestionFromBugTaskForm,
-    IUpstreamProductBugTaskSearch,
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugBlueprintSearch,
+    BugBranchSearch,
+    BugTagsSearchCombinator,
+    BugTaskSearchParams,
+    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY,
+    IBugTaskSearch,
+    IFrontPageBugTaskSearch,
+    IPersonBugTaskSearch,
+    IUpstreamProductBugTaskSearch,
     )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
@@ -241,7 +243,10 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import MilestoneVocabulary
+from lp.registry.vocabularies import (
+    InformationTypeVocabulary,
+    MilestoneVocabulary,
+    )
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
@@ -694,6 +699,17 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             cancel_url = canonical_url(self.context)
         return cancel_url
 
+
+    @cachedproperty
+    def is_duplicate_active(self):
+        active = True
+        if self.context.bug.duplicateof is not None:
+            naked_duplicate = removeSecurityProxy(
+                self.context.bug.duplicateof)
+            active = getattr(
+                naked_duplicate.default_bugtask.target, 'active', True)
+        return active
+
     @cachedproperty
     def api_request(self):
         return IWebServiceClientRequest(self.request)
@@ -704,16 +720,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     @property
     def information_type(self):
-        use_private_flag = getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled')
-        info_type_enabled_flag = getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')
-        value = None
-        if info_type_enabled_flag:
-            value = self.context.bug.information_type.title
-            if (use_private_flag and value == InformationType.USERDATA.title):
-                value = "Private"
-        return value
+        return self.context.bug.information_type.title
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -737,7 +744,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, IBug['title'], "Edit this summary", 'h1',
-            edit_url=canonical_url(self.context, view_name='+edit'))
+            edit_url=canonical_url(self.context, view_name='+edit'),
+            max_width='95%', truncate_lines=6)
 
         # XXX 2010-10-05 gmb bug=655597:
         # This line of code keeps the view's query count down,
@@ -949,9 +957,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                     continue
                 if prev_comment.index + 1 != comment.index:
                     # There is a gap here, record it.
+
+                    # The number of items between two items is one less than
+                    # their difference. There is one number between 1 and 3,
+                    # not 2 (their difference).
+                    num_hidden = abs(comment.index - prev_comment.index) - 1
                     separator = {
                         'date': prev_comment.datecreated,
-                        'num_hidden': comment.index - prev_comment.index,
+                        'num_hidden': num_hidden,
                         }
                     events.insert(index, separator)
                     index += 1
@@ -2218,9 +2231,16 @@ class BugTaskListingItem:
             assignee = self.people[self.assigneeID].displayname
         reporter = self.people[self.bug.ownerID]
 
-        base_tag_url = "%s/?field.tag=" % canonical_url(
-            self.bugtask.target,
-            view_name="+bugs")
+        # the case that there is no target context (e.g. viewing bug that
+        # are related to a user account) is intercepted
+        if self.target_context is None:
+            base_tag_url = "%s/?field.tag=" % canonical_url(
+                self.bugtask.target,
+                view_name="+bugs")
+        else:
+            base_tag_url = "%s/?field.tag=" % canonical_url(
+                self.target_context,
+                view_name="+bugs")
 
         flattened = {
             'age': age,
@@ -2233,6 +2253,7 @@ class BugTaskListingItem:
             'id': self.bug.id,
             'importance': self.importance.title,
             'importance_class': 'importance' + self.importance.name,
+            'information_type': self.bug.information_type.title,
             'last_updated': last_updated,
             'milestone_name': milestone_name,
             'reporter': reporter.displayname,
@@ -2268,6 +2289,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             'show_heat': True,
             'show_id': True,
             'show_importance': True,
+            'show_information_type': False,
             'show_date_last_updated': False,
             'show_milestone_name': False,
             'show_reporter': False,
@@ -2370,14 +2392,13 @@ class BugListingBatchNavigator(TableBatchNavigator):
         objects = IJSONRequestCache(self.request).objects
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             objects = obfuscate_structure(objects)
-        return pystache.render(self.mustache_template,
-                               objects['mustache_model'])
+        model = dict(objects['mustache_model'])
+        model.update(self.field_visibility)
+        return pystache.render(self.mustache_template, model)
 
     @property
     def model(self):
         items = [bugtask.model for bugtask in self.getBugListingItems()]
-        for item in items:
-            item.update(self.field_visibility)
         return {'items': items}
 
 
@@ -2486,11 +2507,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
     def bugsupervisor(self):
         return Link('+bugsupervisor', 'Change bug supervisor', icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        return Link(
-            '+securitycontact', 'Change security contact', icon='edit')
-
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
@@ -2500,6 +2516,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
 SORT_KEYS = [
     ('importance', 'Importance', 'desc'),
     ('status', 'Status', 'asc'),
+    ('information_type', 'Information Type', 'asc'),
     ('id', 'Number', 'desc'),
     ('title', 'Title', 'asc'),
     ('targetname', 'Package/Project/Series name', 'asc'),
@@ -3094,6 +3111,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
         return self.getWidgetValues(vocabulary=BugTaskImportance)
+
+    def getInformationTypeWidgetValues(self):
+        """Return data used to render the Information Type checkboxes."""
+        if (IProduct.providedBy(self.context)
+            or IDistribution.providedBy(self.context)):
+            vocab = InformationTypeVocabulary(
+                types=self.context.getAllowedBugInformationTypes())
+        else:
+            vocab = InformationType
+        return self.getWidgetValues(vocabulary=vocab)
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""

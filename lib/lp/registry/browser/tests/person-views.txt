@@ -5,93 +5,6 @@ There are many views that wrap the Person object to display the person's
 information.
 
 
-Probationary and invalid users
-------------------------------
-
-The person +index view provides the is_probationary_or_invalid_user so
-that page features can be disabled because the user may abuse them.
-Active users with karma are not on probation; the user's
-homepage_content is formatted as HTML.
-
-    >>> from lp.registry.interfaces.person import IPersonSet
-
-    >>> homepage_content = "line one <script>\n\nhttp://aa.aa/"
-    >>> person_set = getUtility(IPersonSet)
-    >>> active_user = person_set.getByName('name12')
-    >>> ignored = login_person(active_user)
-    >>> active_user.homepage_content = homepage_content
-    >>> login(ANONYMOUS)
-    >>> view = create_initialized_view(active_user, '+index')
-    >>> view.is_probationary_or_invalid_user
-    False
-
-    >>> print view.homepage_content
-    <p>line one &lt;script&gt;</p>
-    <BLANKLINE>
-    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr />aa.aa/</a></p>
-
-Teams are always valid and do not have probation rules; the homepage
-content is formatted HTML.
-
-    >>> team = factory.makeTeam()
-    >>> ignored = login_person(team.teamowner)
-    >>> team.homepage_content = homepage_content
-    >>> login(ANONYMOUS)
-    >>> view = create_initialized_view(team, '+index')
-    >>> view.is_probationary_or_invalid_user
-    False
-
-    >>> print view.homepage_content
-    <p>line one &lt;script&gt;</p>
-    <BLANKLINE>
-    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr />aa.aa/</a></p>
-
-New users are on probation; the homepage content is escaped HTML.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> new_user = factory.makePerson()
-    >>> removeSecurityProxy(new_user).homepage_content = homepage_content
-    >>> view = create_initialized_view(new_user, '+index')
-    >>> view.is_probationary_or_invalid_user
-    True
-
-    >>> print view.homepage_content
-    line one &lt;script&gt;
-    <BLANKLINE>
-    http://aa.aa/
-
-Inactive and suspended users are invalid; the homepage content is
-escaped HTML.
-
-    >>> from lp.services.identity.interfaces.account import AccountStatus
-    >>> from lp.services.database.lpstorm import IMasterObject
-
-    # Only admins can change an account.
-
-    >>> admin_user = person_set.getByName('name16')
-    >>> ignored = login_person(admin_user)
-    >>> invalid_user = factory.makePerson(name="ugh")
-    >>> invalid_user.homepage_content = homepage_content
-    >>> IMasterObject(invalid_user.account).status = AccountStatus.NOACCOUNT
-    >>> view = create_initialized_view(invalid_user, '+index')
-    >>> view.is_probationary_or_invalid_user
-    True
-
-    >>> print view.homepage_content
-    line one &lt;script&gt;
-    <BLANKLINE>
-    http://aa.aa/
-
-    >>> login(ANONYMOUS)
-
-If the user has no homepage content, the view's value is None.
-
-    >>> removeSecurityProxy(new_user).homepage_content = None
-    >>> view = create_initialized_view(new_user, '+index')
-    >>> print view.homepage_content
-    None
-
-
 Email address disclosure
 ------------------------
 
@@ -108,6 +21,8 @@ can see them
 Mark has a registered email address, and he has chosen to disclose it to
 anyone in Launchpad..
 
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
     >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
@@ -378,8 +293,7 @@ working on.
 
 Assigned bugs do not display when their status is not INPROGRESS.
 
-    >>> bug = factory.makeBug(
-    ...     product=product, title='tool does not work')
+    >>> bug = factory.makeBug(target=product, title='tool does not work')
     >>> bug.bugtasks[0].transitionToAssignee(user)
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
@@ -424,7 +338,7 @@ status is in INPROGRESS.
 Multiple bugs and specs are displayed.
 
     >>> another_bug = factory.makeBug(
-    ...     product=product, title='tool does is broken')
+    ...     target=product, title='tool does is broken')
     >>> another_bug.bugtasks[0].transitionToAssignee(user)
     >>> another_bug.bugtasks[0].transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, user)

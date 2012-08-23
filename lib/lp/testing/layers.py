@@ -1,10 +1,10 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We like global!
 # pylint: disable-msg=W0603,W0702
 
-"""Layers used by Canonical tests.
+"""Layers used by Launchpad tests.
 
 Layers are the mechanism used by the Zope3 test runner to efficiently
 provide environments for tests and are documented in the lib/zope/testing.
@@ -24,6 +24,7 @@ of one, forcing us to attempt to make some sort of layer tree.
 __metaclass__ = type
 __all__ = [
     'AppServerLayer',
+    'AuditorLayer',
     'BaseLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
@@ -39,6 +40,7 @@ __all__ = [
     'LayerIsolationError',
     'LibrarianLayer',
     'PageTestLayer',
+    'RabbitMQLayer',
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
@@ -101,6 +103,7 @@ from zope.security.management import (
 from zope.server.logger.pythonlogger import PythonLogger
 
 from lp.services import pidfile
+from lp.services.auditor.server import AuditorServer
 from lp.services.config import (
     config,
     dbconfig,
@@ -245,7 +248,7 @@ def wait_children(seconds=120):
     while True:
         try:
             os.waitpid(-1, os.WNOHANG)
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ECHILD:
                 raise
             break
@@ -868,7 +871,7 @@ class LibrarianLayer(DatabaseLayer):
         try:
             f = urlopen(config.librarian.download_url)
             f.read()
-        except Exception, e:
+        except Exception as e:
             raise LayerIsolationError(
                     "Librarian has been killed or has hung."
                     "Tests should use LibrarianLayer.hide() and "
@@ -1348,6 +1351,42 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         disconnect_stores()
 
 
+class AuditorLayer(LaunchpadFunctionalLayer):
+
+    auditor = AuditorServer()
+
+    _is_setup = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.auditor.setUp()
+        cls.config_fixture.add_section(cls.auditor.service_config)
+        cls.appserver_config_fixture.add_section(cls.auditor.service_config)
+        cls._is_setup = True
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls.auditor.cleanUp()
+        cls._is_setup = False
+        # Can't pop the config above, so bail here and let the test runner
+        # start a sub-process.
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
 class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
                                      GoogleServiceLayer):
     """Provides Google service in addition to LaunchpadFunctionalLayer."""
@@ -1714,7 +1753,7 @@ class LayerProcessController:
         """
         try:
             os.kill(cls.appserver.pid, sig)
-        except OSError, error:
+        except OSError as error:
             if error.errno == errno.ESRCH:
                 # The child process doesn't exist.  Maybe it went away by the
                 # time we got here.
@@ -1777,7 +1816,7 @@ class LayerProcessController:
             # Don't worry if the process no longer exists.
             try:
                 os.kill(pid, signal.SIGTERM)
-            except OSError, error:
+            except OSError as error:
                 if error.errno != errno.ESRCH:
                     raise
             pidfile.remove_pidfile('launchpad', cls.appserver_config)
@@ -1809,7 +1848,7 @@ class LayerProcessController:
             try:
                 connection = urlopen(root_url)
                 connection.read()
-            except IOError, error:
+            except IOError as error:
                 # We are interested in a wrapped socket.error.
                 # urlopen() really sucks here.
                 if len(error.args) <= 1:

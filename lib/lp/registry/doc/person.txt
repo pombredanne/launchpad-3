@@ -1309,7 +1309,7 @@ within the context of a specific bug target, or in Launchpad in general.
 A person with bugs assigned to them in a context is considered a 'Bug
 Contributor'.
 
-    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 
     >>> cprov.searchTasks(
     ...     BugTaskSearchParams(user=foobar, assignee=cprov)).count()
@@ -1366,7 +1366,7 @@ bugtracker.
 The method createPersonWithoutEmail() is used in these situations. This
 takes some parameters similar to those taken by createPersonAndEmail()
 but, since an emailless Person cannot be considered to be valid, it
-takes no parameters regarding to emails or passwords.
+takes no parameters regarding to emails.
 
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> new_person = person_set.createPersonWithoutEmail(

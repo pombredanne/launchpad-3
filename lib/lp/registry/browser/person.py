@@ -19,7 +19,6 @@ __all__ = [
     'PersonCodeOfConductEditView',
     'PersonDeactivateAccountView',
     'PersonEditEmailsView',
-    'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
     'PersonEditTimeZoneView',
@@ -46,7 +45,6 @@ __all__ = [
     'PersonSpecWorkloadTableView',
     'PersonSpecWorkloadView',
     'PersonSpecsMenu',
-    'PersonUpcomingWorkView',
     'PersonView',
     'PersonVouchersView',
     'PPANavigationMenuMixIn',
@@ -63,10 +61,7 @@ __all__ = [
 
 
 import cgi
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 import itertools
 from itertools import chain
 from operator import (
@@ -129,10 +124,11 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.lazrjs import (
+    TextAreaEditorWidget,
+    )
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
-    format_link,
     PersonFormatterAPI,
     )
 from lp.app.errors import (
@@ -147,12 +143,12 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
-from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
@@ -165,6 +161,7 @@ from lp.registry.browser.menu import (
     TopLevelMenuMixin,
     )
 from lp.registry.browser.teamjoin import TeamJoinMixin
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -183,7 +180,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonClaim,
     IPersonSet,
-    PersonVisibility,
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -262,7 +258,10 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     IOpenLaunchBag,
     )
-from lp.services.webapp.login import logoutPerson
+from lp.services.webapp.login import (
+    logoutPerson,
+    require_fresh_login,
+    )
 from lp.services.webapp.menu import get_current_view
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
@@ -639,12 +638,6 @@ class CommonMenuLinks:
         return self.context
 
     @enabled_with_permission('launchpad.Edit')
-    def common_edithomepage(self):
-        target = '+edithomepage'
-        text = 'Change home page'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
         text = 'Create a new PPA'
@@ -733,7 +726,6 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     links = [
         'edit',
         'branding',
-        'common_edithomepage',
         'editemailaddresses',
         'editlanguages',
         'editircnicknames',
@@ -1462,7 +1454,7 @@ class PersonVouchersView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
             self.removeRedeemableVoucher(voucher)
-        except SalesforceVoucherProxyException, error:
+        except SalesforceVoucherProxyException as error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))
             # Log an OOPS report without raising an error.
@@ -1665,25 +1657,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         return user.is_probationary or not user.is_valid_person_or_team
 
     @cachedproperty
-    def homepage_content(self):
-        """The user's HTML formatted homepage content.
-
-        The markup is simply escaped for probationary or invalid users.
-        The homepage content is reformatted as HTML and linkified if the user
-        is active.
-        """
-        content = self.context.homepage_content
-        if content is None:
-            return None
-        elif self.is_probationary_or_invalid_user:
-            # XXX: Is this really useful?  They can post links in many other
-            # places. -- mbp 2011-11-20.
-            return cgi.escape(content)
-        else:
-            formatter = FormattersAPI
-            return formatter(content).markdown()
-
-    @cachedproperty
     def recently_approved_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.APPROVED,
@@ -1712,7 +1685,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         but hidden in case it adds a member to the list.
         """
         if IResultSet(self.recently_approved_members).is_empty():
-            return 'unseen'
+            return 'hidden'
         else:
             return ''
 
@@ -1724,7 +1697,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         but hidden in case it adds a member to the list.
         """
         if IResultSet(self.recently_proposed_members).is_empty():
-            return 'unseen'
+            return 'hidden'
         else:
             return ''
 
@@ -1736,7 +1709,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         but hidden in case it adds a member to the list.
         """
         if IResultSet(self.recently_invited_members).is_empty():
-            return 'unseen'
+            return 'hidden'
         else:
             return ''
 
@@ -2221,7 +2194,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
-        if self.context.is_merge_pending:
+        if self.context.isMergePending():
             if self.context.is_team:
                 merge_action = 'merged or deleted'
             else:
@@ -2240,13 +2213,19 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
         else:
             return "%s does not use Launchpad" % context.displayname
 
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        non_probationary = not self.context.is_probationary
+        return TextAreaEditorWidget(
+            self.context, IPerson['description'], title="",
+            edit_title='Edit description', hide_empty=False,
+            linkify_text=non_probationary)
+
     @cachedproperty
     def page_description(self):
-        context = self.context
-        if context.is_valid_person_or_team:
-            return (
-                self.context.homepage_content
-                or self.context.teamdescription)
+        if self.context.is_valid_person_or_team:
+            return self.context.description
         else:
             return None
 
@@ -2434,6 +2413,8 @@ class PersonEditSSHKeysView(LaunchpadView):
     error_message = None
 
     def initialize(self):
+        require_fresh_login(self.request, self.context, '+editsshkeys')
+
         if self.request.method != "POST":
             # Nothing to do
             return
@@ -2513,6 +2494,10 @@ class PersonGPGView(LaunchpadView):
 
     error_message = None
     info_message = None
+
+    def initialize(self):
+        require_fresh_login(self.request, self.context, '+editpgpkeys')
+        super(PersonGPGView, self).initialize()
 
     @property
     def cancel_url(self):
@@ -2712,24 +2697,10 @@ class BasePersonEditView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
-class PersonEditHomePageView(BasePersonEditView):
-
-    field_names = ['homepage_content']
-    custom_widget(
-        'homepage_content', TextAreaWidget, height=30, width=30)
-
-    @property
-    def label(self):
-        """The form label."""
-        return 'Change home page for %s' % self.context.displayname
-
-    page_title = label
-
-
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
+    field_names = ['displayname', 'name', 'mugshot', 'description',
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
@@ -2815,6 +2786,7 @@ class PersonEditEmailsView(LaunchpadFormView):
     label = 'Change your e-mail settings'
 
     def initialize(self):
+        require_fresh_login(self.request, self.context, '+editemails')
         if self.context.is_team:
             # +editemails is not available on teams.
             name = self.request['PATH_INFO'].split('/')[-1]
@@ -3282,7 +3254,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         newpolicy = data['mailing_list_auto_subscribe_policy']
         self.context.mailing_list_auto_subscribe_policy = newpolicy
         self.request.response.addInfoNotification(
-            'Your auto-subscription policy has been updated.')
+            'Your auto-subscribe policy has been updated.')
         self.next_url = self.action_url
 
 
@@ -3598,10 +3570,11 @@ class PersonRelatedSoftwareView(LaunchpadView):
             project['title'] = pillar.title
             project['url'] = canonical_url(pillar)
             if IProduct.providedBy(pillar):
-                project['bug_count'] = product_bugtask_counts.get(pillar.id,
-                                                                  0)
+                project['bug_count'] = product_bugtask_counts.get(
+                    pillar.id, 0)
             else:
-                project['bug_count'] = pillar.open_bugtasks.count()
+                project['bug_count'] = pillar.searchTasks(
+                    BugTaskSet().open_bugtask_search).count()
             project['spec_count'] = pillar.specifications().count()
             project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)
@@ -4326,7 +4299,7 @@ class EmailToPersonView(LaunchpadFormView):
         try:
             send_direct_contact_email(
                 sender_email, self.recipients, subject, message)
-        except QuotaReachedError, error:
+        except QuotaReachedError as error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
                 _('Your message was not sent because you have exceeded your '
@@ -4408,304 +4381,3 @@ class PersonXHTMLRepresentation:
     def __call__(self):
         """Render `Person` as XHTML using the webservice."""
         return PersonFormatterAPI(self.person).link(None)
-
-
-class PersonUpcomingWorkView(LaunchpadView):
-    """This view displays work items and bugtasks that are due within 60 days
-    and are assigned to a person (or participants of of a team).
-    """
-
-    # We'll show bugs and work items targeted to milestones with a due date up
-    # to DAYS from now.
-    DAYS = 180
-
-    def initialize(self):
-        super(PersonUpcomingWorkView, self).initialize()
-        self.workitem_counts = {}
-        self.bugtask_counts = {}
-        self.milestones_per_date = {}
-        self.progress_per_date = {}
-        for date, containers in self.work_item_containers:
-            total_items = 0
-            total_done = 0
-            total_postponed = 0
-            milestones = set()
-            self.bugtask_counts[date] = 0
-            self.workitem_counts[date] = 0
-            for container in containers:
-                total_items += len(container.items)
-                total_done += len(container.done_items)
-                total_postponed += len(container.postponed_items)
-                if isinstance(container, AggregatedBugsContainer):
-                    self.bugtask_counts[date] += len(container.items)
-                else:
-                    self.workitem_counts[date] += len(container.items)
-                for item in container.items:
-                    milestones.add(item.milestone)
-            self.milestones_per_date[date] = sorted(
-                milestones, key=attrgetter('displayname'))
-
-            percent_done = 0
-            if total_items > 0:
-                done_or_postponed = total_done + total_postponed
-                percent_done = 100.0 * done_or_postponed / total_items
-            self.progress_per_date[date] = '{0:.0f}'.format(percent_done)
-
-    @property
-    def label(self):
-        return self.page_title
-
-    @property
-    def page_title(self):
-        return "Upcoming work for %s" % self.context.displayname
-
-    @cachedproperty
-    def work_item_containers(self):
-        cutoff_date = datetime.today().date() + timedelta(days=self.DAYS)
-        result = getWorkItemsDueBefore(self.context, cutoff_date, self.user)
-        return sorted(result.items(), key=itemgetter(0))
-
-
-class WorkItemContainer:
-    """A container of work items, assigned to a person (or a team's
-    participatns), whose milestone is due on a certain date.
-    """
-
-    def __init__(self):
-        self._items = []
-
-    @property
-    def html_link(self):
-        raise NotImplementedError("Must be implemented in subclasses")
-
-    @property
-    def priority_title(self):
-        raise NotImplementedError("Must be implemented in subclasses")
-
-    @property
-    def target_link(self):
-        raise NotImplementedError("Must be implemented in subclasses")
-
-    @property
-    def assignee_link(self):
-        raise NotImplementedError("Must be implemented in subclasses")
-
-    @property
-    def items(self):
-        raise NotImplementedError("Must be implemented in subclasses")
-
-    @property
-    def done_items(self):
-        return [item for item in self._items if item.is_complete]
-
-    @property
-    def postponed_items(self):
-        return [item for item in self._items
-                if item.status == SpecificationWorkItemStatus.POSTPONED]
-
-    @property
-    def percent_done_or_postponed(self):
-        """Returns % of work items to be worked on."""
-        percent_done = 0
-        if len(self._items) > 0:
-            done_or_postponed = (len(self.done_items) +
-                                 len(self.postponed_items))
-            percent_done = 100.0 * done_or_postponed / len(self._items)
-        return '{0:.0f}'.format(percent_done)
-
-    @property
-    def has_incomplete_work(self):
-        """Return True if there are incomplete work items."""
-        return (len(self.done_items) + len(self.postponed_items) <
-                len(self._items))
-
-    def append(self, item):
-        self._items.append(item)
-
-
-class SpecWorkItemContainer(WorkItemContainer):
-    """A container of SpecificationWorkItems wrapped with GenericWorkItem."""
-
-    def __init__(self, spec):
-        super(SpecWorkItemContainer, self).__init__()
-        self.spec = spec
-        self.priority = spec.priority
-        self.target = spec.target
-        self.assignee = spec.assignee
-
-    @property
-    def html_link(self):
-        return format_link(self.spec)
-
-    @property
-    def priority_title(self):
-        return self.priority.title
-
-    @property
-    def target_link(self):
-        return format_link(self.target)
-
-    @property
-    def assignee_link(self):
-        if self.assignee is None:
-            return 'Nobody'
-        return format_link(self.assignee)
-
-    @property
-    def items(self):
-        # Sort the work items by status only because they all have the same
-        # priority.
-        def sort_key(item):
-            status_order = {
-                SpecificationWorkItemStatus.POSTPONED: 5,
-                SpecificationWorkItemStatus.DONE: 4,
-                SpecificationWorkItemStatus.INPROGRESS: 3,
-                SpecificationWorkItemStatus.TODO: 2,
-                SpecificationWorkItemStatus.BLOCKED: 1,
-                }
-            return status_order[item.status]
-        return sorted(self._items, key=sort_key)
-
-
-class AggregatedBugsContainer(WorkItemContainer):
-    """A container of BugTasks wrapped with GenericWorkItem."""
-
-    @property
-    def html_link(self):
-        return 'Bugs targeted to a milestone on this date'
-
-    @property
-    def assignee_link(self):
-        return 'N/A'
-
-    @property
-    def target_link(self):
-        return 'N/A'
-
-    @property
-    def priority_title(self):
-        return 'N/A'
-
-    @property
-    def items(self):
-        def sort_key(item):
-            return (item.status.value, item.priority.value)
-        # Sort by (status, priority) in reverse order because the biggest the
-        # status/priority the more interesting it is to us.
-        return sorted(self._items, key=sort_key, reverse=True)
-
-
-class GenericWorkItem:
-    """A generic piece of work; either a BugTask or a SpecificationWorkItem.
-
-    This class wraps a BugTask or a SpecificationWorkItem to provide a
-    common API so that the template doesn't have to worry about what kind of
-    work item it's dealing with.
-    """
-
-    def __init__(self, assignee, status, priority, target, title,
-                 bugtask=None, work_item=None):
-        self.assignee = assignee
-        self.status = status
-        self.priority = priority
-        self.target = target
-        self.title = title
-        self._bugtask = bugtask
-        self._work_item = work_item
-
-    @classmethod
-    def from_bugtask(cls, bugtask):
-        return cls(
-            bugtask.assignee, bugtask.status, bugtask.importance,
-            bugtask.target, bugtask.bug.description, bugtask=bugtask)
-
-    @classmethod
-    def from_workitem(cls, work_item):
-        assignee = work_item.assignee
-        if assignee is None:
-            assignee = work_item.specification.assignee
-        return cls(
-            assignee, work_item.status, work_item.specification.priority,
-            work_item.specification.target, work_item.title,
-            work_item=work_item)
-
-    @property
-    def milestone(self):
-        milestone = self.actual_workitem.milestone
-        if milestone is None:
-            assert self._work_item is not None, (
-                "BugTaks without a milestone must not be here.")
-            milestone = self._work_item.specification.milestone
-        return milestone
-
-    @property
-    def actual_workitem(self):
-        """Return the actual work item that we are wrapping.
-
-        This may be either an IBugTask or an ISpecificationWorkItem.
-        """
-        if self._work_item is not None:
-            return self._work_item
-        else:
-            return self._bugtask
-
-    @property
-    def is_complete(self):
-        return self.actual_workitem.is_complete
-
-
-def getWorkItemsDueBefore(person, cutoff_date, user):
-    """Return a dict mapping dates to lists of WorkItemContainers.
-
-    This is a grouping, by milestone due date, of all work items
-    (SpecificationWorkItems/BugTasks) assigned to this person (or any of its
-    participants, in case it's a team).
-
-    Only work items whose milestone have a due date between today and the
-    given cut-off date are included in the results.
-    """
-    workitems = person.getAssignedSpecificationWorkItemsDueBefore(cutoff_date)
-    # For every specification that has work items in the list above, create
-    # one SpecWorkItemContainer holding the work items from that spec that are
-    # targeted to the same milestone and assigned to this person (or its
-    # participants, in case it's a team).
-    containers_by_date = {}
-    containers_by_spec = {}
-    for workitem in workitems:
-        spec = workitem.specification
-        milestone = workitem.milestone
-        if milestone is None:
-            milestone = spec.milestone
-        if milestone.dateexpected not in containers_by_date:
-            containers_by_date[milestone.dateexpected] = []
-        container = containers_by_spec.setdefault(milestone, {}).get(spec)
-        if container is None:
-            container = SpecWorkItemContainer(spec)
-            containers_by_spec[milestone][spec] = container
-            containers_by_date[milestone.dateexpected].append(container)
-        container.append(GenericWorkItem.from_workitem(workitem))
-
-    # Sort our containers by priority.
-    for date in containers_by_date:
-        containers_by_date[date].sort(
-            key=attrgetter('priority'), reverse=True)
-
-    bugtasks = person.getAssignedBugTasksDueBefore(cutoff_date, user)
-    bug_containers_by_date = {}
-    # For every milestone due date, create an AggregatedBugsContainer with all
-    # the bugtasks targeted to a milestone on that date and assigned to
-    # this person (or its participants, in case it's a team).
-    for task in bugtasks:
-        dateexpected = task.milestone.dateexpected
-        container = bug_containers_by_date.get(dateexpected)
-        if container is None:
-            container = AggregatedBugsContainer()
-            bug_containers_by_date[dateexpected] = container
-            # Also append our new container to the dictionary we're going
-            # to return.
-            if dateexpected not in containers_by_date:
-                containers_by_date[dateexpected] = []
-            containers_by_date[dateexpected].append(container)
-        container.append(GenericWorkItem.from_bugtask(task))
-
-    return containers_by_date

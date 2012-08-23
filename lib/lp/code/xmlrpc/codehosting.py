@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for codehosting."""
@@ -32,14 +32,13 @@ from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import BranchType
 from lp.code.errors import (
     BranchCreationException,
-    CannotHaveLinkedBranch,
     InvalidNamespace,
-    NoLinkedBranch,
     UnknownBranchTypeError,
     )
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchlookup import (
+    get_first_path_result,
     IBranchLookup,
     ILinkedBranchTraverser,
     )
@@ -51,7 +50,6 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
     branch_id_alias,
-    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     ICodehostingAPI,
@@ -67,13 +65,9 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
     )
-from lp.registry.interfaces.product import (
-    InvalidProductName,
-    NoSuchProduct,
-    )
+from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
-from lp.services.utils import iter_split
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interaction import setupInteractionForPerson
@@ -219,10 +213,10 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             except InvalidNamespace:
                 return faults.PermissionDenied(
                     "Cannot create branch at '%s'" % branch_path)
-            except NoSuchPerson, e:
+            except NoSuchPerson as e:
                 return faults.NotFound(
                     "User/team '%s' does not exist." % e.name)
-            except NoSuchProduct, e:
+            except NoSuchProduct as e:
                 return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
             except NoSuchSourcePackageName as e:
@@ -231,17 +225,17 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 except InvalidName:
                     return faults.InvalidSourcePackageName(e.name)
                 return self.createBranch(login_id, branch_path)
-            except NameLookupFailed, e:
+            except NameLookupFailed as e:
                 return faults.NotFound(str(e))
             try:
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
-            except LaunchpadValidationError, e:
+            except LaunchpadValidationError as e:
                 msg = e.args[0]
                 if isinstance(msg, unicode):
                     msg = msg.encode('utf-8')
                 return faults.PermissionDenied(msg)
-            except BranchCreationException, e:
+            except BranchCreationException as e:
                 return faults.PermissionDenied(str(e))
 
             if link_func:
@@ -313,12 +307,12 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             {'id': branch_id, 'writable': writable},
             trailing_path)
 
-    def _serializeControlDirectory(self, requester, product_path,
-                                   trailing_path):
+    def _serializeControlDirectory(self, requester, lookup):
         try:
-            namespace = lookup_branch_namespace(product_path)
+            namespace = lookup_branch_namespace(lookup['control_name'])
         except (InvalidNamespace, NotFoundError):
             return
+        trailing_path = lookup['trailing'].lstrip('/')
         if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
             # '.bzr' is OK, '.bzr/foo' is OK, '.bzrfoo' is not.
             return
@@ -332,26 +326,21 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         return (
             CONTROL_TRANSPORT,
             {'default_stack_on': escape(path)},
-            trailing_path)
+            escape(trailing_path))
 
-    def _translateBranchIdAlias(self, requester, path):
-        # If the path isn't a branch id alias, nothing more to do.
-        stripped_path = unescape(path.strip('/'))
-        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
-            return None
-        try:
-            parts = stripped_path.split('/', 2)
-            branch_id = int(parts[1])
-        except (ValueError, IndexError):
-            raise faults.PathTranslationError(path)
-        branch = getUtility(IBranchLookup).get(branch_id)
+    def performLookup(self, requester, path, lookup):
+        looker = getUtility(IBranchLookup)
+        if lookup['type'] == 'control_name':
+            return self._serializeControlDirectory(requester, lookup)
+        branch, trailing = looker.performLookup(lookup)
         if branch is None:
+            return None
+        trailing = trailing.lstrip('/')
+        serialized = self._serializeBranch(requester, branch, trailing,
+                                           lookup['type'] == 'id')
+        if serialized is None:
             raise faults.PathTranslationError(path)
-        try:
-            trailing = parts[2]
-        except IndexError:
-            trailing = ''
-        return self._serializeBranch(requester, branch, trailing, True)
+        return serialized
 
     def translatePath(self, requester_id, path):
         """See `ICodehostingAPI`."""
@@ -359,47 +348,10 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
-            branch = self._translateBranchIdAlias(requester, path)
-            if branch is not None:
-                return branch
-            stripped_path = path.strip('/')
-            for first, second in iter_split(stripped_path, '/'):
-                first = unescape(first)
-                # Is it a branch?
-                if first.startswith(BRANCH_ALIAS_PREFIX + '/'):
-                    try:
-                        # translatePath('/+branch/.bzr') *must* return not
-                        # found, otherwise bzr will look for it and we don't
-                        # have a global bzr dir.
-                        lp_path = first[len(BRANCH_ALIAS_PREFIX + '/'):]
-                        if lp_path == '.bzr' or lp_path.startswith('.bzr/'):
-                            raise faults.PathTranslationError(path)
-                        branch, trailing = getUtility(
-                            IBranchLookup).getByLPPath(lp_path)
-                    except (InvalidProductName, NoLinkedBranch,
-                            CannotHaveLinkedBranch):
-                        # If we get one of these errors, then there is no
-                        # point walking back through the path parts.
-                        break
-                    except (NameLookupFailed, InvalidNamespace):
-                        # The reason we're doing it is that getByLPPath thinks
-                        # that 'foo/.bzr' is a request for the '.bzr' series
-                        # of a product.
-                        continue
-                    if trailing is None:
-                        trailing = ''
-                    second = '/'.join([trailing, second]).strip('/')
-                else:
-                    branch = getUtility(IBranchLookup).getByUniqueName(first)
-                if branch is not None:
-                    branch = self._serializeBranch(requester, branch, second)
-                    if branch is None:
-                        break
-                    return branch
-                # Is it a product control directory?
-                product = self._serializeControlDirectory(
-                    requester, first, second)
-                if product is not None:
-                    return product
-            raise faults.PathTranslationError(path)
+            stripped_path = unescape(path.strip('/'))
+            lookup = lambda l: self.performLookup(requester_id, path, l)
+            result = get_first_path_result(stripped_path, lookup, None)
+            if result is None:
+                raise faults.PathTranslationError(path)
+            return result
         return run_with_login(requester_id, translate_path)

@@ -124,7 +124,7 @@
             tal:content="structure link/render"></li>
         <li tal:condition="view/user_is_official_translator"
             id="translation-switch-working-mode-container"
-            class="unseen">
+            class="hidden">
           <span>
           <a id="translation-switch-working-mode"
              class="sprite edit js-action widget-hd">

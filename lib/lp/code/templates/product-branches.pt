@@ -19,19 +19,20 @@
     <div id="branch-portlet"
          tal:condition="not: context/codehosting_usage/enumvalue:UNKNOWN">
       <div id="privacy"
-           tal:define="are_private view/new_branches_are_private"
-           tal:attributes="class python: are_private and 'first portlet private' or 'first portlet public'">
+           tal:define="private_class python: 'private' if view.default_information_type_is_private else 'public'"
+           tal:attributes="class string:first portlet ${private_class}">
+        <span tal:condition="not: view/default_information_type"
+           id="privacy-text">
+          You can't create new branches for
+          <tal:name replace="context/displayname"/>.
+        </span>
 
-        <p tal:condition="not:view/new_branches_are_private" id="privacy-text">
-          New branches you create for <tal:name replace="context/displayname"/>
-          are <strong>public</strong> initially.
-        </p>
-
-        <p tal:condition="view/new_branches_are_private" id="privacy-text">
-          New branches you create for <tal:name replace="context/displayname"/>
-          are <strong>private</strong> initially.
-        </p>
-
+        <span tal:condition="view/default_information_type"
+           tal:attributes="class string:sprite ${private_class}"
+           id="privacy-text">
+          New branches for <tal:name replace="context/displayname"/> are
+          <strong tal:content="view/default_information_type_title" />.
+        </span>
       </div>
 
       <div id="involvement" class="portlet"

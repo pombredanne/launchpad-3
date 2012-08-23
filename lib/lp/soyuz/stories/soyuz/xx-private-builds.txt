@@ -21,25 +21,20 @@ We'll make a private archive and add a new build to it to demonstrate this.
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.enums import (
-    ...     PackagePublishingStatus)
-    >>> from lp.testing import login, logout
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.services.database.sqlbase import flush_database_updates
 
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> cprov_private_ppa = factory.makeArchive(
-    ...     private=True, owner=cprov, name="p3a",
-    ...     distribution=ubuntu)
+    ...     private=True, owner=cprov, name="p3a", distribution=ubuntu)
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
     >>> private_source_pub = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     sourcename='privacy-test',
-    ...     archive=cprov_private_ppa)
+    ...     sourcename='privacy-test', archive=cprov_private_ppa)
     >>> [private_build] = private_source_pub.createMissingBuilds()
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
@@ -53,8 +48,7 @@ can use him to see builds from a buildd-admin perspective.
     >>> name12 = getUtility(IPersonSet).getByName("name12")
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName("launchpad-buildd-admins")
-    >>> from lp.registry.interfaces.person import (
-    ...     TeamMembershipStatus)
+    >>> from lp.registry.interfaces.person import TeamMembershipStatus
     >>> ignored = buildd_admins.addMember(
     ...     name12, reviewer=name12, status=TeamMembershipStatus.APPROVED)
 
@@ -283,12 +277,11 @@ First log in as an admin to be able to manipulate the source publishing.
     >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
     >>> from lp.services.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
-    >>> from lp.registry.interfaces.distribution import (
-    ...     IDistributionSet)
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
     >>> breezy_autotest = ubuntutest['breezy-autotest']
     >>> new_pub = private_source_pub.copyTo(
-    ...     breezy_autotest, private_source_pub.pocket, ubuntutest.main_archive)
+    ...     breezy_autotest, private_source_pub.pocket,
+    ...     ubuntutest.main_archive)
     >>> binary_pkg_release = test_publisher.uploadBinaryForBuild(
     ...     private_build, 'privacy-test-bin')
     >>> binary_pkg_pub_history = test_publisher.publishBinaryInArchive(

@@ -26,10 +26,14 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    InformationType,
+    )
 from lp.registry.errors import (
+    InclusiveTeamLinkageError,
     NoSuchDistroSeries,
-    OpenTeamLinkageError,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
@@ -37,16 +41,12 @@ from lp.registry.interfaces.distribution import (
     IDistributionSet,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
-from lp.registry.interfaces.person import (
-    CLOSED_TEAM_POLICY,
-    IPersonSet,
-    OPEN_TEAM_POLICY,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import CurrentSourceReleasesMixin
-from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -79,31 +79,17 @@ class TestDistribution(TestCaseWithFactory):
 
     def test_owner_cannot_be_open_team(self):
         """Distro owners cannot be open teams."""
-        for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
+        for policy in INCLUSIVE_TEAM_POLICY:
+            open_team = self.factory.makeTeam(membership_policy=policy)
             self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeDistribution,
+                InclusiveTeamLinkageError, self.factory.makeDistribution,
                 owner=open_team)
 
     def test_owner_can_be_closed_team(self):
-        """Distro owners can be closed teams."""
-        for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
+        """Distro owners can be exclusive teams."""
+        for policy in EXCLUSIVE_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeDistribution(owner=closed_team)
-
-    def test_security_contact_cannot_be_open_team(self):
-        """Distro security contacts cannot be open teams."""
-        for policy in OPEN_TEAM_POLICY:
-            open_team = self.factory.makeTeam(subscription_policy=policy)
-            self.assertRaises(
-                OpenTeamLinkageError, self.factory.makeDistribution,
-                security_contact=open_team)
-
-    def test_security_contact_can_be_closed_team(self):
-        """Distro security contacts can be closed teams."""
-        for policy in CLOSED_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(subscription_policy=policy)
-            self.factory.makeDistribution(security_contact=closed_team)
 
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
@@ -143,7 +129,8 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
-            binarypackagename='binary-package', dateremoved=UTC_NOW)
+            binarypackagename='binary-package',
+            status=PackagePublishingStatus.SUPERSEDED)
         with ExpectedException(NotFoundError, ".*Binary package.*"):
             distroseries.distribution.guessPublishedSourcePackageName(
                 'binary-package')
@@ -272,8 +259,22 @@ class TestDistribution(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         ap = getUtility(IAccessPolicySource).findByPillar((distro,))
         expected = [
-            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+            InformationType.USERDATA, InformationType.PRIVATESECURITY]
         self.assertContentEqual(expected, [policy.type for policy in ap])
+
+    def test_getAllowedBugInformationTypes(self):
+        # All distros currently support just the non-proprietary
+        # information types.
+        self.assertContentEqual(
+            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            self.factory.makeDistribution().getAllowedBugInformationTypes())
+
+    def test_getDefaultBugInformationType(self):
+        # The default information type for distributions is always PUBLIC.
+        self.assertEqual(
+            InformationType.PUBLIC,
+            self.factory.makeDistribution().getDefaultBugInformationType())
 
 
 class TestDistributionCurrentSourceReleases(

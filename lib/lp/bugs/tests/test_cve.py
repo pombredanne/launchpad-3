@@ -5,7 +5,7 @@
 
 from zope.component import getUtility
 
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.interfaces.cve import ICveSet
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (

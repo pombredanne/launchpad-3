@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'DailyDatabaseGarbageCollector',
+    'FrequentDatabaseGarbageCollector',
     'HourlyDatabaseGarbageCollector',
     ]
 
@@ -26,7 +27,14 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    And,
+    Exists,
+    In,
+    Not,
+    Select,
+    Update,
+    Or)
 from storm.locals import (
     Max,
     Min,
@@ -38,19 +46,24 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.workitemmigration import extractWorkItemsFromWhiteboard
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtarget import (
+    POLICY_ALLOWED_TYPES as BUG_POLICY_ALLOWED_TYPES,
+    )
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
     )
+from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchnamespace import (
+    POLICY_ALLOWED_TYPES as BRANCH_POLICY_ALLOWED_TYPES,
+    )
+from lp.code.model.branchvisibilitypolicy import BranchVisibilityTeamPolicy
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -58,14 +71,21 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.registry.enums import FREE_INFORMATION_TYPES
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
+from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
-    quote_like,
     session_store,
     sqlvalues,
     )
@@ -82,7 +102,6 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
-from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -995,145 +1014,100 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
-class SpecificationWorkitemMigrator(TunableLoop):
-    """Migrate work-items from Specification.whiteboard to
-    SpecificationWorkItem.
-
-    Migrating work items from the whiteboard is an all-or-nothing thing; if we
-    encounter any errors when parsing the whiteboard of a spec, we abort the
-    transaction and leave its whiteboard unchanged.
-
-    On a test with production data, only 100 whiteboards (out of almost 2500)
-    could not be migrated. On 24 of those the assignee in at least one work
-    item is not valid, on 33 the status of a work item is not valid and on 42
-    one or more milestones are not valid.
-    """
-
-    maximum_chunk_size = 500
-    offset = 0
-    projects_to_migrate = [
-        'linaro-graphics-misc', 'linaro-powerdebug', 'linaro-mm-sig',
-        'linaro-patchmetrics', 'linaro-android-mirror', 'u-boot-linaro',
-        'lava-dashboard-tool', 'lava-celery', 'smartt', 'linaro-power-kernel',
-        'linaro-django-xmlrpc', 'linaro-multimedia-testcontent',
-        'linaro-status-website', 'linaro-octo-armhf', 'svammel', 'libmatrix',
-        'glproxy', 'lava-test', 'cbuild', 'linaro-ci',
-        'linaro-multimedia-ucm', 'linaro-ubuntu',
-        'linaro-android-infrastructure', 'linaro-wordpress-registration-form',
-        'linux-linaro', 'lava-server', 'linaro-android-build-tools',
-        'linaro-graphics-dashboard', 'linaro-fetch-image', 'unity-gles',
-        'lava-kernel-ci-views', 'cortex-strings', 'glmark2-extra',
-        'lava-dashboard', 'linaro-multimedia-speex', 'glcompbench',
-        'igloocommunity', 'linaro-validation-misc', 'linaro-websites',
-        'linaro-graphics-tests', 'linaro-android',
-        'jenkins-plugin-shell-status', 'binutils-linaro',
-        'linaro-multimedia-project', 'lava-qatracker',
-        'linaro-toolchain-binaries', 'linaro-image-tools',
-        'linaro-toolchain-misc', 'qemu-linaro', 'linaro-toolchain-benchmarks',
-        'lava-dispatcher', 'gdb-linaro', 'lava-android-test', 'libjpeg-turbo',
-        'lava-scheduler-tool', 'glmark2', 'linaro-infrastructure-misc',
-        'lava-lab', 'linaro-android-frontend', 'linaro-powertop',
-        'linaro-license-protection', 'gcc-linaro', 'lava-scheduler',
-        'linaro-offspring', 'linaro-python-dashboard-bundle',
-        'linaro-power-qa', 'lava-tool', 'linaro']
-
-    def __init__(self, log, abort_time=None):
-        super(SpecificationWorkitemMigrator, self).__init__(
-            log, abort_time=abort_time)
-
-        if not getFeatureFlag('garbo.workitem_migrator.enabled'):
-            self.log.info(
-                "Not migrating work items. Change the "
-                "garbo.workitem_migrator.enabled feature flag if you want "
-                "to enable this.")
-            # This will cause isDone() to return True, thus skipping the work
-            # item migration.
-            self.total = 0
-            return
-
-        query = ("product in (select id from product where name in %s)"
-            % ",".join(sqlvalues(self.projects_to_migrate)))
-        # Get only the specs which contain "work items" in their whiteboard
-        # and which don't have any SpecificationWorkItems.
-        query += " and whiteboard ilike '%%' || %s || '%%'" % quote_like(
-            'work items')
-        query += (" and id not in (select distinct specification from "
-                  "SpecificationWorkItem)")
-        self.specs = IMasterStore(Specification).find(Specification, query)
-        self.total = self.specs.count()
-        self.log.info(
-            "Migrating work items from the whiteboard of %d specs"
-            % self.total)
-
-    def getNextBatch(self, chunk_size):
-        end_at = self.offset + int(chunk_size)
-        return self.specs[self.offset:end_at]
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return self.offset >= self.total
-
-    def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        for spec in self.getNextBatch(chunk_size):
-            try:
-                work_items = extractWorkItemsFromWhiteboard(spec)
-            except Exception, e:
-                self.log.info(
-                    "Failed to parse whiteboard of %s: %s" % (
-                        spec, unicode(e)))
-                transaction.abort()
-                continue
-
-            if len(work_items) > 0:
-                self.log.info(
-                    "Migrated %d work items from the whiteboard of %s" % (
-                        len(work_items), spec))
-                transaction.commit()
-            else:
-                self.log.info(
-                    "No work items found on the whiteboard of %s" % spec)
-        self.offset += chunk_size
-
-
-class BugTaskFlattener(TunableLoop):
-    """A `TunableLoop` to populate BugTaskFlat for all bugtasks."""
+class PopulateProjectSharingPolicies(TunableLoop):
+    """Sets bug and branch sharing policies for non commercial projects."""
 
     maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None):
-        super(BugTaskFlattener, self).__init__(log, abort_time)
-        generation = getFeatureFlag('bugs.bugtaskflattener.generation')
-        if generation is None:
-            self.start_at = None
-        else:
-            self.memcache_key = (
-                '%s:bugtask-flattener:%s'
-                % (config.instance_name, generation.encode('utf-8')))
-            watermark = getUtility(IMemcacheClient).get(self.memcache_key)
-            self.start_at = watermark or 0
+        super(PopulateProjectSharingPolicies, self).__init__(log, abort_time)
+        self.store = IMasterStore(Product)
 
-    def findTaskIDs(self):
-        if self.start_at is None:
-            return EmptyResultSet()
-        return IMasterStore(BugTask).find(
-            (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
+    def getProducts(self):
+        """ Load the products to process.
+
+        We only want products which:
+            - are non-commercial products which have neither bug nor
+              branch sharing policy set
+            - have private_bugs = false
+            - have no branch visibility policies other than public
+        """
+        return self.store.find(
+            Product.id,
+            Not(
+                Or(
+                    Exists(Select(1, tables=[CommercialSubscription],
+                        where=And(
+                            CommercialSubscription.product == Product.id,
+                            CommercialSubscription.date_expires > datetime.now(
+                            pytz.UTC)))),
+                    Product.private_bugs == True,
+                    Exists(Select(1, tables=[BranchVisibilityTeamPolicy],
+                        where=And(
+                            BranchVisibilityTeamPolicy.product == Product.id,
+                            BranchVisibilityTeamPolicy.rule !=
+                                BranchVisibilityRule.PUBLIC))),
+                )),
+            And(Product.bug_sharing_policy == None,
+                Product.branch_sharing_policy == None)).order_by(Product.id)
 
     def isDone(self):
-        return self.findTaskIDs().is_empty()
+        return self.getProducts().is_empty()
 
     def __call__(self, chunk_size):
-        ids = [row[0] for row in self.findTaskIDs()[:chunk_size]]
-        list(IMasterStore(BugTask).using(BugTask).find(
-            SQL('bugtask_flatten(BugTask.id, false)'),
-            BugTask.id.is_in(ids)))
+        products_to_process = self.getProducts()[:chunk_size]
+        changes = {
+            Product.bug_sharing_policy: 1,
+            Product.branch_sharing_policy: 1
+        }
+        expr = Update(
+            changes,
+            where=Product.id.is_in(products_to_process))
+        self.store.execute(expr, noresult=True)
+        transaction.commit()
 
-        self.start_at = ids[-1] + 1
-        result = getUtility(IMemcacheClient).set(
-            self.memcache_key, self.start_at)
-        if not result:
-            self.log.warning('Failed to set start_at in memcache.')
 
+class UnusedSharingPolicyPruner(TunableLoop):
+    """Deletes unused AccessPolicy and AccessPolicyGrants for products."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(UnusedSharingPolicyPruner, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(Product)
+
+    def findProducts(self):
+        return self.store.find(
+            Product, Product.id >= self.start_at).order_by(Product.id)
+
+    def isDone(self):
+        return self.findProducts().is_empty()
+
+    def __call__(self, chunk_size):
+        products = list(self.findProducts()[:chunk_size])
+        for product in products:
+            allowed_bug_policies = set(
+                BUG_POLICY_ALLOWED_TYPES.get(
+                    product.bug_sharing_policy, FREE_INFORMATION_TYPES))
+            allowed_branch_policies = set(
+                BRANCH_POLICY_ALLOWED_TYPES.get(
+                    product.branch_sharing_policy, FREE_INFORMATION_TYPES))
+            # Fetch all APs, and after filtering out ones that are forbidden
+            # by the bug and branch policies, the APs that have no APAs are
+            # unused and can be deleted.
+            access_policies = set(
+                getUtility(IAccessPolicySource).findByPillar([product]))
+            candidate_aps = access_policies.difference(
+                allowed_bug_policies, allowed_branch_policies)
+            apa_source = getUtility(IAccessPolicyArtifactSource)
+            unused_aps = [
+                ap for ap in candidate_aps
+                if apa_source.findByPolicy([ap]).is_empty()]
+            getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
+            for ap in unused_aps:
+                self.store.remove(ap)
+        self.start_at = products[-1].id + 1
         transaction.commit()
 
 
@@ -1369,7 +1343,6 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
-        SpecificationWorkitemMigrator,
         ]
     experimental_tunable_loops = []
 
@@ -1391,7 +1364,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        BugTaskFlattener,
+        PopulateProjectSharingPolicies,
         ]
     experimental_tunable_loops = []
 
@@ -1424,8 +1397,9 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
-        UnusedPOTMsgSetPruner,
         UnlinkedAccountPruner,
+        UnusedPOTMsgSetPruner,
+        UnusedSharingPolicyPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

@@ -22,7 +22,7 @@ from lp.archivepublisher.customupload import CustomUpload
 class DebianInstallerUpload(CustomUpload):
     """ Debian Installer custom upload.
 
-    The debian-installer filename should be something like:
+    The debian-installer filename must be of the form:
 
         <BASE>_<VERSION>_<ARCH>.tar.gz
 
@@ -40,20 +40,24 @@ class DebianInstallerUpload(CustomUpload):
     """
     custom_type = "installer"
 
-    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+    @staticmethod
+    def parsePath(tarfile_path):
         tarfile_base = os.path.basename(tarfile_path)
-        _, self.version, self.arch = tarfile_base.split("_")
-        self.arch = self.arch.split(".")[0]
+        bits = tarfile_base.split("_")
+        if len(bits) != 3:
+            raise ValueError("%s is not BASE_VERSION_ARCH" % tarfile_base)
+        return bits[0], bits[1], bits[2].split(".")[0]
 
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+        _, self.version, self.arch = self.parsePath(tarfile_path)
         self.targetdir = os.path.join(
-            archive_root, 'dists', distroseries, 'main',
+            pubconf.archiveroot, 'dists', distroseries, 'main',
             'installer-%s' % self.arch)
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
         try:
-            _, _, arch = os.path.basename(tarfile_path).split("_")
-            return arch.split(".")[0]
+            return cls.parsePath(tarfile_path)[2]
         except ValueError:
             return None
 
@@ -70,7 +74,7 @@ class DebianInstallerUpload(CustomUpload):
         return filename.startswith('%s/' % self.version)
 
 
-def process_debian_installer(archive_root, tarfile_path, distroseries):
+def process_debian_installer(pubconf, tarfile_path, distroseries):
     """Process a raw-installer tarfile.
 
     Unpacking it into the given archive for the given distroseries.
@@ -78,4 +82,4 @@ def process_debian_installer(archive_root, tarfile_path, distroseries):
     wrong.
     """
     upload = DebianInstallerUpload()
-    upload.process(archive_root, tarfile_path, distroseries)
+    upload.process(pubconf, tarfile_path, distroseries)

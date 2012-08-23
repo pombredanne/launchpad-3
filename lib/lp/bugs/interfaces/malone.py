@@ -12,10 +12,13 @@ from lazr.restful.declarations import (
     collection_default_content,
     export_as_webservice_collection,
     export_factory_operation,
+    export_read_operation,
+    operation_for_version,
     operation_parameters,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
 from zope.interface import Attribute
 
 from lp.bugs.interfaces.bug import IBug
@@ -35,6 +38,22 @@ class IMaloneApplication(ILaunchpadApplication):
 
     def searchTasks(search_params):
         """Search IBugTasks with the given search parameters."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        bug_id=copy_field(IBug['id']),
+        related_bug=Reference(schema=IBug)
+    )
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBugData(user, bug_id, related_bug=None):
+        """Search bugtasks matching the specified criteria.
+
+        The only criteria currently supported is to search for a bugtask with
+        the specified bug id.
+
+        :return: a list of matching bugs represented as json data
+        """
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")
     bugwatch_count = Attribute("The number of links to external bug trackers")
@@ -58,8 +77,8 @@ class IMaloneApplication(ILaunchpadApplication):
                    "this bug."))
     @export_factory_operation(
         IBug, ['title', 'description', 'tags', 'security_related', 'private'])
-    def createBug(owner, title, description, target, security_related=False,
-                  private=False, tags=None):
+    def createBug(owner, title, description, target, security_related=None,
+                  private=None, tags=None):
         """Create a bug (with an appropriate bugtask) and return it.
 
         :param target: The Product, Distribution or DistributionSourcePackage

@@ -235,7 +235,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         """
         try:
             callableObj(*args, **kwargs)
-        except excClass, error:
+        except excClass as error:
             return error
         else:
             if getattr(excClass, '__name__', None) is not None:
@@ -1957,14 +1957,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(deb.priority_name, ddeb.priority_name)
 
 
-class TestBuildUploadProcessor(TestUploadProcessorBase):
-    """Test that processing build uploads works."""
-
-    def setUp(self):
-        super(TestBuildUploadProcessor, self).setUp()
-        self.uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-
-
 class TestUploadHandler(TestUploadProcessorBase):
 
     def setUp(self):
@@ -2169,7 +2161,10 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Failures should generate a message that includes the upload log URL.
         self.doFailureRecipeBuild()
         (mail,) = pop_notifications()
-        subject = mail['Subject'].replace('\n\t', ' ')
+        # Python2.6 prefixes continuation lines with a \t, 2.7 uses a single
+        # space instead, try both to stay compatible (see email/generator.py
+        # Generator._write_headers for details).
+        subject = mail['Subject'].replace('\n\t', ' ').replace('\n ', ' ')
         self.assertIn('Failed to upload', subject)
         body = mail.get_payload(decode=True)
         self.assertIn('Upload Log: http', body)

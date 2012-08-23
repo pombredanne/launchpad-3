@@ -27,6 +27,8 @@ setup(
     # used in zcml.
     install_requires=[
         'ampoule',
+        'auditorclient',
+        'auditorfixture',
         'BeautifulSoup',
         'bzr',
         'Chameleon',
@@ -39,6 +41,7 @@ setup(
         'funkload',
         'html5browser',
         'pygpgme',
+        'python-debian',
         'python-subunit',
         'launchpadlib',
         'lazr.batchnavigator',
@@ -86,6 +89,7 @@ setup(
         'soupmatchers',
         'sourcecodegen',
         'storm',
+        'subvertpy',
         'testtools',
         'timeline',
         'transaction',

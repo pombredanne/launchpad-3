@@ -15,6 +15,7 @@ from lp.app.browser.lazrjs import (
     InlineEditPickerWidget,
     InlinePersonEditPickerWidget,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -68,7 +69,7 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def getWidget(self, widget_value, **kwargs):
+    def getWidget(self, widget_value, show_create_team=False, **kwargs):
         class ITest(Interface):
             test_field = Choice(**kwargs)
 
@@ -80,7 +81,8 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
 
         context = Test()
         return InlinePersonEditPickerWidget(
-            context, ITest['test_field'], None, edit_url='fake')
+            context, ITest['test_field'], None, edit_url='fake',
+            show_create_team=show_create_team)
 
     def test_person_selected_value_meta(self):
         # The widget has the correct meta value for a person value.
@@ -115,3 +117,19 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
             None, vocabulary='TargetPPAs', required=True)
         login_person(self.factory.makePerson())
         self.assertFalse(widget.config['show_assign_me_button'])
+
+    def test_show_create_team_link_with_feature_flag(self):
+        with FeatureFixture(
+                {'disclosure.add-team-person-picker.enabled': 'true'}):
+            widget = self.getWidget(
+                None, vocabulary='ValidPersonOrTeam', required=True,
+                show_create_team=True)
+            login_person(self.factory.makePerson())
+            self.assertTrue(widget.config['show_create_team'])
+
+    def test_show_create_team_link(self):
+        widget = self.getWidget(
+            None, vocabulary='ValidPersonOrTeam', required=True,
+            show_create_team=True)
+        login_person(self.factory.makePerson())
+        self.assertFalse(widget.config['show_create_team'])

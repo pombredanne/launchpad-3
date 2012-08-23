@@ -426,7 +426,7 @@ officially supports.
     >>> ignored = login_person(owner)
     >>> question = factory.makeQuestion(target=product)
     >>> faq = factory.makeFAQ(target=product)
-    >>> bug = factory.makeBug(product=product)
+    >>> bug = factory.makeBug(target=product)
     >>> blueprint = factory.makeSpecification(product=product)
 
     >>> view = create_initialized_view(

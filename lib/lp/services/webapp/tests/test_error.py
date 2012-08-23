@@ -5,6 +5,7 @@
 
 
 import httplib
+import socket
 import time
 import urllib2
 
@@ -12,6 +13,8 @@ from storm.exceptions import (
     DisconnectionError,
     OperationalError,
     )
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
 
 from lp.services.webapp.error import (
@@ -62,12 +65,28 @@ class TestDatabaseErrorViews(TestCase):
     def getHTTPError(self, url):
         try:
             urllib2.urlopen(url)
-        except urllib2.HTTPError, error:
+        except urllib2.HTTPError as error:
             return error
         else:
             self.fail("We should have gotten an HTTP error")
 
-    def retryConnection(self, url, retries=60):
+    def add_retry_failure_details(self, bouncer):
+        # XXX benji bug=974617, bug=1011847, bug=504291 2011-07-31:
+        # This method (and its invocations) are to be removed when we have
+        # figured out what is causing bug 974617 and friends.
+
+        # First we figure out if pgbouncer is listening on the port it is
+        # supposed to be listening on.  connect_ex returns 0 on success or an
+        # errno otherwise.
+        pg_port_status = str(socket.socket().connect_ex(('localhost', 5432)))
+        self.addDetail('postgres socket.connect_ex result',
+            Content(UTF8_TEXT, lambda: pg_port_status))
+        bouncer_port_status = str(
+            socket.socket().connect_ex(('localhost', bouncer.port)))
+        self.addDetail('pgbouncer socket.connect_ex result',
+            Content(UTF8_TEXT, lambda: bouncer_port_status))
+
+    def retryConnection(self, url, bouncer, retries=60):
         """Retry to connect to *url* for *retries* times.
 
         Return the file-like object returned by *urllib2.urlopen(url)*.
@@ -81,6 +100,7 @@ class TestDatabaseErrorViews(TestCase):
                     raise
             time.sleep(1)
         else:
+            self.add_retry_failure_details(bouncer)
             raise TimeoutException(
                 "Launchpad did not come up after {0} attempts."
                     .format(retries))
@@ -89,10 +109,20 @@ class TestDatabaseErrorViews(TestCase):
         # Test setup.
         self.useFixture(Urllib2Fixture())
         bouncer = PGBouncerFixture()
+        # XXX gary bug=974617, bug=1011847, bug=504291 2011-07-03:
+        # In parallel tests, we are rarely encountering instances of
+        # bug 504291 while running this test.  These cause the tests
+        # to fail entirely (the store.rollback() described in comment
+        # 11 does not fix the insane state) despite nultiple retries.
+        # As mentioned in that bug, we are trying aborts to see if they
+        # eliminate the problem.  If this works, we can find which of
+        # these two aborts are actually needed.
+        transaction.abort()
         self.useFixture(bouncer)
+        transaction.abort()
         # Verify things are working initially.
         url = 'http://launchpad.dev/'
-        self.retryConnection(url)
+        self.retryConnection(url, bouncer)
         # Now break the database, and we get an exception, along with
         # our view.
         bouncer.stop()
@@ -113,7 +143,7 @@ class TestDatabaseErrorViews(TestCase):
         self.assertEqual(503, self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
         bouncer.start()
-        self.retryConnection(url)
+        self.retryConnection(url, bouncer)
 
     def test_disconnectionerror_view(self):
         request = LaunchpadTestRequest()
@@ -124,6 +154,14 @@ class TestDatabaseErrorViews(TestCase):
         # Test setup.
         self.useFixture(Urllib2Fixture())
         bouncer = PGBouncerFixture()
+        # XXX gary bug=974617, bug=1011847, bug=504291 2011-07-03:
+        # In parallel tests, we are rarely encountering instances of
+        # bug 504291 while running this test.  These cause the tests
+        # to fail entirely (the store.rollback() described in comment
+        # 11 does not fix the insane state) despite nultiple retries.
+        # As mentioned in that bug, we are trying aborts to see if they
+        # eliminate the problem.
+        transaction.abort()
         self.useFixture(bouncer)
         # This is necessary to avoid confusing PG after the stopped bouncer.
         transaction.abort()
@@ -139,7 +177,7 @@ class TestDatabaseErrorViews(TestCase):
                          self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
         bouncer.start()
-        self.retryConnection(url)
+        self.retryConnection(url, bouncer)
 
     def test_operationalerror_view(self):
         request = LaunchpadTestRequest()

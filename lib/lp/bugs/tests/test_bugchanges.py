@@ -31,7 +31,6 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     api_url,
-    celebrity_logged_in,
     launchpadlib_for,
     login_person,
     person_logged_in,
@@ -52,7 +51,7 @@ class TestBugChanges(TestCaseWithFactory):
             selfgenerated_bugnotifications=True)
         self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
-        self.bug = self.factory.makeBug(product=self.product, owner=self.user)
+        self.bug = self.factory.makeBug(target=self.product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
 
         # Add some structural subscribers to show that notifications
@@ -237,7 +236,7 @@ class TestBugChanges(TestCaseWithFactory):
         subscriber = self.factory.makePerson(displayname='Mom')
         # Create the private bug.
         bug = self.factory.makeBug(
-            product=self.product, owner=self.user,
+            target=self.product, owner=self.user,
             information_type=InformationType.USERDATA)
         bug.subscribe(subscriber, self.user)
         self.saveOldChanges(bug=bug)
@@ -630,7 +629,7 @@ class TestBugChanges(TestCaseWithFactory):
         bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         with FeatureFixture(feature_flag):
             bug.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY, self.user)
+                InformationType.PRIVATESECURITY, self.user)
             notify(ObjectModifiedEvent(
                 bug, bug_before_modification, ['information_type'],
                 user=self.user))
@@ -639,43 +638,11 @@ class TestBugChanges(TestCaseWithFactory):
             'person': self.user,
             'whatchanged': 'information type',
             'oldvalue': 'Public',
-            'newvalue': 'Embargoed Security',
+            'newvalue': 'Private Security',
             }
         information_type_change_notification = {
-            'text': '** Information type changed from Public to Embargoed '
+            'text': '** Information type changed from Public to Private '
                 'Security',
-            'person': self.user,
-            }
-        self.assertRecordedChange(
-            expected_activity=information_type_change_activity,
-            expected_notification=information_type_change_notification,
-            bug=bug)
-
-    def test_change_information_type_userdata_as_private(self):
-        # Changing the information type of a bug to User Data with the
-        # display_userdata_as_private flag enabled adds the change as
-        # 'Private' to the activity log and notifications.
-        bug = self.factory.makeBug()
-        self.saveOldChanges(bug=bug)
-        feature_flags = {
-            'disclosure.information_type_notifications.enabled': 'on',
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
-        with FeatureFixture(feature_flags):
-            bug.transitionToInformationType(
-                InformationType.USERDATA, self.user)
-            notify(ObjectModifiedEvent(
-                bug, bug_before_modification, ['information_type'],
-                user=self.user))
-
-        information_type_change_activity = {
-            'person': self.user,
-            'whatchanged': 'information type',
-            'oldvalue': 'Public',
-            'newvalue': 'Private',
-            }
-        information_type_change_notification = {
-            'text': '** Information type changed from Public to Private',
             'person': self.user,
             }
         self.assertRecordedChange(
@@ -695,16 +662,16 @@ class TestBugChanges(TestCaseWithFactory):
         lp_bug = webservice.load(api_url(bug))
         with FeatureFixture(feature_flag):
             lp_bug.transitionToInformationType(
-                information_type='Embargoed Security')
+                information_type='Private Security')
 
         information_type_change_activity = {
             'person': person,
             'whatchanged': 'information type',
             'oldvalue': 'Public',
-            'newvalue': 'Embargoed Security',
+            'newvalue': 'Private Security',
             }
         information_type_change_notification = {
-            'text': '** Information type changed from Public to Embargoed '
+            'text': '** Information type changed from Public to Private '
                 'Security',
             'person': person,
             }
@@ -1078,83 +1045,6 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=expected_activity,
             expected_notification=expected_notification)
 
-    def _test_retarget_private_security_bug_to_product(self,
-                                                       bug, maintainer,
-                                                       bug_supervisor=None):
-        # When a private security related bug has a bugtask retargetted to a
-        # different product, a notification is sent to the new bug supervisor
-        # and maintainer. If they are the same person, only one notification
-        # is sent. They only get notifications if they can see the bug.
-
-        # Create the private bug.
-        bug_task = bug.bugtasks[0]
-        new_target = self.factory.makeProduct(
-            owner=maintainer, bug_supervisor=bug_supervisor)
-        self.saveOldChanges(bug)
-
-        bug_task_before_modification = Snapshot(
-            bug_task, providing=providedBy(bug_task))
-        bug_task.transitionToTarget(new_target, self.user)
-        notify(ObjectModifiedEvent(
-            bug_task, bug_task_before_modification,
-            ['target', 'product'], user=self.user))
-
-        expected_activity = {
-            'person': self.user,
-            'whatchanged': 'affects',
-            'oldvalue': bug_task_before_modification.bugtargetname,
-            'newvalue': bug_task.bugtargetname,
-            }
-
-        expected_recipients = [self.user]
-        expected_reasons = ['Subscriber']
-        if bug.userCanView(maintainer):
-            expected_recipients.append(maintainer)
-            expected_reasons.append('Maintainer')
-        if (bug_supervisor and not bug_supervisor.inTeam(maintainer)
-                and bug.userCanView(bug_supervisor)):
-            expected_recipients.append(bug_supervisor)
-            expected_reasons.append('Bug Supervisor')
-        expected_notification = {
-            'text': u"** Project changed: %s => %s" % (
-                bug_task_before_modification.bugtargetname,
-                bug_task.bugtargetname),
-            'person': self.user,
-            'recipients': expected_recipients,
-            'recipient_reasons': expected_reasons
-            }
-        self.assertRecordedChange(
-            expected_activity=expected_activity,
-            expected_notification=expected_notification, bug=bug)
-
-    def test_retarget_private_security_bug_to_product(self):
-        # A series of tests for re-targetting a private bug task.
-        bug = self.factory.makeBug(
-            product=self.product, owner=self.user,
-            information_type=InformationType.USERDATA)
-        maintainer = self.factory.makePerson()
-        bug_supervisor = self.factory.makePerson()
-
-        # Test with no bug supervisor
-        self._test_retarget_private_security_bug_to_product(bug, maintainer)
-        # Test with bug supervisor = maintainer.
-        self._test_retarget_private_security_bug_to_product(
-            bug, maintainer, maintainer)
-        # Test with different bug supervisor
-        self._test_retarget_private_security_bug_to_product(
-            bug, maintainer, bug_supervisor)
-
-        # Now make the bug visible to the bug supervisor and re-test.
-        with celebrity_logged_in('admin'):
-            bug.default_bugtask.transitionToAssignee(bug_supervisor)
-
-        # Test with bug supervisor = maintainer.
-        self._test_retarget_private_security_bug_to_product(
-            bug, maintainer, maintainer)
-        # Test with different bug supervisor
-        self._test_retarget_private_security_bug_to_product(
-            bug, maintainer, bug_supervisor)
-
     def test_target_bugtask_to_sourcepackage(self):
         # When a bugtask's target is changed, BugActivity and
         # BugNotification get updated.
@@ -1166,8 +1056,7 @@ class TestBugChanges(TestCaseWithFactory):
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
 
-        source_package_bug = self.factory.makeBug(
-            owner=self.user)
+        source_package_bug = self.factory.makeBug(owner=self.user)
         source_package_bug_task = source_package_bug.addTask(
             owner=self.user, target=target)
         self.saveOldChanges(source_package_bug)
@@ -1215,7 +1104,7 @@ class TestBugChanges(TestCaseWithFactory):
         new_product.addBugSubscription(subscriber, subscriber)
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            product=old_product, owner=owner,
+            target=old_product, owner=owner,
             information_type=InformationType.USERDATA)
         bug.default_bugtask.transitionToTarget(new_product, owner)
         self.assertNotIn(subscriber, bug.getDirectSubscribers())
@@ -1847,7 +1736,7 @@ class TestBugChanges(TestCaseWithFactory):
         # When a bug is created, activity is recorded and a comment
         # notification is sent.
         new_bug = self.factory.makeBug(
-            product=self.product, owner=self.user, comment="ENOTOWEL")
+            target=self.product, owner=self.user, comment="ENOTOWEL")
 
         expected_activity = {
             'person': self.user,

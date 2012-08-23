@@ -620,7 +620,9 @@ class SpecificationView(SpecificationSimpleView):
     def title_widget(self):
         field = ISpecification['title']
         title = "Edit the blueprint title"
-        return TextLineEditorWidget(self.context, field, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, field, title, 'h1', max_width='95%',
+            truncate_lines=2)
 
     @property
     def summary_widget(self):
@@ -1307,7 +1309,7 @@ class SpecificationTreePNGView(SpecificationTreeGraphView):
         try:
             image = self.renderGraphvizGraph('png')
             self.request.response.setHeader('Content-type', 'image/png')
-        except (ProblemRenderingGraph, OSError), error:
+        except (ProblemRenderingGraph, OSError) as error:
             # The subprocess or command can raise errors that might not
             # occur if we used a Python bindings for GraphViz. Instead of
             # sending the generated image, return the fail-over image
@@ -1327,7 +1329,7 @@ class SpecificationTreeImageTag(SpecificationTreeGraphView):
         """Render the image and image map tags for this dependency graph."""
         try:
             image_map = self.renderGraphvizGraph('cmapx').decode('UTF-8')
-        except (ProblemRenderingGraph, OSError), error:
+        except (ProblemRenderingGraph, OSError) as error:
             # The subprocess or command can raise errors that might not
             # occur if we used a Python bindings for GraphViz. Instead
             # of rendering an image map, return an explanation that the

@@ -49,16 +49,13 @@ from lp.registry.enums import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import flush_database_caches
-from lp.services.features import (
-    get_relevant_feature_controller,
-    getFeatureFlag,
-    )
+from lp.services.features import getFeatureFlag
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.utils import utc_now
@@ -125,16 +122,9 @@ from lp.testing.pages import (
 from lp.testing.views import create_initialized_view
 
 
-def set_derived_series_ui_feature_flag(test_case):
-    test_case.useFixture(FeatureFixture({
-        u'soyuz.derived_series_ui.enabled': u'on',
-        }))
-
-
 def set_derived_series_sync_feature_flag(test_case):
     test_case.useFixture(FeatureFixture({
         u'soyuz.derived_series_sync.enabled': u'on',
-        u'soyuz.derived_series_ui.enabled': u'on',
         }))
 
 
@@ -315,30 +305,9 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 parent_series=first_parent_series)
         return derived_series
 
-    def test_differences_no_flag_no_portlet(self):
-        # The portlet is not displayed if the feature flag is not enabled.
-        derived_series = self._setupDifferences('deri', 'sid', 1, 2, 2)
-        portlet_header = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Derivation portlet header', 'h2',
-                text='Derived from Sid'),
-            )
-
-        with person_logged_in(self.simple_user):
-            view = create_initialized_view(
-                derived_series,
-                '+index',
-                principal=self.simple_user)
-            html_content = view()
-
-        self.assertEqual(
-            None, getFeatureFlag('soyuz.derived_series_ui.enabled'))
-        self.assertThat(html_content, Not(portlet_header))
-
     def test_differences_portlet_all_differences(self):
         # The difference portlet shows the differences with the parent
         # series.
-        set_derived_series_ui_feature_flag(self)
         derived_series = self._setupDifferences('deri', 'sid', 1, 2, 3)
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
@@ -350,9 +319,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 derived_series,
                 '+index',
                 principal=self.simple_user)
-            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
-            # self.features to NullFeatureController.
-            view.request.features = get_relevant_feature_controller()
             html_content = view()
 
         self.assertThat(html_content, portlet_display)
@@ -360,7 +326,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     def test_differences_portlet_all_differences_multiple_parents(self):
         # The difference portlet shows the differences with the multiple
         # parent series.
-        set_derived_series_ui_feature_flag(self)
         derived_series = self._setupDifferences(
             'deri', ['sid1', 'sid2'], 0, 1, 0)
         portlet_display = soupmatchers.HTMLContains(soupmatchers.Tag(
@@ -372,9 +337,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 derived_series,
                 '+index',
                 principal=self.simple_user)
-            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
-            # self.features to NullFeatureController.
-            view.request.features = get_relevant_feature_controller()
             html_text = view()
 
         self.assertThat(html_text, portlet_display)
@@ -382,7 +344,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     def test_differences_portlet_no_differences(self):
         # The difference portlet displays 'No differences' if there is no
         # differences with the parent.
-        set_derived_series_ui_feature_flag(self)
         derived_series = self._setupDifferences('deri', 'sid', 0, 0, 0)
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
@@ -398,9 +359,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 derived_series,
                 '+index',
                 principal=self.simple_user)
-            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
-            # self.features to NullFeatureController.
-            view.request.features = get_relevant_feature_controller()
             html_content = view()
 
         self.assertThat(html_content, portlet_display)
@@ -408,7 +366,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     def test_differences_portlet_initializing(self):
         # The difference portlet displays 'The series is initializing.' if
         # there is an initializing job for the series.
-        set_derived_series_ui_feature_flag(self)
         derived_series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
         self.simple_user = self.factory.makePerson()
@@ -428,9 +385,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 derived_series,
                 '+index',
                 principal=self.simple_user)
-            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
-            # self.features to NullFeatureController.
-            view.request.features = get_relevant_feature_controller()
             html_content = view()
 
         self.assertTrue(derived_series.isInitializing())
@@ -439,7 +393,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     def test_differences_portlet_initialization_failed(self):
         # The difference portlet displays a failure message if initialization
         # for the series has failed.
-        set_derived_series_ui_feature_flag(self)
         derived_series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
         self.simple_user = self.factory.makePerson()
@@ -488,17 +441,8 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         else:
             self.assertThat(html_content, Not(init_link_matcher))
 
-    def test_differences_init_link_no_feature(self):
-        # The link to +initseries is not displayed if the feature flag
-        # is not enabled.
-        series = self.factory.makeDistroSeries()
-
-        self.assertInitSeriesLinkNotPresent(series, 'admin')
-
     def test_differences_init_link_admin(self):
-        # The link to +initseries is displayed to admin users if the
-        # feature flag is enabled.
-        set_derived_series_ui_feature_flag(self)
+        # The link to +initseries is displayed to admin users.
         series = self.factory.makeDistroSeries()
 
         self.assertInitSeriesLinkPresent(series, 'admin')
@@ -506,7 +450,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     def test_differences_init_link_series_driver(self):
         # The link to +initseries is displayed to the distroseries's
         # drivers.
-        set_derived_series_ui_feature_flag(self)
         distroseries = self.factory.makeDistroSeries()
         driver = self.factory.makePerson()
         with celebrity_logged_in('admin'):
@@ -517,7 +460,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     def test_differences_init_link_not_admin(self):
         # The link to +initseries is not displayed to not admin users if the
         # feature flag is enabled.
-        set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         person = self.factory.makePerson()
 
@@ -526,7 +468,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     def test_differences_init_link_initialized(self):
         # The link to +initseries is not displayed if the series is
         # already initialized (i.e. has any published package).
-        set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         self.factory.makeSourcePackagePublishingHistory(
             archive=series.main_archive,
@@ -537,7 +478,6 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     def test_differences_init_link_series_initializing(self):
         # The link to +initseries is not displayed if the series is
         # initializing.
-        set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
         job_source = getUtility(IInitializeDistroSeriesJobSource)
@@ -557,7 +497,6 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
     def test_initialization_failed_can_retry(self):
         # When initialization has failed and the user has the ability to retry
         # it prompts the user to try again.
-        set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         parent = self.factory.makeDistroSeries()
         job = self.job_source.create(series, [parent.id])
@@ -574,7 +513,6 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
     def test_initialization_failed_cannot_retry(self):
         # When initialization has failed and the user does not have the
         # ability to retry it suggests contacting someone who can.
-        set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         parent = self.factory.makeDistroSeries()
         job = self.job_source.create(series, [parent.id])
@@ -595,7 +533,7 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         with person_logged_in(series.distribution.owner):
             series.distribution.owner = self.factory.makeTeam(
                 displayname=u"Team Teamy Team Team",
-                subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+                membership_policy=TeamMembershipPolicy.RESTRICTED)
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()
@@ -625,7 +563,6 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         # When initialization has failed an explanation of the failure can be
         # displayed. It depends on the nature of the failure; only some error
         # types are displayed.
-        set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         parent = self.factory.makeDistroSeries()
         job = self.job_source.create(series, [parent.id])
@@ -755,54 +692,21 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         view = create_initialized_view(distroseries, "+initseries")
         self.assertTrue(view)
 
-    def test_is_derived_series_feature_disabled(self):
-        # The feature is disabled by default.
+    def test_form_shown(self):
+        # The form is shown.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with FeatureFixture({}):
-            self.assertFalse(view.is_derived_series_feature_enabled)
-
-    def test_is_derived_series_feature_enabled(self):
-        # The feature is disabled by default, but can be enabled by setting
-        # the soyuz.derived_series_ui.enabled flag.
-        distroseries = self.factory.makeDistroSeries()
-        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
-        with FeatureFixture(flags):
-            view = create_initialized_view(distroseries, "+initseries")
-            self.assertTrue(view.is_derived_series_feature_enabled)
-
-    def test_form_hidden_when_derived_series_feature_disabled(self):
-        # The form is hidden when the feature flag is not set.
-        distroseries = self.factory.makeDistroSeries()
-        view = create_initialized_view(distroseries, "+initseries")
-        with FeatureFixture({}):
-            root = html.fromstring(view())
-            self.assertEqual(
-                [], root.cssselect("#initseries-form-container"))
-            # Instead an explanatory message is shown.
-            [message] = root.cssselect("p.error.message")
-            self.assertIn(
-                u"The Derivative Distributions feature is under development",
-                message.text)
-
-    def test_form_shown_when_derived_series_feature_enabled(self):
-        # The form is shown when the feature flag is set.
-        distroseries = self.factory.makeDistroSeries()
-        view = create_initialized_view(distroseries, "+initseries")
-        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
-        with FeatureFixture(flags):
-            root = html.fromstring(view())
-            self.assertNotEqual(
-                [], root.cssselect("#initseries-form-container"))
-            # A different explanatory message is shown for clients that don't
-            # process Javascript.
-            [message] = root.cssselect("p.error.message")
-            self.assertIn(
-                u"Javascript is required to use this page",
-                message.text)
-            self.assertIn(
-                u"javascript-disabled",
-                message.get("class").split())
+        root = html.fromstring(view())
+        self.assertNotEqual([], root.cssselect("#initseries-form-container"))
+        # A different explanatory message is shown for clients that don't
+        # process Javascript.
+        [message] = root.cssselect("p.error.message")
+        self.assertIn(
+            u"Javascript is required to use this page",
+            message.text)
+        self.assertIn(
+            u"javascript-disabled",
+            message.get("class").split())
 
     def test_seriesToVocab(self):
         distroseries = self.factory.makeDistroSeries()
@@ -857,42 +761,34 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             cache['previous_parents'][1])
 
     def test_form_hidden_when_distroseries_is_initialized(self):
-        # The form is hidden when the feature flag is set but the series has
-        # already been initialized.
+        # The form is hidden when the series has already been initialized.
         distroseries = self.factory.makeDistroSeries(
             previous_series=self.factory.makeDistroSeries())
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, archive=distroseries.main_archive)
         view = create_initialized_view(distroseries, "+initseries")
-        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
-        with FeatureFixture(flags):
-            root = html.fromstring(view())
-            self.assertEqual(
-                [], root.cssselect("#initseries-form-container"))
-            # Instead an explanatory message is shown.
-            [message] = root.cssselect("p.error.message")
-            self.assertThat(
-                message.text, EqualsIgnoringWhitespace(
-                    u"This series already contains source packages "
-                    u"and cannot be initialized again."))
+        root = html.fromstring(view())
+        self.assertEqual([], root.cssselect("#initseries-form-container"))
+        # Instead an explanatory message is shown.
+        [message] = root.cssselect("p.error.message")
+        self.assertThat(
+            message.text, EqualsIgnoringWhitespace(
+                u"This series already contains source packages "
+                u"and cannot be initialized again."))
 
     def test_form_hidden_when_distroseries_is_being_initialized(self):
-        # The form is hidden when the feature flag is set but the series has
-        # already been derived.
+        # The form is hidden when the series has already been derived.
         distroseries = self.factory.makeDistroSeries()
         getUtility(IInitializeDistroSeriesJobSource).create(
             distroseries, [self.factory.makeDistroSeries().id])
         view = create_initialized_view(distroseries, "+initseries")
-        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
-        with FeatureFixture(flags):
-            root = html.fromstring(view())
-            self.assertEqual(
-                [], root.cssselect("#initseries-form-container"))
-            # Instead an explanatory message is shown.
-            [message] = root.cssselect("p.error.message")
-            self.assertThat(
-                message.text, EqualsIgnoringWhitespace(
-                    u"This series is already being initialized."))
+        root = html.fromstring(view())
+        self.assertEqual([], root.cssselect("#initseries-form-container"))
+        # Instead an explanatory message is shown.
+        [message] = root.cssselect("p.error.message")
+        self.assertThat(
+            message.text, EqualsIgnoringWhitespace(
+                u"This series is already being initialized."))
 
     def test_form_hidden_when_previous_series_none(self):
         # If the distribution has an initialized series and the
@@ -905,18 +801,15 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=another_distroseries)
         view = create_initialized_view(distroseries, "+initseries")
-        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
-        with FeatureFixture(flags):
-            root = html.fromstring(view())
-            self.assertEqual(
-                [], root.cssselect("#initseries-form-container"))
-            # Instead an explanatory message is shown.
-            [message] = root.cssselect("p.error.message")
-            self.assertThat(
-                message.text, EqualsIgnoringWhitespace(
-                    u'Unable to initialize series: the distribution '
-                    u'already has initialized series and this distroseries '
-                    u'has no previous series.'))
+        root = html.fromstring(view())
+        self.assertEqual([], root.cssselect("#initseries-form-container"))
+        # Instead an explanatory message is shown.
+        [message] = root.cssselect("p.error.message")
+        self.assertThat(
+            message.text, EqualsIgnoringWhitespace(
+                u'Unable to initialize series: the distribution '
+                u'already has initialized series and this distroseries '
+                u'has no previous series.'))
 
     def test_form_hidden_when_no_publisher_config_set_up(self):
         # If the distribution has no publisher config set up:
@@ -926,18 +819,14 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution)
         view = create_initialized_view(distroseries, "+initseries")
-        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
-        with FeatureFixture(flags):
-            root = html.fromstring(view())
-            self.assertEqual(
-                [], root.cssselect("#initseries-form-container"))
-            # Instead an explanatory message is shown.
-            [message] = root.cssselect("p.error.message")
-            self.assertThat(
-                message.text, EqualsIgnoringWhitespace(
-                    u"The series' distribution has no publisher "
-                    u"configuration. Please ask an administrator to set "
-                    "this up."))
+        root = html.fromstring(view())
+        self.assertEqual([], root.cssselect("#initseries-form-container"))
+        # Instead an explanatory message is shown.
+        [message] = root.cssselect("p.error.message")
+        self.assertThat(
+            message.text, EqualsIgnoringWhitespace(
+                u"The series' distribution has no publisher configuration. "
+                u"Please ask an administrator to set this up."))
 
 
 class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):
@@ -948,7 +837,6 @@ class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):
     def setUp(self):
         super(TestDistroSeriesInitializeViewAccess,
               self).setUp('foo.bar@canonical.com')
-        set_derived_series_ui_feature_flag(self)
 
     def test_initseries_access_anon(self):
         # Anonymous users cannot access +initseries.
@@ -1030,7 +918,6 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
     def setUp(self):
         super(TestDistroSeriesLocalDiffPerformance,
              self).setUp('foo.bar@canonical.com')
-        set_derived_series_ui_feature_flag(self)
         self.simple_user = self.factory.makePerson()
 
     def _assertQueryCount(self, derived_series):
@@ -1193,7 +1080,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
-        set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(
             derived_series, '+localpackagediffs', principal=simple_user)
 
@@ -1210,7 +1096,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 packages=[ds_diff.source_package_name],
                 distroseries=ds_diff.derived_series)
 
-        set_derived_series_ui_feature_flag(self)
         simple_user = self.factory.makePerson()
         with person_logged_in(simple_user):
             view = create_initialized_view(
@@ -1235,7 +1120,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                     packages=[ds_diff.source_package_name],
                     distroseries=ds_diff.derived_series)
 
-        set_derived_series_ui_feature_flag(self)
         simple_user = self.factory.makePerson()
         with person_logged_in(simple_user):
             view = create_initialized_view(
@@ -1249,20 +1133,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self._test_packagesets(
             html_content, packageset_text, 'packagesets',
             'Packagesets')
-
-    def test_view_redirects_without_feature_flag(self):
-        # If the feature flag soyuz.derived_series_ui.enabled is not set the
-        # view simply redirects to the derived series.
-        derived_series, parent_series = self._createChildAndParent()
-
-        self.assertIs(
-            None, getFeatureFlag('soyuz.derived_series_ui.enabled'))
-        view = self.makeView(derived_series)
-
-        response = view.request.response
-        self.assertEqual(302, response.getStatus())
-        self.assertEqual(
-            canonical_url(derived_series), response.getHeader('location'))
 
     def test_label(self):
         # The view label includes the names of both series.
@@ -1321,7 +1191,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_template_includes_help_link(self):
         # The help link for popup help is included.
         derived_series, parent_series = self._createChildAndParent()
-        set_derived_series_ui_feature_flag(self)
         view = self.makeView(derived_series)
 
         soup = BeautifulSoup(view())
@@ -1338,7 +1207,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             difference.addComment(difference.owner, "Earlier comment")
             difference.addComment(difference.owner, "Latest comment")
 
-        set_derived_series_ui_feature_flag(self)
         view = self.makeView(derived_series)
 
         # Find all the rows within the body of the table
@@ -1357,7 +1225,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
-        set_derived_series_ui_feature_flag(self)
         view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
@@ -1388,7 +1255,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             parent_series=parent_series,
             source_package_name_str=package_name,
             derived_series=derived_series)
-        set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
         multiple_parents_matches = soupmatchers.HTMLContains(
@@ -1430,7 +1296,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             distroseries=derived_series,
             version=new_version)
 
-        set_derived_series_ui_feature_flag(self)
         view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
@@ -1474,7 +1339,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # Flush out the changes and invalidate caches (esp. property caches).
         flush_database_caches()
 
-        set_derived_series_ui_feature_flag(self)
         view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
@@ -1495,7 +1359,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_diff_row_last_changed(self):
         # The SPR creator (i.e. who make the package change, rather than the
         # uploader) is shown on each difference row.
-        set_derived_series_ui_feature_flag(self)
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
         root = html.fromstring(view())
@@ -1509,7 +1372,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_diff_row_last_changed_also_shows_uploader_if_different(self):
         # When the SPR creator and uploader are different both are named on
         # each difference row.
-        set_derived_series_ui_feature_flag(self)
         dsd = self.makePackageUpgrade()
         uploader = self.factory.makePerson()
         removeSecurityProxy(dsd.source_package_release).dscsigningkey = (
@@ -1528,7 +1390,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # After the parent's version, there should be text "(changelog)"
         # linked to the parent distro source package +changelog page.  The
         # text is styled with "lesser".
-        set_derived_series_ui_feature_flag(self)
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
         soup = BeautifulSoup(view())
@@ -1690,8 +1551,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
     def test_higher_radio_mentions_parent(self):
         # The user is shown an option to display only the blacklisted
-        # package with a higer version than in the parent.
-        set_derived_series_ui_feature_flag(self)
+        # package with a higher version than in the parent.
         derived_series, parent_series = self._createChildAndParent()
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
@@ -1710,7 +1570,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertThat(view.render(), radio_option_matches)
 
     def test_higher_radio_mentions_parents(self):
-        set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParents()
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
@@ -1737,7 +1596,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
     def test_batch_filtered(self):
         # The name_filter parameter allows filtering of packages by name.
-        set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
         diff1 = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
@@ -1761,7 +1619,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
     def test_batch_non_blacklisted(self):
         # The default filter is all non blacklisted differences.
-        set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
         diff1 = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
@@ -1789,7 +1646,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_batch_all_packages(self):
         # field.package_type parameter allows to list all the
         # differences.
-        set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
         # Create differences of all possible statuses.
         diffs = []
@@ -1807,7 +1663,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_batch_wrong_param(self):
         # If a wrong parameter is passed then an error is displayed
         # and no differences are shown.
-        set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
@@ -1824,7 +1679,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_batch_blacklisted_differences_with_higher_version(self):
         # field.package_type parameter allows to list only
         # blacklisted differences with a child's version higher than parent's.
-        set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
         blacklisted_diff_higher = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
@@ -1852,7 +1706,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_batch_resolved_differences(self):
         # Test that we can search for differences that we marked
         # resolved.
-        set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
 
         self.factory.makeDistroSeriesDifference(
@@ -1891,7 +1744,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             difference_type=difference_type)
         sourcepackagename = self.factory.getOrMakeSourcePackageName(
             src_name)
-        set_derived_series_ui_feature_flag(self)
         return derived_series, parent_series, sourcepackagename, str(diff.id)
 
     def test_canPerformSync_anon(self):
@@ -2361,7 +2213,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_specified_packagesets_filter_none_specified(self):
         # specified_packagesets_filter is None when there are no
         # field.packageset parameters in the query.
-        set_derived_series_ui_feature_flag(self)
         dsd = self.factory.makeDistroSeriesDifference()
         person = dsd.derived_series.owner
         with person_logged_in(person):
@@ -2373,7 +2224,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_specified_packagesets_filter_specified(self):
         # specified_packagesets_filter returns a collection of Packagesets
         # when there are field.packageset query parameters.
-        set_derived_series_ui_feature_flag(self)
         dsd = self.factory.makeDistroSeriesDifference()
         person = dsd.derived_series.owner
         packageset1 = self.factory.makePackageset(
@@ -2392,7 +2242,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_search_for_packagesets(self):
         # If packagesets are supplied in the query the resulting batch will
         # only contain packages in the given packagesets.
-        set_derived_series_ui_feature_flag(self)
         dsd = self.factory.makeDistroSeriesDifference()
         person = dsd.derived_series.owner
         packageset = self.factory.makePackageset(
@@ -2414,7 +2263,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_specified_changed_by_filter_none_specified(self):
         # specified_changed_by_filter is None when there are no
         # field.changed_by parameters in the query.
-        set_derived_series_ui_feature_flag(self)
         dsd = self.factory.makeDistroSeriesDifference()
         person = dsd.derived_series.owner
         with person_logged_in(person):
@@ -2426,7 +2274,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_specified_changed_by_filter_specified(self):
         # specified_changed_by_filter returns a collection of Person when
         # there are field.changed_by query parameters.
-        set_derived_series_ui_feature_flag(self)
         dsd = self.factory.makeDistroSeriesDifference()
         person = dsd.derived_series.owner
         changed_by1 = self.factory.makePerson()
@@ -2445,7 +2292,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_search_for_changed_by(self):
         # If changed_by is specified the query the resulting batch will only
         # contain packages relating to those people or teams.
-        set_derived_series_ui_feature_flag(self)
         dsd = self.factory.makeDistroSeriesDifference()
         person = dsd.derived_series.owner
         ironhide = self.factory.makePersonByName("Ironhide")
@@ -2570,7 +2416,6 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
     def setUp(self):
         super(DistroSeriesMissingPackagesPageTestCase,
               self).setUp('foo.bar@canonical.com')
-        set_derived_series_ui_feature_flag(self)
         self.simple_user = self.factory.makePerson()
 
     def test_parent_packagesets_missingpackages(self):
@@ -2671,7 +2516,6 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
         # For a series derived from multiple parents, the parent for each
         # DSD is displayed; no parent version is displayed because we're
         # listing packages unique to the derived series.
-        set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParents()
         missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
         self.factory.makeDistroSeriesDifference(
@@ -2733,7 +2577,6 @@ class DistroSeriesUniquePackagesPageTestCase(TestCaseWithFactory,
     def setUp(self):
         super(DistroSeriesUniquePackagesPageTestCase,
               self).setUp('foo.bar@canonical.com')
-        set_derived_series_ui_feature_flag(self)
         self.simple_user = self.factory.makePerson()
 
     def test_packagesets_uniquepackages(self):

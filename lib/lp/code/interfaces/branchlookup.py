@@ -7,12 +7,24 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_first_path_result',
     'IBranchLookup',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
     ]
 
+from itertools import (
+    ifilter,
+    imap,
+    )
+
 from zope.interface import Interface
+
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
+    BRANCH_ID_ALIAS_PREFIX,
+    )
+from lp.services.utils import iter_split
 
 
 class ILinkedBranchTraversable(Interface):
@@ -60,32 +72,31 @@ class IBranchLookup(Interface):
         Return the default value if there is no such branch.
         """
 
+    def getByHostingPath(path):
+        """Get information about a given codehosting path.
+
+        If the path includes a branch, it is returned.  Otherwise, None.
+        The portion of the path following the branch's portion is returned as
+        'trailing'.
+
+        :return: A tuple of (branch, trailing).
+        """
+
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
         Return None if no match was found.
         """
 
-    def getIdAndTrailingPath(path, from_slave=False):
-        """Return id of and path within the branch identified by the `path`.
+    def uriToHostingPath(uri):
+        """Return the path for the URI, if the URI is on codehosting.
 
-        To explain by example, if the branch with id 5 has unique name
-        '~user/project/name', getIdAndTrailingPath('~user/project/name/foo')
-        will return (5, '/foo').
-
-        :return: ``(branch_id, trailing_path)``, both will be ``None`` if no
-            branch is identified.
-        """
-
-    def uriToUniqueName(uri):
-        """Return the unique name for the URI, if the URI is on codehosting.
-
-        This does not ensure that the unique name is valid.  It recognizes the
+        This does not ensure that the path is valid.  It recognizes the
         codehosting URIs of remote branches and mirrors, but not their
         remote URIs.
 
         :param uri: An instance of lazr.uri.URI
-        :return: The unique name if possible, None if the URI is not a valid
+        :return: The path if possible, None if the URI is not a valid
             codehosting URI.
         """
 
@@ -97,6 +108,9 @@ class IBranchLookup(Interface):
 
         Return None if no match was found.
         """
+
+    def performLookup(lookup):
+        """Find a branch and trailing path according to params"""
 
     def getByUrls(urls):
         """Find branches by URL.
@@ -129,8 +143,6 @@ class IBranchLookup(Interface):
             component of the path.
         :raises NoSuchProduct: If we can't find a product that matches the
             product component of the path.
-        :raises NoSuchProductSeries: If the product series component doesn't
-            match an existing series.
         :raises NoSuchDistroSeries: If the distro series component doesn't
             match an existing series.
         :raises NoSuchSourcePackageName: If the source packagae referred to
@@ -147,3 +159,47 @@ class IBranchLookup(Interface):
             make things like 'bzr cat lp:~foo/bar/baz/README' work. Trailing
             paths are not handled for shortcut paths.
         """
+
+
+def path_lookups(path):
+    if path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+        try:
+            parts = path.split('/', 2)
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            return
+        trailing = '/'.join([''] + parts[2:])
+        yield {'type': 'id', 'branch_id': branch_id, 'trailing': trailing}
+        return
+    alias_prefix_trailing = BRANCH_ALIAS_PREFIX + '/'
+    if path.startswith(alias_prefix_trailing):
+        yield {'type': 'alias', 'lp_path': path[len(alias_prefix_trailing):]}
+        return
+    for unique_name, trailing in iter_split(path, '/', [5, 3]):
+        yield {
+            'type': 'branch_name',
+            'unique_name': unique_name,
+            'trailing': trailing,
+        }
+    for control_name, trailing in iter_split(path, '/', [4, 2]):
+        yield {
+            'type': 'control_name',
+            'control_name': control_name,
+            'trailing': trailing,
+        }
+
+
+def get_first_path_result(path, perform_lookup, failure_result):
+    """Find the first codehosting path lookup result.
+
+    :param path: The codehosting path to use.
+    :param perform_lookup: The callable to use for looking up a value.
+    :param failure_result: The result that indicates lookup failure.
+    :return: The first successful lookup, or failure_result if there are
+        no successes.
+    """
+    sparse_results = imap(perform_lookup, path_lookups(path))
+    results = ifilter(lambda x: x != failure_result, sparse_results)
+    for result in results:
+        return result
+    return failure_result

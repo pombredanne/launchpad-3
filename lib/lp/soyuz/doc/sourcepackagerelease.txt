@@ -82,16 +82,6 @@ All the builds returned are for non-PPA archives:
    >>> set(build.archive.purpose.name for build in spr.builds)
    set(['PRIMARY'])
 
-We can use the magic productrelease property to map this to a ProductRelease:
-
-   >>> pr = spr.productrelease
-   >>> print pr.product.name
-   firefox
-   >>> print pr.productseries.name
-   trunk
-   >>> print pr.version
-   0.9
-
 We can use the sourcepackage and distrosourcepackage properties to
 grab magical objects representing that package in the distribution to
 which it was uploaded:
@@ -100,27 +90,6 @@ which it was uploaded:
    mozilla-firefox in Ubuntu Warty
    >>> print spr.distrosourcepackage.displayname
    mozilla-firefox in Ubuntu
-
-It should also work when the version has a dash and packaging revision
-after it:
-
-   >>> spr = SourcePackageRelease.get(16)
-   >>> print spr.name
-   netapplet
-   >>> print spr.version
-   1.0-1
-   >>> pr = spr.productrelease
-   >>> print pr.product.name
-   netapplet
-   >>> print pr.productseries.name
-   trunk
-   >>> print pr.version
-   1.0
-
-If there isn't one, that should return None.
-
-   >>> print SourcePackageRelease.get(20).productrelease
-   None
 
 Check that the uploaded changesfile works:
 
@@ -131,7 +100,7 @@ Check that the uploaded changesfile works:
 Check ISourcePackageRelease.override() behaviour:
 
    >>> spr.component.name, spr.section.name
-   (u'main', u'editors')
+   (u'main', u'base')
 
    >>> from lp.soyuz.interfaces.component import IComponentSet
    >>> from lp.soyuz.interfaces.section import ISectionSet

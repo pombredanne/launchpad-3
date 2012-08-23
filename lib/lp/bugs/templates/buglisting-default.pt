@@ -55,7 +55,7 @@ i18n:domain="malone"
       </p>
 
       <a id="getting-started-help"
-         class="sprite maybe action-icon"
+         class="sprite maybe"
          href="https://help.launchpad.net/Bugs">
         Getting started with bug tracking in Launchpad</a>.
 
@@ -96,7 +96,7 @@ i18n:domain="malone"
               </strong>
             </p>
             <p id="getting-started-help">
-              <a class="sprite maybe action-icon"
+              <a class="sprite maybe"
                  href="https://help.launchpad.net/Bugs">Getting started
                 with bug tracking in Launchpad</a>.
             </p>
@@ -128,7 +128,7 @@ i18n:domain="malone"
     <div id="bug-portlets" tal:condition="view/should_show_bug_information">
       <div id="involvement" class="portlet">
         <ul class="involvement">
-          <li style="border: 0">
+          <li class="first">
             <a href="+filebug" class="menu-link-filebug sprite bugs">
               Report a bug
             </a>
@@ -173,24 +173,6 @@ i18n:domain="malone"
                 <img tal:attributes="alt link/text" src="/@@/edit" />
               </a>
             </tal:edit-bug-supervisor>
-          </dd>
-        </dl>
-        <dl tal:define="securitycontact context/security_contact">
-          <dt id="bug-security">Security contact:</dt>
-          <dd>
-            <tal:none condition="not:securitycontact">None set</tal:none>
-            <a tal:condition="securitycontact"
-               tal:replace="structure securitycontact/fmt:link">
-              Billy Anderson
-            </a>
-            <tal:edit-securitycontact
-                condition="context/menu:bugs/securitycontact|nothing">
-              <a tal:define="link context/menu:bugs/securitycontact"
-                 tal:condition="link/enabled"
-                 tal:attributes="href link/url; title link/text">
-                <img tal:attributes="alt link/text" src="/@@/edit" />
-              </a>
-            </tal:edit-securitycontact>
           </dd>
         </dl>
       </div>

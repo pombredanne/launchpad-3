@@ -66,6 +66,16 @@ class TestProductVocabulary(TestCaseWithFactory):
         self.assertEqual(
             [quux_product, bar_product], list(result))
 
+    def test_search_with_or_expression(self):
+        # Searches for either of two or more names are possible.
+        blah_product = self.factory.makeProduct(
+            name='blah', displayname='Blah', summary='Blah blather')
+        baz_product = self.factory.makeProduct(
+            name='baz', displayname='Baz')
+        result = self.vocabulary.search('blah OR baz')
+        self.assertEqual(
+            [blah_product, baz_product], list(result))
+
     def test_exact_match_is_first(self):
         # When the flag is enabled, an exact name match always wins.
         the_quux_product = self.factory.makeProduct(

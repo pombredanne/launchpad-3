@@ -15,7 +15,7 @@ from lp.bugs.interfaces.personsubscriptioninfo import (
     IVirtualSubscriptionInfoCollection,
     )
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     person_logged_in,
@@ -91,17 +91,15 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(info.pillar, pillar)
         self.assertContentEqual(info.tasks, bugtasks)
 
-    def assertRealSubscriptionInfoMatches(
-        self, info, bug, principal,
-        principal_is_reporter, security_contact_tasks, bug_supervisor_tasks):
+    def assertRealSubscriptionInfoMatches(self, info, bug, principal,
+                                          principal_is_reporter,
+                                          bug_supervisor_tasks):
         # Make sure that the real subscription info has expected values.
         self.assertEqual(info.bug, bug)
         self.assertEqual(info.principal, principal)
         self.assertEqual(info.principal_is_reporter, principal_is_reporter)
         self.assertContentEqual(
             info.bug_supervisor_tasks, bug_supervisor_tasks)
-        self.assertContentEqual(
-            info.security_contact_tasks, security_contact_tasks)
 
     def test_no_subscriptions(self):
         # Load a `PersonSubscriptionInfo`s for a subscriber and a bug.
@@ -222,7 +220,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.direct, personal=1)
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.direct.personal[0],
-            self.bug, self.subscriber, False, [], [])
+            self.bug, self.subscriber, False, [])
 
     def test_direct_getDataForClient(self):
         # Subscribed directly to the bug.
@@ -237,7 +235,6 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(references[personal['bug']], self.bug)
         self.assertEqual(references[personal['subscription']], subscription)
         self.assertEqual(personal['principal_is_reporter'], False)
-        self.assertEqual(personal['security_contact_pillars'], [])
         self.assertEqual(personal['bug_supervisor_pillars'], [])
 
     def test_direct_through_team(self):
@@ -255,7 +252,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.direct, as_team_member=1)
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.direct.as_team_member[0],
-            self.bug, team, False, [], [])
+            self.bug, team, False, [])
 
     def test_direct_through_team_getDataForClient(self):
         # Subscribed to the bug through membership in a team.
@@ -286,7 +283,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.direct, as_team_admin=1)
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.direct.as_team_admin[0],
-            self.bug, team, False, [], [])
+            self.bug, team, False, [])
 
     def test_direct_through_team_as_admin_getDataForClient(self):
         # Subscribed to the bug through membership in a team
@@ -314,7 +311,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.from_duplicate, personal=1)
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.from_duplicate.personal[0],
-            duplicate, self.subscriber, False, [], [])
+            duplicate, self.subscriber, False, [])
 
     def test_duplicate_direct_reverse(self):
         # Subscribed directly to the primary bug, and a duplicate bug changes.
@@ -349,10 +346,10 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.from_duplicate, personal=2)
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.from_duplicate.personal[0],
-            duplicate1, self.subscriber, False, [], [])
+            duplicate1, self.subscriber, False, [])
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.from_duplicate.personal[1],
-            duplicate2, self.subscriber, False, [], [])
+            duplicate2, self.subscriber, False, [])
 
     def test_duplicate_through_team(self):
         # Subscribed to a duplicate bug through team membership.
@@ -370,7 +367,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.from_duplicate, as_team_member=1)
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.from_duplicate.as_team_member[0],
-            duplicate, team, False, [], [])
+            duplicate, team, False, [])
 
     def test_duplicate_through_team_as_admin(self):
         # Subscribed to a duplicate bug through team membership
@@ -392,7 +389,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.from_duplicate, as_team_admin=1)
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.from_duplicate.as_team_admin[0],
-            duplicate, team, False, [], [])
+            duplicate, team, False, [])
 
     def test_subscriber_is_reporter(self):
         self.bug = self.factory.makeBug(owner=self.subscriber)
@@ -405,21 +402,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.subscriptions.reload()
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.direct.personal[0],
-            self.bug, self.subscriber, True, [], [])
-
-    def test_subscriber_is_security_contact(self):
-        target = self.bug.default_bugtask.target
-        removeSecurityProxy(target).security_contact = self.subscriber
-        # Subscribed directly to the bug.
-        with person_logged_in(self.subscriber):
-            self.bug.subscribe(self.subscriber, self.subscriber)
-
-        # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
-        self.subscriptions.reload()
-        self.assertRealSubscriptionInfoMatches(
-            self.subscriptions.direct.personal[0],
-            self.bug, self.subscriber, False,
-             [{'task': self.bug.default_bugtask, 'pillar': target}], [])
+            self.bug, self.subscriber, True, [])
 
     def test_subscriber_is_bug_supervisor(self):
         target = self.bug.default_bugtask.target
@@ -433,7 +416,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.direct.personal[0],
             self.bug, self.subscriber, False,
-             [], [{'task': self.bug.default_bugtask, 'pillar': target}])
+             [{'task': self.bug.default_bugtask, 'pillar': target}])
 
     def test_owner(self):
         # Bug is targeted to a pillar with no supervisor set.
@@ -463,7 +446,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         target = self.bug.default_bugtask.target
         team = self.factory.makeTeam(
             members=[self.subscriber],
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         removeSecurityProxy(target).owner = team
         # Load a `PersonSubscriptionInfo`s for target.owner and a bug.
         self.subscriptions.reload()
@@ -481,7 +464,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Bug is targeted to a pillar with no supervisor set.
         target = self.bug.default_bugtask.target
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         with person_logged_in(team.teamowner):
             team.addMember(self.subscriber, team.teamowner,
                            status=TeamMembershipStatus.ADMIN)

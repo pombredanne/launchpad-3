@@ -273,7 +273,7 @@
                 </tal:checkbox>
               </div>
             </td>
-            <td width="30%">
+            <td width="25%">
               <div><label>Importance:</label></div>
               <div tal:repeat="widget_value view/getImportanceWidgetValues">
                 <tal:checkbox
@@ -286,6 +286,22 @@
                     <label style="font-weight: normal"
                       tal:content="widget_value/title"
                       tal:attributes="for widget_id">Critical</label>
+              </tal:checkbox>
+            </div>
+          </td>
+            <td width="35%">
+              <div><label>Information Type:</label></div>
+              <div tal:repeat="widget_value view/getInformationTypeWidgetValues">
+                <tal:checkbox
+                    define="widget_id string:information_type.${widget_value/title}">
+                    <input name="field.information_type:list"
+                      type="checkbox"
+                      tal:attributes="value widget_value/value;
+                                      checked widget_value/checked;
+                                      id widget_id"/>
+                    <label style="font-weight: normal"
+                      tal:content="widget_value/title"
+                      tal:attributes="for widget_id">Public</label>
               </tal:checkbox>
             </div>
           </td>
@@ -516,8 +532,6 @@
                    tal:content="structure view/widgets/tag/label">
               Tag
             </label>: <input tal:replace="structure view/widgets/tag" />
-            <a href="/+help-bugs/tag-search.html"
-               target="help">Tag search help</a>
             <div
               tal:condition="error"
               class="message"

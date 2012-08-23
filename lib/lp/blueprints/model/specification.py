@@ -62,12 +62,15 @@ from lp.blueprints.model.specificationsubscription import (
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.buglink import IBugLinkTarget
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
@@ -212,6 +215,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
+    information_type = EnumCol(
+        enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
     @cachedproperty
     def subscriptions(self):
@@ -289,9 +294,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
         Also set the sequence of those deleted work items to -1.
         """
+        title_counts = self._list_to_dict_of_frequency(titles)
+
         for work_item in self.work_items:
-            if work_item.title not in titles:
+            if (work_item.title not in title_counts or
+                title_counts[work_item.title] == 0):
                 work_item.deleted = True
+
+            elif title_counts[work_item.title] > 0:
+                title_counts[work_item.title] -= 1
+
+    def _list_to_dict_of_frequency(self, list):
+        dictionary = {}
+        for item in list:
+            if not item in dictionary:
+                dictionary[item] = 1
+            else:
+                dictionary[item] += 1
+        return dictionary
 
     def updateWorkItems(self, new_work_items):
         """See ISpecification."""
@@ -308,18 +328,20 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # ones.
         to_insert = []
         existing_titles = [wi.title for wi in work_items]
-        for i in range(len(new_work_items)):
-            new_wi = new_work_items[i]
-            if new_wi['title'] not in existing_titles:
-                # This is a new work item, so we insert it with 'i' as its
-                # sequence because that's the position it is on the list
-                # entered by the user.
+        existing_title_count = self._list_to_dict_of_frequency(existing_titles)
+
+        for i, new_wi in enumerate(new_work_items):
+            if (new_wi['title'] not in existing_titles or
+                existing_title_count[new_wi['title']] == 0):
                 to_insert.append((i, new_wi))
             else:
-                # Get the existing work item with the same title and update
+                existing_title_count[new_wi['title']] -= 1
+                # Get an existing work item with the same title and update
                 # it to match what we have now.
-                existing_wi = work_items[
-                    existing_titles.index(new_wi['title'])]
+                existing_wi_index = existing_titles.index(new_wi['title'])
+                existing_wi = work_items[existing_wi_index]
+                # Mark a work item as dirty - don't use it again this update.
+                existing_titles[existing_wi_index] = None
                 # Update the sequence to match its current position on the
                 # list entered by the user.
                 existing_wi.sequence = i
@@ -793,6 +815,26 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def __repr__(self):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
+
+    @property
+    def private(self):
+        return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    def userCanView(self, user):
+        """See `ISpecification`."""
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        if user is None:
+            return False
+        # Temporary: we should access the grant tables instead of
+        # checking if a given user has special roles.
+        # The following is basically copied from
+        # EditSpecificationByRelatedPeople.checkAuthenticated()
+        return (user.in_admin or
+                user.isOwner(self.target) or
+                user.isOneOfDrivers(self.target) or
+                user.isOneOf(
+                    self, ['owner', 'drafter', 'assignee', 'approver']))
 
 
 class HasSpecificationsMixin:

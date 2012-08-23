@@ -26,15 +26,12 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.bugs.adapters.bug import convert_to_information_type
-from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.malone import (
@@ -58,16 +55,10 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorIDSet,
     ParameterError,
     )
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.mailinglist import IMailingListApplication
-from lp.registry.interfaces.product import (
-    IProduct,
-    IProductSet,
-    )
+from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.feeds.interfaces.application import IFeedsApplication
@@ -77,6 +68,7 @@ from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -126,25 +118,46 @@ class MaloneApplication:
         """See `IMaloneApplication`."""
         return getUtility(IBugTaskSet).search(search_params)
 
-    def createBug(self, owner, title, description, target,
-                  security_related=False, private=False, tags=None):
+    def getBugData(self, user, bug_id, related_bug=None):
         """See `IMaloneApplication`."""
-        information_type = convert_to_information_type(
-            private, security_related)
+        search_params = BugTaskSearchParams(user, bug=bug_id)
+        bugtasks = getUtility(IBugTaskSet).search(search_params)
+        if not bugtasks:
+            return []
+        bugs = [task.bug for task in bugtasks]
+        data = []
+        for bug in bugs:
+            bugtask = bug.default_bugtask
+            different_pillars = related_bug and (
+                set(bug.affected_pillars).isdisjoint(
+                    related_bug.affected_pillars)) or False
+            data.append({
+                'id': bug_id,
+                'information_type': bug.information_type.title,
+                'is_private':
+                    bug.information_type in PRIVATE_INFORMATION_TYPES,
+                'importance': bugtask.importance.title,
+                'importance_class': 'importance' + bugtask.importance.name,
+                'status': bugtask.status.title,
+                'status_class': 'status' + bugtask.status.name,
+                'bug_summary': bug.title,
+                'description': bug.description,
+                'bug_url': canonical_url(bugtask),
+                'different_pillars': different_pillars})
+        return data
+
+    def createBug(self, owner, title, description, target,
+                  security_related=None, private=None, tags=None):
+        """See `IMaloneApplication`."""
+        if security_related is None and private is None:
+            # Nothing to adapt, let BugSet.createBug() choose the default.
+            information_type = None
+        else:
+            information_type = convert_to_information_type(
+                private, security_related)
         params = CreateBugParams(
             title=title, comment=description, owner=owner,
-            information_type=information_type, tags=tags)
-        if IProduct.providedBy(target):
-            params.setBugTarget(product=target)
-        elif IDistribution.providedBy(target):
-            params.setBugTarget(distribution=target)
-        elif IDistributionSourcePackage.providedBy(target):
-            params.setBugTarget(distribution=target.distribution,
-                                sourcepackagename=target.sourcepackagename)
-        else:
-            raise InvalidBugTargetType(
-                "A bug target must be a Project, a Distribution or a "
-                "DistributionSourcePackage. Got %r." % target)
+            information_type=information_type, tags=tags, target=target)
         return getUtility(IBugSet).createBug(params)
 
     @property

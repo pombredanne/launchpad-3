@@ -298,7 +298,7 @@
 
         <!-- BugTaskSearchParams -->
         <class
-            class="lp.bugs.interfaces.bugtask.BugTaskSearchParams">
+            class="lp.bugs.interfaces.bugtasksearch.BugTaskSearchParams">
             <allow
                 attributes="
                     setTarget
@@ -623,6 +623,14 @@
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsProtected"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
+    <adapter
+        for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        factory=".adapters.bugsubscriptionfilter.bugsubscriptionfilter_to_distribution"/>
+    <adapter
+        for=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
+        provides="lp.registry.interfaces.product.IProduct"
+        factory=".adapters.bugsubscriptionfilter.bugsubscriptionfilter_to_product"/>
 
     <!-- BugMute -->
     <class
@@ -658,7 +666,6 @@
           permission="launchpad.View"
           attributes="
               all_assignees
-              all_pillar_owners_without_bug_supervisors
               also_notified_subscribers
               direct_subscribers
               direct_subscribers_at_all_levels
@@ -969,7 +976,7 @@
         <!-- BugNotificationRecipients provides the following
              attributes/methods in addition. -->
         <allow
-            attributes="subscription_filters addFilter addBugSupervisor addMaintainer"/>
+            attributes="subscription_filters addFilter"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"

@@ -16,10 +16,11 @@ __all__ = [
 
 from logging import info
 import os
+from uuid import uuid4
 
 
 os.environ.setdefault('CELERY_CONFIG_MODULE', 'lp.services.job.celeryconfig')
-from celery.task import task
+from celery.task import Task
 from lazr.jobrunner.celerytask import RunJob
 from storm.zope.interfaces import IZStorm
 import transaction
@@ -70,34 +71,62 @@ class CeleryRunJobIgnoreResult(CeleryRunJob):
     ignore_result = True
 
 
+class FindMissingReady:
+
+    def __init__(self, job_source):
+        from lp.services.job.celeryjob import CeleryRunJob
+        from lazr.jobrunner.celerytask import list_queued
+        self.job_source = job_source
+        self.queue_contents = list_queued(CeleryRunJob.app,
+                                          [job_source.task_queue])
+        self.queued_job_ids = set(task[1][0][0] for task in
+                                  self.queue_contents)
+
+    def find_missing_ready(self):
+        return [job for job in self.job_source.iterReady()
+                if job.job_id not in self.queued_job_ids]
+
+
 def find_missing_ready(job_source):
     """Find ready jobs that are not queued."""
-    from lp.services.job.celeryjob import CeleryRunJob
-    from lazr.jobrunner.celerytask import list_queued
-    queued_job_ids = set(task[1][0][0] for task in list_queued(
-        CeleryRunJob.app, [job_source.task_queue]))
-    return [job for job in job_source.iterReady() if job.job_id not in
-            queued_job_ids]
+    return FindMissingReady(job_source).find_missing_ready()
 
 
-@task
-def run_missing_ready(_no_init=False):
+class RunMissingReady(Task):
     """Task to run any jobs that are ready but not scheduled.
 
     Currently supports only BranchScanJob.
     :param _no_init: For tests.  If True, do not perform the initialization.
     """
-    if not _no_init:
-        task_init('run_missing_ready')
-    with TransactionFreeOperation():
-        count = 0
-        for job in find_missing_ready(BranchScanJob):
-            if not celery_enabled(job.__class__.__name__):
-                continue
-            job.celeryCommitHook(True)
-            count += 1
-        info('Scheduled %d missing jobs.', count)
-        transaction.commit()
+    ignore_result = True
+
+    def run(self, _no_init=False):
+        if not _no_init:
+            task_init('run_missing_ready')
+        with TransactionFreeOperation():
+            count = 0
+            for job in find_missing_ready(BranchScanJob):
+                if not celery_enabled(job.__class__.__name__):
+                    continue
+                job.celeryCommitHook(True)
+                count += 1
+            info('Scheduled %d missing jobs.', count)
+            transaction.commit()
+
+    def apply_async(self, args=None, kwargs=None, task_id=None, publisher=None,
+                    connection=None, router=None, queues=None, **options):
+        """Create a task_id if none is specified.
+
+        Override the quite generic default task_id with one containing
+        the class name.
+
+        See also `celery.task.Task.apply_async()`.
+        """
+        if task_id is None:
+            task_id = '%s_%s' % (self.__class__.__name__, uuid4())
+        return super(RunMissingReady, self).apply_async(
+            args, kwargs, task_id, publisher, connection, router, queues,
+            **options)
 
 
 needs_zcml = True

@@ -151,21 +151,21 @@ class Database:
 
         try:
             fd = open(summary)
-        except IOError, e:
+        except IOError as e:
             if e.errno == 2:
                 raise SummaryMissing, summary
             raise
 
         try:
             message = email.message_from_file(fd)
-        except Exception, e:
+        except Exception as e:
             raise SummaryParseError, '%s: %s' % (summary, str(e))
 
         version = message['format-version']
         if version is None:
             raise SummaryParseError, "%s: Missing Format-Version" % summary
 
-        if version != '2':
+        if version not in ('2', '3'):
             raise SummaryVersionError, "%s: I don't understand version %s" % (summary, version)
 
         bug.originator = message['submitter']
@@ -192,7 +192,7 @@ class Database:
 
         try:
             fd = open(report)
-        except IOError, e:
+        except IOError as e:
             if e.errno == 2:
                 raise ReportMissing, report
             raise
@@ -241,7 +241,7 @@ class Database:
             if process.returncode != 0:
                 raise LogParseFailed(errors)
 
-        except IOError, e:
+        except IOError as e:
             if e.errno == 2:
                 raise LogMissing, log
             raise
@@ -268,7 +268,7 @@ if __name__ == '__main__':
     for bug in Database('/srv/debzilla.no-name-yet.com/debbugs'):
         try:
             print bug, bug.subject
-        except Exception, e:
+        except Exception as e:
             print >>sys.stderr, '%s: %s' % (e.__class__.__name__, str(e))
 
 

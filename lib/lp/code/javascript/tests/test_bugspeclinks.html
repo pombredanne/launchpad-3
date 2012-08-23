@@ -25,10 +25,23 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
 
       <!-- Dependencies -->
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/app/client.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/mustache.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/anim/anim.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/client.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/errors.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/lp.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/testing/mockio.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/activator/activator.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/effects/effects.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/expander.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/extras/extras.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/formwidgets/formwidgets.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/inlineedit/editor.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/lazr/lazr.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/app/picker/picker.js"></script>
+      <script type="text/javascript" src="../../../../../build/js/lp/bugs/bug_picker.js"></script>
 
       <!-- The module under test. -->
       <script type="text/javascript" src="../branch.bugspeclinks.js"></script>
@@ -38,12 +51,25 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
       <!-- The test suite. -->
       <script type="text/javascript" src="test_bugspeclinks.js"></script>
+      <script type="text/javascript" src="../../../bugs/javascript/tests/test_bug_picker.js"></script>
 
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <!-- <li>lp.large_indicator.test</li> -->
-            <li>lp.bugspeclinks.test</li>
+            <li>lp.code.branch.bugspeclinks.test</li>
         </ul>
+        <div id="fixture">
+        </div>
+        <script type="text/x-template" id="bugspec-links">
+            <div id="buglinks" class="actions">
+                <a href="#" id="linkbug" class="pick-bug js-action">
+                    Link to bug report</a>
+                <div id="buglink-list">
+                    <a id="delete-buglink-6"
+                       href="+bug/6/+delete"
+                       class="delete-buglink" title="Remove link"></a>
+                </div>
+            </div>
+        </script>
     </body>
 </html>

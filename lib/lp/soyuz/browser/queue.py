@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'PackageUploadNavigation',
     'QueueItemsView',
     ]
 
@@ -20,12 +21,17 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.registry.model.person import Person
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
     )
 from lp.services.job.model.job import Job
-from lp.services.webapp import LaunchpadView
+from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.webapp import (
+    GetitemNavigation,
+    LaunchpadView,
+    )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.soyuz.enums import (
@@ -44,9 +50,14 @@ from lp.soyuz.interfaces.publishing import name_priority_map
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
     IPackageUploadSet,
+    QueueAdminUnauthorizedError,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.packagecopyjob import PackageCopyJob
+from lp.soyuz.model.queue import PackageUploadSource
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 QUEUE_SIZE = 30
@@ -193,11 +204,6 @@ class QueueItemsView(LaunchpadView):
 
     def loadPackageCopyJobs(self, uploads):
         """Batch-load `PackageCopyJob`s and related information."""
-        # Avoid circular imports.
-        from lp.registry.model.person import Person
-        from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.packagecopyjob import PackageCopyJob
-
         package_copy_jobs = load_related(
             PackageCopyJob, uploads, ['package_copy_job_id'])
         load_related(Archive, package_copy_jobs, ['source_archive_id'])
@@ -211,10 +217,6 @@ class QueueItemsView(LaunchpadView):
         CompletePackageUpload.  This avoids many additional SQL queries
         in the +queue template.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.queue import PackageUploadSource
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
         uploads = list(self.batchnav.currentBatch())
 
         if len(uploads) == 0:
@@ -333,10 +335,12 @@ class QueueItemsView(LaunchpadView):
         # Get a list of components for which the user has rights to
         # override to or from.
         permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
+        component_permissions = permission_set.componentsForQueueAdmin(
             self.context.main_archive, self.user)
         allowed_components = set(
-            permission.component for permission in permissions)
+            permission.component for permission in component_permissions)
+        pocket_permissions = permission_set.pocketsForQueueAdmin(
+            self.context.main_archive, self.user)
 
         try:
             if section_override:
@@ -383,12 +387,25 @@ class QueueItemsView(LaunchpadView):
             # Sources and binaries are mutually exclusive when it comes to
             # overriding, so only one of these will be set.
             try:
+                for permission in pocket_permissions:
+                    if (permission.pocket == queue_item.pocket and
+                        permission.distroseries in (
+                            None, queue_item.distroseries)):
+                        item_allowed_components = (
+                            queue_item.distroseries.upload_components)
+                else:
+                    item_allowed_components = allowed_components
                 source_overridden = queue_item.overrideSource(
-                    new_component, new_section, allowed_components)
+                    new_component, new_section, item_allowed_components)
+                binary_changes = [{
+                    "component": new_component,
+                    "section": new_section,
+                    "priority": new_priority,
+                    }]
                 binary_overridden = queue_item.overrideBinaries(
-                    new_component, new_section, new_priority,
-                    allowed_components)
-            except QueueInconsistentStateError, info:
+                    binary_changes, item_allowed_components)
+            except (QueueAdminUnauthorizedError,
+                    QueueInconsistentStateError) as info:
                 failure.append("FAILED: %s (%s)" %
                                (queue_item.displayname, info))
                 continue
@@ -409,7 +426,8 @@ class QueueItemsView(LaunchpadView):
 
             try:
                 getattr(self, 'queue_action_' + action)(queue_item)
-            except QueueInconsistentStateError, info:
+            except (QueueAdminUnauthorizedError,
+                    QueueInconsistentStateError) as info:
                 failure.append('FAILED: %s (%s)' %
                                (queue_item.displayname, info))
             else:
@@ -434,12 +452,12 @@ class QueueItemsView(LaunchpadView):
         self.request.response.redirect(url)
 
     def queue_action_accept(self, queue_item):
-        """Reject the queue item passed."""
-        queue_item.acceptFromQueue()
+        """Accept the queue item passed."""
+        queue_item.acceptFromQueue(user=self.user)
 
     def queue_action_reject(self, queue_item):
-        """Accept the queue item passed."""
-        queue_item.rejectFromQueue()
+        """Reject the queue item passed."""
+        queue_item.rejectFromQueue(user=self.user)
 
     def sortedSections(self):
         """Possible sections for the context distroseries.
@@ -453,6 +471,10 @@ class QueueItemsView(LaunchpadView):
     def priorities(self):
         """An iterable of priorities from PackagePublishingPriority."""
         return (priority for priority in PackagePublishingPriority)
+
+
+class PackageUploadNavigation(GetitemNavigation, FileNavigationMixin):
+    usedfor = IPackageUpload
 
 
 class CompletePackageUpload:
@@ -578,6 +600,7 @@ class CompletePackageUpload:
             (self.contains_installer, ("Installer", 'ubuntu-icon')),
             (self.contains_upgrader, ("Upgrader", 'ubuntu-icon')),
             (self.contains_ddtp, (ddtp, 'ubuntu-icon')),
+            (self.contains_uefi, ("Signed UEFI boot loader", 'ubuntu-icon')),
             ]
         return [
             self.composeIcon(*details)

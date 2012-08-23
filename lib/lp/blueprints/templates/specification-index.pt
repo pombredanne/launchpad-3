@@ -136,7 +136,7 @@
             <dl>
               <dt>Implementation:</dt>
               <dd id="implementation">
-                <img tal:attributes="class context/informational/css:select/visible/unseen"
+                <img tal:attributes="class context/informational/css:select/visible/hidden"
                      src="/@@/info" alt="Informational"
                      title="Informational blueprint, no implementation necessary"
                      id="informational-icon"
@@ -162,7 +162,7 @@
             </dl>
 
             <dl id="started-by"
-                tal:attributes="class context/starter/css:select/visible/unseen">
+                tal:attributes="class context/starter/css:select/visible/hidden">
                <dt>Started by</dt>
                <dd>
                  <tal:starter replace="structure context/starter/fmt:link" />
@@ -171,7 +171,7 @@
             </dl>
 
             <dl id="completed-by"
-                tal:attributes="class context/completer/css:select/visible/unseen">
+                tal:attributes="class context/completer/css:select/visible/hidden">
               <dt>Completed by</dt>
               <dd>
                  <tal:completer replace="structure context/completer/fmt:link" />
@@ -310,42 +310,42 @@
     </div>
 
   <script type="text/javascript">
-    LPJS.use('lp.anim', 'lp.ui', 'node', 'widget', function(Y) {
+    LPJS.use('lp.anim', 'lp.deprecated.ui', 'node', 'widget', function(Y) {
 
         Y.on('lp:context:implementation_status:changed', function(e) {
             var icon = Y.one('#informational-icon');
             if (e.new_value == 'Informational') {
-              icon.removeClass('unseen');
+              icon.removeClass('hidden');
             } else {
-              icon.addClass('unseen');
+              icon.addClass('hidden');
             }
         });
         Y.on('lp:context:lifecycle_status:changed', function(e) {
-            Y.lp.ui.update_field('#lifecycle-status', e.new_value);
+            Y.lp.deprecated.ui.update_field('#lifecycle-status', e.new_value);
         });
         Y.on('lp:context:is_started:changed', function(e) {
             var started = Y.one('#started-by');
             if (e.new_value) {
-              started.removeClass('unseen');
+              started.removeClass('hidden');
               started.one('dd').setContent(e.entry.getHTML('starter'));
               Y.lp.anim.green_flash({node:started}).run();
             } else {
-              started.addClass('unseen');
+              started.addClass('hidden');
             }
         });
         Y.on('lp:context:is_complete:changed', function(e) {
             var completed = Y.one('#completed-by');
             if (e.new_value) {
-              completed.removeClass('unseen');
+              completed.removeClass('hidden');
               completed.one('dd').setContent(e.entry.getHTML('completer'));
               Y.lp.anim.green_flash({node:completed}).run();
             } else {
-              completed.addClass('unseen');
+              completed.addClass('hidden');
             }
         });
         Y.on('lp:context:title:changed', function(e) {
             // change the window title and breadcrumb.
-            Y.lp.ui.update_field('ol.breadcrumbs li:last-child', e.new_value);
+            Y.lp.deprecated.ui.update_field('ol.breadcrumbs li:last-child', e.new_value);
             var title = window.document.title;
             title = e.new_value + title.substring(e.old_value.length);
             window.document.title = title;

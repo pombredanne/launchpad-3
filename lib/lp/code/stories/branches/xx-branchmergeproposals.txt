@@ -201,7 +201,8 @@ People who are logged in can perform reviews.
 
     >>> nopriv_browser.open(klingon_proposal)
     >>> nopriv_browser.getLink('Add a review or comment').click()
-    >>> nopriv_browser.getControl(name='field.comment').value = "Don't like it"
+    >>> nopriv_browser.getControl(name='field.comment').value = (
+    ...     "Don't like it")
     >>> nopriv_browser.getControl(name='field.vote').getControl(
     ...     'Disapprove').click()
     >>> nopriv_browser.getControl('Save Comment').click()
@@ -209,7 +210,8 @@ People who are logged in can perform reviews.
     ...     nopriv_browser.contents, 'code-review-votes')
     >>> print extract_text(pending)
     Reviewer                         Review Type  Date Requested Status
-    No Privileges Person (community)                             Disapprove ...
+    No Privileges Person (community)                             Disapprove
+    ...
 
 People can claim reviews for teams of which they are a member.
 
@@ -545,7 +547,7 @@ The section is shown if there are links.
 
     >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
-    Bug #...: Bug for linking Undecided New
+    Related bugs and blueprints: Bug #...: Bug for linking Undecided New
 
 
 Target branch edge cases
@@ -659,7 +661,8 @@ If the review diff is empty, then we say it is empty.
 Preview diff generation status
 ------------------------------
 
-    >>> update = find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    >>> update = find_tag_by_id(
+    ...     nopriv_browser.contents, 'diff-pending-update')
     >>> print extract_text(update)
     Updating diff...
     An updated diff will be available in a few minutes.  Reload to see the
@@ -714,7 +717,7 @@ If a branch with a merge proposal is linked to a bug, the merge proposal
 details are shown on the bug page under the branch link.
 
     >>> login('admin@canonical.com')
-    >>> bug = factory.makeBug(product=fooix)
+    >>> bug = factory.makeBug(target=fooix)
     >>> ignored = bug.linkBranch(proposed, fred)
     >>> bug_url = canonical_url(bug)
     >>> logout()

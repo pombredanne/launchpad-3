@@ -91,16 +91,16 @@ If the Create milestone link is not enabled, the script is not present.
 
 The view also sets the class of the milestone and releases table which can
 be removed by the in-page script. If the product series has no milestones,
-the class table is 'listing unseen'.
+the class table is 'listing hidden'.
 
     >>> ignored = login_person(product.owner)
     >>> view = create_view(series, '+index', principal=product.owner)
     >>> print view.milestone_table_class
-    listing unseen
+    listing hidden
 
     >>> table = find_tag_by_id(view.render(), 'series-simple')
     >>> print table['class']
-    listing unseen
+    listing hidden
 
 When the product series has milestones, the class is just 'listing'.
 
@@ -304,7 +304,7 @@ portion do.
     >>> milestone_two = productseries.newMilestone('0.2', code_name='two')
     >>> specification = factory.makeSpecification(product=product)
     >>> specification.milestone = milestone_one
-    >>> bug = factory.makeBug(product=product)
+    >>> bug = factory.makeBug(target=product)
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone_two
 

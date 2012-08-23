@@ -1,5 +1,5 @@
 #!/usr/bin/python2.6 -S
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Full update process."""
@@ -11,6 +11,10 @@ from optparse import OptionParser
 import subprocess
 import sys
 
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
 from lp.services.scripts import (
     db_options,
     logger,
@@ -19,6 +23,7 @@ from lp.services.scripts import (
 from preflight import (
     KillConnectionsPreflight,
     NoConnectionCheckPreflight,
+    streaming_sync
     )
 import security  # security.py script
 import upgrade  # upgrade.py script
@@ -60,7 +65,7 @@ def run_upgrade(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
-    except SystemExit, x:
+    except SystemExit as x:
         log.fatal("upgrade.py failed [%s]", x)
 
 
@@ -74,7 +79,6 @@ def run_security(options, log):
     options.dryrun = False
     options.revoke = True
     options.owner = 'postgres'
-    options.cluster = True
     security.options = options
     security.log = log
     # Invoke the database security reset process.
@@ -83,12 +87,19 @@ def run_security(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
-    except SystemExit, x:
+    except SystemExit as x:
         log.fatal("security.py failed [%s]", x)
 
 
 def main():
     parser = OptionParser()
+
+    # Unfortunatly, we can't reliably detect streaming replicas so
+    # we pass them in on the command line.
+    parser.add_option(
+        '--standby', dest='standbys', default=[], action="append",
+        metavar='CONN_STR',
+        help="libpq connection string to a hot standby database")
 
     # Add all the command command line arguments.
     db_options(parser)
@@ -112,7 +123,7 @@ def main():
 
     # We initially ignore open connections, as they will shortly be
     # killed.
-    if not NoConnectionCheckPreflight(log).check_all():
+    if not NoConnectionCheckPreflight(log, options.standbys).check_all():
         return 99
 
     #
@@ -136,7 +147,7 @@ def main():
             return pgbouncer_rc
         pgbouncer_down = True
 
-        if not KillConnectionsPreflight(log).check_all():
+        if not KillConnectionsPreflight(log, options.standbys).check_all():
             return 100
 
         log.info("Preflight check succeeded. Starting upgrade.")
@@ -151,7 +162,22 @@ def main():
             return security_rc
         security_run = True
 
-        log.info("All database upgrade steps completed")
+        log.info("All database upgrade steps completed. Waiting for sync.")
+
+        # Increase this timeout once we are confident in the implementation.
+        # We don't want to block rollouts unnecessarily with slow
+        # timeouts and a flaky sync detection implementation.
+        streaming_sync_timeout = 60
+
+        sync = streaming_sync(
+            connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT),
+            streaming_sync_timeout)
+        if sync:
+            log.debug('Streaming replicas in sync.')
+        else:
+            log.error(
+                'Streaming replicas failed to sync after %d seconds.',
+                streaming_sync_timeout)
 
         log.info("Restarting pgbouncer")
         pgbouncer_rc = run_pgbouncer(log, 'start')
@@ -163,7 +189,7 @@ def main():
 
         # We will start seeing connections as soon as pgbouncer is
         # reenabled, so ignore them here.
-        if not NoConnectionCheckPreflight(log).check_all():
+        if not NoConnectionCheckPreflight(log, options.standbys).check_all():
             return 101
 
         log.info("All good. All done.")

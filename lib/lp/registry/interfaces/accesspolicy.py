@@ -40,7 +40,7 @@ class IAccessArtifact(Interface):
 class IAccessArtifactGrant(Interface):
     """A grant for a person or team to access an artifact.
 
-    For example, the reporter of an embargoed security bug has a grant for
+    For example, the reporter of an private security bug has a grant for
     that bug.
     """
 
@@ -79,7 +79,7 @@ class IAccessPolicyGrant(Interface):
     """A grant for a person or team to access all of a policy's artifacts.
 
     For example, the Canonical security team has a grant for Ubuntu's
-    security policy so they can see embargoed security bugs.
+    security policy so they can see private security bugs.
     """
 
     grantee = Attribute("Grantee")
@@ -228,6 +228,9 @@ class IAccessPolicyGrantSource(Interface):
         :param grants: a collection of (`IAccessPolicy`, grantee `IPerson`)
             pairs.
         """
+
+    def revokeByPolicy(policies):
+        """Revoke all `IAccessPolicyGrant` for the policies."""
 
 
 class IAccessPolicyGrantFlatSource(Interface):

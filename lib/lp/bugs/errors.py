@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'BugCannotBePrivate',
-    'InvalidBugTargetType',
     'InvalidDuplicateValue',
 ]
 
@@ -15,11 +14,6 @@ import httplib
 from lazr.restful.declarations import error_status
 
 from lp.app.validators import LaunchpadValidationError
-
-
-@error_status(httplib.BAD_REQUEST)
-class InvalidBugTargetType(Exception):
-    """Bug target's type is not valid."""
 
 
 @error_status(httplib.EXPECTATION_FAILED)

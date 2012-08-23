@@ -288,7 +288,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         # expected error message.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(
-            product=product, information_type=InformationType.PROPRIETARY)
+            target=product, information_type=InformationType.PROPRIETARY)
         self.factory.makeProduct(name='fnord')
         login_celebrity('admin')
         login_person(bug.owner)
@@ -377,13 +377,13 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(
             title='bug title', owner=user,
-            information_type=InformationType.EMBARGOEDSECURITY)
+            information_type=InformationType.PRIVATESECURITY)
         command = PrivateEmailCommand('private', ['no'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug_params.information_type)
+            InformationType.PRIVATESECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 
@@ -409,7 +409,7 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug_params.information_type)
+            InformationType.PRIVATESECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 
@@ -422,23 +422,23 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = InformationTypeEmailCommand(
-            'informationtype', ['unembargoedsecurity'])
+            'informationtype', ['publicsecurity'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(
-            InformationType.UNEMBARGOEDSECURITY, bug_params.information_type)
+            InformationType.PUBLICSECURITY, bug_params.information_type)
         self.assertTrue(IObjectModifiedEvent.providedBy(event))
 
     def test_execute_bug(self):
         bug = self.factory.makeBug()
         login_person(bug.owner)
         command = InformationTypeEmailCommand(
-            'informationtype', ['embargoedsecurity'])
+            'informationtype', ['privatesecurity'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
         self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, bug.information_type)
+            InformationType.PRIVATESECURITY, bug.information_type)
         self.assertTrue(IObjectModifiedEvent.providedBy(event))
 
     def test_execute_bug_params_with_rubbish(self):
@@ -450,18 +450,6 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         self.assertRaises(
             EmailProcessingError, command.execute, bug_params, dummy_event)
-
-    def test_execute_bug_params_with_proprietary(self):
-        user = self.factory.makePerson()
-        login_person(user)
-        bug_params = CreateBugParams(title='bug title', owner=user)
-        command = InformationTypeEmailCommand(
-            'informationtype', ['proprietary'])
-        dummy_event = object()
-        self.assertRaisesWithContent(
-            EmailProcessingError, 'Proprietary bugs are forbidden to be '
-            'filed via the mail interface.', command.execute, bug_params,
-            dummy_event)
 
 
 class SubscribeEmailCommandTestCase(TestCaseWithFactory):
