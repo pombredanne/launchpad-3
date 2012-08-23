@@ -19,7 +19,7 @@ contact, the maintainer will be subscribed to the bug instead.
     http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
 
-Now the reporter and the maintainer are subscribed.
+Now the reporter is subscribed.
 
     >>> from zope.component import getUtility
 
@@ -31,7 +31,7 @@ Now the reporter and the maintainer are subscribed.
     >>> bug = getUtility(IBugSet).get(bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'name12', u'name16']
+    [u'name16']
 
     >>> logout()
 
@@ -80,10 +80,10 @@ which the no-privs is not an explicit subscriber.
     ...
     NotFound:...
 
-Sample Person accesses the bug page of a private bug. He is allowed to
+Foo Bar accesses the bug page of a private bug. He is allowed to
 view the page because he is an explicit subscriber on the bug.
 
-    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/%s" % bug_id)
     >>> print browser.headers["Status"]
     200 Ok
@@ -91,7 +91,7 @@ view the page because he is an explicit subscriber on the bug.
 He now accesses the task page of a task on a private bug; also
 permitted.
 
-    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
     >>> print browser.headers["Status"]
     200 Ok

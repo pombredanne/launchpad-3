@@ -140,7 +140,7 @@ Reporting a package bug.
     >>> bug.private
     True
     >>> sorted(p.name for p in bug.getDirectSubscribers())
-    [u'name12', u'no-priv', u'ubuntu-team']
+    [u'name12', u'no-priv']
     >>> bug.getIndirectSubscribers()
     []
 

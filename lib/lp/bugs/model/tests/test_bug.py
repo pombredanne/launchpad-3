@@ -729,21 +729,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
 
-    def test_setPillarOwnerSubscribed(self):
-        # The pillar owner is subscribed if the bug is marked as
-        # PRIVATESECURITY.
-        bug_owner = self.factory.makePerson(name='bugowner')
-        bug = self.factory.makeBug(owner=bug_owner)
-        with person_logged_in(bug_owner):
-            who = self.factory.makePerson(name='who')
-            bug.transitionToInformationType(
-                InformationType.PRIVATESECURITY, who)
-            subscribers = bug.getDirectSubscribers()
-        naked_bugtask = removeSecurityProxy(bug).default_bugtask
-        self.assertContentEqual(
-            set((naked_bugtask.pillar.owner, bug_owner, who)),
-            subscribers)
-
     def test_structural_bug_supervisor_becomes_direct_on_private(self):
         # If a bug supervisor has a structural subscription to the bug, and
         # the bug is marked as private, the supervisor should get a direct

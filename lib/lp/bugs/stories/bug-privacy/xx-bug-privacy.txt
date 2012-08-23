@@ -56,7 +56,7 @@ Foo Bar sees the private bug he filed.
     ...Ubuntu Linux...
     ...<a...>...BUG-ID...</a>...
 
-Foo Bar and the Ubuntu Team are subscribed to the bug.
+Foo Bar is subscribed to the bug.
 
     >>> from zope.component import getUtility
     >>> from lp.testing import login, logout
@@ -67,7 +67,7 @@ Foo Bar and the Ubuntu Team are subscribed to the bug.
     >>> bug = getUtility(IBugSet).get(bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'name16', u'ubuntu-team']
+    [u'name16']
 
     >>> logout()
 

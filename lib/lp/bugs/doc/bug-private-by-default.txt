@@ -59,4 +59,4 @@ For a security related bug, the security contact or the product owner
 
     >>> sorted(
     ...     sub.name for sub in security_bug_task.bug.getDirectSubscribers())
-    [u'name12', u'no-priv']
+    [u'no-priv']
