@@ -736,6 +736,9 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
         for ap in aps:
             IStore(ap).remove(ap)
         bug = self.factory.makeBug(target=product)
-        self.assertRaises(
-            AssertionError, reconcile_access_for_artifact, bug,
+        expected = (
+            "Pillar(s) %s require an access policy for information type "
+            "Private.") % product.name
+        self.assertRaisesWithContent(
+            AssertionError, expected, reconcile_access_for_artifact, bug,
             InformationType.USERDATA, [product])
