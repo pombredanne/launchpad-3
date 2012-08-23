@@ -41,7 +41,6 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import (
-    IPersonSet,
     PersonVisibility,
     )
 from lp.services.config import config
@@ -72,7 +71,6 @@ from lp.testing.pages import (
     setupBrowser,
     setupBrowserForUser,
     )
-from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -1086,10 +1084,9 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         self.factory.makeCommercialSubscription(product=product)
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        product.setBranchSharingPolicy(
-            BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY, comadmin)
         with person_logged_in(owner):
+            product.setBranchSharingPolicy(
+                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
             branch = self.factory.makeBranch(
                 product=product, owner=owner,
                 information_type=InformationType.PROPRIETARY)
@@ -1102,10 +1099,8 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         self.factory.makeCommercialSubscription(product=product)
-        comadmin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
-        product.setBranchSharingPolicy(
-            BranchSharingPolicy.PROPRIETARY, comadmin)
         with person_logged_in(owner):
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
             branch = self.factory.makeBranch(
                 product=product, owner=owner,
                 information_type=InformationType.PROPRIETARY)

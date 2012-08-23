@@ -300,8 +300,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             title=_('Owner'),
             required=True, readonly=True,
             vocabulary='AllUserTeamsParticipationPlusSelf',
-            description=_("Either yourself or a team you are a member of. "
-                          "This controls who can modify the branch.")))
+            description=_("Either yourself or an exclusive team you are a "
+                          "member of. This controls who can modify the "
+                          "branch.")))
 
     # Distroseries and sourcepackagename are exported together as
     # the sourcepackage.
@@ -996,10 +997,10 @@ class IBranchModerateAttributes(Interface):
         PublicPersonChoice(
             title=_('Review Team'),
             required=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for reviewing proposals and "
-                          "merging into this branch.")))
+            vocabulary='ValidBranchReviewer',
+            description=_("The reviewer of a branch is the person or "
+                          "exclusive team that is responsible for reviewing "
+                          "proposals and merging into this branch.")))
 
     description = exported(
         Text(

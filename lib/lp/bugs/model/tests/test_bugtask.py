@@ -3218,6 +3218,15 @@ class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
         self.assertTrue(
             bugtask.userHasBugSupervisorPrivileges(distroseries.driver))
 
+    def test_commercial_admin_has_no_privileges(self):
+        # Commercial admins have no privileges.
+        pillar = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(pillar)
+        bugtask = self.factory.makeBugTask(target=pillar)
+        commercial_admin = self.factory.makeCommercialAdmin()
+        self.assertFalse(
+            bugtask.userHasBugSupervisorPrivileges(commercial_admin))
+
     def test_random_has_no_privileges(self):
         # Joe Random has no privileges.
         bugtask = self.factory.makeBugTask()

@@ -53,6 +53,7 @@
   font-weight: normal;
   padding: 0;
   color: #666;
+  white-space: normal;
 }
 .yui3-ichoicelist-content .choice-link:hover {
   text-decoration: underline;

@@ -66,6 +66,11 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
@@ -210,6 +215,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
+    information_type = EnumCol(
+        enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
     @cachedproperty
     def subscriptions(self):
@@ -808,6 +815,26 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def __repr__(self):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
+
+    @property
+    def private(self):
+        return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    def userCanView(self, user):
+        """See `ISpecification`."""
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
+            return True
+        if user is None:
+            return False
+        # Temporary: we should access the grant tables instead of
+        # checking if a given user has special roles.
+        # The following is basically copied from
+        # EditSpecificationByRelatedPeople.checkAuthenticated()
+        return (user.in_admin or
+                user.isOwner(self.target) or
+                user.isOneOfDrivers(self.target) or
+                user.isOneOf(
+                    self, ['owner', 'drafter', 'assignee', 'approver']))
 
 
 class HasSpecificationsMixin:
