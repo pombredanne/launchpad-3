@@ -10,6 +10,7 @@ __all__ = [
     'CodeHostingTestProviderAdapter',
     'create_branch_with_one_revision',
     'deferToThread',
+    'force_stacked_on_url',
     'LoomTestMixin',
     'make_bazaar_branch_and_tree',
     'TestResultWrapper',
@@ -185,6 +186,16 @@ def create_branch_with_one_revision(branch_dir, format=None):
     f.close()
     tree.commit('message')
     return tree
+
+
+def force_stacked_on_url(branch, url):
+    """Set the stacked_on url of a branch without standard error-checking.
+
+    Bazaar 1.17 and up make it harder to create branches with invalid
+    stacking.  It's still worth testing that we don't blow up in the face of
+    them, so this function lets us create them anyway.
+    """
+    branch.get_config().set_user_option('stacked_on_location', url)
 
 
 class TestResultWrapper:
