@@ -59,6 +59,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.product import Product
@@ -1082,6 +1083,21 @@ class TestGarbo(TestCaseWithFactory):
                 BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
             self.assertEqual(
                 BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
+
+    def test_UnusedSharingPolicyPruner(self):
+        # UnusedSharingPolicyPruner destroys the unused sharing details.
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        ap = self.factory.makeAccessPolicy(pillar=product)
+        self.factory.makeAccessPolicyArtifact(policy=ap)
+        self.factory.makeAccessPolicyGrant(policy=ap)
+        all_aps = getUtility(IAccessPolicySource).findByPillar([product])
+        # There are 3 because two are created implicitly when the product is.
+        self.assertEqual(3, all_aps.count())
+        self.runDaily()
+        all_aps = getUtility(IAccessPolicySource).findByPillar([product])
+        self.assertEqual([ap], list(all_aps))
 
 
 class TestGarboTasks(TestCaseWithFactory):
