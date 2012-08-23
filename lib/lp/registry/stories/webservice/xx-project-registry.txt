@@ -188,7 +188,6 @@ Projects are available at their canonical URL on the API virtual host.
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard: None
     screenshots_url: None
-    security_contact_link: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'
     sourceforge_project: None

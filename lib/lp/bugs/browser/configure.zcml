@@ -379,12 +379,6 @@
         class="lp.bugs.browser.bugtask.BugNominationsView"
         permission="zope.Public"
         template="../templates/series-bug-nominations.pt"/>
-    <browser:page
-        name="+securitycontact"
-        for="lp.bugs.interfaces.securitycontact.IHasSecurityContact"
-        class="lp.bugs.browser.securitycontact.SecurityContactEditView"
-        permission="launchpad.Edit"
-        template="../templates/securitycontact-edit.pt"/>
     <adapter
         for="lp.registry.interfaces.product.IProduct"
         provides=".bugtarget.IProductBugConfiguration"

@@ -1,7 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
 """Database classes for implementing distribution items."""
 
 __metaclass__ = type
@@ -236,10 +235,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
-    security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_person_or_closed_team, notNull=False,
-        default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_public_person, notNull=False, default=None)

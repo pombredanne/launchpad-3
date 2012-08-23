@@ -42,7 +42,6 @@ class RealSubscriptionInfo:
         self.bug = bug
         self.subscription = subscription
         self.principal_is_reporter = False
-        self.security_contact_tasks = []
         self.bug_supervisor_tasks = []
 
 
@@ -137,18 +136,14 @@ class RealSubscriptionInfoCollection(
             for info in infos:
                 info.principal_is_reporter = True
 
-    def annotateBugTaskResponsibilities(
-        self, bugtask, pillar, security_contact, bug_supervisor):
-        for principal, collection_name in (
-            (security_contact, 'security_contact_tasks'),
-            (bug_supervisor, 'bug_supervisor_tasks')):
-            if principal is not None:
-                key = (principal, bugtask.bug)
-                infos = self._principal_bug_to_infos.get(key)
-                if infos is not None:
-                    value = {'task': bugtask, 'pillar': pillar}
-                    for info in infos:
-                        getattr(info, collection_name).append(value)
+    def annotateBugTaskResponsibilities(self, bugtask, pillar, bug_supervisor):
+        if bug_supervisor is not None:
+            key = (bug_supervisor, bugtask.bug)
+            infos = self._principal_bug_to_infos.get(key)
+            if infos is not None:
+                value = {'task': bugtask, 'pillar': pillar}
+                for info in infos:
+                    info.bug_supervisor_tasks.append(value)
 
 
 class PersonSubscriptions(object):
@@ -208,18 +203,16 @@ class PersonSubscriptions(object):
             collection.add(
                 subscriber, subscribed_bug, subscription)
         for bug in bugs:
-            # indicate the reporter, bug_supervisor, and security_contact
+            # indicate the reporter and bug_supervisor
             duplicates.annotateReporter(bug, bug.owner)
             direct.annotateReporter(bug, bug.owner)
             for task in bug.bugtasks:
-                # get security_contact and bug_supervisor
+                # Get bug_supervisor.
                 pillar = self._getTaskPillar(task)
                 duplicates.annotateBugTaskResponsibilities(
-                    task, pillar,
-                    pillar.security_contact, pillar.bug_supervisor)
+                    task, pillar, pillar.bug_supervisor)
                 direct.annotateBugTaskResponsibilities(
-                    task, pillar,
-                    pillar.security_contact, pillar.bug_supervisor)
+                    task, pillar, pillar.bug_supervisor)
         return (direct, duplicates)
 
     def _isMuted(self, person, bug):
@@ -297,9 +290,6 @@ class PersonSubscriptions(object):
                 'subscription': get_id(info.subscription),
                 'principal_is_reporter': info.principal_is_reporter,
                 # We won't add bugtasks yet unless we need them.
-                'security_contact_pillars': sorted(set(
-                    get_id(d['pillar']) for d
-                    in info.security_contact_tasks)),
                 'bug_supervisor_pillars': sorted(set(
                     get_id(d['pillar']) for d
                     in info.bug_supervisor_tasks)),

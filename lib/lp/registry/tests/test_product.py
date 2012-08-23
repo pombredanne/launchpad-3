@@ -1,7 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-
 __metaclass__ = type
 
 from cStringIO import StringIO
@@ -262,20 +261,6 @@ class TestProduct(TestCaseWithFactory):
         for policy in EXCLUSIVE_TEAM_POLICY:
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProduct(owner=closed_team)
-
-    def test_security_contact_cannot_be_open_team(self):
-        """Product security contacts cannot be open teams."""
-        for policy in INCLUSIVE_TEAM_POLICY:
-            open_team = self.factory.makeTeam(membership_policy=policy)
-            self.assertRaises(
-                InclusiveTeamLinkageError, self.factory.makeProduct,
-                security_contact=open_team)
-
-    def test_security_contact_can_be_closed_team(self):
-        """Product security contacts can be exclusive teams."""
-        for policy in EXCLUSIVE_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(membership_policy=policy)
-            self.factory.makeProduct(security_contact=closed_team)
 
     def test_private_bugs_on_not_allowed_for_anonymous(self):
         # Anonymous cannot turn on private bugs.
