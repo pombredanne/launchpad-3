@@ -725,3 +725,17 @@ class TestReconcileAccessPolicyArtifacts(TestCaseWithFactory):
         reconcile_access_for_artifact(
             bug, InformationType.USERDATA, [product])
         self.assertPoliciesForBug([(product, InformationType.USERDATA)], bug)
+
+    def test_raises_exception_on_missing_policies(self):
+        # reconcile_access_for_artifact raises an exception if a pillar is
+        # missing an AccessPolicy.
+        product = self.factory.makeProduct()
+        # Creating a product will have created two APs, delete them.
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(aps)
+        for ap in aps:
+            IStore(ap).remove(ap)
+        bug = self.factory.makeBug(target=product)
+        self.assertRaises(
+            ValueError, reconcile_access_for_artifact, bug,
+            InformationType.USERDATA, [product])

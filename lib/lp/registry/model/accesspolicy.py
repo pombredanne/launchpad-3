@@ -65,14 +65,15 @@ def reconcile_access_for_artifact(artifact, information_type, pillars):
         getUtility(IAccessArtifactSource).delete([artifact])
         return
     [abstract_artifact] = getUtility(IAccessArtifactSource).ensure([artifact])
+    aps = getUtility(IAccessPolicySource).find(
+        (pillar, information_type) for pillar in pillars)
+    if len(pillars) != aps.count():
+        raise ValueError("All pillars require access policies.")
 
     # Now determine the existing and desired links, and make them
     # match.
     apasource = getUtility(IAccessPolicyArtifactSource)
-    wanted_links = set(
-        (abstract_artifact, policy) for policy in
-        getUtility(IAccessPolicySource).find(
-            (pillar, information_type) for pillar in pillars))
+    wanted_links = set((abstract_artifact, policy) for policy in aps)
     existing_links = set([
         (apa.abstract_artifact, apa.policy)
         for apa in apasource.findByArtifact([abstract_artifact])])
