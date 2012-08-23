@@ -8,9 +8,13 @@ ALTER TABLE accesspolicy ALTER COLUMN type DROP NOT NULL;
 
 ALTER TABLE accesspolicy DROP CONSTRAINT has_target; 
 
+-- If person is set, then all other columns must be null.
+-- If type is set, then either product or distribution must be set and person must be null.
 ALTER TABLE accesspolicy ADD CONSTRAINT has_target
-    CHECK ((((type is NOT NULL) AND (product IS NULL) <> (distribution IS NULL))
-    OR (person IS NOT NULL AND type is NULL)));
+    CHECK (
+      (type IS NOT NULL AND (product IS NULL <> distribution IS NULL) AND person IS NULL)
+      OR
+      (type IS NULL AND person IS NOT NULL and product IS NULL AND distribution IS NULL) )
 
 ALTER TABLE ONLY accesspolicy
     ADD CONSTRAINT accesspolicy_person_fkey FOREIGN KEY (person) REFERENCES person(id);
