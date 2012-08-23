@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad database policies."""
@@ -18,7 +18,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import logging
 from textwrap import dedent
 
 from storm.cache import (
@@ -305,9 +304,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                     session_data['last_write'] = now
 
     def getReplicationLag(self):
-        """Return the replication lag on the MAIN_STORE slave.
-
-        Lag to other replication sets is currently ignored.
+        """Return the replication lag between the primary and our hot standby.
 
         :returns: timedelta, or None if this isn't a replicated environment,
         """
@@ -328,30 +325,9 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
             # Return the lag.
             return streaming_lag
 
-        # Slave might be a Slony-I slave. We need to ask our slave what
-        # node it is. We can't cache this, as we might have reconnect to
-        # a different slave between requests.
-        slave_node_id = slave_store.execute(
-            "SELECT getlocalnodeid()").get_one()[0]
-        if slave_node_id is None:
-            # Unreplicated. This might be a dev system, or a production
-            # system running on a single database for some reason.
-            return None
-
-        # sl_status gives meaningful results only on the origin node.
-        master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-
-        # Retrieve the cached lag.
-        lag = master_store.execute("""
-            SELECT lag + (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - updated)
-            FROM DatabaseReplicationLag WHERE node=%d
-            """ % slave_node_id).get_one()
-        if lag is None:
-            logging.error(
-                "No data in DatabaseReplicationLag for node %d"
-                % slave_node_id)
-            return timedelta(days=999)
-        return lag[0]
+        # Unreplicated. This might be a dev system, or a production
+        # system running on a single database for some reason.
+        return None
 
 
 def WebServiceDatabasePolicyFactory(request):
