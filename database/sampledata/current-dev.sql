@@ -762,9 +762,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3533,6 +3530,13 @@ ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfilterimportance ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfilterinformationtype DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilterinformationtype ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfiltermute DISABLE TRIGGER ALL;
@@ -9011,6 +9015,13 @@ INSERT INTO potranslation (id, translation) VALUES (668, 'auto, esddsp, artsdsp,
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
+
+
+ALTER TABLE processacceptedbugsjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE processacceptedbugsjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productjob DISABLE TRIGGER ALL;
