@@ -26,7 +26,7 @@ names = [
     # Use the old cssgrids instead of the new cssgrids.
     #'lazr/build/yui/cssgrids/grids.css',
     'cssgrids/grids.css',
-    'build/lazr/assets/skins/sam/lazr.css',
+    'build/ui/assets/skins/sam/lazr.css',
     'build/inlineedit/assets/skins/sam/editor.css',
     'build/autocomplete/assets/skins/sam/autocomplete.css',
     'build/overlay/assets/skins/sam/pretty-overlay.css',
