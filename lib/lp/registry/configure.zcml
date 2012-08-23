@@ -1270,7 +1270,6 @@
                 redeemSubscriptionVoucher
                 releaseroot
                 screenshotsurl
-                security_contact
                 sourceforgeproject
                 summary
                 title
@@ -1581,7 +1580,6 @@
                 official_malone
                 owner
                 package_derivatives_email
-                security_contact
                 summary
                 title"/>
         <require

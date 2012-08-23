@@ -254,11 +254,6 @@ class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         text = 'Report a bug'
         return Link('+filebug', text, icon='bug')
 
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        text = 'Change security contact'
-        return Link('+securitycontact', text, icon='edit')
-
 
 class PillarViewMixin():
     """A mixin for pillar views to populate the json request cache."""
@@ -266,6 +261,7 @@ class PillarViewMixin():
     def initialize(self):
         # Insert close team membership policy data into the json cache.
         # This data is used for the maintainer and driver pickers.
+        super(PillarViewMixin, self).initialize()
         cache = IJSONRequestCache(self.request)
         policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
         team_membership_policy_data = vocabulary_to_choice_edit_items(

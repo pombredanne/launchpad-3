@@ -175,24 +175,6 @@ i18n:domain="malone"
             </tal:edit-bug-supervisor>
           </dd>
         </dl>
-        <dl tal:define="securitycontact context/security_contact">
-          <dt id="bug-security">Security contact:</dt>
-          <dd>
-            <tal:none condition="not:securitycontact">None set</tal:none>
-            <a tal:condition="securitycontact"
-               tal:replace="structure securitycontact/fmt:link">
-              Billy Anderson
-            </a>
-            <tal:edit-securitycontact
-                condition="context/menu:bugs/securitycontact|nothing">
-              <a tal:define="link context/menu:bugs/securitycontact"
-                 tal:condition="link/enabled"
-                 tal:attributes="href link/url; title link/text">
-                <img tal:attributes="alt link/text" src="/@@/edit" />
-              </a>
-            </tal:edit-securitycontact>
-          </dd>
-        </dl>
       </div>
       <tal:menu replace="structure view/@@+related-pages" />
       <tal:do_not_show_portlets_advanced_form

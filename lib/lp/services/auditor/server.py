@@ -8,12 +8,9 @@ __all__ = [
     'AuditorServer',
     ]
 
-import os
 from textwrap import dedent
 
 from auditorfixture.server import AuditorFixture
-
-import lp
 
 
 class AuditorServer(AuditorFixture):
@@ -22,11 +19,6 @@ class AuditorServer(AuditorFixture):
     :ivar service_config: A snippet of .ini that describes the `auditor`
         configuration.
     """
-
-    def __init__(self, port=None, logfile=None, manage_bin=None):
-        manage_bin = os.path.join(
-            os.path.dirname(lp.__file__), '../../bin/auditor-manage')
-        super(AuditorServer, self).__init__(port, logfile, manage_bin)
 
     def setUp(self):
         super(AuditorServer, self).setUp()

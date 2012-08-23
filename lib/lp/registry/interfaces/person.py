@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Person interfaces."""
 
 __metaclass__ = type
@@ -1145,9 +1143,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
     def isAnyPillarOwner():
         """Is this person the owner of any pillar?"""
-
-    def isAnySecurityContact():
-        """Is this person the security contact of any pillar?"""
 
     def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.

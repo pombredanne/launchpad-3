@@ -402,10 +402,10 @@ inserted at the top of the message body.
     >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: support@ubuntu.com
+    To: test@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] [NEW] Zero-day on Frobulator
-    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     *** This bug is a security vulnerability ***
     <BLANKLINE>
@@ -426,10 +426,10 @@ The message is only inserted for new bugs, not for modified bugs:
     >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
-    To: support@ubuntu.com
+    To: test@canonical.com
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug ...] subject
-    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     a comment.
     <BLANKLINE>

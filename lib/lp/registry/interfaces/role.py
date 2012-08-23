@@ -1,7 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213,W0611
 """Interfaces that define common roles associated with objects."""
 
 __metaclass__ = type
@@ -129,9 +128,6 @@ class IPersonRoles(Interface):
 
     def isBugSupervisor(obj):
         """Is this person the bug supervisor of the object?"""
-
-    def isSecurityContact(obj):
-        """Is this person the security contact of the object?"""
 
     def isOneOfDrivers(obj):
         """Is this person on of the drivers of the object?

@@ -501,12 +501,7 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     @property
     def links(self):
-        links = [
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            'filebug',
-            ]
+        links = ['bugsupervisor', 'cve', 'filebug']
         add_subscribe_link(links)
         return links
 
