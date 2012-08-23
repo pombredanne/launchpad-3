@@ -310,7 +310,7 @@
     </div>
 
   <script type="text/javascript">
-    LPJS.use('lp.anim', 'lp.client', 'lp.ui',
+    LPJS.use('lp.anim', 'lp.client', 'lp.deprecated.ui',
              'lp.app.information_type_choice', 'node', 'widget', function(Y) {
         Y.on('domready', function(){
             var privacy_link = Y.one('#privacy-link');
@@ -328,7 +328,7 @@
             }
         });
         Y.on('lp:context:lifecycle_status:changed', function(e) {
-            Y.lp.ui.update_field('#lifecycle-status', e.new_value);
+            Y.lp.deprecated.ui.update_field('#lifecycle-status', e.new_value);
         });
         Y.on('lp:context:is_started:changed', function(e) {
             var started = Y.one('#started-by');
@@ -352,7 +352,7 @@
         });
         Y.on('lp:context:title:changed', function(e) {
             // change the window title and breadcrumb.
-            Y.lp.ui.update_field('ol.breadcrumbs li:last-child', e.new_value);
+            Y.lp.deprecated.ui.update_field('ol.breadcrumbs li:last-child', e.new_value);
             var title = window.document.title;
             title = e.new_value + title.substring(e.old_value.length);
             window.document.title = title;
