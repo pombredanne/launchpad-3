@@ -433,16 +433,6 @@ class TestTeamMembershipPolicyChoiceModerated(TeamMembershipPolicyBase):
             TeamMembershipPolicyError, self.field.validate,
             TeamMembershipPolicy.OPEN)
 
-    def test_closed_team_security_contact_cannot_become_open(self):
-        # The team cannot become open if it is a security contact.
-        self.setUpTeams()
-        self.factory.makeProduct(security_contact=self.team)
-        self.assertFalse(
-            self.field.constraint(TeamMembershipPolicy.OPEN))
-        self.assertRaises(
-            TeamMembershipPolicyError, self.field.validate,
-            TeamMembershipPolicy.OPEN)
-
 
 class TestTeamMembershipPolicyChoiceRestrcted(
                                    TestTeamMembershipPolicyChoiceModerated):

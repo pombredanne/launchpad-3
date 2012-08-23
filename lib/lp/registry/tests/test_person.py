@@ -572,22 +572,6 @@ class TestPerson(TestCaseWithFactory):
         self.assertTrue(owner.isAnyPillarOwner())
         self.assertFalse(person.isAnyPillarOwner())
 
-    def test_product_isAnySecurityContact(self):
-        # Test isAnySecurityContact for products
-        person = self.factory.makePerson()
-        contact = self.factory.makePerson()
-        self.factory.makeProduct(security_contact=contact)
-        self.assertTrue(contact.isAnySecurityContact())
-        self.assertFalse(person.isAnySecurityContact())
-
-    def test_distribution_isAnySecurityContact(self):
-        # Test isAnySecurityContact for distributions
-        person = self.factory.makePerson()
-        contact = self.factory.makePerson()
-        self.factory.makeDistribution(security_contact=contact)
-        self.assertTrue(contact.isAnySecurityContact())
-        self.assertFalse(person.isAnySecurityContact())
-
     def test_has_current_commercial_subscription(self):
         # IPerson.hasCurrentCommercialSubscription() checks for one.
         team = self.factory.makeTeam(

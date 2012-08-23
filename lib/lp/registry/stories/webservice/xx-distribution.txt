@@ -47,7 +47,6 @@ And for every distribution we publish most of its attributes.
     owner_link: u'http://.../~ubuntu-team'
     registrant_link: u'http://.../~registry'
     resource_type_link: u'http://.../#distribution'
-    security_contact_link: None
     self_link: u'http://.../ubuntu'
     series_collection_link: u'http://.../ubuntu/series'
     summary: u'Ubuntu is a new approach to Linux Distribution...'

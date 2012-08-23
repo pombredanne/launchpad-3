@@ -76,7 +76,6 @@ from lp.app.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
-from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
@@ -105,7 +104,6 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_target,
@@ -161,7 +159,6 @@ class IProductBugConfiguration(Interface):
 
     bug_supervisor = copy_field(
         IHasBugSupervisor['bug_supervisor'], readonly=False)
-    security_contact = copy_field(IHasSecurityContact['security_contact'])
     private_bugs = copy_field(
         IProduct['private_bugs'], readonly=False)
     official_malone = copy_field(ILaunchpadUsage['official_malone'])
@@ -184,8 +181,7 @@ def product_to_productbugconfiguration(product):
     return product
 
 
-class ProductConfigureBugTrackerView(BugRoleMixin,
-                                     ProductPrivateBugsMixin,
+class ProductConfigureBugTrackerView(ProductPrivateBugsMixin,
                                      ProductConfigureBase):
     """View class to configure the bug tracker for a project."""
 
@@ -210,15 +206,13 @@ class ProductConfigureBugTrackerView(BugRoleMixin,
             "private_bugs"
             ]
         if check_permission("launchpad.Edit", self.context):
-            field_names.extend(["bug_supervisor", "security_contact"])
+            field_names.append("bug_supervisor")
 
         return field_names
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
         super(ProductConfigureBugTrackerView, self).validate(data)
-        if check_permission("launchpad.Edit", self.context):
-            self.validateSecurityContact(data)
         # enable_bug_expiration is disabled by JavaScript when bugtracker
         # is not 'In Launchpad'. The constraint is enforced here in case the
         # JavaScript fails to activate or run. Note that the bugtracker
@@ -230,12 +224,6 @@ class ProductConfigureBugTrackerView(BugRoleMixin,
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        # security_contact requires a transition method, so it must be
-        # handled separately and removed for the updateContextFromData call
-        # to work as expected.
-        if check_permission("launchpad.Edit", self.context):
-            self.changeSecurityContact(data['security_contact'])
-            del data['security_contact']
         self.updateContextFromData(data)
 
 

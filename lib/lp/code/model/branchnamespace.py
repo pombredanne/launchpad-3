@@ -8,6 +8,7 @@ __all__ = [
     'BranchNamespaceSet',
     'PackageNamespace',
     'PersonalNamespace',
+    'POLICY_ALLOWED_TYPES',
     'ProductNamespace',
     ]
 
