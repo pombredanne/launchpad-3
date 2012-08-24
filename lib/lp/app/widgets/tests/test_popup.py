@@ -13,7 +13,6 @@ from lp.app.widgets.popup import (
     PersonPickerWidget,
     VocabularyPickerWidget,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -170,24 +169,15 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertFalse(person_picker_widget.config['show_remove_button'])
 
     def test_create_team_link(self):
-        # The person picker widget shows a create team link if the feature flag
-        # is on.
+        # The person picker widget shows a create team link.
         field = ITest['test_valid.item']
         bound_field = field.bind(self.context)
-
-        with FeatureFixture(
-                {'disclosure.add-team-person-picker.enabled': 'true'}):
-            picker_widget = PersonPickerWidget(
-                bound_field, self.vocabulary, self.request)
-            picker_widget.show_create_team_link = True
-            self.assertTrue(picker_widget.config['show_create_team'])
-            self.assertTrue(picker_widget.config['enhanced_picker'])
 
         picker_widget = PersonPickerWidget(
             bound_field, self.vocabulary, self.request)
         picker_widget.show_create_team_link = True
-        self.assertFalse(picker_widget.config['show_create_team'])
-        self.assertFalse(picker_widget.config['enhanced_picker'])
+        self.assertTrue(picker_widget.config['show_create_team'])
+        self.assertTrue(picker_widget.config['enhanced_picker'])
 
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.

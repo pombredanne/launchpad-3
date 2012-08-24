@@ -200,7 +200,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -1766,18 +1765,10 @@ class Bug(SQLBase):
                     if pillar.driver in subscribers and pillar != ubuntu:
                         required_subscribers.add(pillar.driver)
                 service = getUtility(IService, 'sharing')
-                subscribers_to_remove = set(service.getPeopleWithoutAccess(
-                    self, subscribers)).difference(required_subscribers)
                 if len(required_subscribers):
                     service.ensureAccessGrants(
                         required_subscribers, who, bugs=[self],
                         ignore_permissions=True)
-                # There is a job to do the unsubscribe, but it's behind a
-                # flag. If that flag is not set, do it manually.
-                if len(subscribers_to_remove) and not bool(
-                    getFeatureFlag('disclosure.unsubscribe_jobs.enabled')):
-                    for s in subscribers_to_remove:
-                        self.unsubscribe(s, who, ignore_permissions=True)
 
         # Add the required subscribers, but not if they are all already
         # subscribed via a team.
@@ -1788,13 +1779,10 @@ class Bug(SQLBase):
 
         self.updateHeat()
 
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the bug. We need to run a job to remove any such
-            # subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                who, [self])
+        # As a result of the transition, some subscribers may no longer
+        # have access to the bug. We need to run a job to remove any such
+        # subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(who, [self])
 
         return True
 

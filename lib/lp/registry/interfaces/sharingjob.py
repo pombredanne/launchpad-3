@@ -83,7 +83,7 @@ class ISharingJobSource(IJobSource):
 class IRemoveArtifactSubscriptionsJobSource(ISharingJobSource):
     """An interface for acquiring IRemoveArtifactSubscriptionsJobs."""
 
-    def create(requestor, bugs=None, grantee=None, pillar=None,
+    def create(requestor, artifacts=None, grantee=None, pillar=None,
                information_types=None):
         """Create a new job to remove subscriptions for the specified
         artifacts.

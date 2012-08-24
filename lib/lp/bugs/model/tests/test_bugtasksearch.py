@@ -67,7 +67,6 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import convert_storm_clause_to_string
-from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
     any,
@@ -2410,8 +2409,6 @@ class BaseGetBugPrivacyFilterTermsTests:
         # People and teams with AccessPolicyGrants can see the bug.
         self.makePrivacyScenario()
 
-        self.useFixture(FeatureFixture(
-            {'disclosure.enhanced_sharing.writable': 'true'}))
         with admin_logged_in():
             for princ in (self.grantee_team, self.grantee_person):
                 getUtility(IService, 'sharing').sharePillarInformation(

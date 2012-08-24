@@ -15,7 +15,6 @@ from lp.app.browser.lazrjs import (
     InlineEditPickerWidget,
     InlinePersonEditPickerWidget,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -118,18 +117,9 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self.assertFalse(widget.config['show_assign_me_button'])
 
-    def test_show_create_team_link_with_feature_flag(self):
-        with FeatureFixture(
-                {'disclosure.add-team-person-picker.enabled': 'true'}):
-            widget = self.getWidget(
-                None, vocabulary='ValidPersonOrTeam', required=True,
-                show_create_team=True)
-            login_person(self.factory.makePerson())
-            self.assertTrue(widget.config['show_create_team'])
-
     def test_show_create_team_link(self):
         widget = self.getWidget(
             None, vocabulary='ValidPersonOrTeam', required=True,
             show_create_team=True)
         login_person(self.factory.makePerson())
-        self.assertFalse(widget.config['show_create_team'])
+        self.assertTrue(widget.config['show_create_team'])

@@ -23,7 +23,6 @@ from lp.app.browser.vocabulary import (
     get_person_picker_entry_metadata,
     vocabulary_filters,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
 
@@ -60,9 +59,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def enhanced_picker(self):
-        flag = getFeatureFlag(
-            "disclosure.add-team-person-picker.enabled")
-        return flag and self.show_create_team_link
+        return self.show_create_team_link
 
     @cachedproperty
     def matches(self):

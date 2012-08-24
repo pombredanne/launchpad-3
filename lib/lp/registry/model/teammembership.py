@@ -65,7 +65,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
@@ -343,13 +342,11 @@ class TeamMembership(SQLBase):
             _fillTeamParticipation(self.person, self.team)
         elif old_status in ACTIVE_STATES:
             _cleanTeamParticipation(self.person, self.team)
-            flag = 'disclosure.unsubscribe_jobs.enabled'
-            if bool(getFeatureFlag(flag)):
-                # A person has left the team so they may no longer have access
-                # to some artifacts shared with the team. We need to run a job
-                # to remove any subscriptions to such artifacts.
-                getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                    user, grantee=self.person)
+            # A person has left the team so they may no longer have access
+            # to some artifacts shared with the team. We need to run a job
+            # to remove any subscriptions to such artifacts.
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                user, grantee=self.person)
         else:
             # Changed from an inactive state to another inactive one, so no
             # need to fill/clean the TeamParticipation table.

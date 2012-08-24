@@ -40,7 +40,6 @@ from lp.app.browser.vocabulary import (
     get_person_picker_entry_metadata,
     vocabulary_filters,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -423,9 +422,7 @@ class InlinePersonEditPickerWidget(InlineEditPickerWidget):
 
     @property
     def show_create_team(self):
-        return (self._show_create_team
-                and getFeatureFlag(
-                    "disclosure.add-team-person-picker.enabled"))
+        return self._show_create_team
 
     def getConfig(self):
         config = super(InlinePersonEditPickerWidget, self).getConfig()

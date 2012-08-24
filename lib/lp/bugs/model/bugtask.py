@@ -141,7 +141,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
@@ -1140,13 +1139,11 @@ class BugTask(SQLBase):
             self.maybeConfirm()
         # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the parent bug. We need to run a job to remove any
-            # such subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                user, [self.bug], pillar=target_before_change)
+        # As a result of the transition, some subscribers may no longer
+        # have access to the parent bug. We need to run a job to remove any
+        # such subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            user, [self.bug], pillar=target_before_change.pillar)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""

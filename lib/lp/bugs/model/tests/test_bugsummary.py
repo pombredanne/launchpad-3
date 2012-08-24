@@ -28,7 +28,6 @@ from lp.registry.enums import (
     SharingPermission,
     )
 from lp.services.database.lpstorm import IMasterStore
-from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -192,11 +191,9 @@ class TestBugSummary(TestCaseWithFactory):
         person_b = self.factory.makePerson()
         person_c = self.factory.makePerson()
         product = self.factory.makeProduct()
-        with FeatureFixture(
-                {'disclosure.enhanced_sharing.writable': 'true'}):
-            getUtility(IService, 'sharing').sharePillarInformation(
-                product, person_c, product.owner,
-                {InformationType.USERDATA: SharingPermission.ALL})
+        getUtility(IService, 'sharing').sharePillarInformation(
+            product, person_c, product.owner,
+            {InformationType.USERDATA: SharingPermission.ALL})
         bug = self.factory.makeBug(target=product, owner=person_b)
 
         bug.subscribe(person=person_a, subscribed_by=person_a)

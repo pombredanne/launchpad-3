@@ -2678,7 +2678,6 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'disclosure.unsubscribe_jobs.enabled': 'true',
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
