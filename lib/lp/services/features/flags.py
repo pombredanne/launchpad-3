@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -286,6 +286,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('private.project.enabled',
+     'boolean',
+     'If true, enabled access to private project registration features.',
+     '',
+     '',
+     'https://dev.launchpad.net/LEP/PrivateProjects'),
+
     ])
 
 # The set of all flag names that are documented.
