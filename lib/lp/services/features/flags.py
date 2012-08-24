@@ -286,7 +286,7 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('private.project.enabled',
+    ('disclosure.private_projects.enabled',
      'boolean',
      'If true, enabled access to private project registration features.',
      '',
