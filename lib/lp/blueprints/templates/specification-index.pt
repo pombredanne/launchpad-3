@@ -315,7 +315,8 @@
         Y.on('domready', function(){
             var privacy_link = Y.one('#privacy-link');
             Y.lp.app.information_type_choice.setup_information_type_choice(
-              privacy_link, new Y.lp.client.Launchpad(), LP.cache.context);
+              privacy_link, new Y.lp.client.Launchpad(), LP.cache.context,
+              null);
             privacy_link.setStyle('display', 'inline');
         });
 
