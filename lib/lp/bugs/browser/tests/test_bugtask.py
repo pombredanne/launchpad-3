@@ -140,12 +140,12 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        # If this test is run in isolation, the query count is 89.
+        # If this test is run in isolation, the query count is 94.
         # Other tests in this TestCase could cache the
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(94)))
+        self.assertThat(recorder, HasQueryCount(LessThan(95)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
