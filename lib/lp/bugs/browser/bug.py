@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
+from lp.app.interfaces.services import IService
 
 __metaclass__ = type
 
@@ -55,7 +56,10 @@ from zope.interface import (
     Interface,
     providedBy,
     )
-from zope.schema import Choice
+from zope.schema import (
+    Bool,
+    Choice,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -69,6 +73,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.product import GhostCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
@@ -455,7 +460,7 @@ class BugViewMixin:
             active = getattr(
                 naked_duplicate.default_bugtask.target, 'active', True)
         return active
-            
+
     @cachedproperty
     def subscription_info(self):
         return IBug(self.context).getSubscriptionInfo()
@@ -826,9 +831,10 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
 
     page_title = label
 
-    field_names = ['information_type']
+    field_names = ['information_type', 'validate_change']
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget('validate_change', GhostCheckBoxWidget)
 
     @property
     def schema(self):
@@ -839,6 +845,11 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
                 vocabulary=InformationTypeVocabulary(types=info_types))
+            # A hidden field used to determine if the new information type
+            # should be validated to ensure the bug does not become invisible
+            # after the change.
+            validate_change = Bool(
+                title=u"Validate change", required=False, default=False)
         return information_type_schema
 
     @property
@@ -861,12 +872,23 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         """Update the bug."""
         data = dict(data)
         bug = self.context.bug
-        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         information_type = data.pop('information_type')
         changed_fields = ['information_type']
+        # When the user first submits the form, validate change is True and
+        # so we check that the bug does not become invisible. If the user
+        # confirms they really want to make the change, validate change is
+        # False and we process the change as normal.
+        if self.request.is_ajax:
+            validate_change = data.get('validate_change', False)
+            if (validate_change and
+                self._bug_will_be_invisible(information_type)):
+                self.request.response.setStatus(400, "Bug Visibility")
+                return ''
+
         user_will_be_subscribed = (
             information_type in PRIVATE_INFORMATION_TYPES and
             bug.getSubscribersForPerson(self.user).is_empty())
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         changed = bug.transitionToInformationType(
             information_type, self.user)
         if changed:
@@ -880,6 +902,18 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
                 return self._getSubscriptionDetails()
             else:
                 return ''
+
+    def _bug_will_be_invisible(self, information_type):
+        # Return true if this bug will be totally invisible if it were to be
+        # change to the specified information type.
+        pillars = self.context.bug.affected_pillars
+        service = getUtility(IService, 'sharing')
+        for pillar in pillars:
+            grant_counts = service.getAccessPolicyGrantCounts(pillar)
+            for count_info in grant_counts:
+                if count_info[1] > 0 and count_info[0] == information_type:
+                    return False
+        return True
 
     def _getSubscriptionDetails(self):
         cache = dict()
