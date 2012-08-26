@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
-from lp.app.interfaces.services import IService
 
 __metaclass__ = type
 
@@ -72,6 +71,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.services import IService
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import GhostCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -881,6 +881,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         if self.request.is_ajax:
             validate_change = data.get('validate_change', False)
             if (validate_change and
+                information_type in PRIVATE_INFORMATION_TYPES and
                 self._bug_will_be_invisible(information_type)):
                 self.request.response.setStatus(400, "Bug Visibility")
                 return ''
