@@ -1000,28 +1000,14 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             self.assertContentEqual(types, view.getInformationTypesToShow())
 
     def test_public_branch(self):
-        # A normal public branch on a public project can only be public.
-        # We don't show information types like Public Security
-        # unless there's a linked branch of that type, as they're not
-        # useful or unconfusing otherwise.
+        # A normal public branch on a public project can only be a public
+        # information type.
         # The model doesn't enforce this, so it's just a UI thing.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
-        self.assertShownTypes([InformationType.PUBLIC], branch)
-
-    def test_public_branch_with_security_bug(self):
-        # A public branch can be set to Public Security if it has a
-        # linked Public Security bug. The project policy doesn't
-        # allow private branches, so Private Security and Private
-        # are unavailable.
-        branch = self.factory.makeBranch(
-            information_type=InformationType.PUBLIC)
-        bug = self.factory.makeBug(
-            information_type=InformationType.PUBLICSECURITY)
-        with admin_logged_in():
-            branch.linkBug(bug, branch.owner)
         self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.PUBLICSECURITY],
+            [InformationType.PUBLIC,
+             InformationType.PUBLICSECURITY],
             branch)
 
     def test_branch_with_disallowed_type(self):
@@ -1031,7 +1017,10 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             information_type=InformationType.PROPRIETARY)
         self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.PROPRIETARY], branch)
+            [InformationType.PUBLIC,
+             InformationType.PUBLICSECURITY,
+             InformationType.PROPRIETARY],
+            branch)
 
     def test_stacked_on_private(self):
         # A branch stacked on a private branch has its choices limited
@@ -1058,24 +1047,10 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             branch.product.setBranchVisibilityTeamPolicy(
                 branch.owner, BranchVisibilityRule.PRIVATE)
         self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.USERDATA], branch)
-
-    def test_private_branch_with_security_bug(self):
-        # Branches on projects that allow private branches can use the
-        # Private Security information type if they have a security
-        # bug linked.
-        branch = self.factory.makeBranch(
-            information_type=InformationType.PUBLIC)
-        with admin_logged_in():
-            branch.product.setBranchVisibilityTeamPolicy(
-                branch.owner, BranchVisibilityRule.PRIVATE)
-        bug = self.factory.makeBug(
-            information_type=InformationType.PUBLICSECURITY)
-        with admin_logged_in():
-            branch.linkBug(bug, branch.owner)
-        self.assertShownTypes(
-            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY, InformationType.USERDATA],
+            [InformationType.PUBLIC,
+             InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY,
+             InformationType.USERDATA],
             branch)
 
     def test_branch_for_project_with_embargoed_and_proprietary(self):
@@ -1138,6 +1113,7 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
             owner=owner, information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             view = create_initialized_view(branch, '+portlet-privacy')
+            edit_url = '/' + branch.unique_name + '/+edit-information-type'
             soup = BeautifulSoup(view.render())
         information_type = soup.find('strong')
         description = soup.find('div', id='information-type-description')
@@ -1145,3 +1121,5 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
             InformationType.USERDATA.title, information_type.renderContents())
         self.assertTextMatchesExpressionIgnoreWhitespace(
             InformationType.USERDATA.description, description.renderContents())
+        self.assertIsNotNone(
+            soup.find('a', id='privacy-link', attrs={'href': edit_url}))

@@ -308,12 +308,18 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'create_queue']
+        'create_queue', 'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
         text = 'Change branch status'
         return Link('+edit-status', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def visibility(self):
+        """Return the 'Set privacy/security' Link."""
+        text = 'Change privacy/security'
+        return Link('+edit-information-type', text)
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
@@ -738,15 +744,14 @@ class BranchEditFormView(LaunchpadEditFormView):
                 InformationType.USERDATA,
                 InformationType.PROPRIETARY,
                 InformationType.EMBARGOED,
-                )
-
-            # We only show Private Security and Public Security
-            # if the branch is linked to a bug with one of those types,
-            # as they're confusing and not generally useful otherwise.
-            # Once Proprietary is fully deployed, it should be added here.
-            hidden_types = (
                 InformationType.PUBLICSECURITY,
                 InformationType.PRIVATESECURITY,
+                )
+
+            # XXX Once Branch Visibility Policies are removed, we only want to
+            # show Private (USERDATA) if the branch is linked to such a bug.
+            hidden_types = (
+                # InformationType.USERDATA,
                 )
             if set(allowed_types).intersection(hidden_types):
                 params = BugTaskSearchParams(
@@ -866,6 +871,12 @@ class BranchEditStatusView(BranchEditFormView):
     """A view for editing the lifecycle status only."""
 
     field_names = ['lifecycle_status']
+
+
+class BranchEditInformationTypeView(BranchEditFormView):
+    """A view for editing the information type only."""
+
+    field_names = ['information_type']
 
 
 class BranchMirrorStatusView(LaunchpadFormView):
