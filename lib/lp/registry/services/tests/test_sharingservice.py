@@ -1071,6 +1071,17 @@ class TestSharingService(TestCaseWithFactory):
             Unauthorized, self.service.revokeAccessGrants,
             product, grantee, product.owner, bugs=[bug])
 
+    def test_revokeAccessGrants_without_bugs_or_branches(self):
+        # The revokeAccessGrants method raises a ValueError if called without
+        # specifying either bugs or branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        grantee = self.factory.makePerson()
+        login_person(owner)
+        self.assertRaises(
+            ValueError, self.service.revokeAccessGrants,
+            product, grantee, product.owner)
+
     def _assert_ensureAccessGrants(self, user, bugs, branches,
                                    grantee=None):
         # Creating access grants works as expected.

@@ -515,6 +515,9 @@ class SharingService:
         if not self.write_enabled:
             raise Unauthorized("This feature is not yet enabled.")
 
+        if not branches and not bugs:
+            raise ValueError("Either bugs or branches must be specified")
+
         artifacts = []
         if branches:
             artifacts.extend(branches)
