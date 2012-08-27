@@ -289,7 +289,7 @@ flag_info = sorted([
     ('disclosure.private_projects.enabled',
      'boolean',
      'If true, enabled access to private project registration features.',
-     '',
+     'disabled',
      '',
      'https://dev.launchpad.net/LEP/PrivateProjects'),
 
