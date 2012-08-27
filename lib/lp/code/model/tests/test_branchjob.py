@@ -176,7 +176,7 @@ class TestBranchScanJob(TestCaseWithFactory):
         self.assertEqual(db_branch.revision_count, 5)
 
     def test_run_with_private_linked_bug(self):
-        """Ensure the job scans the private branch with a private bug."""
+        """Ensure the job scans a branch with a private bug in the revprops."""
         self.useBzrBranches(direct_database=True)
         db_branch, bzr_tree = self.create_branch_and_tree()
         product = self.factory.makeProduct()
