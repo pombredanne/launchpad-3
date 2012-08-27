@@ -65,6 +65,8 @@ from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.model.revision import RevisionSet
 from lp.code.model.tests.test_branch import create_knit
 from lp.codehosting.vfs import branch_id_to_path
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -172,6 +174,22 @@ class TestBranchScanJob(TestCaseWithFactory):
             job.run()
 
         self.assertEqual(db_branch.revision_count, 5)
+
+    def test_run_with_private_linked_bug(self):
+        """Ensure the job scans the private branch with a private bug."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        product = self.factory.makeProduct()
+        private_bug = self.factory.makeBug(
+            target=product, information_type=InformationType.USERDATA)
+        bug_line = 'https://launchpad.net/bugs/%s fixed' % private_bug.id
+        with override_environ(BZR_EMAIL='me@example.com'):
+            bzr_tree.commit(
+                'First commit', rev_id='rev1', revprops={'bugs': bug_line})
+        job = BranchScanJob.create(db_branch)
+        with dbuser(config.branchscanner.dbuser):
+            job.run()
+        self.assertEqual(db_branch.revision_count, 1)
 
 
 class TestBranchUpgradeJob(TestCaseWithFactory):
