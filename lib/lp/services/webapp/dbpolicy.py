@@ -23,6 +23,7 @@ from storm.cache import (
     Cache,
     GenerationalCache,
     )
+from storm.exceptions import DatabaseError as StormDatabaseError
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -80,6 +81,18 @@ def storm_cache_factory():
         assert False, "Unknown storm_cache %s." % dbconfig.storm_cache
 
 
+def ensure_connected(store):
+    """Ensure a Store is connected to a database.
+
+    :raises storm.exceptions.DatabaseError: on failure to connect.
+    """
+    # Register the Store with the transaction manager first. Otherwise,
+    # _ensure_connected() might set the store to disconnected state and
+    # it won't be set to reconnect state at the end of the transaction.
+    store._connection._event.emit('register-transaction')
+    store._connection._ensure_connected()
+
+
 class BaseDatabasePolicy:
     """Base class for database policies."""
     implements(IDatabasePolicy)
@@ -96,8 +109,39 @@ class BaseDatabasePolicy:
             flavor = self.default_flavor
 
         store_name = '%s-%s' % (name, flavor)
-        store = getUtility(IZStorm).get(
-            store_name, 'launchpad:%s' % store_name)
+        try:
+            store = getUtility(IZStorm).get(
+                store_name, 'launchpad:%s' % store_name)
+            ensure_connected(store)  # Only return a usable connection.
+        except StormDatabaseError:
+
+            # A request for a master database connection was made
+            # and failed. Nothing we can do so reraise the exception.
+            if flavor != SLAVE_FLAVOR:
+                raise
+
+            # A request for a slave database connection was made
+            # and failed. Try to return a master connection, this
+            # will be good enough. Note we don't call self.getStore()
+            # recursively because we want to make this attempt even if
+            # the DatabasePolicy normally disallows master database
+            # connections. All this behavior allows read-only requests
+            # to keep working when slave databases are being rebuilt or
+            # updated.
+            try:
+                flavor = MASTER_FLAVOR
+                store_name = '%s-%s' % (name, flavor)
+                store = getUtility(IZStorm).get(
+                    store_name, 'launchpad:%s' % store_name)
+                ensure_connected(store)  # Only return a usable connection.
+            except StormDatabaseError:
+                store = None
+
+            # If we still haven't connected to a suitable database,
+            # reraise the original attempt's exception.
+            if store == None:
+                raise
+
         if not getattr(store, '_lp_store_initialized', False):
             # No existing Store. Create a new one and tweak its defaults.
 
