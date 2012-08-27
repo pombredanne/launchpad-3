@@ -715,14 +715,6 @@ COMMENT ON COLUMN PreviewDiff.source_revision_id IS 'The source branch revision_
 COMMENT ON COLUMN PreviewDiff.target_revision_id IS 'The target branch revision_id used to generate this diff.';
 
 
--- ProcessAcceptedBugsJob
-COMMENT ON TABLE ProcessAcceptedBugsJob IS 'Contains references to jobs for modifying bugs in response to accepting package uploads.';
-COMMENT ON COLUMN ProcessAcceptedBugsJob.job IS 'The Job related to this ProcessAcceptedBugsJob.';
-COMMENT ON COLUMN ProcessAcceptedBugsJob.distroseries IS 'The DistroSeries of the accepted upload.';
-COMMENT ON COLUMN ProcessAcceptedBugsJob.sourcepackagerelease IS 'The SourcePackageRelease of the accepted upload.';
-COMMENT ON COLUMN ProcessAcceptedBugsJob.json_data IS 'A JSON struct containing data for the job.';
-
-
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a ''website'' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
 COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who created this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
