@@ -436,8 +436,8 @@ class BranchMirrorMixin:
         return branch.url
 
 
-class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin,
-                 InformationTypePortletMixin):
+class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
+                 LaunchpadView):
 
     feed_types = (
         BranchFeedLink,
@@ -737,7 +737,7 @@ class BranchEditFormView(LaunchpadEditFormView):
         # If we're stacked on a private branch, only show that
         # information type.
         if self.context.stacked_on and self.context.stacked_on.private:
-            shown_types = set([self.context.stacked_on.information_type])
+            shown_types = {self.context.stacked_on.information_type}
         else:
             shown_types = (
                 InformationType.PUBLIC,
@@ -805,7 +805,8 @@ class BranchEditFormView(LaunchpadEditFormView):
         """See `LaunchpadFormView`"""
         return {self.schema: self.context}
 
-    @action('Change Branch', name='change')
+    @action('Change Branch', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def change_action(self, action, data):
         # If the owner or product has changed, add an explicit notification.
         # We take our own snapshot here to make sure that the snapshot records
@@ -854,9 +855,15 @@ class BranchEditFormView(LaunchpadEditFormView):
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW
 
+        if self.request.is_ajax:
+            return ''
+
     @property
     def next_url(self):
-        return canonical_url(self.context)
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
 
     cancel_url = next_url
 
@@ -1125,9 +1132,9 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
-        owner = data['owner']
         if 'name' in data:
             # Only validate if the name has changed or the owner has changed.
+            owner = data['owner']
             if ((data['name'] != self.context.name) or
                 (owner != self.context.owner)):
                 # We only allow moving within the same branch target for now.

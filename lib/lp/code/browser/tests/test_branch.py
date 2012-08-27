@@ -71,7 +71,10 @@ from lp.testing.pages import (
     setupBrowser,
     setupBrowserForUser,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestBranchMirrorHidden(TestCaseWithFactory):
@@ -985,6 +988,29 @@ class TestBranchEditView(TestCaseWithFactory):
                 canonical_url(branch) + '/+edit', user=owner)
         self.assertRaises(
             LookupError, browser.getControl, "Information Type")
+
+    def test_edit_view_ajax_render(self):
+        # An information type change request is processed as expected when an
+        # XHR request is made to the view.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', form={
+                'field.actions.change': 'Change Branch',
+                'field.information_type': 'PUBLICSECURITY'},
+            **extra)
+        with person_logged_in(person):
+            view = create_view(
+                branch, name='+edit-information-type',
+                request=request, principal=person)
+            request.traversed_objects = [person, branch.product, branch, view]
+            view.initialize()
+            result = view.render()
+            self.assertEqual('', result)
+            self.assertEqual(
+                branch.information_type, InformationType.PUBLICSECURITY)
 
 
 class TestBranchEditViewInformationTypes(TestCaseWithFactory):
