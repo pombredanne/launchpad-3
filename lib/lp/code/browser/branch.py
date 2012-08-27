@@ -317,8 +317,8 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def visibility(self):
-        """Return the 'Set privacy/security' Link."""
-        text = 'Change privacy/security'
+        """Return the 'Set information type' Link."""
+        text = 'Change information type'
         return Link('+edit-information-type', text)
 
     def browse_revisions(self):
