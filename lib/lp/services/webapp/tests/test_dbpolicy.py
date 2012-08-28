@@ -11,6 +11,7 @@ from textwrap import dedent
 from fixtures import Fixture
 from lazr.restful.interfaces import IWebServiceConfiguration
 from storm.exceptions import DisconnectionError
+import transaction
 from zope.component import (
     getAdapter,
     getUtility,
@@ -219,7 +220,6 @@ class LayerDatabasePolicyTestCase(TestCase):
         newInteraction(request)
         try:
             # First, generate a valid session cookie.
-            cookie_name = getUtility(IClientIdManager).namespace
             ISession(request)['whatever']['whatever'] = 'whatever'
             # Then stuff it into the request where we expect to
             # find it. The database policy is only interested if
@@ -273,6 +273,8 @@ class MasterFallbackTestCase(TestCase):
         super(MasterFallbackTestCase, self).tearDown()
 
     def test_can_shutdown_slave_only(self):
+        '''Confirm that this TestCase's test infrastructure works as needed.
+        '''
         master_store = IMasterStore(Person)
         slave_store = ISlaveStore(Person)
 
@@ -285,3 +287,74 @@ class MasterFallbackTestCase(TestCase):
         self.pgbouncer_fixture.stop()
         master_store.get(Person, 2)
         self.assertRaises(DisconnectionError, slave_store.get, Person, 2)
+
+    def test_startup_with_no_slave(self):
+        '''An attempt is made for the first time to connect to a slave.'''
+        self.pgbouncer_fixture.stop()
+
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+
+        # The master and slave Stores are the same object.
+        self.assertIs(master_store, slave_store)
+
+    def test_slave_shutdown_during_transaction(self):
+        '''Slave is shutdown while running, but we can recover.'''
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+
+        self.assertIsNot(master_store, slave_store)
+
+        self.pgbouncer_fixture.stop()
+
+        # The transaction fails if the slave store is used. Robust
+        # processes will handle this and retry (even if just means exit
+        # and wait for the next scheduled invocation).
+        self.assertRaises(DisconnectionError, slave_store.get, Person, 1)
+
+        transaction.abort()
+
+        # But in the next transaction, we get the master Store if we ask
+        # for the slave Store so we can continue.
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+
+        self.assertIs(master_store, slave_store)
+
+    def test_slave_shutdown_between_transactions(self):
+        '''Slave is shutdown in between transactions.'''
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+        self.assertIsNot(master_store, slave_store)
+
+        transaction.abort()
+        self.pgbouncer_fixture.stop()
+
+        # The process doesn't notice the slave going down, and things
+        # will fail the next time the slave is used.
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+        self.assertIsNot(master_store, slave_store)
+        self.assertRaises(DisconnectionError, slave_store.get, Person, 1)
+
+        # But now it has been discovered the socket is no longer
+        # connected to anything, next transaction we get a master
+        # Store when we ask for a slave.
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+        self.assertIs(master_store, slave_store)
+
+    def test_slave_reconnect_after_outage(self):
+        '''The slave is again used once it becomes available.'''
+        self.pgbouncer_fixture.stop()
+
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+        self.assertIs(master_store, slave_store)
+
+        self.pgbouncer_fixture.start()
+        transaction.abort()
+
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+        self.assertIsNot(master_store, slave_store)
