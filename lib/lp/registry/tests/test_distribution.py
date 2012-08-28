@@ -91,20 +91,6 @@ class TestDistribution(TestCaseWithFactory):
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeDistribution(owner=closed_team)
 
-    def test_security_contact_cannot_be_open_team(self):
-        """Distro security contacts cannot be open teams."""
-        for policy in INCLUSIVE_TEAM_POLICY:
-            open_team = self.factory.makeTeam(membership_policy=policy)
-            self.assertRaises(
-                InclusiveTeamLinkageError, self.factory.makeDistribution,
-                security_contact=open_team)
-
-    def test_security_contact_can_be_closed_team(self):
-        """Distro security contacts can be exclusive teams."""
-        for policy in EXCLUSIVE_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(membership_policy=policy)
-            self.factory.makeDistribution(security_contact=closed_team)
-
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
         distro = self.factory.makeDistribution(

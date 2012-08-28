@@ -1,6 +1,5 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
@@ -342,10 +341,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='bug_supervisor', foreignKey='Person',
         storm_validator=validate_person,
         notNull=False,
-        default=None)
-    security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_person_or_closed_team, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
@@ -1731,8 +1726,7 @@ class ProductSet:
                 ['development_focusID'])
             # Only need the objects for canonical_url, no need for validity.
             bulk.load_related(Person, products.values(),
-                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID',
-                 'security_contactID'])
+                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def search_sqlobject(self, text):

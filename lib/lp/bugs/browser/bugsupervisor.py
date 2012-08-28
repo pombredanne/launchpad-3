@@ -16,7 +16,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.services.webapp.menu import structured
 from lp.services.webapp.publisher import canonical_url
@@ -32,7 +31,7 @@ class BugSupervisorEditSchema(Interface):
         IHasBugSupervisor['bug_supervisor'], readonly=False)
 
 
-class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
+class BugSupervisorEditView(LaunchpadEditFormView):
     """Browser view class for editing the bug supervisor."""
 
     schema = BugSupervisorEditSchema

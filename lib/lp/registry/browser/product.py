@@ -619,12 +619,7 @@ class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):
 
     @cachedproperty
     def links(self):
-        links = [
-            'filebug',
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            ]
+        links = ['filebug', 'bugsupervisor', 'cve']
         add_subscribe_link(links)
         links.append('configure_bugtracker')
         return links
@@ -2214,7 +2209,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             self.next_url = self._return_url
 
 
-class ProductAddView(MultiStepView):
+class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title
