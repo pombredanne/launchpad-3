@@ -1120,6 +1120,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         # could affect another package.
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
+        self.factory.makeAccessPolicy(pillar=distro)
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.PROPRIETARY)
@@ -1140,6 +1141,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         sp = self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
         owner = self.factory.makePerson()
+        self.factory.makeAccessPolicy(pillar=distro)
         bug = self.factory.makeBug(
             target=sp.distribution_sourcepackage, owner=owner,
             information_type=InformationType.PROPRIETARY)

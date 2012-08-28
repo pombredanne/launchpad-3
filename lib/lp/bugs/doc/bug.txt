@@ -662,6 +662,7 @@ Proprietary bugs are only allowed to affect a single project or distribution.
     ...     comment="a description of the bug",
     ...     owner=current_user())
     >>> private_bug = firefox.createBug(params)
+    >>> ignored = factory.makeAccessPolicy(pillar=firefox)
     >>> private_bug.transitionToInformationType(
     ...     InformationType.PROPRIETARY, current_user())
     True
@@ -730,6 +731,7 @@ We can also add an allowed distro series source package.
 We cannot add distro series or source package tasks for different distros.
 
     >>> private_bug = tubuntu.createBug(params)
+    >>> ignored = factory.makeAccessPolicy(pillar=tubuntu)
     >>> private_bug.transitionToInformationType(
     ...     InformationType.PROPRIETARY, current_user())
     True
