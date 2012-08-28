@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Classes that implement IBugTask and its related interfaces."""
 
 __metaclass__ = type
@@ -1148,7 +1146,7 @@ class BugTask(SQLBase):
             # have access to the parent bug. We need to run a job to remove any
             # such subscriptions.
             getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                user, [self.bug], pillar=target_before_change)
+                user, [self.bug], pillar=target_before_change.pillar)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1586,10 +1584,6 @@ class BugTaskSet:
             validate_new_target(bug, target)
             pillars.add(target.pillar)
             target_keys.append(bug_target_to_key(target))
-        if bug.information_type == InformationType.PUBLICSECURITY:
-            for pillar in pillars:
-                if pillar.security_contact:
-                    bug.subscribe(pillar.security_contact, owner)
 
         values = [
             (bug, owner, key['product'], key['productseries'],

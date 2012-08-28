@@ -1,7 +1,5 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# vars() causes W0612
-# pylint: disable-msg=E0611,W0212,W0612,C0322
 
 """Implementation classes for a Person."""
 
@@ -1209,30 +1207,6 @@ class Person(
         )
         return rs.one()
 
-    def isAnySecurityContact(self):
-        """See IPerson."""
-        with_sql = [
-            With("teams", SQL("""
-                 SELECT team FROM TeamParticipation
-                 WHERE TeamParticipation.person = %d
-                """ % self.id)),
-            With("owned_entities", SQL("""
-                 SELECT Product.id
-                 FROM Product
-                 WHERE Product.security_contact IN (SELECT team FROM teams)
-                 UNION ALL
-                 SELECT Distribution.id
-                 FROM Distribution
-                 WHERE Distribution.security_contact
-                    IN (SELECT team FROM teams)
-                """))
-           ]
-        store = IStore(self)
-        rs = store.with_(with_sql).using("owned_entities").find(
-            SQL("count(*) > 0"),
-        )
-        return rs.one()
-
     def getAllCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
         if voucher_proxy is None:
@@ -1846,17 +1820,12 @@ class Person(
         if not self.is_team:
             raise ValueError("This method must only be used for teams.")
 
-        # Does this team own or is the security contact for any pillars?
+        # Does this team own any pillars?
         if self.isAnyPillarOwner():
             raise TeamMembershipPolicyError(
                 "The team membership policy cannot be %s because it "
                 "maintains one or more projects, project groups, or "
                 "distributions." % policy)
-        if self.isAnySecurityContact():
-            raise TeamMembershipPolicyError(
-                "The team membership policy cannot be %s because it "
-                "is the security contact for one or more projects, "
-                "project groups, or distributions." % policy)
 
         # Does this team have any PPAs
         for ppa in self.ppas:

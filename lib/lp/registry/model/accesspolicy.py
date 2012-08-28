@@ -378,6 +378,11 @@ class AccessPolicyGrant(StormBase):
         """See `IAccessPolicyGrantSource`."""
         cls.find(grants).remove()
 
+    @classmethod
+    def revokeByPolicy(cls, policies):
+        """See `IAccessPolicyGrantSource`."""
+        cls.findByPolicy(policies).remove()
+
 
 class AccessPolicyGrantFlat(StormBase):
     __storm_table__ = 'AccessPolicyGrantFlat'

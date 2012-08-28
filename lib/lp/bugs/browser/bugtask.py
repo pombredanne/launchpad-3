@@ -2507,11 +2507,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
     def bugsupervisor(self):
         return Link('+bugsupervisor', 'Change bug supervisor', icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        return Link(
-            '+securitycontact', 'Change security contact', icon='edit')
-
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
