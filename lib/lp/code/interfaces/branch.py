@@ -249,10 +249,6 @@ class IBranchPublic(Interface):
             title=_('Date Last Modified'),
             required=True,
             readonly=False))
-    explicitly_private = Bool(
-        title=_("Explicitly Private"),
-        description=_("This branch is explicitly marked private as opposed "
-        "to being private because it is stacked on a private branch."))
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,

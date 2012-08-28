@@ -203,18 +203,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         enum=InformationType, default=InformationType.PUBLIC)
     access_policy = IntCol()
 
-    # These can die after the UI is dropped.
-    @property
-    def explicitly_private(self):
-        return self.private
-
-    @property
-    def transitively_private(self):
-        return self.private
-
     @property
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    explicitly_private = private
 
     def _reconcileAccess(self):
         """Reconcile the branch's sharing information.
