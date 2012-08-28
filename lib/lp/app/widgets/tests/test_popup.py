@@ -177,7 +177,6 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             bound_field, self.vocabulary, self.request)
         picker_widget.show_create_team_link = True
         self.assertTrue(picker_widget.config['show_create_team'])
-        self.assertTrue(picker_widget.config['enhanced_picker'])
 
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.

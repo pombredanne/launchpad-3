@@ -57,10 +57,6 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     # Defaults to self.vocabulary.displayname.
     header = None
 
-    @property
-    def enhanced_picker(self):
-        return self.show_create_team_link
-
     @cachedproperty
     def matches(self):
         """Return a list of matches (as ITokenizedTerm) to whatever the
@@ -149,8 +145,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             vocabulary_filters=self.vocabulary_filters,
             input_element=self.input_id,
             show_widget_id=self.show_widget_id,
-            enhanced_picker=self.enhanced_picker,
-            show_create_team=self.enhanced_picker)
+            show_create_team=self.show_create_team_link)
 
     @property
     def json_config(self):
