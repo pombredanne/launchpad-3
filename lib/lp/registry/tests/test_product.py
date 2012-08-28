@@ -366,7 +366,11 @@ class TestProduct(TestCaseWithFactory):
     def test_open_product_creation_sharing_policies(self):
         # Creating a new open (non-proprietary) product sets the bug and branch
         # sharing polices to public.
-        product = self.factory.makeProduct()
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.MIT])
         self.assertEqual(BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
         self.assertEqual(
             BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
@@ -374,8 +378,11 @@ class TestProduct(TestCaseWithFactory):
     def test_proprietary_product_creation_sharing_policies(self):
         # Creating a new proprietary product sets the bug and branch sharing
         # polices to proprietary.
-        product = self.factory.makeProduct(
-            licenses=[License.OTHER_PROPRIETARY])
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.OTHER_PROPRIETARY])
         self.assertEqual(
             BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
         self.assertEqual(
