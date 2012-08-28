@@ -315,7 +315,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         text = 'Change branch status'
         return Link('+edit-status', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Moderate')
     def visibility(self):
         """Return the 'Set information type' Link."""
         text = 'Change information type'
@@ -741,11 +741,11 @@ class BranchEditFormView(LaunchpadEditFormView):
         else:
             shown_types = (
                 InformationType.PUBLIC,
+                InformationType.PUBLICSECURITY,
+                InformationType.PRIVATESECURITY,
                 InformationType.USERDATA,
                 InformationType.PROPRIETARY,
                 InformationType.EMBARGOED,
-                InformationType.PUBLICSECURITY,
-                InformationType.PRIVATESECURITY,
                 )
 
             # XXX Once Branch Visibility Policies are removed, we only want to
