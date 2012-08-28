@@ -80,7 +80,6 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
-    BranchCannotChangeInformationType,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
@@ -137,6 +136,7 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
@@ -257,10 +257,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         if (self.stacked_on
             and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
             and information_type in PUBLIC_INFORMATION_TYPES):
-            raise BranchCannotChangeInformationType()
+            raise CannotChangeInformationType("Must match stacked-on branch.")
         if (verify_policy
             and information_type not in self.getAllowedInformationTypes(who)):
-            raise BranchCannotChangeInformationType()
+            raise CannotChangeInformationType("Forbidden by project policy.")
         self.information_type = information_type
         self._reconcileAccess()
         if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:

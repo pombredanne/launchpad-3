@@ -54,7 +54,6 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
-    BranchCannotChangeInformationType,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
@@ -120,6 +119,7 @@ from lp.registry.enums import (
     PUBLIC_INFORMATION_TYPES,
     TeamMembershipPolicy,
     )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
@@ -2480,12 +2480,11 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
-        # BranchCannotChangeInformationType is rasied.
+        # CannotChangeInformationType is raised.
         branch = self.factory.makeProductBranch()
         self.assertRaises(
-            BranchCannotChangeInformationType,
-            branch.setPrivate,
-            True, branch.owner)
+            CannotChangeInformationType,
+            branch.setPrivate, True, branch.owner)
 
     def test_public_to_private_for_admins(self):
         # Admins can override the default behaviour and make any public branch
@@ -2521,8 +2520,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
-        # to change the branch to be public raises
-        # BranchCannotChangeInformationType.
+        # to change the branch to be public raises CannotChangeInformationType.
         branch = self.factory.makeProductBranch(
             information_type=InformationType.USERDATA)
         branch.product.setBranchVisibilityTeamPolicy(
@@ -2530,9 +2528,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE_ONLY)
         self.assertRaises(
-            BranchCannotChangeInformationType,
-            branch.setPrivate,
-            False, branch.owner)
+            CannotChangeInformationType,
+            branch.setPrivate, False, branch.owner)
 
     def test_cannot_transition_with_private_stacked_on(self):
         # If a public branch is stacked on a private branch, it can not
@@ -2541,7 +2538,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         branch = self.factory.makeBranch(stacked_on=stacked_on)
         self.assertRaises(
-            BranchCannotChangeInformationType,
+            CannotChangeInformationType,
             branch.transitionToInformationType, InformationType.PUBLIC,
             branch.owner)
 
