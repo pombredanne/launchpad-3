@@ -34,6 +34,10 @@ lib -path 'lib/lp/*/javascript/*' \
 ! -path 'lib/lp/services/*'
 endef
 
+JS_BUILD_DIR := build/js
+YUI_VERSIONS := 3.3.0 3.5.1
+YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
+YUI_DEFAULT := $(JS_BUILD_DIR)/yui-3.3.0
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
 JS_ALL := $(JS_YUI) $(JS_LP)
@@ -131,12 +135,6 @@ logs:
 xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
-check-configs: $(PY)
-	${PY} utilities/check-configs.py
-
-pagetests: build
-	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
-
 codehosting-dir:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
@@ -177,10 +175,24 @@ jsbuild_widget_css: bin/jsbuild
 jsbuild_watch:
 	$(PY) bin/watch_jsbuild
 
+$(JS_BUILD_DIR):
+	mkdir -p $@
+
+$(YUI_BUILDS): $(JS_BUILD_DIR)
+	for V in $(YUI_VERSIONS); do \
+		mkdir $(JS_BUILD_DIR)/yui-$$V $(JS_BUILD_DIR)/yui-$$V-tmp; \
+		unzip -q download-cache/dist/yui_$$V.zip -d $(JS_BUILD_DIR)/yui-$$V-tmp; \
+		mv $(JS_BUILD_DIR)/yui-$$V-tmp/yui/build/* $(JS_BUILD_DIR)/yui-$$V/; \
+		rm -rf $(JS_BUILD_DIR)/yui-$$V-tmp; \
+	done
+
 $(JS_LP): jsbuild_widget_css
 $(JS_YUI):
 	cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
 
+# YUI_DEFAULT is one of the targets in YUI_BUILDS which expands all of our YUI
+# versions for us.
+$(JS_ALL): $(YUI_DEFAULT)
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | bin/lpjsmin > $@
@@ -193,7 +205,7 @@ combobuild:
 	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)
-	bin/combo-rootdir build/js
+	bin/combo-rootdir build/js $(YUI_DEFAULT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -476,7 +488,7 @@ copy-apache-config:
 	if [ ! -d /srv/launchpad.dev ]; then \
 		mkdir /srv/launchpad.dev; \
 		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
-	fi	
+	fi
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad

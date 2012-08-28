@@ -57,6 +57,8 @@ requires the user to enter a bug number.
     >>> browser.getControl('Continue').click()
     >>> printBugBranchLinks(browser)
     Bug #4: Reflow problems with complex page layouts
+    Medium
+    New
 
 Attempting to link to the same bug again gives no error.
 
@@ -93,6 +95,8 @@ Sample person can see it...
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> printBugBranchLinks(browser)
     Bug #4: Reflow problems with complex page layouts
+    Medium
+    New
 
 ... but an anonymous user cannot.
 
@@ -132,6 +136,7 @@ links to a page restricted with the launchpad.AnyPerson permission.
     >>> browser.getLink('~name12/gnome-terminal/scanned').click()
     >>> printBugBranchLinks(browser)
     Bug #11: Make Jokosher use autoaudiosink
+    Undecided New
 
 
 Quick branch registration

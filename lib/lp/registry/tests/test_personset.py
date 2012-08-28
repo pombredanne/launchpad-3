@@ -117,13 +117,13 @@ class TestPersonSet(TestCaseWithFactory):
 
     def test_getByEmail_ignores_unvalidated_emails(self):
         person = self.factory.makePerson()
-        unvalidated_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             'fnord@example.com',
             person,
             email_status=EmailAddressStatus.NEW)
         found = self.person_set.getByEmail('fnord@example.com')
         self.assertTrue(found is None)
-        
+
     def test_getPrecachedPersonsFromIDs(self):
         # The getPrecachedPersonsFromIDs() method should only make one
         # query to load all the extraneous data. Accessing the
@@ -182,6 +182,57 @@ class TestPersonSet(TestCaseWithFactory):
             None,
             self.person_set.getByOpenIDIdentifier(
                 u'http://not.launchpad.dev/+id/%s' % identifier))
+
+    def test_find__accepts_queries_with_or_operator(self):
+        # PersonSet.find() allows to search for OR combined terms.
+        person_one = self.factory.makePerson(name='baz')
+        person_two = self.factory.makeTeam(name='blah')
+        result = list(self.person_set.find('baz OR blah'))
+        self.assertEqual([person_one, person_two], result)
+
+    def test_findPerson__accepts_queries_with_or_operator(self):
+        # PersonSet.findPerson() allows to search for OR combined terms.
+        person_one = self.factory.makePerson(
+            name='baz', email='one@example.org')
+        person_two = self.factory.makePerson(
+            name='blah', email='two@example.com')
+        result = list(self.person_set.findPerson('baz OR blah'))
+        self.assertEqual([person_one, person_two], result)
+        # Note that these OR searches do not work for email addresses.
+        result = list(self.person_set.findPerson(
+            'one@example.org OR two@example.org'))
+        self.assertEqual([], result)
+
+    def test_findPerson__case_insensitive_email_address_search(self):
+        # A search for email addresses is case insensitve.
+        person_one = self.factory.makePerson(
+            name='baz', email='ONE@example.org')
+        person_two = self.factory.makePerson(
+            name='blah', email='two@example.com')
+        result = list(self.person_set.findPerson('one@example.org'))
+        self.assertEqual([person_one], result)
+        result = list(self.person_set.findPerson('TWO@example.com'))
+        self.assertEqual([person_two], result)
+
+    def test_findTeam__accepts_queries_with_or_operator(self):
+        # PersonSet.findTeam() allows to search for OR combined terms.
+        team_one = self.factory.makeTeam(name='baz', email='ONE@example.org')
+        team_two = self.factory.makeTeam(name='blah', email='TWO@example.com')
+        result = list(self.person_set.findTeam('baz OR blah'))
+        self.assertEqual([team_one, team_two], result)
+        # Note that these OR searches do not work for email addresses.
+        result = list(self.person_set.findTeam(
+            'one@example.org OR two@example.org'))
+        self.assertEqual([], result)
+
+    def test_findTeam__case_insensitive_email_address_search(self):
+        # A search for email addresses is case insensitve.
+        team_one = self.factory.makeTeam(name='baz', email='ONE@example.org')
+        team_two = self.factory.makeTeam(name='blah', email='TWO@example.com')
+        result = list(self.person_set.findTeam('one@example.org'))
+        self.assertEqual([team_one], result)
+        result = list(self.person_set.findTeam('TWO@example.com'))
+        self.assertEqual([team_two], result)
 
 
 class TestPersonSetMergeMailingListSubscriptions(TestCaseWithFactory):
@@ -614,9 +665,10 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
         login_person(from_person)
-        job = self.person_set.mergeAsync(from_person, to_person)
+        job = self.person_set.mergeAsync(from_person, to_person, from_person)
         self.assertEqual(from_person, job.from_person)
         self.assertEqual(to_person, job.to_person)
+        self.assertEqual(from_person, job.requester)
 
     def test_mergeProposedInvitedTeamMembership(self):
         # Proposed and invited memberships are declined.

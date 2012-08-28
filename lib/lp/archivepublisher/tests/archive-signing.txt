@@ -382,7 +382,6 @@ file contents.
     >>> from lp.archivepublisher.config import getPubConfig
     >>> archive_root = getPubConfig(cprov.archive).archiveroot
 
-    >>> import os
     >>> suite_path = os.path.join(archive_root, 'dists', test_suite)
     >>> os.makedirs(suite_path)
     >>> release_path = os.path.join(suite_path, 'Release')

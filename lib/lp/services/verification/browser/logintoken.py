@@ -206,14 +206,14 @@ class ClaimTeamView(
 
     schema = ITeam
     field_names = [
-        'teamowner', 'displayname', 'teamdescription', 'subscriptionpolicy',
+        'teamowner', 'displayname', 'description', 'membership_policy',
         'defaultmembershipperiod', 'renewal_policy', 'defaultrenewalperiod']
     label = 'Claim Launchpad team'
-    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget('description', TextAreaWidget, height=10, width=30)
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'membership_policy', LaunchpadRadioWidget, orientation='vertical')
 
     expected_token_types = (LoginTokenType.TEAMCLAIM,)
 
@@ -600,7 +600,7 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
             self.mergeCompleted = False
             return
         getUtility(IPersonSet).mergeAsync(
-            self.dupe, requester, reviewer=requester)
+            self.dupe, requester, requester, reviewer=requester)
         merge_message = _(
             'A merge is queued and is expected to complete in a few minutes.')
         self.request.response.addInfoNotification(merge_message)

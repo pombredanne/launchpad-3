@@ -29,16 +29,16 @@ working comparisons::
 A dbschema Item can also be given to sqlobject's select() method, or any
 of its variants.
 
-    >>> proxied_policy = mark_proxied.subscriptionpolicy
+    >>> proxied_policy = mark_proxied.membership_policy
     >>> type(proxied_policy)
     <type 'zope.security._proxy._Proxy'>
 
     # We don't want this test to fail when we add new person entries, so we
     # compare it against a base number.
-    >>> Person.select(Person.q.subscriptionpolicy==proxied_policy).count() > 60
+    >>> Person.select(Person.q.membership_policy==proxied_policy).count() > 60
     True
-    >>> person = Person.select(Person.q.subscriptionpolicy==proxied_policy)[0]
-    >>> person.subscriptionpolicy.name
+    >>> person = Person.select(Person.q.membership_policy==proxied_policy)[0]
+    >>> person.membership_policy.name
     'MODERATED'
 
 XXX: stevea: 20051018: Rewrite this test to use security proxies directly

@@ -380,8 +380,7 @@ are displayed.
 A link to further PPA searches is also included.
 
     >>> link = browser.getLink(
-    ...     url='http://launchpad.dev/ubuntutest/+ppas?'
-    ...         'name_filter=netapplet')
+    ...     url='http://launchpad.dev/ubuntutest/+ppas?name_filter=netapplet')
     >>> link.text
     "...other untrusted versions of..."
 
@@ -389,10 +388,10 @@ A link to further PPA searches is also included.
 Source package change logs
 --------------------------
 
-/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that lists
-each published version of a package with its changelog entry for that version.
-To navigate to this page, click on the "View full change log" link from
-the index page.
+/$DISTRO/+source/$PACKAGE/+changelog pages contain a version history that
+lists each published version of a package with its changelog entry for that
+version.  To navigate to this page, click on the "View full change log" link
+from the index page.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/")
     >>> browser.getLink("View full change log").click()
@@ -497,8 +496,7 @@ Packages that are not published
 If the package being viewed has no publishing history, a blank table is
 displayed:
 
-    >>> user_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/a52dec/")
+    >>> user_browser.open("http://launchpad.dev/ubuntu/+source/a52dec/")
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'packages_list'))
 
@@ -538,10 +536,7 @@ We will create 4 new versions of 'alsa-utils' sourcepackages.
 
     >>> from zope.component import getUtility
     >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> from lp.testing import login, logout
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
 
     >>> login("foo.bar@canonical.com")
 

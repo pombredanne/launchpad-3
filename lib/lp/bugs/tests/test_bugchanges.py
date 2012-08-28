@@ -51,7 +51,7 @@ class TestBugChanges(TestCaseWithFactory):
             selfgenerated_bugnotifications=True)
         self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
-        self.bug = self.factory.makeBug(product=self.product, owner=self.user)
+        self.bug = self.factory.makeBug(target=self.product, owner=self.user)
         self.bug_task = self.bug.bugtasks[0]
 
         # Add some structural subscribers to show that notifications
@@ -236,7 +236,7 @@ class TestBugChanges(TestCaseWithFactory):
         subscriber = self.factory.makePerson(displayname='Mom')
         # Create the private bug.
         bug = self.factory.makeBug(
-            product=self.product, owner=self.user,
+            target=self.product, owner=self.user,
             information_type=InformationType.USERDATA)
         bug.subscribe(subscriber, self.user)
         self.saveOldChanges(bug=bug)
@@ -1056,8 +1056,7 @@ class TestBugChanges(TestCaseWithFactory):
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
 
-        source_package_bug = self.factory.makeBug(
-            owner=self.user)
+        source_package_bug = self.factory.makeBug(owner=self.user)
         source_package_bug_task = source_package_bug.addTask(
             owner=self.user, target=target)
         self.saveOldChanges(source_package_bug)
@@ -1095,6 +1094,21 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=source_package_bug)
+
+    def test_private_bug_target_change_doesnt_add_everyone(self):
+        # Retargeting a private bug doesn't add all subscribers for the
+        # target.
+        old_product = self.factory.makeProduct()
+        new_product = self.factory.makeProduct()
+        subscriber = self.factory.makePerson()
+        new_product.addBugSubscription(subscriber, subscriber)
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            target=old_product, owner=owner,
+            information_type=InformationType.USERDATA)
+        bug.default_bugtask.transitionToTarget(new_product, owner)
+        self.assertNotIn(subscriber, bug.getDirectSubscribers())
+        self.assertNotIn(subscriber, bug.getIndirectSubscribers())
 
     def test_add_bugwatch_to_bugtask(self):
         # Adding a BugWatch to a bug task records an entry in
@@ -1722,7 +1736,7 @@ class TestBugChanges(TestCaseWithFactory):
         # When a bug is created, activity is recorded and a comment
         # notification is sent.
         new_bug = self.factory.makeBug(
-            product=self.product, owner=self.user, comment="ENOTOWEL")
+            target=self.product, owner=self.user, comment="ENOTOWEL")
 
         expected_activity = {
             'person': self.user,

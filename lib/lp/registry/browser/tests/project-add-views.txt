@@ -135,6 +135,7 @@ When an open source licence is selected, the project is created.
 
     # The form keys have the 'field.' prefix here because the form data will
     # be processed.
+    >>> registrant = factory.makePerson()
     >>> form = {
     ...     'field.displayname': 'Snowdog',
     ...     'field.name': 'snowdog',
@@ -142,6 +143,7 @@ When an open source licence is selected, the project is created.
     ...     'field.summary': 'By-tor and the Snowdog',
     ...     'field.licenses': ['PYTHON'],
     ...     'field.license_info': '',
+    ...     'field.owner': registrant.name,
     ...     'field.__visited_steps__': '%s|%s' % (
     ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
     ...     'field.actions.continue': 'Continue',

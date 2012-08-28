@@ -40,9 +40,9 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
-from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import (
     quote,
@@ -257,10 +257,6 @@ class ImporterHandler:
     #
     # Package stuff
     #
-
-    def ensure_sourcepackagename(self, name):
-        """Import only the sourcepackagename ensuring them."""
-        self.sphandler.ensureSourcePackageName(name)
 
     def preimport_sourcecheck(self, sourcepackagedata):
         """

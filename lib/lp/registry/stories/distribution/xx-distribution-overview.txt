@@ -79,11 +79,7 @@ Others do not have any series so the portlet is not shown.
 The 5 latest derivatives are displayed on the home page
 along with a link to list all of them.
 
-   >>> from lp.services.features.testing import FeatureFixture
-   >>> derivation_enabled = FeatureFixture(
-   ...     {'soyuz.derived_series_ui.enabled': 'on'})
-   >>> with derivation_enabled:
-   ...     anon_browser.open('http://launchpad.dev/ubuntu')
+   >>> anon_browser.open('http://launchpad.dev/ubuntu')
    >>> print extract_text(find_tag_by_id(anon_browser.contents,
    ... 'derivatives'))
    Latest derivatives
@@ -107,11 +103,10 @@ The "All derivatives" link takes you to the derivatives page.
     >>> anon_browser.getLink('All derivatives').url
     'http://launchpad.dev/ubuntu/+derivatives'
 
-If there is no derivatives, the link to the derivatives page is
+If there are no derivatives, the link to the derivatives page is
 not there.
 
-   >>> with derivation_enabled:
-   ...     anon_browser.open('http://launchpad.dev/ubuntutest')
+   >>> anon_browser.open('http://launchpad.dev/ubuntutest')
    >>> print extract_text(find_tag_by_id(anon_browser.contents,
    ... 'derivatives'))
    Latest derivatives

@@ -134,7 +134,7 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
         self.product = self.factory.makeProduct(name='crumb-tester')
         self.product_url = canonical_url(self.product)
         self.product_bugs_url = canonical_url(self.product, rootsite='bugs')
-        product_bug = self.factory.makeBug(product=self.product)
+        product_bug = self.factory.makeBug(target=self.product)
         self.product_bugtask = product_bug.default_bugtask
         self.product_bugtask_url = canonical_url(self.product_bugtask)
         self.source_package = self.factory.makeSourcePackage()

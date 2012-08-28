@@ -84,7 +84,7 @@ time goes on.
     >>> feature_branch = factory.makeAnyBranch(
     ...     owner=eric, product=fooix, name='feature-branch',
     ...     lifecycle_status=BranchLifecycleStatus.EXPERIMENTAL)
-    >>> feature_branch_bug = factory.makeBug(product=fooix,
+    >>> feature_branch_bug = factory.makeBug(target=fooix,
     ...     title='Stuff needs features')
     >>> feature_branch_spec = factory.makeSpecification(product=fooix,
     ...     title='Super Feature X')

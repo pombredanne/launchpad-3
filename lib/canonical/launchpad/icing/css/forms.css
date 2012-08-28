@@ -73,6 +73,9 @@ img[src$=spinner] + button  {
     margin: 0.2em 0 0.5em 0.2em;
     color: #666;
     }
+.subordinate[type="checkbox"] + label + .formHelp {
+    margin-left: 3.4em;
+    }
 .listbox {
     /* a scrolling list of checkboxes or radio buttons */
     border: 1px solid #8cacbb;
@@ -90,7 +93,6 @@ img[src$=spinner] + button  {
 .extra-form-buttons {
     text-align: center;
     padding-top: 1em;
-    white-space: nowrap;
     }
 .extra-form-buttons button {
     margin-right: 0.7em;
@@ -140,7 +142,7 @@ table.listing div.actions {
 table.form, table.extra-options {
     /* Many forms are laid out using tables, with appropriate spacing: */
     /* http://launchpad.dev/firefox/+edit */
-    margin: 1em 0;
+    margin: 1em 0 inherit inherit;
     width: 100%;
     }
 table.form th {
@@ -262,6 +264,12 @@ h1 .yui3-ieditor-errors {
     text-decoration: underline;
     cursor: pointer;
     }
+
+.no-click:hover {
+    text-decoration: none !important;
+    cursor: default !important;
+    }
+    
 .yui3-buglisting-config-util a {
     position: relative;
     top: 3px;

@@ -149,9 +149,20 @@
 
   <class class="lp.blueprints.model.specification.Specification">
     <allow interface="lp.blueprints.interfaces.specification.ISpecificationPublic"/>
-    <!-- We allow any authenticated person to update the whiteboard -->
     <require
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
+        set_attributes="information_type" />
+
+    <require
+        permission="launchpad.LimitedView"
+        interface="lp.blueprints.interfaces.specification.ISpecificationView" />
+
+    <!-- For publicly visible specifications, we allow any authenticated
+         person to update the whiteboard. The whiteboard of restricted
+         specification may only be changed by people who may also view
+         the specification. -->
+    <require
+        permission="launchpad.AnyAllowedPerson"
         set_attributes="whiteboard"/>
     <!-- NB: goals and goalstatus are not to be set directly, it should
          only be set through the proposeGoal / acceptBy / declineBy
@@ -166,11 +177,12 @@
     <require
         permission="launchpad.Admin"
         set_attributes="priority direction_approved"/>
-    <allow
+    <require
+        permission="launchpad.LimitedView"
         attributes="bugs
                     bug_links"/>
     <require
-        permission="launchpad.AnyPerson"
+        permission="launchpad.AnyAllowedPerson"
         attributes="linkBug
                     unlinkBug
                     setWorkItems"/>

@@ -65,14 +65,19 @@ def reconcile_access_for_artifact(artifact, information_type, pillars):
         getUtility(IAccessArtifactSource).delete([artifact])
         return
     [abstract_artifact] = getUtility(IAccessArtifactSource).ensure([artifact])
+    aps = getUtility(IAccessPolicySource).find(
+        (pillar, information_type) for pillar in pillars)
+    missing_pillars = set(pillars) - set([ap.pillar for ap in aps])
+    if len(missing_pillars):
+        pillar_str =  ', '.join([p.name for p in missing_pillars])
+        raise AssertionError(
+            "Pillar(s) %s require an access policy for information type "
+            "%s." % (pillar_str, information_type.title))
 
     # Now determine the existing and desired links, and make them
     # match.
     apasource = getUtility(IAccessPolicyArtifactSource)
-    wanted_links = set(
-        (abstract_artifact, policy) for policy in
-        getUtility(IAccessPolicySource).find(
-            (pillar, information_type) for pillar in pillars))
+    wanted_links = set((abstract_artifact, policy) for policy in aps)
     existing_links = set([
         (apa.abstract_artifact, apa.policy)
         for apa in apasource.findByArtifact([abstract_artifact])])
@@ -334,7 +339,7 @@ class AccessArtifactGrant(StormBase):
 
     @classmethod
     def revokeByArtifact(cls, artifacts, grantees=None):
-        """See `IAccessPolicyGrantSource`."""
+        """See `IAccessArtifactGrantSource`."""
         cls.findByArtifact(artifacts, grantees).remove()
 
 
@@ -377,6 +382,11 @@ class AccessPolicyGrant(StormBase):
     def revoke(cls, grants):
         """See `IAccessPolicyGrantSource`."""
         cls.find(grants).remove()
+
+    @classmethod
+    def revokeByPolicy(cls, policies):
+        """See `IAccessPolicyGrantSource`."""
+        cls.findByPolicy(policies).remove()
 
 
 class AccessPolicyGrantFlat(StormBase):

@@ -26,7 +26,7 @@ from lp.app.browser.vocabulary import (
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.vocabulary import (
@@ -539,7 +539,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         # The results are JSON encoded.
         team = self.factory.makeTeam(
             name='xpting-team',
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
@@ -590,7 +590,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         # The vocab filter is used to filter results.
         team = self.factory.makeTeam(
             name='xpting-team',
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         TestPersonVocabulary.test_persons.extend([team, person])
         product = self.factory.makeProduct(owner=team)

@@ -10,6 +10,7 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
+    'BugInformationTypePortletView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
@@ -44,15 +45,22 @@ from lazr.restful.interfaces import IJSONRequestCache
 from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.event import notify
 from zope.interface import (
     implements,
     Interface,
     providedBy,
     )
-from zope.schema import Choice
+from zope.schema import (
+    Bool,
+    Choice,
+    )
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
@@ -63,7 +71,9 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.services import IService
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.product import GhostCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
@@ -78,9 +88,11 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTask,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTaskSearchParams,
     IFrontPageBugTaskSearch,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -441,6 +453,15 @@ class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
     @cachedproperty
+    def is_duplicate_active(self):
+        active = True
+        if self.context.duplicateof is not None:
+            naked_duplicate = removeSecurityProxy(self.context.duplicateof)
+            active = getattr(
+                naked_duplicate.default_bugtask.target, 'active', True)
+        return active
+
+    @cachedproperty
     def subscription_info(self):
         return IBug(self.context).getSubscriptionInfo()
 
@@ -514,7 +535,12 @@ class BugViewMixin:
         return getUtility(ILaunchBag).bugtask
 
 
-class BugView(InformationTypePortletMixin, LaunchpadView, BugViewMixin):
+class BugInformationTypePortletView(InformationTypePortletMixin,
+                                    LaunchpadView):
+    """View class for the information type portlet."""
+
+
+class BugView(LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -695,6 +721,8 @@ class BugEditViewBase(LaunchpadEditFormView):
         """Return the next URL to call when this call completes."""
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
 
 class BugEditView(BugEditViewBase):
     """The view for the edit bug page."""
@@ -702,71 +730,18 @@ class BugEditView(BugEditViewBase):
     field_names = ['title', 'description', 'tags']
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
-    next_url = None
-
-    _confirm_new_tags = False
-
-    def __init__(self, context, request):
-        """context is always an IBugTask."""
-        BugEditViewBase.__init__(self, context, request)
-        self.notifications = []
 
     @property
     def label(self):
         """The form label."""
         return 'Edit details for bug #%d' % self.context.bug.id
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
-
-    def validate(self, data):
-        """Make sure new tags are confirmed."""
-        if 'tags' not in data:
-            return
-        confirm_action = self.confirm_tag_action
-        if confirm_action.submitted():
-            # Validation is needed only for the change action.
-            return
-        bugtarget = self.context.target
-        newly_defined_tags = set(data['tags']).difference(
-            bugtarget.getUsedBugTags() + bugtarget.official_bug_tags)
-        # Display the confirm button in a notification message. We want
-        # it to be slightly smaller than usual, so we can't simply let
-        # it render itself.
-        confirm_button = (
-            '<input style="font-size: smaller" type="submit"'
-            ' value="%s" name="%s" />' % (
-                confirm_action.label, confirm_action.__name__))
-        for new_tag in newly_defined_tags:
-            self.notifications.append(
-                'The tag "%s" hasn\'t been used by %s before. %s' % (
-                    new_tag, bugtarget.bugtargetdisplayname, confirm_button))
-            self._confirm_new_tags = True
+    page_title = label
 
     @action('Change', name='change')
-    def edit_bug_action(self, action, data):
+    def change_action(self, action, data):
         """Update the bug with submitted changes."""
-        if not self._confirm_new_tags:
-            self.updateBugFromData(data)
-            self.next_url = canonical_url(self.context)
-
-    @action('Create the new tag', name='confirm_tag')
-    def confirm_tag_action(self, action, data):
-        """Define a new tag."""
-        self.actions['field.actions.change'].success(data)
-
-    def render(self):
-        """Render the page with only one submit button."""
-        # The confirmation button shouldn't be rendered automatically.
-        self.actions = [self.edit_bug_action]
-        return BugEditViewBase.render(self)
+        self.updateBugFromData(data)
 
 
 class BugMarkAsDuplicateView(BugEditViewBase):
@@ -781,7 +756,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         super(BugMarkAsDuplicateView, self).setUpFields()
 
         duplicateof_field = DuplicateBug(
-            __name__='duplicateof', title=_('Duplicate Of'), required=False)
+            __name__='duplicateof', title=_('Duplicate Of'), required=True)
 
         self.form_fields = self.form_fields.omit('duplicateof')
         self.form_fields = formlib.form.Fields(duplicateof_field)
@@ -791,7 +766,20 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         """See `LaunchpadFormView.`"""
         return {'duplicateof': self.context.bug.duplicateof}
 
-    @action('Change', name='change')
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
+
+    def _validate(self, action, data):
+        if action.name != 'remove':
+            return super(BugMarkAsDuplicateView, self)._validate(action, data)
+        return []
+
+    @action('Set Duplicate', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def change_action(self, action, data):
         """Update the bug."""
         data = dict(data)
@@ -805,6 +793,33 @@ class BugMarkAsDuplicateView(BugEditViewBase):
             ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
         # Apply other changes.
         self.updateBugFromData(data)
+        return self._duplicate_action_result()
+
+    def shouldShowRemoveButton(self, action):
+        return self.context.bug.duplicateof is not None
+
+    @action('Remove Duplicate', name='remove',
+        condition=shouldShowRemoveButton)
+    def remove_action(self, action, data):
+        """Update the bug."""
+        bug = self.context.bug
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
+        bug.markAsDuplicate(None)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        return self._duplicate_action_result()
+
+    def _duplicate_action_result(self):
+        if self.request.is_ajax:
+            bug = self.context.bug
+            launchbag = getUtility(ILaunchBag)
+            launchbag.add(bug.default_bugtask)
+            view = getMultiAdapter(
+                (bug, self.request),
+                name='+bugtasks-and-nominations-table')
+            view.initialize()
+            return view.render()
+        return None
 
 
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
@@ -816,17 +831,25 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
 
     page_title = label
 
-    field_names = ['information_type']
+    field_names = ['information_type', 'validate_change']
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget('validate_change', GhostCheckBoxWidget)
 
     @property
     def schema(self):
         """Schema for editing the information type of a `IBug`."""
+        info_types = self.context.bug.getAllowedInformationTypes(self.user)
+
         class information_type_schema(Interface):
             information_type_field = copy_field(
                 IBug['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary(self.context))
+                vocabulary=InformationTypeVocabulary(types=info_types))
+            # A hidden field used to determine if the new information type
+            # should be validated to ensure the bug does not become invisible
+            # after the change.
+            validate_change = Bool(
+                title=u"Validate change", required=False, default=False)
         return information_type_schema
 
     @property
@@ -849,12 +872,24 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         """Update the bug."""
         data = dict(data)
         bug = self.context.bug
-        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         information_type = data.pop('information_type')
         changed_fields = ['information_type']
+        # When the user first submits the form, validate change is True and
+        # so we check that the bug does not become invisible. If the user
+        # confirms they really want to make the change, validate change is
+        # False and we process the change as normal.
+        if self.request.is_ajax:
+            validate_change = data.get('validate_change', False)
+            if (validate_change and
+                information_type in PRIVATE_INFORMATION_TYPES and
+                self._bug_will_be_invisible(information_type)):
+                self.request.response.setStatus(400, "Bug Visibility")
+                return ''
+
         user_will_be_subscribed = (
             information_type in PRIVATE_INFORMATION_TYPES and
             bug.getSubscribersForPerson(self.user).is_empty())
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         changed = bug.transitionToInformationType(
             information_type, self.user)
         if changed:
@@ -868,6 +903,18 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
                 return self._getSubscriptionDetails()
             else:
                 return ''
+
+    def _bug_will_be_invisible(self, information_type):
+        # Return true if this bug will be totally invisible if it were to be
+        # change to the specified information type.
+        pillars = self.context.bug.affected_pillars
+        service = getUtility(IService, 'sharing')
+        for pillar in pillars:
+            grant_counts = service.getAccessPolicyGrantCounts(pillar)
+            for count_info in grant_counts:
+                if count_info[1] > 0 and count_info[0] == information_type:
+                    return False
+        return True
 
     def _getSubscriptionDetails(self):
         cache = dict()

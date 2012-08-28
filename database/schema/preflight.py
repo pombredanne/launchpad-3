@@ -8,6 +8,7 @@ __all__ = [
     'DatabasePreflight',
     'KillConnectionsPreflight',
     'NoConnectionCheckPreflight',
+    'streaming_sync',
     ]
 
 import _pythonpath
@@ -27,7 +28,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-import replication.helpers
 from replication.helpers import Node
 import upgrade
 
@@ -72,42 +72,11 @@ class DatabasePreflight:
         master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
-        self.is_slony = replication.helpers.slony_installed(master_con)
-        if self.is_slony:
-            self.nodes = set(
-                replication.helpers.get_all_cluster_nodes(master_con))
-            for node in self.nodes:
-                node.con = node.connect(ISOLATION_LEVEL_AUTOCOMMIT)
-
-            # Create a list of nodes subscribed to the replicated sets we
-            # are modifying.
-            cur = master_con.cursor()
-            cur.execute("""
-                WITH subscriptions AS (
-                    SELECT *
-                    FROM _sl.sl_subscribe
-                    WHERE sub_set = 1 AND sub_active IS TRUE)
-                SELECT sub_provider FROM subscriptions
-                UNION
-                SELECT sub_receiver FROM subscriptions
-                """)
-            lpmain_node_ids = set(row[0] for row in cur.fetchall())
-            self.lpmain_nodes = set(
-                node for node in self.nodes
-                if node.node_id in lpmain_node_ids)
-
-            # Store a reference to the lpmain origin.
-            lpmain_master_node_id = replication.helpers.get_master_node(
-                master_con, 1).node_id
-            self.lpmain_master_node = [
-                node for node in self.lpmain_nodes
-                    if node.node_id == lpmain_master_node_id][0]
-        else:
-            node = Node(None, None, None, True)
-            node.con = master_con
-            self.nodes = set([node])
-            self.lpmain_nodes = self.nodes
-            self.lpmain_master_node = node
+        node = Node(None, None, None, True)
+        node.con = master_con
+        self.nodes = set([node])
+        self.lpmain_nodes = self.nodes
+        self.lpmain_master_node = node
 
         # Add streaming replication standbys, which unfortunately cannot be
         # detected reliably and has to be passed in via the command line.
@@ -257,29 +226,6 @@ class DatabasePreflight:
 
     def check_replication_lag(self):
         """Return False if the replication cluster is badly lagged."""
-        slony_lagged = False
-        if self.is_slony:
-            # Check replication lag on every node just in case there are
-            # disagreements.
-            max_lag = timedelta(seconds=-1)
-            for node in self.nodes:
-                cur = node.con.cursor()
-                cur.execute("""
-                    SELECT current_database(),
-                    max(st_lag_time) AS lag FROM _sl.sl_status
-                """)
-                dbname, lag = cur.fetchone()
-                if lag > max_lag:
-                    max_lag = lag
-                self.log.debug(
-                    "%s reports database lag of %s.", dbname, lag)
-            if max_lag <= MAX_LAG:
-                self.log.info("Slony cluster lag is ok (%s)", max_lag)
-                slony_lagged = False
-            else:
-                self.log.fatal("Slony cluster lag is high (%s)", max_lag)
-                slony_lagged = True
-
         # Do something harmless to force changes to be streamed in case
         # system is idle.
         self.lpmain_master_node.con.cursor().execute(
@@ -291,14 +237,21 @@ class DatabasePreflight:
             max_lag = timedelta(seconds=-1)
             for node in self.nodes:
                 cur = node.con.cursor()
+                # streaming replication only works with 9.1 or later.
+                # Remove this guard when SSO nodes are migrated to 9.1.
                 cur.execute("""
-                    SELECT current_setting('hot_standby') = 'on',
-                    now() - pg_last_xact_replay_timestamp()
+                    select current_setting('server_version') >= '9.1'
                     """)
-                is_standby, lag = cur.fetchone()
-                if is_standby:
-                    self.log.debug2('streaming lag %s', lag)
-                    max_lag = max(max_lag, lag)
+                is_pg91 = cur.fetchone()[0]
+                if is_pg91:
+                    cur.execute("""
+                        SELECT current_setting('hot_standby') = 'on',
+                        now() - pg_last_xact_replay_timestamp()
+                        """)
+                    is_standby, lag = cur.fetchone()
+                    if is_standby:
+                        self.log.debug2('streaming lag %s', lag)
+                        max_lag = max(max_lag, lag)
             if max_lag < MAX_LAG:
                 break
             time.sleep(0.2)
@@ -314,7 +267,7 @@ class DatabasePreflight:
             self.log.debug(
                 "Streaming replication lag is not high (%s)", max_lag)
 
-        return not (slony_lagged or streaming_lagged)
+        return not streaming_lagged
 
     def check_can_sync(self):
         """Return True if a sync event is acknowledged by all nodes.
@@ -322,40 +275,14 @@ class DatabasePreflight:
         We only wait 30 seconds for the sync, because we require the
         cluster to be quiescent.
         """
-        slony_success = True
-        if self.is_slony:
-            slony_success = replication.helpers.sync(30, exit_on_fail=False)
-            if slony_success:
-                self.log.info(
-                    "Replication events are being propagated.")
-            else:
-                self.log.fatal(
-                    "Replication events are not being propagated.")
-                self.log.fatal(
-                    "One or more replication daemons may be down.")
-                self.log.fatal(
-                    "Bounce the replication daemons and check the logs.")
-
-        streaming_success = False
         # PG 9.1 streaming replication, or no replication.
-        #
-        cur = self.lpmain_master_node.con.cursor()
-        # Force a WAL switch, returning the current position.
-        cur.execute('SELECT pg_switch_xlog()')
-        wal_point = cur.fetchone()[0]
-        self.log.debug('WAL at %s', wal_point)
-        start_time = time.time()
-        while time.time() < start_time + 30:
-            cur.execute("""
-                SELECT FALSE FROM pg_stat_replication
-                WHERE replay_location < %s LIMIT 1
-                """, (wal_point,))
-            if cur.fetchone() is None:
-                # All slaves, possibly 0, are in sync.
-                streaming_success = True
-                break
-            time.sleep(0.2)
-        return slony_success and streaming_success
+        streaming_success = streaming_sync(self.lpmain_master_node.con, 30)
+        if streaming_success:
+            self.log.info("Streaming replicas syncing.")
+        else:
+            self.log.fatal("Streaming replicas not syncing.")
+
+        return streaming_success
 
     def report_patches(self):
         """Report what patches are due to be applied from this tree."""
@@ -446,6 +373,32 @@ class KillConnectionsPreflight(DatabasePreflight):
             # terminate.
             time.sleep(seconds_to_pause)
         return all_clear
+
+
+def streaming_sync(con, timeout=None):
+    """Wait for streaming replicas to synchronize with master as of now.
+
+    :param timeout: seconds to wait, None for no timeout.
+
+    :returns: True if sync happened or no streaming replicas
+              False if the timeout was passed.
+    """
+    cur = con.cursor()
+
+    # Force a WAL switch, returning the current position.
+    cur.execute('SELECT pg_switch_xlog()')
+    wal_point = cur.fetchone()[0]
+    start_time = time.time()
+    while timeout is None or time.time() < start_time + timeout:
+        cur.execute("""
+            SELECT FALSE FROM pg_stat_replication
+            WHERE replay_location < %s LIMIT 1
+            """, (wal_point,))
+        if cur.fetchone() is None:
+            # All slaves, possibly 0, are in sync.
+            return True
+        time.sleep(0.2)
+    return False
 
 
 def main():

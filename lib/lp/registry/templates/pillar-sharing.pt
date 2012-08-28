@@ -24,20 +24,56 @@
 </head>
 <body>
   <div metal:fill-slot="main">
-    <p>
-      Proprietary, embargoed security, or user-data information is
-      shared with these users and teams.
+    <h2>What's shared</h2>
+    <p tal:condition="context/has_current_commercial_subscription|nothing">
+      You can choose whether new bugs and branches are public or
+      proprietary by default, and what you can change them to
+      afterwards. Changing the default here won't automatically change
+      existing bugs or branches.
     </p>
+    <p tal:condition="not: context/has_current_commercial_subscription|nothing">
+      Open source projects have limited access to sharing features. You can
+      <a href="https://help.launchpad.net/CommercialHosting">purchase a
+      commercial subscription</a> to enable more privacy options, such as
+      setting bugs and branches to be proprietary by default.
+    </p>
+      <table>
+        <tr id="branch-sharing-policy-row"
+           tal:condition="view/branch_sharing_policies">
+           <td id="branch-sharing-policy">
+             Branches sharing policy:&nbsp;
+             <strong><span class="value"></span></strong>
+             <a class="editicon sprite edit action-icon" href="#"
+                 style="padding-bottom: 0;">Edit</a>
+             <div id="branch-sharing-policy-description" class="formHelp"></div>
+           </td>
+        </tr>
+        <tr id="bug-sharing-policy-row"
+           tal:condition="view/bug_sharing_policies">
+           <td id="bug-sharing-policy">
+             Bugs sharing policy:&nbsp;
+             <strong><span class="value"></span></strong>
+             <a class="editicon sprite edit action-icon" href="#"
+                 style="padding-bottom: 0;">Edit</a>
+             <div id="bug-sharing-policy-description" class="formHelp"></div>
+           </td>
+        </tr>
+      </table>
+    <h2>Who it's shared with</h2>
+    <div id="sharing-header">
+      <p>
+        Everyone can see your project's public information. You can
+        choose who can see the private bugs and branches.
+     </p>
+    </div>
     <ul class="horizontal">
-      <li><a id='add-sharee-link' class='sprite add js-action' href="#">Share
+      <li><a id='add-grantee-link' class='sprite add js-action hidden' href="#">Share
         with someone</a></li>
     </ul>
 
-    <div tal:define="batch_navigator view/sharees">
-      <tal:shareelisting content="structure batch_navigator/@@+sharee-table-view" />
+    <div tal:define="batch_navigator view/grantees">
+      <tal:granteelisting content="structure batch_navigator/@@+grantee-table-view" />
     </div>
-
   </div>
-
 </body>
 </html>

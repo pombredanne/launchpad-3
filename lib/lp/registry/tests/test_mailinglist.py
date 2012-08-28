@@ -12,7 +12,7 @@ from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
     login_celebrity,
@@ -48,7 +48,7 @@ class MailingList_getSubscribers_TestCase(TestCaseWithFactory):
             MailingListAutoSubscribePolicy.ALWAYS)
         pending_member.mailing_list_auto_subscribe_policy = (
             MailingListAutoSubscribePolicy.ALWAYS)
-        self.team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.team.membership_policy = TeamMembershipPolicy.MODERATED
         pending_member.join(self.team)
         self.team.addMember(former_member, reviewer=self.team.teamowner)
         former_member.leave(self.team)

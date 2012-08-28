@@ -1,4 +1,5 @@
-= Claiming an automatically created team =
+Claiming an automatically created team
+======================================
 
 Sometimes (mostly when processing package uploads) Launchpad will create new
 people when in fact it should have created teams.  When that happens, it
@@ -25,14 +26,6 @@ is different...
     >>> [email.email for email in doc_team.guessedemails]
     [u'doc@lists.ubuntu.com']
 
-Non-logged-in users must log in to claim a team.
-
-    >>> browser.open('http://launchpad.dev/~doc')
-    >>> browser.getLink(url='+claimteam').click()
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
 While logged-in users get a link to claim that profile and turn it into a
 team. This works even if the profile's email addresses would normally be
 hidden.
@@ -46,7 +39,8 @@ hidden.
 Now we enter the doc team's email address to continue the process of
 turning that profile into a team.
 
-    >>> user_browser.getControl('Email address').value = 'doc@lists.ubuntu.com'
+    >>> user_browser.getControl(
+    ...     'Email address').value = 'doc@lists.ubuntu.com'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.title
     'Ubuntu Doc Team does not use Launchpad'
@@ -93,7 +87,7 @@ claim process the team's owner.
     Team Owner: No Privileges Person...
 
     >>> user_browser.getControl('Display Name').value = 'Ubuntu Doc Team'
-    >>> user_browser.getControl('Team Description').value = 'The doc team'
+    >>> user_browser.getControl('Description').value = 'The doc team'
     >>> user_browser.getControl('Continue').click()
 
 Once the conversion is finished the user is redirected to the team's home
@@ -109,13 +103,3 @@ page.
     ...     find_tag_by_id(user_browser.contents, 'team-owner'))
     Owner:
     No Privileges Person
-
-
-Trying to access +claimteam for an already active team 404s as you would
-expect it to (we shouldn't be linking to from anywhere):
-
-    >>> user_browser.open("http://launchpad.dev/~doc/+claimteam")
-    Traceback (most recent call last):
-    ...
-    NotFound:...
-

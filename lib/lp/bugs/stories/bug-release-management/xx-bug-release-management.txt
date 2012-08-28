@@ -162,7 +162,7 @@ A bug can be nominated for a product series.
     ...     bug_supervisor=nominater)
     >>> series = factory.makeProductSeries(product=widget,
     ...     name='beta')
-    >>> bug = factory.makeBug(product=widget)
+    >>> bug = factory.makeBug(target=widget)
     >>> nominater_browser = setupBrowser(
     ...     auth='Basic %s:test' % nominater.preferredemail.email)
     >>> logout()

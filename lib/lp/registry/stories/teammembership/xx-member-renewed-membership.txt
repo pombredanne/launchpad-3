@@ -59,13 +59,11 @@ Other users (apart from Karl) can't see that page.
 If we change the team's renewal policy it still won't be possible for
 the user to renew that membership because it's not about to expire.
 
-    >>> team_admin_browser = setupBrowser(auth='Basic mark@example.com:test')
-    >>> team_admin_browser.open(
-    ...     'http://launchpad.dev/~ubuntu-mirror-admins/+edit')
-    >>> team_admin_browser.getControl(
-    ...     'invite them to renew their own membership').selected = True
-    >>> team_admin_browser.getControl('Renewal period').value = '30'
-    >>> team_admin_browser.getControl('Save').click()
+    >>> login('mark@example.com')
+    >>> team = personset.getByName('ubuntu-mirror-admins')
+    >>> team.defaultrenewalperiod = 365
+    >>> team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> logout()
 
     >>> browser.open('http://launchpad.dev/~karl/+expiringmembership/'
     ...              'ubuntu-mirror-admins')
@@ -91,6 +89,7 @@ mech_control TestBrowser voodoo.
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> day_after_tomorrow = now + timedelta(days=2)
 
+    >>> team_admin_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-mirror-admins/+member/karl')
     >>> team_admin_browser.getControl(name='expires').value = ['date']

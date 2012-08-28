@@ -71,18 +71,9 @@ class TestUserCanSetCommentVisibility(TestCaseWithFactory):
     def test_userdata_grant_can_toggle_comment_visibility(self):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
+        bug = self.factory.makeBug(target=product)
         policy = getUtility(IAccessPolicySource).find(
             [(product, InformationType.USERDATA)]).one()
         self.factory.makeAccessPolicyGrant(
             policy=policy, grantor=product.owner, grantee=person)
-        self.assertTrue(bug.userCanSetCommentVisibility(person))
-
-    def test_artifact_grant_can_toggle_comment_visibility(self):
-        person = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-        artifact = self.factory.makeAccessArtifact(concrete=bug)
-        self.factory.makeAccessArtifactGrant(
-            artifact=artifact, grantor=product.owner, grantee=person)
         self.assertTrue(bug.userCanSetCommentVisibility(person))

@@ -8,6 +8,7 @@ __all__ = [
     'BranchNamespaceSet',
     'PackageNamespace',
     'PersonalNamespace',
+    'POLICY_ALLOWED_TYPES',
     'ProductNamespace',
     ]
 
@@ -47,8 +48,11 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.enums import (
     BranchSharingPolicy,
+    FREE_INFORMATION_TYPES,
+    FREE_PRIVATE_INFORMATION_TYPES,
     InformationType,
-    PRIVATE_INFORMATION_TYPES,
+    PersonVisibility,
+    NON_EMBARGOED_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.errors import (
@@ -63,7 +67,6 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
-    PersonVisibility,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -81,27 +84,31 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 
+
 POLICY_ALLOWED_TYPES = {
-    BranchSharingPolicy.PUBLIC: PUBLIC_INFORMATION_TYPES,
-    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY:
-        PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC:
-        PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES,
-    BranchSharingPolicy.PROPRIETARY: PRIVATE_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
+    BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: (
+        NON_EMBARGOED_INFORMATION_TYPES),
+    BranchSharingPolicy.PROPRIETARY: [InformationType.PROPRIETARY],
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY:
+        [InformationType.PROPRIETARY, InformationType.EMBARGOED],
     }
 
 POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.PUBLIC: InformationType.PUBLIC,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
-    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
     }
 
 POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PUBLIC: None,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: None,
-    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.USERDATA,
-    BranchSharingPolicy.PROPRIETARY: InformationType.USERDATA,
+    BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
+    BranchSharingPolicy.PROPRIETARY: InformationType.PROPRIETARY,
+    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.PROPRIETARY,
     }
 
 
@@ -325,7 +332,7 @@ class PersonalNamespace(_BaseNamespace):
         # Private teams get private branches, everyone else gets public ones.
         if (self.owner.is_team
             and self.owner.visibility == PersonVisibility.PRIVATE):
-            return PUBLIC_INFORMATION_TYPES + PRIVATE_INFORMATION_TYPES
+            return FREE_INFORMATION_TYPES
         else:
             return PUBLIC_INFORMATION_TYPES
 
@@ -453,7 +460,7 @@ class ProductNamespace(_BaseNamespace):
         if public:
             types.extend(PUBLIC_INFORMATION_TYPES)
         if private:
-            types.extend(PRIVATE_INFORMATION_TYPES)
+            types.extend(FREE_PRIVATE_INFORMATION_TYPES)
         return types
 
     def getDefaultInformationType(self):

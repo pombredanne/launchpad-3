@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for QueueItemsView."""
@@ -15,6 +15,7 @@ from zope.component import (
     )
 
 from lp.archiveuploader.tests import datadir
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.queue import CompletePackageUpload
 from lp.soyuz.enums import PackageUploadStatus
@@ -23,6 +24,7 @@ from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,
+    login_person,
     logout,
     person_logged_in,
     TestCaseWithFactory,
@@ -50,6 +52,9 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.test_publisher = SoyuzTestPublisher()
         self.test_publisher.prepareBreezyAutotest()
         distribution = self.test_publisher.distroseries.distribution
+        self.second_series = self.factory.makeDistroSeries(
+            distribution=distribution)
+        self.factory.makeComponentSelection(self.second_series, 'main')
         self.main_archive = distribution.getArchiveByComponent('main')
         self.partner_archive = distribution.getArchiveByComponent('partner')
 
@@ -68,6 +73,17 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
             sourcename='main-upload', spr_only=True,
             component='main', changes_file_content=changes_file_content)
         self.main_spr.package_upload.setNew()
+        self.proposed_spr = self.test_publisher.getPubSource(
+            sourcename='proposed-upload', spr_only=True,
+            component='main', changes_file_content=changes_file_content,
+            pocket=PackagePublishingPocket.PROPOSED)
+        self.proposed_spr.package_upload.setNew()
+        self.proposed_series_spr = self.test_publisher.getPubSource(
+            sourcename='proposed-series-upload', spr_only=True,
+            component='main', changes_file_content=changes_file_content,
+            pocket=PackagePublishingPocket.PROPOSED,
+            distroseries=self.second_series)
+        self.proposed_series_spr.package_upload.setNew()
 
         # Define the form that will be used to post to the view.
         self.form = {
@@ -78,26 +94,35 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         # Create a user with queue admin rights for main, and a separate
         # user with queue admin rights for partner (on the partner
         # archive).
-        self.main_queue_admin = self.factory.makePerson(
-            email='main-queue@example.org')
+        self.main_queue_admin = self.factory.makePerson()
         getUtility(IArchivePermissionSet).newQueueAdmin(
             distribution.getArchiveByComponent('main'),
             self.main_queue_admin, self.main_spr.component)
-        self.partner_queue_admin = self.factory.makePerson(
-            email='partner-queue@example.org')
+        self.partner_queue_admin = self.factory.makePerson()
         getUtility(IArchivePermissionSet).newQueueAdmin(
             distribution.getArchiveByComponent('partner'),
             self.partner_queue_admin, self.partner_spr.component)
+
+        # Create users with various pocket queue admin rights.
+        self.proposed_queue_admin = self.factory.makePerson()
+        getUtility(IArchivePermissionSet).newPocketQueueAdmin(
+            self.main_archive, self.proposed_queue_admin,
+            PackagePublishingPocket.PROPOSED)
+        self.proposed_series_queue_admin = self.factory.makePerson()
+        getUtility(IArchivePermissionSet).newPocketQueueAdmin(
+            self.main_archive, self.proposed_series_queue_admin,
+            PackagePublishingPocket.PROPOSED, distroseries=self.second_series)
 
         # We need to commit to ensure the changes file exists in the
         # librarian.
         transaction.commit()
         logout()
 
-    def setupQueueView(self, request):
+    def setupQueueView(self, request, series=None):
         """A helper to create and setup the view for testing."""
-        view = queryMultiAdapter(
-            (self.test_publisher.distroseries, request), name="+queue")
+        if series is None:
+            series = self.test_publisher.distroseries
+        view = queryMultiAdapter((series, request), name="+queue")
         view.setupQueueList()
         view.performQueueAction()
         return view
@@ -105,7 +130,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_main_admin_can_accept_main_upload(self):
         # A person with queue admin access for main
         # can accept uploads to the main archive.
-        login('main-queue@example.org')
+        login_person(self.main_queue_admin)
         self.assertTrue(
             self.main_archive.canAdministerQueue(
                 self.main_queue_admin, self.main_spr.component))
@@ -123,7 +148,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_main_admin_cannot_accept_partner_upload(self):
         # A person with queue admin access for main cannot necessarily
         # accept uploads to partner.
-        login('main-queue@example.org')
+        login_person(self.main_queue_admin)
         self.assertFalse(
             self.partner_archive.canAdministerQueue(
                 self.main_queue_admin, self.partner_spr.component))
@@ -160,7 +185,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_partner_admin_can_accept_partner_upload(self):
         # A person with queue admin access for partner
         # can accept uploads to the partner archive.
-        login('partner-queue@example.org')
+        login_person(self.partner_queue_admin)
         self.assertTrue(
             self.partner_archive.canAdministerQueue(
                 self.partner_queue_admin, self.partner_spr.component))
@@ -178,7 +203,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
     def test_partner_admin_cannot_accept_main_upload(self):
         # A person with queue admin access for partner cannot necessarily
         # accept uploads to main.
-        login('partner-queue@example.org')
+        login_person(self.partner_queue_admin)
         self.assertFalse(
             self.main_archive.canAdministerQueue(
                 self.partner_queue_admin, self.main_spr.component))
@@ -194,6 +219,97 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
             "component(s) 'main')",
             view.request.response.notifications[0].message)
         self.assertEquals(
+            'NEW',
+            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+
+    def test_proposed_admin_can_accept_proposed_upload(self):
+        # A person with queue admin access for proposed can accept uploads
+        # to the proposed pocket for any series.
+        login_person(self.proposed_queue_admin)
+        self.assertTrue(
+            self.main_archive.canAdministerQueue(
+                self.proposed_queue_admin,
+                pocket=PackagePublishingPocket.PROPOSED))
+        for distroseries in self.test_publisher.distroseries.distribution:
+            self.assertTrue(
+                self.main_archive.canAdministerQueue(
+                    self.proposed_queue_admin,
+                    pocket=PackagePublishingPocket.PROPOSED,
+                    distroseries=distroseries))
+        package_upload_set = getUtility(IPackageUploadSet)
+
+        for spr in (self.proposed_spr, self.proposed_series_spr):
+            package_upload_id = spr.package_upload.id
+            self.form['QUEUE_ID'] = [package_upload_id]
+            request = LaunchpadTestRequest(form=self.form)
+            request.method = 'POST'
+            self.setupQueueView(request, series=spr.upload_distroseries)
+
+            self.assertEqual(
+                'DONE', package_upload_set.get(package_upload_id).status.name)
+
+    def test_proposed_admin_cannot_accept_release_upload(self):
+        # A person with queue admin access for proposed cannot necessarly
+        # accept uploads to the release pocket.
+        login_person(self.proposed_queue_admin)
+        self.assertFalse(
+            self.main_archive.canAdministerQueue(
+                self.proposed_queue_admin,
+                pocket=PackagePublishingPocket.RELEASE))
+
+        package_upload_id = self.main_spr.package_upload.id
+        self.form['QUEUE_ID'] = [package_upload_id]
+        request = LaunchpadTestRequest(form=self.form)
+        request.method = 'POST'
+        view = self.setupQueueView(request)
+
+        self.assertEqual(
+            "FAILED: main-upload (You have no rights to accept "
+            "component(s) 'main')",
+            view.request.response.notifications[0].message)
+        self.assertEqual(
+            'NEW',
+            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+
+    def test_proposed_series_admin_can_accept_that_series_upload(self):
+        # A person with queue admin access for proposed for one series can
+        # accept uploads to that series.
+        login_person(self.proposed_series_queue_admin)
+        self.assertTrue(
+            self.main_archive.canAdministerQueue(
+                self.proposed_series_queue_admin,
+                pocket=PackagePublishingPocket.PROPOSED,
+                distroseries=self.second_series))
+
+        package_upload_id = self.proposed_series_spr.package_upload.id
+        self.form['QUEUE_ID'] = [package_upload_id]
+        request = LaunchpadTestRequest(form=self.form)
+        request.method = 'POST'
+        self.setupQueueView(request, series=self.second_series)
+
+        self.assertEqual(
+            'DONE',
+            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+
+    def test_proposed_series_admin_cannot_accept_other_series_upload(self):
+        # A person with queue admin access for proposed for one series
+        # cannot necessarily accept uploads to other series.
+        login_person(self.proposed_series_queue_admin)
+        self.assertFalse(
+            self.main_archive.canAdministerQueue(
+                self.proposed_series_queue_admin,
+                pocket=PackagePublishingPocket.PROPOSED,
+                distroseries=self.test_publisher.distroseries))
+
+        package_upload_id = self.proposed_spr.package_upload.id
+        self.form['QUEUE_ID'] = [package_upload_id]
+        request = LaunchpadTestRequest(form=self.form)
+        request.method = 'POST'
+        view = self.setupQueueView(request)
+
+        self.assertEqual(
+            "You do not have permission to act on queue items.", view.error)
+        self.assertEqual(
             'NEW',
             getUtility(IPackageUploadSet).get(package_upload_id).status.name)
 

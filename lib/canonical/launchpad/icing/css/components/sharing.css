@@ -13,8 +13,7 @@ table.sharing ul.horizontal li {
     padding-right: 10px;
     }
 
-table.sharing ul.horizontal li div,
-.information_type {
+table.sharing ul.horizontal li div {
     display: inline;
     border-radius: 5px;
     background-color: #dcdcdc;

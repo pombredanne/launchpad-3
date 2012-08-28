@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 import re
+
 from simplejson import dumps
 from zope.app.form.browser.textwidgets import (
     IntWidget,

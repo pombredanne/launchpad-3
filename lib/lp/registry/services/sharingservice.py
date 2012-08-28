@@ -14,6 +14,7 @@ from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
 from storm.expr import (
     And,
+    Count,
     In,
     Join,
     Or,
@@ -25,12 +26,12 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.tales import ObjectImageDisplayAPI
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     SharingPermission,
     )
@@ -50,12 +51,14 @@ from lp.registry.interfaces.sharingjob import (
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.accesspolicy import (
     AccessArtifactGrant,
+    AccessPolicy,
     AccessPolicyArtifact,
     AccessPolicyGrant,
     )
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.lpstorm import IStore
+from lp.services.database.stormexpr import ColumnSelect
 from lp.services.features import getFeatureFlag
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
@@ -65,7 +68,7 @@ from lp.services.webapp.authorization import (
 
 
 class SharingService:
-    """Service providing operations for adding and removing pillar sharees.
+    """Service providing operations for adding and removing pillar grantees.
 
     Service is accessed via a url of the form
     '/services/sharing?ws.op=...
@@ -102,6 +105,19 @@ class SharingService:
             AccessPolicyGrant.policy_id == policy.id,
             TeamParticipation.personID == person.id)
         return not result.is_empty()
+
+    def getAccessPolicyGrantCounts(self, pillar):
+        """See `ISharingService`."""
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+        ids = [policy.id for policy in policies]
+        store = IStore(AccessPolicyGrant)
+        count_select = Select((Count(),), tables=(AccessPolicyGrant,),
+            where=AccessPolicyGrant.policy == AccessPolicy.id)
+        return store.find(
+            (AccessPolicy.type,
+            ColumnSelect(count_select)),
+            AccessPolicy.id.is_in(ids)
+        )
 
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
@@ -231,6 +247,19 @@ class SharingService:
 
         return set(people).difference(set(result_set))
 
+    def _makeEnumData(self, enums):
+        # Make a dict of data for the a view request cache.
+        result_data = []
+        for x, enum in enumerate(enums):
+            item = dict(
+                index=x,
+                value=enum.name,
+                title=enum.title,
+                description=enum.description
+            )
+            result_data.append(item)
+        return result_data
+
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [
@@ -242,16 +271,40 @@ class SharingService:
                 pillar.has_current_commercial_subscription):
             allowed_types.append(InformationType.PROPRIETARY)
 
-        result_data = []
-        for x, policy in enumerate(allowed_types):
-            item = dict(
-                index=x,
-                value=policy.name,
-                title=policy.title,
-                description=policy.description
-            )
-            result_data.append(item)
-        return result_data
+        return self._makeEnumData(allowed_types)
+
+    def getBranchSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have branch sharing policies.
+        if not IProduct.providedBy(pillar):
+            return []
+        allowed_policies = [BranchSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary branches.
+        if pillar.has_current_commercial_subscription:
+            allowed_policies.extend([
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                BranchSharingPolicy.PROPRIETARY])
+        if (pillar.branch_sharing_policy and
+            not pillar.branch_sharing_policy in allowed_policies):
+            allowed_policies.append(pillar.branch_sharing_policy)
+
+        return self._makeEnumData(allowed_policies)
+
+    def getBugSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have bug sharing policies.
+        if not IProduct.providedBy(pillar):
+            return []
+        allowed_policies = [BugSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary bugs.
+        if pillar.has_current_commercial_subscription:
+            allowed_policies.extend([
+                BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                BugSharingPolicy.PROPRIETARY])
+
+        return self._makeEnumData(allowed_policies)
 
     def getSharingPermissions(self):
         """See `ISharingService`."""
@@ -273,7 +326,7 @@ class SharingService:
         return sharing_permissions
 
     @available_with_permission('launchpad.Driver', 'pillar')
-    def getPillarSharees(self, pillar):
+    def getPillarGrantees(self, pillar):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
@@ -285,14 +338,14 @@ class SharingService:
         return grant_permissions
 
     @available_with_permission('launchpad.Driver', 'pillar')
-    def getPillarShareeData(self, pillar):
+    def getPillarGranteeData(self, pillar):
         """See `ISharingService`."""
-        grant_permissions = list(self.getPillarSharees(pillar))
+        grant_permissions = list(self.getPillarGrantees(pillar))
         if not grant_permissions:
             return None
-        return self.jsonShareeData(grant_permissions)
+        return self.jsonGranteeData(grant_permissions)
 
-    def jsonShareeData(self, grant_permissions):
+    def jsonGranteeData(self, grant_permissions):
         """See `ISharingService`."""
         result = []
         request = get_current_web_service_request()
@@ -306,9 +359,9 @@ class SharingService:
         for (grantee, permissions, shared_artifact_types) in grant_permissions:
             some_things_shared = (
                 details_enabled and len(shared_artifact_types) > 0)
-            sharee_permissions = {}
+            grantee_permissions = {}
             for (policy, permission) in permissions.iteritems():
-                sharee_permissions[policy.type.name] = permission.name
+                grantee_permissions[policy.type.name] = permission.name
             shared_artifact_type_names = [
                 info_type.name for info_type in shared_artifact_types]
             display_api = ObjectImageDisplayAPI(grantee)
@@ -321,16 +374,16 @@ class SharingService:
                 'display_name': grantee.displayname,
                 'self_link': absoluteURL(grantee, request),
                 'web_link': absoluteURL(grantee, browser_request),
-                'permissions': sharee_permissions,
+                'permissions': grantee_permissions,
                 'shared_artifact_types': shared_artifact_type_names,
                 'shared_items_exist': some_things_shared})
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def sharePillarInformation(self, pillar, sharee, user, permissions):
+    def sharePillarInformation(self, pillar, grantee, user, permissions):
         """See `ISharingService`."""
 
-        # We do not support adding sharees to project groups.
+        # We do not support adding grantees to project groups.
         assert not IProjectGroup.providedBy(pillar)
 
         if not self.write_enabled:
@@ -359,7 +412,7 @@ class SharingService:
             wanted_pillar_policies = policy_source.find(
                 required_pillar_info_types)
             # We need to figure out which policy grants to create or delete.
-            wanted_policy_grants = [(policy, sharee)
+            wanted_policy_grants = [(policy, grantee)
                 for policy in wanted_pillar_policies]
             existing_policy_grants = [
                 (grant.policy, grant.grantee)
@@ -369,36 +422,44 @@ class SharingService:
                 set(wanted_policy_grants).difference(existing_policy_grants))
             if len(policy_grants_to_create) > 0:
                 policy_grant_source.grant(
-                    [(policy, sharee, user)
-                    for policy, sharee in policy_grants_to_create])
+                    [(policy, grantee, user)
+                    for policy, grantee in policy_grants_to_create])
 
         # Now revoke any existing policy grants for types with
         # permission 'some'.
         all_pillar_policies = policy_source.findByPillar([pillar])
         policy_grants_to_revoke = [
-            (policy, sharee)
+            (policy, grantee)
             for policy in all_pillar_policies
             if policy.type in info_types_for_some]
         if len(policy_grants_to_revoke) > 0:
             policy_grant_source.revoke(policy_grants_to_revoke)
 
         # For information types with permission 'nothing', we can simply
-        # call the deletePillarSharee method directly.
+        # call the deletePillarGrantee method directly.
         if len(info_types_for_nothing) > 0:
-            self.deletePillarSharee(
-                pillar, sharee, user, info_types_for_nothing)
+            self.deletePillarGrantee(
+                pillar, grantee, user, info_types_for_nothing)
 
-        # Return sharee data to the caller.
+        # Return grantee data to the caller.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         grant_permissions = list(ap_grant_flat.findGranteePermissionsByPolicy(
-            all_pillar_policies, [sharee]))
-        if not grant_permissions:
-            return None
-        [sharee] = self.jsonShareeData(grant_permissions)
-        return sharee
+            all_pillar_policies, [grantee]))
+
+        grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
+        invisible_types = [
+            count_info[0].title for count_info in grant_counts
+            if count_info[1] == 0]
+        grantee = None
+        if grant_permissions:
+            [grantee] = self.jsonGranteeData(grant_permissions)
+        result = {
+            'grantee_entry': grantee,
+            'invisible_information_types': invisible_types}
+        return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def deletePillarSharee(self, pillar, sharee, user,
+    def deletePillarGrantee(self, pillar, grantee, user,
                              information_types=None):
         """See `ISharingService`."""
 
@@ -418,7 +479,7 @@ class SharingService:
 
         # First delete any access policy grants.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        policy_grants = [(policy, sharee) for policy in pillar_policies]
+        policy_grants = [(policy, grantee) for policy in pillar_policies]
         grants = [
             (grant.policy, grant.grantee)
             for grant in policy_grant_source.find(policy_grants)]
@@ -428,20 +489,26 @@ class SharingService:
         # Second delete any access artifact grants.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         to_delete = list(ap_grant_flat.findArtifactsByGrantee(
-            sharee, pillar_policies))
+            grantee, pillar_policies))
         if len(to_delete) > 0:
             accessartifact_grant_source = getUtility(
                 IAccessArtifactGrantSource)
-            accessartifact_grant_source.revokeByArtifact(to_delete, [sharee])
+            accessartifact_grant_source.revokeByArtifact(to_delete, [grantee])
 
-        # Create a job to remove subscriptions for artifacts the sharee can no
+        # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
         getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-            user, artifacts=None, grantee=sharee, pillar=pillar,
+            user, artifacts=None, grantee=grantee, pillar=pillar,
             information_types=information_types)
 
+        grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
+        invisible_types = [
+            count_info[0].title for count_info in grant_counts
+            if count_info[1] == 0]
+        return invisible_types
+
     @available_with_permission('launchpad.Edit', 'pillar')
-    def revokeAccessGrants(self, pillar, sharee, user, branches=None,
+    def revokeAccessGrants(self, pillar, grantee, user, branches=None,
                            bugs=None):
         """See `ISharingService`."""
 
@@ -456,20 +523,17 @@ class SharingService:
         # Find the access artifacts associated with the bugs and branches.
         accessartifact_source = getUtility(IAccessArtifactSource)
         artifacts_to_delete = accessartifact_source.find(artifacts)
-        # Revoke access to bugs/branches for the specified sharee.
+        # Revoke access to bugs/branches for the specified grantee.
         accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
         accessartifact_grant_source.revokeByArtifact(
-            artifacts_to_delete, [sharee])
+            artifacts_to_delete, [grantee])
 
-        # Create a job to remove subscriptions for artifacts the sharee can no
+        # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
-        if bugs:
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                user, bugs, grantee=sharee, pillar=pillar)
-        # XXX 2012-06-13 wallyworld bug=1012448
-        # Remove branch subscriptions when information type fully implemented.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            user, artifacts, grantee=grantee, pillar=pillar)
 
-    def ensureAccessGrants(self, sharees, user, branches=None, bugs=None,
+    def ensureAccessGrants(self, grantees, user, branches=None, bugs=None,
                            ignore_permissions=False):
         """See `ISharingService`."""
 
@@ -495,9 +559,9 @@ class SharingService:
         artifacts_with_grants = [
             artifact_grant.abstract_artifact
             for artifact_grant in
-            aagsource.find(product(artifacts, sharees))]
-        # Create access to bugs/branches for the specified sharee for which a
+            aagsource.find(product(artifacts, grantees))]
+        # Create access to bugs/branches for the specified grantee for which a
         # grant does not already exist.
         missing_artifacts = set(artifacts) - set(artifacts_with_grants)
         getUtility(IAccessArtifactGrantSource).grant(
-            list(product(missing_artifacts, sharees, [user])))
+            list(product(missing_artifacts, grantees, [user])))

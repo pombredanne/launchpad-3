@@ -42,7 +42,7 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
 
     def test_two_product_tasks_case_no_context(self):
         widget = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=widget)
+        bug = self.factory.makeBug(target=widget)
         cogs = self.factory.makeProduct()
         self.factory.makeBugTask(bug=bug, target=cogs)
         tasks = list(bug.bugtasks)
@@ -53,7 +53,7 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
 
     def test_two_product_tasks_case(self):
         widget = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=widget)
+        bug = self.factory.makeBug(target=widget)
         cogs = self.factory.makeProduct()
         task = self.factory.makeBugTask(bug=bug, target=cogs)
         tasks = list(bug.bugtasks)

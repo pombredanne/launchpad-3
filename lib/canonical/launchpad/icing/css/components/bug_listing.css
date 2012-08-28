@@ -28,12 +28,13 @@ div#client-listing .status,
 div#client-listing .importance,
 div#client-listing .information_type {
     float: left;
-    height: 1.5em;
+    height: 1.4em;
     font-size: 0.8em;
     border-radius: 2px;
     text-transform: uppercase;
     line-height: 12px;
     text-align: center;
+    padding-top: 0.1em;
     margin: 5px 10px 0 0;
     }
 
@@ -46,8 +47,8 @@ div#client-listing .status {
     }
 
 div#client-listing .information_type {
-    height: 1em;
-    width: 160px;
+    width: 165px;
+    background-color: #dcdcdc;
     }
 
 div#client-listing .field {

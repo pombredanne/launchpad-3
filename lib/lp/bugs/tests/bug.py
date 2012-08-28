@@ -28,14 +28,12 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tag_by_id,
     find_tags_by_class,
-    print_table,
     )
 
 
@@ -164,18 +162,13 @@ def create_bug_from_strings(
     distroset = getUtility(IDistributionSet)
     distribution = distroset.getByName(distribution)
 
-    # XXX: kiko 2008-02-01: would be really great if spnset consistently
-    # offered getByName.
-    spnset = getUtility(ISourcePackageNameSet)
-    sourcepackagename = spnset.queryByName(sourcepackagename)
-
     personset = getUtility(IPersonSet)
     owner = personset.getByName(owner)
 
     bugset = getUtility(IBugSet)
-    params = CreateBugParams(owner, summary, description, status=status)
-    params.setBugTarget(distribution=distribution,
-                        sourcepackagename=sourcepackagename)
+    params = CreateBugParams(
+        owner, summary, description, status=status,
+        target=distribution.getSourcePackage(sourcepackagename))
     return bugset.createBug(params)
 
 

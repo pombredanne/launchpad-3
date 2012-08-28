@@ -1,4 +1,6 @@
-= Archive View Classes and Pages =
+==============================
+Archive View Classes and Pages
+==============================
 
 Let's use Celso's PPA for the tests.
 
@@ -6,7 +8,8 @@ Let's use Celso's PPA for the tests.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
-== ArchiveView ==
+ArchiveView
+===========
 
 The ArchiveView includes a few helper methods that make it easier to
 display different types of archives (copy archives, ppas).
@@ -482,7 +485,8 @@ The PPA description is linked when the user has made a contribution.
     <p><a rel="nofollow" href="http://example.dom/">http://...example...
 
 
-== ArchivePackageView ==
+ArchivePackageView
+==================
 
 This view displays detailed information about the archive packages that
 is not so relevant for the PPA index page, such as a summary of build
@@ -525,7 +529,8 @@ is a copy archive.
     True
 
 
-== ArchivePackageDeletionView ==
+ArchivePackageDeletionView
+==========================
 
 We use ArchivePackageDeletionView to provide the mechnisms used to
 delete packages from a PPA via the UI.
@@ -652,7 +657,8 @@ situation and ignore it. See bug #185922 for reference.
     2
 
 
-== ArchiveEditDependenciesView ==
+ArchiveEditDependenciesView
+===========================
 
 We use ArchiveEditDependenciesView to provide the mechnisms used to
 add and/or remove archive dependencies for a PPA via the UI.
@@ -1036,7 +1042,8 @@ affect the following tests.
     >>> cprov_private_ppa.disable()
 
 
-== ArchivePackageCopyingView ==
+ArchivePackageCopyingView
+=========================
 
 This class extends ArchiveSourceSelectionFormView, and thus uses the
 same mechanisms for presenting and filtering available sources for
@@ -1313,7 +1320,8 @@ value is submitted.
                        RequiredMissing())
 
 
-=== Copy private files to public archives ===
+Copy private files to public archives
+-------------------------------------
 
 Users are allowed to copy private sources into private PPAs, however
 it happens via 'delayed-copies' not the usual direct copying method.
@@ -1378,8 +1386,105 @@ upload queue.
     >>> print copy.status.name
     ACCEPTED
 
+The action may also be performed asynchronously.
 
-== External dependencies validation ==
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> from lp.soyuz.browser.archive import (
+    ...     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS,
+    ...     )
+    >>> fixture = FeatureFixture({
+    ...     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS: '0',
+    ...     })
+    >>> fixture.setUp()
+
+    >>> login('foo.bar@canonical.com')
+    >>> async_private_source = test_publisher.createSource(
+    ...     cprov_private_ppa, 'foocomm', '1.0-1', new_version='3.0-1')
+    >>> transaction.commit()
+
+    >>> print async_private_source.displayname
+    foocomm 3.0-1 in hoary
+
+    >>> login('celso.providelo@canonical.com')
+    >>> view = create_initialized_view(
+    ...     cprov_private_ppa, name="+copy-packages",
+    ...     form={
+    ...         'field.selected_sources': [str(async_private_source.id)],
+    ...         'field.destination_archive': 'ubuntu-team/ppa',
+    ...         'field.destination_series': '',
+    ...         'field.include_binaries': 'REBUILD_SOURCES',
+    ...         'field.actions.copy': 'Copy',
+    ...         })
+
+    >>> len(view.errors)
+    0
+
+    >>> for notification in view.request.response.notifications:
+    ...     print extract_text(notification.message)
+    Requested sync of 1 package.
+    Please allow some time for this to be processed.
+
+There is one copy job waiting, which we run.
+
+    >>> from lp.services.config import config
+    >>> from lp.services.job.runner import JobRunner
+    >>> from lp.soyuz.interfaces.packagecopyjob import (
+    ...     IPlainPackageCopyJobSource,
+    ...     )
+    >>> from lp.testing.dbuser import dbuser
+    >>> [job] = getUtility(IPlainPackageCopyJobSource).getActiveJobs(
+    ...     ubuntu_team_ppa)
+    >>> with dbuser(config.IPlainPackageCopyJobSource.dbuser):
+    ...     JobRunner([job]).runAll()
+    >>> print job.status.name
+    COMPLETED
+
+The copy results in a pending source publication.
+
+    >>> [copied_source] = ubuntu_team_ppa.getPublishedSources(
+    ...     name="foocomm", exact_match=True)
+    >>> print copied_source.displayname
+    foocomm 3.0-1 in hoary
+
+If we run the same copy again, it will fail.
+
+    >>> view = create_initialized_view(
+    ...     cprov_private_ppa, name="+copy-packages",
+    ...     form={
+    ...         'field.selected_sources': [str(async_private_source.id)],
+    ...         'field.destination_archive': 'ubuntu-team/ppa',
+    ...         'field.destination_series': '',
+    ...         'field.include_binaries': 'REBUILD_SOURCES',
+    ...         'field.actions.copy': 'Copy',
+    ...         })
+    >>> [job] = getUtility(IPlainPackageCopyJobSource).getActiveJobs(
+    ...     ubuntu_team_ppa)
+    >>> with dbuser(config.IPlainPackageCopyJobSource.dbuser):
+    ...     JobRunner([job]).runAll()
+    >>> print job.status.name
+    FAILED
+
+The job failure is shown in the UI.
+
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(ubuntu_team_ppa.owner):
+    ...     ubuntu_team_ppa_view = create_initialized_view(
+    ...         ubuntu_team_ppa, name="+packages",
+    ...         principal=ubuntu_team_ppa.owner)
+    >>> ubuntu_team_ppa_view.has_pending_copy_jobs is not None
+    True
+    >>> for job in ubuntu_team_ppa_view.package_copy_jobs:
+    ...     print job.status.title, job.package_name, job.package_version
+    ...     print job.error_message
+    Failed foocomm 3.0-1
+    foocomm 3.0-1 in hoary (same version already building in the destination
+    archive for Hoary)
+
+    >>> fixture.cleanUp()
+
+
+External dependencies validation
+================================
 
 The ArchiveAdminView checks the external_dependencies form data to see if
 it's a valid sources.list entry.

@@ -113,18 +113,17 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.enums import (
+    BranchSharingPolicy,
     InformationType,
+    PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
+    TeamMembershipPolicy,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
-    )
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
@@ -139,6 +138,7 @@ from lp.services.job.tests import (
     )
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     admin_logged_in,
@@ -153,8 +153,8 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     time_counter,
-    ws_object,
     WebServiceTestCase,
+    ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
@@ -1255,8 +1255,8 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
         params = CreateBugParams(
-            owner=self.user, title='Firefox bug', comment='blah')
-        params.setBugTarget(product=self.product)
+            owner=self.user, title='Firefox bug', comment='blah',
+            target=self.product)
         bug = getUtility(IBugSet).createBug(params)
         bug.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
@@ -1948,8 +1948,8 @@ class BranchDateLastModified(TestCaseWithFactory):
         self.assertEqual(branch.date_last_modified, date_created)
 
         params = CreateBugParams(
-            owner=branch.owner, title='A bug', comment='blah')
-        params.setBugTarget(product=branch.product)
+            owner=branch.owner, title='A bug', comment='blah',
+            target=branch.product)
         bug = getUtility(IBugSet).createBug(params)
 
         bug.linkBranch(branch, branch.owner)
@@ -2389,7 +2389,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
 
     def test_personal_branches_for_private_teams_are_private(self):
         team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            membership_policy=TeamMembershipPolicy.MODERATED,
             visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)
@@ -2430,6 +2430,9 @@ class TestBranchGetAllowedInformationTypes(TestCaseWithFactory):
             branch.getAllowedInformationTypes(branch.owner))
         self.assertNotIn(
             InformationType.PROPRIETARY,
+            branch.getAllowedInformationTypes(branch.owner))
+        self.assertNotIn(
+            InformationType.EMBARGOED,
             branch.getAllowedInformationTypes(branch.owner))
 
     def test_admin_sees_namespace_types(self):
@@ -2578,6 +2581,46 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             InformationType.PRIVATESECURITY, owner, verify_policy=False)
         self.assertEqual(
             InformationType.PRIVATESECURITY, branch.information_type)
+
+
+class BranchModerateTestCase(TestCaseWithFactory):
+    """Test that product owners and commercial admins can moderate branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_moderate_permission(self):
+        # Test the ModerateBranch security checker.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            self.assertTrue(
+                check_permission('launchpad.Moderate', branch))
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(
+                check_permission('launchpad.Moderate', branch))
+
+    def test_methods_smoketest(self):
+        # Users with launchpad.Moderate can call transitionToInformationType.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
+            branch.transitionToInformationType(
+                InformationType.PRIVATESECURITY, branch.product.owner)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, branch.information_type)
+
+    def test_attribute_smoketest(self):
+        # Users with launchpad.Moderate can set attrs.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.name = 'not-secret'
+            branch.description = 'redacted'
+            branch.reviewer = branch.product.owner
+            branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
+        self.assertEqual('not-secret', branch.name)
+        self.assertEqual('redacted', branch.description)
+        self.assertEqual(branch.product.owner, branch.reviewer)
+        self.assertEqual(
+            BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
@@ -3233,3 +3276,20 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
+
+    def test_transitionToInformationType(self):
+        """Test transitionToInformationType() API arguments."""
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(product.owner):
+            product.setBranchSharingPolicy(
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
+            db_branch = self.factory.makeBranch(product=product)
+            launchpad = launchpadlib_for('test', db_branch.owner,
+                service_root=self.layer.appserver_root_url('api'))
+
+        branch = ws_object(launchpad, db_branch)
+        branch.transitionToInformationType(information_type='Proprietary')
+
+        updated_branch = ws_object(launchpad, db_branch)
+        self.assertEqual('Proprietary', updated_branch.information_type)

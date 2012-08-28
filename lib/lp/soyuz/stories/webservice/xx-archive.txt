@@ -229,14 +229,7 @@ Archive Permission Custom Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Permission collections can be retrieved with custom operations on the
-archive.
-
-`getPermissionsForPerson` returns all the permissions that a user has.
-
-    >>> ubuntu_team = user_webservice.get("/~ubuntu-team").jsonBody()
-    >>> permissions = user_webservice.named_get(
-    ...     ubuntutest['main_archive_link'], 'getPermissionsForPerson',
-    ...     person=ubuntu_team['self_link']).jsonBody()
+archive.  First, define some general helper functions.
 
     >>> def permission_entry_sort_key(entry):
     ...      return (entry['permission'],
@@ -253,10 +246,45 @@ archive.
     ...         print entry['component_name']
     ...         print entry['source_package_name']
     ...         print entry['pocket']
+    ...         print entry['distroseries_link']
+
+`getAllPermissions` returns all permissions on the archive.
+
+    >>> ubuntu_devel = user_webservice.get(
+    ...     '/distros', api_version='devel').jsonBody()['entries'][0]
+
+    >>> def show_all_permissions(archive):
+    ...     permissions = user_webservice.get(
+    ...         '%s?ws.op=getAllPermissions&ws.size=50' % archive,
+    ...         api_version='devel').jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_all_permissions(ubuntu_devel['main_archive_link'])
+    Archive Upload Rights ...~carlos None mozilla-firefox None None
+    Archive Upload Rights ...~ubuntu-team main None None None
+    Archive Upload Rights ...~ubuntu-team restricted None None None
+    Archive Upload Rights ...~ubuntu-team universe None None None
+    Queue Administration Rights ...~name12 main None None None
+    Queue Administration Rights ...~name12 multiverse None None None
+    Queue Administration Rights ...~name12 restricted None None None
+    Queue Administration Rights ...~name12 universe None None None
+    Queue Administration Rights ...~no-team-memberships multiverse None None None
+    Queue Administration Rights ...~no-team-memberships universe None None None
+    Queue Administration Rights ...~ubuntu-team main None None None
+    Queue Administration Rights ...~ubuntu-team partner None None None
+    Queue Administration Rights ...~ubuntu-team restricted None None None
+    Queue Administration Rights ...~ubuntu-team universe None None None
+
+`getPermissionsForPerson` returns all the permissions that a user has.
+
+    >>> ubuntu_team = user_webservice.get("/~ubuntu-team").jsonBody()
+    >>> permissions = user_webservice.named_get(
+    ...     ubuntutest['main_archive_link'], 'getPermissionsForPerson',
+    ...     person=ubuntu_team['self_link']).jsonBody()
 
     >>> show_permission_entries(permissions)
-    Archive Upload Rights ...~ubuntu-team main None None
-    Archive Upload Rights ...~ubuntu-team universe None None
+    Archive Upload Rights ...~ubuntu-team main None None None
+    Archive Upload Rights ...~ubuntu-team universe None None None
 
 `getUploadersForPackage` returns all the permissions where someone can
 upload a particular package.
@@ -268,7 +296,7 @@ upload a particular package.
     ...     show_permission_entries(permissions)
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox None
+    Archive Upload Rights ...~carlos None mozilla-firefox None None
 
 Passing a bad package name results in an error:
 
@@ -283,8 +311,6 @@ Colin is a valid member of the team who owns the ubuntu primary archive.
     >>> from lp.testing.pages import webservice_for_person
     >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
 
     >>> login('foo.bar@canonical.com')
     >>> cjwatson = getUtility(IPersonSet).getByName('kamion')
@@ -294,7 +320,7 @@ Colin is a valid member of the team who owns the ubuntu primary archive.
 
 Let's also make a new Person to own the Ubuntu distro.
 
-    >>> ubuntu_owner = factory.makePerson()
+    >>> ubuntu_owner = factory.makePerson(name='ubuntu-owner')
     >>> ubuntu_db.owner = ubuntu_owner
 
     >>> logout()
@@ -370,8 +396,8 @@ for a person to upload a package.
     http://.../ubuntu/+archive/primary/+upload/name12?type=packagename&item=mozilla-firefox
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox None
-    Archive Upload Rights ...~name12 None mozilla-firefox None
+    Archive Upload Rights ...~carlos None mozilla-firefox None None
+    Archive Upload Rights ...~name12 None mozilla-firefox None None
 
 deletePackageUploader() removes that permission:
 
@@ -385,7 +411,7 @@ deletePackageUploader() removes that permission:
 And we can see that it's gone:
 
     >>> show_mozilla_permissions()
-    Archive Upload Rights ...~carlos None mozilla-firefox None
+    Archive Upload Rights ...~carlos None mozilla-firefox None None
 
 getUploadersForComponent returns all the permissions where someone can
 upload to a particular component:
@@ -397,7 +423,7 @@ upload to a particular component:
     ...     show_permission_entries(permissions)
 
     >>> show_component_permissions("main")
-    Archive Upload Rights ...~ubuntu-team main None None
+    Archive Upload Rights ...~ubuntu-team main None None None
 
 Passing a bad component name results in an error:
 
@@ -411,8 +437,8 @@ If you don't specify the component, you get all the uploaders for
 all components.
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~ubuntu-team main None None
-    Archive Upload Rights ...~ubuntu-team universe None None
+    Archive Upload Rights ...~ubuntu-team main None None None
+    Archive Upload Rights ...~ubuntu-team universe None None None
 
 newComponentUploader adds a new permission for a person to upload to a
 component.
@@ -431,10 +457,10 @@ component.
     http://.../ubuntu/+archive/primary/+upload/name12?type=component&item=restricted
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~name12 restricted None None
-    Archive Upload Rights ...~ubuntu-team main None None
-    Archive Upload Rights ...~ubuntu-team restricted None None
-    Archive Upload Rights ...~ubuntu-team universe None None
+    Archive Upload Rights ...~name12 restricted None None None
+    Archive Upload Rights ...~ubuntu-team main None None None
+    Archive Upload Rights ...~ubuntu-team restricted None None None
+    Archive Upload Rights ...~ubuntu-team universe None None None
 
 We can use ``checkUpload`` to verify that a person can upload a
 sourcepackage.
@@ -461,9 +487,9 @@ deleteComponentUploader() removes that permission:
 And we can see that it's gone:
 
     >>> show_component_permissions()
-    Archive Upload Rights ...~ubuntu-team main None None
-    Archive Upload Rights ...~ubuntu-team restricted None None
-    Archive Upload Rights ...~ubuntu-team universe None None
+    Archive Upload Rights ...~ubuntu-team main None None None
+    Archive Upload Rights ...~ubuntu-team restricted None None None
+    Archive Upload Rights ...~ubuntu-team universe None None None
 
 And ``checkUpload`` now also no longer passes:
 
@@ -527,8 +553,8 @@ can administer distroseries queues in a particular component.
     ...     show_permission_entries(permissions)
 
     >>> show_admins_for_component("main")
-    Queue Administration Rights ...~name12 main None None
-    Queue Administration Rights ...~ubuntu-team main None None
+    Queue Administration Rights ...~name12 main None None None
+    Queue Administration Rights ...~ubuntu-team main None None None
 
 getComponentsForQueueAdmin returns all the permissions relating to components
 where the user is able to administer distroseries queues.
@@ -540,10 +566,10 @@ where the user is able to administer distroseries queues.
     ...     show_permission_entries(permissions)
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None None
-    Queue Administration Rights ...~name12 multiverse None None
-    Queue Administration Rights ...~name12 restricted None None
-    Queue Administration Rights ...~name12 universe None None
+    Queue Administration Rights ...~name12 main None None None
+    Queue Administration Rights ...~name12 multiverse None None None
+    Queue Administration Rights ...~name12 restricted None None None
+    Queue Administration Rights ...~name12 universe None None None
 
 newQueueAdmin adds a new permission for a person to administer distroseries
 queues in a particular component.
@@ -562,11 +588,11 @@ queues in a particular component.
     http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=partner
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None None
-    Queue Administration Rights ...~name12 multiverse None None
-    Queue Administration Rights ...~name12 partner None None
-    Queue Administration Rights ...~name12 restricted None None
-    Queue Administration Rights ...~name12 universe None None
+    Queue Administration Rights ...~name12 main None None None
+    Queue Administration Rights ...~name12 multiverse None None None
+    Queue Administration Rights ...~name12 partner None None None
+    Queue Administration Rights ...~name12 restricted None None None
+    Queue Administration Rights ...~name12 universe None None None
 
 deleteQueueAdmin removes that permission.
 
@@ -580,16 +606,13 @@ deleteQueueAdmin removes that permission.
 And we can see that it's gone:
 
     >>> show_components_for_admin(name12)
-    Queue Administration Rights ...~name12 main None None
-    Queue Administration Rights ...~name12 multiverse None None
-    Queue Administration Rights ...~name12 restricted None None
-    Queue Administration Rights ...~name12 universe None None
+    Queue Administration Rights ...~name12 main None None None
+    Queue Administration Rights ...~name12 multiverse None None None
+    Queue Administration Rights ...~name12 restricted None None None
+    Queue Administration Rights ...~name12 universe None None None
 
 getUploadersForPocket returns all the permissions where someone can upload
 to a particular pocket:
-
-    >>> ubuntu_devel = webservice.get(
-    ...     '/distros', api_version='devel').jsonBody()['entries'][0]
 
     >>> def show_pocket_permissions(pocket):
     ...     permissions = user_webservice.named_get(
@@ -624,7 +647,7 @@ newPocketUploader adds a new permission for a person to upload to a pocket.
     http://.../ubuntu/+archive/primary/+upload/name12?type=pocket&item=PROPOSED
 
     >>> show_pocket_permissions('Proposed')
-    Archive Upload Rights ...~name12 None None Proposed
+    Archive Upload Rights ...~name12 None None Proposed None
 
 The person named in the permission can upload a package to this pocket.
 
@@ -649,7 +672,6 @@ deletePocketUploader removes that permission:
 
     >>> show_pocket_permissions('Proposed')
 
-    >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
     >>> response = user_webservice.named_get(
     ...     ubuntu['main_archive_link'], 'checkUpload',
     ...     distroseries=grumpy['self_link'],
@@ -660,6 +682,102 @@ deletePocketUploader removes that permission:
     ...
     The signer of this package has no upload rights to
     this distribution's primary archive.  Did you mean to upload to a PPA?
+
+getQueueAdminsForPocket returns all the permissions where someone can
+administer distroseries queues in a particular pocket.
+
+    >>> def show_admins_for_pocket(pocket, distroseries=None):
+    ...     kwargs = {}
+    ...     if distroseries is not None:
+    ...         kwargs['distroseries'] = distroseries
+    ...     permissions = webservice.named_get(
+    ...         ubuntu_devel['main_archive_link'], 'getQueueAdminsForPocket',
+    ...         api_version='devel', pocket=pocket, **kwargs).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_admins_for_pocket('Security')
+    >>> show_admins_for_pocket('Security', distroseries=grumpy['self_link'])
+
+getPocketsForQueueAdmin returns all the permissions relating to pockets
+where the user is able to administer distroseries queues.
+
+    >>> def show_pockets_for_admin(person):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu_devel['main_archive_link'], 'getPocketsForQueueAdmin',
+    ...         api_version='devel', person=person['self_link']).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_pockets_for_admin(name12)
+
+newPocketQueueAdmin adds a new permission for a person to administer
+distroseries queues in a particular pocket.
+
+    >>> response = ubuntu_owner_webservice.named_post(
+    ...     ubuntu_devel['main_archive_link'], 'newPocketQueueAdmin', {},
+    ...     api_version='devel', person=name12['self_link'],
+    ...     pocket='Security')
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = ubuntu_owner_webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+queue-admin/name12?type=pocket&item=SECURITY
+
+    >>> show_pockets_for_admin(name12)
+    Queue Administration Rights ...~name12 None None Security None
+
+It can also grant series-specific pocket queue admin permissions.
+
+    >>> ubuntu_owner_ws = ubuntu_owner_webservice.get(
+    ...     "/~ubuntu-owner").jsonBody()
+    >>> hoary = user_webservice.get("/ubuntu/hoary").jsonBody()
+    >>> new_permissions = []
+    >>> for series in hoary, grumpy:
+    ...     response = ubuntu_owner_webservice.named_post(
+    ...         ubuntu_devel['main_archive_link'], 'newPocketQueueAdmin', {},
+    ...         api_version='devel', person=ubuntu_owner_ws['self_link'],
+    ...         pocket='Security', distroseries=series['self_link'])
+    ...     print response
+    ...     new_permissions.append(ubuntu_owner_webservice.get(
+    ...         response.getHeader('Location')).jsonBody())
+    HTTP/1.1 201 Created
+    ...
+    HTTP/1.1 201 Created
+    ...
+
+    >>> print new_permissions[0]['self_link']
+    http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-owner?type=pocket&item=SECURITY&series=hoary
+    >>> print new_permissions[1]['self_link']
+    http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-owner?type=pocket&item=SECURITY&series=grumpy
+
+    >>> show_pockets_for_admin(ubuntu_owner_ws)
+    Queue Administration Rights ...~ubuntu-owner None None Security .../hoary
+    Queue Administration Rights ...~ubuntu-owner None None Security .../grumpy
+
+deletePocketQueueAdmin removes these permissions.
+
+    >>> print ubuntu_owner_webservice.named_post(
+    ...     ubuntu_devel['main_archive_link'], 'deletePocketQueueAdmin', {},
+    ...     api_version='devel', person=name12['self_link'],
+    ...     pocket='Security')
+    HTTP/1.1 200 Ok
+    ...
+    >>> for series in hoary, grumpy:
+    ...     print ubuntu_owner_webservice.named_post(
+    ...         ubuntu_devel['main_archive_link'], 'deletePocketQueueAdmin',
+    ...         {}, api_version='devel', person=ubuntu_owner_ws['self_link'],
+    ...         pocket='Security', distroseries=series['self_link'])
+    HTTP/1.1 200 Ok
+    ...
+    HTTP/1.1 200 Ok
+    ...
+
+And we can see that they're gone:
+
+    >>> show_pockets_for_admin(name12)
+    >>> show_pockets_for_admin(ubuntu_owner_ws)
 
 Malformed archive permission URLs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -796,8 +914,7 @@ Package copying/synchronisation
 
 IArchive contains 2 custom operations to copy packages from another archive.
 These are syncSource() and syncSources(). Both are wrappers of the
-`PackageCopier` infrastructure, see more information in
-scripts/packagecopier.py.
+`do_copy` infrastructure, see more information in scripts/packagecopier.py.
 
 For testing purposes we will create some publications.
 

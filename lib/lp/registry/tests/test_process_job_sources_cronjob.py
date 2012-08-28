@@ -102,14 +102,15 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         self.assertIn('Group: MAIN\n    I', output)
 
     def test_empty_queue(self):
-        # The script should just create a lockfile, launch a child for
-        # each job source class, and then exit if no jobs are in the queue.
+        # The script should just launch a child for each job source class,
+        # and then exit if no jobs are in the queue.  It should not create
+        # its own lockfile.
         returncode, output, error = run_script(self.script, ['MAIN'])
         expected = (
-            '.*Creating lockfile:.*launchpad-processjobsourcegroups.lock'
             '.*Creating lockfile:.*launchpad-process-job-'
             'source-IMembershipNotificationJobSource.lock.*')
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, error)
+        self.assertNotIn("launchpad-processjobsourcegroups.lock", error)
 
     def test_processed(self):
         # The script should output the number of jobs that have been
@@ -137,8 +138,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         for source in self.getJobSources("MAIN"):
             args.extend(("--exclude", source))
         returncode, output, error = run_script(self.script, args)
-        expected = "INFO    Creating lockfile: ...\n"
-        self.assertThat(error, DocTestMatches(expected))
+        self.assertEqual("", error)
 
     def test_exclude_non_existing_group(self):
         # If a job source specified by --exclude does not exist the script
@@ -148,7 +148,5 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
             args.extend(("--exclude", source))
         args.extend(("--exclude", "BobbyDazzler"))
         returncode, output, error = run_script(self.script, args)
-        expected = (
-            "INFO    Creating lockfile: ...\n"
-            "INFO    'BobbyDazzler' is not in MAIN\n")
+        expected = "INFO    'BobbyDazzler' is not in MAIN\n"
         self.assertThat(error, DocTestMatches(expected))

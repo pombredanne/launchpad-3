@@ -33,7 +33,6 @@ from lp.services.scripts import (
     logger,
     logger_options,
     )
-import replication.helpers
 
 PGSQL_BASE = '/usr/share/postgresql'
 
@@ -292,11 +291,6 @@ def main():
 
     con = connect()
 
-    is_replicated_db = replication.helpers.slony_installed(con)
-
-    if options.liverebuild and is_replicated_db:
-        parser.error("--live-rebuild does not work with Slony-I install.")
-
     if options.liverebuild:
         con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         liverebuild(con)
@@ -306,23 +300,8 @@ def main():
     else:
         parser.error("Required argument not specified")
 
-    if is_replicated_db:
-        slonik_sql.flush()
-        con.close()
-        log.info("Executing generated SQL using slonik")
-        if replication.helpers.execute_slonik("""
-            execute script (
-                set id=@lpmain_set,
-                event node=@master_node,
-                filename='%s');
-            """ % slonik_sql.name, sync=0):
-            return 0
-        else:
-            log.fatal("Failed to execute SQL in Slony-I environment.")
-            return 1
-    else:
-        con.commit()
-        return 0
+    con.commit()
+    return 0
 
 
 if __name__ == '__main__':

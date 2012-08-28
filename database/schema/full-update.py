@@ -1,5 +1,5 @@
 #!/usr/bin/python2.6 -S
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Full update process."""
@@ -11,6 +11,10 @@ from optparse import OptionParser
 import subprocess
 import sys
 
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
 from lp.services.scripts import (
     db_options,
     logger,
@@ -19,6 +23,7 @@ from lp.services.scripts import (
 from preflight import (
     KillConnectionsPreflight,
     NoConnectionCheckPreflight,
+    streaming_sync
     )
 import security  # security.py script
 import upgrade  # upgrade.py script
@@ -52,7 +57,6 @@ def run_upgrade(options, log):
     # Fake expected command line arguments and global log
     options.commit = True
     options.partial = False
-    options.ignore_slony = False
     upgrade.options = options
     upgrade.log = log
     # Invoke the database schema upgrade process.
@@ -75,7 +79,6 @@ def run_security(options, log):
     options.dryrun = False
     options.revoke = True
     options.owner = 'postgres'
-    options.cluster = True
     security.options = options
     security.log = log
     # Invoke the database security reset process.
@@ -159,7 +162,22 @@ def main():
             return security_rc
         security_run = True
 
-        log.info("All database upgrade steps completed")
+        log.info("All database upgrade steps completed. Waiting for sync.")
+
+        # Increase this timeout once we are confident in the implementation.
+        # We don't want to block rollouts unnecessarily with slow
+        # timeouts and a flaky sync detection implementation.
+        streaming_sync_timeout = 60
+
+        sync = streaming_sync(
+            connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT),
+            streaming_sync_timeout)
+        if sync:
+            log.debug('Streaming replicas in sync.')
+        else:
+            log.error(
+                'Streaming replicas failed to sync after %d seconds.',
+                streaming_sync_timeout)
 
         log.info("Restarting pgbouncer")
         pgbouncer_rc = run_pgbouncer(log, 'start')

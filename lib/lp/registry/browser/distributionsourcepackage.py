@@ -55,6 +55,8 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -573,6 +575,12 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             uses_bugs=uses_bugs, uses_answers=uses_answers,
             uses_both=uses_both, uses_either=uses_either)
 
+    @cachedproperty
+    def new_bugtasks_count(self):
+        search_params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.NEW, omit_dupes=True)
+        return self.context.searchTasks(search_params).count()
+
 
 class DistributionSourcePackageChangelogView(
     DistributionSourcePackageBaseView, LaunchpadView):
@@ -589,6 +597,16 @@ class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
     """View for presenting `DistributionSourcePackage` publishing history."""
 
     page_title = 'Publishing history'
+
+    def initialize(self):
+        """Preload relevant `IPerson` objects."""
+        ids = set()
+        for spph in self.context.publishing_history:
+            ids.update((spph.removed_byID, spph.creatorID, spph.sponsorID))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
 
     @property
     def label(self):

@@ -6,11 +6,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    TeamSubscriptionPolicy,
+from lp.registry.enums import (
+    InformationType,
+    TeamMembershipPolicy,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.testing import (
     login_celebrity,
@@ -34,6 +34,7 @@ class TestValidatingMergeView(TestCaseWithFactory):
         self.person_set = getUtility(IPersonSet)
         self.dupe = self.factory.makePerson(name='dupe')
         self.target = self.factory.makePerson(name='target')
+        self.requester = self.factory.makePerson(name='requester')
 
     def getForm(self, dupe_name=None):
         if dupe_name is None:
@@ -83,7 +84,8 @@ class TestValidatingMergeView(TestCaseWithFactory):
         # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(
-            from_person=self.dupe, to_person=self.target)
+            from_person=self.dupe, to_person=self.target,
+            requester=self.requester)
         login_person(self.target)
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
@@ -95,7 +97,8 @@ class TestValidatingMergeView(TestCaseWithFactory):
         # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
         job_source.create(
-            from_person=self.target, to_person=self.dupe)
+            from_person=self.target, to_person=self.dupe,
+            requester=self.requester)
         login_person(self.target)
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
@@ -185,7 +188,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
     def test_cannot_merge_team_with_ppa(self):
         # A team with a PPA cannot be merged.
         login_celebrity('admin')
-        self.dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        self.dupe_team.membership_policy = TeamMembershipPolicy.MODERATED
         self.dupe_team.createPPA()
         login_celebrity('registry_experts')
         view = self.getView()

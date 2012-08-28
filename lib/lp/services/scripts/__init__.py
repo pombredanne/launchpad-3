@@ -145,10 +145,6 @@ def db_options(parser):
     'dbname=foo user=baz host=bar port=6432'
     >>> config.database.rw_main_slave
     'dbname=foo user=baz host=bar port=6432'
-    >>> config.database.ro_main_master
-    'dbname=foo user=baz host=bar port=6432'
-    >>> config.database.ro_main_slave
-    'dbname=foo user=baz host=bar port=6432'
 
     Make sure that the default user is None
 
@@ -164,8 +160,6 @@ def db_options(parser):
         connection_string_keys = [
             'rw_main_master',
             'rw_main_slave',
-            'ro_main_master',
-            'ro_main_slave',
             ]
         config_data = ["[database]"]
         for con_str_key in connection_string_keys:

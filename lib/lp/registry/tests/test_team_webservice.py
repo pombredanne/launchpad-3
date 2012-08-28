@@ -11,10 +11,10 @@ from lazr.restfulclient.errors import (
     )
 import transaction
 
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.person import (
+from lp.registry.enums import (
+    InformationType,
     PersonVisibility,
-    TeamSubscriptionPolicy,
+    TeamMembershipPolicy,
     )
 from lp.testing import (
     ExpectedException,
@@ -36,11 +36,11 @@ class TestTeamJoining(TestCaseWithFactory):
 
     def test_restricted_rejects_membership(self):
         # Calling person.join with a team that has a restricted membership
-        # subscription policy should raise an HTTP error with BAD_REQUEST
+        # membership policy should raise an HTTP error with BAD_REQUEST
         self.person = self.factory.makePerson(name='test-person')
         self.team = self.factory.makeTeam(name='test-team')
         login_person(self.team.teamowner)
-        self.team.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+        self.team.membership_policy = TeamMembershipPolicy.RESTRICTED
         logout()
 
         launchpad = launchpadlib_for("test", self.person)
@@ -53,12 +53,12 @@ class TestTeamJoining(TestCaseWithFactory):
 
     def test_open_accepts_membership(self):
         # Calling person.join with a team that has an open membership
-        # subscription policy should add that that user to the team.
+        # membership policy should add that that user to the team.
         self.person = self.factory.makePerson(name='test-person')
         owner = self.factory.makePerson()
         self.team = self.factory.makeTeam(name='test-team', owner=owner)
         login_person(owner)
-        self.team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
+        self.team.membership_policy = TeamMembershipPolicy.OPEN
         logout()
 
         launchpad = launchpadlib_for("test", self.person)
@@ -71,6 +71,37 @@ class TestTeamJoining(TestCaseWithFactory):
             [membership.team.name
                 for membership in self.person.team_memberships])
         logout()
+
+
+class TeamObsoleteAPITestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_newTeam_obsolete_subscription_policy(self):
+        # The subscription_policy kwarg can be passed instead of
+        # membership_policy to suppport 1.0 API
+        owner = self.factory.makePerson()
+        launchpad = launchpadlib_for("test", owner)
+        team = launchpad.people.newTeam(
+            name='pting', display_name='Pting',
+            subscription_policy="Open Team")
+        self.assertEqual("Open Team", team.subscription_policy)
+        self.assertEqual("Open Team", team.membership_policy)
+
+    def test_subscription_policy_is_membership_policy(self):
+        # The subcription_policy property wraps membership_policy.
+        owner = self.factory.makePerson()
+        self.factory.makeTeam(
+            owner=owner, name='pting',
+            membership_policy=TeamMembershipPolicy.MODERATED)
+        launchpad = launchpadlib_for("test", owner)
+        team = launchpad.people['pting']
+        self.assertEqual("Moderated Team", team.subscription_policy)
+        self.assertEqual("Moderated Team", team.membership_policy)
+        team.subscription_policy = "Open Team"
+        team.lp_save()
+        self.assertEqual("Open Team", team.subscription_policy)
+        self.assertEqual("Open Team", team.membership_policy)
 
 
 class TestTeamLimitedViewAccess(TestCaseWithFactory):
@@ -86,7 +117,7 @@ class TestTeamLimitedViewAccess(TestCaseWithFactory):
         db_team = self.factory.makeTeam(
             name='private-team', owner=team_owner,
             visibility=PersonVisibility.PRIVATE,
-            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+            membership_policy=TeamMembershipPolicy.RESTRICTED)
         # Create a P3A for the team.
         with person_logged_in(team_owner):
             self.factory.makeArchive(
@@ -136,7 +167,7 @@ class TestTeamLimitedViewAccess(TestCaseWithFactory):
         # prohibited detail, like attributes on IPersonViewRestricted.
         launchpad = self.factory.makeLaunchpadService(self.authorised_person)
         team = launchpad.people['private-team']
-        self.assertIn(':redacted', team.homepage_content)
+        self.assertIn(':redacted', team.description)
         failure_regex = '(.|\n)*api_activemembers.*launchpad.View(.|\n)*'
         with ExpectedException(Unauthorized, failure_regex):
             members = team.members

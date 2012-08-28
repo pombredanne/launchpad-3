@@ -9,7 +9,10 @@ There are also tests in lp/blueprints/stories/blueprints/xx-dependencies.txt.
 __metaclass__ = type
 
 from lp.services.webapp import canonical_url
-from lp.testing import BrowserTestCase
+from lp.testing import (
+    BrowserTestCase,
+    person_logged_in,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -21,7 +24,14 @@ class TestAddDependency(BrowserTestCase):
         # field of the form to add a dependency to a spec.
         spec = self.factory.makeSpecification(owner=self.user)
         dependency = self.factory.makeSpecification()
+        dependency_url = canonical_url(dependency)
         browser = self.getViewBrowser(spec, '+linkdependency')
-        browser.getControl('Depends On').value = canonical_url(dependency)
+        browser.getControl('Depends On').value = dependency_url
         browser.getControl('Continue').click()
-        self.assertIn(dependency, spec.dependencies)
+        # click() above issues a request, and
+        # ZopePublication.endRequest() calls
+        # zope.security.management.endInteraction().
+        # We need a new interaction for the permission checks
+        # on ISpecification objects.
+        with person_logged_in(None):
+            self.assertIn(dependency, spec.dependencies)

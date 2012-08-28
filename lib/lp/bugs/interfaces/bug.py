@@ -31,7 +31,6 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
-    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -102,8 +101,8 @@ class CreateBugParams:
 
     def __init__(self, owner, title, comment=None, description=None,
                  msg=None, status=None, datecreated=None,
-                 information_type=InformationType.PUBLIC, subscribers=(),
-                 tags=None, subscribe_owner=True, filed_by=None,
+                 information_type=None, subscribers=(), tags=None,
+                 subscribe_owner=True, filed_by=None, target=None,
                  importance=None, milestone=None, assignee=None, cve=None):
         self.owner = owner
         self.title = title
@@ -114,9 +113,7 @@ class CreateBugParams:
         self.datecreated = datecreated
         self.information_type = information_type
         self.subscribers = subscribers
-        self.product = None
-        self.distribution = None
-        self.sourcepackagename = None
+        self.target = target
         self.tags = tags
         self.subscribe_owner = subscribe_owner
         self.filed_by = filed_by
@@ -124,42 +121,6 @@ class CreateBugParams:
         self.milestone = milestone
         self.assignee = assignee
         self.cve = cve
-
-    def setBugTarget(self, product=None, distribution=None,
-                     sourcepackagename=None):
-        """Set the IBugTarget in which the bug is being reported.
-
-        :product: an IProduct
-        :distribution: an IDistribution
-        :sourcepackagename: an ISourcePackageName
-
-        A product or distribution must be provided, or an AssertionError
-        is raised.
-
-        If product is specified, all other parameters must evaluate to
-        False in a boolean context, or an AssertionError will be raised.
-
-        If distribution is specified, sourcepackagename may optionally
-        be provided. Product must evaluate to False in a boolean
-        context, or an AssertionError will be raised.
-        """
-        assert product or distribution, (
-            "You must specify the product or distribution in which this "
-            "bug exists")
-
-        if product:
-            conflicting_context = (
-                distribution or sourcepackagename)
-        elif distribution:
-            conflicting_context = product
-
-        assert not conflicting_context, (
-            "You must specify either an upstream context or a distribution "
-            "context, but not both.")
-
-        self.product = product
-        self.distribution = distribution
-        self.sourcepackagename = sourcepackagename
 
 
 class BugNameField(ContentNameField):
@@ -209,12 +170,11 @@ class IBugPublic(IPrivacy):
         Bool(title=_("This bug report should be private"), required=False,
              description=_("Private bug reports are visible only to "
                            "their subscribers."),
-             default=False,
              readonly=True))
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,
-            required=True, readonly=True, default=InformationType.PUBLIC,
+            required=True, readonly=True,
             description=_(
                 'The type of information contained in this bug report.')))
 
@@ -344,7 +304,7 @@ class IBugView(Interface):
             readonly=True)))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability."),
-             required=False, default=False, readonly=True))
+             required=False, readonly=True))
     has_patches = Attribute("Does this bug have any patches?")
     latest_patch_uploaded = exported(
         Datetime(
@@ -519,8 +479,7 @@ class IBugView(Interface):
             `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
-    def getBugNotificationRecipients(duplicateof=None, old_bug=None,
-                                     include_master_dupe_subscribers=False):
+    def getBugNotificationRecipients(duplicateof=None, old_bug=None):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -528,8 +487,6 @@ class IBugView(Interface):
         includes email addresses and textual and header-ready
         rationales. See `BugNotificationRecipients` for
         details of this implementation.
-        If this bug is a dupe, set include_master_dupe_subscribers to
-        True to include the master bug's subscribers as recipients.
         """
 
     def canBeAQuestion():
@@ -714,6 +671,12 @@ class IBugView(Interface):
         Otherwise, return False.
         """
 
+    def getAllowedInformationTypes(user):
+        """Get a list of acceptable `InformationType`s for this bug.
+
+        The intersection of the affected pillars' allowed types is permitted.
+        """
+
 
 class IBugEdit(Interface):
     """IBug attributes that require launchpad.Edit permission."""
@@ -837,18 +800,10 @@ class IBugEdit(Interface):
         file_alias.restricted.
         """
 
-    def linkCVE(cve, user):
-        """Ensure that this CVE is linked to this bug."""
-
-    # XXX intellectronica 2008-11-06 Bug #294858:
-    # We use this method to suppress the return value
-    # from linkCVE, which we don't want to export.
-    # In the future we'll have a decorator which does that for us.
-    @call_with(user=REQUEST_USER)
+    @call_with(user=REQUEST_USER, return_cve=False)
     @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
-    @export_operation_as('linkCVE')
     @export_write_operation()
-    def linkCVEAndReturnNothing(cve, user):
+    def linkCVE(cve, user, return_cve=True):
         """Ensure that this CVE is linked to this bug."""
 
     @call_with(user=REQUEST_USER)
@@ -892,10 +847,10 @@ class IBugEdit(Interface):
     @operation_parameters(
         information_type=copy_field(IBugPublic['information_type']),
         )
-    @call_with(who=REQUEST_USER, from_api=True)
+    @call_with(who=REQUEST_USER)
     @export_write_operation()
     @operation_for_version("devel")
-    def transitionToInformationType(information_type, who, from_api=False):
+    def transitionToInformationType(information_type, who):
         """Set the information type for this bug.
 
         :information_type: The `InformationType` to transition to.

@@ -123,30 +123,3 @@ so is good defensive programming.
     >>> from lp.services.database.lpstorm import IMasterObject
     >>> IMasterObject(ro_janitor) is writable_janitor
     True
-
-Read-Only Mode
---------------
-
-During database outages, we run in read-only mode. In this mode, no
-matter what database policy is currently installed, explicit requests
-for a master store fail and the default store is always the slave.
-
-    >>> from lp.services.database.tests.readonly import read_only_mode
-    >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
-    >>> from contextlib import nested
-
-    >>> with nested(read_only_mode(), MasterDatabasePolicy()):
-    ...     default_store = IStore(Person)
-    ...     IMasterStore.providedBy(default_store)
-    False
-
-    >>> with nested(read_only_mode(), MasterDatabasePolicy()):
-    ...     slave_store = ISlaveStore(Person)
-    ...     IMasterStore.providedBy(slave_store)
-    False
-
-    >>> with nested(read_only_mode(), MasterDatabasePolicy()):
-    ...     master_store = IMasterStore(Person)
-    Traceback (most recent call last):
-    ...
-    ReadOnlyModeDisallowedStore: ('main', 'master')

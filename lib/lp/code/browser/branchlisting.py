@@ -99,9 +99,7 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin,
     SortSeriesMixin,
     )
-from lp.registry.enums import (
-    PRIVATE_INFORMATION_TYPES,
-    )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,

@@ -16,11 +16,7 @@ Registering information
 The distroseries pages presents the 'registering' information besides
 its main 'heading'.
 
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> derivation_enabled = FeatureFixture(
-    ...     {'soyuz.derived_series_ui.enabled': 'on'})
-    >>> with derivation_enabled:
-    ...     anon_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'registration'))
@@ -67,13 +63,13 @@ change its text slightly to annouce this:
     Project drivers: Jeff Waugh, Mark Shuttleworth
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
-    Successor to: Woody (3.0)
+    Derives from: Sarge (3.1) is not derived from another series.
+    Derived series: No derived series.
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
 
-The series' derivation parents - rather than the previous series - are
-shown when derivation is enabled, as are the series derived from this
-series:
+The series' derivation parents are shown when derivation is enabled, as are
+the series derived from this series:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.testing import celebrity_logged_in
@@ -97,8 +93,7 @@ series:
     ...             derived_series=child, parent_series=sarge)
     ...         for child in children]
 
-    >>> with derivation_enabled:
-    ...     anon_browser.open('http://launchpad.dev/debian/sarge')
+    >>> anon_browser.open('http://launchpad.dev/debian/sarge')
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Series information'))
     Series information

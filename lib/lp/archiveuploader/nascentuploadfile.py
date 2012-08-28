@@ -31,9 +31,9 @@ from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
+from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
-from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.uefi import UefiUpload
 from lp.archiveuploader.utils import (
     determine_source_file_type,

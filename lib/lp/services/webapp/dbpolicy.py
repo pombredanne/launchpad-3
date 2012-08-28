@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad database policies."""
@@ -9,7 +9,6 @@ __all__ = [
     'DatabaseBlockedPolicy',
     'LaunchpadDatabasePolicy',
     'MasterDatabasePolicy',
-    'ReadOnlyLaunchpadDatabasePolicy',
     'SlaveDatabasePolicy',
     'SlaveOnlyDatabasePolicy',
     ]
@@ -18,7 +17,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import logging
 from textwrap import dedent
 
 from storm.cache import (
@@ -45,7 +43,6 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
-from lp.services.database.readonly import is_read_only
 from lp.services.database.sqlbase import StupidCache
 from lp.services.webapp import LaunchpadView
 from lp.services.webapp.interfaces import (
@@ -55,7 +52,6 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
-    ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR,
     )
 
@@ -195,8 +191,6 @@ def LaunchpadDatabasePolicyFactory(request):
     # of test requests in our automated tests.
     if request.get('PATH_INFO') in [u'/+opstats', u'/+haproxy']:
         return DatabaseBlockedPolicy(request)
-    elif is_read_only():
-        return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         return LaunchpadDatabasePolicy(request)
 
@@ -305,9 +299,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                     session_data['last_write'] = now
 
     def getReplicationLag(self):
-        """Return the replication lag on the MAIN_STORE slave.
-
-        Lag to other replication sets is currently ignored.
+        """Return the replication lag between the primary and our hot standby.
 
         :returns: timedelta, or None if this isn't a replicated environment,
         """
@@ -328,70 +320,23 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
             # Return the lag.
             return streaming_lag
 
-        # Slave might be a Slony-I slave. We need to ask our slave what
-        # node it is. We can't cache this, as we might have reconnect to
-        # a different slave between requests.
-        slave_node_id = slave_store.execute(
-            "SELECT getlocalnodeid()").get_one()[0]
-        if slave_node_id is None:
-            # Unreplicated. This might be a dev system, or a production
-            # system running on a single database for some reason.
-            return None
-
-        # sl_status gives meaningful results only on the origin node.
-        master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-
-        # Retrieve the cached lag.
-        lag = master_store.execute("""
-            SELECT lag + (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - updated)
-            FROM DatabaseReplicationLag WHERE node=%d
-            """ % slave_node_id).get_one()
-        if lag is None:
-            logging.error(
-                "No data in DatabaseReplicationLag for node %d"
-                % slave_node_id)
-            return timedelta(days=999)
-        return lag[0]
+        # Unreplicated. This might be a dev system, or a production
+        # system running on a single database for some reason.
+        return None
 
 
 def WebServiceDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    if is_read_only():
-        return ReadOnlyLaunchpadDatabasePolicy(request)
-    else:
-        # If a session cookie was sent with the request, use the
-        # standard Launchpad database policy for load balancing to
-        # the slave databases. The javascript web service libraries
-        # send the session cookie for authenticated users.
-        cookie_name = getUtility(IClientIdManager).namespace
-        if cookie_name in request.cookies:
-            return LaunchpadDatabasePolicy(request)
-        # Otherwise, use the master only web service database policy.
-        return MasterDatabasePolicy(request)
-
-
-class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):
-    """Policy for Launchpad web requests when running in read-only mode.
-
-    Access to all master Stores is blocked.
-    """
-
-    def getStore(self, name, flavor):
-        """See `IDatabasePolicy`.
-
-        Access to all master Stores is blocked. The default Store is
-        the slave.
-
-        Note that we even have to block access to the authdb master
-        Store, as it allows access to tables replicated from the
-        lpmain replication set. These tables will be locked during
-        a lpmain replication set database upgrade.
-        """
-        if flavor == MASTER_FLAVOR:
-            raise ReadOnlyModeDisallowedStore(name, flavor)
-        return super(ReadOnlyLaunchpadDatabasePolicy, self).getStore(
-            name, SLAVE_FLAVOR)
+    # If a session cookie was sent with the request, use the
+    # standard Launchpad database policy for load balancing to
+    # the slave databases. The javascript web service libraries
+    # send the session cookie for authenticated users.
+    cookie_name = getUtility(IClientIdManager).namespace
+    if cookie_name in request.cookies:
+        return LaunchpadDatabasePolicy(request)
+    # Otherwise, use the master only web service database policy.
+    return MasterDatabasePolicy(request)
 
 
 class WhichDbView(LaunchpadView):

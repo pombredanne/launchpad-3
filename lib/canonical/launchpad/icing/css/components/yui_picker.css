@@ -1,5 +1,6 @@
 .yui3-picker {
-    width: 40%;
+    min-width: 40%;
+    max-width: 40%;
     }
 
 .yui3-picker-results div.badge {

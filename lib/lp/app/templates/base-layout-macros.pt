@@ -88,8 +88,7 @@
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
 
   <tal:js-loader condition="request/features/js.combo_loader.enabled">
-   <script type="text/javascript"
-        tal:attributes="src string:${combo_url}/?yui/yui/yui-min.js&amp;lp/meta.js&amp;yui/loader/loader-min.js"></script>
+   <script type="text/javascript" tal:attributes="src string:${combo_url}/?${yui_version}/yui/yui-min.js&amp;lp/meta.js&amp;${yui_version}/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
         var raw = null;
         if (LP.devmode) {
@@ -98,10 +97,11 @@
         YUI.GlobalConfig = {
             combine: true,
             comboBase: '${combo_url}/?',
-            root: 'yui/',
+            root: '${yui_version}/',
             filter: raw,
             debug: ${yui_console_debug},
             fetchCSS: false,
+            maxURLLength: 2000,
             groups: {
                 lp: {
                     combine: true,
@@ -167,8 +167,8 @@
             'lp.app.banner.beta', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
             'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
-            'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
-            function(Y) {
+            'lp.app.ellipsis', 'lp.code.branchmergeproposal.diff',
+             function(Y) {
 
             Y.on("domready", function () {
                 if (Y.one(document.body).hasClass('private')) {

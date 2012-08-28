@@ -253,6 +253,9 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         if upload.is_ppa:
             self.checkArchiveSizeQuota(upload)
         else:
+            # XXX cjwatson 2012-07-20 bug=1026665: For now, direct uploads
+            # to SECURITY will not be built.  See
+            # BuildPackageJob.postprocessCandidate.
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
                     "This upload queue does not permit SECURITY uploads.")
@@ -319,6 +322,8 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
     def autoApprove(self, upload):
         """Check that all custom files in this upload can be auto-approved."""
+        if upload.is_ppa:
+            return True
         if upload.binaryful:
             for custom_file in upload.changes.custom_files:
                 if not custom_file.autoApprove():

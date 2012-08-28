@@ -24,7 +24,7 @@ If no title is entered, the user is asked to supply one.
     There is 1 error.
     >>> for message in top_portlet.findAll(attrs={'class': 'message'}):
     ...     print message.renderContents()
-    A summary is required.
+    Required input is missing.
 
 The user fills in some keywords, and clicks a button to search existing
 bugs.

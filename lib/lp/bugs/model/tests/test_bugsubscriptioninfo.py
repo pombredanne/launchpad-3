@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `BugSubscriptionInfo`."""
@@ -123,7 +123,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         super(TestBugSubscriptionInfo, self).setUp()
         self.target = self.factory.makeProduct(
             bug_supervisor=self.factory.makePerson())
-        self.bug = self.factory.makeBug(product=self.target)
+        self.bug = self.factory.makeBug(target=self.target)
         # Unsubscribe the bug filer to make the tests more readable.
         with person_logged_in(self.bug.owner):
             self.bug.unsubscribe(self.bug.owner, self.bug.owner)
@@ -230,7 +230,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             [sub1, sub2], info.direct_subscriptions_at_all_levels)
 
     def _create_duplicate_subscription(self):
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
             duplicate_bug_subscription = (
@@ -276,7 +276,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
     def test_duplicate_only(self):
         # The set of duplicate subscriptions where the subscriber has no other
         # subscriptions.
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
             duplicate_bug_subscription = (
@@ -363,67 +363,6 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             [bugtask2.owner],
             self.getInfo().forTask(bugtask2).all_assignees)
 
-    def test_all_pillar_owners_without_bug_supervisors(self):
-        # The set of owners of pillars for which no bug supervisor is
-        # configured and which use Launchpad for bug tracking.
-        [bugtask] = self.bug.bugtasks
-        found_owners = (
-            self.getInfo().all_pillar_owners_without_bug_supervisors)
-        self.assertContentEqual([], found_owners)
-        # Clear the supervisor for the bugtask's target and ensure that the
-        # project uses Launchpad Bugs.
-        with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(None, bugtask.owner)
-            bugtask.pillar.official_malone = True
-        # The collection includes the pillar's owner.
-        found_owners = (
-            self.getInfo().all_pillar_owners_without_bug_supervisors)
-        self.assertContentEqual([bugtask.pillar.owner], found_owners)
-        # Add another bugtask for a pillar that uses Launchpad but does not
-        # have a bug supervisor.
-        target2 = self.factory.makeProduct(
-            bug_supervisor=None, official_malone=True)
-        bugtask2 = self.factory.makeBugTask(bug=self.bug, target=target2)
-        found_owners = (
-            self.getInfo().all_pillar_owners_without_bug_supervisors)
-        self.assertContentEqual(
-            [bugtask.pillar.owner, bugtask2.pillar.owner],
-            found_owners)
-
-    def test_all_pillar_owners_without_bug_supervisors_not_using_malone(self):
-        # The set of owners of pillars for which no bug supervisor is
-        # configured and which do not use Launchpad for bug tracking is empty.
-        [bugtask] = self.bug.bugtasks
-        # Clear the supervisor for the first bugtask's target and ensure the
-        # project does not use Launchpad Bugs.
-        with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(None, bugtask.owner)
-            bugtask.pillar.official_malone = False
-        found_owners = (
-            self.getInfo().all_pillar_owners_without_bug_supervisors)
-        self.assertContentEqual([], found_owners)
-
-    def test_all_pillar_owners_without_bug_supervisors_for_bugtask(self):
-        # The set of the owner of the chosen bugtask's pillar when no bug
-        # supervisor is configured and which uses Launchpad for bug tracking.
-        [bugtask] = self.bug.bugtasks
-        # Clear the supervisor for the bugtask's target and ensure that the
-        # project uses Launchpad Bugs.
-        with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(None, bugtask.owner)
-            bugtask.pillar.official_malone = True
-        # Add another bugtask for a pillar that uses Launchpad but does not
-        # have a bug supervisor.
-        target2 = self.factory.makeProduct(
-            bug_supervisor=None, official_malone=True)
-        bugtask2 = self.factory.makeBugTask(bug=self.bug, target=target2)
-        # Getting subscription info for just a specific bugtask will yield
-        # owners for only the pillar associated with that bugtask.
-        info_for_bugtask2 = self.getInfo().forTask(bugtask2)
-        self.assertContentEqual(
-            [bugtask2.pillar.owner],
-            info_for_bugtask2.all_pillar_owners_without_bug_supervisors)
-
     def _create_also_notified_subscribers(self):
         # Add an assignee, a bug supervisor and a structural subscriber.
         bugtask = self.bug.default_bugtask
@@ -432,7 +371,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             bugtask.transitionToAssignee(assignee)
         supervisor = self.factory.makePerson()
         with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(supervisor, supervisor)
+            bugtask.target.bug_supervisor = supervisor
         structural_subscriber = self.factory.makePerson()
         with person_logged_in(structural_subscriber):
             bugtask.target.addSubscription(
@@ -453,8 +392,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # the assignee, supervisor and structural subscriber do.
         found_subscribers = self.getInfo().also_notified_subscribers
         self.assertContentEqual(
-            [assignee, supervisor, structural_subscriber],
-            found_subscribers)
+            [assignee, structural_subscriber], found_subscribers)
 
     def test_also_notified_subscribers_muted(self):
         # If someone is muted, they are not listed in the
@@ -466,13 +404,10 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # when they are not muted.
         found_subscribers = self.getInfo().also_notified_subscribers
         self.assertContentEqual(
-            [assignee, supervisor, structural_subscriber],
-            found_subscribers)
+            [assignee, structural_subscriber], found_subscribers)
         # Now we mute all of the subscribers.
         with person_logged_in(assignee):
             self.bug.mute(assignee, assignee)
-        with person_logged_in(supervisor):
-            self.bug.mute(supervisor, supervisor)
         with person_logged_in(structural_subscriber):
             self.bug.mute(structural_subscriber, structural_subscriber)
         # Now we don't see them.
@@ -511,7 +446,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
     def setUp(self):
         super(TestBugSubscriptionInfoQueries, self).setUp()
         self.target = self.factory.makeProduct()
-        self.bug = self.factory.makeBug(product=self.target)
+        self.bug = self.factory.makeBug(target=self.target)
         self.info = BugSubscriptionInfo(
             self.bug, BugNotificationLevel.LIFECYCLE)
         # Get the Storm cache into a known state.
@@ -588,7 +523,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             "direct_subscriptions_at_all_levels")
 
     def make_duplicate_bug(self):
-        duplicate_bug = self.factory.makeBug(product=self.target)
+        duplicate_bug = self.factory.makeBug(target=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
 
@@ -608,7 +543,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             self.bug.setPrivate(True, self.bug.owner)
         with self.exactly_x_queries(1):
             self.info.duplicate_subscriptions
-        with self.exactly_x_queries(1):
+        with self.exactly_x_queries(0):
             self.info.duplicate_subscriptions.subscribers
 
     def add_structural_subscriber(self):
@@ -630,14 +565,6 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         with self.exactly_x_queries(1):
             self.info.all_assignees
 
-    def test_all_pillar_owners_without_bug_supervisors(self):
-        # Getting all bug supervisors and pillar owners can take several
-        # queries. However, there are typically few tasks so the trade for
-        # simplicity of implementation is acceptable. Only the simplest case
-        # is tested here (everything is already cached).
-        with self.exactly_x_queries(0):
-            self.info.all_pillar_owners_without_bug_supervisors
-
     def test_also_notified_subscribers(self):
         with self.exactly_x_queries(5):
             self.info.also_notified_subscribers
@@ -646,7 +573,6 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         # When also_notified_subscribers is referenced after some other sets
         # in BugSubscriptionInfo are referenced, everything comes from cache.
         self.info.all_assignees
-        self.info.all_pillar_owners_without_bug_supervisors
         self.info.direct_subscriptions.subscribers
         self.info.structural_subscribers
         with self.exactly_x_queries(1):

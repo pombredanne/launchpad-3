@@ -107,7 +107,7 @@ class FileBugAPI(LaunchpadXMLRPCView):
         if security_related:
             information_type = InformationType.PRIVATESECURITY
         else:
-            information_type = InformationType.PUBLIC
+            information_type = None
 
         params = CreateBugParams(
             owner=self.user, title=summary, comment=comment,

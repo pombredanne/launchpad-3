@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -52,6 +52,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -210,8 +211,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         Returns True is the user is subscribed to bug notifications
         for the context target.
         """
-        subscription = self.context.getSubscription(person)
-        return subscription is not None
+        return self.context.getSubscription(person) is not None
 
     def currentUserIsSubscribed(self):
         """Return True, if the current user is subscribed."""
@@ -415,6 +415,7 @@ def expose_structural_subscription_data_to_js(context, request,
     expose_user_administered_teams_to_js(request, user, context)
     expose_enum_to_js(request, BugTaskImportance, 'importances')
     expose_enum_to_js(request, BugTaskStatus, 'statuses')
+    expose_enum_to_js(request, InformationType, 'information_types')
     if subscriptions is None:
         try:
             # No subscriptions, which means we are on a target
@@ -432,10 +433,7 @@ def expose_structural_subscription_data_to_js(context, request,
 
 def expose_enum_to_js(request, enum, name):
     """Make a list of enum titles and value available to JavaScript."""
-    info = []
-    for item in enum:
-        info.append(item.title)
-    IJSONRequestCache(request).objects[name] = info
+    IJSONRequestCache(request).objects[name] = [item.title for item in enum]
 
 
 def expose_user_administered_teams_to_js(request, user, context,

@@ -82,10 +82,8 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonVisibility,
-    )
+from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
@@ -380,6 +378,8 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
         if item_type is None or item is None:
             return None
 
+        the_item = None
+        kwargs = {}
         if item_type == 'component':
             # See if "item" is a component name.
             try:
@@ -406,6 +406,15 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
             # See if "item" is a pocket name.
             try:
                 the_item = PackagePublishingPocket.items[item]
+                # Was a 'series' URL param passed?
+                series = get_url_param('series')
+                if series is not None:
+                    # Get the requested distro series.
+                    try:
+                        series = self.context.distribution[series]
+                        kwargs["distroseries"] = series
+                    except NotFoundError:
+                        pass
             except KeyError:
                 pass
         else:
@@ -413,7 +422,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin,
 
         if the_item is not None:
             result_set = getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, the_item)
+                user, self.context, permission_type, the_item, **kwargs)
             try:
                 return result_set[0]
             except IndexError:
@@ -900,7 +909,9 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
     def displayname_edit_widget(self):
         display_name = IArchive['displayname']
         title = "Edit the displayname"
-        return TextLineEditorWidget(self.context, display_name, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, display_name, title, 'h1', max_width='95%',
+            truncate_lines=1)
 
     @property
     def default_series_filter(self):
@@ -1322,7 +1333,7 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
             copy_policy=PackageCopyPolicy.INSECURE,
-            requester=person, sponsored=sponsored)
+            requester=person, sponsored=sponsored, unembargo=True)
 
     return copy_asynchronously_message(len(source_pubs))
 

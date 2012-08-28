@@ -101,7 +101,7 @@ def create_list(team_name):
     browser.open('%s/people/+newteam' % MailmanLayer.appserver_root_url())
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
-    browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    browser.getControl(name='field.membership_policy').displayValue = [
         'Open Team']
     browser.getControl('Create').click()
     # Create the mailing list.

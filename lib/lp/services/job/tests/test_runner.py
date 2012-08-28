@@ -384,7 +384,7 @@ class TestJobRunner(TestCaseWithFactory):
         task_id = job.taskId()
         uuid_expr = (
             '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
-        mo = re.search('^NullJob-%s-%s$' % (job.job_id, uuid_expr), task_id)
+        mo = re.search('^NullJob_%s_%s$' % (job.job_id, uuid_expr), task_id)
         self.assertIsNot(None, mo)
 
 

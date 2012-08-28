@@ -60,10 +60,10 @@
         </dd>
       </dl>
       <dl id="subscription-policy">
-        <dt>Subscription policy:</dt>
+        <dt>Membership policy:</dt>
         <dd
-          tal:attributes="title context/subscriptionpolicy/description">
-          <span tal:replace="context/subscriptionpolicy/title" />
+          tal:attributes="title context/membership_policy/description">
+          <span tal:replace="context/membership_policy/title" />
           <a class="sprite maybe action-icon" href="/+help-registry/team-subscription-policy.html"
             target="help"></a>
         </dd>

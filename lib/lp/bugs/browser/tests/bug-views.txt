@@ -35,10 +35,8 @@ comment, of the bug report.
     ...     )
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskSearchParams,
-    ...     IBugTaskSet,
-    ...     )
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
@@ -633,14 +631,12 @@ and the bug will have been edited.
     False
     >>> bug_edit.wasRedirected()
     True
-
     >>> bug_one.title
     u'New title'
     >>> bug_one.description
     u'New description.'
     >>> bug_one.tags
     [u'doc']
-
 
 Emails are sent out by adding entries to the bugnotification table. We
 need to know how many messages are currently in that table.
@@ -649,59 +645,15 @@ need to know how many messages are currently in that table.
     >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
     >>> start_bugnotification_count = bn_set.count()
 
-Re-adding the same tag that already exists shouldn't notify anyone.
-
-    >>> edit_values['field.tags'] = u'doc doc'
-    >>> bug_edit.submit('change', edit_values)
-    >>> bug_edit.hasErrors()
-    False
-    >>> for message in bug_edit.view.notifications:
-    ...     print message
-
-    >>> bug_edit.wasRedirected()
-    True
-    >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
-    >>> bn_set.count() == start_bugnotification_count
-    True
-
-The tag 'doc' has already been used for other Firefox bugs, let's try
-adding a tag that hasn't already been used. Add 'new-tag' multiple times
-so that we can verify that it will only be added once.
+Add 'new-tag' multiple times so that we can verify that it will only be added
+once.
 
     >>> edit_values['field.tags'] = u'new-tag doc new-tag'
     >>> bug_edit.submit('change', edit_values)
-
-Now the form will have a notification, asking us to confirm that we indeed
-want to use a new tag. The notification includes a button, with which
-the user can confirm that he wants to add the tag.
-
-    >>> bug_edit.hasErrors()
-    False
-    >>> for message in bug_edit.view.notifications:
-    ...     print message
-    The tag "new-tag" hasn't been used by Mozilla Firefox before.
-    <input ...Create the new tag...>
-
-    >>> bug_edit.wasRedirected()
-    False
-
-The form still contains the 'Change' button, though, so that the user
-can edit the tag and submit the form again.
-
-    >>> bug_edit.view.render()
-    EDIT BUG
-    >>> [action.label for action in bug_edit.view.actions]
-    ['Change']
-
-If we click on the 'Create the new tag' button, we'll get redirected to
-the bug page, and the bug will have the new tag.
-
-    >>> bug_edit.submit('confirm_tag', edit_values)
     >>> bug_edit.hasErrors()
     False
     >>> bug_edit.wasRedirected()
     True
-
     >>> bug_one.tags
     [u'doc', u'new-tag']
 
@@ -732,7 +684,7 @@ First, some set-up.
 
     >>> login('foo.bar@canonical.com')
     >>> product = factory.makeProduct(name='testproduct')
-    >>> bug = factory.makeBug(title="A bug title", product=product)
+    >>> bug = factory.makeBug(title="A bug title", target=product)
     >>> title_change = BugTitleChange(
     ...     when=nowish, person=foo_bar, what_changed='title',
     ...     old_value=bug.title, new_value="A new bug title")
