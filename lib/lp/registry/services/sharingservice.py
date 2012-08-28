@@ -59,7 +59,6 @@ from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormexpr import ColumnSelect
-from lp.services.features import getFeatureFlag
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
     available_with_permission,
@@ -80,12 +79,6 @@ class SharingService:
     def name(self):
         """See `IService`."""
         return 'sharing'
-
-    @property
-    def write_enabled(self):
-        return (
-            bool(getFeatureFlag(
-            'disclosure.enhanced_sharing.writable')))
 
     def checkPillarAccess(self, pillar, information_type, person):
         """See `ISharingService`."""
@@ -350,15 +343,12 @@ class SharingService:
         result = []
         request = get_current_web_service_request()
         browser_request = IWebBrowserOriginatingRequest(request)
-        details_enabled = bool((getFeatureFlag(
-            'disclosure.enhanced_sharing_details.enabled')))
         # We need to precache icon and validity information for the batch.
         grantee_ids = [grantee[0].id for grantee in grant_permissions]
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             grantee_ids, need_icon=True, need_validity=True))
         for (grantee, permissions, shared_artifact_types) in grant_permissions:
-            some_things_shared = (
-                details_enabled and len(shared_artifact_types) > 0)
+            some_things_shared = len(shared_artifact_types) > 0
             grantee_permissions = {}
             for (policy, permission) in permissions.iteritems():
                 grantee_permissions[policy.type.name] = permission.name
@@ -385,9 +375,6 @@ class SharingService:
 
         # We do not support adding grantees to project groups.
         assert not IProjectGroup.providedBy(pillar)
-
-        if not self.write_enabled:
-            raise Unauthorized("This feature is not yet enabled.")
 
         # Separate out the info types according to permission.
         information_types = permissions.keys()
@@ -463,9 +450,6 @@ class SharingService:
                              information_types=None):
         """See `ISharingService`."""
 
-        if not self.write_enabled:
-            raise Unauthorized("This feature is not yet enabled.")
-
         policy_source = getUtility(IAccessPolicySource)
         if information_types is None:
             # We delete all policy grants for the pillar.
@@ -491,9 +475,8 @@ class SharingService:
         to_delete = list(ap_grant_flat.findArtifactsByGrantee(
             grantee, pillar_policies))
         if len(to_delete) > 0:
-            accessartifact_grant_source = getUtility(
-                IAccessArtifactGrantSource)
-            accessartifact_grant_source.revokeByArtifact(to_delete, [grantee])
+            getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                to_delete, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
@@ -512,9 +495,6 @@ class SharingService:
                            bugs=None):
         """See `ISharingService`."""
 
-        if not self.write_enabled:
-            raise Unauthorized("This feature is not yet enabled.")
-
         artifacts = []
         if branches:
             artifacts.extend(branches)
@@ -524,8 +504,7 @@ class SharingService:
         accessartifact_source = getUtility(IAccessArtifactSource)
         artifacts_to_delete = accessartifact_source.find(artifacts)
         # Revoke access to bugs/branches for the specified grantee.
-        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
-        accessartifact_grant_source.revokeByArtifact(
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             artifacts_to_delete, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
@@ -536,9 +515,6 @@ class SharingService:
     def ensureAccessGrants(self, grantees, user, branches=None, bugs=None,
                            ignore_permissions=False):
         """See `ISharingService`."""
-
-        if not ignore_permissions and not self.write_enabled:
-            raise Unauthorized("This feature is not yet enabled.")
 
         artifacts = []
         if branches:

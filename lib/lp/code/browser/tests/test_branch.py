@@ -1040,8 +1040,10 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         # We don't force branches with a disallowed type (eg. Proprietary on a
         # non-commercial project) to change, so the current type is
         # shown.
+        product = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(pillar=product)
         branch = self.factory.makeBranch(
-            information_type=InformationType.PROPRIETARY)
+            product=product, information_type=InformationType.PROPRIETARY)
         self.assertShownTypes(
             [InformationType.PUBLIC,
              InformationType.PUBLICSECURITY,
