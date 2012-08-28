@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -1740,11 +1738,9 @@ class Bug(SQLBase):
 
         # We have to capture subscribers that must exist after transition. In
         # the case of a transition to USERDATA, we want the bug supervisor or
-        # maintainer. For SECURITY types, we want the security contact or
-        # maintainer. In either case, if the driver is already subscribed,
-        # then the driver is also required.
-        # Ubuntu is special: we don't want to add required subscribers in that
-        # case.
+        # maintainer and if the driver is already subscribed, then the driver
+        # is also required. Ubuntu is special: we don't want to add required
+        # subscribers in that case.
         if information_type == InformationType.USERDATA:
             for pillar in pillars:
                 if pillar.driver in subscribers:
@@ -1754,15 +1750,6 @@ class Bug(SQLBase):
                         required_subscribers.add(pillar.bug_supervisor)
                     else:
                         required_subscribers.add(pillar.owner)
-
-        if information_type in SECURITY_INFORMATION_TYPES:
-            for pillar in pillars:
-                if pillar.driver in subscribers:
-                    required_subscribers.add(pillar.driver)
-                if pillar.security_contact is not None:
-                    required_subscribers.add(pillar.security_contact)
-                else:
-                    required_subscribers.add(pillar.owner)
 
         # If we've made the bug private, we need to do some cleanup.
         # Required subscribers must be given access.
@@ -2649,16 +2636,11 @@ class BugSet:
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, params.target, status=params.status)
 
-        if params.information_type in SECURITY_INFORMATION_TYPES:
-            pillar = params.target.pillar
-            if pillar.security_contact:
-                bug.subscribe(pillar.security_contact, params.owner)
-            else:
-                bug.subscribe(pillar.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
-        elif IProduct.providedBy(params.target) and params.target.private_bugs:
+        if (IProduct.providedBy(params.target) and params.target.private_bugs
+            and params.information_type not in SECURITY_INFORMATION_TYPES):
             # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.

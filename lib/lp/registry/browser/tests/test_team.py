@@ -329,16 +329,6 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         self._test_edit_team_view_expected_subscription_vocab(
             setup_team, EXCLUSIVE_TEAM_POLICY)
 
-    def test_edit_team_view_pillar_security_contact(self):
-        # The edit view renders only closed membership policy choices when
-        # the team is a pillar security contact.
-
-        def setup_team(team):
-            self.factory.makeProduct(security_contact=team)
-
-        self._test_edit_team_view_expected_subscription_vocab(
-            setup_team, EXCLUSIVE_TEAM_POLICY)
-
     def test_edit_team_view_has_ppas(self):
         # The edit view renders only closed membership policy choices when
         # the team has any ppas.

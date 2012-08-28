@@ -173,7 +173,6 @@ class BugTaskPillarAffiliation(PillarAffiliation):
         - owner of bugtask pillar
         - driver of bugtask pillar
         - bug supervisor of bugtask pillar
-        - security contact of bugtask pillar
         """
         super_instance = super(BugTaskPillarAffiliation, self)
         result = super_instance._getAffiliationTeamRoles(pillars)
@@ -182,10 +181,6 @@ class BugTaskPillarAffiliation(PillarAffiliation):
                 self.getIconUrl(pillar),
                 pillar.displayname,
                 'bug supervisor')] = [pillar.bug_supervisor]
-            result[BadgeDetails(
-                self.getIconUrl(pillar),
-                pillar.displayname,
-                'security contact')] = [pillar.security_contact]
         return result
 
 

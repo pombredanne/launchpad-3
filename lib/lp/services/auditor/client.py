@@ -28,7 +28,6 @@ class AuditorClient(Client):
             object_to_enterpriseid(obj), operation,
             object_to_enterpriseid(actorobj), comment, details)
 
-
     def receive(self, obj=None, operation=None, actorobj=None, limit=None):
         if obj:
             obj = object_to_enterpriseid(obj)
