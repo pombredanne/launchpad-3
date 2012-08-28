@@ -1688,6 +1688,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 target = series.pillar
             else:
                 target = self.makeProduct()
+                if information_type == InformationType.PROPRIETARY:
+                    self.makeAccessPolicy(pillar=target)
         if IDistributionSourcePackage.providedBy(target):
             self.makeSourcePackagePublishingHistory(
                 distroseries=target.distribution.currentseries,
