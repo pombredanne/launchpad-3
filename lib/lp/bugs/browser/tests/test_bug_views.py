@@ -403,6 +403,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # bug will become invisible but and no visibility check is performed.
         product = self.factory.makeProduct(
             bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        self.factory.makeAccessPolicy(pillar=product)
         bug = self.factory.makeBug(target=product)
         self._assert_secrecy_view_ajax_render(bug, 'PROPRIETARY', False)
 
