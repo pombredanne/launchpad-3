@@ -6,7 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
+from textwrap import dedent
+
+from fixtures import Fixture
 from lazr.restful.interfaces import IWebServiceConfiguration
+from storm.exceptions import DisconnectionError
 from zope.component import (
     getAdapter,
     getUtility,
@@ -26,6 +30,8 @@ from lp.layers import (
     setFirstLayer,
     WebServiceLayer,
     )
+from lp.registry.model.person import Person
+from lp.services.config import config
 from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
@@ -49,7 +55,9 @@ from lp.services.webapp.interfaces import (
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
+from lp.testing.fixture import PGBouncerFixture
 from lp.testing.layers import (
+    DatabaseLayer,
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
@@ -230,3 +238,50 @@ class LayerDatabasePolicyTestCase(TestCase):
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, LaunchpadDatabasePolicy)
+
+
+class MasterFallbackTestCase(TestCase):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(MasterFallbackTestCase, self).setUp()
+
+        self.fixture = Fixture()
+        self.fixture.setUp()
+
+        self.pgbouncer_fixture = PGBouncerFixture()
+
+        dbname = DatabaseLayer._db_fixture.dbname
+        conn_str_direct = self.pgbouncer_fixture.databases[dbname]
+        conn_str_pgbouncer = 'dbname=%s host=localhost' % dbname
+
+        # Configure slave connections via pgbouncer, so we can shut them
+        # down. Master connections direct so they are unaffected.
+        config_key = 'master-slave-separation'
+        config.push(config_key, dedent('''\
+            [database]
+            rw_main_master: %s
+            rw_main_slave: %s
+            ''' % (conn_str_direct, conn_str_pgbouncer)))
+        self.addCleanup(lambda: config.pop(config_key))
+
+        self.fixture.useFixture(self.pgbouncer_fixture)
+
+    def tearDown(self):
+        self.pgbouncer_fixture = None
+        self.fixture.cleanUp()
+        super(MasterFallbackTestCase, self).tearDown()
+
+    def test_can_shutdown_slave_only(self):
+        master_store = IMasterStore(Person)
+        slave_store = ISlaveStore(Person)
+
+        # Both Stores work when pgbouncer is up.
+        master_store.get(Person, 1)
+        slave_store.get(Person, 1)
+
+        # Slave Store breaks when pgbouncer is torn down. Master Store
+        # is fine.
+        self.pgbouncer_fixture.stop()
+        master_store.get(Person, 2)
+        self.assertRaises(DisconnectionError, slave_store.get, Person, 2)
