@@ -737,7 +737,7 @@ class BranchEditFormView(LaunchpadEditFormView):
         # If we're stacked on a private branch, only show that
         # information type.
         if self.context.stacked_on and self.context.stacked_on.private:
-            shown_types = {self.context.stacked_on.information_type}
+            shown_types = set([self.context.stacked_on.information_type])
         else:
             shown_types = (
                 InformationType.PUBLIC,
