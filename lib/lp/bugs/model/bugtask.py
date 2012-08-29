@@ -338,6 +338,12 @@ def validate_target(bug, target, retarget_existing=True):
             except NotFoundError as e:
                 raise IllegalTarget(e[0])
 
+    legal_types = target.pillar.getAllowedBugInformationTypes()
+    if bug.information_type not in legal_types:
+        raise IllegalTarget(
+            "%s doesn't allow %s bugs."
+            % (target.pillar.displayname, bug.information_type.title))
+
     if bug.information_type == InformationType.PROPRIETARY:
         # Perhaps we are replacing the one and only existing bugtask, in
         # which case that's ok.

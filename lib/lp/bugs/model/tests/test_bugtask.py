@@ -56,6 +56,7 @@ from lp.bugs.scripts.bugtasktargetnamecaches import (
     )
 from lp.bugs.tests.bug import create_old_bug
 from lp.registry.enums import (
+    BugSharingPolicy,
     InformationType,
     TeamMembershipPolicy,
     )
@@ -3078,6 +3079,26 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
             "Package %s not published in %s"
             % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
+
+    def test_illegal_information_type_disallowed(self):
+        # The bug's current information_type must be permitted by the
+        # new target.
+        free_prod = self.factory.makeProduct()
+        other_free_prod = self.factory.makeProduct()
+        commercial_prod = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product=commercial_prod)
+        with person_logged_in(commercial_prod.owner):
+            commercial_prod.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+        bug = self.factory.makeBug(target=free_prod)
+
+        # The new bug is Public, which is legal on the other free product.
+        self.assertIs(None, validate_target(bug, other_free_prod))
+
+        # But not on the proprietary-only product.
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "%s doesn't allow Public bugs." % commercial_prod.displayname,
+            validate_target, bug, commercial_prod)
 
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):
