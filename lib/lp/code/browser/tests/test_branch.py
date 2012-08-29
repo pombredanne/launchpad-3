@@ -968,7 +968,7 @@ class TestBranchEditView(TestCaseWithFactory):
         admin = admins.teamowner
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=admin)
-        browser.getControl("Private").click()
+        browser.getControl("Private", index=1).click()
         browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEqual(
