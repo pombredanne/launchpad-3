@@ -187,7 +187,6 @@ class TestSharingService(TestCaseWithFactory):
         # if it is not in the nominally allowed policy list.
         product = self.factory.makeProduct(
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-        self.factory.makeCommercialSubscription(product)
         self._assert_getBranchSharingPolicies(
             product,
             [BranchSharingPolicy.PUBLIC,

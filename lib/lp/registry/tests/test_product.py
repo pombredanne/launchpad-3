@@ -412,7 +412,7 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
     def test_legacy_private_bugs(self):
         # The deprecated private_bugs attribute overrides the default
         # information type to USERDATA.
-        product = self.factory.makeProduct(private_bugs=True)
+        product = self.factory.makeLegacyProduct(private_bugs=True)
         self.assertContentEqual(
             FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
