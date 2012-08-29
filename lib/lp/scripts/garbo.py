@@ -1087,23 +1087,23 @@ class UnusedSharingPolicyPruner(TunableLoop):
     def __call__(self, chunk_size):
         products = list(self.findProducts()[:chunk_size])
         for product in products:
-            allowed_bug_policies = set(
+            allowed_bug_types = set(
                 BUG_POLICY_ALLOWED_TYPES.get(
                     product.bug_sharing_policy, FREE_INFORMATION_TYPES))
-            allowed_branch_policies = set(
+            allowed_branch_types = set(
                 BRANCH_POLICY_ALLOWED_TYPES.get(
                     product.branch_sharing_policy, FREE_INFORMATION_TYPES))
+            allowed_types = allowed_bug_types.union(allowed_branch_types)
             # Fetch all APs, and after filtering out ones that are forbidden
             # by the bug and branch policies, the APs that have no APAs are
             # unused and can be deleted.
             access_policies = set(
                 getUtility(IAccessPolicySource).findByPillar([product]))
-            candidate_aps = access_policies.difference(
-                allowed_bug_policies, allowed_branch_policies)
             apa_source = getUtility(IAccessPolicyArtifactSource)
             unused_aps = [
-                ap for ap in candidate_aps
-                if apa_source.findByPolicy([ap]).is_empty()]
+                ap for ap in access_policies
+                if ap.type not in allowed_types
+                and apa_source.findByPolicy([ap]).is_empty()]
             getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
             for ap in unused_aps:
                 self.store.remove(ap)
