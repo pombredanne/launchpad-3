@@ -1036,14 +1036,16 @@ class TestGarbo(TestCaseWithFactory):
         # set.
         with dbuser('testadmin'):
             non_commercial_products = [
-                self.factory.makeProduct()
+                self.factory.makeLegacyProduct()
                 for i in range(10)]
-            commercial_project = self.factory.makeProduct()
+            commercial_project = self.factory.makeLegacyProduct()
             self.factory.makeCommercialSubscription(commercial_project)
             configured_project = self.factory.makeProduct(
                 bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
-            private_project = self.factory.makeProduct(private_bugs=True)
-            project_with_bvp = self.factory.makeProduct()
+            removeSecurityProxy(
+                configured_project).branch_sharing_policy = None
+            private_project = self.factory.makeLegacyProduct(private_bugs=True)
+            project_with_bvp = self.factory.makeLegacyProduct()
             project_with_bvp.setBranchVisibilityTeamPolicy(
                 None, BranchVisibilityRule.FORBIDDEN)
 

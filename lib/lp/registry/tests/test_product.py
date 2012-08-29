@@ -363,6 +363,31 @@ class TestProduct(TestCaseWithFactory):
         grantees = set([grant.grantee for grant in grants])
         self.assertEqual(expected_grantess, grantees)
 
+    def test_open_product_creation_sharing_policies(self):
+        # Creating a new open (non-proprietary) product sets the bug and branch
+        # sharing polices to public.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.MIT])
+        self.assertEqual(BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+
+    def test_proprietary_product_creation_sharing_policies(self):
+        # Creating a new proprietary product sets the bug and branch sharing
+        # polices to proprietary.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.OTHER_PROPRIETARY])
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
 
@@ -387,7 +412,7 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
     def test_legacy_private_bugs(self):
         # The deprecated private_bugs attribute overrides the default
         # information type to USERDATA.
-        product = self.factory.makeProduct(private_bugs=True)
+        product = self.factory.makeLegacyProduct(private_bugs=True)
         self.assertContentEqual(
             FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
