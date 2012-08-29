@@ -480,6 +480,13 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+edit-information-type"
+        for="lp.code.interfaces.branch.IBranch"
+        layer="lp.code.publisher.CodeLayer"
+        class="lp.code.browser.branch.BranchEditInformationTypeView"
+        permission="launchpad.Moderate"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+edit"
         for="lp.code.interfaces.branch.IBranch"
         layer="lp.code.publisher.CodeLayer"
