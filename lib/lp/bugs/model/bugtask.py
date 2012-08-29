@@ -94,7 +94,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.enums import (
-    InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import (
@@ -341,10 +341,10 @@ def validate_target(bug, target, retarget_existing=True):
     legal_types = target.pillar.getAllowedBugInformationTypes()
     if bug.information_type not in legal_types:
         raise IllegalTarget(
-            "%s doesn't allow %s bugs."
-            % (target.pillar.displayname, bug.information_type.title))
+            "%s doesn't allow %s bugs." % (
+            target.pillar.bugtargetdisplayname, bug.information_type.title))
 
-    if bug.information_type == InformationType.PROPRIETARY:
+    if bug.information_type in PROPRIETARY_INFORMATION_TYPES:
         # Perhaps we are replacing the one and only existing bugtask, in
         # which case that's ok.
         if retarget_existing and len(bug.bugtasks) <= 1:
@@ -355,7 +355,7 @@ def validate_target(bug, target, retarget_existing=True):
             raise IllegalTarget(
                 "This proprietary bug already affects %s. "
                 "Proprietary bugs cannot affect multiple projects."
-                    % bug.default_bugtask.target.bugtargetdisplayname)
+                    % bug.default_bugtask.target.pillar.bugtargetdisplayname)
 
 
 def validate_new_target(bug, target):
