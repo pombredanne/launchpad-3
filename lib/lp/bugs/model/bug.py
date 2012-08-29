@@ -1709,6 +1709,8 @@ class Bug(SQLBase):
         """See `IBug`."""
         if self.information_type == information_type:
             return False
+        if information_type not in self.getAllowedInformationTypes(who):
+            raise CannotChangeInformationType("Forbidden by project policy.")
         if (information_type == InformationType.PROPRIETARY and
             len(self.affected_pillars) > 1):
             raise CannotChangeInformationType(
