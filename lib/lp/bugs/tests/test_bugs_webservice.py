@@ -380,7 +380,7 @@ class BugSetTestCase(TestCaseWithFactory):
         # Verify the path through user submission, to MaloneApplication to
         # BugSet, and back to the user creates a private bug according
         # to the project's bugs are private by default rule.
-        project = self.factory.makeProduct(
+        project = self.factory.makeLegacyProduct(
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(project.owner):
             project.setPrivateBugs(True, project.owner)
@@ -392,9 +392,9 @@ class BugSetTestCase(TestCaseWithFactory):
 
     def test_explicit_private_private_bugs_true(self):
         # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug beause the
+        # BugSet, and back to the user creates a private bug because the
         # user commands it.
-        project = self.factory.makeProduct(
+        project = self.factory.makeLegacyProduct(
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(project.owner):
             project.setPrivateBugs(True, project.owner)

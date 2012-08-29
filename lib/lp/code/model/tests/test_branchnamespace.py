@@ -985,7 +985,7 @@ class TestProductNamespaceCanCreateBranches(TestCaseWithFactory,
                                             BaseCanCreateBranchesMixin):
 
     def _getNamespace(self, owner):
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         return ProductNamespace(owner, product)
 
     def setUp(self):
@@ -1097,7 +1097,7 @@ class TestProductNamespaceAllowedInformationTypes(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.product = self.factory.makeProduct()
+        self.product = self.factory.makeLegacyProduct()
         removeSecurityProxy(self.product).branch_sharing_policy = None
 
     def _getNamespace(self, owner):
