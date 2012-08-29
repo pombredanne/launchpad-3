@@ -57,7 +57,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -457,11 +456,6 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
     """
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestProductNamespacePrivacyWithInformationType, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'disclosure.enhanced_sharing.writable': 'true'}))
 
     def makeProductNamespace(self, sharing_policy, person=None):
         if person is None:
