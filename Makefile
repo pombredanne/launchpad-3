@@ -203,7 +203,8 @@ else
 endif
 
 combobuild:
-	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
+	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o \
+	build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)
