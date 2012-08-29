@@ -702,7 +702,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             cancel_url = canonical_url(self.context)
         return cancel_url
 
-
     @cachedproperty
     def is_duplicate_active(self):
         active = True
