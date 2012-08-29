@@ -364,6 +364,7 @@ special users will be removed.
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
+    Mark Shuttleworth
     Robert Collins
 
 Direct subscriptions always take precedence over indirect subscriptions.
@@ -375,6 +376,7 @@ any subscribers not converted to direct subscribers.
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
+    Mark Shuttleworth
     Robert Collins
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
@@ -398,6 +400,7 @@ You can query for the addresses and reasons:
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
+     ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
@@ -411,6 +414,7 @@ notification level or higher will be returned.
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
+     ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
 
@@ -424,6 +428,7 @@ the COMMENTS level...
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
+     ('mark@example.com', 'Subscriber'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
 
@@ -435,6 +440,7 @@ the COMMENTS level...
     >>> addresses = recipients.getEmails()
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
+     ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
