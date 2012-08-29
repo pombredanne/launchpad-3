@@ -158,9 +158,9 @@ class ISpecificationPublic(IPrivacy):
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,
-            required=True, readonly=True,
+            required=True, readonly=True, default=InformationType.PUBLIC,
             description=_(
-                'The type of information contained in this bug report.')))
+                'The type of information contained in this specification.')))
 
     def userCanView(user):
         """Return True if `user` can see this ISpecification, false otherwise.
