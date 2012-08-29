@@ -360,7 +360,8 @@ class TestBranchView(BrowserTestCase):
     def test_linked_bugs_series_branch_query_scaling(self):
         # As we add linked bugs, the query count for a branch index page stays
         # constant.
-        product = self.factory.makeProduct()
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PUBLIC)
         branch = self.factory.makeProductBranch(product=product)
         browses_under_limit = BrowsesWithQueryLimit(54, branch.owner)
         with person_logged_in(product.owner):
