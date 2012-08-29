@@ -495,6 +495,9 @@ class SharingService:
                            bugs=None):
         """See `ISharingService`."""
 
+        if not branches and not bugs:
+            raise ValueError("Either bugs or branches must be specified")
+
         artifacts = []
         if branches:
             artifacts.extend(branches)
