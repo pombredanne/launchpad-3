@@ -1067,13 +1067,13 @@ class PopulateProjectSharingPolicies(TunableLoop):
         transaction.commit()
 
 
-class UnusedSharingPolicyPruner(TunableLoop):
+class UnusedAccessPolicyPruner(TunableLoop):
     """Deletes unused AccessPolicy and AccessPolicyGrants for products."""
 
     maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None):
-        super(UnusedSharingPolicyPruner, self).__init__(log, abort_time)
+        super(UnusedAccessPolicyPruner, self).__init__(log, abort_time)
         self.start_at = 1
         self.store = IMasterStore(Product)
 
@@ -1398,8 +1398,8 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnlinkedAccountPruner,
+        UnusedAccessPolicyPruner,
         UnusedPOTMsgSetPruner,
-        UnusedSharingPolicyPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

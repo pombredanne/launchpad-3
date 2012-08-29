@@ -1090,8 +1090,8 @@ class TestGarbo(TestCaseWithFactory):
             ap.type
             for ap in getUtility(IAccessPolicySource).findByPillar([pillar])]
 
-    def test_UnusedSharingPolicyPruner(self):
-        # UnusedSharingPolicyPruner removes access policies that aren't
+    def test_UnusedAccessPolicyPruner(self):
+        # UnusedAccessPolicyPruner removes access policies that aren't
         # in use by artifacts or allowed by the project sharing policy.
         switch_dbuser('testadmin')
         product = self.factory.makeProduct()
