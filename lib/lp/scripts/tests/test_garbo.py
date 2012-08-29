@@ -58,6 +58,7 @@ from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
@@ -1091,12 +1092,14 @@ class TestGarbo(TestCaseWithFactory):
         switch_dbuser('testadmin')
         product = self.factory.makeProduct(
             branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
-        ap = self.factory.makeAccessPolicy(pillar=product)
+        ap = self.factory.makeAccessPolicy(
+            pillar=product, type=InformationType.EMBARGOED)
         self.factory.makeAccessPolicyArtifact(policy=ap)
         self.factory.makeAccessPolicyGrant(policy=ap)
         all_aps = getUtility(IAccessPolicySource).findByPillar([product])
-        # There are 3 because two are created implicitly when the product is.
-        self.assertEqual(3, all_aps.count())
+        # There are 4 because two are created implicitly when the product is
+        # and another when the branch sharing policy is set.
+        self.assertEqual(4, all_aps.count())
         self.runDaily()
         all_aps = getUtility(IAccessPolicySource).findByPillar([product])
         self.assertEqual([ap], list(all_aps))
