@@ -23,7 +23,6 @@ from lp.app.browser.vocabulary import (
     get_person_picker_entry_metadata,
     vocabulary_filters,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
 
@@ -57,12 +56,6 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     step_title = None
     # Defaults to self.vocabulary.displayname.
     header = None
-
-    @property
-    def enhanced_picker(self):
-        flag = getFeatureFlag(
-            "disclosure.add-team-person-picker.enabled")
-        return flag and self.show_create_team_link
 
     @cachedproperty
     def matches(self):
@@ -152,8 +145,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             vocabulary_filters=self.vocabulary_filters,
             input_element=self.input_id,
             show_widget_id=self.show_widget_id,
-            enhanced_picker=self.enhanced_picker,
-            show_create_team=self.enhanced_picker)
+            show_create_team=self.show_create_team_link)
 
     @property
     def json_config(self):

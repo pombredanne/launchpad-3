@@ -287,6 +287,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         # Test that attempts to invalidly add a new bug task results in the
         # expected error message.
         product = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(pillar=product)
         bug = self.factory.makeBug(
             target=product, information_type=InformationType.PROPRIETARY)
         self.factory.makeProduct(name='fnord')

@@ -97,6 +97,7 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         # We expect that only the Also Affects Project link is disallowed.
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
+        self.factory.makeAccessPolicy(pillar=distro)
         bug = self.factory.makeBug(
             target=distro,
             information_type=InformationType.PROPRIETARY, owner=owner)
@@ -402,6 +403,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # bug will become invisible but and no visibility check is performed.
         product = self.factory.makeProduct(
             bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        self.factory.makeAccessPolicy(pillar=product)
         bug = self.factory.makeBug(target=product)
         self._assert_secrecy_view_ajax_render(bug, 'PROPRIETARY', False)
 
