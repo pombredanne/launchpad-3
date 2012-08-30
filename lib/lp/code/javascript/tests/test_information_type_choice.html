@@ -6,7 +6,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
-      <title>lp.bugs.information_type_choice Tests</title>
+      <title>lp.code.branch.information_type_choice Tests</title>
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
@@ -44,23 +44,17 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/effects/effects.js"></script>
       <script type="text/javascript"
-          src="../../../../../build/js/lp/app/indicator/indicator.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/app/inlineedit/editor.js"></script>
-      <script type="text/javascript"
           src="../../../../../build/js/lp/app/ui/ui.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/app/mustache.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
       <script type="text/javascript"
-          src="../../../../../build/js/lp/app/confirmationoverlay/confirmationoverlay.js"></script>
+          src="../../../../../build/js/lp/app/mustache.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/inlineedit/editor.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/formoverlay/formoverlay.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/app/picker/picker.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/expander.js"></script>
       <script type="text/javascript"
@@ -69,20 +63,12 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           src="../../../../../build/js/lp/app/banners/banner.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/banners/privacy.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/bugs/bug_subscription_portlet.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/bugs/subscribers.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/app/subscribers/subscribers_list.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/bugs/bugtask_index.js"></script>
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../information_type_choice.js"></script>
+      <script type="text/javascript" src="../branch.information_type_choice.js"></script>
 
       <!-- Placeholder for any css asset for this module. -->
-      <!-- <link rel="stylesheet" href="../assets/bugs.information_type_choice-core.css" /> -->
+      <!-- <link rel="stylesheet" href="../assets/bugs.information_type_choice-ctest_inforore.css" /> -->
 
       <!-- The test suite -->
       <script type="text/javascript" src="test_information_type_choice.js"></script>
@@ -90,7 +76,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <li>lp.bugs.information_type_choice.test</li>
+            <li>lp.code.branch.information_type_choice.test</li>
         </ul>
         <div id="fixture"></div>
         <script type="text/x-template" id="portlet-template">
@@ -105,12 +91,6 @@ GNU Affero General Public License version 3 (see the file LICENSE).
                     <div id="information-type-description">Everyone can see this information.</div>
                 </div>
             </div>
-            <div id="current_user_subscription">
-                <span></span>
-                <a href="#" text="" class="menu-link-mute_subscription unmute"></a>
-                <a href="#" text="" class="menu-link-mute_subscription mute"></a>
-            </div>
-            <div id="other-bug-subscribers"></div>
         </script>
     </body>
 </html>

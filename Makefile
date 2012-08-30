@@ -187,8 +187,10 @@ $(YUI_BUILDS): $(JS_BUILD_DIR)
 	done
 
 $(JS_LP): jsbuild_widget_css
-$(JS_YUI):
-	cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
+
+build/js/yui2/%: lib/canonical/launchpad/icing/yui_2.7.0b/build/%
+	mkdir -p `dirname $@`
+	cp -a $< $@
 
 # YUI_DEFAULT is one of the targets in YUI_BUILDS which expands all of our YUI
 # versions for us.
@@ -201,7 +203,8 @@ else
 endif
 
 combobuild:
-	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
+	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o \
+	build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)

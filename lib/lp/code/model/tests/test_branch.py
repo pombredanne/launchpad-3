@@ -2481,7 +2481,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
         # BranchCannotChangeInformationType is rasied.
-        branch = self.factory.makeProductBranch()
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeBranch(product=product)
         self.assertRaises(
             BranchCannotChangeInformationType,
             branch.setPrivate,
@@ -2523,7 +2524,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         # If the namespace policy does not allow public branches, attempting
         # to change the branch to be public raises
         # BranchCannotChangeInformationType.
-        branch = self.factory.makeProductBranch(
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeBranch(
+            product=product,
             information_type=InformationType.USERDATA)
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
