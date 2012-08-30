@@ -23,6 +23,10 @@ from lp.registry.enums import (
     InformationType,
     BugSharingPolicy,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -97,6 +101,7 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         # We expect that only the Also Affects Project link is disallowed.
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
+        self.factory.makeAccessPolicy(pillar=distro)
         bug = self.factory.makeBug(
             target=distro,
             information_type=InformationType.PROPRIETARY, owner=owner)
@@ -412,14 +417,16 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         bug_owner = self.factory.makePerson()
         product = self.factory.makeProduct(
             bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
-        self.factory.makeCommercialSubscription(product)
         bug = self.factory.makeBug(target=product, owner=bug_owner)
+        userdata_policy = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(userdata_policy)
 
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         request = LaunchpadTestRequest(
             method='POST', form={
                 'field.actions.change': 'Change',
-                'field.information_type': 'PROPRIETARY',
+                'field.information_type': 'USERDATA',
                 'field.validate_change': 'on'},
             **extra)
         with person_logged_in(bug_owner):

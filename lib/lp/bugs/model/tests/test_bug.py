@@ -642,7 +642,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             who = self.factory.makePerson(name='who')
             bug.transitionToInformationType(
                 InformationType.PRIVATESECURITY, who=who)
-            subscribers = bug.getDirectSubscribers()
+            subscribers = bug.getDirectSubscribers(filter_visible=True)
         expected_subscribers = set((
             default_bugtask.pillar.driver, bug_owner, who))
         self.assertContentEqual(expected_subscribers, subscribers)
@@ -665,7 +665,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 bug.subscribe(subscriber, bug_owner)
             who = self.factory.makePerson(name='who')
             bug.transitionToInformationType(InformationType.USERDATA, who)
-            subscribers = bug.getDirectSubscribers()
+            subscribers = bug.getDirectSubscribers(filter_visible=True)
         expected_subscribers = set((
             default_bugtask.pillar.bug_supervisor,
             default_bugtask.pillar.driver,

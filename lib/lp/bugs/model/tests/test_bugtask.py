@@ -2679,7 +2679,6 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'disclosure.unsubscribe_jobs.enabled': 'true',
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
@@ -2857,6 +2856,7 @@ class ValidateTargetMixin:
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         p = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(pillar=d)
         with person_logged_in(bug.owner):
             bug.transitionToInformationType(
                 InformationType.PROPRIETARY, bug.owner)
@@ -2878,6 +2878,7 @@ class ValidateTargetMixin:
         bug = self.factory.makeBug(target=p1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
+        self.factory.makeAccessPolicy(pillar=p1)
         with person_logged_in(bug.owner):
             bug.transitionToInformationType(
                 InformationType.PROPRIETARY, bug.owner)
@@ -2906,6 +2907,7 @@ class ValidateTargetMixin:
         bug = self.factory.makeBug(target=p1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
+        self.factory.makeAccessPolicy(pillar=p1)
         with person_logged_in(bug.owner):
             bug.transitionToInformationType(
                 InformationType.PROPRIETARY, bug.owner)
@@ -2928,6 +2930,7 @@ class ValidateTargetMixin:
         bug = self.factory.makeBug(target=d1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
+        self.factory.makeAccessPolicy(pillar=d1)
         with person_logged_in(bug.owner):
             bug.transitionToInformationType(
                 InformationType.PROPRIETARY, bug.owner)

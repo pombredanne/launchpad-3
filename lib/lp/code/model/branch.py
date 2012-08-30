@@ -171,7 +171,6 @@ from lp.services.database.stormexpr import (
     ArrayAgg,
     ArrayIntersects,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -203,18 +202,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         enum=InformationType, default=InformationType.PUBLIC)
     access_policy = IntCol()
 
-    # These can die after the UI is dropped.
-    @property
-    def explicitly_private(self):
-        return self.private
-
-    @property
-    def transitively_private(self):
-        return self.private
-
     @property
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    explicitly_private = private
 
     def _reconcileAccess(self):
         """Reconcile the branch's sharing information.
@@ -272,13 +264,10 @@ class Branch(SQLBase, BzrIdentityMixin):
                 service.ensureAccessGrants(
                     blind_subscribers, who, branches=[self],
                     ignore_permissions=True)
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the branch. We need to run a job to remove any
-            # such subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                who, [self])
+        # As a result of the transition, some subscribers may no longer
+        # have access to the branch. We need to run a job to remove any
+        # such subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(who, [self])
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
