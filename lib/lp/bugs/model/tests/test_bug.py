@@ -20,7 +20,6 @@ from lp.bugs.enums import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
-from lp.bugs.errors import BugCannotBePrivate
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
@@ -28,7 +27,11 @@ from lp.bugs.model.bug import (
     BugNotification,
     BugSubscriptionInfo,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BugSharingPolicy,
+    InformationType,
+    )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
@@ -753,12 +756,17 @@ class TestBugPrivacy(TestCaseWithFactory):
 
     def test_multipillar_proprietary_bugs_disallowed(self):
         # A multi-pillar bug cannot be made proprietary.
-        bug = self.factory.makeBug()
-        product = self.factory.makeProduct()
-        self.factory.makeBugTask(bug=bug, target=product)
+        p1 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        p2 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        bug = self.factory.makeBug(target=p1)
+        self.factory.makeBugTask(bug=bug, target=p2)
         login_person(bug.owner)
-        self.assertRaises(
-            BugCannotBePrivate, bug.transitionToInformationType,
+        self.assertRaisesWithContent(
+            CannotChangeInformationType,
+            "Proprietary bugs can only affect one project.",
+            bug.transitionToInformationType,
             InformationType.PROPRIETARY, bug.owner)
         bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
         self.assertTrue(bug.private)
@@ -868,6 +876,29 @@ class TestBugPrivacy(TestCaseWithFactory):
             [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
              InformationType.PRIVATESECURITY, InformationType.USERDATA],
             self.factory.makeBug().getAllowedInformationTypes(None))
+
+    def test_transitionToInformationType_respects_allowed_proprietary(self):
+        # transitionToInformationType rejects types that aren't allowed
+        # for the bug.
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            bug = self.factory.makeBug(target=product)
+            self.assertRaisesWithContent(
+                CannotChangeInformationType, "Forbidden by project policy.",
+                bug.transitionToInformationType,
+                InformationType.PROPRIETARY, bug.owner)
+
+    def test_transitionToInformationType_respects_allowed_public(self):
+        # transitionToInformationType rejects types that aren't allowed
+        # for the bug.
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        with person_logged_in(product.owner):
+            bug = self.factory.makeBug(target=product)
+            self.assertRaisesWithContent(
+                CannotChangeInformationType, "Forbidden by project policy.",
+                bug.transitionToInformationType,
+                InformationType.PUBLIC, bug.owner)
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(

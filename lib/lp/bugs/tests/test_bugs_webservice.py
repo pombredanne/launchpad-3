@@ -361,15 +361,19 @@ class TestErrorHandling(TestCaseWithFactory):
         # a proprietary bug. In this case, we cannot mark a proprietary bug
         # as affecting more than one project.
         owner = self.factory.makePerson()
+        product1 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        product2 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         bug = self.factory.makeBug(
-            owner=owner, information_type=InformationType.PROPRIETARY)
-        product = self.factory.makeProduct()
+            target=product1, owner=owner,
+            information_type=InformationType.PROPRIETARY)
 
         login_person(owner)
         launchpad = launchpadlib_for('test', owner)
         lp_bug = launchpad.load(api_url(bug))
         self.assertRaises(
-            BadRequest, lp_bug.addTask, target=api_url(product))
+            BadRequest, lp_bug.addTask, target=api_url(product2))
 
 
 class BugSetTestCase(TestCaseWithFactory):

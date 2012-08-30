@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6 -S
+#!/usr/bin/python -S
 # Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
