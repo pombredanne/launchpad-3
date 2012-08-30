@@ -385,7 +385,7 @@ class TestProductNamespacePrivacyWithBranchVisibility(TestCaseWithFactory):
         # and the namespace owner is in that team, then the team is
         # subscribed.
         person = self.factory.makePerson()
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         namespace = ProductNamespace(person, product)
         team = self.factory.makeTeam(owner=person)
         product.setBranchVisibilityTeamPolicy(
@@ -399,7 +399,7 @@ class TestProductNamespacePrivacyWithBranchVisibility(TestCaseWithFactory):
         team = self.factory.makeTeam(
             membership_policy=TeamMembershipPolicy.MODERATED,
             owner=person)
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         namespace = ProductNamespace(team, product)
         product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
@@ -436,7 +436,7 @@ class TestProductNamespacePrivacyWithBranchVisibility(TestCaseWithFactory):
         # those rules is private, then the team that has the private rule is
         # the subscriber.
         person = self.factory.makePerson()
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         namespace = ProductNamespace(person, product)
         product.setBranchVisibilityTeamPolicy(
             self.factory.makeTeam(owner=person), BranchVisibilityRule.PUBLIC)
@@ -985,7 +985,7 @@ class TestProductNamespaceCanCreateBranches(TestCaseWithFactory,
                                             BaseCanCreateBranchesMixin):
 
     def _getNamespace(self, owner):
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         return ProductNamespace(owner, product)
 
     def setUp(self):
@@ -1097,7 +1097,8 @@ class TestProductNamespaceAllowedInformationTypes(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.product = self.factory.makeProduct()
+        self.product = self.factory.makeLegacyProduct()
+        removeSecurityProxy(self.product).branch_sharing_policy = None
 
     def _getNamespace(self, owner):
         return ProductNamespace(owner, self.product)
@@ -1299,6 +1300,7 @@ class BranchVisibilityPolicyTestCase(TestCaseWithFactory):
             'admin@canonical.com')
         # Our test product.
         self.product = self.factory.makeProduct()
+        removeSecurityProxy(self.product).branch_sharing_policy = None
         # Create some test people.
         self.albert = self.factory.makePerson(
             name='albert', displayname='Albert Tester')
