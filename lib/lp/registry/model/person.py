@@ -4211,6 +4211,10 @@ class PersonSet:
         # These table.columns will be skipped by the 'catch all'
         # update performed later
         skip = [
+            # The AccessPolicy.person reference is to allow private teams to
+            # see their own +junk branches. We don't allow merges for teams who
+            # own private branches so we can skip this column.
+            ('accesspolicy', 'person'),
             ('teammembership', 'person'),
             ('teammembership', 'team'),
             ('teamparticipation', 'person'),

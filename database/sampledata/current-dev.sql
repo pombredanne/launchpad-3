@@ -9011,6 +9011,13 @@ INSERT INTO potranslation (id, translation) VALUES (668, 'auto, esddsp, artsdsp,
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
 
 
+ALTER TABLE processacceptedbugsjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE processacceptedbugsjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE productjob DISABLE TRIGGER ALL;
 
 
