@@ -342,13 +342,11 @@ class TestProduct(TestCaseWithFactory):
         product.setPrivateBugs(True, bug_supervisor)
         self.assertTrue(product.private_bugs)
 
-    def test_product_creation_creates_accesspolicies(self):
-        # Creating a new product also creates AccessPolicies for it.
-        product = self.factory.makeProduct()
-        ap = getUtility(IAccessPolicySource).findByPillar((product,))
-        expected = [
-            InformationType.USERDATA, InformationType.PRIVATESECURITY]
-        self.assertContentEqual(expected, [policy.type for policy in ap])
+    def test_product_creation_does_not_create_accesspolicies(self):
+        # Creating a new product does not create AccessPolicies for it.
+        product = self.factory.makeLegacyProduct()
+        ap = getUtility(IAccessPolicySource).findByPillar([product])
+        self.assertEqual([], list(ap))
 
     def test_product_creation_grants_maintainer_access(self):
         # Creating a new product creates an access grant for the maintainer
@@ -364,8 +362,8 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(expected_grantess, grantees)
 
     def test_open_product_creation_sharing_policies(self):
-        # Creating a new open (non-proprietary) product sets the bug and branch
-        # sharing polices to public.
+        # Creating a new open (non-proprietary) product sets the bug and
+        # branch sharing polices to public, and creates policies if required.
         owner = self.factory.makePerson()
         with person_logged_in(owner):
             product = getUtility(IProductSet).createProduct(
@@ -374,6 +372,10 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
         self.assertEqual(
             BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        expected = [
+            InformationType.USERDATA, InformationType.PRIVATESECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in aps])
 
     def test_proprietary_product_creation_sharing_policies(self):
         # Creating a new proprietary product sets the bug and branch sharing
@@ -387,6 +389,9 @@ class TestProduct(TestCaseWithFactory):
             BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
         self.assertEqual(
             BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        expected = [InformationType.PROPRIETARY]
+        self.assertContentEqual(expected, [policy.type for policy in aps])
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
