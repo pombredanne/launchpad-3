@@ -201,41 +201,41 @@ redirected to the bug page.
     ...>pmount (Debian)</a>...
     ...
 
-We cannot allow private bugs to affect more than one pillar.
+We cannot allow proprietary bugs to affect more than one pillar.
 
     >>> from lp.services.webapp import canonical_url
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.enums import InformationType
+    >>> from lp.registry.enums import BugSharingPolicy, InformationType
 
     >>> def current_user():
     ...     return getUtility(ILaunchBag).user
 
-    >>> login("foo.bar@canonical.com")
-    >>> productset = getUtility(IProductSet)
-    >>> firefox = productset.get(4)
-    >>> ignored = factory.makeAccessPolicy(pillar=firefox)
+    >>> login("test@canonical.com")
+    >>> product = factory.makeProduct(
+    ...     displayname='Proprietary Product', name='proprietary-product',
+    ...     bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+    >>> other_product = factory.makeProduct(
+    ...     official_malone=True,
+    ...     bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
     >>> params = CreateBugParams(
     ...     title="a test private bug",
     ...     comment="a description of the bug",
     ...     information_type=InformationType.PROPRIETARY,
     ...     owner=current_user())
-    >>> private_bug = firefox.createBug(params)
-    >>> private_bug.subscribe(firefox.owner, firefox.owner)
-    <lp.bugs.model.bugsubscription.BugSubscription object at ...>
+    >>> private_bug = product.createBug(params)
     >>> logout()
 
     >>> browser.open(canonical_url(private_bug, rootsite='bugs'))
-    >>> browser.getLink(url='+distrotask').click()
-    >>> browser.getControl(name='field.distribution').value = ['debian']
+    >>> browser.getLink(url='+choose-affected-product').click()
+    >>> browser.getControl(name='field.product').value = other_product.name
     >>> browser.getControl('Continue').click()
     >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/16/+distrotask
+    http://bugs.launchpad.dev/proprietary-product/+bug/16/+choose-affected-product
 
     >>> print get_feedback_messages(browser.contents)
     [u'There is 1 error.',
-     u'This proprietary bug already affects Mozilla Firefox.
+     u'This proprietary bug already affects Proprietary Product.
        Proprietary bugs cannot affect multiple projects.']
 
 
