@@ -174,7 +174,7 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
     def validateStep(self, data):
         if data.get('product'):
             try:
-                validate_target(self.context.bug, data.get('product'))
+                validate_new_target(self.context.bug, data.get('product'))
             except IllegalTarget as e:
                 self.setFieldError('product', e[0])
             return

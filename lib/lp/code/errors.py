@@ -8,7 +8,6 @@ __all__ = [
     'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
-    'BranchCannotChangeInformationType',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
@@ -144,10 +143,6 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
-
-
-class BranchCannotChangeInformationType(Exception):
-    """The information type of this branch cannot be changed."""
 
 
 class InvalidBranchException(Exception):
