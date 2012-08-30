@@ -2982,7 +2982,7 @@ class TestBranchSetTarget(TestCaseWithFactory):
     def test_private_junk_branches_allowed_for_private_teams(self):
         # Only private teams can have private junk branches.
         owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
-        with admin_logged_in():
+        with person_logged_in(owner):
             branch = self.factory.makeBranch(
                 owner=owner,
                 information_type=InformationType.USERDATA)
@@ -3004,10 +3004,10 @@ class TestBranchSetTarget(TestCaseWithFactory):
         # setTarget calls _reconcileAccess to make the sharing schema
         # correct for a private junk branch.
         owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
-        branch = self.factory.makeBranch(
-            owner=owner,
-            information_type=InformationType.USERDATA)
-        with admin_logged_in():
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                owner=owner,
+                information_type=InformationType.USERDATA)
             branch.setTarget(user=branch.owner)
         self.assertEqual(
             owner, get_policies_for_artifact(branch)[0].person)
