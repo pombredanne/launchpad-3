@@ -171,7 +171,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
@@ -500,12 +499,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
 
     @enabled_with_permission('launchpad.Driver')
     def sharing(self):
-        text = 'Sharing'
-        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
-        enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
-        enabled = (bool(getFeatureFlag(enabled_readonly_flag))
-            or bool(getFeatureFlag(enabled_writable_flag)))
-        return Link('+sharing', text, icon='edit', enabled=enabled)
+        return Link('+sharing', 'Sharing', icon='edit')
 
 
 class IProductEditMenu(Interface):
@@ -619,12 +613,7 @@ class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):
 
     @cachedproperty
     def links(self):
-        links = [
-            'filebug',
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            ]
+        links = ['filebug', 'bugsupervisor', 'cve']
         add_subscribe_link(links)
         links.append('configure_bugtracker')
         return links
@@ -2214,7 +2203,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             self.next_url = self._return_url
 
 
-class ProductAddView(MultiStepView):
+class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title

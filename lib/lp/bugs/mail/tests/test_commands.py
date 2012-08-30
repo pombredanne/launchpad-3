@@ -287,6 +287,7 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         # Test that attempts to invalidly add a new bug task results in the
         # expected error message.
         product = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(pillar=product)
         bug = self.factory.makeBug(
             target=product, information_type=InformationType.PROPRIETARY)
         self.factory.makeProduct(name='fnord')
@@ -450,18 +451,6 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         self.assertRaises(
             EmailProcessingError, command.execute, bug_params, dummy_event)
-
-    def test_execute_bug_params_with_proprietary(self):
-        user = self.factory.makePerson()
-        login_person(user)
-        bug_params = CreateBugParams(title='bug title', owner=user)
-        command = InformationTypeEmailCommand(
-            'informationtype', ['proprietary'])
-        dummy_event = object()
-        self.assertRaisesWithContent(
-            EmailProcessingError, 'Proprietary bugs are forbidden to be '
-            'filed via the mail interface.', command.execute, bug_params,
-            dummy_event)
 
 
 class SubscribeEmailCommandTestCase(TestCaseWithFactory):

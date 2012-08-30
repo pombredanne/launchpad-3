@@ -100,7 +100,10 @@
       <div id="bug-is-duplicate">
           <tal:dupe-info
              condition="duplicateof|nothing"
-             define="duplicateof context/bug/duplicateof">
+             define="duplicateof context/bug/duplicateof;
+                     dupe_active view/is_duplicate_active">
+
+          <tal:active condition="dupe_active">
           <span class="bug-duplicate-details ellipsis single-line wide">
             <span class="sprite info"></span>
             This bug report is a duplicate of:&nbsp;
@@ -112,6 +115,14 @@
                   tal:content="string:Bug #${duplicateof/id}: ${duplicateof/title}."
                 >bug #42</a>
           </span>
+          </tal:active>
+          <tal:inactive condition="not: dupe_active">
+          <span class="bug-duplicate-details ellipsis single-line wide">
+            <span class="sprite info"></span>
+            This bug report is a duplicate of a bug on an inactive project.
+          </span>
+          </tal:inactive>
+
           <a id="change-duplicate-bug-bugtasks"
             href="+duplicate"
             title="Edit or remove linked duplicate bug"

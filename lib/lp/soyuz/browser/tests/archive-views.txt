@@ -1393,7 +1393,6 @@ The action may also be performed asynchronously.
     ...     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS,
     ...     )
     >>> fixture = FeatureFixture({
-    ...     'soyuz.copypackageppa.enabled': 'on',
     ...     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS: '0',
     ...     })
     >>> fixture.setUp()

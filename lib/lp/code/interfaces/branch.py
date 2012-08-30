@@ -249,10 +249,16 @@ class IBranchPublic(Interface):
             title=_('Date Last Modified'),
             required=True,
             readonly=False))
-    explicitly_private = Bool(
-        title=_("Explicitly Private"),
-        description=_("This branch is explicitly marked private as opposed "
-        "to being private because it is stacked on a private branch."))
+    # Defines whether *this* branch is private. A branch may have
+    # explicitly private set false but still be considered private because it
+    # is stacked on a private branch. This attribute is read-only. The value
+    # is guarded by setPrivate().
+    explicitly_private = exported(
+        Bool(
+            title=_("Keep branch confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "Make this branch visible only to its subscribers.")))
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,
@@ -300,8 +306,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             title=_('Owner'),
             required=True, readonly=True,
             vocabulary='AllUserTeamsParticipationPlusSelf',
-            description=_("Either yourself or a team you are a member of. "
-                          "This controls who can modify the branch.")))
+            description=_("Either yourself or an exclusive team you are a "
+                          "member of. This controls who can modify the "
+                          "branch.")))
 
     # Distroseries and sourcepackagename are exported together as
     # the sourcepackage.
@@ -981,11 +988,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
 
-class IBranchEditableAttributes(Interface):
-    """IBranch attributes that can be edited.
-
-    These attributes need launchpad.View to see, and launchpad.Edit to change.
-    """
+class IBranchModerateAttributes(Interface):
+    """IBranch attributes that can be edited by more than one community."""
 
     name = exported(
         TextLine(
@@ -999,10 +1003,48 @@ class IBranchEditableAttributes(Interface):
         PublicPersonChoice(
             title=_('Review Team'),
             required=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for reviewing proposals and "
-                          "merging into this branch.")))
+            vocabulary='ValidBranchReviewer',
+            description=_("The reviewer of a branch is the person or "
+                          "exclusive team that is responsible for reviewing "
+                          "proposals and merging into this branch.")))
+
+    description = exported(
+        Text(
+            title=_('Description'), required=False,
+            description=_(
+                'A short description of the changes in this branch.')))
+
+    lifecycle_status = exported(
+        Choice(
+            title=_('Status'), vocabulary=BranchLifecycleStatus,
+            default=BranchLifecycleStatus.DEVELOPMENT))
+
+
+class IBranchModerate(Interface):
+    """IBranch methods that can be edited by more than one community."""
+
+    @operation_parameters(
+        information_type=copy_field(IBranchPublic['information_type']),
+        )
+    @call_with(who=REQUEST_USER, verify_policy=True)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def transitionToInformationType(information_type, who,
+                                    verify_policy=True):
+        """Set the information type for this branch.
+
+        :param information_type: The `InformationType` to transition to.
+        :param who: The `IPerson` who is making the change.
+        :param verify_policy: Check if the new information type complies
+            with the `IBranchNamespacePolicy`.
+        """
+
+
+class IBranchEditableAttributes(Interface):
+    """IBranch attributes that can be edited.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    """
 
     url = exported(
         BranchURIField(
@@ -1026,17 +1068,6 @@ class IBranchEditableAttributes(Interface):
         Choice(
             title=_("Branch Type"), required=True, readonly=True,
             vocabulary=BranchType))
-
-    description = exported(
-        Text(
-            title=_('Description'), required=False,
-            description=_(
-                'A short description of the changes in this branch.')))
-
-    lifecycle_status = exported(
-        Choice(
-            title=_('Status'), vocabulary=BranchLifecycleStatus,
-            default=BranchLifecycleStatus.DEVELOPMENT))
 
     branch_format = exported(
         Choice(
@@ -1132,22 +1163,6 @@ class IBranchEdit(Interface):
         :raise: CannotDeleteBranch if the branch cannot be deleted.
         """
 
-    @operation_parameters(
-        information_type=copy_field(IBranchPublic['information_type']),
-        )
-    @call_with(who=REQUEST_USER, verify_policy=True)
-    @export_write_operation()
-    @operation_for_version("devel")
-    def transitionToInformationType(information_type, who,
-                                    verify_policy=True):
-        """Set the information type for this branch.
-
-        :param information_type: The `InformationType` to transition to.
-        :param who: The `IPerson` who is making the change.
-        :param verify_policy: Check if the new information type complies
-            with the `IBranchNamespacePolicy`.
-        """
-
 
 class IMergeQueueable(Interface):
     """An interface for branches that can be queued."""
@@ -1197,7 +1212,8 @@ class IMergeQueueable(Interface):
 
 
 class IBranch(IBranchPublic, IBranchView, IBranchEdit,
-              IBranchEditableAttributes, IBranchAnyone, IMergeQueueable):
+              IBranchEditableAttributes, IBranchModerate,
+              IBranchModerateAttributes, IBranchAnyone, IMergeQueueable):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -1213,18 +1229,7 @@ class IBranch(IBranchPublic, IBranchView, IBranchEdit,
             description=_(
                 "This branch is visible only to its subscribers.")))
 
-    # Defines whether *this* branch is private. A branch may have
-    # explicitly private set false but still be considered private because it
-    # is stacked on a private branch. This attribute is read-only. The value
-    # is guarded by setPrivate().
-    explicitly_private = exported(
-        Bool(
-            title=_("Keep branch confidential"), required=False,
-            readonly=True, default=False,
-            description=_(
-                "Make this branch visible only to its subscribers.")))
-
-    @mutator_for(explicitly_private)
+    @mutator_for(IBranchPublic['explicitly_private'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))

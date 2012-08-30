@@ -19,11 +19,16 @@ from testtools.matchers import (
     Equals,
     LessThan,
     )
-from zope.component import getMultiAdapter
+from zope.component import (
+    getMultiAdapter,
+    )
 
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BugSharingPolicy,
+    InformationType,
+    )
 from lp.registry.interfaces.product import License
 from lp.services.webapp import snapshot
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -375,7 +380,7 @@ class BugSetTestCase(TestCaseWithFactory):
         # Verify the path through user submission, to MaloneApplication to
         # BugSet, and back to the user creates a private bug according
         # to the project's bugs are private by default rule.
-        project = self.factory.makeProduct(
+        project = self.factory.makeLegacyProduct(
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(project.owner):
             project.setPrivateBugs(True, project.owner)
@@ -387,9 +392,9 @@ class BugSetTestCase(TestCaseWithFactory):
 
     def test_explicit_private_private_bugs_true(self):
         # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug beause the
+        # BugSet, and back to the user creates a private bug because the
         # user commands it.
-        project = self.factory.makeProduct(
+        project = self.factory.makeLegacyProduct(
             licenses=[License.OTHER_PROPRIETARY])
         with person_logged_in(project.owner):
             project.setPrivateBugs(True, project.owner)
@@ -399,3 +404,18 @@ class BugSetTestCase(TestCaseWithFactory):
             target=api_url(project), title='title', description='desc',
             private=True)
         self.assertEqual('Private', bug.information_type)
+
+    def test_default_sharing_policy_proprietary(self):
+        # Verify the path through user submission, to MaloneApplication to
+        # BugSet, and back to the user creates a private bug according
+        # to the project's bug sharing policy.
+        project = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        webservice = launchpadlib_for('test', 'salgado')
+        bugs_collection = webservice.load('/bugs')
+        bug = bugs_collection.createBug(
+            target=api_url(project), title='title', description='desc')
+        self.assertEqual('Proprietary', bug.information_type)

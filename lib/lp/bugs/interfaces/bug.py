@@ -847,10 +847,10 @@ class IBugEdit(Interface):
     @operation_parameters(
         information_type=copy_field(IBugPublic['information_type']),
         )
-    @call_with(who=REQUEST_USER, from_api=True)
+    @call_with(who=REQUEST_USER)
     @export_write_operation()
     @operation_for_version("devel")
-    def transitionToInformationType(information_type, who, from_api=False):
+    def transitionToInformationType(information_type, who):
         """Set the information type for this bug.
 
         :information_type: The `InformationType` to transition to.

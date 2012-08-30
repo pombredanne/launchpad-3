@@ -58,7 +58,9 @@ from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    InformationType,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.product import Product
@@ -1034,14 +1036,16 @@ class TestGarbo(TestCaseWithFactory):
         # set.
         with dbuser('testadmin'):
             non_commercial_products = [
-                self.factory.makeProduct()
+                self.factory.makeLegacyProduct()
                 for i in range(10)]
-            commercial_project = self.factory.makeProduct()
+            commercial_project = self.factory.makeLegacyProduct()
             self.factory.makeCommercialSubscription(commercial_project)
             configured_project = self.factory.makeProduct(
                 bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
-            private_project = self.factory.makeProduct(private_bugs=True)
-            project_with_bvp = self.factory.makeProduct()
+            removeSecurityProxy(
+                configured_project).branch_sharing_policy = None
+            private_project = self.factory.makeLegacyProduct(private_bugs=True)
+            project_with_bvp = self.factory.makeLegacyProduct()
             project_with_bvp.setBranchVisibilityTeamPolicy(
                 None, BranchVisibilityRule.FORBIDDEN)
 
@@ -1082,6 +1086,40 @@ class TestGarbo(TestCaseWithFactory):
                 BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
             self.assertEqual(
                 BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
+
+    def getAccessPolicyTypes(self, pillar):
+        return [
+            ap.type
+            for ap in getUtility(IAccessPolicySource).findByPillar([pillar])]
+
+    def test_UnusedAccessPolicyPruner(self):
+        # UnusedAccessPolicyPruner removes access policies that aren't
+        # in use by artifacts or allowed by the project sharing policy.
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+        [ap] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.PRIVATESECURITY)])
+        self.factory.makeAccessPolicyArtifact(policy=ap)
+
+        # Private and Private Security were created with the project.
+        # Proprietary was created when the branch sharing policy was set.
+        self.assertContentEqual(
+            [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+             InformationType.PROPRIETARY],
+            self.getAccessPolicyTypes(product))
+
+        self.runDaily()
+
+        # Proprietary is permitted by the sharing policy, and there's a
+        # Private Security artifact. But Private isn't in use or allowed
+        # by a sharing policy, so garbo deleted it.
+        self.assertContentEqual(
+            [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
+            self.getAccessPolicyTypes(product))
 
 
 class TestGarboTasks(TestCaseWithFactory):

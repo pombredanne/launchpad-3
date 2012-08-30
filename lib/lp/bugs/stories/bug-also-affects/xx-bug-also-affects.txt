@@ -215,6 +215,7 @@ We cannot allow private bugs to affect more than one pillar.
     >>> login("foo.bar@canonical.com")
     >>> productset = getUtility(IProductSet)
     >>> firefox = productset.get(4)
+    >>> ignored = factory.makeAccessPolicy(pillar=firefox)
     >>> params = CreateBugParams(
     ...     title="a test private bug",
     ...     comment="a description of the bug",

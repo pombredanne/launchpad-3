@@ -8,6 +8,7 @@ __all__ = [
     'BranchNamespaceSet',
     'PackageNamespace',
     'PersonalNamespace',
+    'POLICY_ALLOWED_TYPES',
     'ProductNamespace',
     ]
 
@@ -47,6 +48,8 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
 from lp.registry.enums import (
     BranchSharingPolicy,
+    FREE_INFORMATION_TYPES,
+    FREE_PRIVATE_INFORMATION_TYPES,
     InformationType,
     PersonVisibility,
     NON_EMBARGOED_INFORMATION_TYPES,
@@ -81,11 +84,6 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 
-
-FREE_PRIVATE_INFORMATION_TYPES = (
-    InformationType.PRIVATESECURITY, InformationType.USERDATA)
-FREE_INFORMATION_TYPES = (
-    PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
 
 POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,

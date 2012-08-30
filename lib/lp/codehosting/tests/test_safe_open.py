@@ -32,6 +32,9 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     WhitelistPolicy,
     )
+from lp.codehosting.tests.helpers import (
+    force_stacked_on_url,
+    )
 from lp.testing import TestCase
 
 
@@ -195,8 +198,8 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
     def testAllowedURL(self):
         # checkSource does not raise an exception for branches stacked on
         # branches with allowed URLs.
-        stacked_on_branch = self.make_branch('base-branch', format='1.6')
-        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_on_branch = self.make_branch('base-branch')
+        stacked_branch = self.make_branch('stacked-branch')
         stacked_branch.set_stacked_on_url(stacked_on_branch.base)
         opener = self.makeBranchOpener(
             [stacked_branch.base, stacked_on_branch.base])
@@ -215,8 +218,8 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
     def testAllowedRelativeURL(self):
         # checkSource passes on absolute urls to checkOneURL, even if the
         # value of stacked_on_location in the config is set to a relative URL.
-        stacked_on_branch = self.make_branch('base-branch', format='1.6')
-        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_on_branch = self.make_branch('base-branch')
+        stacked_branch = self.make_branch('stacked-branch')
         stacked_branch.set_stacked_on_url('../base-branch')
         opener = self.makeBranchOpener(
             [stacked_branch.base, stacked_on_branch.base])
@@ -229,10 +232,10 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
     def testAllowedRelativeNested(self):
         # Relative URLs are resolved relative to the stacked branch.
         self.get_transport().mkdir('subdir')
-        a = self.make_branch('subdir/a', format='1.6')
-        b = self.make_branch('b', format='1.6')
+        a = self.make_branch('subdir/a')
+        b = self.make_branch('b')
         b.set_stacked_on_url('../subdir/a')
-        c = self.make_branch('subdir/c', format='1.6')
+        c = self.make_branch('subdir/c')
         c.set_stacked_on_url('../../b')
         opener = self.makeBranchOpener([c.base, b.base, a.base])
         # This doesn't raise an exception.
@@ -241,8 +244,8 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
     def testForbiddenURL(self):
         # checkSource raises a BadUrl exception if a branch is stacked on a
         # branch with a forbidden URL.
-        stacked_on_branch = self.make_branch('base-branch', format='1.6')
-        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_on_branch = self.make_branch('base-branch')
+        stacked_branch = self.make_branch('stacked-branch')
         stacked_branch.set_stacked_on_url(stacked_on_branch.base)
         opener = self.makeBranchOpener([stacked_branch.base])
         self.assertRaises(BadUrl, opener.open, stacked_branch.base)
@@ -250,10 +253,10 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
     def testForbiddenURLNested(self):
         # checkSource raises a BadUrl exception if a branch is stacked on a
         # branch that is in turn stacked on a branch with a forbidden URL.
-        a = self.make_branch('a', format='1.6')
-        b = self.make_branch('b', format='1.6')
+        a = self.make_branch('a')
+        b = self.make_branch('b')
         b.set_stacked_on_url(a.base)
-        c = self.make_branch('c', format='1.6')
+        c = self.make_branch('c')
         c.set_stacked_on_url(b.base)
         opener = self.makeBranchOpener([c.base, b.base])
         self.assertRaises(BadUrl, opener.open, c.base)
@@ -261,11 +264,8 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
     def testSelfStackedBranch(self):
         # checkSource raises StackingLoopError if a branch is stacked on
         # itself. This avoids infinite recursion errors.
-        a = self.make_branch('a', format='1.6')
-        # Bazaar 1.17 and up make it harder to create branches like this.
-        # It's still worth testing that we don't blow up in the face of them,
-        # so we grovel around a bit to create one anyway.
-        a.get_config().set_user_option('stacked_on_location', a.base)
+        a = self.make_branch('a')
+        force_stacked_on_url(a, a.base)
         opener = self.makeBranchOpener([a.base])
         self.assertRaises(BranchLoopError, opener.open, a.base)
 
@@ -273,8 +273,8 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         # checkSource raises StackingLoopError if a branch is stacked in such
         # a way so that it is ultimately stacked on itself. e.g. a stacked on
         # b stacked on a.
-        a = self.make_branch('a', format='1.6')
-        b = self.make_branch('b', format='1.6')
+        a = self.make_branch('a')
+        b = self.make_branch('b')
         a.set_stacked_on_url(b.base)
         b.set_stacked_on_url(a.base)
         opener = self.makeBranchOpener([a.base, b.base])
@@ -283,8 +283,8 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
 
     def testCustomOpener(self):
         # A custom function for opening a control dir can be specified.
-        a = self.make_branch('a', format='2a')
-        b = self.make_branch('b', format='2a')
+        a = self.make_branch('a')
+        b = self.make_branch('b')
         b.set_stacked_on_url(a.base)
 
         TrackingProber.seen_urls = []
@@ -296,7 +296,7 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
 
     def testCustomOpenerWithBranchReference(self):
         # A custom function for opening a control dir can be specified.
-        a = self.make_branch('a', format='2a')
+        a = self.make_branch('a')
         b_dir = self.make_bzrdir('b')
         b = BranchReferenceFormat().initialize(b_dir, target_branch=a)
         TrackingProber.seen_urls = []
@@ -305,6 +305,20 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         opener.open(b.base)
         self.assertEquals(
             set(TrackingProber.seen_urls), set([b.base, a.base]))
+
+    def test_ignore_fallbacks(self):
+        """"Cross-format stacking doesn't error with ignore_fallbacks."""
+        stacked, stacked_on = make_cross_format_stacked(self)
+        opener = self.makeBranchOpener([stacked.base, stacked_on.base])
+        opener.open(stacked.base, ignore_fallbacks=True)
+
+
+def make_cross_format_stacked(test_case):
+    test_case.get_transport().mkdir('inside')
+    stacked = test_case.make_branch('inside/stacked', format='1.6')
+    stacked_on = test_case.make_branch('inside/stacked-on', format='2a')
+    force_stacked_on_url(stacked, stacked_on.base)
+    return stacked, stacked_on
 
 
 class TestSafeOpen(TestCaseWithTransport):
@@ -361,3 +375,10 @@ class TestSafeOpen(TestCaseWithTransport):
             self.get_url('outside/stacked-on'))
         self.assertRaises(
             BadUrl, safe_open, scheme, get_chrooted_url('stacked'))
+
+    def test_ignore_fallbacks(self):
+        """"Cross-format stacking doesn't error with ignore_fallbacks."""
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        stacked, stacked_on = make_cross_format_stacked(self)
+        force_stacked_on_url(stacked, get_chrooted_url('stacked-on'))
+        safe_open(scheme, get_chrooted_url('stacked'), ignore_fallbacks=True)

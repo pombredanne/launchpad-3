@@ -25,6 +25,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import (
+    BugSharingPolicy,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     )
@@ -353,7 +354,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
         self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
 
     def filebug_via_view(self, private_bugs=False, information_type=None,
-                         extra_data_token=None):
+                         bug_sharing_policy=None, extra_data_token=None):
         form = {
             'field.title': 'A bug',
             'field.comment': 'A comment',
@@ -361,9 +362,13 @@ class TestFileBugViewBase(TestCaseWithFactory):
         }
         if information_type:
             form['field.information_type'] = information_type
-        product = self.factory.makeProduct(official_malone=True)
+        product = self.factory.makeLegacyProduct(official_malone=True)
         if private_bugs:
             removeSecurityProxy(product).private_bugs = True
+        if bug_sharing_policy:
+            self.factory.makeCommercialSubscription(product=product)
+            with person_logged_in(product.owner):
+                product.setBugSharingPolicy(bug_sharing_policy)
         with person_logged_in(product.owner):
             view = create_view(
                 product, '+filebug', method='POST', form=form,
@@ -397,6 +402,15 @@ class TestFileBugViewBase(TestCaseWithFactory):
             InformationType.USERDATA, view.default_information_type)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
+    def test_filebug_information_type_with_bug_sharing_policy(self):
+        # If we don't specify the bug's information_type, it follows the
+        # target's getDefaultBugInformationType().
+        bug, view = self.filebug_via_view(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self.assertEqual(
+            InformationType.PROPRIETARY, view.default_information_type)
+        self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
+
     def test_filebug_information_type_with_public_blob(self):
         # Bugs filed with an apport blob that doesn't request privacy
         # are public by default.
@@ -414,7 +428,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
             InformationType.USERDATA, view.default_information_type)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
-    def test_filebug_information_type_normal_projects(self):
+    def test_filebug_information_type_public_policy(self):
         # The vocabulary for information_type when filing a bug is created
         # correctly for non commercial projects.
         product = self.factory.makeProduct(official_malone=True)
@@ -424,6 +438,19 @@ class TestFileBugViewBase(TestCaseWithFactory):
             html = view.render()
             soup = BeautifulSoup(html)
         self.assertIsNone(soup.find('label', text="Proprietary"))
+
+    def test_filebug_information_type_proprietary_policy(self):
+        # The vocabulary for information_type when filing a bug is created
+        # correctly for a project with a proprietary sharing policy.
+        product = self.factory.makeProduct(official_malone=True)
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            view = create_initialized_view(
+                product, '+filebug', principal=product.owner)
+            html = view.render()
+            soup = BeautifulSoup(html)
+        self.assertIsNotNone(soup.find('label', text="Proprietary"))
 
     def test_filebug_information_type_vocabulary(self):
         # The vocabulary for information_type when filing a bug is created
@@ -455,16 +482,21 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def filebug_via_view(self, private_bugs=False, security_related=False):
+    def filebug_via_view(self, private_bugs=False, bug_sharing_policy=None,
+                         security_related=False):
         form = {
             'field.title': 'A bug',
             'field.comment': 'A comment',
             'field.security_related': 'on' if security_related else '',
             'field.actions.submit_bug': 'Submit Bug Request',
         }
-        product = self.factory.makeProduct(official_malone=True)
+        product = self.factory.makeLegacyProduct(official_malone=True)
         if private_bugs:
             removeSecurityProxy(product).private_bugs = True
+        if bug_sharing_policy:
+            self.factory.makeCommercialSubscription(product=product)
+            with person_logged_in(product.owner):
+                product.setBugSharingPolicy(bug_sharing_policy)
         anyone = self.factory.makePerson()
         with person_logged_in(anyone):
             view = create_initialized_view(
@@ -498,6 +530,13 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
         # private_bugs=True.
         bug = self.filebug_via_view(private_bugs=True)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_filebug_with_proprietary_sharing(self):
+        # Non security related bugs are PROPRIETARY for products with a
+        # proprietary sharing policy.
+        bug = self.filebug_via_view(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self.assertEqual(InformationType.PROPRIETARY, bug.information_type)
 
     def test_filebug_view_renders_security_related(self):
         # The security_related checkbox is rendered for non bug supervisors.
@@ -618,7 +657,7 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         self._assert_cache_values(view, True)
 
     def test_product_private_bugs(self):
-        project = self.factory.makeProduct(
+        project = self.factory.makeLegacyProduct(
             official_malone=True, private_bugs=True)
         user = self.factory.makePerson()
         login_person(user)

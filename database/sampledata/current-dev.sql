@@ -762,9 +762,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3535,6 +3532,13 @@ ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
 ALTER TABLE bugsubscriptionfilterimportance ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugsubscriptionfilterinformationtype DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilterinformationtype ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugsubscriptionfiltermute DISABLE TRIGGER ALL;
 
 
@@ -4299,9 +4303,6 @@ ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 
 ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
-INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.enhanced_choice_popup.enabled', 'true', '2012-05-18 07:34:39.239649');
-INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.enhanced_sharing.writable', 'true', '2012-05-18 07:34:39.239649');
-INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.enhanced_sharing_details.enabled', 'true', '2012-05-18 07:34:39.239649');
 INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.information_type_notifications.enabled', 'true', '2012-05-18 07:34:39.239649');
 INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'js.combo_loader.enabled', 'true', '2012-05-18 07:34:39.239649');
 INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 1, 'longpoll.merge_proposals.enabled', 'true', '2012-05-18 07:34:39.239649');
@@ -9011,6 +9012,13 @@ INSERT INTO potranslation (id, translation) VALUES (668, 'auto, esddsp, artsdsp,
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
+
+
+ALTER TABLE processacceptedbugsjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE processacceptedbugsjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productjob DISABLE TRIGGER ALL;

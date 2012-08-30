@@ -15,7 +15,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import (
     IHasDrivers,
@@ -57,11 +56,6 @@ class PersonRoles:
         """See IPersonRoles."""
         return (IHasBugSupervisor.providedBy(obj)
                 and self.inTeam(obj.bug_supervisor))
-
-    def isSecurityContact(self, obj):
-        """See IPersonRoles."""
-        return (IHasSecurityContact.providedBy(obj)
-                and self.inTeam(obj.security_contact))
 
     def isDriver(self, obj):
         """See IPersonRoles."""

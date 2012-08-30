@@ -43,7 +43,7 @@
            <td id="branch-sharing-policy">
              Branches sharing policy:&nbsp;
              <strong><span class="value"></span></strong>
-             <a class="editicon sprite edit action-icon"
+             <a class="editicon sprite edit action-icon" href="#"
                  style="padding-bottom: 0;">Edit</a>
              <div id="branch-sharing-policy-description" class="formHelp"></div>
            </td>
@@ -53,7 +53,7 @@
            <td id="bug-sharing-policy">
              Bugs sharing policy:&nbsp;
              <strong><span class="value"></span></strong>
-             <a class="editicon sprite edit action-icon"
+             <a class="editicon sprite edit action-icon" href="#"
                  style="padding-bottom: 0;">Edit</a>
              <div id="bug-sharing-policy-description" class="formHelp"></div>
            </td>

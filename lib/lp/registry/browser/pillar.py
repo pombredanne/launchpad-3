@@ -31,7 +31,6 @@ from zope.schema.vocabulary import (
     getVocabularyRegistry,
     SimpleVocabulary,
     )
-from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.launchpad import iter_view_registrations
@@ -60,9 +59,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
@@ -254,11 +251,6 @@ class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         text = 'Report a bug'
         return Link('+filebug', text, icon='bug')
 
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        text = 'Change security contact'
-        return Link('+securitycontact', text, icon='edit')
-
 
 class PillarViewMixin():
     """A mixin for pillar views to populate the json request cache."""
@@ -266,6 +258,7 @@ class PillarViewMixin():
     def initialize(self):
         # Insert close team membership policy data into the json cache.
         # This data is used for the maintainer and driver pickers.
+        super(PillarViewMixin, self).initialize()
         cache = IJSONRequestCache(self.request)
         policy_items = [(item.name, item) for item in EXCLUSIVE_TEAM_POLICY]
         team_membership_policy_data = vocabulary_to_choice_edit_items(
@@ -281,11 +274,6 @@ class PillarSharingView(LaunchpadView):
     label = "Sharing information"
 
     sharing_vocabulary_name = 'NewPillarGrantee'
-
-    related_features = (
-        'disclosure.enhanced_sharing.enabled',
-        'disclosure.enhanced_sharing.writable',
-        )
 
     _batch_navigator = None
 
@@ -352,16 +340,7 @@ class PillarSharingView(LaunchpadView):
 
     def initialize(self):
         super(PillarSharingView, self).initialize()
-        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
-        enabled_writable_flag = (
-            'disclosure.enhanced_sharing.writable')
-        enabled = bool(getFeatureFlag(enabled_readonly_flag))
-        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
-        if not enabled and not write_flag_enabled:
-            raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
-        cache.objects['sharing_write_enabled'] = (write_flag_enabled
-            and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
         cache.objects['bug_sharing_policies'] = self.bug_sharing_policies
@@ -406,11 +385,6 @@ class PillarPersonSharingView(LaunchpadView):
     label = "Information shared with person or team"
 
     def initialize(self):
-        enabled_flag = 'disclosure.enhanced_sharing_details.enabled'
-        enabled = bool(getFeatureFlag(enabled_flag))
-        if not enabled:
-            raise Unauthorized("This feature is not yet available.")
-
         self.pillar = self.context.pillar
         self.person = self.context.person
 
@@ -435,11 +409,6 @@ class PillarPersonSharingView(LaunchpadView):
         cache.objects['pillar'] = pillar_data
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
-        enabled_writable_flag = (
-            'disclosure.enhanced_sharing.writable')
-        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
-        cache.objects['sharing_write_enabled'] = (write_flag_enabled
-            and check_permission('launchpad.Edit', self.pillar))
 
     def _loadSharedArtifacts(self):
         # As a concrete can by linked via more than one policy, we use sets to

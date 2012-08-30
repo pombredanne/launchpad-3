@@ -1,6 +1,5 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
@@ -91,6 +90,10 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import (
+    POLICY_ALLOWED_TYPES,
+    POLICY_DEFAULT_TYPES,
+    )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -339,10 +342,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         storm_validator=validate_person,
         notNull=False,
         default=None)
-    security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_person_or_closed_team, notNull=False,
-        default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_person,
@@ -561,12 +560,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
-    def setBranchSharingPolicy(self, branch_sharing_policy, user):
-        """See `IProductPublic`."""
-        if not user or not IPersonRoles(user).in_commercial_admin:
-            raise Unauthorized(
-                "Only commercial admins can configure sharing policies right "
-                "now.")
+    def setBranchSharingPolicy(self, branch_sharing_policy):
+        """See `IProductEditRestricted`."""
         if branch_sharing_policy != BranchSharingPolicy.PUBLIC:
             if not self.has_current_commercial_subscription:
                 raise CommercialSubscribersOnly(
@@ -579,12 +574,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self._ensurePolicies(required_policies)
         self.branch_sharing_policy = branch_sharing_policy
 
-    def setBugSharingPolicy(self, bug_sharing_policy, user):
-        """See `IProductPublic`."""
-        if not user or not IPersonRoles(user).in_commercial_admin:
-            raise Unauthorized(
-                "Only commercial admins can configure sharing policies right "
-                "now.")
+    def setBugSharingPolicy(self, bug_sharing_policy):
+        """See `IProductEditRestricted`."""
         if bug_sharing_policy != BugSharingPolicy.PUBLIC:
             if not self.has_current_commercial_subscription:
                 raise CommercialSubscribersOnly(
@@ -595,6 +586,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
+        if self.bug_sharing_policy is not None:
+            return POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
+
         types = set(InformationType.items)
         types.discard(InformationType.PROPRIETARY)
         types.discard(InformationType.EMBARGOED)
@@ -602,7 +596,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
-        if self.private_bugs:
+        if self.bug_sharing_policy is not None:
+            return POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
+        elif self.private_bugs:
             return InformationType.USERDATA
         else:
             return InformationType.PUBLIC
@@ -1556,8 +1552,20 @@ class ProductSet:
             project_reviewed=project_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
+        # Set up the sharing policies and product licence.
+        bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
+        branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
+            # By default, new non-proprietary projects use public bugs and
+            # branches. Proprietary projects are given a complimentary 30 day
+            # commercial subscription and so may use proprietary sharing
+            # policies.
+            if License.OTHER_PROPRIETARY in licenses:
+                bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
+                branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
+        product.setBugSharingPolicy(bug_sharing_policy_to_use)
+        product.setBranchSharingPolicy(branch_sharing_policy_to_use)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
@@ -1730,8 +1738,7 @@ class ProductSet:
                 ['development_focusID'])
             # Only need the objects for canonical_url, no need for validity.
             bulk.load_related(Person, products.values(),
-                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID',
-                 'security_contactID'])
+                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def search_sqlobject(self, text):

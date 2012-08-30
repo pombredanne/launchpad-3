@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6 -S
+#!/usr/bin/python -S
 # Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -237,21 +237,15 @@ class DatabasePreflight:
             max_lag = timedelta(seconds=-1)
             for node in self.nodes:
                 cur = node.con.cursor()
-                # streaming replication only works with 9.1 or later.
-                # Remove this guard when SSO nodes are migrated to 9.1.
                 cur.execute("""
-                    select current_setting('server_version') >= '9.1'
-                    """)
-                is_pg91 = cur.fetchone()[0]
-                if is_pg91:
-                    cur.execute("""
-                        SELECT current_setting('hot_standby') = 'on',
+                    SELECT
+                        pg_is_in_recovery(),
                         now() - pg_last_xact_replay_timestamp()
-                        """)
-                    is_standby, lag = cur.fetchone()
-                    if is_standby:
-                        self.log.debug2('streaming lag %s', lag)
-                        max_lag = max(max_lag, lag)
+                    """)
+                is_standby, lag = cur.fetchone()
+                if is_standby:
+                    self.log.debug2('streaming lag %s', lag)
+                    max_lag = max(max_lag, lag)
             if max_lag < MAX_LAG:
                 break
             time.sleep(0.2)

@@ -1,7 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-
 __metaclass__ = type
 
 from cStringIO import StringIO
@@ -32,6 +31,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     EXCLUSIVE_TEAM_POLICY,
+    FREE_INFORMATION_TYPES,
     INCLUSIVE_TEAM_POLICY,
     InformationType,
     )
@@ -55,8 +55,8 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
+from lp.services.webapp.authorization import check_permission
 from lp.testing import (
-    admin_logged_in,
     celebrity_logged_in,
     login,
     person_logged_in,
@@ -262,20 +262,6 @@ class TestProduct(TestCaseWithFactory):
             closed_team = self.factory.makeTeam(membership_policy=policy)
             self.factory.makeProduct(owner=closed_team)
 
-    def test_security_contact_cannot_be_open_team(self):
-        """Product security contacts cannot be open teams."""
-        for policy in INCLUSIVE_TEAM_POLICY:
-            open_team = self.factory.makeTeam(membership_policy=policy)
-            self.assertRaises(
-                InclusiveTeamLinkageError, self.factory.makeProduct,
-                security_contact=open_team)
-
-    def test_security_contact_can_be_closed_team(self):
-        """Product security contacts can be exclusive teams."""
-        for policy in EXCLUSIVE_TEAM_POLICY:
-            closed_team = self.factory.makeTeam(membership_policy=policy)
-            self.factory.makeProduct(security_contact=closed_team)
-
     def test_private_bugs_on_not_allowed_for_anonymous(self):
         # Anonymous cannot turn on private bugs.
         product = self.factory.makeProduct()
@@ -377,25 +363,146 @@ class TestProduct(TestCaseWithFactory):
         grantees = set([grant.grantee for grant in grants])
         self.assertEqual(expected_grantess, grantees)
 
-    def test_getAllowedBugInformationTypes(self):
-        # All projects currently support just the non-proprietary
-        # information types.
-        self.assertContentEqual(
-            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY, InformationType.USERDATA],
-            self.factory.makeProduct().getAllowedBugInformationTypes())
+    def test_open_product_creation_sharing_policies(self):
+        # Creating a new open (non-proprietary) product sets the bug and branch
+        # sharing polices to public.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.MIT])
+        self.assertEqual(BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
 
-    def test_getDefaultBugInformationType_public(self):
-        # The default information type for normal projects is PUBLIC.
+    def test_proprietary_product_creation_sharing_policies(self):
+        # Creating a new proprietary product sets the bug and branch sharing
+        # polices to proprietary.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.OTHER_PROPRIETARY])
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+
+
+class TestProductBugInformationTypes(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeProductWithPolicy(self, bug_sharing_policy, private_bugs=False):
+        product = self.factory.makeProduct(private_bugs=private_bugs)
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(bug_sharing_policy)
+        return product
+
+    def test_no_policy(self):
+        # New projects can only use the non-proprietary information
+        # types.
         product = self.factory.makeProduct()
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
             InformationType.PUBLIC, product.getDefaultBugInformationType())
 
-    def test_getDefaultBugInformationType_private(self):
-        # private_bugs overrides the default information type to USERDATA.
-        product = self.factory.makeProduct(private_bugs=True)
+    def test_legacy_private_bugs(self):
+        # The deprecated private_bugs attribute overrides the default
+        # information type to USERDATA.
+        product = self.factory.makeLegacyProduct(private_bugs=True)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
             InformationType.USERDATA, product.getDefaultBugInformationType())
+
+    def test_sharing_policy_overrides_private_bugs(self):
+        # bug_sharing_policy overrides private_bugs.
+        product = self.makeProductWithPolicy(
+            BugSharingPolicy.PUBLIC, private_bugs=True)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC, product.getDefaultBugInformationType())
+
+    def test_sharing_policy_public_or_proprietary(self):
+        # bug_sharing_policy can enable Proprietary.
+        product = self.makeProductWithPolicy(
+            BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+            product.getAllowedBugInformationTypes())
+        self.assertEqual(
+            InformationType.PUBLIC,
+            product.getDefaultBugInformationType())
+
+    def test_sharing_policy_proprietary_or_public(self):
+        # bug_sharing_policy can enable and default to Proprietary.
+        product = self.makeProductWithPolicy(
+            BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+            product.getAllowedBugInformationTypes())
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            product.getDefaultBugInformationType())
+
+    def test_sharing_policy_proprietary(self):
+        # bug_sharing_policy can enable only Proprietary.
+        product = self.makeProductWithPolicy(BugSharingPolicy.PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY],
+            product.getAllowedBugInformationTypes())
+        self.assertEqual(
+            InformationType.PROPRIETARY,
+            product.getDefaultBugInformationType())
+
+
+class ProductPermissionTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_owner_can_edit(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            self.assertTrue(check_permission('launchpad.Edit', product))
+
+    def test_commercial_admin_cannot_edit_non_commercial(self):
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('commercial_admin'):
+            self.assertFalse(check_permission('launchpad.Edit', product))
+
+    def test_commercial_admin_can_edit_commercial(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(check_permission('launchpad.Edit', product))
+
+    def test_owner_can_driver(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            self.assertTrue(check_permission('launchpad.Driver', product))
+
+    def test_driver_can_driver(self):
+        product = self.factory.makeProduct()
+        driver = self.factory.makePerson()
+        with person_logged_in(product.owner):
+            product.driver = driver
+        with person_logged_in(driver):
+            self.assertTrue(check_permission('launchpad.Driver', product))
+
+    def test_commercial_admin_cannot_drive_non_commercial(self):
+        product = self.factory.makeProduct()
+        with celebrity_logged_in('commercial_admin'):
+            self.assertFalse(check_permission('launchpad.Driver', product))
+
+    def test_commercial_admin_can_drive_commercial(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(check_permission('launchpad.Driver', product))
 
 
 class TestProductFiles(TestCase):
@@ -664,13 +771,16 @@ class BaseSharingPolicyTests:
     def setUp(self):
         super(BaseSharingPolicyTests, self).setUp()
         self.product = self.factory.makeProduct()
-        self.commercial_admin = self.factory.makePerson()
-        with admin_logged_in():
-            commercials = getUtility(ILaunchpadCelebrities).commercial_admin
-            commercials.addMember(self.commercial_admin, commercials)
+        self.commercial_admin = self.factory.makeCommercialAdmin()
+
+    def test_owner_can_set_policy(self):
+        # Project maintainers can set sharing policies.
+        self.setSharingPolicy(self.public_policy, self.product.owner)
+        self.assertEqual(self.public_policy, self.getSharingPolicy())
 
     def test_commercial_admin_can_set_policy(self):
-        # Commercial admins can set sharing policies.
+        # Commercial admins can set sharing policies for commercial projects.
+        self.factory.makeCommercialSubscription(product=self.product)
         self.setSharingPolicy(self.public_policy, self.commercial_admin)
         self.assertEqual(self.public_policy, self.getSharingPolicy())
 
@@ -680,13 +790,6 @@ class BaseSharingPolicyTests:
         self.assertRaises(
             Unauthorized, self.setSharingPolicy, self.public_policy, person)
 
-    def test_owner_cannot_set_policy(self):
-        # The project owner can't yet set sharing policies. This will
-        # change once they're stable.
-        self.assertRaises(
-            Unauthorized, self.setSharingPolicy,
-            self.public_policy, self.product.owner)
-
     def test_anonymous_cannot_set_policy(self):
         # An anonymous user can't set sharing policies.
         self.assertRaises(
@@ -695,12 +798,12 @@ class BaseSharingPolicyTests:
     def test_proprietary_forbidden_without_commercial_sub(self):
         # No policy that allows Proprietary can be configured without a
         # commercial subscription.
-        self.setSharingPolicy(self.public_policy, self.commercial_admin)
+        self.setSharingPolicy(self.public_policy, self.product.owner)
         self.assertEqual(self.public_policy, self.getSharingPolicy())
         for policy in self.commercial_policies:
             self.assertRaises(
                 CommercialSubscribersOnly,
-                self.setSharingPolicy, policy, self.commercial_admin)
+                self.setSharingPolicy, policy, self.product.owner)
 
     def test_proprietary_allowed_with_commercial_sub(self):
         # All policies are valid when there's a current commercial
@@ -746,7 +849,9 @@ class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
         )
 
     def setSharingPolicy(self, policy, user):
-        return self.product.setBugSharingPolicy(policy, user)
+        with person_logged_in(user):
+            result = self.product.setBugSharingPolicy(policy)
+        return result
 
     def getSharingPolicy(self):
         return self.product.bug_sharing_policy
@@ -768,7 +873,9 @@ class ProductBranchSharingPolicyTestCase(BaseSharingPolicyTests,
         )
 
     def setSharingPolicy(self, policy, user):
-        return self.product.setBranchSharingPolicy(policy, user)
+        with person_logged_in(user):
+            result = self.product.setBranchSharingPolicy(policy)
+        return result
 
     def getSharingPolicy(self):
         return self.product.branch_sharing_policy

@@ -10,6 +10,8 @@ __all__ = [
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
     'EXCLUSIVE_TEAM_POLICY',
+    'FREE_INFORMATION_TYPES',
+    'FREE_PRIVATE_INFORMATION_TYPES',
     'INCLUSIVE_TEAM_POLICY',
     'InformationType',
     'NON_EMBARGOED_INFORMATION_TYPES',
@@ -77,7 +79,6 @@ class InformationType(DBEnumeratedType):
 PUBLIC_INFORMATION_TYPES = (
     InformationType.PUBLIC, InformationType.PUBLICSECURITY)
 
-
 PRIVATE_INFORMATION_TYPES = (
     InformationType.PRIVATESECURITY, InformationType.USERDATA,
     InformationType.PROPRIETARY, InformationType.EMBARGOED)
@@ -89,6 +90,12 @@ NON_EMBARGOED_INFORMATION_TYPES = (
 
 SECURITY_INFORMATION_TYPES = (
     InformationType.PUBLICSECURITY, InformationType.PRIVATESECURITY)
+
+FREE_PRIVATE_INFORMATION_TYPES = (
+    InformationType.PRIVATESECURITY, InformationType.USERDATA)
+
+FREE_INFORMATION_TYPES = (
+    PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
 
 
 class SharingPermission(DBEnumeratedType):

@@ -811,10 +811,6 @@ class InformationTypeEmailCommand(DBSchemaEditEmailCommand):
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
         user = getUtility(ILaunchBag).user
-        if attr_value == InformationType.PROPRIETARY:
-            raise EmailProcessingError(
-                'Proprietary bugs are forbidden to be filed via the mail '
-                'interface.')
         if isinstance(context, CreateBugParams):
             context.information_type = attr_value
         else:

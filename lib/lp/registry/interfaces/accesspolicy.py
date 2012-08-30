@@ -241,6 +241,9 @@ class IAccessPolicyGrantSource(Interface):
             pairs.
         """
 
+    def revokeByPolicy(policies):
+        """Revoke all `IAccessPolicyGrant` for the policies."""
+
 
 class IAccessPolicyGrantFlatSource(Interface):
     """Experimental query utility to search through the flattened schema."""
