@@ -584,7 +584,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def setBugSharingPolicy(self, bug_sharing_policy):
         """See `IProductEditRestricted`."""
         self._prepare_to_set_sharing_policy(
-            bug_sharing_policy, BugSharingPolicy, 'bugs', POLICY_ALLOWED_TYPES)
+            bug_sharing_policy, BugSharingPolicy, 'bugs',
+            BUG_POLICY_ALLOWED_TYPES)
         self.bug_sharing_policy = bug_sharing_policy
 
     def getAllowedBugInformationTypes(self):
