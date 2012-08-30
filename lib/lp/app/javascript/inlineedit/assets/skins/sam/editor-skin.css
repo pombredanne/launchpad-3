@@ -74,7 +74,7 @@
 }
 
 .yui3-skin-sam .yui3-ieditor-waiting .yui3-ieditor-btns {
-    background: url("../../../../lazr/assets/skins/sam/spinner.gif") 0.2em 0em no-repeat;
+    background: url("../../../../ui/assets/skins/sam/spinner.gif") 0.2em 0em no-repeat;
 }
 
 /*
@@ -192,7 +192,7 @@
     position: relative;
     top: 4px;
     left: -8px;
-    background: url('../../../../lazr/assets/skins/sam/spinner.gif') top left no-repeat;
+    background: url('../../../../ui/assets/skins/sam/spinner.gif') top left no-repeat;
     padding: 2px 0 0 18px;
     z-index: 2;
 }
