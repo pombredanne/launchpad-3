@@ -2483,8 +2483,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         # CannotChangeInformationType is raised.
         product = self.factory.makeLegacyProduct()
         branch = self.factory.makeBranch(product=product)
-        self.assertRaises(
-            CannotChangeInformationType,
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Forbidden by project policy.',
             branch.setPrivate, True, branch.owner)
 
     def test_public_to_private_for_admins(self):
@@ -2530,8 +2530,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE_ONLY)
-        self.assertRaises(
-            CannotChangeInformationType,
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Forbidden by project policy.',
             branch.setPrivate, False, branch.owner)
 
     def test_cannot_transition_with_private_stacked_on(self):
@@ -2540,8 +2540,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         stacked_on = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         branch = self.factory.makeBranch(stacked_on=stacked_on)
-        self.assertRaises(
-            CannotChangeInformationType,
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Must match stacked-on branch.',
             branch.transitionToInformationType, InformationType.PUBLIC,
             branch.owner)
 
