@@ -30,7 +30,10 @@ from bzrlib.branch import (
     BzrBranchFormat6,
     BzrBranchFormat7,
     )
-from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.bzrdir import (
+    BzrDirMetaFormat1,
+    BzrDirMetaFormat1Colo,
+    )
 from bzrlib.errors import (
     NotStacked,
     NoSuchRevision,
@@ -267,6 +270,8 @@ class ControlFormat(BazaarFormatEnum):
     BZR_DIR_6 = _format_enum(6, BzrDirFormat6)
 
     BZR_METADIR_1 = _format_enum(1, BzrDirMetaFormat1)
+
+    BZR_METADIR_1_COLO = _format_enum(2, BzrDirMetaFormat1Colo)
 
 
 # A tuple of branch formats that should not suggest upgrading.
