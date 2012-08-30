@@ -459,6 +459,50 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
             product.getDefaultBugInformationType())
 
 
+class TestProductBranchInformationTypes(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_policy(self):
+        # New projects can only use the non-proprietary information
+        # types.
+        product = self.factory.makeProduct()
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES, product.getAllowedBranchInformationTypes())
+
+    def test_sharing_policy_public_or_proprietary(self):
+        # branch_sharing_policy can enable Proprietary.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+            product.getAllowedBranchInformationTypes())
+
+    def test_sharing_policy_proprietary_or_public(self):
+        # branch_sharing_policy can enable Proprietary.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+            product.getAllowedBranchInformationTypes())
+
+    def test_sharing_policy_proprietary(self):
+        # branch_sharing_policy can enable only Proprietary.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY],
+            product.getAllowedBranchInformationTypes())
+
+    def test_sharing_policy_embargoed_or_proprietary(self):
+        # branch_sharing_policy can enable Embargoed or Proprietary.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            product.getAllowedBranchInformationTypes())
+
+
 class ProductPermissionTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

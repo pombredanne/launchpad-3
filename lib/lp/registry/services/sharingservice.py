@@ -32,7 +32,7 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
+    PRIVATE_INFORMATION_TYPES,
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -257,7 +257,9 @@ class SharingService:
         """See `ISharingService`."""
         allowed_types = set(pillar.getAllowedBugInformationTypes()).union(
             pillar.getAllowedBranchInformationTypes())
-        return self._makeEnumData(allowed_types)
+        allowed_private_types = allowed_types.intersection(
+            PRIVATE_INFORMATION_TYPES)
+        return self._makeEnumData(allowed_private_types)
 
     def getBranchSharingPolicies(self, pillar):
         """See `ISharingService`."""
