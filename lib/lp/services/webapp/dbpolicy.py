@@ -139,7 +139,7 @@ class BaseDatabasePolicy:
 
             # If we still haven't connected to a suitable database,
             # reraise the original attempt's exception.
-            if store == None:
+            if store is None:
                 raise
 
         if not getattr(store, '_lp_store_initialized', False):
