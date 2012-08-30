@@ -3088,10 +3088,8 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
         # new target.
         free_prod = self.factory.makeProduct()
         other_free_prod = self.factory.makeProduct()
-        commercial_prod = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product=commercial_prod)
-        with person_logged_in(commercial_prod.owner):
-            commercial_prod.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+        commercial_prod = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         bug = self.factory.makeBug(target=free_prod)
 
         # The new bug is Public, which is legal on the other free product.

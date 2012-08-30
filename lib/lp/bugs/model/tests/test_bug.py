@@ -756,15 +756,12 @@ class TestBugPrivacy(TestCaseWithFactory):
 
     def test_multipillar_proprietary_bugs_disallowed(self):
         # A multi-pillar bug cannot be made proprietary.
-        products = []
-        for i in range(2):
-            products.append(self.factory.makeProduct())
-            self.factory.makeCommercialSubscription(product=products[-1])
-            with person_logged_in(products[-1].owner):
-                products[-1].setBugSharingPolicy(
-                    BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
-        bug = self.factory.makeBug(target=products[0])
-        self.factory.makeBugTask(bug=bug, target=products[1])
+        p1 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        p2 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        bug = self.factory.makeBug(target=p1)
+        self.factory.makeBugTask(bug=bug, target=p2)
         login_person(bug.owner)
         self.assertRaisesWithContent(
             CannotChangeInformationType,
@@ -885,7 +882,6 @@ class TestBugPrivacy(TestCaseWithFactory):
         # for the bug.
         product = self.factory.makeProduct()
         with person_logged_in(product.owner):
-            product.setBugSharingPolicy(BugSharingPolicy.PUBLIC)
             bug = self.factory.makeBug(target=product)
             self.assertRaisesWithContent(
                 CannotChangeInformationType, "Forbidden by project policy.",
@@ -895,10 +891,9 @@ class TestBugPrivacy(TestCaseWithFactory):
     def test_transitionToInformationType_respects_allowed_public(self):
         # transitionToInformationType rejects types that aren't allowed
         # for the bug.
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product=product)
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         with person_logged_in(product.owner):
-            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
             bug = self.factory.makeBug(target=product)
             self.assertRaisesWithContent(
                 CannotChangeInformationType, "Forbidden by project policy.",
