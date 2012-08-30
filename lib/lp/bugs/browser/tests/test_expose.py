@@ -262,8 +262,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         context = self.factory.makeDistribution(
             owner=self.user, members=self.bug_super_team)
         with person_logged_in(self.user):
-            context.setBugSupervisor(
-                self.bug_super_team, self.user)
+            context.bug_supervisor = self.bug_super_team
 
         expose_user_administered_teams_to_js(self.request, self.user, context,
             absoluteURL=fake_absoluteURL)

@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Person interfaces."""
 
 __metaclass__ = type
@@ -694,9 +692,13 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             description=_('The cached total karma for this person.')))
     homepage_content = exported(
         Text(title=_("Homepage Content"), required=False,
+            description=_("Obsolete. Use description.")))
+
+    description = exported(
+        Text(title=_("Description"), required=False,
             description=_(
-                "The content of your profile page. Use plain text, "
-                "paragraphs are preserved and URLs are linked in pages.")))
+                "Details about interests and goals. Use plain text, "
+                "paragraphs are preserved and URLs are linked.")))
 
     mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
@@ -1141,9 +1143,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
     def isAnyPillarOwner():
         """Is this person the owner of any pillar?"""
-
-    def isAnySecurityContact():
-        """Is this person the security contact of any pillar?"""
 
     def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
@@ -1822,10 +1821,7 @@ class ITeamPublic(Interface):
 
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
-             description=_(
-                "Details about the team's work, highlights, goals, "
-                "and how to contribute. Use plain text, paragraphs are "
-                "preserved and URLs are linked in pages.")),
+             description=_("Obsolete. Use description.")),
         exported_as='team_description')
 
     membership_policy = exported(

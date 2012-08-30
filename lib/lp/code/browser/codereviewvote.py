@@ -26,7 +26,7 @@ class ReassignSchema(Interface):
 
     reviewer = PublicPersonChoice(title=_('Reviewer'), required=True,
             description=_('A person who you want to review this.'),
-            vocabulary='ValidPersonOrTeam')
+            vocabulary='ValidBranchReviewer')
 
 
 class CodeReviewVoteReassign(LaunchpadFormView):

@@ -371,7 +371,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             bugtask.transitionToAssignee(assignee)
         supervisor = self.factory.makePerson()
         with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(supervisor, supervisor)
+            bugtask.target.bug_supervisor = supervisor
         structural_subscriber = self.factory.makePerson()
         with person_logged_in(structural_subscriber):
             bugtask.target.addSubscription(
@@ -392,8 +392,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # the assignee, supervisor and structural subscriber do.
         found_subscribers = self.getInfo().also_notified_subscribers
         self.assertContentEqual(
-            [assignee, supervisor, structural_subscriber],
-            found_subscribers)
+            [assignee, structural_subscriber], found_subscribers)
 
     def test_also_notified_subscribers_muted(self):
         # If someone is muted, they are not listed in the
@@ -405,13 +404,10 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # when they are not muted.
         found_subscribers = self.getInfo().also_notified_subscribers
         self.assertContentEqual(
-            [assignee, supervisor, structural_subscriber],
-            found_subscribers)
+            [assignee, structural_subscriber], found_subscribers)
         # Now we mute all of the subscribers.
         with person_logged_in(assignee):
             self.bug.mute(assignee, assignee)
-        with person_logged_in(supervisor):
-            self.bug.mute(supervisor, supervisor)
         with person_logged_in(structural_subscriber):
             self.bug.mute(structural_subscriber, structural_subscriber)
         # Now we don't see them.

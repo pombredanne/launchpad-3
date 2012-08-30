@@ -699,6 +699,17 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             cancel_url = canonical_url(self.context)
         return cancel_url
 
+
+    @cachedproperty
+    def is_duplicate_active(self):
+        active = True
+        if self.context.bug.duplicateof is not None:
+            naked_duplicate = removeSecurityProxy(
+                self.context.bug.duplicateof)
+            active = getattr(
+                naked_duplicate.default_bugtask.target, 'active', True)
+        return active
+
     @cachedproperty
     def api_request(self):
         return IWebServiceClientRequest(self.request)
@@ -734,7 +745,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, IBug['title'], "Edit this summary", 'h1',
             edit_url=canonical_url(self.context, view_name='+edit'),
-            max_width='95%', truncate_lines=2)
+            max_width='95%', truncate_lines=6)
 
         # XXX 2010-10-05 gmb bug=655597:
         # This line of code keeps the view's query count down,
@@ -1337,7 +1348,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
     @cachedproperty
     def editable_field_names(self):
         """Return the names of fields the user has permission to edit."""
-        if self.context.target_uses_malone:
+        if self.context.pillar.official_malone:
             # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
             editable_field_names = set(self.default_field_names)
@@ -1492,7 +1503,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
                        values=importance_vocab_items,
                        default=BugTaskImportance.UNDECIDED))
 
-        if self.context.target_uses_malone:
+        if self.context.pillar.official_malone:
             self.form_fields = self.form_fields.omit('bugwatch')
 
         elif (self.context.bugwatch is not None and
@@ -1513,7 +1524,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
 
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
-        if self.context.target_uses_malone:
+        if self.context.pillar.official_malone:
             read_only_field_names = []
 
             if not self.user_has_privileges:
@@ -2495,11 +2506,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def bugsupervisor(self):
         return Link('+bugsupervisor', 'Change bug supervisor', icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        return Link(
-            '+securitycontact', 'Change security contact', icon='edit')
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
@@ -4125,7 +4131,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
         If yes, return True, otherwise return False.
         """
         bugtask = self.context
-        edit_allowed = bugtask.target_uses_malone or bugtask.bugwatch
+        edit_allowed = bugtask.pillar.official_malone or bugtask.bugwatch
         if bugtask.bugwatch:
             bugtracker = bugtask.bugwatch.bugtracker
             edit_allowed = (

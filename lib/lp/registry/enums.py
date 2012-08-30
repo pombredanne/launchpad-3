@@ -10,8 +10,11 @@ __all__ = [
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
     'EXCLUSIVE_TEAM_POLICY',
+    'FREE_INFORMATION_TYPES',
+    'FREE_PRIVATE_INFORMATION_TYPES',
     'INCLUSIVE_TEAM_POLICY',
     'InformationType',
+    'NON_EMBARGOED_INFORMATION_TYPES',
     'PersonTransferJobType',
     'PersonVisibility',
     'PRIVATE_INFORMATION_TYPES',
@@ -66,18 +69,33 @@ class InformationType(DBEnumeratedType):
         Only shared with users permitted to see proprietary information.
         """)
 
+    EMBARGOED = DBItem(6, """
+        Embargoed
+
+        Only shared with users permitted to see embargoed information.
+        """)
+
 
 PUBLIC_INFORMATION_TYPES = (
     InformationType.PUBLIC, InformationType.PUBLICSECURITY)
 
-
 PRIVATE_INFORMATION_TYPES = (
     InformationType.PRIVATESECURITY, InformationType.USERDATA,
-    InformationType.PROPRIETARY)
+    InformationType.PROPRIETARY, InformationType.EMBARGOED)
 
+NON_EMBARGOED_INFORMATION_TYPES = (
+    PUBLIC_INFORMATION_TYPES +
+    (InformationType.PRIVATESECURITY, InformationType.USERDATA,
+     InformationType.PROPRIETARY))
 
 SECURITY_INFORMATION_TYPES = (
     InformationType.PUBLICSECURITY, InformationType.PRIVATESECURITY)
+
+FREE_PRIVATE_INFORMATION_TYPES = (
+    InformationType.PRIVATESECURITY, InformationType.USERDATA)
+
+FREE_INFORMATION_TYPES = (
+    PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
 
 
 class SharingPermission(DBEnumeratedType):
@@ -133,6 +151,14 @@ class BranchSharingPolicy(DBEnumeratedType):
 
         Branches are always proprietary. Only people who can see the
         project's proprietary information can create new branches.
+        """)
+
+    EMBARGOED_OR_PROPRIETARY = DBItem(5, """
+        Embargoed, can be proprietary
+
+        New branches are embargoed, but can be made proprietary later. Only
+        people who can see the project's proprietary information can create
+        new branches.
         """)
 
 

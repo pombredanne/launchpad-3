@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,E0602
 
 """Bug task interfaces."""
 
@@ -546,8 +544,6 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         title=_('Target'), required=True, schema=Interface,  # IBugTarget
         readonly=True,
         description=_("The software in which this bug should be fixed.")))
-    target_uses_malone = Bool(
-        title=_("Whether the bugtask's target uses Launchpad officially"))
     title = exported(
         Text(title=_("The title of the bug related to this bugtask"),
              readonly=True))
@@ -785,7 +781,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userHasDriverPrivileges(user):
-        """Does the user have driver privledges on the current bugtask?
+        """Does the user have driver privileges on the current bugtask?
 
         :return: A boolean.
         """

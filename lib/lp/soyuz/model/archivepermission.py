@@ -195,8 +195,8 @@ class ArchivePermissionSet:
             clauses.append("ArchivePermission.pocket = %s" % sqlvalues(item))
             if distroseries is not None:
                 clauses.append(
-                    "ArchivePermission.distroseries IS NULL OR "
-                    "ArchivePermission.distroseries = %s" %
+                    "(ArchivePermission.distroseries IS NULL OR "
+                     "ArchivePermission.distroseries = %s)" %
                     sqlvalues(distroseries))
                 prejoins.append("distroseries")
         else:

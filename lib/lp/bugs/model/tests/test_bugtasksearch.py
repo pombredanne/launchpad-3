@@ -67,7 +67,6 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import convert_storm_clause_to_string
-from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
     any,
@@ -936,7 +935,7 @@ class BugTargetWithBugSuperVisor:
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""
         with person_logged_in(self.owner):
-            self.searchtarget.setBugSupervisor(supervisor, self.owner)
+            self.searchtarget.bug_supervisor = supervisor
 
 
 class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
@@ -1103,7 +1102,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
         with person_logged_in(self.owner):
             # We must set the bug supervisor for each bug task target
             for bugtask in self.bugtasks:
-                bugtask.target.setBugSupervisor(supervisor, self.owner)
+                bugtask.target.bug_supervisor = supervisor
 
     def findBugtaskForOtherProduct(self, bugtask):
         # Return the bugtask for the product that not related to the
@@ -1613,8 +1612,7 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""
         with person_logged_in(self.owner):
-            self.searchtarget.distribution.setBugSupervisor(
-                supervisor, self.owner)
+            self.searchtarget.distribution.bug_supervisor = supervisor
 
     def targetToGroup(self, target):
         return target.sourcepackagename.id
@@ -2411,8 +2409,6 @@ class BaseGetBugPrivacyFilterTermsTests:
         # People and teams with AccessPolicyGrants can see the bug.
         self.makePrivacyScenario()
 
-        self.useFixture(FeatureFixture(
-            {'disclosure.enhanced_sharing.writable': 'true'}))
         with admin_logged_in():
             for princ in (self.grantee_team, self.grantee_person):
                 getUtility(IService, 'sharing').sharePillarInformation(

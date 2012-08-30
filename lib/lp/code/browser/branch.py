@@ -308,12 +308,18 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'create_queue']
+        'create_queue', 'visibility']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
         text = 'Change branch status'
         return Link('+edit-status', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Moderate')
+    def visibility(self):
+        """Return the 'Set information type' Link."""
+        text = 'Change information type'
+        return Link('+edit-information-type', text)
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
@@ -430,8 +436,8 @@ class BranchMirrorMixin:
         return branch.url
 
 
-class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin,
-                 InformationTypePortletMixin):
+class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
+                 LaunchpadView):
 
     feed_types = (
         BranchFeedLink,
@@ -735,17 +741,17 @@ class BranchEditFormView(LaunchpadEditFormView):
         else:
             shown_types = (
                 InformationType.PUBLIC,
-                InformationType.USERDATA,
-                InformationType.PROPRIETARY,
-                )
-
-            # We only show Private Security and Public Security
-            # if the branch is linked to a bug with one of those types,
-            # as they're confusing and not generally useful otherwise.
-            # Once Proprietary is fully deployed, it should be added here.
-            hidden_types = (
                 InformationType.PUBLICSECURITY,
                 InformationType.PRIVATESECURITY,
+                InformationType.USERDATA,
+                InformationType.PROPRIETARY,
+                InformationType.EMBARGOED,
+                )
+
+            # XXX Once Branch Visibility Policies are removed, we only want to
+            # show Private (USERDATA) if the branch is linked to such a bug.
+            hidden_types = (
+                # InformationType.USERDATA,
                 )
             if set(allowed_types).intersection(hidden_types):
                 params = BugTaskSearchParams(
@@ -799,7 +805,8 @@ class BranchEditFormView(LaunchpadEditFormView):
         """See `LaunchpadFormView`"""
         return {self.schema: self.context}
 
-    @action('Change Branch', name='change')
+    @action('Change Branch', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def change_action(self, action, data):
         # If the owner or product has changed, add an explicit notification.
         # We take our own snapshot here to make sure that the snapshot records
@@ -848,9 +855,15 @@ class BranchEditFormView(LaunchpadEditFormView):
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW
 
+        if self.request.is_ajax:
+            return ''
+
     @property
     def next_url(self):
-        return canonical_url(self.context)
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
 
     cancel_url = next_url
 
@@ -865,6 +878,12 @@ class BranchEditStatusView(BranchEditFormView):
     """A view for editing the lifecycle status only."""
 
     field_names = ['lifecycle_status']
+
+
+class BranchEditInformationTypeView(BranchEditFormView):
+    """A view for editing the information type only."""
+
+    field_names = ['information_type']
 
 
 class BranchMirrorStatusView(LaunchpadFormView):
@@ -1113,9 +1132,9 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
-        owner = data['owner']
         if 'name' in data:
             # Only validate if the name has changed or the owner has changed.
+            owner = data['owner']
             if ((data['name'] != self.context.name) or
                 (owner != self.context.owner)):
                 # We only allow moving within the same branch target for now.

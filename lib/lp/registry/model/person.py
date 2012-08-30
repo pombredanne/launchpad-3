@@ -1,7 +1,5 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# vars() causes W0612
-# pylint: disable-msg=E0611,W0212,W0612,C0322
 
 """Implementation classes for a Person."""
 
@@ -542,6 +540,7 @@ class Person(
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
+    _description = StringCol(dbName='description', default=None)
     icon = ForeignKey(
         dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
@@ -626,6 +625,26 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @property
+    def description(self):
+        """See `IPerson`."""
+        if self._description is not None:
+            return self._description
+        else:
+            # Fallback to obsolete sources.
+            texts = [
+                val for val in [self.homepage_content, self.teamdescription]
+                if val is not None]
+            if len(texts) > 0:
+                return '\n'.join(texts)
+            return None
+
+    @description.setter  # pyflakes:ignore
+    def description(self, value):
+        self._description = value
+        self.homepage_content = None
+        self.teamdescription = None
 
     @cachedproperty
     def ircnicknames(self):
@@ -1180,30 +1199,6 @@ class Person(
                  SELECT Distribution.id
                  FROM Distribution
                  WHERE Distribution.owner IN (SELECT team FROM teams)
-                """))
-           ]
-        store = IStore(self)
-        rs = store.with_(with_sql).using("owned_entities").find(
-            SQL("count(*) > 0"),
-        )
-        return rs.one()
-
-    def isAnySecurityContact(self):
-        """See IPerson."""
-        with_sql = [
-            With("teams", SQL("""
-                 SELECT team FROM TeamParticipation
-                 WHERE TeamParticipation.person = %d
-                """ % self.id)),
-            With("owned_entities", SQL("""
-                 SELECT Product.id
-                 FROM Product
-                 WHERE Product.security_contact IN (SELECT team FROM teams)
-                 UNION ALL
-                 SELECT Distribution.id
-                 FROM Distribution
-                 WHERE Distribution.security_contact
-                    IN (SELECT team FROM teams)
                 """))
            ]
         store = IStore(self)
@@ -1825,17 +1820,12 @@ class Person(
         if not self.is_team:
             raise ValueError("This method must only be used for teams.")
 
-        # Does this team own or is the security contact for any pillars?
+        # Does this team own any pillars?
         if self.isAnyPillarOwner():
             raise TeamMembershipPolicyError(
                 "The team membership policy cannot be %s because it "
                 "maintains one or more projects, project groups, or "
                 "distributions." % policy)
-        if self.isAnySecurityContact():
-            raise TeamMembershipPolicyError(
-                "The team membership policy cannot be %s because it "
-                "is the security contact for one or more projects, "
-                "project groups, or distributions." % policy)
 
         # Does this team have any PPAs
         for ppa in self.ppas:
@@ -3312,7 +3302,7 @@ class PersonSet:
             # Support 1.0 API.
             membership_policy = subscription_policy
         team = Person(teamowner=teamowner, name=name, displayname=displayname,
-                teamdescription=teamdescription,
+                description=teamdescription,
                 defaultmembershipperiod=defaultmembershipperiod,
                 defaultrenewalperiod=defaultrenewalperiod,
                 membership_policy=membership_policy)

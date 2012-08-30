@@ -30,6 +30,8 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     SharingPermission,
     )
@@ -57,7 +59,6 @@ from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormexpr import ColumnSelect
-from lp.services.features import getFeatureFlag
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
     available_with_permission,
@@ -78,12 +79,6 @@ class SharingService:
     def name(self):
         """See `IService`."""
         return 'sharing'
-
-    @property
-    def write_enabled(self):
-        return (
-            bool(getFeatureFlag(
-            'disclosure.enhanced_sharing.writable')))
 
     def checkPillarAccess(self, pillar, information_type, person):
         """See `ISharingService`."""
@@ -245,6 +240,19 @@ class SharingService:
 
         return set(people).difference(set(result_set))
 
+    def _makeEnumData(self, enums):
+        # Make a dict of data for the a view request cache.
+        result_data = []
+        for x, enum in enumerate(enums):
+            item = dict(
+                index=x,
+                value=enum.name,
+                title=enum.title,
+                description=enum.description
+            )
+            result_data.append(item)
+        return result_data
+
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [
@@ -256,16 +264,40 @@ class SharingService:
                 pillar.has_current_commercial_subscription):
             allowed_types.append(InformationType.PROPRIETARY)
 
-        result_data = []
-        for x, policy in enumerate(allowed_types):
-            item = dict(
-                index=x,
-                value=policy.name,
-                title=policy.title,
-                description=policy.description
-            )
-            result_data.append(item)
-        return result_data
+        return self._makeEnumData(allowed_types)
+
+    def getBranchSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have branch sharing policies.
+        if not IProduct.providedBy(pillar):
+            return []
+        allowed_policies = [BranchSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary branches.
+        if pillar.has_current_commercial_subscription:
+            allowed_policies.extend([
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                BranchSharingPolicy.PROPRIETARY])
+        if (pillar.branch_sharing_policy and
+            not pillar.branch_sharing_policy in allowed_policies):
+            allowed_policies.append(pillar.branch_sharing_policy)
+
+        return self._makeEnumData(allowed_policies)
+
+    def getBugSharingPolicies(self, pillar):
+        """See `ISharingService`."""
+        # Only Products have bug sharing policies.
+        if not IProduct.providedBy(pillar):
+            return []
+        allowed_policies = [BugSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary bugs.
+        if pillar.has_current_commercial_subscription:
+            allowed_policies.extend([
+                BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                BugSharingPolicy.PROPRIETARY])
+
+        return self._makeEnumData(allowed_policies)
 
     def getSharingPermissions(self):
         """See `ISharingService`."""
@@ -311,15 +343,12 @@ class SharingService:
         result = []
         request = get_current_web_service_request()
         browser_request = IWebBrowserOriginatingRequest(request)
-        details_enabled = bool((getFeatureFlag(
-            'disclosure.enhanced_sharing_details.enabled')))
         # We need to precache icon and validity information for the batch.
         grantee_ids = [grantee[0].id for grantee in grant_permissions]
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             grantee_ids, need_icon=True, need_validity=True))
         for (grantee, permissions, shared_artifact_types) in grant_permissions:
-            some_things_shared = (
-                details_enabled and len(shared_artifact_types) > 0)
+            some_things_shared = len(shared_artifact_types) > 0
             grantee_permissions = {}
             for (policy, permission) in permissions.iteritems():
                 grantee_permissions[policy.type.name] = permission.name
@@ -346,9 +375,6 @@ class SharingService:
 
         # We do not support adding grantees to project groups.
         assert not IProjectGroup.providedBy(pillar)
-
-        if not self.write_enabled:
-            raise Unauthorized("This feature is not yet enabled.")
 
         # Separate out the info types according to permission.
         information_types = permissions.keys()
@@ -424,9 +450,6 @@ class SharingService:
                              information_types=None):
         """See `ISharingService`."""
 
-        if not self.write_enabled:
-            raise Unauthorized("This feature is not yet enabled.")
-
         policy_source = getUtility(IAccessPolicySource)
         if information_types is None:
             # We delete all policy grants for the pillar.
@@ -452,9 +475,8 @@ class SharingService:
         to_delete = list(ap_grant_flat.findArtifactsByGrantee(
             grantee, pillar_policies))
         if len(to_delete) > 0:
-            accessartifact_grant_source = getUtility(
-                IAccessArtifactGrantSource)
-            accessartifact_grant_source.revokeByArtifact(to_delete, [grantee])
+            getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                to_delete, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
@@ -473,8 +495,8 @@ class SharingService:
                            bugs=None):
         """See `ISharingService`."""
 
-        if not self.write_enabled:
-            raise Unauthorized("This feature is not yet enabled.")
+        if not branches and not bugs:
+            raise ValueError("Either bugs or branches must be specified")
 
         artifacts = []
         if branches:
@@ -485,8 +507,7 @@ class SharingService:
         accessartifact_source = getUtility(IAccessArtifactSource)
         artifacts_to_delete = accessartifact_source.find(artifacts)
         # Revoke access to bugs/branches for the specified grantee.
-        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
-        accessartifact_grant_source.revokeByArtifact(
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             artifacts_to_delete, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
@@ -497,9 +518,6 @@ class SharingService:
     def ensureAccessGrants(self, grantees, user, branches=None, bugs=None,
                            ignore_permissions=False):
         """See `ISharingService`."""
-
-        if not ignore_permissions and not self.write_enabled:
-            raise Unauthorized("This feature is not yet enabled.")
 
         artifacts = []
         if branches:

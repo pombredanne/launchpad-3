@@ -326,7 +326,7 @@ class SafeBranchOpener(object):
             redirected)
         return format.open(transport)
 
-    def open(self, url):
+    def open(self, url, ignore_fallbacks=False):
         """Open the Bazaar branch at url, first checking for safety.
 
         What safety means is defined by a subclasses `followReference` and
@@ -334,20 +334,21 @@ class SafeBranchOpener(object):
         """
         url = self.checkAndFollowBranchReference(url)
 
-        def open_branch(url):
+        def open_branch(url, ignore_fallbacks):
             dir = self._open_dir(url)
-            return dir.open_branch()
+            return dir.open_branch(ignore_fallbacks=ignore_fallbacks)
         return self.runWithTransformFallbackLocationHookInstalled(
-            open_branch, url)
+            open_branch, url, ignore_fallbacks)
 
 
-def safe_open(allowed_scheme, url):
+def safe_open(allowed_scheme, url, ignore_fallbacks=False):
     """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
 
     :raises BadUrl: An attempt was made to open a URL that was not on
         `allowed_scheme`.
     """
-    return SafeBranchOpener(SingleSchemePolicy(allowed_scheme)).open(url)
+    return SafeBranchOpener(SingleSchemePolicy(allowed_scheme)).open(url,
+                            ignore_fallbacks=ignore_fallbacks)
 
 
 SafeBranchOpener.install_hook()

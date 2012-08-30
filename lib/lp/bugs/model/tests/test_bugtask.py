@@ -934,13 +934,10 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
 
     def _setBugSupervisorData(self):
         """Helper function used by sub-classes to setup bug supervisors."""
-        self.supervisor_team = self.factory.makeTeam(
-            owner=self.target_owner_member)
         self.supervisor_member = self.factory.makePerson()
-        self.supervisor_team.addMember(
-            self.supervisor_member, self.target_owner_member)
-        self.target.setBugSupervisor(
-            self.supervisor_team, self.target_owner_member)
+        self.supervisor_team = self.factory.makeTeam(
+            owner=self.target_owner_member, members=[self.supervisor_member])
+        self.target.bug_supervisor = self.supervisor_team
 
     def _setBugSupervisorDataNone(self):
         """Helper for sub-classes to work around setting a bug supervisor."""
@@ -1197,7 +1194,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         """
         non_malone_using_bugtasks = [
             related_task for related_task in bugtask.related_tasks
-            if not related_task.target_uses_malone]
+            if not related_task.pillar.official_malone]
         pending_bugwatch_bugtasks = [
             related_bugtask for related_bugtask in non_malone_using_bugtasks
             if related_bugtask.bugwatch is None]
@@ -2681,7 +2678,6 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'disclosure.unsubscribe_jobs.enabled': 'true',
             'jobs.celery.enabled_classes': 'RemoveArtifactSubscriptionsJob',
         }))
         super(TestTransitionsRemovesSubscribersJob, self).setUp()
@@ -2859,6 +2855,7 @@ class ValidateTargetMixin:
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         p = self.factory.makeProduct()
+        self.factory.makeAccessPolicy(pillar=d)
         with person_logged_in(bug.owner):
             bug.transitionToInformationType(
                 InformationType.PROPRIETARY, bug.owner)
@@ -2880,6 +2877,7 @@ class ValidateTargetMixin:
         bug = self.factory.makeBug(target=p1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
+        self.factory.makeAccessPolicy(pillar=p1)
         with person_logged_in(bug.owner):
             bug.transitionToInformationType(
                 InformationType.PROPRIETARY, bug.owner)
@@ -2908,6 +2906,7 @@ class ValidateTargetMixin:
         bug = self.factory.makeBug(target=p1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
+        self.factory.makeAccessPolicy(pillar=p1)
         with person_logged_in(bug.owner):
             bug.transitionToInformationType(
                 InformationType.PROPRIETARY, bug.owner)
@@ -2930,6 +2929,7 @@ class ValidateTargetMixin:
         bug = self.factory.makeBug(target=d1)
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
+        self.factory.makeAccessPolicy(pillar=d1)
         with person_logged_in(bug.owner):
             bug.transitionToInformationType(
                 InformationType.PROPRIETARY, bug.owner)
@@ -3199,10 +3199,8 @@ class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
 
     def test_pillar_bug_supervisor(self):
         # The pillar bug supervisor has privileges.
-        pillar = self.factory.makeProduct()
         bugsupervisor = self.factory.makePerson()
-        removeSecurityProxy(pillar).setBugSupervisor(
-            bugsupervisor, self.celebrities.admin)
+        pillar = self.factory.makeProduct(bug_supervisor=bugsupervisor)
         bugtask = self.factory.makeBugTask(target=pillar)
         self.assertTrue(
             bugtask.userHasBugSupervisorPrivileges(bugsupervisor))
@@ -3222,6 +3220,15 @@ class TestBugTaskUserHasBugSupervisorPrivileges(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(target=distroseries)
         self.assertTrue(
             bugtask.userHasBugSupervisorPrivileges(distroseries.driver))
+
+    def test_commercial_admin_has_no_privileges(self):
+        # Commercial admins have no privileges.
+        pillar = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(pillar)
+        bugtask = self.factory.makeBugTask(target=pillar)
+        commercial_admin = self.factory.makeCommercialAdmin()
+        self.assertFalse(
+            bugtask.userHasBugSupervisorPrivileges(commercial_admin))
 
     def test_random_has_no_privileges(self):
         # Joe Random has no privileges.

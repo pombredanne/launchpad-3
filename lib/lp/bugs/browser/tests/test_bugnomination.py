@@ -41,7 +41,7 @@ class TestBugNominationView(TestCaseWithFactory):
         self.bug_worker = self.factory.makePerson()
         with person_logged_in(owner):
             bug_team.addMember(self.bug_worker, owner)
-            self.distribution.setBugSupervisor(bug_team, owner)
+            self.distribution.bug_supervisor = bug_team
             self.distribution.driver = self.factory.makePerson()
         self.bug_task = self.factory.makeBugTask(target=self.distribution)
         launchbag = getUtility(ILaunchBag)
@@ -54,7 +54,7 @@ class TestBugNominationView(TestCaseWithFactory):
         members.append(person)
         bug_supervisor = self.factory.makeTeam(members=members, owner=owner)
         with person_logged_in(owner):
-            target.setBugSupervisor(bug_supervisor, owner)
+            target.bug_supervisor = bug_supervisor
 
     def test_submit_action_bug_supervisor(self):
         # A bug supervisor sees the Nominate action label.

@@ -37,6 +37,7 @@ from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
     )
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 
@@ -271,8 +272,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def getNewPrivatePPAs(self, since=None):
         """Return the recently created private PPAs."""
-        # Avoid circular import.
-        from lp.soyuz.model.archive import Archive
         store = IStore(Archive)
         extra_expr = []
         if since:

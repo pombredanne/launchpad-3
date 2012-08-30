@@ -114,6 +114,12 @@ class ISharingService(IService):
     def getInformationTypes(pillar):
         """Return the allowed information types for the given pillar."""
 
+    def getBugSharingPolicies(pillar):
+        """Return the allowed bug sharing policies for the given pillar."""
+
+    def getBranchSharingPolicies(pillar):
+        """Return the allowed branch sharing policies for the given pillar."""
+
     def getSharingPermissions():
         """Return the information sharing permissions."""
 

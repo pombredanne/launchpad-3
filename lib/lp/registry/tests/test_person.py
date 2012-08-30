@@ -283,6 +283,40 @@ class TestPerson(TestCaseWithFactory):
         title = smartquote('"%s" team') % team.displayname
         self.assertEqual(title, team.title)
 
+    def test_description_not_exists(self):
+        # When the person does not have a description, teamdescription or
+        # homepage_content, the value is None.
+        person = self.factory.makePerson()
+        self.assertEqual(None, person.description)
+
+    def test_description_fallback_for_person(self):
+        # When the person does not have a description, but does have a
+        # teamdescription or homepage_content, they are used.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+        self.assertEqual('babble\nfish', person.description)
+
+    def test_description_exists(self):
+        # When the person has a description, it is returned.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.description = 'babble'
+        self.assertEqual('babble', person.description)
+
+    def test_description_setting_reconciles_obsolete_sources(self):
+        # When the description is set, the homepage_content and teamdescription
+        # are set to None.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            person.homepage_content = 'babble'
+            person.teamdescription = 'fish'
+            person.description = "What's this fish doing?"
+        self.assertEqual("What's this fish doing?", person.description)
+        self.assertEqual(None, person.homepage_content)
+        self.assertEqual(None, person.teamdescription)
+
     def test_getOwnedOrDrivenPillars(self):
         user = self.factory.makePerson()
         active_project = self.factory.makeProject(owner=user)
@@ -537,22 +571,6 @@ class TestPerson(TestCaseWithFactory):
         self.factory.makeDistribution(owner=owner)
         self.assertTrue(owner.isAnyPillarOwner())
         self.assertFalse(person.isAnyPillarOwner())
-
-    def test_product_isAnySecurityContact(self):
-        # Test isAnySecurityContact for products
-        person = self.factory.makePerson()
-        contact = self.factory.makePerson()
-        self.factory.makeProduct(security_contact=contact)
-        self.assertTrue(contact.isAnySecurityContact())
-        self.assertFalse(person.isAnySecurityContact())
-
-    def test_distribution_isAnySecurityContact(self):
-        # Test isAnySecurityContact for distributions
-        person = self.factory.makePerson()
-        contact = self.factory.makePerson()
-        self.factory.makeDistribution(security_contact=contact)
-        self.assertTrue(contact.isAnySecurityContact())
-        self.assertFalse(person.isAnySecurityContact())
 
     def test_has_current_commercial_subscription(self):
         # IPerson.hasCurrentCommercialSubscription() checks for one.

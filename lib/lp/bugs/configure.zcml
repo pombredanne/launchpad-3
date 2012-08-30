@@ -221,7 +221,6 @@
                     asEmailHeaderValue
                     getDelta
                     pillar
-                    target_uses_malone
                     bugtask_branches
                     conjoined_master
                     conjoined_slave
@@ -976,7 +975,7 @@
         <!-- BugNotificationRecipients provides the following
              attributes/methods in addition. -->
         <allow
-            attributes="subscription_filters addFilter addBugSupervisor addMaintainer"/>
+            attributes="subscription_filters addFilter"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"

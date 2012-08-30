@@ -5,8 +5,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 """Testing infrastructure for the Launchpad application.
 
 This module should not contain tests (but it should be tested).
@@ -139,6 +137,8 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionSet,
     )
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     InformationType,
@@ -604,7 +604,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePerson(
         self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
-        time_zone=None, latitude=None, longitude=None, homepage_content=None,
+        time_zone=None, latitude=None, longitude=None, description=None,
         selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
@@ -633,8 +633,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
-        if homepage_content is not None:
-            naked_person.homepage_content = homepage_content
+        if description is not None:
+            naked_person.description = description
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
@@ -782,7 +782,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname, teamdescription=description,
+            owner, name, displayname, description,
             membership_policy=membership_policy)
         naked_team = removeSecurityProxy(team)
         if visibility is not None:
@@ -955,7 +955,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, private_bugs=False,
-        driver=None, security_contact=None, icon=None):
+        driver=None, icon=None, bug_sharing_policy=None,
+        branch_sharing_policy=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -994,10 +995,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:
             naked_product.driver = driver
-        if security_contact is not None:
-            naked_product.security_contact = security_contact
         if private_bugs:
             naked_product.private_bugs = private_bugs
+        if ((branch_sharing_policy and
+            branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
+            (bug_sharing_policy and
+            bug_sharing_policy != BugSharingPolicy.PUBLIC)):
+            self.makeCommercialSubscription(product)
+        if branch_sharing_policy:
+            naked_product.setBranchSharingPolicy(branch_sharing_policy)
+        if bug_sharing_policy:
+            naked_product.setBugSharingPolicy(bug_sharing_policy)
+
+        return product
+
+    def makeLegacyProduct(self, **kwargs):
+        # Create a product which does not have any of the new bug and branch
+        # sharing policies set. New products have these set to default values
+        # but we need to test for existing products which have not yet been
+        # migrated.
+        # XXX This method can be removed when branch visibility policy dies.
+        product = self.makeProduct(**kwargs)
+        removeSecurityProxy(product).bug_sharing_policy = None
+        removeSecurityProxy(product).branch_sharing_policy = None
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1687,6 +1707,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 target = series.pillar
             else:
                 target = self.makeProduct()
+                if information_type == InformationType.PROPRIETARY:
+                    self.makeAccessPolicy(pillar=target)
         if IDistributionSourcePackage.providedBy(target):
             self.makeSourcePackagePublishingHistory(
                 distroseries=target.distribution.currentseries,
@@ -2410,9 +2432,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          registrant=None, members=None, title=None,
                          aliases=None, bug_supervisor=None, driver=None,
-                         security_contact=None, publish_root_dir=None,
-                         publish_base_url=None, publish_copy_base_url=None,
-                         no_pubconf=False, icon=None, summary=None):
+                         publish_root_dir=None, publish_base_url=None,
+                         publish_copy_base_url=None, no_pubconf=False,
+                         icon=None, summary=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2440,8 +2462,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_distro.driver = driver
         if bug_supervisor is not None:
             naked_distro.bug_supervisor = bug_supervisor
-        if security_contact is not None:
-            naked_distro.security_contact = security_contact
         if not no_pubconf:
             self.makePublisherConfig(
                 distro, publish_root_dir, publish_base_url,

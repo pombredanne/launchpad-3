@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -202,7 +200,6 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -929,7 +926,8 @@ class Bug(SQLBase):
             # This may be a webservice request.
             person = unmuted_by
         mutes = self._getMutes(person)
-        store.remove(mutes.one())
+        if not mutes.is_empty():
+            store.remove(mutes.one())
         return self.getSubscriptionForPerson(person)
 
     @property
@@ -1708,12 +1706,8 @@ class Bug(SQLBase):
                 set(pillar.getAllowedBugInformationTypes()))
         return types
 
-    def transitionToInformationType(self, information_type, who,
-                                    from_api=False):
+    def transitionToInformationType(self, information_type, who):
         """See `IBug`."""
-        if from_api and information_type == InformationType.PROPRIETARY:
-            raise BugCannotBePrivate(
-                "Cannot transition the information type to proprietary.")
         if self.information_type == information_type:
             return False
         if (information_type == InformationType.PROPRIETARY and
@@ -1743,11 +1737,9 @@ class Bug(SQLBase):
 
         # We have to capture subscribers that must exist after transition. In
         # the case of a transition to USERDATA, we want the bug supervisor or
-        # maintainer. For SECURITY types, we want the security contact or
-        # maintainer. In either case, if the driver is already subscribed,
-        # then the driver is also required.
-        # Ubuntu is special: we don't want to add required subscribers in that
-        # case.
+        # maintainer and if the driver is already subscribed, then the driver
+        # is also required. Ubuntu is special: we don't want to add required
+        # subscribers in that case.
         if information_type == InformationType.USERDATA:
             for pillar in pillars:
                 if pillar.driver in subscribers:
@@ -1757,15 +1749,6 @@ class Bug(SQLBase):
                         required_subscribers.add(pillar.bug_supervisor)
                     else:
                         required_subscribers.add(pillar.owner)
-
-        if information_type in SECURITY_INFORMATION_TYPES:
-            for pillar in pillars:
-                if pillar.driver in subscribers:
-                    required_subscribers.add(pillar.driver)
-                if pillar.security_contact is not None:
-                    required_subscribers.add(pillar.security_contact)
-                else:
-                    required_subscribers.add(pillar.owner)
 
         # If we've made the bug private, we need to do some cleanup.
         # Required subscribers must be given access.
@@ -1782,18 +1765,10 @@ class Bug(SQLBase):
                     if pillar.driver in subscribers and pillar != ubuntu:
                         required_subscribers.add(pillar.driver)
                 service = getUtility(IService, 'sharing')
-                subscribers_to_remove = set(service.getPeopleWithoutAccess(
-                    self, subscribers)).difference(required_subscribers)
                 if len(required_subscribers):
                     service.ensureAccessGrants(
                         required_subscribers, who, bugs=[self],
                         ignore_permissions=True)
-                # There is a job to do the unsubscribe, but it's behind a
-                # flag. If that flag is not set, do it manually.
-                if len(subscribers_to_remove) and not bool(
-                    getFeatureFlag('disclosure.unsubscribe_jobs.enabled')):
-                    for s in subscribers_to_remove:
-                        self.unsubscribe(s, who, ignore_permissions=True)
 
         # Add the required subscribers, but not if they are all already
         # subscribed via a team.
@@ -1804,13 +1779,10 @@ class Bug(SQLBase):
 
         self.updateHeat()
 
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the bug. We need to run a job to remove any such
-            # subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                who, [self])
+        # As a result of the transition, some subscribers may no longer
+        # have access to the bug. We need to run a job to remove any such
+        # subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(who, [self])
 
         return True
 
@@ -2652,16 +2624,11 @@ class BugSet:
         getUtility(IBugTaskSet).createTask(
             bug, params.owner, params.target, status=params.status)
 
-        if params.information_type in SECURITY_INFORMATION_TYPES:
-            pillar = params.target.pillar
-            if pillar.security_contact:
-                bug.subscribe(pillar.security_contact, params.owner)
-            else:
-                bug.subscribe(pillar.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
-        elif IProduct.providedBy(params.target) and params.target.private_bugs:
+        if (IProduct.providedBy(params.target) and params.target.private_bugs
+            and params.information_type not in SECURITY_INFORMATION_TYPES):
             # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.

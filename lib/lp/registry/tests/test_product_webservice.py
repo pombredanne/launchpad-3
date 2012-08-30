@@ -57,8 +57,7 @@ class TestProduct(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
         webservice = webservice_for_person(
-            self.factory.makeCommercialAdmin(),
-            permission=OAuthPermission.WRITE_PRIVATE)
+            product.owner, permission=OAuthPermission.WRITE_PRIVATE)
         response = self.patch(
             webservice, product, branch_sharing_policy='Proprietary')
         self.assertEqual(209, response.status)
@@ -68,10 +67,9 @@ class TestProduct(TestCaseWithFactory):
     def test_branch_sharing_policy_non_commercial(self):
         # An API attempt to set a commercial-only branch_sharing_policy
         # on a non-commercial project returns Forbidden.
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         webservice = webservice_for_person(
-            self.factory.makeCommercialAdmin(),
-            permission=OAuthPermission.WRITE_PRIVATE)
+            product.owner, permission=OAuthPermission.WRITE_PRIVATE)
         response = self.patch(
             webservice, product, branch_sharing_policy='Proprietary')
         self.assertThat(response, MatchesStructure.byEquality(
@@ -80,27 +78,12 @@ class TestProduct(TestCaseWithFactory):
                       'proprietary branches.')))
         self.assertIs(None, product.branch_sharing_policy)
 
-    def test_branch_sharing_policy_random_user(self):
-        # Arbitrary users can't set branch_sharing_policy.
-        product = self.factory.makeProduct()
-        webservice = webservice_for_person(
-            self.factory.makePerson(),
-            permission=OAuthPermission.WRITE_PRIVATE)
-        response = self.patch(
-            webservice, product, branch_sharing_policy='Proprietary')
-        self.assertThat(response, MatchesStructure.byEquality(
-                status=401,
-                body=('Only commercial admins can configure sharing policies '
-                      'right now.')))
-        self.assertIs(None, product.branch_sharing_policy)
-
     def test_bug_sharing_policy_can_be_set(self):
         # bug_sharing_policy can be set via the API.
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
         webservice = webservice_for_person(
-            self.factory.makeCommercialAdmin(),
-            permission=OAuthPermission.WRITE_PRIVATE)
+            product.owner, permission=OAuthPermission.WRITE_PRIVATE)
         response = self.patch(
             webservice, product, bug_sharing_policy='Proprietary')
         self.assertEqual(209, response.status)
@@ -110,28 +93,13 @@ class TestProduct(TestCaseWithFactory):
     def test_bug_sharing_policy_non_commercial(self):
         # An API attempt to set a commercial-only bug_sharing_policy
         # on a non-commercial project returns Forbidden.
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         webservice = webservice_for_person(
-            self.factory.makeCommercialAdmin(),
-            permission=OAuthPermission.WRITE_PRIVATE)
+            product.owner, permission=OAuthPermission.WRITE_PRIVATE)
         response = self.patch(
             webservice, product, bug_sharing_policy='Proprietary')
         self.assertThat(response, MatchesStructure.byEquality(
                 status=403,
                 body=('A current commercial subscription is required to use '
                       'proprietary bugs.')))
-        self.assertIs(None, product.bug_sharing_policy)
-
-    def test_bug_sharing_policy_random_user(self):
-        # Arbitrary users can't set bug_sharing_policy.
-        product = self.factory.makeProduct()
-        webservice = webservice_for_person(
-            self.factory.makePerson(),
-            permission=OAuthPermission.WRITE_PRIVATE)
-        response = self.patch(
-            webservice, product, bug_sharing_policy='Proprietary')
-        self.assertThat(response, MatchesStructure.byEquality(
-                status=401,
-                body=('Only commercial admins can configure sharing policies '
-                      'right now.')))
         self.assertIs(None, product.bug_sharing_policy)

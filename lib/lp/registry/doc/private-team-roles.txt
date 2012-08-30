@@ -223,8 +223,8 @@ Bug Supervisor
 A public team and a private team can be a project bug supervisor.
 
     >>> product = factory.makeProduct()
-    >>> product.setBugSupervisor(public_team, admin_user)
-    >>> product.setBugSupervisor(priv_team, admin_user)
+    >>> product.bug_supervisor = public_team
+    >>> product.bug_supervisor = priv_team
 
 
 Product Series Roles

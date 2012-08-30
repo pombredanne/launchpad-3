@@ -111,8 +111,7 @@ class RepositoryIndexFile:
         'temp_root'.
         """
         self.root = root
-        assert os.path.exists(temp_root), (
-            'Temporary root does not exist.')
+        assert os.path.exists(temp_root), 'Temporary root does not exist.'
 
         self.index_files = (
             PlainTempFile(temp_root, filename),

@@ -113,6 +113,7 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.enums import (
+    BranchSharingPolicy,
     InformationType,
     PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
@@ -137,6 +138,7 @@ from lp.services.job.tests import (
     )
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     admin_logged_in,
@@ -2429,6 +2431,9 @@ class TestBranchGetAllowedInformationTypes(TestCaseWithFactory):
         self.assertNotIn(
             InformationType.PROPRIETARY,
             branch.getAllowedInformationTypes(branch.owner))
+        self.assertNotIn(
+            InformationType.EMBARGOED,
+            branch.getAllowedInformationTypes(branch.owner))
 
     def test_admin_sees_namespace_types(self):
         # An admin sees all the types, since they occasionally need to
@@ -2476,7 +2481,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
         # BranchCannotChangeInformationType is rasied.
-        branch = self.factory.makeProductBranch()
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeBranch(product=product)
         self.assertRaises(
             BranchCannotChangeInformationType,
             branch.setPrivate,
@@ -2518,7 +2524,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         # If the namespace policy does not allow public branches, attempting
         # to change the branch to be public raises
         # BranchCannotChangeInformationType.
-        branch = self.factory.makeProductBranch(
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeBranch(
+            product=product,
             information_type=InformationType.USERDATA)
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
@@ -2576,6 +2584,46 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             InformationType.PRIVATESECURITY, owner, verify_policy=False)
         self.assertEqual(
             InformationType.PRIVATESECURITY, branch.information_type)
+
+
+class BranchModerateTestCase(TestCaseWithFactory):
+    """Test that product owners and commercial admins can moderate branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_moderate_permission(self):
+        # Test the ModerateBranch security checker.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            self.assertTrue(
+                check_permission('launchpad.Moderate', branch))
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(
+                check_permission('launchpad.Moderate', branch))
+
+    def test_methods_smoketest(self):
+        # Users with launchpad.Moderate can call transitionToInformationType.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.product.setBranchSharingPolicy(BranchSharingPolicy.PUBLIC)
+            branch.transitionToInformationType(
+                InformationType.PRIVATESECURITY, branch.product.owner)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, branch.information_type)
+
+    def test_attribute_smoketest(self):
+        # Users with launchpad.Moderate can set attrs.
+        branch = self.factory.makeProductBranch()
+        with person_logged_in(branch.product.owner):
+            branch.name = 'not-secret'
+            branch.description = 'redacted'
+            branch.reviewer = branch.product.owner
+            branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
+        self.assertEqual('not-secret', branch.name)
+        self.assertEqual('redacted', branch.description)
+        self.assertEqual(branch.product.owner, branch.reviewer)
+        self.assertEqual(
+            BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
@@ -3231,3 +3279,20 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
+
+    def test_transitionToInformationType(self):
+        """Test transitionToInformationType() API arguments."""
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(product.owner):
+            product.setBranchSharingPolicy(
+                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
+            db_branch = self.factory.makeBranch(product=product)
+            launchpad = launchpadlib_for('test', db_branch.owner,
+                service_root=self.layer.appserver_root_url('api'))
+
+        branch = ws_object(launchpad, db_branch)
+        branch.transitionToInformationType(information_type='Proprietary')
+
+        updated_branch = ws_object(launchpad, db_branch)
+        self.assertEqual('Proprietary', updated_branch.information_type)

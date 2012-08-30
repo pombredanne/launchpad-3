@@ -140,12 +140,12 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        # If this test is run in isolation, the query count is 89.
+        # If this test is run in isolation, the query count is 94.
         # Other tests in this TestCase could cache the
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(93)))
+        self.assertThat(recorder, HasQueryCount(LessThan(95)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -161,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                96, self.factory.makePerson())
+                97, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -251,13 +251,10 @@ class TestBugTaskView(TestCaseWithFactory):
         # and will instead receive an error in the UI.
         person = self.factory.makePerson()
         product = self.factory.makeProduct(
-            name='product1', owner=person, official_malone=True)
-        with person_logged_in(person):
-            product.setBugSupervisor(person, person)
+            name='product1', owner=person, official_malone=True,
+            bug_supervisor=person)
         product_2 = self.factory.makeProduct(
             name='product2', official_malone=True)
-        with person_logged_in(product_2.owner):
-            product_2.setBugSupervisor(product_2.owner, product_2.owner)
         bug = self.factory.makeBug(target=product, owner=person)
         # We need to commit here, otherwise all the sample data we
         # created gets destroyed when the transaction is rolled back.
@@ -300,6 +297,25 @@ class TestBugTaskView(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(bug=bug)
         view = create_initialized_view(bugtask, name="+index")
         self.assertEqual('Private', view.information_type)
+
+    def test_duplicate_message_for_inactive_dupes(self):
+        # A duplicate on an inactive project is not linked to.
+        inactive_project = self.factory.makeProduct()
+        inactive_bug = self.factory.makeBug(target=inactive_project)
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.markAsDuplicate(inactive_bug)
+        removeSecurityProxy(inactive_project).active = False
+        browser = self.getUserBrowser(canonical_url(bug))
+        contents = browser.contents
+        self.assertIn(
+            "This bug report is a duplicate of a bug on an inactive project.",
+            contents)
+
+        # Confirm there is no link to the duplicate bug.
+        soup = BeautifulSoup(contents)
+        tag = soup.find('a', attrs={'id': "duplicate-of"})
+        self.assertIsNone(tag)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
@@ -1104,6 +1120,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         # could affect another package.
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
+        self.factory.makeAccessPolicy(pillar=distro)
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.PROPRIETARY)
@@ -1124,6 +1141,7 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         sp = self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
         owner = self.factory.makePerson()
+        self.factory.makeAccessPolicy(pillar=distro)
         bug = self.factory.makeBug(
             target=sp.distribution_sourcepackage, owner=owner,
             information_type=InformationType.PROPRIETARY)
@@ -1241,7 +1259,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         # For regular users, the assignee vocabulary is
         # AllUserTeamsParticipation if there is a bug supervisor defined.
         login_person(self.owner)
-        self.product.setBugSupervisor(self.owner, self.owner)
+        self.product.bug_supervisor = self.owner
         login(USER_EMAIL)
         view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
         view.initialize()
@@ -1253,7 +1271,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         # For regular users, the assignee vocabulary is
         # ValidAssignee is there is not a bug supervisor defined.
         login_person(self.owner)
-        self.product.setBugSupervisor(None, self.owner)
+        self.product.bug_supervisor = None
         login(USER_EMAIL)
         view = BugTaskEditView(self.bugtask, LaunchpadTestRequest())
         view.initialize()

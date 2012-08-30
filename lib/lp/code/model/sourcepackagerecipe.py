@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,W1001
@@ -281,6 +281,10 @@ class SourcePackageRecipe(Storm):
         return SourcePackageRecipeBuild.getRecentBuilds(
             requester, self, distroseries).count() >= 5
 
+    def containsUnbuildableSeries(self, archive):
+        buildable_distros = set(get_buildable_distroseries_set(archive.owner))
+        return len(set(self.distroseries).difference(buildable_distros)) >= 1
+
     def requestBuild(self, archive, requester, distroseries,
                      pocket=PackagePublishingPocket.RELEASE,
                      manual=False):
@@ -321,7 +325,10 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipe`."""
         builds = []
         self.is_stale = False
-        for distroseries in self.distroseries:
+        buildable_distros = set(get_buildable_distroseries_set(
+            self.daily_build_archive.owner))
+        build_for = set(self.distroseries).intersection(buildable_distros)
+        for distroseries in build_for:
             try:
                 build = self.requestBuild(
                     self.daily_build_archive, self.owner,

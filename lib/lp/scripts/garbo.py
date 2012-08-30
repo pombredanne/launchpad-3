@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'DailyDatabaseGarbageCollector',
+    'FrequentDatabaseGarbageCollector',
     'HourlyDatabaseGarbageCollector',
     ]
 
@@ -26,7 +27,14 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    And,
+    Exists,
+    In,
+    Not,
+    Select,
+    Update,
+    Or)
 from storm.locals import (
     Max,
     Min,
@@ -39,6 +47,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtarget import (
+    POLICY_ALLOWED_TYPES as BUG_POLICY_ALLOWED_TYPES,
+    )
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
@@ -47,7 +58,12 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
     )
+from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchnamespace import (
+    POLICY_ALLOWED_TYPES as BRANCH_POLICY_ALLOWED_TYPES,
+    )
+from lp.code.model.branchvisibilitypolicy import BranchVisibilityTeamPolicy
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -55,7 +71,15 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.registry.enums import FREE_INFORMATION_TYPES
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
+from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
@@ -990,6 +1014,103 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
+class PopulateProjectSharingPolicies(TunableLoop):
+    """Sets bug and branch sharing policies for non commercial projects."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(PopulateProjectSharingPolicies, self).__init__(log, abort_time)
+        self.store = IMasterStore(Product)
+
+    def getProducts(self):
+        """ Load the products to process.
+
+        We only want products which:
+            - are non-commercial products which have neither bug nor
+              branch sharing policy set
+            - have private_bugs = false
+            - have no branch visibility policies other than public
+        """
+        return self.store.find(
+            Product.id,
+            Not(
+                Or(
+                    Exists(Select(1, tables=[CommercialSubscription],
+                        where=And(
+                            CommercialSubscription.product == Product.id,
+                            CommercialSubscription.date_expires > datetime.now(
+                            pytz.UTC)))),
+                    Product.private_bugs == True,
+                    Exists(Select(1, tables=[BranchVisibilityTeamPolicy],
+                        where=And(
+                            BranchVisibilityTeamPolicy.product == Product.id,
+                            BranchVisibilityTeamPolicy.rule !=
+                                BranchVisibilityRule.PUBLIC))),
+                )),
+            And(Product.bug_sharing_policy == None,
+                Product.branch_sharing_policy == None)).order_by(Product.id)
+
+    def isDone(self):
+        return self.getProducts().is_empty()
+
+    def __call__(self, chunk_size):
+        products_to_process = self.getProducts()[:chunk_size]
+        changes = {
+            Product.bug_sharing_policy: 1,
+            Product.branch_sharing_policy: 1
+        }
+        expr = Update(
+            changes,
+            where=Product.id.is_in(products_to_process))
+        self.store.execute(expr, noresult=True)
+        transaction.commit()
+
+
+class UnusedAccessPolicyPruner(TunableLoop):
+    """Deletes unused AccessPolicy and AccessPolicyGrants for products."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(UnusedAccessPolicyPruner, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(Product)
+
+    def findProducts(self):
+        return self.store.find(
+            Product, Product.id >= self.start_at).order_by(Product.id)
+
+    def isDone(self):
+        return self.findProducts().is_empty()
+
+    def __call__(self, chunk_size):
+        products = list(self.findProducts()[:chunk_size])
+        for product in products:
+            allowed_bug_types = set(
+                BUG_POLICY_ALLOWED_TYPES.get(
+                    product.bug_sharing_policy, FREE_INFORMATION_TYPES))
+            allowed_branch_types = set(
+                BRANCH_POLICY_ALLOWED_TYPES.get(
+                    product.branch_sharing_policy, FREE_INFORMATION_TYPES))
+            allowed_types = allowed_bug_types.union(allowed_branch_types)
+            # Fetch all APs, and after filtering out ones that are forbidden
+            # by the bug and branch policies, the APs that have no APAs are
+            # unused and can be deleted.
+            access_policies = set(
+                getUtility(IAccessPolicySource).findByPillar([product]))
+            apa_source = getUtility(IAccessPolicyArtifactSource)
+            unused_aps = [
+                ap for ap in access_policies
+                if ap.type not in allowed_types
+                and apa_source.findByPolicy([ap]).is_empty()]
+            getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
+            for ap in unused_aps:
+                self.store.remove(ap)
+        self.start_at = products[-1].id + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1243,6 +1364,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        PopulateProjectSharingPolicies,
         ]
     experimental_tunable_loops = []
 
@@ -1275,8 +1397,9 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
-        UnusedPOTMsgSetPruner,
         UnlinkedAccountPruner,
+        UnusedAccessPolicyPruner,
+        UnusedPOTMsgSetPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

@@ -45,6 +45,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationPublic,
+    ISpecificationView,
     )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
@@ -242,6 +243,11 @@ from lp.translations.interfaces.translator import (
     )
 
 
+def is_commercial_case(obj, user):
+    """Is this a commercial project and the user is a commercial admin?"""
+    return obj.has_current_commercial_subscription and user.in_commercial_admin
+
+
 class ViewByLoggedInUser(AuthorizationBase):
     """The default ruleset for the launchpad.View permission.
 
@@ -359,7 +365,7 @@ class PillarPersonSharingDriver(AuthorizationBase):
     permission = 'launchpad.Driver'
 
     def checkAuthenticated(self, user):
-        """The Admins & Commercial Admins can see inactive pillars."""
+        """Maintainers, drivers, and admins can drive projects."""
         return (user.in_admin or
                 user.isOwner(self.obj.pillar) or
                 user.isOneOfDrivers(self.obj.pillar))
@@ -426,6 +432,13 @@ class EditByOwnersOrAdmins(AuthorizationBase):
 
 class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        # Commercial admins may help setup commercial projects.
+        return (
+            super(EditProduct, self).checkAuthenticated(user)
+            or is_commercial_case(self.obj, user)
+            or False)
 
 
 class EditPackaging(EditByOwnersOrAdmins):
@@ -517,6 +530,27 @@ class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
 
     permission = 'launchpad.View'
     usedfor = ISpecificationPublic
+
+
+class ViewSpecification(AuthorizationBase):
+
+    permission = 'launchpad.LimitedView'
+    usedfor = ISpecificationView
+
+    def checkAuthenticated(self, user):
+        return self.obj.userCanView(user)
+
+    def checkUnauthenticated(self):
+        return self.obj.userCanView(None)
+
+
+class EditWhiteboardSpecification(ViewSpecification):
+
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = ISpecificationView
+
+    def checkUnauthenticated(self):
+        return False
 
 
 class EditSpecificationByRelatedPeople(AuthorizationBase):
@@ -1220,6 +1254,19 @@ class SeriesDrivers(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return self.obj.personHasDriverRights(user)
+
+
+class DriveProduct(SeriesDrivers):
+
+    permission = 'launchpad.Driver'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        # Commercial admins may help setup commercial projects.
+        return (
+            super(DriveProduct, self).checkAuthenticated(user)
+            or is_commercial_case(self.obj, user)
+            or False)
 
 
 class ViewProductSeries(AnonymousAuthorization):
@@ -2095,6 +2142,19 @@ class EditBranch(AuthorizationBase):
                 and user.inTeam(code_import.registrant)))
 
 
+class ModerateBranch(EditBranch):
+    """The owners, product owners, and admins can moderate branches."""
+    permission = 'launchpad.Moderate'
+
+    def checkAuthenticated(self, user):
+        if super(ModerateBranch, self).checkAuthenticated(user):
+            return True
+        branch = self.obj
+        if branch.product is not None and user.inTeam(branch.product.owner):
+            return True
+        return user.in_commercial_admin
+
+
 def can_upload_linked_package(person_role, branch):
     """True if person may upload the package linked to `branch`."""
     # No associated `ISuiteSourcePackage` data -> not an official branch.
@@ -2430,9 +2490,6 @@ class AppendArchive(AuthorizationBase):
     PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
-
-    Appending to ubuntu main archives can also be done by the
-    'ubuntu-security' celebrity.
     """
     permission = 'launchpad.Append'
     usedfor = IArchive
@@ -2445,12 +2502,6 @@ class AppendArchive(AuthorizationBase):
             return True
 
         if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
-            return True
-
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (self.obj.is_main and
-            self.obj.distribution == celebrities.ubuntu and
-            user.in_ubuntu_security):
             return True
 
         return False

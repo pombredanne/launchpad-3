@@ -86,7 +86,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -132,7 +131,6 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     ComponentNotFound,
     default_name_by_purpose,
-    ForbiddenByFeatureFlag,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
@@ -1671,21 +1669,10 @@ class Archive(SQLBase):
             [source], to_pocket, to_series, include_binaries,
             person=person)
 
-    def _checkCopyPackageFeatureFlags(self):
-        """Prevent copyPackage(s) if these conditions are not met."""
-        if (self.is_ppa and
-            not getFeatureFlag(u"soyuz.copypackageppa.enabled")):
-            # We have no way of giving feedback about failed jobs yet,
-            # so this is disabled for now.
-            raise ForbiddenByFeatureFlag(
-                "Not enabled for copying to PPAs yet.")
-
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
                     sponsored=None, unembargo=False, auto_approve=False):
         """See `IArchive`."""
-        self._checkCopyPackageFeatureFlags()
-
         # Asynchronously copy a package using the job system.
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
@@ -1712,8 +1699,6 @@ class Archive(SQLBase):
                      include_binaries=None, sponsored=None, unembargo=False,
                      auto_approve=False):
         """See `IArchive`."""
-        self._checkCopyPackageFeatureFlags()
-
         sources = self._collectLatestPublishedSources(
             from_archive, from_series, source_names)
 
@@ -1823,8 +1808,7 @@ class Archive(SQLBase):
         # Perform the copy, may raise CannotCopy. Don't do any further
         # permission checking: this method is protected by
         # launchpad.Append, which is mostly more restrictive than archive
-        # permissions, except that it also allows ubuntu-security to
-        # copy packages they wouldn't otherwise be able to.
+        # permissions.
         do_copy(
             sources, self, series, pocket, include_binaries, person=person,
             check_permissions=False, allow_delayed_copies=True)

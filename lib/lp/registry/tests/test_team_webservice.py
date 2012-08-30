@@ -167,7 +167,7 @@ class TestTeamLimitedViewAccess(TestCaseWithFactory):
         # prohibited detail, like attributes on IPersonViewRestricted.
         launchpad = self.factory.makeLaunchpadService(self.authorised_person)
         team = launchpad.people['private-team']
-        self.assertIn(':redacted', team.homepage_content)
+        self.assertIn(':redacted', team.description)
         failure_regex = '(.|\n)*api_activemembers.*launchpad.View(.|\n)*'
         with ExpectedException(Unauthorized, failure_regex):
             members = team.members

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for the Launchpad application.
@@ -64,7 +64,6 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
-    ubuntu_security = Attribute("The 'ubuntu-security' team.")
     ubuntu_techboard = Attribute("The Ubuntu technical board.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
 

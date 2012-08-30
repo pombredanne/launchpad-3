@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for handling bug notification recipients in bug mail."""
@@ -105,28 +105,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             reason += " @%s" % person.name
         else:
             text = "are a bug assignee"
-        self._addReason(person, text, reason)
-
-    def addBugSupervisor(self, person):
-        """Registers a bug supervisor of a bugtask's pillar of this bug."""
-        reason = "Bug Supervisor"
-        if person.is_team:
-            text = ("are a member of %s, which is a bug supervisor"
-                    % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a bug supervisor"
-        self._addReason(person, text, reason)
-
-    def addMaintainer(self, person):
-        """Registers a maintainer of a bugtask's pillar of this bug."""
-        reason = "Maintainer"
-        if person.is_team:
-            text = ("are a member of %s, which is a maintainer"
-                    % person.displayname)
-            reason += " @%s" % person.name
-        else:
-            text = "are a maintainer"
         self._addReason(person, text, reason)
 
     def addStructuralSubscriber(self, person, target):

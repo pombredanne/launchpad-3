@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces including common IDistroSeries and IProductSeries classes."""
 
 __metaclass__ = type
@@ -26,10 +24,7 @@ from zope.schema import Bool
 from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasDrivers
-from lp.services.fields import (
-    PublicPersonChoice,
-    Summary,
-    )
+from lp.services.fields import Summary
 
 
 class SeriesStatus(DBEnumeratedType):
@@ -129,9 +124,3 @@ class ISeriesMixin(IHasDrivers):
                 'supervisor.'),
         readonly=True,
         value_type=Reference(schema=IPerson))
-
-    security_contact = PublicPersonChoice(
-        title=_('Security Contact'),
-        description=_('Currently just a reference to the parent '
-                      'security contact.'),
-        required=False, vocabulary='ValidPersonOrTeam')

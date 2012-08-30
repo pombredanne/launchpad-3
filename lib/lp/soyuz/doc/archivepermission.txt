@@ -69,7 +69,7 @@ has a number of useful properties that can be checked:
 The checkAuthenticated() call is also able to check someone's
 permission on a SourcePackageName, which gives a smaller radius of
 permission than allowing access to the whole component.  Just pass
-a SourcePacakgeName as the "item" parameter:
+a SourcePackageName as the "item" parameter:
 
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
@@ -98,10 +98,9 @@ team are returned.  This allows team-level permissions to be set.
     >>> [permission.person.name for permission in all_main_permissions]
     [u'ubuntu-team']
 
-    >>> mark_permissions = permission_set.checkAuthenticated(
+    >>> permission_set.checkAuthenticated(
     ...     mark, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
-    ...     main_component)
-    >>> mark_permissions.count()
+    ...     main_component).count()
     1
 
 checkAuthenticated() does not know about any other item types, and
@@ -121,9 +120,8 @@ check permissions.
 permissionsForPerson() returns all the permission records for the supplied
 person:
 
-    >>> permissions = permission_set.permissionsForPerson(
-    ...     ubuntu.main_archive,  ubuntu_team)
-    >>> permissions.count()
+    >>> permission_set.permissionsForPerson(
+    ...     ubuntu.main_archive, ubuntu_team).count()
     7
 
 uploadersForComponent() returns ArchivePermission records where a person
@@ -178,16 +176,14 @@ components that the supplied user has permission to upload to.
 uploadersForPackage() returns the ArchivePermission records where a person
 or team has permission to upload to the supplied source package name:
 
-    >>> uploaders = permission_set.uploadersForPackage(
-    ...     ubuntu.main_archive, alsa_utils)
-    >>> uploaders.count()
+    >>> permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, alsa_utils).count()
     0
 
 You can also pass a string package name instead of an ISourcePackageName:
 
-    >>> uploaders = permission_set.uploadersForPackage(
-    ...     ubuntu.main_archive, "alsa-utils")
-    >>> uploaders.count()
+    >>> permission_set.uploadersForPackage(
+    ...     ubuntu.main_archive, "alsa-utils").count()
     0
 
 Passing a non-existent package name will cause a
@@ -348,3 +344,68 @@ deleteQueueAdmin() removes it:
     ubuntu-team
     name12
 
+newPocketQueueAdmin() creates a permission for a person to administer a
+specific pocket in the distroseries queues, which may or may not be
+per-series:
+
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+    >>> def showPocketQueueAdmins(archive, pocket, distroseries=None):
+    ...     archive_admins = permission_set.queueAdminsForPocket(
+    ...         archive, pocket, distroseries=distroseries)
+    ...     for archive_admin in sorted(
+    ...         archive_admins, key=operator.attrgetter("id")):
+    ...         print archive_admin.person.name
+
+    >>> new_permission = permission_set.newPocketQueueAdmin(
+    ...     ubuntu.main_archive, carlos, PackagePublishingPocket.SECURITY)
+    >>> new_permission = permission_set.newPocketQueueAdmin(
+    ...     ubuntu.main_archive, mark, PackagePublishingPocket.PROPOSED,
+    ...     distroseries=ubuntu.series[0])
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
+    carlos
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED)
+    mark
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED,
+    ...     distroseries=ubuntu.series[0])
+    mark
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED,
+    ...     distroseries=ubuntu.series[1])
+
+checkAuthenticated returns sensible results for these permissions:
+
+    >>> def countPocketAdminPermissions(person, pocket, distroseries=None):
+    ...     return permission_set.checkAuthenticated(
+    ...         person, ubuntu.main_archive,
+    ...         ArchivePermissionType.QUEUE_ADMIN, pocket,
+    ...         distroseries=distroseries).count()
+
+    >>> countPocketAdminPermissions(carlos, PackagePublishingPocket.SECURITY)
+    1
+    >>> countPocketAdminPermissions(mark, PackagePublishingPocket.PROPOSED)
+    1
+    >>> countPocketAdminPermissions(
+    ...     mark, PackagePublishingPocket.PROPOSED, ubuntu.series[0])
+    1
+    >>> countPocketAdminPermissions(
+    ...     mark, PackagePublishingPocket.PROPOSED, ubuntu.series[1])
+    0
+    >>> countPocketAdminPermissions(
+    ...     mark, PackagePublishingPocket.SECURITY, ubuntu.series[0])
+    0
+
+deletePocketQueueAdmin removes them:
+
+    >>> permission_set.deletePocketQueueAdmin(
+    ...     ubuntu.main_archive, carlos, PackagePublishingPocket.SECURITY)
+    >>> permission_set.deletePocketQueueAdmin(
+    ...     ubuntu.main_archive, mark, PackagePublishingPocket.PROPOSED,
+    ...     distroseries=ubuntu.series[0])
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
+    >>> showPocketQueueAdmins(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED)

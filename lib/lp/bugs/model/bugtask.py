@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Classes that implement IBugTask and its related interfaces."""
 
 __metaclass__ = type
@@ -143,7 +141,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
@@ -763,13 +760,6 @@ class BugTask(SQLBase):
             # setter methods directly.
             setattr(self, synched_attr, PassthroughValue(slave_attr_value))
 
-    @property
-    def target_uses_malone(self):
-        """See `IBugTask`"""
-        # XXX sinzui 2007-10-04 bug=149009:
-        # This property is not needed. Code should inline this implementation.
-        return (self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
-
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
         if not self.userHasBugSupervisorPrivileges(user):
@@ -1142,13 +1132,11 @@ class BugTask(SQLBase):
             self.maybeConfirm()
         # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the parent bug. We need to run a job to remove any
-            # such subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                user, [self.bug], pillar=target_before_change)
+        # As a result of the transition, some subscribers may no longer
+        # have access to the parent bug. We need to run a job to remove any
+        # such subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            user, [self.bug], pillar=target_before_change.pillar)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1586,10 +1574,6 @@ class BugTaskSet:
             validate_new_target(bug, target)
             pillars.add(target.pillar)
             target_keys.append(bug_target_to_key(target))
-        if bug.information_type == InformationType.PUBLICSECURITY:
-            for pillar in pillars:
-                if pillar.security_contact:
-                    bug.subscribe(pillar.security_contact, owner)
 
         values = [
             (bug, owner, key['product'], key['productseries'],
