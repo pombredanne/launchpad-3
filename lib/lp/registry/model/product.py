@@ -1552,8 +1552,20 @@ class ProductSet:
             project_reviewed=project_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
+        # Set up the sharing policies and product licence.
+        bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
+        branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
+            # By default, new non-proprietary projects use public bugs and
+            # branches. Proprietary projects are given a complimentary 30 day
+            # commercial subscription and so may use proprietary sharing
+            # policies.
+            if License.OTHER_PROPRIETARY in licenses:
+                bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
+                branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
+        product.setBugSharingPolicy(bug_sharing_policy_to_use)
+        product.setBranchSharingPolicy(branch_sharing_policy_to_use)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(

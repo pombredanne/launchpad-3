@@ -249,10 +249,16 @@ class IBranchPublic(Interface):
             title=_('Date Last Modified'),
             required=True,
             readonly=False))
-    explicitly_private = Bool(
-        title=_("Explicitly Private"),
-        description=_("This branch is explicitly marked private as opposed "
-        "to being private because it is stacked on a private branch."))
+    # Defines whether *this* branch is private. A branch may have
+    # explicitly private set false but still be considered private because it
+    # is stacked on a private branch. This attribute is read-only. The value
+    # is guarded by setPrivate().
+    explicitly_private = exported(
+        Bool(
+            title=_("Keep branch confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "Make this branch visible only to its subscribers.")))
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,
@@ -1223,18 +1229,7 @@ class IBranch(IBranchPublic, IBranchView, IBranchEdit,
             description=_(
                 "This branch is visible only to its subscribers.")))
 
-    # Defines whether *this* branch is private. A branch may have
-    # explicitly private set false but still be considered private because it
-    # is stacked on a private branch. This attribute is read-only. The value
-    # is guarded by setPrivate().
-    explicitly_private = exported(
-        Bool(
-            title=_("Keep branch confidential"), required=False,
-            readonly=True, default=False,
-            description=_(
-                "Make this branch visible only to its subscribers.")))
-
-    @mutator_for(explicitly_private)
+    @mutator_for(IBranchPublic['explicitly_private'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))

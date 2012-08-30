@@ -221,7 +221,6 @@
                     asEmailHeaderValue
                     getDelta
                     pillar
-                    target_uses_malone
                     bugtask_branches
                     conjoined_master
                     conjoined_slave
