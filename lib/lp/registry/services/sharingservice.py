@@ -255,15 +255,8 @@ class SharingService:
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
-        allowed_types = [
-            InformationType.PRIVATESECURITY,
-            InformationType.USERDATA]
-        # Products with current commercial subscriptions are also allowed to
-        # have a PROPRIETARY information type.
-        if (IProduct.providedBy(pillar) and
-                pillar.has_current_commercial_subscription):
-            allowed_types.append(InformationType.PROPRIETARY)
-
+        allowed_types = set(pillar.getAllowedBugInformationTypes()).union(
+            pillar.getAllowedBranchInformationTypes())
         return self._makeEnumData(allowed_types)
 
     def getBranchSharingPolicies(self, pillar):
