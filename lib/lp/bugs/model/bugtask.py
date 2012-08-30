@@ -760,13 +760,6 @@ class BugTask(SQLBase):
             # setter methods directly.
             setattr(self, synched_attr, PassthroughValue(slave_attr_value))
 
-    @property
-    def target_uses_malone(self):
-        """See `IBugTask`"""
-        # XXX sinzui 2007-10-04 bug=149009:
-        # This property is not needed. Code should inline this implementation.
-        return (self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
-
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
         if not self.userHasBugSupervisorPrivileges(user):
