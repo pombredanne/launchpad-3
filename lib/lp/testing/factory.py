@@ -956,7 +956,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None, private_bugs=False,
         driver=None, icon=None, bug_sharing_policy=None,
-        branch_sharing_policy=None, skip_sharing_policy=False):
+        branch_sharing_policy=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -985,8 +985,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 licenses=licenses,
                 project=project,
                 registrant=registrant,
-                icon=icon,
-                skip_sharing_policy=skip_sharing_policy)
+                icon=icon)
         naked_product = removeSecurityProxy(product)
         if official_malone is not None:
             naked_product.official_malone = official_malone
@@ -1016,7 +1015,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # but we need to test for existing products which have not yet been
         # migrated.
         # XXX This method can be removed when branch visibility policy dies.
-        return self.makeProduct(skip_sharing_policy=True, **kwargs)
+        product = self.makeProduct(**kwargs)
+        removeSecurityProxy(product).bug_sharing_policy = None
+        removeSecurityProxy(product).branch_sharing_policy = None
+        return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
                           summary=None, date_created=None, branch=None):

@@ -342,12 +342,6 @@ class TestProduct(TestCaseWithFactory):
         product.setPrivateBugs(True, bug_supervisor)
         self.assertTrue(product.private_bugs)
 
-    def test_product_creation_does_not_create_accesspolicies(self):
-        # Creating a new product does not create AccessPolicies for it.
-        product = self.factory.makeLegacyProduct()
-        ap = getUtility(IAccessPolicySource).findByPillar([product])
-        self.assertEqual([], list(ap))
-
     def test_product_creation_grants_maintainer_access(self):
         # Creating a new product creates an access grant for the maintainer
         # for all default policies.
