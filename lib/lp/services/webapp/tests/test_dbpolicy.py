@@ -246,13 +246,15 @@ class MasterFallbackTestCase(TestCase):
     def setUp(self):
         super(MasterFallbackTestCase, self).setUp()
 
-        self.fixture = Fixture()
-        self.fixture.setUp()
-
         self.pgbouncer_fixture = PGBouncerFixture()
 
+        # The PGBouncerFixture will set the PGPORT environment variable,
+        # causing all DB connections to go via pgbouncer unless an
+        # explicit port is provided.
         dbname = DatabaseLayer._db_fixture.dbname
+        # Pull the direct db connection string, including explicit port.
         conn_str_direct = self.pgbouncer_fixture.databases[dbname]
+        # Generate a db connection string that will go via pgbouncer.
         conn_str_pgbouncer = 'dbname=%s host=localhost' % dbname
 
         # Configure slave connections via pgbouncer, so we can shut them
@@ -265,12 +267,7 @@ class MasterFallbackTestCase(TestCase):
             ''' % (conn_str_direct, conn_str_pgbouncer)))
         self.addCleanup(lambda: config.pop(config_key))
 
-        self.fixture.useFixture(self.pgbouncer_fixture)
-
-    def tearDown(self):
-        self.pgbouncer_fixture = None
-        self.fixture.cleanUp()
-        super(MasterFallbackTestCase, self).tearDown()
+        self.useFixture(self.pgbouncer_fixture)
 
     def test_can_shutdown_slave_only(self):
         '''Confirm that this TestCase's test infrastructure works as needed.
