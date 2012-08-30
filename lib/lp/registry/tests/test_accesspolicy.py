@@ -133,6 +133,33 @@ class TestAccessPolicySource(TestCaseWithFactory):
                 for ap in getUtility(IAccessPolicySource).findByPillar(
                     [product])])
 
+    def test_createForTeams(self):
+        # Test createForTeams.
+        teams = [self.factory.makeTeam()]
+        policies = getUtility(IAccessPolicySource).createForTeams(teams)
+        self.assertThat(
+            policies,
+            AllMatch(Provides(IAccessPolicy)))
+        self.assertContentEqual(
+            teams,
+            [policy.person for policy in policies])
+
+    def test_findByTeam(self):
+        # findByTeam finds only the relevant policies.
+        team = self.factory.makeTeam()
+        other_team = self.factory.makeTeam()
+        aps = getUtility(IAccessPolicySource)
+        aps.createForTeams([team])
+        self.assertContentEqual(
+            [team],
+            [ap.person
+                for ap in getUtility(IAccessPolicySource).findByTeam(
+                [team, other_team])])
+        self.assertContentEqual(
+            [team],
+            [ap.person
+                for ap in getUtility(IAccessPolicySource).findByTeam([team])])
+
 
 class TestAccessArtifact(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer

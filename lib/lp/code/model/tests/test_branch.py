@@ -2415,6 +2415,16 @@ class TestBranchPrivacy(TestCaseWithFactory):
         removeSecurityProxy(branch)._reconcileAccess()
         self.assertEqual([], get_policies_for_artifact(branch))
 
+    def test__reconcileAccess_for_personal_branch(self):
+        # _reconcileAccess uses a person policy for a personal branch.
+        team_owner = self.factory.makeTeam()
+        branch = self.factory.makePersonalBranch(
+            owner=team_owner, information_type=InformationType.USERDATA)
+        removeSecurityProxy(branch)._reconcileAccess()
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).findByTeam([team_owner]),
+            get_policies_for_artifact(branch))
+
 
 class TestBranchGetAllowedInformationTypes(TestCaseWithFactory):
     """Test Branch.getAllowedInformationTypes."""
@@ -2956,6 +2966,26 @@ class TestBranchSetTarget(TestCaseWithFactory):
         branch.setTarget(user=branch.owner)
         self.assertEqual(branch.owner, branch.target.context)
 
+    def test_private_junk_branches_forbidden_for_public_teams(self):
+        # Only private teams can have private junk branches.
+        owner = self.factory.makeTeam()
+        branch = self.factory.makeBranch(
+            owner=owner,
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            self.assertRaises(
+                BranchTargetError, branch.setTarget, branch.owner)
+
+    def test_private_junk_branches_allowed_for_private_teams(self):
+        # Only private teams can have private junk branches.
+        owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                owner=owner,
+                information_type=InformationType.USERDATA)
+            branch.setTarget(user=branch.owner)
+            self.assertEqual(branch.owner, branch.target.context)
+
     def test_reconciles_access(self):
         # setTarget calls _reconcileAccess to make the sharing schema
         # match the new target.
@@ -2966,6 +2996,18 @@ class TestBranchSetTarget(TestCaseWithFactory):
             branch.setTarget(user=branch.owner, project=new_product)
         self.assertEqual(
             new_product, get_policies_for_artifact(branch)[0].pillar)
+
+    def test_reconciles_access_junk_branch(self):
+        # setTarget calls _reconcileAccess to make the sharing schema
+        # correct for a private junk branch.
+        owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                owner=owner,
+                information_type=InformationType.USERDATA)
+            branch.setTarget(user=branch.owner)
+        self.assertEqual(
+            owner, get_policies_for_artifact(branch)[0].person)
 
 
 def make_proposal_and_branch_revision(factory, revno, revision_id,
