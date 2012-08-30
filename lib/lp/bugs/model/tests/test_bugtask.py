@@ -1194,7 +1194,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         """
         non_malone_using_bugtasks = [
             related_task for related_task in bugtask.related_tasks
-            if not related_task.target_uses_malone]
+            if not related_task.pillar.official_malone]
         pending_bugwatch_bugtasks = [
             related_bugtask for related_bugtask in non_malone_using_bugtasks
             if related_bugtask.bugwatch is None]
