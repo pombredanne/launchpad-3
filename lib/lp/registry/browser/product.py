@@ -1992,9 +1992,9 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'homepageurl', 'licenses', 'license_info',
-                    'owner',
+    _field_names = ['displayname', 'name', 'title', 'summary', 'description',
+                    'homepageurl', 'licenses', 'license_info',
+                    'driver', 'bug_supervisor', 'owner',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2010,6 +2010,12 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('license_info', GhostWidget)
     custom_widget(
         'owner', PersonPickerWidget, header="Select the maintainer",
+        show_create_team_link=True)
+    custom_widget(
+        'bug_supervisor', PersonPickerWidget, header="Set a bug supervisor",
+        show_create_team_link=True)
+    custom_widget(
+        'driver', PersonPickerWidget, header="Set a driver",
         show_create_team_link=True)
     custom_widget(
         'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
@@ -2042,13 +2048,23 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     @property
     def initial_values(self):
-        return {'owner': self.user.name}
+        return {
+            'driver': self.user.name,
+            'bug_supervisor': self.user.name,
+            'owner': self.user.name,
+        }
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
-        hidden_names = ('__visited_steps__', 'license_info')
+        hidden_names = ['__visited_steps__', 'license_info']
         hidden_fields = self.form_fields.select(*hidden_names)
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if not private_projects:
+            hidden_names.extend(['bug_supervisor', 'driver'])
+
         visible_fields = self.form_fields.omit(*hidden_names)
         self.form_fields = (visible_fields +
                             self._createDisclaimMaintainerField() +
@@ -2175,6 +2191,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             owner = data.get('owner')
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
+            bug_supervisor=data['bug_supervisor'],
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],
