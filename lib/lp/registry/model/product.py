@@ -91,8 +91,8 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
-    POLICY_ALLOWED_TYPES as BUG_POLICY_ALLOWED_TYPES,
-    POLICY_DEFAULT_TYPES,
+    BUG_POLICY_ALLOWED_TYPES,
+    BUG_POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bugtarget import (
@@ -107,9 +107,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.code.model.branchnamespace import (
-    POLICY_ALLOWED_TYPES as BRANCH_POLICY_ALLOWED_TYPES,
-    )
+from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
@@ -597,7 +595,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
         if self.bug_sharing_policy is not None:
-            return POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
+            return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
         elif self.private_bugs:
             return InformationType.USERDATA
         else:

@@ -47,9 +47,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtarget import (
-    POLICY_ALLOWED_TYPES as BUG_POLICY_ALLOWED_TYPES,
-    )
+from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
@@ -60,9 +58,7 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     )
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchnamespace import (
-    POLICY_ALLOWED_TYPES as BRANCH_POLICY_ALLOWED_TYPES,
-    )
+from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityTeamPolicy
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
