@@ -32,7 +32,7 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    InformationType,
+    PRIVATE_INFORMATION_TYPES,
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -255,16 +255,11 @@ class SharingService:
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
-        allowed_types = [
-            InformationType.PRIVATESECURITY,
-            InformationType.USERDATA]
-        # Products with current commercial subscriptions are also allowed to
-        # have a PROPRIETARY information type.
-        if (IProduct.providedBy(pillar) and
-                pillar.has_current_commercial_subscription):
-            allowed_types.append(InformationType.PROPRIETARY)
-
-        return self._makeEnumData(allowed_types)
+        allowed_types = set(pillar.getAllowedBugInformationTypes()).union(
+            pillar.getAllowedBranchInformationTypes())
+        allowed_private_types = allowed_types.intersection(
+            PRIVATE_INFORMATION_TYPES)
+        return self._makeEnumData(allowed_private_types)
 
     def getBranchSharingPolicies(self, pillar):
         """See `ISharingService`."""
