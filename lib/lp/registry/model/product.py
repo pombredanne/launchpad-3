@@ -92,7 +92,7 @@ from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     BUG_POLICY_ALLOWED_TYPES,
-    POLICY_DEFAULT_TYPES,
+    BUG_POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bugtarget import (
@@ -598,7 +598,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
         if self.bug_sharing_policy is not None:
-            return POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
+            return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
         elif self.private_bugs:
             return InformationType.USERDATA
         else:
