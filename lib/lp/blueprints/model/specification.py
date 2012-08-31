@@ -71,6 +71,7 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
@@ -817,6 +818,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def getAllowedInformationTypes(self, who):
         return set(InformationType.items)
+
+    def transitionToInformationType(self, information_type, who):
+        """See `IBug`."""
+        if self.information_type == information_type:
+            return False
+        if information_type not in self.getAllowedInformationTypes(who):
+            raise CannotChangeInformationType("Forbidden by project policy.")
+        self.information_type = information_type
+        return True
 
     @property
     def private(self):

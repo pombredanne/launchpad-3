@@ -278,7 +278,7 @@
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+secrecy"
-            template="../templates/specification-portlet-blocked.pt"
+            template="../templates/bug-secrecy.pt"
             class="lp.blueprints.browser.specification.SpecificationInformationTypeEditView"
             permission="zope.Public"
             />

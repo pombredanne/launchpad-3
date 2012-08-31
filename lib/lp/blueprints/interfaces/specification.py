@@ -627,6 +627,8 @@ class ISpecificationEditRestricted(Interface):
         The new target must be an IProduct or IDistribution.
         """
 
+    def transitionToInformationType(information_type, who):
+        """Change the information type of the Specification."""
 
 class ISpecification(ISpecificationPublic, ISpecificationView,
                      ISpecificationEditRestricted, IBugLinkTarget):
