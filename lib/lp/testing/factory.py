@@ -789,6 +789,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
             naked_team.visibility = visibility
+            naked_team._ensurePolicies()
         if email is not None:
             removeSecurityProxy(team).setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
@@ -1016,6 +1017,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # migrated.
         # XXX This method can be removed when branch visibility policy dies.
         product = self.makeProduct(**kwargs)
+        # Since createProduct() doesn't create PRIVATESECURITY/USERDATA.
+        removeSecurityProxy(product)._ensurePolicies([
+            InformationType.PRIVATESECURITY, InformationType.USERDATA])
         removeSecurityProxy(product).bug_sharing_policy = None
         removeSecurityProxy(product).branch_sharing_policy = None
         return product

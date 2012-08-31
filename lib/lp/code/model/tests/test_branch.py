@@ -54,7 +54,6 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
-    BranchCannotChangeInformationType,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
@@ -120,6 +119,7 @@ from lp.registry.enums import (
     PUBLIC_INFORMATION_TYPES,
     TeamMembershipPolicy,
     )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessPolicyArtifactSource,
@@ -2415,6 +2415,16 @@ class TestBranchPrivacy(TestCaseWithFactory):
         removeSecurityProxy(branch)._reconcileAccess()
         self.assertEqual([], get_policies_for_artifact(branch))
 
+    def test__reconcileAccess_for_personal_branch(self):
+        # _reconcileAccess uses a person policy for a personal branch.
+        team_owner = self.factory.makeTeam()
+        branch = self.factory.makePersonalBranch(
+            owner=team_owner, information_type=InformationType.USERDATA)
+        removeSecurityProxy(branch)._reconcileAccess()
+        self.assertContentEqual(
+            getUtility(IAccessPolicySource).findByTeam([team_owner]),
+            get_policies_for_artifact(branch))
+
 
 class TestBranchGetAllowedInformationTypes(TestCaseWithFactory):
     """Test Branch.getAllowedInformationTypes."""
@@ -2480,13 +2490,12 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
-        # BranchCannotChangeInformationType is rasied.
+        # CannotChangeInformationType is raised.
         product = self.factory.makeLegacyProduct()
         branch = self.factory.makeBranch(product=product)
-        self.assertRaises(
-            BranchCannotChangeInformationType,
-            branch.setPrivate,
-            True, branch.owner)
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Forbidden by project policy.',
+            branch.setPrivate, True, branch.owner)
 
     def test_public_to_private_for_admins(self):
         # Admins can override the default behaviour and make any public branch
@@ -2522,8 +2531,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
 
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
-        # to change the branch to be public raises
-        # BranchCannotChangeInformationType.
+        # to change the branch to be public raises CannotChangeInformationType.
         product = self.factory.makeLegacyProduct()
         branch = self.factory.makeBranch(
             product=product,
@@ -2532,10 +2540,9 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE_ONLY)
-        self.assertRaises(
-            BranchCannotChangeInformationType,
-            branch.setPrivate,
-            False, branch.owner)
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Forbidden by project policy.',
+            branch.setPrivate, False, branch.owner)
 
     def test_cannot_transition_with_private_stacked_on(self):
         # If a public branch is stacked on a private branch, it can not
@@ -2543,8 +2550,8 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         stacked_on = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         branch = self.factory.makeBranch(stacked_on=stacked_on)
-        self.assertRaises(
-            BranchCannotChangeInformationType,
+        self.assertRaisesWithContent(
+            CannotChangeInformationType, 'Must match stacked-on branch.',
             branch.transitionToInformationType, InformationType.PUBLIC,
             branch.owner)
 
@@ -2959,6 +2966,26 @@ class TestBranchSetTarget(TestCaseWithFactory):
         branch.setTarget(user=branch.owner)
         self.assertEqual(branch.owner, branch.target.context)
 
+    def test_private_junk_branches_forbidden_for_public_teams(self):
+        # Only private teams can have private junk branches.
+        owner = self.factory.makeTeam()
+        branch = self.factory.makeBranch(
+            owner=owner,
+            information_type=InformationType.USERDATA)
+        with admin_logged_in():
+            self.assertRaises(
+                BranchTargetError, branch.setTarget, branch.owner)
+
+    def test_private_junk_branches_allowed_for_private_teams(self):
+        # Only private teams can have private junk branches.
+        owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                owner=owner,
+                information_type=InformationType.USERDATA)
+            branch.setTarget(user=branch.owner)
+            self.assertEqual(branch.owner, branch.target.context)
+
     def test_reconciles_access(self):
         # setTarget calls _reconcileAccess to make the sharing schema
         # match the new target.
@@ -2969,6 +2996,18 @@ class TestBranchSetTarget(TestCaseWithFactory):
             branch.setTarget(user=branch.owner, project=new_product)
         self.assertEqual(
             new_product, get_policies_for_artifact(branch)[0].pillar)
+
+    def test_reconciles_access_junk_branch(self):
+        # setTarget calls _reconcileAccess to make the sharing schema
+        # correct for a private junk branch.
+        owner = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(owner):
+            branch = self.factory.makeBranch(
+                owner=owner,
+                information_type=InformationType.USERDATA)
+            branch.setTarget(user=branch.owner)
+        self.assertEqual(
+            owner, get_policies_for_artifact(branch)[0].person)
 
 
 def make_proposal_and_branch_revision(factory, revno, revision_id,

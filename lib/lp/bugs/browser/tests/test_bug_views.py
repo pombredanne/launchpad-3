@@ -84,8 +84,11 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         # We expect that both Also Affects links (for project and distro) are
         # disallowed.
         owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         bug = self.factory.makeBug(
-            information_type=InformationType.PROPRIETARY, owner=owner)
+            target=product, owner=owner,
+            information_type=InformationType.PROPRIETARY)
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
@@ -101,10 +104,14 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         # We expect that only the Also Affects Project link is disallowed.
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
-        self.factory.makeAccessPolicy(pillar=distro)
+        # XXX wgrant 2012-08-30 bug=1041002: Distributions don't have
+        # sharing policies yet, so it isn't possible legitimately create
+        # a Proprietary distro bug.
         bug = self.factory.makeBug(
             target=distro,
-            information_type=InformationType.PROPRIETARY, owner=owner)
+            information_type=InformationType.PRIVATESECURITY, owner=owner)
+        removeSecurityProxy(bug).information_type = (
+            InformationType.PROPRIETARY)
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
