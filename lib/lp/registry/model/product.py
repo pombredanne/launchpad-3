@@ -91,7 +91,7 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
-    POLICY_ALLOWED_TYPES,
+    POLICY_ALLOWED_TYPES as BUG_POLICY_ALLOWED_TYPES,
     POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
@@ -121,6 +121,7 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     )
@@ -583,18 +584,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def setBugSharingPolicy(self, bug_sharing_policy):
         """See `IProductEditRestricted`."""
         self._prepare_to_set_sharing_policy(
-            bug_sharing_policy, BugSharingPolicy, 'bugs', POLICY_ALLOWED_TYPES)
+            bug_sharing_policy, BugSharingPolicy, 'bugs',
+            BUG_POLICY_ALLOWED_TYPES)
         self.bug_sharing_policy = bug_sharing_policy
 
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
         if self.bug_sharing_policy is not None:
-            return POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
-
-        types = set(InformationType.items)
-        types.discard(InformationType.PROPRIETARY)
-        types.discard(InformationType.EMBARGOED)
-        return types
+            return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
+        return FREE_INFORMATION_TYPES
 
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
@@ -604,6 +602,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return InformationType.USERDATA
         else:
             return InformationType.PUBLIC
+
+    def getAllowedBranchInformationTypes(self):
+        """See `IProduct.`"""
+        if self.branch_sharing_policy is not None:
+            return BRANCH_POLICY_ALLOWED_TYPES[self.branch_sharing_policy]
+        return FREE_INFORMATION_TYPES
 
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
