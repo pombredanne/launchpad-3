@@ -197,13 +197,14 @@ class TestSpecificationInformationType(BrowserTestCase):
             Not(soupmatchers.HTMLContains(self.portlet_tag)))
 
     def test_has_privacy_banner(self):
+        owner = self.factory.makePerson()
         spec = self.factory.makeSpecification(
-            information_type=InformationType.PROPRIETARY)
-        browser = self.getViewBrowser(spec)
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        browser = self.getViewBrowser(spec, user=owner)
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
                 attrs={'class': 'banner-text'})
         self.assertThat(browser.contents,
-                           soupmatchers.HTMLContains(privacy_banner))
+                        soupmatchers.HTMLContains(privacy_banner))
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
