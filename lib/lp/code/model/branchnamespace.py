@@ -8,7 +8,7 @@ __all__ = [
     'BranchNamespaceSet',
     'PackageNamespace',
     'PersonalNamespace',
-    'POLICY_ALLOWED_TYPES',
+    'BRANCH_POLICY_ALLOWED_TYPES',
     'ProductNamespace',
     ]
 
@@ -85,7 +85,7 @@ from lp.services.webapp.interfaces import (
     )
 
 
-POLICY_ALLOWED_TYPES = {
+BRANCH_POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: (
@@ -95,7 +95,7 @@ POLICY_ALLOWED_TYPES = {
         [InformationType.PROPRIETARY, InformationType.EMBARGOED],
     }
 
-POLICY_DEFAULT_TYPES = {
+BRANCH_POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.PUBLIC: InformationType.PUBLIC,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
@@ -103,7 +103,7 @@ POLICY_DEFAULT_TYPES = {
     BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY: InformationType.EMBARGOED,
     }
 
-POLICY_REQUIRED_GRANTS = {
+BRANCH_POLICY_REQUIRED_GRANTS = {
     BranchSharingPolicy.PUBLIC: None,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: None,
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,
@@ -420,14 +420,14 @@ class ProductNamespace(_BaseNamespace):
             # Some policies require that the owner have full access to
             # an information type. If it's required and the owner
             # doesn't hold it, no information types are legal.
-            required_grant = POLICY_REQUIRED_GRANTS[
+            required_grant = BRANCH_POLICY_REQUIRED_GRANTS[
                 self.product.branch_sharing_policy]
             if (required_grant is not None
                 and not getUtility(IService, 'sharing').checkPillarAccess(
                     self.product, required_grant, self.owner)):
                 return []
 
-            return POLICY_ALLOWED_TYPES[
+            return BRANCH_POLICY_ALLOWED_TYPES[
                 self.product.branch_sharing_policy]
 
         # The project still uses BranchVisibilityPolicy, so check that.
@@ -466,7 +466,7 @@ class ProductNamespace(_BaseNamespace):
     def getDefaultInformationType(self):
         """See `IBranchNamespace`."""
         if not self._using_branchvisibilitypolicy:
-            default_type = POLICY_DEFAULT_TYPES[
+            default_type = BRANCH_POLICY_DEFAULT_TYPES[
                 self.product.branch_sharing_policy]
             if default_type not in self.getAllowedInformationTypes():
                 return None
