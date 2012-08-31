@@ -276,12 +276,11 @@
                 template="../templates/specification-portlet-blocked.pt"/>
         </browser:pages>
         <browser:page
-            for="lp.blueprints.interfaces.specification.ISpecification"
             name="+secrecy"
-            template="../templates/bug-secrecy.pt"
+            for="lp.blueprints.interfaces.specification.ISpecification"
             class="lp.blueprints.browser.specification.SpecificationInformationTypeEditView"
-            permission="zope.Public"
-            />
+            permission="launchpad.Edit"
+            template="../templates/bug-secrecy.pt"/>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+portlet-subscribers"

@@ -821,7 +821,6 @@ class SpecificationInformationTypeEditView(LaunchpadFormView):
         return ''
 
 
-
 class SpecificationEditMilestoneView(SpecificationEditView):
     label = 'Target to a milestone'
     field_names = ['milestone', 'whiteboard']
