@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'BugCannotBePrivate',
     'InvalidDuplicateValue',
 ]
 
@@ -19,8 +18,3 @@ from lp.app.validators import LaunchpadValidationError
 @error_status(httplib.EXPECTATION_FAILED)
 class InvalidDuplicateValue(LaunchpadValidationError):
     """A bug cannot be set as the duplicate of another."""
-
-
-@error_status(httplib.BAD_REQUEST)
-class BugCannotBePrivate(Exception):
-    """The bug is not allowed to be private."""

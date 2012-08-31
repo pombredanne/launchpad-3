@@ -137,6 +137,8 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionSet,
     )
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     InformationType,
@@ -787,6 +789,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
             naked_team.visibility = visibility
+            naked_team._ensurePolicies()
         if email is not None:
             removeSecurityProxy(team).setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
@@ -995,10 +998,30 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.driver = driver
         if private_bugs:
             naked_product.private_bugs = private_bugs
+        if ((branch_sharing_policy and
+            branch_sharing_policy != BranchSharingPolicy.PUBLIC) or
+            (bug_sharing_policy and
+            bug_sharing_policy != BugSharingPolicy.PUBLIC)):
+            self.makeCommercialSubscription(product)
         if branch_sharing_policy:
-            naked_product.branch_sharing_policy = branch_sharing_policy
+            naked_product.setBranchSharingPolicy(branch_sharing_policy)
         if bug_sharing_policy:
-            naked_product.bug_sharing_policy = bug_sharing_policy
+            naked_product.setBugSharingPolicy(bug_sharing_policy)
+
+        return product
+
+    def makeLegacyProduct(self, **kwargs):
+        # Create a product which does not have any of the new bug and branch
+        # sharing policies set. New products have these set to default values
+        # but we need to test for existing products which have not yet been
+        # migrated.
+        # XXX This method can be removed when branch visibility policy dies.
+        product = self.makeProduct(**kwargs)
+        # Since createProduct() doesn't create PRIVATESECURITY/USERDATA.
+        removeSecurityProxy(product)._ensurePolicies([
+            InformationType.PRIVATESECURITY, InformationType.USERDATA])
+        removeSecurityProxy(product).bug_sharing_policy = None
+        removeSecurityProxy(product).branch_sharing_policy = None
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,

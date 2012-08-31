@@ -362,7 +362,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
         }
         if information_type:
             form['field.information_type'] = information_type
-        product = self.factory.makeProduct(official_malone=True)
+        product = self.factory.makeLegacyProduct(official_malone=True)
         if private_bugs:
             removeSecurityProxy(product).private_bugs = True
         if bug_sharing_policy:
@@ -490,7 +490,7 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
             'field.security_related': 'on' if security_related else '',
             'field.actions.submit_bug': 'Submit Bug Request',
         }
-        product = self.factory.makeProduct(official_malone=True)
+        product = self.factory.makeLegacyProduct(official_malone=True)
         if private_bugs:
             removeSecurityProxy(product).private_bugs = True
         if bug_sharing_policy:
@@ -657,7 +657,7 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         self._assert_cache_values(view, True)
 
     def test_product_private_bugs(self):
-        project = self.factory.makeProduct(
+        project = self.factory.makeLegacyProduct(
             official_malone=True, private_bugs=True)
         user = self.factory.makePerson()
         login_person(user)

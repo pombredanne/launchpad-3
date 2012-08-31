@@ -342,14 +342,6 @@ class TestProduct(TestCaseWithFactory):
         product.setPrivateBugs(True, bug_supervisor)
         self.assertTrue(product.private_bugs)
 
-    def test_product_creation_creates_accesspolicies(self):
-        # Creating a new product also creates AccessPolicies for it.
-        product = self.factory.makeProduct()
-        ap = getUtility(IAccessPolicySource).findByPillar((product,))
-        expected = [
-            InformationType.USERDATA, InformationType.PRIVATESECURITY]
-        self.assertContentEqual(expected, [policy.type for policy in ap])
-
     def test_product_creation_grants_maintainer_access(self):
         # Creating a new product creates an access grant for the maintainer
         # for all default policies.
@@ -362,6 +354,38 @@ class TestProduct(TestCaseWithFactory):
         expected_grantess = set([product.owner])
         grantees = set([grant.grantee for grant in grants])
         self.assertEqual(expected_grantess, grantees)
+
+    def test_open_product_creation_sharing_policies(self):
+        # Creating a new open (non-proprietary) product sets the bug and
+        # branch sharing polices to public, and creates policies if required.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.MIT])
+        self.assertEqual(BugSharingPolicy.PUBLIC, product.bug_sharing_policy)
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, product.branch_sharing_policy)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        expected = [
+            InformationType.USERDATA, InformationType.PRIVATESECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in aps])
+
+    def test_proprietary_product_creation_sharing_policies(self):
+        # Creating a new proprietary product sets the bug and branch sharing
+        # polices to proprietary.
+        owner = self.factory.makePerson()
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'carrot', 'Carrot', 'Carrot', 'testing',
+                licenses=[License.OTHER_PROPRIETARY])
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        expected = [InformationType.PROPRIETARY]
+        self.assertContentEqual(expected, [policy.type for policy in aps])
 
 
 class TestProductBugInformationTypes(TestCaseWithFactory):
@@ -387,7 +411,7 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
     def test_legacy_private_bugs(self):
         # The deprecated private_bugs attribute overrides the default
         # information type to USERDATA.
-        product = self.factory.makeProduct(private_bugs=True)
+        product = self.factory.makeLegacyProduct(private_bugs=True)
         self.assertContentEqual(
             FREE_INFORMATION_TYPES, product.getAllowedBugInformationTypes())
         self.assertEqual(
@@ -433,6 +457,50 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
         self.assertEqual(
             InformationType.PROPRIETARY,
             product.getDefaultBugInformationType())
+
+
+class TestProductBranchInformationTypes(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_policy(self):
+        # New projects can only use the non-proprietary information
+        # types.
+        product = self.factory.makeProduct()
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES, product.getAllowedBranchInformationTypes())
+
+    def test_sharing_policy_public_or_proprietary(self):
+        # branch_sharing_policy can enable Proprietary.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+            product.getAllowedBranchInformationTypes())
+
+    def test_sharing_policy_proprietary_or_public(self):
+        # branch_sharing_policy can enable Proprietary.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        self.assertContentEqual(
+            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
+            product.getAllowedBranchInformationTypes())
+
+    def test_sharing_policy_proprietary(self):
+        # branch_sharing_policy can enable only Proprietary.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY],
+            product.getAllowedBranchInformationTypes())
+
+    def test_sharing_policy_embargoed_or_proprietary(self):
+        # branch_sharing_policy can enable Embargoed or Proprietary.
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            product.getAllowedBranchInformationTypes())
 
 
 class ProductPermissionTestCase(TestCaseWithFactory):

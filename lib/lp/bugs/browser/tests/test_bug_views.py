@@ -23,6 +23,10 @@ from lp.registry.enums import (
     InformationType,
     BugSharingPolicy,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -80,8 +84,11 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         # We expect that both Also Affects links (for project and distro) are
         # disallowed.
         owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         bug = self.factory.makeBug(
-            information_type=InformationType.PROPRIETARY, owner=owner)
+            target=product, owner=owner,
+            information_type=InformationType.PROPRIETARY)
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
@@ -97,10 +104,14 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         # We expect that only the Also Affects Project link is disallowed.
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
-        self.factory.makeAccessPolicy(pillar=distro)
+        # XXX wgrant 2012-08-30 bug=1041002: Distributions don't have
+        # sharing policies yet, so it isn't possible legitimately create
+        # a Proprietary distro bug.
         bug = self.factory.makeBug(
             target=distro,
-            information_type=InformationType.PROPRIETARY, owner=owner)
+            information_type=InformationType.PRIVATESECURITY, owner=owner)
+        removeSecurityProxy(bug).information_type = (
+            InformationType.PROPRIETARY)
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
@@ -403,7 +414,6 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # bug will become invisible but and no visibility check is performed.
         product = self.factory.makeProduct(
             bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
-        self.factory.makeAccessPolicy(pillar=product)
         bug = self.factory.makeBug(target=product)
         self._assert_secrecy_view_ajax_render(bug, 'PROPRIETARY', False)
 
@@ -414,14 +424,16 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         bug_owner = self.factory.makePerson()
         product = self.factory.makeProduct(
             bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
-        self.factory.makeCommercialSubscription(product)
         bug = self.factory.makeBug(target=product, owner=bug_owner)
+        userdata_policy = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(userdata_policy)
 
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         request = LaunchpadTestRequest(
             method='POST', form={
                 'field.actions.change': 'Change',
-                'field.information_type': 'PROPRIETARY',
+                'field.information_type': 'USERDATA',
                 'field.validate_change': 'on'},
             **extra)
         with person_logged_in(bug_owner):

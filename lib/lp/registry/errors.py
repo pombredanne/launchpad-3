@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesDifferenceError',
     'NotADerivedSeriesError',
+    'CannotChangeInformationType',
     'CannotDeleteCommercialSubscription',
     'CannotTransitionToCountryMirror',
     'CommercialSubscribersOnly',
@@ -190,3 +191,8 @@ class PPACreationError(Exception):
 
 class CannotDeleteCommercialSubscription(Exception):
     """Raised when a commercial subscription cannot be deleted."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class CannotChangeInformationType(Exception):
+    """The information type cannot be changed."""

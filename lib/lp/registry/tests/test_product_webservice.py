@@ -67,7 +67,7 @@ class TestProduct(TestCaseWithFactory):
     def test_branch_sharing_policy_non_commercial(self):
         # An API attempt to set a commercial-only branch_sharing_policy
         # on a non-commercial project returns Forbidden.
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         webservice = webservice_for_person(
             product.owner, permission=OAuthPermission.WRITE_PRIVATE)
         response = self.patch(
@@ -93,7 +93,7 @@ class TestProduct(TestCaseWithFactory):
     def test_bug_sharing_policy_non_commercial(self):
         # An API attempt to set a commercial-only bug_sharing_policy
         # on a non-commercial project returns Forbidden.
-        product = self.factory.makeProduct()
+        product = self.factory.makeLegacyProduct()
         webservice = webservice_for_person(
             product.owner, permission=OAuthPermission.WRITE_PRIVATE)
         response = self.patch(

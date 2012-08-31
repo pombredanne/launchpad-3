@@ -139,13 +139,20 @@ class TestSharingService(TestCaseWithFactory):
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
 
     def test_getInformationTypes_commercial_product(self):
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         self._assert_getInformationTypes(
             product,
-            [InformationType.PRIVATESECURITY,
-             InformationType.USERDATA,
-             InformationType.PROPRIETARY])
+            [InformationType.PROPRIETARY])
+
+    def test_getInformationTypes_product_with_embargoed(self):
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self._assert_getInformationTypes(
+            product,
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED])
 
     def test_getInformationTypes_distro(self):
         distro = self.factory.makeDistribution()
@@ -183,7 +190,6 @@ class TestSharingService(TestCaseWithFactory):
         # if it is not in the nominally allowed policy list.
         product = self.factory.makeProduct(
             branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-        self.factory.makeCommercialSubscription(product)
         self._assert_getBranchSharingPolicies(
             product,
             [BranchSharingPolicy.PUBLIC,
