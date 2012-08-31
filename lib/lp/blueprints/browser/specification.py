@@ -47,7 +47,10 @@ from subprocess import (
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import use_template
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IWebServiceClientRequest,
@@ -98,6 +101,7 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -115,6 +119,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
+from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.config import config
 from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
@@ -766,6 +771,55 @@ class SpecificationEditPriorityView(SpecificationEditView):
 class SpecificationEditStatusView(SpecificationEditView):
     label = 'Change status'
     field_names = ['definition_status', 'implementation_status', 'whiteboard']
+
+
+class SpecificationInformationTypeEditView(LaunchpadFormView):
+    """Form for marking a bug as a private/public."""
+
+    @property
+    def label(self):
+        return 'Set information type'
+
+    page_title = label
+
+    field_names = ['information_type']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def schema(self):
+        """Schema for editing the information type of a `IBug`."""
+        info_types = self.context.bug.getAllowedInformationTypes(self.user)
+
+        class information_type_schema(Interface):
+            information_type_field = copy_field(
+                ISpecification['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+        return information_type_schema
+
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        return None
+
+    cancel_url = next_url
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'information_type': self.context.information_type}
+
+    @action('Change', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
+    def change_action(self, action, data):
+        """Update the bug."""
+        data = dict(data)
+        information_type = data.pop('information_type')
+        changed_fields = ['information_type']
+        changed = self.context.transitionToInformationType(
+            information_type, self.user)
+        return ''
+
 
 
 class SpecificationEditMilestoneView(SpecificationEditView):

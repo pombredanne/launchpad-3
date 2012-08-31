@@ -277,6 +277,13 @@
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
+            name="+secrecy"
+            template="../templates/specification-portlet-blocked.pt"
+            class="lp.blueprints.browser.specification.SpecificationInformationTypeEditView"
+            permission="zope.Public"
+            />
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecification"
             name="+portlet-subscribers"
             class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersContents"
             template="../templates/specification-portlet-subscribers.pt"
