@@ -8,7 +8,7 @@ __all__ = [
     'BranchNamespaceSet',
     'PackageNamespace',
     'PersonalNamespace',
-    'POLICY_ALLOWED_TYPES',
+    'BRANCH_POLICY_ALLOWED_TYPES',
     'ProductNamespace',
     ]
 
@@ -85,7 +85,7 @@ from lp.services.webapp.interfaces import (
     )
 
 
-POLICY_ALLOWED_TYPES = {
+BRANCH_POLICY_ALLOWED_TYPES = {
     BranchSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC: (
@@ -427,7 +427,7 @@ class ProductNamespace(_BaseNamespace):
                     self.product, required_grant, self.owner)):
                 return []
 
-            return POLICY_ALLOWED_TYPES[
+            return BRANCH_POLICY_ALLOWED_TYPES[
                 self.product.branch_sharing_policy]
 
         # The project still uses BranchVisibilityPolicy, so check that.
