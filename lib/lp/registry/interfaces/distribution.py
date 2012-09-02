@@ -628,12 +628,6 @@ class IDistributionPublic(
         :return: The `InformationType`.
         """
 
-    def getAllowedBranchInformationTypes():
-        """Get the information types that a branch in this distro can have.
-
-        :return: A sequence of `InformationType`s.
-        """
-
     def userCanEdit(user):
         """Can the user edit this distribution?"""
 

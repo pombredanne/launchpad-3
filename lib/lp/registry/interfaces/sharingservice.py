@@ -112,13 +112,7 @@ class ISharingService(IService):
         """
 
     def getInformationTypes(pillar):
-        """Return the allowed information types for the given pillar.
-
-        The allowed information types are those for which bugs and branches
-        may be created. This does not mean that there will necessarily be bugs
-        and branches of these types; the result is used to populate the allowed
-        choices in the grantee sharing pillar and other similar things.
-        """
+        """Return the allowed information types for the given pillar."""
 
     def getBugSharingPolicies(pillar):
         """Return the allowed bug sharing policies for the given pillar."""
