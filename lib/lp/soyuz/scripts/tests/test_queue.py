@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """queue tool base class tests."""
@@ -47,6 +47,9 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.processacceptedbugsjob import (
+    IProcessAcceptedBugsJobSource,
+    )
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.soyuz.scripts.processaccepted import (
@@ -1085,8 +1088,8 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
         # we're testing.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
         archive_admin = self.factory.makePerson()
-        dsp = spr.upload_distroseries.distribution.getSourcePackage(
-            spr.sourcepackagename)
+        series = spr.upload_distroseries
+        dsp = series.distribution.getSourcePackage(spr.sourcepackagename)
         bug = self.factory.makeBug(
             target=dsp, information_type=InformationType.USERDATA)
         changes = StringIO(changes_file_template % bug.id)
@@ -1095,12 +1098,17 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
             # The archive admin user can't normally see this bug.
             self.assertRaises(ForbiddenAttribute, bug, 'status')
             # But the bug closure should work.
-            close_bugs_for_sourcepackagerelease(spr, changes)
+            close_bugs_for_sourcepackagerelease(series, spr, changes)
 
-        # Verify it was closed.
+        # Rather than closing the bugs immediately, this creates a
+        # ProcessAcceptedBugsJob.
         with celebrity_logged_in("admin"):
-            self.assertEqual(
-                bug.default_bugtask.status, BugTaskStatus.FIXRELEASED)
+            self.assertEqual(BugTaskStatus.NEW, bug.default_bugtask.status)
+        job_source = getUtility(IProcessAcceptedBugsJobSource)
+        [job] = list(job_source.iterReady())
+        self.assertEqual(series, job.distroseries)
+        self.assertEqual(spr, job.sourcepackagerelease)
+        self.assertEqual([bug.id], job.bug_ids)
 
 
 class TestQueueToolInJail(TestQueueBase, TestCase):
