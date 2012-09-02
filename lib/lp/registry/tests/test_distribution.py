@@ -276,14 +276,6 @@ class TestDistribution(TestCaseWithFactory):
             InformationType.PUBLIC,
             self.factory.makeDistribution().getDefaultBugInformationType())
 
-    def test_getAllowedBranchInformationTypes(self):
-        # All distros currently support just the non-proprietary
-        # information types.
-        self.assertContentEqual(
-            [InformationType.PUBLIC, InformationType.PUBLICSECURITY,
-             InformationType.PRIVATESECURITY, InformationType.USERDATA],
-            self.factory.makeDistribution().getAllowedBranchInformationTypes())
-
 
 class TestDistributionCurrentSourceReleases(
     CurrentSourceReleasesMixin, TestCase):
