@@ -313,7 +313,7 @@ class PillarSharingViewTestMixin:
         view = create_view(self.pillar, name='+sharing')
         with StormStatementRecorder() as recorder:
             view.initialize()
-        self.assertThat(recorder, HasQueryCount(LessThan(9)))
+        self.assertThat(recorder, HasQueryCount(LessThan(10)))
 
     def test_view_invisible_information_types(self):
         # Test the expected invisible information type  data is in the

@@ -253,7 +253,7 @@ class SharingService:
             result_data.append(item)
         return result_data
 
-    def getInformationTypes(self, pillar):
+    def getAllowedInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_private_types = [
             policy.type

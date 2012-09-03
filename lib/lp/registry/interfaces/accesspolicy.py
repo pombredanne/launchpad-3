@@ -213,8 +213,12 @@ class IAccessPolicySource(Interface):
     def findByTeam(teams):
         """Return a `ResultSet` of all `IAccessPolicy`s for the teams."""
 
-    def delete(policies):
-        """Delete the `IAccessPolicy objects."""
+    def delete(pillars_and_types):
+        """Delete the given pillars and types.
+
+        :param pillars_and_types: a collection of
+            (`IProduct` or `IDistribution`, `InformationType`) pairs delete.
+        """
 
 
 class IAccessPolicyGrantSource(Interface):

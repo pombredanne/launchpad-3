@@ -166,7 +166,8 @@ class TestAccessPolicySource(TestCaseWithFactory):
         pillars = [self.factory.makeProduct() for x in range(5)]
         policies = list(ap_source.findByPillar(pillars))
         getUtility(IAccessPolicyGrantSource).revokeByPolicy(policies[2:])
-        ap_source.delete(policies[2:])
+        ap_source.delete(
+            [(policy.pillar, policy.type) for policy in policies[2:]])
         IStore(policies[0]).invalidate()
         self.assertRaises(LostObjectError, getattr, policies[3], 'pillar')
         self.assertContentEqual(

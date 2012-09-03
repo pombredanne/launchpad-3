@@ -260,10 +260,9 @@ class AccessPolicy(StormBase):
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
     @classmethod
-    def delete(cls, policies):
+    def delete(cls, pillars_and_types):
         """See `IAccessPolicySource`."""
-        ids = [policy.id for policy in policies]
-        IStore(cls).find(cls, cls.id.is_in(ids)).remove()
+        cls.find(pillars_and_types).remove()
 
 
 class AccessPolicyArtifact(StormBase):

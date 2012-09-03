@@ -641,7 +641,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             if ap.type not in allowed_types
             and apa_source.findByPolicy([ap]).is_empty()]
         getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
-        ap_source.delete(unused_aps)
+        ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
 
     @cachedproperty
     def commercial_subscription(self):
