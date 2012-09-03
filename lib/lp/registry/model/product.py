@@ -623,25 +623,25 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         getUtility(IAccessPolicyGrantSource).grant(grants)
 
     def _pruneUnusedPolicies(self):
-            allowed_bug_types = set(
-                BUG_POLICY_ALLOWED_TYPES.get(
-                    self.bug_sharing_policy, FREE_INFORMATION_TYPES))
-            allowed_branch_types = set(
-                BRANCH_POLICY_ALLOWED_TYPES.get(
-                    self.branch_sharing_policy, FREE_INFORMATION_TYPES))
-            allowed_types = allowed_bug_types.union(allowed_branch_types)
-            # Fetch all APs, and after filtering out ones that are forbidden
-            # by the bug and branch policies, the APs that have no APAs are
-            # unused and can be deleted.
-            ap_source = getUtility(IAccessPolicySource)
-            access_policies = set(ap_source.findByPillar([self]))
-            apa_source = getUtility(IAccessPolicyArtifactSource)
-            unused_aps = [
-                ap for ap in access_policies
-                if ap.type not in allowed_types
-                and apa_source.findByPolicy([ap]).is_empty()]
-            getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
-            ap_source.delete(unused_aps)
+        allowed_bug_types = set(
+            BUG_POLICY_ALLOWED_TYPES.get(
+                self.bug_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_branch_types = set(
+            BRANCH_POLICY_ALLOWED_TYPES.get(
+                self.branch_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_types = allowed_bug_types.union(allowed_branch_types)
+        # Fetch all APs, and after filtering out ones that are forbidden
+        # by the bug and branch policies, the APs that have no APAs are
+        # unused and can be deleted.
+        ap_source = getUtility(IAccessPolicySource)
+        access_policies = set(ap_source.findByPillar([self]))
+        apa_source = getUtility(IAccessPolicyArtifactSource)
+        unused_aps = [
+            ap for ap in access_policies
+            if ap.type not in allowed_types
+            and apa_source.findByPolicy([ap]).is_empty()]
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
+        ap_source.delete(unused_aps)
 
     @cachedproperty
     def commercial_subscription(self):
