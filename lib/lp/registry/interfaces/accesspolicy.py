@@ -213,6 +213,9 @@ class IAccessPolicySource(Interface):
     def findByTeam(teams):
         """Return a `ResultSet` of all `IAccessPolicy`s for the teams."""
 
+    def delete(policies):
+        """Delete the `IAccessPolicy objects."""
+
 
 class IAccessPolicyGrantSource(Interface):
 

@@ -1049,7 +1049,6 @@ class TestGarbo(TestCaseWithFactory):
             project_with_bvp.setBranchVisibilityTeamPolicy(
                 None, BranchVisibilityRule.FORBIDDEN)
 
-
         def get_non_migrated_products():
             return IMasterStore(Product).find(
                 Product,
@@ -1098,9 +1097,10 @@ class TestGarbo(TestCaseWithFactory):
         switch_dbuser('testadmin')
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
-        with person_logged_in(product.owner):
-            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
-            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+        self.factory.makeAccessPolicy(product, InformationType.PROPRIETARY)
+        naked_product = removeSecurityProxy(product)
+        naked_product.bug_sharing_policy = BugSharingPolicy.PROPRIETARY
+        naked_product.branch_sharing_policy = BranchSharingPolicy.PROPRIETARY
         [ap] = getUtility(IAccessPolicySource).find(
             [(product, InformationType.PRIVATESECURITY)])
         self.factory.makeAccessPolicyArtifact(policy=ap)

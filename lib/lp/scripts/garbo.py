@@ -47,7 +47,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugtarget import BUG_POLICY_ALLOWED_TYPES
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
@@ -58,7 +57,6 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     )
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityTeamPolicy
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
@@ -67,12 +65,6 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.enums import FREE_INFORMATION_TYPES
-from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicyArtifactSource,
-    IAccessPolicyGrantSource,
-    IAccessPolicySource,
-    )
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -1083,26 +1075,7 @@ class UnusedAccessPolicyPruner(TunableLoop):
     def __call__(self, chunk_size):
         products = list(self.findProducts()[:chunk_size])
         for product in products:
-            allowed_bug_types = set(
-                BUG_POLICY_ALLOWED_TYPES.get(
-                    product.bug_sharing_policy, FREE_INFORMATION_TYPES))
-            allowed_branch_types = set(
-                BRANCH_POLICY_ALLOWED_TYPES.get(
-                    product.branch_sharing_policy, FREE_INFORMATION_TYPES))
-            allowed_types = allowed_bug_types.union(allowed_branch_types)
-            # Fetch all APs, and after filtering out ones that are forbidden
-            # by the bug and branch policies, the APs that have no APAs are
-            # unused and can be deleted.
-            access_policies = set(
-                getUtility(IAccessPolicySource).findByPillar([product]))
-            apa_source = getUtility(IAccessPolicyArtifactSource)
-            unused_aps = [
-                ap for ap in access_policies
-                if ap.type not in allowed_types
-                and apa_source.findByPolicy([ap]).is_empty()]
-            getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
-            for ap in unused_aps:
-                self.store.remove(ap)
+            product._pruneUnusedPolicies()
         self.start_at = products[-1].id + 1
         transaction.commit()
 
