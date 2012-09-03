@@ -23,7 +23,7 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.errors import UpToDateFormat
-from bzrlib.plugins.loom.formats import (
+from bzrlib.plugins.loom import (
     NotALoom,
     require_loom_branch,
     )
