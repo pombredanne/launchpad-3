@@ -111,8 +111,20 @@ class ISharingService(IService):
         :return: a collection of people without access to the artifact.
         """
 
-    def getInformationTypes(pillar):
-        """Return the allowed information types for the given pillar."""
+    def getAllowedInformationTypes(pillar):
+        """Return the allowed private information types for the given pillar.
+
+        The allowed information types are those for which bugs and branches
+        may be created. This does not mean that there will necessarily be bugs
+        and branches of these types; the result is used to populate the allowed
+        choices in the grantee sharing pillar and other similar things.
+
+        The allowed information types are determined by the pillar's bug and
+        branch sharing policies. It is possible that there are bugs or branches
+        of a given information type which is now nominally not allowed with a
+        change in policy. Such information types are also included in the
+        result.
+        """
 
     def getBugSharingPolicies(pillar):
         """Return the allowed bug sharing policies for the given pillar."""

@@ -832,6 +832,42 @@ class BaseSharingPolicyTests:
             getUtility(IService, 'sharing').checkPillarAccess(
                 self.product, InformationType.PROPRIETARY, self.product.owner))
 
+    def test_unused_policies_are_pruned(self):
+        # When a sharing policy is changed, the allowed information types may
+        # become more restricted. If this case, any existing access polices
+        # for the now defunct information type(s) should be removed so long as
+        # there are no corresponding policy artifacts.
+
+        # We create a product with and ensure there's an APA.
+        ap_source = getUtility(IAccessPolicySource)
+        product = self.factory.makeProduct()
+        [ap] = ap_source.find([(product, InformationType.PRIVATESECURITY)])
+        self.factory.makeAccessPolicyArtifact(policy=ap)
+
+        def getAccessPolicyTypes(pillar):
+            return [
+                ap.type
+                for ap in ap_source.findByPillar([pillar])]
+
+        # Now change the sharing policies to PROPRIETARY
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            # Just bug sharing policy has been changed so all previous policy
+            # types are still valid.
+            self.assertContentEqual(
+                [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+                 InformationType.PROPRIETARY],
+                getAccessPolicyTypes(product))
+
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+            # Proprietary is permitted by the sharing policy, and there's a
+            # Private Security artifact. But Private isn't in use or allowed
+            # by a sharing policy, so it's now gone.
+            self.assertContentEqual(
+                [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
+                getAccessPolicyTypes(product))
+
 
 class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,
                                       TestCaseWithFactory):

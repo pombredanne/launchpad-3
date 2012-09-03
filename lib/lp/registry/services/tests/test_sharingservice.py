@@ -121,35 +121,43 @@ class TestSharingService(TestCaseWithFactory):
             expected_data.append(item)
         self.assertContentEqual(expected_data, enum_data)
 
-    def _assert_getInformationTypes(self, pillar, expected_policies):
-        policy_data = self.service.getInformationTypes(pillar)
+    def _assert_getAllowedInformationTypes(self, pillar,
+                                           expected_policies):
+        policy_data = self.service.getAllowedInformationTypes(pillar)
         self._assert_enumData(expected_policies, policy_data)
 
     def test_getInformationTypes_product(self):
         product = self.factory.makeProduct()
-        self._assert_getInformationTypes(
+        self._assert_getAllowedInformationTypes(
             product,
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
 
     def test_getInformationTypes_expired_commercial_product(self):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product, expired=True)
-        self._assert_getInformationTypes(
+        self._assert_getAllowedInformationTypes(
             product,
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
 
     def test_getInformationTypes_commercial_product(self):
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        self._assert_getInformationTypes(
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self._assert_getAllowedInformationTypes(
             product,
-            [InformationType.PRIVATESECURITY,
-             InformationType.USERDATA,
-             InformationType.PROPRIETARY])
+            [InformationType.PROPRIETARY])
+
+    def test_getInformationTypes_product_with_embargoed(self):
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self._assert_getAllowedInformationTypes(
+            product,
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED])
 
     def test_getInformationTypes_distro(self):
         distro = self.factory.makeDistribution()
-        self._assert_getInformationTypes(
+        self._assert_getAllowedInformationTypes(
             distro,
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
 
