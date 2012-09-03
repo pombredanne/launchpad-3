@@ -119,7 +119,6 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     )
@@ -590,7 +589,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct.`"""
         if self.bug_sharing_policy is not None:
             return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
-        return FREE_INFORMATION_TYPES
+
+        types = set(InformationType.items)
+        types.discard(InformationType.PROPRIETARY)
+        types.discard(InformationType.EMBARGOED)
+        return types
 
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
@@ -600,12 +603,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return InformationType.USERDATA
         else:
             return InformationType.PUBLIC
-
-    def getAllowedBranchInformationTypes(self):
-        """See `IProduct.`"""
-        if self.branch_sharing_policy is not None:
-            return BRANCH_POLICY_ALLOWED_TYPES[self.branch_sharing_policy]
-        return FREE_INFORMATION_TYPES
 
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified

@@ -91,7 +91,6 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
 from lp.registry.enums import (
-    FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
@@ -1575,15 +1574,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedBugInformationTypes(self):
         """See `IDistribution.`"""
-        return FREE_INFORMATION_TYPES
+        types = set(InformationType.items)
+        types.discard(InformationType.PROPRIETARY)
+        types.discard(InformationType.EMBARGOED)
+        return types
 
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
         return InformationType.PUBLIC
-
-    def getAllowedBranchInformationTypes(self):
-        """See `IDistribution.`"""
-        return FREE_INFORMATION_TYPES
 
     def userCanEdit(self, user):
         """See `IDistribution`."""
