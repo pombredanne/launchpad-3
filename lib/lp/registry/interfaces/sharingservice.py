@@ -31,6 +31,8 @@ from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bug import IBug
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     SharingPermission,
     )
@@ -238,4 +240,20 @@ class ISharingService(IService):
         :param user: the user making the request
         :param bugs: the bugs for which to grant access
         :param branches: the branches for which to grant access
+        """
+
+    @export_write_operation()
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        branch_sharing_policy=Choice(vocabulary=BranchSharingPolicy),
+        bug_sharing_policy=Choice(vocabulary=BugSharingPolicy))
+    @operation_for_version('devel')
+    def updatePillarSharingPolicies(pillar, branch_sharing_policy=None,
+                                    bug_sharing_policy=None):
+        """Update the sharing policies for a pillar.
+
+        :param pillar: the pillar to update
+        :param branch_sharing_policy: the new branch sharing policy
+        :param bug_sharing_policy: the new bug sharing policy
+        :return: data for the in-use information types after the update
         """

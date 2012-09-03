@@ -542,3 +542,27 @@ class SharingService:
         missing_artifacts = set(artifacts) - set(artifacts_with_grants)
         getUtility(IAccessArtifactGrantSource).grant(
             list(product(missing_artifacts, grantees, [user])))
+
+    @available_with_permission('launchpad.Edit', 'pillar')
+    def updatePillarSharingPolicies(self, pillar, branch_sharing_policy=None,
+                                    bug_sharing_policy=None):
+        if not branch_sharing_policy and not bug_sharing_policy:
+            return None
+        # Only Products have sharing policies.
+        if not IProduct.providedBy(pillar):
+            raise ValueError(
+                "Sharing policies are only supported for products.")
+        if branch_sharing_policy:
+            pillar.setBranchSharingPolicy(branch_sharing_policy)
+        if bug_sharing_policy:
+            pillar.setBugSharingPolicy(bug_sharing_policy)
+
+        grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
+        invisible_types = [
+            count_info[0].title for count_info in grant_counts
+            if count_info[1] == 0]
+
+        result = {
+            'information_types': self.getAllowedInformationTypes(pillar),
+            'invisible_information_types': invisible_types}
+        return result
