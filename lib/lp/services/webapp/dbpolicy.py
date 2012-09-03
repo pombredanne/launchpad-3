@@ -86,11 +86,16 @@ def ensure_connected(store):
 
     :raises storm.exceptions.DatabaseError: on failure to connect.
     """
-    # Register the Store with the transaction manager first. Otherwise,
-    # _ensure_connected() might set the store to disconnected state and
-    # it won't be set to reconnect state at the end of the transaction.
-    store._connection._event.emit('register-transaction')
-    store._connection._ensure_connected()
+    con = store._connection
+    try:
+        con._ensure_connected()
+    except StormDatabaseError:
+        # If the Store is in a disconnected state, ensure it is
+        # registered with the transaction manager. Otherwise, if
+        # _ensure_connected() caused the disconnected state it may not
+        # be put into reconnect state at the end of the transaction.
+        if con._state == STATE_DISCONNECTED:
+            con._event.emit('register-transaction')
 
 
 class BaseDatabasePolicy:
