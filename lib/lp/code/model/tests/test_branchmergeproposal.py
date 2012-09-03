@@ -433,6 +433,20 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertIs(None, proposal.date_reviewed)
         self.assertIs(None, proposal.reviewed_revision_id)
 
+    def test_transitions_from_rejected_to_merged_resets_reviewer(self):
+        # When a rejected proposal ends up being merged anyway, reset the
+        # reviewer details as they did not approve as is otherwise assumed.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.REJECTED)
+        self.assertIsNot(None, proposal.reviewer)
+        self.assertIsNot(None, proposal.date_reviewed)
+        self.assertIsNot(None, proposal.reviewed_revision_id)
+        proposal.markAsMerged()
+        self.assertIs(None, proposal.reviewer)
+        self.assertIs(None, proposal.date_reviewed)
+        self.assertIs(None, proposal.reviewed_revision_id)
+
 
 class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
     """Test the setStatus method of BranchMergeProposal."""
