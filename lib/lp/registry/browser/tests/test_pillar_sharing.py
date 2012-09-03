@@ -75,7 +75,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
         return grantee
 
     def makeArtifactGrantee(self, grantee=None, with_bug=True,
-                            with_branch=False, security=False):
+                            with_branch=False, security=False,
+                            information_type=InformationType.USERDATA):
         if grantee is None:
             grantee = self.factory.makePerson()
 
@@ -86,7 +87,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
         if with_branch and self.pillar_type == 'product':
             branch = self.factory.makeBranch(
                 product=self.pillar, owner=self.pillar.owner,
-                information_type=InformationType.USERDATA)
+                information_type=information_type)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
 
@@ -95,24 +96,15 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner = self.factory.makePerson()
             else:
                 owner = self.pillar.owner
-            if self.pillar_type == 'product':
-                bug = self.factory.makeBug(
-                    target=self.pillar, owner=owner,
-                    information_type=InformationType.USERDATA)
-            elif self.pillar_type == 'distribution':
-                bug = self.factory.makeBug(
-                    target=self.pillar, owner=owner,
-                    information_type=InformationType.USERDATA)
+            bug = self.factory.makeBug(
+                target=self.pillar, owner=owner,
+                information_type=information_type)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=bug))
 
         for artifact in artifacts:
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact, policy=self.access_policy)
             self.factory.makeAccessArtifactGrant(
-                artifact=artifact,
-                grantee=grantee,
-                grantor=self.pillar.owner)
+                artifact=artifact, grantee=grantee, grantor=self.pillar.owner)
         return grantee
 
     def setupSharing(self, grantees):
@@ -211,6 +203,19 @@ class PillarSharingDetailsMixin:
                 'web_link': canonical_url(branch, path_only_if_possible=True),
                 'self_link': absoluteURL(branch, request),
             }, cache.objects.get('branches')[0])
+
+    def test_view_data_model_proprietary_branch(self):
+        # Test that branches show as the correct information type.
+        if self.pillar_type != 'product':
+            return
+        person = self.makeArtifactGrantee(
+            with_bug=False, with_branch=True,
+            information_type=InformationType.PROPRIETARY)
+        pillarperson = PillarPerson(self.pillar, person)
+        view = create_initialized_view(pillarperson, '+index')
+        cache = IJSONRequestCache(view.request)
+        information_type = cache.objects.get('branches')[0]['information_type']
+        self.assertEqual(InformationType.PROPRIETARY.title, information_type)
 
     def test_view_query_count(self):
         # Test that the view bulk loads artifacts.
