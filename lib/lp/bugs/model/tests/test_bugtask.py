@@ -56,6 +56,7 @@ from lp.bugs.scripts.bugtasktargetnamecaches import (
     )
 from lp.bugs.tests.bug import create_old_bug
 from lp.registry.enums import (
+    BugSharingPolicy,
     InformationType,
     TeamMembershipPolicy,
     )
@@ -1194,7 +1195,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         """
         non_malone_using_bugtasks = [
             related_task for related_task in bugtask.related_tasks
-            if not related_task.target_uses_malone]
+            if not related_task.pillar.official_malone]
         pending_bugwatch_bugtasks = [
             related_bugtask for related_bugtask in non_malone_using_bugtasks
             if related_bugtask.bugwatch is None]
@@ -2847,52 +2848,26 @@ class ValidateTargetMixin:
         a private bugs to check for multi-tenant constraints.
     """
 
-    def test_private_multi_tenanted_forbidden(self):
-        # A new task project cannot be added if there is already one from
-        # another pillar.
-        d = self.factory.makeDistribution()
-        bug = self.factory.makeBug(target=d)
-        if not self.multi_tenant_test_one_task_only:
-            self.factory.makeBugTask(bug=bug)
-        p = self.factory.makeProduct()
-        self.factory.makeAccessPolicy(pillar=d)
-        with person_logged_in(bug.owner):
-            bug.transitionToInformationType(
-                InformationType.PROPRIETARY, bug.owner)
-            self.assertRaisesWithContent(
-                IllegalTarget,
-                "This proprietary bug already affects %s. "
-                "Proprietary bugs cannot affect multiple projects."
-                    % d.displayname,
-                self.validate_method, bug, p)
-            bug.transitionToInformationType(
-                InformationType.USERDATA, bug.owner)
-            self.validate_method(bug, p)
-
     def test_private_incorrect_pillar_task_forbidden(self):
-        # A product or distro cannot be added if there is already a bugtask.
-        p1 = self.factory.makeProduct()
-        p2 = self.factory.makeProduct()
-        d = self.factory.makeDistribution()
-        bug = self.factory.makeBug(target=p1)
+        # Another pillar cannot be added if there is already a bugtask.
+        p1 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        p2 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(target=p1, owner=owner)
+        # validate_target allows cross-pillar transitions if there's
+        # only one task, so we might need to create a second task to test.
         if not self.multi_tenant_test_one_task_only:
-            self.factory.makeBugTask(bug=bug)
-        self.factory.makeAccessPolicy(pillar=p1)
-        with person_logged_in(bug.owner):
-            bug.transitionToInformationType(
-                InformationType.PROPRIETARY, bug.owner)
+            self.factory.makeBugTask(
+                bug=bug, target=self.factory.makeProductSeries(product=p1))
+        with person_logged_in(owner):
             self.assertRaisesWithContent(
                 IllegalTarget,
                 "This proprietary bug already affects %s. "
                 "Proprietary bugs cannot affect multiple projects."
                     % p1.displayname,
                 self.validate_method, bug, p2)
-            self.assertRaisesWithContent(
-                IllegalTarget,
-                "This proprietary bug already affects %s. "
-                "Proprietary bugs cannot affect multiple projects."
-                    % p1.displayname,
-                self.validate_method, bug, d)
             bug.transitionToInformationType(
                 InformationType.USERDATA, bug.owner)
             self.validate_method(bug, p2)
@@ -2900,44 +2875,24 @@ class ValidateTargetMixin:
     def test_private_incorrect_product_series_task_forbidden(self):
         # A product series cannot be added if there is already a bugtask for
         # a different product.
-        p1 = self.factory.makeProduct()
-        p2 = self.factory.makeProduct()
+        p1 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        p2 = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         series = self.factory.makeProductSeries(product=p2)
-        bug = self.factory.makeBug(target=p1)
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(target=p1, owner=owner)
+        # validate_target allows cross-pillar transitions if there's
+        # only one task, so we might need to create a second task to test.
         if not self.multi_tenant_test_one_task_only:
-            self.factory.makeBugTask(bug=bug)
-        self.factory.makeAccessPolicy(pillar=p1)
-        with person_logged_in(bug.owner):
-            bug.transitionToInformationType(
-                InformationType.PROPRIETARY, bug.owner)
+            self.factory.makeBugTask(
+                bug=bug, target=self.factory.makeProductSeries(product=p1))
+        with person_logged_in(owner):
             self.assertRaisesWithContent(
                 IllegalTarget,
                 "This proprietary bug already affects %s. "
                 "Proprietary bugs cannot affect multiple projects."
                     % p1.displayname,
-                self.validate_method, bug, series)
-            bug.transitionToInformationType(
-                InformationType.USERDATA, bug.owner)
-            self.validate_method(bug, series)
-
-    def test_private_incorrect_distro_series_task_forbidden(self):
-        # A distro series cannot be added if there is already a bugtask for
-        # a different distro.
-        d1 = self.factory.makeDistribution()
-        d2 = self.factory.makeDistribution()
-        series = self.factory.makeDistroSeries(distribution=d2)
-        bug = self.factory.makeBug(target=d1)
-        if not self.multi_tenant_test_one_task_only:
-            self.factory.makeBugTask(bug=bug)
-        self.factory.makeAccessPolicy(pillar=d1)
-        with person_logged_in(bug.owner):
-            bug.transitionToInformationType(
-                InformationType.PROPRIETARY, bug.owner)
-            self.assertRaisesWithContent(
-                IllegalTarget,
-                "This proprietary bug already affects %s. "
-                "Proprietary bugs cannot affect multiple projects."
-                    % d1.displayname,
                 self.validate_method, bug, series)
             bug.transitionToInformationType(
                 InformationType.USERDATA, bug.owner)
@@ -3081,6 +3036,24 @@ class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):
             "Package %s not published in %s"
             % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
+
+    def test_illegal_information_type_disallowed(self):
+        # The bug's current information_type must be permitted by the
+        # new target.
+        free_prod = self.factory.makeProduct()
+        other_free_prod = self.factory.makeProduct()
+        commercial_prod = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        bug = self.factory.makeBug(target=free_prod)
+
+        # The new bug is Public, which is legal on the other free product.
+        self.assertIs(None, validate_target(bug, other_free_prod))
+
+        # But not on the proprietary-only product.
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "%s doesn't allow Public bugs." % commercial_prod.displayname,
+            validate_target, bug, commercial_prod)
 
 
 class TestValidateNewTarget(TestCaseWithFactory, ValidateTargetMixin):

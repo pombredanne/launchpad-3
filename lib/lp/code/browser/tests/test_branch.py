@@ -919,7 +919,7 @@ class TestBranchEditView(TestCaseWithFactory):
     def test_forbidden_owner_is_error(self):
         # An error is displayed if a branch's owner is changed to
         # a value forbidden by the visibility policy.
-        product = self.factory.makeProduct(displayname='Some Product')
+        product = self.factory.makeLegacyProduct(displayname='Some Product')
         person = self.factory.makePerson()
         branch = self.factory.makeBranch(product=product, owner=person)
         self.factory.makeTeam(
@@ -944,7 +944,8 @@ class TestBranchEditView(TestCaseWithFactory):
         # A branch's owner can be changed to a private team permitted by the
         # visibility policy.
         person = self.factory.makePerson()
-        branch = self.factory.makeProductBranch(owner=person)
+        product = self.factory.makeLegacyProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=person)
         team = self.factory.makeTeam(
             owner=person, displayname="Private team",
             visibility=PersonVisibility.PRIVATE)
@@ -1027,14 +1028,16 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
             self.assertContentEqual(types, view.getInformationTypesToShow())
 
     def test_public_branch(self):
-        # A normal public branch on a public project can only be a public
-        # information type.
+        # A normal public branch on a public project can be any information
+        # type except embargoed and proprietary.
         # The model doesn't enforce this, so it's just a UI thing.
         branch = self.factory.makeBranch(
             information_type=InformationType.PUBLIC)
         self.assertShownTypes(
             [InformationType.PUBLIC,
-             InformationType.PUBLICSECURITY],
+             InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY,
+             InformationType.USERDATA],
             branch)
 
     def test_branch_with_disallowed_type(self):
@@ -1048,6 +1051,8 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         self.assertShownTypes(
             [InformationType.PUBLIC,
              InformationType.PUBLICSECURITY,
+             InformationType.PRIVATESECURITY,
+             InformationType.USERDATA,
              InformationType.PROPRIETARY],
             branch)
 

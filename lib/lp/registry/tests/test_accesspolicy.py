@@ -133,6 +133,46 @@ class TestAccessPolicySource(TestCaseWithFactory):
                 for ap in getUtility(IAccessPolicySource).findByPillar(
                     [product])])
 
+    def test_createForTeams(self):
+        # Test createForTeams.
+        teams = [self.factory.makeTeam()]
+        policies = getUtility(IAccessPolicySource).createForTeams(teams)
+        self.assertThat(
+            policies,
+            AllMatch(Provides(IAccessPolicy)))
+        self.assertContentEqual(
+            teams,
+            [policy.person for policy in policies])
+
+    def test_findByTeam(self):
+        # findByTeam finds only the relevant policies.
+        team = self.factory.makeTeam()
+        other_team = self.factory.makeTeam()
+        aps = getUtility(IAccessPolicySource)
+        aps.createForTeams([team])
+        self.assertContentEqual(
+            [team],
+            [ap.person
+                for ap in getUtility(IAccessPolicySource).findByTeam(
+                [team, other_team])])
+        self.assertContentEqual(
+            [team],
+            [ap.person
+                for ap in getUtility(IAccessPolicySource).findByTeam([team])])
+
+    def test_delete(self):
+        # delete functions as expected.
+        ap_source = getUtility(IAccessPolicySource)
+        pillars = [self.factory.makeProduct() for x in range(5)]
+        policies = list(ap_source.findByPillar(pillars))
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(policies[2:])
+        ap_source.delete(
+            [(policy.pillar, policy.type) for policy in policies[2:]])
+        IStore(policies[0]).invalidate()
+        self.assertRaises(LostObjectError, getattr, policies[3], 'pillar')
+        self.assertContentEqual(
+            policies[:2], ap_source.findByPillar(pillars))
+
 
 class TestAccessArtifact(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer

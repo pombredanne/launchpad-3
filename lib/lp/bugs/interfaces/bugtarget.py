@@ -18,8 +18,8 @@ __all__ = [
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
     'ISeriesBugTarget',
-    'POLICY_ALLOWED_TYPES',
-    'POLICY_DEFAULT_TYPES',
+    'BUG_POLICY_ALLOWED_TYPES',
+    'BUG_POLICY_DEFAULT_TYPES',
     ]
 
 
@@ -205,14 +205,14 @@ search_tasks_params_for_api_devel = dict(
         vocabulary=BugBlueprintSearch, required=False))
 
 
-POLICY_ALLOWED_TYPES = {
+BUG_POLICY_ALLOWED_TYPES = {
     BugSharingPolicy.PUBLIC: FREE_INFORMATION_TYPES,
     BugSharingPolicy.PUBLIC_OR_PROPRIETARY: NON_EMBARGOED_INFORMATION_TYPES,
     BugSharingPolicy.PROPRIETARY_OR_PUBLIC: NON_EMBARGOED_INFORMATION_TYPES,
     BugSharingPolicy.PROPRIETARY: (InformationType.PROPRIETARY,),
     }
 
-POLICY_DEFAULT_TYPES = {
+BUG_POLICY_DEFAULT_TYPES = {
     BugSharingPolicy.PUBLIC: InformationType.PUBLIC,
     BugSharingPolicy.PUBLIC_OR_PROPRIETARY: InformationType.PUBLIC,
     BugSharingPolicy.PROPRIETARY_OR_PUBLIC: InformationType.PROPRIETARY,

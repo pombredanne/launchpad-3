@@ -20,7 +20,10 @@ from lp.bugs.mail.commands import (
     TagEmailCommand,
     UnsubscribeEmailCommand,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BugSharingPolicy,
+    InformationType,
+    )
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
     EmailProcessingError,
@@ -286,11 +289,12 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
     def test_execute_bug_cannot_add_task(self):
         # Test that attempts to invalidly add a new bug task results in the
         # expected error message.
-        product = self.factory.makeProduct()
-        self.factory.makeAccessPolicy(pillar=product)
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         bug = self.factory.makeBug(
             target=product, information_type=InformationType.PROPRIETARY)
-        self.factory.makeProduct(name='fnord')
+        self.factory.makeProduct(
+            name='fnord', bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         login_celebrity('admin')
         login_person(bug.owner)
         command = AffectsEmailCommand('affects', ['fnord'])
