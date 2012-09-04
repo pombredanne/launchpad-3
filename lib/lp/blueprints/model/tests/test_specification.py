@@ -616,8 +616,8 @@ class TestSpecificationInformationType(TestCaseWithFactory):
         spec = self.factory.makeSpecification()
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
         with person_logged_in(spec.owner):
-            result = spec.transitionToInformationType(InformationType.EMBARGOED,
-                                                      spec.owner)
+            result = spec.transitionToInformationType(
+                InformationType.EMBARGOED, spec.owner)
             self.assertEqual(InformationType.EMBARGOED, spec.information_type)
         self.assertTrue(result)
 
@@ -634,4 +634,4 @@ class TestSpecificationInformationType(TestCaseWithFactory):
         spec = self.factory.makeSpecification()
         with person_logged_in(spec.owner):
             with ExpectedException(CannotChangeInformationType, '.*'):
-                result = spec.transitionToInformationType(None, spec.owner)
+                spec.transitionToInformationType(None, spec.owner)

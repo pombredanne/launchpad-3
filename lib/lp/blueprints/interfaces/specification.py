@@ -630,6 +630,7 @@ class ISpecificationEditRestricted(Interface):
     def transitionToInformationType(information_type, who):
         """Change the information type of the Specification."""
 
+
 class ISpecification(ISpecificationPublic, ISpecificationView,
                      ISpecificationEditRestricted, IBugLinkTarget):
     """A Specification."""

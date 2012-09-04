@@ -815,9 +815,7 @@ class SpecificationInformationTypeEditView(LaunchpadFormView):
         """Update the bug."""
         data = dict(data)
         information_type = data.pop('information_type')
-        changed_fields = ['information_type']
-        changed = self.context.transitionToInformationType(
-            information_type, self.user)
+        self.context.transitionToInformationType(information_type, self.user)
         return ''
 
 
