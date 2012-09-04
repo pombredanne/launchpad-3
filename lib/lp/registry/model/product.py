@@ -1535,7 +1535,7 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
@@ -1550,7 +1550,8 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang,
             project_reviewed=project_reviewed,
-            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
+            bug_supervisor=bug_supervisor, driver=driver)
 
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)

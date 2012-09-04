@@ -980,7 +980,7 @@ class IProductSet(Interface):
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
                    'project_reviewed', 'licenses', 'license_info',
-                   'registrant'])
+                   'registrant', 'bug_supervisor', 'driver'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
@@ -989,7 +989,7 @@ class IProductSet(Interface):
                       sourceforgeproject=None, programminglang=None,
                       project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
-                      registrant=None):
+                      registrant=None, bug_supervisor=None, driver=None):
         """Create and return a brand new Product.
 
         See `IProduct` for a description of the parameters.

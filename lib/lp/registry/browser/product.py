@@ -2013,10 +2013,10 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         show_create_team_link=True)
     custom_widget(
         'bug_supervisor', PersonPickerWidget, header="Set a bug supervisor",
-        show_create_team_link=True)
+        required=True, show_create_team_link=True)
     custom_widget(
         'driver', PersonPickerWidget, header="Set a driver",
-        show_create_team_link=True)
+        required=True, show_create_team_link=True)
     custom_widget(
         'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
 
@@ -2192,6 +2192,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
             bug_supervisor=data['bug_supervisor'],
+            driver=data['driver'],
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],
