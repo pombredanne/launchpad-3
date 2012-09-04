@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from datetime import datetime
 import unittest
+import urllib
 
 from BeautifulSoup import BeautifulSoup
 import pytz
@@ -205,6 +206,23 @@ class TestSpecificationInformationType(BrowserTestCase):
                 attrs={'class': 'banner-text'})
         self.assertThat(browser.contents,
                         soupmatchers.HTMLContains(privacy_banner))
+
+    def test_secrecy_change(self):
+        """Setting the value via '+secrecy' works."""
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(owner=owner)
+        url = canonical_url(spec, view_name='+secrecy')
+        browser = self.getUserBrowser(user=owner)
+        data = urllib.urlencode({
+            'field.actions.change': 'Change',
+            'field.information_type': 'PROPRIETARY',
+            'field.validate_change': 'off',
+        })
+        browser.post(url, data)
+        with person_logged_in(owner):
+            self.assertEqual(InformationType.PROPRIETARY,
+                             spec.information_type)
+
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
