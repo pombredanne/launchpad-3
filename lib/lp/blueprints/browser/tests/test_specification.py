@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 from datetime import datetime
+import json
 import unittest
-import urllib
 
 from BeautifulSoup import BeautifulSoup
 import pytz
@@ -13,6 +13,7 @@ from testtools.matchers import (
     Equals,
     Not,
     )
+import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
@@ -207,22 +208,40 @@ class TestSpecificationInformationType(BrowserTestCase):
         self.assertThat(browser.contents,
                         soupmatchers.HTMLContains(privacy_banner))
 
+    def set_secrecy(self, spec, owner, information_type='PROPRIETARY'):
+        form = {
+            'field.actions.change': 'Change',
+            'field.information_type': information_type,
+            'field.validate_change': 'off',
+        }
+        with person_logged_in(owner):
+            view = create_initialized_view(
+                spec, '+secrecy', form, principal=owner,
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            body = view.render()
+        return view, body
+
     def test_secrecy_change(self):
         """Setting the value via '+secrecy' works."""
         owner = self.factory.makePerson()
         spec = self.factory.makeSpecification(owner=owner)
-        url = canonical_url(spec, view_name='+secrecy')
-        browser = self.getUserBrowser(user=owner)
-        data = urllib.urlencode({
-            'field.actions.change': 'Change',
-            'field.information_type': 'PROPRIETARY',
-            'field.validate_change': 'off',
-        })
-        browser.post(url, data)
+        self.set_secrecy(spec, owner)
         with person_logged_in(owner):
             self.assertEqual(InformationType.PROPRIETARY,
                              spec.information_type)
 
+    def test_secrecy_change_nonsense(self):
+        """Invalid values produce sane errors."""
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(owner=owner)
+        transaction.commit()
+        view, body = self.set_secrecy(spec, owner,
+                         information_type=self.factory.getUniqueString())
+        self.assertEqual(400, view.request.response.getStatus())
+        error_data = json.loads(body)
+        self.assertEqual({u'field.information_type': u'Invalid value'},
+                         error_data['errors'])
+        self.assertEqual(InformationType.PUBLIC, spec.information_type)
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):
