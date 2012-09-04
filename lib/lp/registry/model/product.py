@@ -119,12 +119,14 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    FREE_INFORMATION_TYPES,
     InformationType,
     PRIVATE_INFORMATION_TYPES,
     )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
+    IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
@@ -577,6 +579,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             branch_sharing_policy, BranchSharingPolicy, 'branches',
             BRANCH_POLICY_ALLOWED_TYPES)
         self.branch_sharing_policy = branch_sharing_policy
+        self._pruneUnusedPolicies()
 
     def setBugSharingPolicy(self, bug_sharing_policy):
         """See `IProductEditRestricted`."""
@@ -584,16 +587,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             bug_sharing_policy, BugSharingPolicy, 'bugs',
             BUG_POLICY_ALLOWED_TYPES)
         self.bug_sharing_policy = bug_sharing_policy
+        self._pruneUnusedPolicies()
 
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
         if self.bug_sharing_policy is not None:
             return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
-
-        types = set(InformationType.items)
-        types.discard(InformationType.PROPRIETARY)
-        types.discard(InformationType.EMBARGOED)
-        return types
+        return FREE_INFORMATION_TYPES
 
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
@@ -621,6 +621,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for p in policies:
             grants.append((p, self.owner, self.owner))
         getUtility(IAccessPolicyGrantSource).grant(grants)
+
+    def _pruneUnusedPolicies(self):
+        allowed_bug_types = set(
+            BUG_POLICY_ALLOWED_TYPES.get(
+                self.bug_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_branch_types = set(
+            BRANCH_POLICY_ALLOWED_TYPES.get(
+                self.branch_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_types = allowed_bug_types.union(allowed_branch_types)
+        # Fetch all APs, and after filtering out ones that are forbidden
+        # by the bug and branch policies, the APs that have no APAs are
+        # unused and can be deleted.
+        ap_source = getUtility(IAccessPolicySource)
+        access_policies = set(ap_source.findByPillar([self]))
+        apa_source = getUtility(IAccessPolicyArtifactSource)
+        unused_aps = [
+            ap for ap in access_policies
+            if ap.type not in allowed_types
+            and apa_source.findByPolicy([ap]).is_empty()]
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
+        ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
 
     @cachedproperty
     def commercial_subscription(self):

@@ -279,7 +279,8 @@ class PillarSharingView(LaunchpadView):
 
     @property
     def information_types(self):
-        return self._getSharingService().getInformationTypes(self.context)
+        return self._getSharingService().getAllowedInformationTypes(
+            self.context)
 
     @property
     def bug_sharing_policies(self):

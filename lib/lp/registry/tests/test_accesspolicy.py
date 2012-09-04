@@ -160,6 +160,19 @@ class TestAccessPolicySource(TestCaseWithFactory):
             [ap.person
                 for ap in getUtility(IAccessPolicySource).findByTeam([team])])
 
+    def test_delete(self):
+        # delete functions as expected.
+        ap_source = getUtility(IAccessPolicySource)
+        pillars = [self.factory.makeProduct() for x in range(5)]
+        policies = list(ap_source.findByPillar(pillars))
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(policies[2:])
+        ap_source.delete(
+            [(policy.pillar, policy.type) for policy in policies[2:]])
+        IStore(policies[0]).invalidate()
+        self.assertRaises(LostObjectError, getattr, policies[3], 'pillar')
+        self.assertContentEqual(
+            policies[:2], ap_source.findByPillar(pillars))
+
 
 class TestAccessArtifact(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
