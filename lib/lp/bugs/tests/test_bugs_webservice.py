@@ -19,9 +19,7 @@ from testtools.matchers import (
     Equals,
     LessThan,
     )
-from zope.component import (
-    getMultiAdapter,
-    )
+from zope.component import getMultiAdapter
 
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
@@ -344,7 +342,7 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
 
 class TestErrorHandling(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_add_duplicate_bugtask_for_project_gives_bad_request(self):
         bug = self.factory.makeBug()
@@ -374,6 +372,18 @@ class TestErrorHandling(TestCaseWithFactory):
         lp_bug = launchpad.load(api_url(bug))
         self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product2))
+
+    def test_add_attachment_with_bad_filename_gives_bad_request(self):
+        # Test that addAttachment raises BadRequest when the filename given
+        # contains slashes.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        login_person(owner)
+        launchpad = launchpadlib_for('test', owner)
+        lp_bug = launchpad.load(api_url(bug))
+        self.assertRaises(
+            BadRequest, lp_bug.addAttachment, comment='foo', data='foo',
+            filename='/home/foo/bar.txt')
 
 
 class BugSetTestCase(TestCaseWithFactory):
