@@ -91,8 +91,8 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
-    POLICY_ALLOWED_TYPES,
-    POLICY_DEFAULT_TYPES,
+    BUG_POLICY_ALLOWED_TYPES,
+    BUG_POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bugtarget import (
@@ -107,6 +107,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.model.branchnamespace import BRANCH_POLICY_ALLOWED_TYPES
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
@@ -118,11 +119,14 @@ from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    FREE_INFORMATION_TYPES,
     InformationType,
+    PRIVATE_INFORMATION_TYPES,
     )
 from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
+    IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
@@ -560,44 +564,41 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
+    def _prepare_to_set_sharing_policy(self, var, enum, kind, allowed_types):
+        if var != enum.PUBLIC and not self.has_current_commercial_subscription:
+            raise CommercialSubscribersOnly(
+                "A current commercial subscription is required to use "
+                "proprietary %s." % kind)
+        required_policies = set(allowed_types[var]).intersection(
+            set(PRIVATE_INFORMATION_TYPES))
+        self._ensurePolicies(required_policies)
+
     def setBranchSharingPolicy(self, branch_sharing_policy):
         """See `IProductEditRestricted`."""
-        if branch_sharing_policy != BranchSharingPolicy.PUBLIC:
-            if not self.has_current_commercial_subscription:
-                raise CommercialSubscribersOnly(
-                    "A current commercial subscription is required to use "
-                    "proprietary branches.")
-            required_policies = [InformationType.PROPRIETARY]
-            if (branch_sharing_policy ==
-                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY):
-                required_policies.append(InformationType.EMBARGOED)
-            self._ensurePolicies(required_policies)
+        self._prepare_to_set_sharing_policy(
+            branch_sharing_policy, BranchSharingPolicy, 'branches',
+            BRANCH_POLICY_ALLOWED_TYPES)
         self.branch_sharing_policy = branch_sharing_policy
+        self._pruneUnusedPolicies()
 
     def setBugSharingPolicy(self, bug_sharing_policy):
         """See `IProductEditRestricted`."""
-        if bug_sharing_policy != BugSharingPolicy.PUBLIC:
-            if not self.has_current_commercial_subscription:
-                raise CommercialSubscribersOnly(
-                    "A current commercial subscription is required to use "
-                    "proprietary bugs.")
-            self._ensurePolicies([InformationType.PROPRIETARY])
+        self._prepare_to_set_sharing_policy(
+            bug_sharing_policy, BugSharingPolicy, 'bugs',
+            BUG_POLICY_ALLOWED_TYPES)
         self.bug_sharing_policy = bug_sharing_policy
+        self._pruneUnusedPolicies()
 
     def getAllowedBugInformationTypes(self):
         """See `IProduct.`"""
         if self.bug_sharing_policy is not None:
-            return POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
-
-        types = set(InformationType.items)
-        types.discard(InformationType.PROPRIETARY)
-        types.discard(InformationType.EMBARGOED)
-        return types
+            return BUG_POLICY_ALLOWED_TYPES[self.bug_sharing_policy]
+        return FREE_INFORMATION_TYPES
 
     def getDefaultBugInformationType(self):
         """See `IDistribution.`"""
         if self.bug_sharing_policy is not None:
-            return POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
+            return BUG_POLICY_DEFAULT_TYPES[self.bug_sharing_policy]
         elif self.private_bugs:
             return InformationType.USERDATA
         else:
@@ -620,6 +621,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for p in policies:
             grants.append((p, self.owner, self.owner))
         getUtility(IAccessPolicyGrantSource).grant(grants)
+
+    def _pruneUnusedPolicies(self):
+        allowed_bug_types = set(
+            BUG_POLICY_ALLOWED_TYPES.get(
+                self.bug_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_branch_types = set(
+            BRANCH_POLICY_ALLOWED_TYPES.get(
+                self.branch_sharing_policy, FREE_INFORMATION_TYPES))
+        allowed_types = allowed_bug_types.union(allowed_branch_types)
+        # Fetch all APs, and after filtering out ones that are forbidden
+        # by the bug and branch policies, the APs that have no APAs are
+        # unused and can be deleted.
+        ap_source = getUtility(IAccessPolicySource)
+        access_policies = set(ap_source.findByPillar([self]))
+        apa_source = getUtility(IAccessPolicyArtifactSource)
+        unused_aps = [
+            ap for ap in access_policies
+            if ap.type not in allowed_types
+            and apa_source.findByPolicy([ap]).is_empty()]
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(unused_aps)
+        ap_source.delete([(ap.pillar, ap.type) for ap in unused_aps])
 
     @cachedproperty
     def commercial_subscription(self):
@@ -1553,8 +1575,20 @@ class ProductSet:
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info,
             bug_supervisor=bug_supervisor, driver=driver)
 
+        # Set up the sharing policies and product licence.
+        bug_sharing_policy_to_use = BugSharingPolicy.PUBLIC
+        branch_sharing_policy_to_use = BranchSharingPolicy.PUBLIC
         if len(licenses) > 0:
             product._setLicenses(licenses, reset_project_reviewed=False)
+            # By default, new non-proprietary projects use public bugs and
+            # branches. Proprietary projects are given a complimentary 30 day
+            # commercial subscription and so may use proprietary sharing
+            # policies.
+            if License.OTHER_PROPRIETARY in licenses:
+                bug_sharing_policy_to_use = BugSharingPolicy.PROPRIETARY
+                branch_sharing_policy_to_use = BranchSharingPolicy.PROPRIETARY
+        product.setBugSharingPolicy(bug_sharing_policy_to_use)
+        product.setBranchSharingPolicy(branch_sharing_policy_to_use)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
@@ -1563,10 +1597,6 @@ class ProductSet:
              'rather than a stable release branch. This is sometimes also '
              'called MAIN or HEAD.'))
         product.development_focus = trunk
-
-        # Add default AccessPolicies.
-        product._ensurePolicies((InformationType.USERDATA,
-                InformationType.PRIVATESECURITY))
         return product
 
     def forReview(self, search_text=None, active=None,

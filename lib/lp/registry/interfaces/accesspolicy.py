@@ -62,6 +62,7 @@ class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
     type = Attribute("Type")
+    person = Attribute("Person")
 
 
 class IAccessPolicyArtifact(Interface):
@@ -187,6 +188,14 @@ class IAccessPolicySource(Interface):
         :return: a collection of the created `IAccessPolicy` objects.
         """
 
+    def createForTeams(teams):
+        """Create an `IAccessPolicy` for the given teams.
+
+        :param teams: a collection of teams to create `IAccessPolicy`
+            objects for.
+        :return: a collection of the created `IAccessPolicy` objects.
+        """
+
     def find(pillars_and_types):
         """Return the `IAccessPolicy`s for the given pillars and types.
 
@@ -200,6 +209,16 @@ class IAccessPolicySource(Interface):
 
     def findByPillar(pillars):
         """Return a `ResultSet` of all `IAccessPolicy`s for the pillars."""
+
+    def findByTeam(teams):
+        """Return a `ResultSet` of all `IAccessPolicy`s for the teams."""
+
+    def delete(pillars_and_types):
+        """Delete the given pillars and types.
+
+        :param pillars_and_types: a collection of
+            (`IProduct` or `IDistribution`, `InformationType`) pairs delete.
+        """
 
 
 class IAccessPolicyGrantSource(Interface):

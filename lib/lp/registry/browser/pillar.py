@@ -31,7 +31,6 @@ from zope.schema.vocabulary import (
     getVocabularyRegistry,
     SimpleVocabulary,
     )
-from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.launchpad import iter_view_registrations
@@ -47,10 +46,7 @@ from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
-from lp.registry.enums import (
-    EXCLUSIVE_TEAM_POLICY,
-    InformationType,
-    )
+from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -60,9 +56,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
@@ -278,11 +272,6 @@ class PillarSharingView(LaunchpadView):
 
     sharing_vocabulary_name = 'NewPillarGrantee'
 
-    related_features = (
-        'disclosure.enhanced_sharing.enabled',
-        'disclosure.enhanced_sharing.writable',
-        )
-
     _batch_navigator = None
 
     def _getSharingService(self):
@@ -290,7 +279,8 @@ class PillarSharingView(LaunchpadView):
 
     @property
     def information_types(self):
-        return self._getSharingService().getInformationTypes(self.context)
+        return self._getSharingService().getAllowedInformationTypes(
+            self.context)
 
     @property
     def bug_sharing_policies(self):
@@ -348,16 +338,7 @@ class PillarSharingView(LaunchpadView):
 
     def initialize(self):
         super(PillarSharingView, self).initialize()
-        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
-        enabled_writable_flag = (
-            'disclosure.enhanced_sharing.writable')
-        enabled = bool(getFeatureFlag(enabled_readonly_flag))
-        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
-        if not enabled and not write_flag_enabled:
-            raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
-        cache.objects['sharing_write_enabled'] = (write_flag_enabled
-            and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
         cache.objects['bug_sharing_policies'] = self.bug_sharing_policies
@@ -402,11 +383,6 @@ class PillarPersonSharingView(LaunchpadView):
     label = "Information shared with person or team"
 
     def initialize(self):
-        enabled_flag = 'disclosure.enhanced_sharing_details.enabled'
-        enabled = bool(getFeatureFlag(enabled_flag))
-        if not enabled:
-            raise Unauthorized("This feature is not yet available.")
-
         self.pillar = self.context.pillar
         self.person = self.context.person
 
@@ -431,11 +407,6 @@ class PillarPersonSharingView(LaunchpadView):
         cache.objects['pillar'] = pillar_data
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
-        enabled_writable_flag = (
-            'disclosure.enhanced_sharing.writable')
-        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
-        cache.objects['sharing_write_enabled'] = (write_flag_enabled
-            and check_permission('launchpad.Edit', self.pillar))
 
     def _loadSharedArtifacts(self):
         # As a concrete can by linked via more than one policy, we use sets to
@@ -450,15 +421,12 @@ class PillarPersonSharingView(LaunchpadView):
     def _build_branch_template_data(self, branches, request):
         branch_data = []
         for branch in branches:
-            # At the moment, all branches displayed on the sharing details
-            # page are private.
-            information_type = InformationType.USERDATA.title
             branch_data.append(dict(
                 self_link=absoluteURL(branch, request),
                 web_link=canonical_url(branch, path_only_if_possible=True),
                 branch_name=branch.unique_name,
                 branch_id=branch.id,
-                information_type=information_type))
+                information_type=branch.information_type.title))
         return branch_data
 
     def _build_bug_template_data(self, bugtasks, request):

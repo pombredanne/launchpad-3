@@ -94,7 +94,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.enums import (
-    InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.distribution import (
@@ -141,7 +141,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
@@ -338,7 +337,13 @@ def validate_target(bug, target, retarget_existing=True):
             except NotFoundError as e:
                 raise IllegalTarget(e[0])
 
-    if bug.information_type == InformationType.PROPRIETARY:
+    legal_types = target.pillar.getAllowedBugInformationTypes()
+    if bug.information_type not in legal_types:
+        raise IllegalTarget(
+            "%s doesn't allow %s bugs." % (
+            target.pillar.bugtargetdisplayname, bug.information_type.title))
+
+    if bug.information_type in PROPRIETARY_INFORMATION_TYPES:
         # Perhaps we are replacing the one and only existing bugtask, in
         # which case that's ok.
         if retarget_existing and len(bug.bugtasks) <= 1:
@@ -349,7 +354,7 @@ def validate_target(bug, target, retarget_existing=True):
             raise IllegalTarget(
                 "This proprietary bug already affects %s. "
                 "Proprietary bugs cannot affect multiple projects."
-                    % bug.default_bugtask.target.bugtargetdisplayname)
+                    % bug.default_bugtask.target.pillar.bugtargetdisplayname)
 
 
 def validate_new_target(bug, target):
@@ -761,13 +766,6 @@ class BugTask(SQLBase):
             # setter methods directly.
             setattr(self, synched_attr, PassthroughValue(slave_attr_value))
 
-    @property
-    def target_uses_malone(self):
-        """See `IBugTask`"""
-        # XXX sinzui 2007-10-04 bug=149009:
-        # This property is not needed. Code should inline this implementation.
-        return (self.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
-
     def transitionToMilestone(self, new_milestone, user):
         """See `IBugTask`."""
         if not self.userHasBugSupervisorPrivileges(user):
@@ -1140,13 +1138,11 @@ class BugTask(SQLBase):
             self.maybeConfirm()
         # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the parent bug. We need to run a job to remove any
-            # such subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                user, [self.bug], pillar=target_before_change.pillar)
+        # As a result of the transition, some subscribers may no longer
+        # have access to the parent bug. We need to run a job to remove any
+        # such subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+            user, [self.bug], pillar=target_before_change.pillar)
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""

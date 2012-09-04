@@ -233,14 +233,12 @@ h1 .yui3-ieditor-errors {
 .step-links {
     padding-top: 0;
     padding-bottom: 0;
+    margin-left: 0.75em;
     margin-right: 10em;
-    text-align: right;
-    }
-.step-links button.next {
-    padding-top: 10px;
+    text-align: left;
     }
 .step-links .prev {
-    margin-right: 2em;
+    margin-right: 0.7em;
     }
 .lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;

@@ -19,7 +19,14 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    BugSharingPolicy,
+    )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -77,8 +84,11 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         # We expect that both Also Affects links (for project and distro) are
         # disallowed.
         owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
         bug = self.factory.makeBug(
-            information_type=InformationType.PROPRIETARY, owner=owner)
+            target=product, owner=owner,
+            information_type=InformationType.PROPRIETARY)
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
@@ -94,9 +104,14 @@ class TestAlsoAffectsLinks(BrowserTestCase):
         # We expect that only the Also Affects Project link is disallowed.
         distro = self.factory.makeDistribution()
         owner = self.factory.makePerson()
+        # XXX wgrant 2012-08-30 bug=1041002: Distributions don't have
+        # sharing policies yet, so it isn't possible legitimately create
+        # a Proprietary distro bug.
         bug = self.factory.makeBug(
             target=distro,
-            information_type=InformationType.PROPRIETARY, owner=owner)
+            information_type=InformationType.PRIVATESECURITY, owner=owner)
+        removeSecurityProxy(bug).information_type = (
+            InformationType.PROPRIETARY)
         url = canonical_url(bug, rootsite="bugs")
         browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
@@ -347,14 +362,14 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         view = self.createInitializedSecrecyView(person, bug)
         self.assertContentEqual([], view.request.response.notifications)
 
-    def test_secrecy_view_ajax_render(self):
+    def _assert_secrecy_view_ajax_render(self, bug, new_type,
+                                         validate_change):
         # When the bug secrecy view is called from an ajax request, it should
         # provide a json encoded dict when rendered. The dict contains bug
         # subscription information resulting from the update to the bug
         # privacy as well as information used to populate the updated
         # subscribers list.
-        person = self.factory.makePerson()
-        bug = self.factory.makeBug(owner=person)
+        person = bug.owner
         with person_logged_in(person):
             bug.subscribe(person, person)
 
@@ -362,7 +377,9 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         request = LaunchpadTestRequest(
             method='POST', form={
                 'field.actions.change': 'Change',
-                'field.information_type': 'USERDATA'},
+                'field.information_type': new_type,
+                'field.validate_change':
+                    'on' if validate_change else 'off'},
             **extra)
         view = self.createInitializedSecrecyView(person, bug, request)
         result_data = simplejson.loads(view.render())
@@ -378,12 +395,52 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             subscription_data['person_link'])
         self.assertEqual(
             'Discussion', subscription_data['bug_notification_level'])
+        return result_data
 
+    def test_secrecy_view_ajax_render(self):
+        # An information type change request is processed as expected when the
+        # bug remains visible to someone and visibility check is performed.
+        bug = self.factory.makeBug()
+        result_data = self._assert_secrecy_view_ajax_render(
+            bug, 'USERDATA', True)
         [subscriber_data] = result_data['subscription_data']
         subscriber = removeSecurityProxy(bug).default_bugtask.pillar.owner
         self.assertEqual(
             subscriber.name, subscriber_data['subscriber']['name'])
         self.assertEqual('Discussion', subscriber_data['subscription_level'])
+
+    def test_secrecy_view_ajax_render_no_check(self):
+        # An information type change request is processed as expected when the
+        # bug will become invisible but and no visibility check is performed.
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        bug = self.factory.makeBug(target=product)
+        self._assert_secrecy_view_ajax_render(bug, 'PROPRIETARY', False)
+
+    def test_secrecy_view_ajax_render_invisible_bug(self):
+        # When a bug is to be changed to an information type where it will
+        # become invisible, and validation checking is used, a 400 response
+        # is returned.
+        bug_owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        bug = self.factory.makeBug(target=product, owner=bug_owner)
+        userdata_policy = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(userdata_policy)
+
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', form={
+                'field.actions.change': 'Change',
+                'field.information_type': 'USERDATA',
+                'field.validate_change': 'on'},
+            **extra)
+        with person_logged_in(bug_owner):
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy', request=request)
+        self.assertEqual(
+            '400 Bug Visibility', view.request.response.getStatusString())
 
     def test_set_information_type(self):
         # Test that the bug's information_type can be updated using the

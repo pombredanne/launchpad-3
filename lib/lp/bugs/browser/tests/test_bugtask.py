@@ -58,7 +58,10 @@ from lp.layers import (
     FeedsLayer,
     setFirstLayer,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    BugSharingPolicy,
+    InformationType,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -140,12 +143,12 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        # If this test is run in isolation, the query count is 89.
+        # If this test is run in isolation, the query count is 94.
         # Other tests in this TestCase could cache the
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(94)))
+        self.assertThat(recorder, HasQueryCount(LessThan(95)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -1105,8 +1108,11 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         # A bug affecting a project cannot also affect another project or
         # package.
         owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
         bug = self.factory.makeBug(
-            information_type=InformationType.PROPRIETARY, owner=owner)
+            target=product, owner=owner,
+            information_type=InformationType.PROPRIETARY)
         with person_logged_in(owner):
             view = self._createView(bug)
             self.assertFalse(view.canAddProjectTask())
@@ -1122,27 +1128,12 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
             target=distro, owner=owner,
-            information_type=InformationType.PROPRIETARY)
-        with person_logged_in(owner):
-            view = self._createView(bug)
-            self.assertFalse(view.canAddProjectTask())
-            self.assertTrue(view.canAddPackageTask())
-            bug.transitionToInformationType(InformationType.USERDATA, owner)
-            self.assertTrue(view.canAddProjectTask())
-            self.assertTrue(view.canAddPackageTask())
-
-    def test_sourcepkg_bug_cannot_affect_project(self):
-        # A bug affecting a source pkg cannot also affect another project but
-        # it could affect another package.
-        distro = self.factory.makeDistribution()
-        distroseries = self.factory.makeDistroSeries(distribution=distro)
-        sp_name = self.factory.getOrMakeSourcePackageName()
-        sp = self.factory.makeSourcePackage(
-            sourcepackagename=sp_name, distroseries=distroseries)
-        owner = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            target=sp.distribution_sourcepackage, owner=owner,
-            information_type=InformationType.PROPRIETARY)
+            information_type=InformationType.PRIVATESECURITY)
+        # XXX wgrant 2012-08-30 bug=1041002: Distributions don't have
+        # sharing policies yet, so it isn't possible legitimately create
+        # a Proprietary distro bug.
+        removeSecurityProxy(bug).information_type = (
+            InformationType.PROPRIETARY)
         with person_logged_in(owner):
             view = self._createView(bug)
             self.assertFalse(view.canAddProjectTask())

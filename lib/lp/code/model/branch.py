@@ -80,7 +80,6 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
-    BranchCannotChangeInformationType,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
@@ -134,12 +133,15 @@ from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
 from lp.registry.enums import (
     InformationType,
+    PersonVisibility,
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.person import (
     validate_person,
@@ -171,7 +173,6 @@ from lp.services.database.stormexpr import (
     ArrayAgg,
     ArrayIntersects,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -203,18 +204,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         enum=InformationType, default=InformationType.PUBLIC)
     access_policy = IntCol()
 
-    # These can die after the UI is dropped.
-    @property
-    def explicitly_private(self):
-        return self.private
-
-    @property
-    def transitively_private(self):
-        return self.private
-
     @property
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
+
+    explicitly_private = private
 
     def _reconcileAccess(self):
         """Reconcile the branch's sharing information.
@@ -222,13 +216,24 @@ class Branch(SQLBase, BzrIdentityMixin):
         Takes the information_type and target and makes the related
         AccessArtifact and AccessPolicyArtifacts match.
         """
-        # We haven't yet quite worked out how distribution privacy
-        # works, so only work for products for now.
-        if self.product is not None:
-            pillars = [self.product]
+        wanted_links = None
+        pillars = []
+        # For private +junk branches, we calculate the wanted grants.
+        if (not self.product and
+            not self.sourcepackagename and
+            not self.information_type in PUBLIC_INFORMATION_TYPES):
+            aasource = getUtility(IAccessArtifactSource)
+            [abstract_artifact] = aasource.ensure([self])
+            wanted_links = set(
+                (abstract_artifact, policy) for policy in
+                getUtility(IAccessPolicySource).findByTeam([self.owner]))
         else:
-            pillars = []
-        reconcile_access_for_artifact(self, self.information_type, pillars)
+            # We haven't yet quite worked out how distribution privacy
+            # works, so only work for products for now.
+            if self.product is not None:
+                pillars = [self.product]
+        reconcile_access_for_artifact(
+            self, self.information_type, pillars, wanted_links)
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
@@ -257,10 +262,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         if (self.stacked_on
             and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
             and information_type in PUBLIC_INFORMATION_TYPES):
-            raise BranchCannotChangeInformationType()
+            raise CannotChangeInformationType("Must match stacked-on branch.")
         if (verify_policy
             and information_type not in self.getAllowedInformationTypes(who)):
-            raise BranchCannotChangeInformationType()
+            raise CannotChangeInformationType("Forbidden by project policy.")
         self.information_type = information_type
         self._reconcileAccess()
         if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:
@@ -272,13 +277,10 @@ class Branch(SQLBase, BzrIdentityMixin):
                 service.ensureAccessGrants(
                     blind_subscribers, who, branches=[self],
                     ignore_permissions=True)
-        flag = 'disclosure.unsubscribe_jobs.enabled'
-        if bool(getFeatureFlag(flag)):
-            # As a result of the transition, some subscribers may no longer
-            # have access to the branch. We need to run a job to remove any
-            # such subscriptions.
-            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-                who, [self])
+        # As a result of the transition, some subscribers may no longer
+        # have access to the branch. We need to run a job to remove any
+        # such subscriptions.
+        getUtility(IRemoveArtifactSubscriptionsJobSource).create(who, [self])
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -360,7 +362,11 @@ class Branch(SQLBase, BzrIdentityMixin):
                     source_package)
         else:
             target = IBranchTarget(self.owner)
-            # Person targets are always valid.
+            if (self.information_type in PRIVATE_INFORMATION_TYPES and
+                (not self.owner.is_team or
+                 self.owner.visibility != PersonVisibility.PRIVATE)):
+                raise BranchTargetError(
+                    'Only private teams may have personal private branches.')
         namespace = target.getNamespace(self.owner)
         namespace.moveBranch(self, user, rename_if_necessary=True)
         self._reconcileAccess()
