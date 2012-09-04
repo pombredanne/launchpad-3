@@ -462,25 +462,26 @@ class SharingService:
         # First delete any access policy grants.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         policy_grants = [(policy, grantee) for policy in pillar_policies]
-        grants = [
+        grants_to_revoke = [
             (grant.policy, grant.grantee)
             for grant in policy_grant_source.find(policy_grants)]
-        if len(grants) > 0:
-            policy_grant_source.revoke(grants)
+        if len(grants_to_revoke) > 0:
+            policy_grant_source.revoke(grants_to_revoke)
 
         # Second delete any access artifact grants.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        to_delete = list(ap_grant_flat.findArtifactsByGrantee(
+        artifacts_to_revoke = list(ap_grant_flat.findArtifactsByGrantee(
             grantee, pillar_policies))
-        if len(to_delete) > 0:
+        if len(artifacts_to_revoke) > 0:
             getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-                to_delete, [grantee])
+                artifacts_to_revoke, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
-        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-            user, artifacts=None, grantee=grantee, pillar=pillar,
-            information_types=information_types)
+        if grants_to_revoke or artifacts_to_revoke:
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                user, artifacts=None, grantee=grantee, pillar=pillar,
+                information_types=information_types)
 
         grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
         invisible_types = [
