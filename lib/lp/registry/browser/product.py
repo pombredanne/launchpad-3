@@ -155,6 +155,7 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -2166,6 +2167,16 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             errors = [error for error in self.errors if error[0] == 'owner']
             for error in errors:
                 self.errors.remove(error)
+
+        private_projects_flag = 'disclosure.private_projects.enabled'
+        private_projects = bool(getFeatureFlag(private_projects_flag))
+        if private_projects:
+            if data.get('information_type') != InformationType.PUBLIC:
+                for required_field in ('bug_supervisor', 'driver'):
+                    if data.get(required_field) is None:
+                        self.setFieldError(
+                            required_field,
+                            'Select a user or team.')
 
     @property
     def label(self):
