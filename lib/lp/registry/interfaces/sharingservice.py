@@ -255,5 +255,4 @@ class ISharingService(IService):
         :param pillar: the pillar to update
         :param branch_sharing_policy: the new branch sharing policy
         :param bug_sharing_policy: the new bug sharing policy
-        :return: data for the in-use information types after the update
         """

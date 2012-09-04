@@ -556,13 +556,3 @@ class SharingService:
             pillar.setBranchSharingPolicy(branch_sharing_policy)
         if bug_sharing_policy:
             pillar.setBugSharingPolicy(bug_sharing_policy)
-
-        grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
-        invisible_types = [
-            count_info[0].title for count_info in grant_counts
-            if count_info[1] == 0]
-
-        result = {
-            'information_types': self.getAllowedInformationTypes(pillar),
-            'invisible_information_types': invisible_types}
-        return result
