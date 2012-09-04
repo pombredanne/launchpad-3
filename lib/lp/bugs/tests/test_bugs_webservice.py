@@ -373,7 +373,7 @@ class TestErrorHandling(TestCaseWithFactory):
         self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product2))
 
-    def test_add_attachment_with_bad_filename_gives_bad_request(self):
+    def test_add_attachment_with_bad_filename_raises_exception(self):
         # Test that addAttachment raises BadRequest when the filename given
         # contains slashes.
         owner = self.factory.makePerson()

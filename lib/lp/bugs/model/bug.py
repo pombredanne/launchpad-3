@@ -31,7 +31,6 @@ from lazr.lifecycle.event import (
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restfulclient.errors import BadRequest
 import pytz
 from sqlobject import (
     BoolCol,
@@ -42,7 +41,6 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.exceptions import IntegrityError
 from storm.expr import (
     And,
     Desc,
@@ -1252,13 +1250,10 @@ class Bug(SQLBase):
                 content_type, encoding = guess_content_type(
                     name=filename, body=filecontent)
 
-        try:
-            filealias = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(filecontent),
-                file=StringIO(filecontent), contentType=content_type,
-                restricted=self.private)
-        except IntegrityError:
-            raise BadRequest('400', "Invalid filename.")
+        filealias = getUtility(ILibraryFileAliasSet).create(
+            name=filename, size=len(filecontent),
+            file=StringIO(filecontent), contentType=content_type,
+            restricted=self.private)
 
         return self.linkAttachment(
             owner, filealias, comment, is_patch, description)
