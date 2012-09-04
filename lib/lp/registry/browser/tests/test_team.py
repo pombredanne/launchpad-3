@@ -442,6 +442,29 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             'existing is already in use by another person or team.',
             view.errors[0].doc())
 
+    def test_expiration_and_renewal(self):
+        # The team's membership expiration and renewal rules can be set.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(name="team", owner=owner)
+        form = {
+            'field.name': team.name,
+            'field.displayname': team.displayname,
+            'field.defaultmembershipperiod': '180',
+            'field.defaultrenewalperiod': '365',
+            'field.membership_policy': 'RESTRICTED',
+            'field.renewal_policy': 'ONDEMAND',
+            'field.actions.save': 'Save',
+            }
+        login_person(owner)
+        view = create_initialized_view(team, '+edit', form=form)
+        self.assertEqual(0, len(view.errors))
+        self.assertEqual(
+            TeamMembershipPolicy.RESTRICTED, team.membership_policy)
+        self.assertEqual(180, team.defaultmembershipperiod)
+        self.assertEqual(365, team.defaultrenewalperiod)
+        self.assertEqual(
+            TeamMembershipRenewalPolicy.ONDEMAND, team.renewal_policy)
+
 
 class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
                                   TestCaseWithFactory):

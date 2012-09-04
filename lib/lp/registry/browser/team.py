@@ -92,7 +92,6 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.app.widgets.popup import PersonPickerWidget
-from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
@@ -299,7 +298,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
 
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget('defaultrenewalperiod', StrippedTextWidget,
+    custom_widget('defaultrenewalperiod', IntWidget,
         widget_class='field subordinate')
     custom_widget(
         'membership_policy', LaunchpadRadioWidgetWithDescription,
