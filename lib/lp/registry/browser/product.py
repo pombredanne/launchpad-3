@@ -141,6 +141,7 @@ from lp.registry.browser import (
     add_subscribe_link,
     BaseRdfView,
     )
+from lp.services.features import getFeatureFlag
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
