@@ -13,9 +13,11 @@ from testtools.matchers import (
     Equals,
     Not,
     )
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 import soupmatchers
 
@@ -219,7 +221,7 @@ class TestSpecificationInformationType(BrowserTestCase):
                 spec, '+secrecy', form, principal=owner,
                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             body = view.render()
-        return view, body
+        return view.request.response.getStatus(), body
 
     def test_secrecy_change(self):
         """Setting the value via '+secrecy' works."""
@@ -235,12 +237,20 @@ class TestSpecificationInformationType(BrowserTestCase):
         owner = self.factory.makePerson()
         spec = self.factory.makeSpecification(owner=owner)
         transaction.commit()
-        view, body = self.set_secrecy(spec, owner,
-                         information_type=self.factory.getUniqueString())
-        self.assertEqual(400, view.request.response.getStatus())
+        status, body = self.set_secrecy(
+            spec, owner, information_type=self.factory.getUniqueString())
+        self.assertEqual(400, status)
         error_data = json.loads(body)
         self.assertEqual({u'field.information_type': u'Invalid value'},
                          error_data['errors'])
+        self.assertEqual(InformationType.PUBLIC, spec.information_type)
+
+    def test_secrecy_change_unprivileged(self):
+        """Unprivileged users cannot change information_type."""
+        spec = self.factory.makeSpecification()
+        person = self.factory.makePerson()
+        with ExpectedException(Unauthorized):
+            self.set_secrecy(spec, person)
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
 
 
