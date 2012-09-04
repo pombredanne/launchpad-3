@@ -23,6 +23,7 @@ from storm.cache import (
     Cache,
     GenerationalCache,
     )
+from storm.database import STATE_DISCONNECTED
 from storm.exceptions import DatabaseError as StormDatabaseError
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
