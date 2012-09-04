@@ -1098,6 +1098,49 @@ class TestSharingService(TestCaseWithFactory):
         login_person(anyone)
         self._assert_ensureAccessGrantsUnauthorized(anyone)
 
+    def test_updatePillarBugSharingPolicy(self):
+        # updatePillarSharingPolicies works for bugs.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        login_person(owner)
+        self.service.updatePillarSharingPolicies(
+            product,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+
+    def test_updatePillarBranchSharingPolicy(self):
+        # updatePillarSharingPolicies works for branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        login_person(owner)
+        self.service.updatePillarSharingPolicies(
+            product,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+
+    def _assert_updatePillarSharingPoliciesUnauthorized(self, user):
+        # updatePillarSharingPolicies raises an Unauthorized exception if the
+        # user is not permitted to do so.
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            Unauthorized, self.service.updatePillarSharingPolicies,
+            product, BranchSharingPolicy.PUBLIC, BugSharingPolicy.PUBLIC)
+
+    def test_updatePillarSharingPoliciesAnonymous(self):
+        # Anonymous users are not allowed.
+        login(ANONYMOUS)
+        self._assert_updatePillarSharingPoliciesUnauthorized(ANONYMOUS)
+
+    def test_updatePillarSharingPoliciesAnyone(self):
+        # Unauthorized users are not allowed.
+        anyone = self.factory.makePerson()
+        login_person(anyone)
+        self._assert_updatePillarSharingPoliciesUnauthorized(anyone)
+
     def test_getSharedArtifacts(self):
         # Test the getSharedArtifacts method.
         owner = self.factory.makePerson()
