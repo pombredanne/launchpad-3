@@ -18,6 +18,7 @@ __all__ = [
     'PersonTransferJobType',
     'PersonVisibility',
     'PRIVATE_INFORMATION_TYPES',
+    'PROPRIETARY_INFORMATION_TYPES',
     'PUBLIC_INFORMATION_TYPES',
     'ProductJobType',
     'SECURITY_INFORMATION_TYPES',
@@ -96,6 +97,9 @@ FREE_PRIVATE_INFORMATION_TYPES = (
 
 FREE_INFORMATION_TYPES = (
     PUBLIC_INFORMATION_TYPES + FREE_PRIVATE_INFORMATION_TYPES)
+
+PROPRIETARY_INFORMATION_TYPES = (
+    InformationType.PROPRIETARY, InformationType.EMBARGOED)
 
 
 class SharingPermission(DBEnumeratedType):

@@ -58,7 +58,8 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
 
 
-def reconcile_access_for_artifact(artifact, information_type, pillars):
+def reconcile_access_for_artifact(artifact, information_type, pillars,
+                                  wanted_links=None):
     if information_type in PUBLIC_INFORMATION_TYPES:
         # If it's public we can delete all the access information.
         # IAccessArtifactSource handles the cascade.
@@ -75,9 +76,10 @@ def reconcile_access_for_artifact(artifact, information_type, pillars):
             "%s." % (pillar_str, information_type.title))
 
     # Now determine the existing and desired links, and make them
-    # match.
+    # match. The caller may have provided the wanted_links.
     apasource = getUtility(IAccessPolicyArtifactSource)
-    wanted_links = set((abstract_artifact, policy) for policy in aps)
+    wanted_links = (wanted_links
+                    or set((abstract_artifact, policy) for policy in aps))
     existing_links = set([
         (apa.abstract_artifact, apa.policy)
         for apa in apasource.findByArtifact([abstract_artifact])])
@@ -172,6 +174,8 @@ class AccessPolicy(StormBase):
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
     type = DBEnum(allow_none=True, enum=InformationType)
+    person_id = Int(name='person')
+    person = Reference(person_id, 'Person.id')
 
     @property
     def pillar(self):
@@ -193,6 +197,17 @@ class AccessPolicy(StormBase):
         return create(
             (cls.product, cls.distribution, cls.type), insert_values,
             get_objects=True)
+
+    @classmethod
+    def createForTeams(cls, teams):
+        insert_values = []
+        for team in teams:
+            if team is None or not team.is_team:
+                raise ValueError("A team must be specified")
+            insert_values.append((None, None, None, team))
+        return create(
+            (cls.product, cls.distribution, cls.type, cls.person),
+            insert_values, get_objects=True)
 
     @classmethod
     def _constraintForPillar(cls, pillar):
@@ -231,11 +246,23 @@ class AccessPolicy(StormBase):
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
     @classmethod
+    def findByTeam(cls, teams):
+        """See `IAccessPolicySource`."""
+        return IStore(cls).find(
+            cls,
+            Or(*(cls.person == team for team in teams)))
+
+    @classmethod
     def findByPillarAndGrantee(cls, pillars):
         """See `IAccessPolicySource`."""
         return IStore(cls).find(
             cls,
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
+
+    @classmethod
+    def delete(cls, pillars_and_types):
+        """See `IAccessPolicySource`."""
+        cls.find(pillars_and_types).remove()
 
 
 class AccessPolicyArtifact(StormBase):

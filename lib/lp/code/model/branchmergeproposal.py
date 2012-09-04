@@ -420,6 +420,10 @@ class BranchMergeProposal(SQLBase):
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        self._mark_unreviewed()
+
+    def _mark_unreviewed(self):
+        """Clear metadata about a previous review."""
         self.reviewer = None
         self.date_reviewed = None
         self.reviewed_revision_id = None
@@ -443,8 +447,7 @@ class BranchMergeProposal(SQLBase):
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
             # Clear out any reviewed or queued values.
-            self.reviewer = None
-            self.reviewed_revision_id = None
+            self._mark_unreviewed()
             self.queuer = None
             self.queued_revision_id = None
 
@@ -545,12 +548,18 @@ class BranchMergeProposal(SQLBase):
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
+        old_state = self.queue_status
         self._transitionToState(
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
         # Remove from the queue.
         self.queue_position = None
+
+        # The reviewer of a merged proposal is assumed to have approved, if
+        # they rejected it remove the review metadata to avoid confusion.
+        if old_state == BranchMergeProposalStatus.REJECTED:
+            self._mark_unreviewed()
 
         if merged_revno is not None:
             branch_revision = Store.of(self).find(

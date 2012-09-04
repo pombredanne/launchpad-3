@@ -35,6 +35,7 @@ from lp.registry.enums import (
     TeamMembershipPolicy,
     )
 from lp.registry.errors import PrivatePersonLinkageError
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
@@ -604,6 +605,22 @@ class TestPerson(TestCaseWithFactory):
         self.assertRaises(
             ImmutableVisibilityError, person.transitionVisibility,
             PersonVisibility.PRIVATE, person)
+
+    def test_private_team_has_personal_access_policy(self):
+        # Private teams have a personal access policy.
+        team = self.factory.makeTeam()
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        team.transitionVisibility(PersonVisibility.PRIVATE, admin)
+        self.assertContentEqual(
+            [team],
+            [ap.person
+                for ap in getUtility(IAccessPolicySource).findByTeam([team])])
+
+    def test_public_team_has_no_personal_access_policy(self):
+        # Public teams do not have a personal access policy.
+        team = self.factory.makeTeam()
+        self.assertContentEqual(
+            [], getUtility(IAccessPolicySource).findByTeam([team]))
 
 
 class TestPersonStates(TestCaseWithFactory):

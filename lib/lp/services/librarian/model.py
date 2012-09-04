@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'LibraryFileAlias',
@@ -30,6 +28,7 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
+from storm.exceptions import IntegrityError
 from storm.locals import (
     Date,
     Desc,
@@ -46,6 +45,7 @@ from zope.interface import (
     Interface,
     )
 
+from lp.registry.errors import InvalidFilename
 from lp.services.config import config
 from lp.services.database.constants import (
     DEFAULT,
@@ -269,15 +269,18 @@ class LibraryFileAliasSet(object):
 
     implements(ILibraryFileAliasSet)
 
-    def create(
-        self, name, size, file, contentType, expires=None, debugID=None,
-        restricted=False):
+    def create(self, name, size, file, contentType, expires=None,
+               debugID=None, restricted=False):
         """See `ILibraryFileAliasSet`"""
         if restricted:
             client = getUtility(IRestrictedLibrarianClient)
         else:
             client = getUtility(ILibrarianClient)
-        fid = client.addFile(name, size, file, contentType, expires, debugID)
+        try:
+            fid = client.addFile(
+                name, size, file, contentType, expires, debugID)
+        except IntegrityError:
+            raise InvalidFilename("Filename cannot contain slashes.")
         lfa = IMasterStore(LibraryFileAlias).find(
             LibraryFileAlias, LibraryFileAlias.id == fid).one()
         assert lfa is not None, "client.addFile didn't!"
