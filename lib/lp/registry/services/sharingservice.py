@@ -112,6 +112,7 @@ class SharingService:
             AccessPolicy.id.is_in(ids)
         )
 
+    @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
@@ -140,6 +141,7 @@ class SharingService:
 
         return bugtasks, branches
 
+    @available_with_permission('launchpad.Driver', 'pillar')
     def getVisibleArtifacts(self, person, branches=None, bugs=None):
         """See `ISharingService`."""
         bugs_by_id = {}

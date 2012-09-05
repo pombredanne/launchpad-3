@@ -1479,6 +1479,19 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         super(TestLaunchpadlib, self).setUp()
         self.launchpad = self.factory.makeLaunchpadService(person=self.owner)
         self.service = self.launchpad.load('+services/sharing')
+        self.bug = self.factory.makeBug(
+            owner=self.owner,
+            target=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
+        self.branch = self.factory.makeBranch(
+            owner=self.owner,
+            product=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
+        login_person(self.owner)
+        self.bug.subscribe(self.grantee, self.owner)
+        self.branch.subscribe(
+            self.grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+            None, CodeReviewNotificationLevel.NOEMAIL, self.owner)
         transaction.commit()
         self._sharePillarInformation()
 
@@ -1494,3 +1507,29 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
             permissions={
                 InformationType.USERDATA.title: SharingPermission.ALL.title}
         )
+
+    def test_getSharedArtifacts(self):
+        # Test the exported getSharedArtifacts() method.
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        (bugtasks, branches) = self.service.getSharedArtifacts(
+            pillar=ws_pillar, person=ws_grantee)
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(1, len(branches))
+        self.assertEqual(bugtasks[0]['title'], self.bug.default_bugtask.title)
+        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)
+
+    def test_getVisibleArtifacts(self):
+        # Test the exported getVisibleArtifacts() method.
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        # Sadly lazr.restful doesn't know how to marshall lists of entities
+        # so we have to use links directly.
+        ws_bug_link = ws_object(self.launchpad, self.bug).self_link
+        ws_branch_link = ws_object(self.launchpad, self.branch).self_link
+        (bugs, branches) = self.service.getVisibleArtifacts(
+            person=ws_grantee,
+            branches=[ws_branch_link], bugs=[ws_bug_link])
+        self.assertEqual(1, len(bugs))
+        self.assertEqual(1, len(branches))
+        self.assertEqual(bugs[0]['title'], self.bug.title)
+        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)
