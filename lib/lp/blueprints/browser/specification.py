@@ -47,7 +47,10 @@ from subprocess import (
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import use_template
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IWebServiceClientRequest,
@@ -78,6 +81,7 @@ from zope.schema.vocabulary import (
     )
 
 from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
@@ -97,6 +101,7 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     format_link,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -111,8 +116,10 @@ from lp.blueprints.interfaces.specification import (
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
+from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.config import config
 from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
@@ -423,7 +430,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
              'linkbug', 'unlinkbug', 'linkbranch',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
-             'retarget']
+             'retarget', 'information_type']
 
     @enabled_with_permission('launchpad.Edit')
     def milestone(self):
@@ -528,8 +535,13 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
+    def information_type(self):
+        """Return the 'Set privacy/security' Link."""
+        text = 'Change privacy/security'
+        return Link('#', text)
 
-class SpecificationSimpleView(LaunchpadView):
+
+class SpecificationSimpleView(InformationTypePortletMixin, LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     @cachedproperty
@@ -544,6 +556,17 @@ class SpecificationSimpleView(LaunchpadView):
     @cachedproperty
     def bug_links(self):
         return self.context.getLinkedBugTasks(self.user)
+
+    @cachedproperty
+    def privacy_portlet_css(self):
+        if self.private:
+            return 'portlet private'
+        else:
+            return 'portlet public'
+
+    @cachedproperty
+    def private(self):
+        return self.context.information_type in PRIVATE_INFORMATION_TYPES
 
 
 class SpecificationView(SpecificationSimpleView):
@@ -562,6 +585,7 @@ class SpecificationView(SpecificationSimpleView):
         return self.context.summary
 
     def initialize(self):
+        super(SpecificationView, self).initialize()
         # The review that the user requested on this spec, if any.
         self.notices = []
 
@@ -747,6 +771,52 @@ class SpecificationEditPriorityView(SpecificationEditView):
 class SpecificationEditStatusView(SpecificationEditView):
     label = 'Change status'
     field_names = ['definition_status', 'implementation_status', 'whiteboard']
+
+
+class SpecificationInformationTypeEditView(LaunchpadFormView):
+    """Form for marking a bug as a private/public."""
+
+    @property
+    def label(self):
+        return 'Set information type'
+
+    page_title = label
+
+    field_names = ['information_type']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def schema(self):
+        """Schema for editing the information type of a `IBug`."""
+        info_types = self.context.getAllowedInformationTypes(self.user)
+
+        class information_type_schema(Interface):
+            information_type_field = copy_field(
+                ISpecification['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+        return information_type_schema
+
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        return None
+
+    cancel_url = next_url
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'information_type': self.context.information_type}
+
+    @action('Change', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
+    def change_action(self, action, data):
+        """Update the bug."""
+        data = dict(data)
+        information_type = data.pop('information_type')
+        self.context.transitionToInformationType(information_type, self.user)
+        return ''
 
 
 class SpecificationEditMilestoneView(SpecificationEditView):

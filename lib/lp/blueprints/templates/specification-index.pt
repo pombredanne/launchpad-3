@@ -310,7 +310,15 @@
     </div>
 
   <script type="text/javascript">
-    LPJS.use('lp.anim', 'lp.deprecated.ui', 'node', 'widget', function(Y) {
+    LPJS.use('lp.anim', 'lp.client', 'lp.deprecated.ui',
+             'lp.app.information_type', 'node', 'widget', function(Y) {
+        Y.on('domready', function(){
+            var privacy_link = Y.one('#privacy-link');
+            Y.lp.app.information_type.setup_information_type_choice(
+              privacy_link, new Y.lp.client.Launchpad(), LP.cache.context,
+              null);
+            privacy_link.setStyle('display', 'inline');
+        });
 
         Y.on('lp:context:implementation_status:changed', function(e) {
             var icon = Y.one('#informational-icon');
@@ -345,7 +353,8 @@
         });
         Y.on('lp:context:title:changed', function(e) {
             // change the window title and breadcrumb.
-            Y.lp.deprecated.ui.update_field('ol.breadcrumbs li:last-child', e.new_value);
+            Y.lp.deprecated.ui.update_field('ol.breadcrumbs li:last-child',
+                                            e.new_value);
             var title = window.document.title;
             title = e.new_value + title.substring(e.old_value.length);
             window.document.title = title;
@@ -377,7 +386,7 @@
 
   <tal:side metal:fill-slot="side">
     <tal:menu replace="structure context/@@+global-actions" />
-
+    <tal:privacy replace="structure context/@@+portlet-privacy" condition="features/blueprints.information_type.enabled" />
     <div tal:replace="structure context/@@+portlet-subscribers" />
   </tal:side>
 </body>
