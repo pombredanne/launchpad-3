@@ -42,20 +42,32 @@
            tal:condition="view/branch_sharing_policies">
            <td id="branch-sharing-policy">
              Branches sharing policy:&nbsp;
-             <strong><span class="value"></span></strong>
+             <strong><span class="value"
+                 tal:content="context/branch_sharing_policy/title|string:Legacy policy"
+                 ></span></strong>
              <a class="editicon sprite edit action-icon" href="#"
                  style="padding-bottom: 0;">Edit</a>
-             <div id="branch-sharing-policy-description" class="formHelp"></div>
+             <div id="branch-sharing-policy-description" class="formHelp"
+                 tal:content="context/branch_sharing_policy/description|
+                 string:Legacy project sharing policy will continue to be used until
+                 a new policy is configured."
+                 ></div>
            </td>
         </tr>
         <tr id="bug-sharing-policy-row"
            tal:condition="view/bug_sharing_policies">
            <td id="bug-sharing-policy">
              Bugs sharing policy:&nbsp;
-             <strong><span class="value"></span></strong>
+             <strong><span class="value"
+                 tal:content="context/bug_sharing_policy/title|string:Legacy policy"
+                 ></span></strong>
              <a class="editicon sprite edit action-icon" href="#"
                  style="padding-bottom: 0;">Edit</a>
-             <div id="bug-sharing-policy-description" class="formHelp"></div>
+             <div id="bug-sharing-policy-description" class="formHelp"
+                 tal:content="context/bug_sharing_policy/description|
+                 string:Legacy project sharing policy will continue to be used until
+                 a new policy is configured."
+                 ></div>
            </td>
         </tr>
       </table>

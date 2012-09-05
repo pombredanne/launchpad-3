@@ -402,6 +402,8 @@ class ExtractVersionTestCase(unittest.TestCase):
         self.assertEqual(version, '21-2')
         version = extract_version('php-fpm-0.6~5.3.1.tar.gz')
         self.assertEqual(version, '0.6')
+        version = extract_version('u1f-google-1.2.4.apk')
+        self.assertEqual(version, '1.2.4')
 
     def test_extract_version_name_with_uppercase(self):
         """Verify that the file's version is lowercases."""
