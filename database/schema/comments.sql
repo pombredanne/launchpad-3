@@ -765,6 +765,7 @@ COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs fo
 COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they''ve reported a new bug.';
 COMMENT ON COLUMN Product.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
+COMMENT ON COLUMN Product.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- ProductJob
 COMMENT ON TABLE productjob IS 'Contains references to jobs for updating projects and sendd notifications.';
