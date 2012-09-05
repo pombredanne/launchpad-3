@@ -1,5 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from zope.schema._bootstrapinterfaces import RequiredMissing
 
 __metaclass__ = type
 
@@ -50,6 +51,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     template = ViewPageTemplateFile('templates/launchpad-target.pt')
     default_option = "package"
     _widgets_set_up = False
+    require_package = False
 
     def getDistributionVocabulary(self):
         return 'Distribution'
@@ -147,6 +149,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         "There is no package named '%s' published in %s."
                          % (entered_name, distribution.displayname))
                 if package_name is None:
+                    if self.require_package:
+                        raise RequiredMissing(
+                            "A valid source package name is required.")
                     return distribution
                 try:
                     if IDistributionSourcePackage.providedBy(package_name):
@@ -162,6 +167,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         % (package_name.name, distribution.displayname))
                 return dsp
             else:
+                if self.require_package:
+                    raise RequiredMissing(
+                        "A valid source package name is required.")
                 return distribution
         else:
             raise UnexpectedFormData("No valid option was selected.")

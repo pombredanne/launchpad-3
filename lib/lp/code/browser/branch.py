@@ -44,6 +44,7 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
+from lazr.restful.fields import Reference
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
@@ -85,6 +86,7 @@ from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
@@ -121,6 +123,7 @@ from lp.code.interfaces.branch import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
@@ -128,7 +131,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import (
     InformationTypeVocabulary,
     UserTeamsParticipationPlusSelfVocabulary,
-    )
+    DistributionVocabulary)
 from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -719,6 +722,16 @@ class BranchNameValidationMixin:
         self.setFieldError(field_name, structured(message))
 
 
+class BranchTargetWidget(LaunchpadTargetWidget):
+    """A widget for editing branch target product or source packages."""
+
+    require_package = True
+
+    def setRenderedValue(self, value):
+        """See IWidget."""
+        super(BranchTargetWidget, self).setRenderedValue(value.context)
+
+
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
 
@@ -790,6 +803,11 @@ class BranchEditFormView(LaunchpadEditFormView):
                 vocabulary=InformationTypeVocabulary(types=info_types))
             reviewer = copy_field(IBranch['reviewer'], required=True)
             owner = copy_field(IBranch['owner'], readonly=False)
+            target = Reference(
+                title=_('This branch is for'), required=True,
+                schema=IBranchTarget,
+                description=_('The project or source package this branch '
+                              'pertains to.'))
         return BranchEditSchema
 
     @property
@@ -824,6 +842,14 @@ class BranchEditFormView(LaunchpadEditFormView):
                 self.request.response.addNotification(
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
+        if 'target' in data:
+            target = data.pop('target')
+            if target != self.context.target:
+                self.context.setBranchTarget(self.user, target)
+                changed = True
+                self.request.response.addNotification(
+                    "The branch target has been changed to %s (%s)"
+                    % (target.displayname, target.name))
         if 'private' in data:
             # Read only for display.
             data.pop('private')
@@ -1080,10 +1106,15 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     @property
     def field_names(self):
-        return [
-            'owner', 'name', 'information_type', 'url', 'description',
-            'lifecycle_status']
+        field_names = ['owner', 'name']
+        if self.context.product or self.context.sourcepackagename:
+            field_names.append('target')
+        field_names.extend([
+            'information_type', 'url', 'description',
+            'lifecycle_status'])
+        return field_names
 
+    custom_widget('target', BranchTargetWidget)
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 

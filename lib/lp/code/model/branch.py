@@ -147,9 +147,11 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.accesspolicy import (
     AccessPolicyGrant,
     reconcile_access_for_artifact,
@@ -342,6 +344,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             target = self.product
         return IBranchTarget(target)
+
+    def setBranchTarget(self, user, target):
+        branch_target = IBranchTarget(target)
+        target = branch_target.context
+        product_target = (
+            target if IProduct.providedBy(target) else None)
+        package_target = (
+            target if ISourcePackage.providedBy(target) else None)
+        self.setTarget(
+            user, project=product_target,
+            source_package=package_target)
 
     def setTarget(self, user, project=None, source_package=None):
         """See `IBranch`."""
