@@ -25,7 +25,7 @@
 <body>
   <div metal:fill-slot="main">
     <h2>What's shared</h2>
-    <tal:what-shared condition="python:context.pillar_category == 'Project'">
+    <tal:what-shared condition="exists:context/licenses">
     <p id='commercial-project-text'
        tal:condition="context/has_current_commercial_subscription|nothing">
       You can choose whether new bugs and branches are public or
