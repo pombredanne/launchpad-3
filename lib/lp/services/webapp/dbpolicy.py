@@ -97,6 +97,7 @@ def ensure_connected(store):
         # be put into reconnect state at the end of the transaction.
         if con._state == STATE_DISCONNECTED:
             con._event.emit('register-transaction')
+        raise
 
 
 class BaseDatabasePolicy:
