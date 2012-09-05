@@ -13,6 +13,7 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
@@ -1010,22 +1011,26 @@ class TestSharingService(TestCaseWithFactory):
             ValueError, self.service.revokeAccessGrants,
             product, grantee, product.owner)
 
-    def _assert_ensureAccessGrants(self, user, bugs, branches,
+    def _assert_ensureAccessGrants(self, user, bugs, branches, specifications,
                                    grantee=None):
         # Creating access grants works as expected.
         if not grantee:
             grantee = self.factory.makePerson()
         self.service.ensureAccessGrants(
-            [grantee], user, bugs=bugs, branches=branches)
+            [grantee], user, bugs=bugs, branches=branches,
+            specifications=specifications)
 
         # Check that grantee has expected access grants.
         shared_bugs = []
         shared_branches = []
+        shared_specifications = []
         all_pillars = []
         for bug in bugs or []:
             all_pillars.extend(bug.affected_pillars)
         for branch in branches or []:
             all_pillars.append(branch.target.context)
+        for specification in specifications or []:
+            all_pillars.append(specification.target)
         policies = getUtility(IAccessPolicySource).findByPillar(all_pillars)
 
         apgfs = getUtility(IAccessPolicyGrantFlatSource)
@@ -1035,8 +1040,11 @@ class TestSharingService(TestCaseWithFactory):
                 shared_bugs.append(a.concrete_artifact)
             elif IBranch.providedBy(a.concrete_artifact):
                 shared_branches.append(a.concrete_artifact)
+            elif ISpecification.providedBy(a.concrete_artifact):
+                shared_specifications.append(a.concrete_artifact)
         self.assertContentEqual(bugs or [], shared_bugs)
         self.assertContentEqual(branches or [], shared_branches)
+        self.assertContentEqual(specifications or [], shared_specifications)
 
     def test_ensureAccessGrantsBugs(self):
         # Access grants can be created for bugs.
@@ -1046,7 +1054,7 @@ class TestSharingService(TestCaseWithFactory):
         bug = self.factory.makeBug(
             target=distro, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_ensureAccessGrants(owner, [bug], None)
+        self._assert_ensureAccessGrants(owner, [bug], None, None)
 
     def test_ensureAccessGrantsBranches(self):
         # Access grants can be created for branches.
@@ -1056,7 +1064,18 @@ class TestSharingService(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             product=product, owner=owner,
             information_type=InformationType.USERDATA)
-        self._assert_ensureAccessGrants(owner, None, [branch])
+        self._assert_ensureAccessGrants(owner, None, [branch], None)
+
+    def test_ensureAccessGrantsSpecifications(self):
+        # Access grants can be created for branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        specification = self.factory.makeSpecification(
+            product=product, owner=owner)
+        with admin_logged_in():
+            specification.transitionToInformationType(InformationType.USERDATA)
+        self._assert_ensureAccessGrants(owner, None, None, [specification])
 
     def test_ensureAccessGrantsExisting(self):
         # Any existing access grants are retained and new ones created.
@@ -1074,7 +1093,8 @@ class TestSharingService(TestCaseWithFactory):
         self.service.ensureAccessGrants([grantee], owner, bugs=[bug])
         # Test with a new bug as well as the one for which access is already
         # granted.
-        self._assert_ensureAccessGrants(owner, [bug, bug2], None, grantee)
+        self._assert_ensureAccessGrants(
+            owner, [bug, bug2], None, None, grantee)
 
     def _assert_ensureAccessGrantsUnauthorized(self, user):
         # ensureAccessGrants raises an Unauthorized exception if the user
