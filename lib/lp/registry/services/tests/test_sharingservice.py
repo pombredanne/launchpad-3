@@ -1482,12 +1482,10 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         self.launchpad = self.factory.makeLaunchpadService(person=self.owner)
         self.service = self.launchpad.load('+services/sharing')
         self.bug = self.factory.makeBug(
-            owner=self.owner,
-            target=self.pillar,
+            owner=self.owner, target=self.pillar,
             information_type=InformationType.PRIVATESECURITY)
         self.branch = self.factory.makeBranch(
-            owner=self.owner,
-            product=self.pillar,
+            owner=self.owner, product=self.pillar,
             information_type=InformationType.PRIVATESECURITY)
         login_person(self.owner)
         self.bug.subscribe(self.grantee, self.owner)
