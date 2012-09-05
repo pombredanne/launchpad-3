@@ -1581,10 +1581,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution.`"""
         return InformationType.PUBLIC
 
-    def getAllowedBranchInformationTypes(self):
-        """See `IDistribution.`"""
-        return FREE_INFORMATION_TYPES
-
     def userCanEdit(self, user):
         """See `IDistribution`."""
         if user is None:

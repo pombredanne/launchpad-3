@@ -253,13 +253,16 @@ class SharingService:
             result_data.append(item)
         return result_data
 
-    def getInformationTypes(self, pillar):
+    def getAllowedInformationTypes(self, pillar):
         """See `ISharingService`."""
-        allowed_types = set(pillar.getAllowedBugInformationTypes()).union(
-            pillar.getAllowedBranchInformationTypes())
-        allowed_private_types = allowed_types.intersection(
-            PRIVATE_INFORMATION_TYPES)
-        return self._makeEnumData(allowed_private_types)
+        allowed_private_types = [
+            policy.type
+            for policy in getUtility(IAccessPolicySource).findByPillar(
+                [pillar])]
+        # We want the types in a specific order.
+        return self._makeEnumData([
+            type for type in PRIVATE_INFORMATION_TYPES
+            if type in allowed_private_types])
 
     def getBranchSharingPolicies(self, pillar):
         """See `ISharingService`."""
@@ -459,25 +462,26 @@ class SharingService:
         # First delete any access policy grants.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         policy_grants = [(policy, grantee) for policy in pillar_policies]
-        grants = [
+        grants_to_revoke = [
             (grant.policy, grant.grantee)
             for grant in policy_grant_source.find(policy_grants)]
-        if len(grants) > 0:
-            policy_grant_source.revoke(grants)
+        if len(grants_to_revoke) > 0:
+            policy_grant_source.revoke(grants_to_revoke)
 
         # Second delete any access artifact grants.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        to_delete = list(ap_grant_flat.findArtifactsByGrantee(
+        artifacts_to_revoke = list(ap_grant_flat.findArtifactsByGrantee(
             grantee, pillar_policies))
-        if len(to_delete) > 0:
+        if len(artifacts_to_revoke) > 0:
             getUtility(IAccessArtifactGrantSource).revokeByArtifact(
-                to_delete, [grantee])
+                artifacts_to_revoke, [grantee])
 
         # Create a job to remove subscriptions for artifacts the grantee can no
         # longer see.
-        getUtility(IRemoveArtifactSubscriptionsJobSource).create(
-            user, artifacts=None, grantee=grantee, pillar=pillar,
-            information_types=information_types)
+        if grants_to_revoke or artifacts_to_revoke:
+            getUtility(IRemoveArtifactSubscriptionsJobSource).create(
+                user, artifacts=None, grantee=grantee, pillar=pillar,
+                information_types=information_types)
 
         grant_counts = list(self.getAccessPolicyGrantCounts(pillar))
         invisible_types = [
@@ -539,3 +543,17 @@ class SharingService:
         missing_artifacts = set(artifacts) - set(artifacts_with_grants)
         getUtility(IAccessArtifactGrantSource).grant(
             list(product(missing_artifacts, grantees, [user])))
+
+    @available_with_permission('launchpad.Edit', 'pillar')
+    def updatePillarSharingPolicies(self, pillar, branch_sharing_policy=None,
+                                    bug_sharing_policy=None):
+        if not branch_sharing_policy and not bug_sharing_policy:
+            return None
+        # Only Products have sharing policies.
+        if not IProduct.providedBy(pillar):
+            raise ValueError(
+                "Sharing policies are only supported for products.")
+        if branch_sharing_policy:
+            pillar.setBranchSharingPolicy(branch_sharing_policy)
+        if bug_sharing_policy:
+            pillar.setBugSharingPolicy(bug_sharing_policy)

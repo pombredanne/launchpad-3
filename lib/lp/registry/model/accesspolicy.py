@@ -259,6 +259,11 @@ class AccessPolicy(StormBase):
             cls,
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
+    @classmethod
+    def delete(cls, pillars_and_types):
+        """See `IAccessPolicySource`."""
+        cls.find(pillars_and_types).remove()
+
 
 class AccessPolicyArtifact(StormBase):
     implements(IAccessPolicyArtifact)

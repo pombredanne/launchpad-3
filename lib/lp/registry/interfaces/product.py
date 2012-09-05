@@ -797,12 +797,6 @@ class IProductPublic(
         :return: The `InformationType`.
         """
 
-    def getAllowedBranchInformationTypes():
-        """Get the information types that a branch in this project can have.
-
-        :return: A sequence of `InformationType`s.
-        """
-
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
 
