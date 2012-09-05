@@ -459,50 +459,6 @@ class TestProductBugInformationTypes(TestCaseWithFactory):
             product.getDefaultBugInformationType())
 
 
-class TestProductBranchInformationTypes(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_no_policy(self):
-        # New projects can only use the non-proprietary information
-        # types.
-        product = self.factory.makeProduct()
-        self.assertContentEqual(
-            FREE_INFORMATION_TYPES, product.getAllowedBranchInformationTypes())
-
-    def test_sharing_policy_public_or_proprietary(self):
-        # branch_sharing_policy can enable Proprietary.
-        product = self.factory.makeProduct(
-            branch_sharing_policy=BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
-        self.assertContentEqual(
-            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
-            product.getAllowedBranchInformationTypes())
-
-    def test_sharing_policy_proprietary_or_public(self):
-        # branch_sharing_policy can enable Proprietary.
-        product = self.factory.makeProduct(
-            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
-        self.assertContentEqual(
-            FREE_INFORMATION_TYPES + (InformationType.PROPRIETARY,),
-            product.getAllowedBranchInformationTypes())
-
-    def test_sharing_policy_proprietary(self):
-        # branch_sharing_policy can enable only Proprietary.
-        product = self.factory.makeProduct(
-            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
-        self.assertContentEqual(
-            [InformationType.PROPRIETARY],
-            product.getAllowedBranchInformationTypes())
-
-    def test_sharing_policy_embargoed_or_proprietary(self):
-        # branch_sharing_policy can enable Embargoed or Proprietary.
-        product = self.factory.makeProduct(
-            branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
-        self.assertContentEqual(
-            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
-            product.getAllowedBranchInformationTypes())
-
-
 class ProductPermissionTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -875,6 +831,42 @@ class BaseSharingPolicyTests:
         self.assertTrue(
             getUtility(IService, 'sharing').checkPillarAccess(
                 self.product, InformationType.PROPRIETARY, self.product.owner))
+
+    def test_unused_policies_are_pruned(self):
+        # When a sharing policy is changed, the allowed information types may
+        # become more restricted. If this case, any existing access polices
+        # for the now defunct information type(s) should be removed so long as
+        # there are no corresponding policy artifacts.
+
+        # We create a product with and ensure there's an APA.
+        ap_source = getUtility(IAccessPolicySource)
+        product = self.factory.makeProduct()
+        [ap] = ap_source.find([(product, InformationType.PRIVATESECURITY)])
+        self.factory.makeAccessPolicyArtifact(policy=ap)
+
+        def getAccessPolicyTypes(pillar):
+            return [
+                ap.type
+                for ap in ap_source.findByPillar([pillar])]
+
+        # Now change the sharing policies to PROPRIETARY
+        self.factory.makeCommercialSubscription(product=product)
+        with person_logged_in(product.owner):
+            product.setBugSharingPolicy(BugSharingPolicy.PROPRIETARY)
+            # Just bug sharing policy has been changed so all previous policy
+            # types are still valid.
+            self.assertContentEqual(
+                [InformationType.PRIVATESECURITY, InformationType.USERDATA,
+                 InformationType.PROPRIETARY],
+                getAccessPolicyTypes(product))
+
+            product.setBranchSharingPolicy(BranchSharingPolicy.PROPRIETARY)
+            # Proprietary is permitted by the sharing policy, and there's a
+            # Private Security artifact. But Private isn't in use or allowed
+            # by a sharing policy, so it's now gone.
+            self.assertContentEqual(
+                [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
+                getAccessPolicyTypes(product))
 
 
 class ProductBugSharingPolicyTestCase(BaseSharingPolicyTests,

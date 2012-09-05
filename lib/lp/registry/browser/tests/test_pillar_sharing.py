@@ -86,7 +86,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
         if with_branch and self.pillar_type == 'product':
             branch = self.factory.makeBranch(
                 product=self.pillar, owner=self.pillar.owner,
-                information_type=InformationType.USERDATA)
+                information_type=InformationType.PRIVATESECURITY)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
 
@@ -95,24 +95,15 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner = self.factory.makePerson()
             else:
                 owner = self.pillar.owner
-            if self.pillar_type == 'product':
-                bug = self.factory.makeBug(
-                    target=self.pillar, owner=owner,
-                    information_type=InformationType.USERDATA)
-            elif self.pillar_type == 'distribution':
-                bug = self.factory.makeBug(
-                    target=self.pillar, owner=owner,
-                    information_type=InformationType.USERDATA)
+            bug = self.factory.makeBug(
+                target=self.pillar, owner=owner,
+                information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=bug))
 
         for artifact in artifacts:
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact, policy=self.access_policy)
             self.factory.makeAccessArtifactGrant(
-                artifact=artifact,
-                grantee=grantee,
-                grantor=self.pillar.owner)
+                artifact=artifact, grantee=grantee, grantor=self.pillar.owner)
         return grantee
 
     def setupSharing(self, grantees):
@@ -207,7 +198,7 @@ class PillarSharingDetailsMixin:
             self.assertEqual({
                 'branch_id': branch.id,
                 'branch_name': branch.unique_name,
-                'information_type': InformationType.USERDATA.title,
+                'information_type': branch.information_type.title,
                 'web_link': canonical_url(branch, path_only_if_possible=True),
                 'self_link': absoluteURL(branch, request),
             }, cache.objects.get('branches')[0])
@@ -313,7 +304,7 @@ class PillarSharingViewTestMixin:
         view = create_view(self.pillar, name='+sharing')
         with StormStatementRecorder() as recorder:
             view.initialize()
-        self.assertThat(recorder, HasQueryCount(LessThan(9)))
+        self.assertThat(recorder, HasQueryCount(LessThan(10)))
 
     def test_view_invisible_information_types(self):
         # Test the expected invisible information type  data is in the
