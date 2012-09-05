@@ -333,6 +333,31 @@ class TestProductSharingView(PillarSharingViewTestMixin,
         # printed to stdout while browsing pages.
         self.useFixture(FakeLogger())
 
+    def test_view_contents_non_commercial_project(self):
+        # Non commercial projects are rendered with the correct text.
+        url = canonical_url(self.pillar, view_name='+sharing')
+        browser = setupBrowserForUser(user=self.driver)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        commercial_text = soup.find('p', {'id': 'commercial-project-text'})
+        non_commercial_text = soup.find(
+            'p', {'id': 'non-commercial-project-text'})
+        self.assertIsNone(commercial_text)
+        self.assertIsNotNone(non_commercial_text)
+
+    def test_view_contents_commercial_project(self):
+        # Commercial projects are rendered with the correct text.
+        self.factory.makeCommercialSubscription(self.pillar)
+        url = canonical_url(self.pillar, view_name='+sharing')
+        browser = setupBrowserForUser(user=self.driver)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        commercial_text = soup.find('p', {'id': 'commercial-project-text'})
+        non_commercial_text = soup.find(
+            'p', {'id': 'non-commercial-project-text'})
+        self.assertIsNotNone(commercial_text)
+        self.assertIsNone(non_commercial_text)
+
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,
                                       SharingBaseTestCase):
@@ -344,3 +369,15 @@ class TestDistributionSharingView(PillarSharingViewTestMixin,
         super(TestDistributionSharingView, self).setUp()
         self.setupSharing(self.grantees)
         login_person(self.driver)
+
+    def test_view_contents(self):
+        # Distributions are rendered with the correct text.
+        url = canonical_url(self.pillar, view_name='+sharing')
+        browser = setupBrowserForUser(user=self.driver)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        commercial_text = soup.find('p', {'id': 'commercial-project-text'})
+        non_commercial_text = soup.find(
+            'p', {'id': 'non-commercial-project-text'})
+        self.assertIsNone(commercial_text)
+        self.assertIsNone(non_commercial_text)

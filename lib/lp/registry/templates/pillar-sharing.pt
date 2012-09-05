@@ -26,13 +26,15 @@
   <div metal:fill-slot="main">
     <h2>What's shared</h2>
     <tal:what-shared condition="python:context.pillar_category == 'Project'">
-    <p tal:condition="context/has_current_commercial_subscription|nothing">
+    <p id='commercial-project-text'
+       tal:condition="context/has_current_commercial_subscription|nothing">
       You can choose whether new bugs and branches are public or
       proprietary by default, and what you can change them to
       afterwards. Changing the default here won't automatically change
       existing bugs or branches.
     </p>
-    <p tal:condition="not: context/has_current_commercial_subscription|nothing">
+    <p id='non-commercial-project-text'
+       tal:condition="not: context/has_current_commercial_subscription|nothing">
       Open source projects have limited access to sharing features. You can
       <a href="https://help.launchpad.net/CommercialHosting">purchase a
       commercial subscription</a> to enable more privacy options, such as
