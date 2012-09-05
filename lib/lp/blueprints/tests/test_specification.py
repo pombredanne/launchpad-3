@@ -175,7 +175,8 @@ class SpecificationTests(TestCaseWithFactory):
                 'validateMove', 'whiteboard', 'work_items', 'workitems_text')),
             'launchpad.Edit': set((
                 'newWorkItem', 'retarget', 'setDefinitionStatus',
-                'setImplementationStatus', 'setTarget', 'updateWorkItems')),
+                'setImplementationStatus', 'setTarget',
+                'transitionToInformationType', 'updateWorkItems')),
             'launchpad.AnyAllowedPerson': set((
                 'unlinkBug', 'linkBug', 'setWorkItems')),
             }
@@ -190,9 +191,9 @@ class SpecificationTests(TestCaseWithFactory):
             'launchpad.AnyAllowedPerson': set(('whiteboard', )),
             'launchpad.Edit': set((
                 'approver', 'assignee', 'definition_status', 'distribution',
-                'drafter', 'implementation_status', 'information_type',
-                'man_days', 'milestone', 'name', 'product', 'specurl',
-                'summary', 'superseded_by', 'title')),
+                'drafter', 'implementation_status', 'man_days', 'milestone',
+                'name', 'product', 'specurl', 'summary', 'superseded_by',
+                'title')),
             }
         specification = self.factory.makeSpecification()
         checker = getChecker(specification)
@@ -250,23 +251,27 @@ class SpecificationTests(TestCaseWithFactory):
         specification = self.factory.makeSpecification()
         for information_type in PUBLIC_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.read_access_to_ISpecificationView(
                 ANONYMOUS, specification, error_expected=False)
         # ...but not to private specifications.
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
         for information_type in PRIVATE_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.read_access_to_ISpecificationView(
                 ANONYMOUS, specification, error_expected=True)
 
     def test_anon_write_access(self):
         # Anonymous users do not have write access to specifications.
         specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
         for information_type in (PUBLIC_INFORMATION_TYPES +
                                  PRIVATE_INFORMATION_TYPES):
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.write_access_to_ISpecificationView(
                 ANONYMOUS, specification, error_expected=True,
                 attribute='whiteboard', value='foo')
@@ -280,13 +285,15 @@ class SpecificationTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         for information_type in PUBLIC_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.read_access_to_ISpecificationView(
                 user, specification, error_expected=False)
         # ...but not to private specifications.
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
         for information_type in PRIVATE_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.read_access_to_ISpecificationView(
                 user, specification, error_expected=True)
 
@@ -297,7 +304,7 @@ class SpecificationTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         for information_type in PUBLIC_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.write_access_to_ISpecificationView(
                 user, specification, error_expected=False,
                 attribute='whiteboard', value='foo')
@@ -305,9 +312,11 @@ class SpecificationTests(TestCaseWithFactory):
                 user, specification, error_expected=True,
                 attribute='name', value='foo')
         # The cannot change any attribute of private specifcations.
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
         for information_type in PRIVATE_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.write_access_to_ISpecificationView(
                 user, specification, error_expected=True,
                 attribute='whiteboard', value='foo')
@@ -319,10 +328,12 @@ class SpecificationTests(TestCaseWithFactory):
         # Users with special privileges can aceess the attributes
         # of public and private specifcations.
         specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
         for information_type in (PUBLIC_INFORMATION_TYPES +
                                  PRIVATE_INFORMATION_TYPES):
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.read_access_to_ISpecificationView(
                 specification.owner, specification, error_expected=False)
 
@@ -330,10 +341,12 @@ class SpecificationTests(TestCaseWithFactory):
         # Users with special privileges can change the attributes
         # of public and private specifcations.
         specification = self.factory.makeSpecification()
+        removeSecurityProxy(specification.target)._ensurePolicies(
+            PRIVATE_INFORMATION_TYPES)
         for information_type in (PUBLIC_INFORMATION_TYPES +
                                  PRIVATE_INFORMATION_TYPES):
             with person_logged_in(specification.owner):
-                specification.information_type = information_type
+                specification.transitionToInformationType(information_type)
             self.write_access_to_ISpecificationView(
                 specification.owner, specification, error_expected=False,
                 attribute='whiteboard', value='foo')

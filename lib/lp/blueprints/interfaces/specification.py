@@ -621,6 +621,12 @@ class ISpecificationEditRestricted(Interface):
         The new target must be an IProduct or IDistribution.
         """
 
+    def transitionToInformationType(information_type):
+        """Set the information type for this specification.
+
+        :information_type: The `InformationType` to transition to.
+        """
+
 
 class ISpecification(ISpecificationPublic, ISpecificationView,
                      ISpecificationEditRestricted, IBugLinkTarget):

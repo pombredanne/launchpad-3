@@ -835,6 +835,17 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 user.isOneOf(
                     self, ['owner', 'drafter', 'assignee', 'approver']))
 
+    def transitionToInformationType(self, information_type):
+        """See ISpecification."""
+        # avoid circular imports.
+        from lp.registry.model.accesspolicy import (
+            reconcile_access_for_artifact,
+            )
+        if self.information_type == information_type:
+            return
+        self.information_type = information_type
+        reconcile_access_for_artifact(self, information_type, [self.target])
+
 
 class HasSpecificationsMixin:
     """A mixin class that implements many of the common shortcut properties
