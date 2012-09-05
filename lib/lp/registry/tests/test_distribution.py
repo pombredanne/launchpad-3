@@ -27,6 +27,8 @@ from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     EXCLUSIVE_TEAM_POLICY,
     INCLUSIVE_TEAM_POLICY,
     InformationType,
@@ -76,6 +78,14 @@ class TestDistribution(TestCaseWithFactory):
         # The pillar category is correct.
         distro = self.factory.makeDistribution()
         self.assertEqual("Distribution", distro.pillar_category)
+
+    def test_sharing_policies(self):
+        # The sharing policies are PUBLIC.
+        distro = self.factory.makeDistribution()
+        self.assertEqual(
+            BranchSharingPolicy.PUBLIC, distro.branch_sharing_policy)
+        self.assertEqual(
+            BugSharingPolicy.PUBLIC, distro.bug_sharing_policy)
 
     def test_owner_cannot_be_open_team(self):
         """Distro owners cannot be open teams."""
