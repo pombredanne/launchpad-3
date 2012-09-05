@@ -201,7 +201,8 @@ class TestSharingService(TestCaseWithFactory):
 
     def test_getBranchSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
-        self._assert_getBranchSharingPolicies(distro, [])
+        self._assert_getBranchSharingPolicies(
+            distro, [BranchSharingPolicy.PUBLIC])
 
     def _assert_getBugSharingPolicies(self, pillar, expected_policies):
         policy_data = self.service.getBugSharingPolicies(pillar)
@@ -228,7 +229,7 @@ class TestSharingService(TestCaseWithFactory):
 
     def test_getBugSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
-        self._assert_getBugSharingPolicies(distro, [])
+        self._assert_getBugSharingPolicies(distro, [BugSharingPolicy.PUBLIC])
 
     def test_jsonGranteeData_with_Some(self):
         # jsonGranteeData returns the expected data for a grantee with

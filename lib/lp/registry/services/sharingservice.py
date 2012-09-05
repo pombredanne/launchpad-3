@@ -266,12 +266,12 @@ class SharingService:
 
     def getBranchSharingPolicies(self, pillar):
         """See `ISharingService`."""
-        # Only Products have branch sharing policies.
-        if not IProduct.providedBy(pillar):
-            return []
+        # Only Products have branch sharing policies. Distributions just
+        # default to Public.
         allowed_policies = [BranchSharingPolicy.PUBLIC]
         # Commercial projects also allow proprietary branches.
-        if pillar.has_current_commercial_subscription:
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
             allowed_policies.extend([
                 BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
@@ -284,12 +284,12 @@ class SharingService:
 
     def getBugSharingPolicies(self, pillar):
         """See `ISharingService`."""
-        # Only Products have bug sharing policies.
-        if not IProduct.providedBy(pillar):
-            return []
+        # Only Products have bug sharing policies. Distributions just
+        # default to Public.
         allowed_policies = [BugSharingPolicy.PUBLIC]
         # Commercial projects also allow proprietary bugs.
-        if pillar.has_current_commercial_subscription:
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
             allowed_policies.extend([
                 BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
                 BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
