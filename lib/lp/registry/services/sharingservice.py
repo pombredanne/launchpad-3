@@ -141,14 +141,20 @@ class SharingService:
 
         return bugtasks, branches
 
-    @available_with_permission('launchpad.Driver', 'pillar')
-    def getVisibleArtifacts(self, person, branches=None, bugs=None):
+    def getVisibleArtifacts(self, person, branches=None, bugs=None,
+                            ignore_permissions=False):
         """See `ISharingService`."""
         bugs_by_id = {}
         branches_by_id = {}
         for bug in bugs or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', bug)):
+                raise Unauthorized
             bugs_by_id[bug.id] = bug
         for branch in branches or []:
+            if (not ignore_permissions
+                and not check_permission('launchpad.View', branch)):
+                raise Unauthorized
             branches_by_id[branch.id] = branch
 
         # Load the bugs.

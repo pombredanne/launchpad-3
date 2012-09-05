@@ -1423,7 +1423,9 @@ class ApiTestMixin:
                         if d['name'] != 'thundercat']
         self.assertEqual('grantee', grantee_data['name'])
         self.assertEqual(
-            {InformationType.USERDATA.name: SharingPermission.ALL.name},
+            {InformationType.USERDATA.name: SharingPermission.ALL.name,
+             InformationType.PRIVATESECURITY.name:
+                 SharingPermission.SOME.name},
             grantee_data['permissions'])
 
 
