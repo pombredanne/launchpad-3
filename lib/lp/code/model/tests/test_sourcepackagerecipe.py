@@ -15,6 +15,7 @@ from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
 from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from storm.locals import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.event import notify
@@ -61,6 +62,7 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
@@ -74,6 +76,7 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     ws_object,
     )
@@ -81,7 +84,11 @@ from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )
-from lp.testing.matchers import DoesNotSnapshot
+from lp.testing.matchers import (
+    DoesNotSnapshot,
+    HasQueryCount,
+    )
+from lp.testing.pages import webservice_for_person
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -1196,3 +1203,16 @@ class TestWebservice(TestCaseWithFactory):
                 "archive": '%s/%s' %
                            (archive.owner.name, archive.name)})
         self.assertEqual(build_info, list(recipe.getPendingBuildInfo()))
+
+    def test_query_count_of_webservice_recipe(self):
+        owner = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe(owner=owner)
+        webservice = webservice_for_person(owner)
+        with person_logged_in(owner):
+            url = canonical_url(recipe, force_local_path=True)
+        store = Store.of(recipe)
+        store.flush()
+        store.invalidate()
+        with StormStatementRecorder() as recorder:
+            webservice.get(url)
+        self.assertThat(recorder, HasQueryCount(Equals(28)))
