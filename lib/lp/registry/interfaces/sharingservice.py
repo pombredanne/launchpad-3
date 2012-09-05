@@ -31,6 +31,8 @@ from lp.app.interfaces.services import IService
 from lp.bugs.interfaces.bug import IBug
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
+    BranchSharingPolicy,
+    BugSharingPolicy,
     InformationType,
     SharingPermission,
     )
@@ -111,8 +113,20 @@ class ISharingService(IService):
         :return: a collection of people without access to the artifact.
         """
 
-    def getInformationTypes(pillar):
-        """Return the allowed information types for the given pillar."""
+    def getAllowedInformationTypes(pillar):
+        """Return the allowed private information types for the given pillar.
+
+        The allowed information types are those for which bugs and branches
+        may be created. This does not mean that there will necessarily be bugs
+        and branches of these types; the result is used to populate the allowed
+        choices in the grantee sharing pillar and other similar things.
+
+        The allowed information types are determined by the pillar's bug and
+        branch sharing policies. It is possible that there are bugs or branches
+        of a given information type which is now nominally not allowed with a
+        change in policy. Such information types are also included in the
+        result.
+        """
 
     def getBugSharingPolicies(pillar):
         """Return the allowed bug sharing policies for the given pillar."""
@@ -226,4 +240,19 @@ class ISharingService(IService):
         :param user: the user making the request
         :param bugs: the bugs for which to grant access
         :param branches: the branches for which to grant access
+        """
+
+    @export_write_operation()
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        branch_sharing_policy=Choice(vocabulary=BranchSharingPolicy),
+        bug_sharing_policy=Choice(vocabulary=BugSharingPolicy))
+    @operation_for_version('devel')
+    def updatePillarSharingPolicies(pillar, branch_sharing_policy=None,
+                                    bug_sharing_policy=None):
+        """Update the sharing policies for a pillar.
+
+        :param pillar: the pillar to update
+        :param branch_sharing_policy: the new branch sharing policy
+        :param bug_sharing_policy: the new bug sharing policy
         """

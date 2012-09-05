@@ -5,11 +5,13 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesDifferenceError',
     'NotADerivedSeriesError',
+    'CannotChangeInformationType',
     'CannotDeleteCommercialSubscription',
     'CannotTransitionToCountryMirror',
     'CommercialSubscribersOnly',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
+    'InvalidFilename',
     'InvalidName',
     'JoinNotAllowed',
     'MirrorNotOfficial',
@@ -53,6 +55,11 @@ class NameAlreadyTaken(Exception):
 
 class InvalidName(Exception):
     """The name given for a person is not valid."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class InvalidFilename(Exception):
+    """An invalid filename was used as an attachment filename."""
 
 
 class NoSuchDistroSeries(NameLookupFailed):
@@ -190,3 +197,8 @@ class PPACreationError(Exception):
 
 class CannotDeleteCommercialSubscription(Exception):
     """Raised when a commercial subscription cannot be deleted."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class CannotChangeInformationType(Exception):
+    """The information type cannot be changed."""

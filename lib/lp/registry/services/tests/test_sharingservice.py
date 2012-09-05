@@ -121,35 +121,43 @@ class TestSharingService(TestCaseWithFactory):
             expected_data.append(item)
         self.assertContentEqual(expected_data, enum_data)
 
-    def _assert_getInformationTypes(self, pillar, expected_policies):
-        policy_data = self.service.getInformationTypes(pillar)
+    def _assert_getAllowedInformationTypes(self, pillar,
+                                           expected_policies):
+        policy_data = self.service.getAllowedInformationTypes(pillar)
         self._assert_enumData(expected_policies, policy_data)
 
     def test_getInformationTypes_product(self):
         product = self.factory.makeProduct()
-        self._assert_getInformationTypes(
+        self._assert_getAllowedInformationTypes(
             product,
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
 
     def test_getInformationTypes_expired_commercial_product(self):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product, expired=True)
-        self._assert_getInformationTypes(
+        self._assert_getAllowedInformationTypes(
             product,
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
 
     def test_getInformationTypes_commercial_product(self):
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        self._assert_getInformationTypes(
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self._assert_getAllowedInformationTypes(
             product,
-            [InformationType.PRIVATESECURITY,
-             InformationType.USERDATA,
-             InformationType.PROPRIETARY])
+            [InformationType.PROPRIETARY])
+
+    def test_getInformationTypes_product_with_embargoed(self):
+        product = self.factory.makeProduct(
+            branch_sharing_policy=BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self._assert_getAllowedInformationTypes(
+            product,
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED])
 
     def test_getInformationTypes_distro(self):
         distro = self.factory.makeDistribution()
-        self._assert_getInformationTypes(
+        self._assert_getAllowedInformationTypes(
             distro,
             [InformationType.PRIVATESECURITY, InformationType.USERDATA])
 
@@ -1089,6 +1097,49 @@ class TestSharingService(TestCaseWithFactory):
         anyone = self.factory.makePerson()
         login_person(anyone)
         self._assert_ensureAccessGrantsUnauthorized(anyone)
+
+    def test_updatePillarBugSharingPolicy(self):
+        # updatePillarSharingPolicies works for bugs.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        login_person(owner)
+        self.service.updatePillarSharingPolicies(
+            product,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+
+    def test_updatePillarBranchSharingPolicy(self):
+        # updatePillarSharingPolicies works for branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        login_person(owner)
+        self.service.updatePillarSharingPolicies(
+            product,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+
+    def _assert_updatePillarSharingPoliciesUnauthorized(self, user):
+        # updatePillarSharingPolicies raises an Unauthorized exception if the
+        # user is not permitted to do so.
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            Unauthorized, self.service.updatePillarSharingPolicies,
+            product, BranchSharingPolicy.PUBLIC, BugSharingPolicy.PUBLIC)
+
+    def test_updatePillarSharingPoliciesAnonymous(self):
+        # Anonymous users are not allowed.
+        login(ANONYMOUS)
+        self._assert_updatePillarSharingPoliciesUnauthorized(ANONYMOUS)
+
+    def test_updatePillarSharingPoliciesAnyone(self):
+        # Unauthorized users are not allowed.
+        anyone = self.factory.makePerson()
+        login_person(anyone)
+        self._assert_updatePillarSharingPoliciesUnauthorized(anyone)
 
     def test_getSharedArtifacts(self):
         # Test the getSharedArtifacts method.
