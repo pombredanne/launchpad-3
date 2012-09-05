@@ -114,6 +114,7 @@ from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.product import (
@@ -1989,7 +1990,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary', 'description',
-                    'homepageurl', 'licenses', 'license_info',
+                    'homepageurl', 'information_type', 'licenses', 'license_info',
                     'driver', 'bug_supervisor', 'owner',
                     ]
     schema = IProduct
@@ -2004,6 +2005,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
     custom_widget(
         'owner', PersonPickerWidget, header="Select the maintainer",
         show_create_team_link=True)
@@ -2059,7 +2062,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         private_projects_flag = 'disclosure.private_projects.enabled'
         private_projects = bool(getFeatureFlag(private_projects_flag))
         if not private_projects:
-            hidden_names.extend(['bug_supervisor', 'driver'])
+            hidden_names.extend([
+                'information_type', 'bug_supervisor', 'driver'])
 
         visible_fields = self.form_fields.omit(*hidden_names)
         self.form_fields = (visible_fields +

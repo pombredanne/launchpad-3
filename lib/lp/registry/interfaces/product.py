@@ -108,6 +108,7 @@ from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    InformationType,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -447,6 +448,13 @@ class IProductPublic(
                 'preferences and decisions around bug tracking, translation '
                 'and security policy will apply to this project.')),
         exported_as='project_group')
+
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True,
+            description=_(
+                'The type of of data contained in this project.')))
 
     owner = exported(
         PersonChoice(

@@ -396,6 +396,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
+    def information_type(self):
+        """See `IProduct`
+
+        Place holder for a db column.
+        """
+        pass
+
+    @property
     def pillar(self):
         """See `IBugTarget`."""
         return self
