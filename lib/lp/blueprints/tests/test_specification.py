@@ -177,7 +177,8 @@ class SpecificationTests(TestCaseWithFactory):
                 'workitems_text')),
             'launchpad.Edit': set((
                 'newWorkItem', 'retarget', 'setDefinitionStatus',
-                'setImplementationStatus', 'setTarget', 'updateWorkItems')),
+                'setImplementationStatus', 'setTarget',
+                'transitionToInformationType', 'updateWorkItems')),
             'launchpad.AnyAllowedPerson': set((
                 'unlinkBug', 'linkBug', 'setWorkItems')),
             }
