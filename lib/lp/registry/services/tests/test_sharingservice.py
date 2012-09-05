@@ -1414,6 +1414,17 @@ class ApiTestMixin:
         self.grantor = self.factory.makePerson()
         self.grantee_uri = canonical_url(self.grantee, force_local_path=True)
         self.grantor_uri = canonical_url(self.grantor, force_local_path=True)
+        self.bug = self.factory.makeBug(
+            owner=self.owner, target=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
+        self.branch = self.factory.makeBranch(
+            owner=self.owner, product=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
+        login_person(self.owner)
+        self.bug.subscribe(self.grantee, self.owner)
+        self.branch.subscribe(
+            self.grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+            None, CodeReviewNotificationLevel.NOEMAIL, self.owner)
         transaction.commit()
 
     def test_getPillarGranteeData(self):
@@ -1481,17 +1492,6 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         super(TestLaunchpadlib, self).setUp()
         self.launchpad = self.factory.makeLaunchpadService(person=self.owner)
         self.service = self.launchpad.load('+services/sharing')
-        self.bug = self.factory.makeBug(
-            owner=self.owner, target=self.pillar,
-            information_type=InformationType.PRIVATESECURITY)
-        self.branch = self.factory.makeBranch(
-            owner=self.owner, product=self.pillar,
-            information_type=InformationType.PRIVATESECURITY)
-        login_person(self.owner)
-        self.bug.subscribe(self.grantee, self.owner)
-        self.branch.subscribe(
-            self.grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
-            None, CodeReviewNotificationLevel.NOEMAIL, self.owner)
         transaction.commit()
         self._sharePillarInformation()
 

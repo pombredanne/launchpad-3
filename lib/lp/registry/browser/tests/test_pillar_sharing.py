@@ -214,7 +214,7 @@ class PillarSharingDetailsMixin:
         IStore(self.pillar).invalidate()
         with StormStatementRecorder() as recorder:
             create_initialized_view(pillarperson, '+index')
-        self.assertThat(recorder, HasQueryCount(LessThan(12)))
+        self.assertThat(recorder, HasQueryCount(LessThan(13)))
 
 
 class TestProductSharingDetailsView(
