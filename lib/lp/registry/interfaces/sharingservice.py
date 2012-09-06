@@ -62,6 +62,12 @@ class ISharingService(IService):
         information type.
         """
 
+    @export_read_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @operation_for_version('devel')
     def getSharedArtifacts(pillar, person, user):
         """Return the artifacts shared between the pillar and person.
 
@@ -75,6 +81,14 @@ class ISharingService(IService):
         :return: a (bugtasks, branches) tuple
         """
 
+    @export_read_operation()
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True),
+        branches=List(
+            Reference(schema=IBranch), title=_('Branches'), required=False),
+        bugs=List(
+            Reference(schema=IBug), title=_('Bugs'), required=False))
+    @operation_for_version('devel')
     def getVisibleArtifacts(person, branches=None, bugs=None):
         """Return the artifacts shared with person.
 
