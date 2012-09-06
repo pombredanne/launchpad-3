@@ -654,4 +654,3 @@ class TestSpecificationInformationType(TestCaseWithFactory):
         self.assertNotIn(InformationType.USERDATA, allowed)
         for info_type in SECURITY_INFORMATION_TYPES:
             self.assertNotIn(info_type, allowed)
-
