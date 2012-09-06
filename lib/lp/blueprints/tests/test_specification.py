@@ -253,7 +253,8 @@ class SpecificationTests(TestCaseWithFactory):
         specification = self.factory.makeSpecification()
         for information_type in PUBLIC_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.read_access_to_ISpecificationView(
                 ANONYMOUS, specification, error_expected=False)
         # ...but not to private specifications.
@@ -261,7 +262,8 @@ class SpecificationTests(TestCaseWithFactory):
             PRIVATE_INFORMATION_TYPES)
         for information_type in PRIVATE_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.read_access_to_ISpecificationView(
                 ANONYMOUS, specification, error_expected=True)
 
@@ -273,7 +275,8 @@ class SpecificationTests(TestCaseWithFactory):
         for information_type in (PUBLIC_INFORMATION_TYPES +
                                  PRIVATE_INFORMATION_TYPES):
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.write_access_to_ISpecificationView(
                 ANONYMOUS, specification, error_expected=True,
                 attribute='whiteboard', value='foo')
@@ -287,7 +290,8 @@ class SpecificationTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         for information_type in PUBLIC_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.read_access_to_ISpecificationView(
                 user, specification, error_expected=False)
         # ...but not to private specifications.
@@ -295,7 +299,8 @@ class SpecificationTests(TestCaseWithFactory):
             PRIVATE_INFORMATION_TYPES)
         for information_type in PRIVATE_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.read_access_to_ISpecificationView(
                 user, specification, error_expected=True)
 
@@ -306,7 +311,8 @@ class SpecificationTests(TestCaseWithFactory):
         user = self.factory.makePerson()
         for information_type in PUBLIC_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.write_access_to_ISpecificationView(
                 user, specification, error_expected=False,
                 attribute='whiteboard', value='foo')
@@ -318,7 +324,8 @@ class SpecificationTests(TestCaseWithFactory):
             PRIVATE_INFORMATION_TYPES)
         for information_type in PRIVATE_INFORMATION_TYPES:
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.write_access_to_ISpecificationView(
                 user, specification, error_expected=True,
                 attribute='whiteboard', value='foo')
@@ -335,7 +342,8 @@ class SpecificationTests(TestCaseWithFactory):
         for information_type in (PUBLIC_INFORMATION_TYPES +
                                  PRIVATE_INFORMATION_TYPES):
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.read_access_to_ISpecificationView(
                 specification.owner, specification, error_expected=False)
 
@@ -348,7 +356,8 @@ class SpecificationTests(TestCaseWithFactory):
         for information_type in (PUBLIC_INFORMATION_TYPES +
                                  PRIVATE_INFORMATION_TYPES):
             with person_logged_in(specification.owner):
-                specification.transitionToInformationType(information_type)
+                specification.transitionToInformationType(
+                    information_type, specification.owner)
             self.write_access_to_ISpecificationView(
                 specification.owner, specification, error_expected=False,
                 attribute='whiteboard', value='foo')

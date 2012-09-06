@@ -44,6 +44,7 @@ from lp.testing import (
     admin_logged_in,
     login,
     login_person,
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -1074,8 +1075,9 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         specification = self.factory.makeSpecification(
             product=product, owner=owner)
-        with admin_logged_in():
-            specification.transitionToInformationType(InformationType.USERDATA)
+        with person_logged_in(owner):
+            specification.transitionToInformationType(
+                InformationType.USERDATA, owner)
         self._assert_ensureAccessGrants(owner, None, None, [specification])
 
     def test_ensureAccessGrantsExisting(self):
