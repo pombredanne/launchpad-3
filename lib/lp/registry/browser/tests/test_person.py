@@ -19,9 +19,7 @@ import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 
-from lp.app.browser.lazrjs import (
-    TextAreaEditorWidget,
-    )
+from lp.app.browser.lazrjs import TextAreaEditorWidget
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus

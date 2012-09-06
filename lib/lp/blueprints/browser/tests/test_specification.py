@@ -9,6 +9,7 @@ import unittest
 
 from BeautifulSoup import BeautifulSoup
 import pytz
+import soupmatchers
 from testtools.matchers import (
     Equals,
     Not,
@@ -19,7 +20,6 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-import soupmatchers
 
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification

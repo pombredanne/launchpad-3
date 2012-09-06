@@ -32,7 +32,10 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.tests.helpers import remove_all_sample_data_branches
-from lp.registry.enums import InformationType, PersonVisibility
+from lp.registry.enums import (
+    InformationType,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.interfaces import (
