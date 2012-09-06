@@ -166,7 +166,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             registrant=registrant,
             target=target,
             branch_name='imported',
-            rcs_type=RevisionControlSystems.GIT),
+            rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
             review_status=None)
         code_import = removeSecurityProxy(code_import)

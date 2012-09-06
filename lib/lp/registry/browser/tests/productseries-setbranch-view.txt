@@ -349,6 +349,7 @@ error if a duplicate name is used.
     http://launchpad.dev/chevy/corvair
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
+
 Set branch
 ----------
 

@@ -74,7 +74,6 @@ from lp.codehosting.codeimport.worker import (
     ForeignTreeStore,
     get_default_bazaar_branch_store,
     GitImportWorker,
-    HgImportWorker,
     ImportDataStore,
     ImportWorker,
     )
