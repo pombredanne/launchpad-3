@@ -20,8 +20,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import (
-    InformationType,
     BugSharingPolicy,
+    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,

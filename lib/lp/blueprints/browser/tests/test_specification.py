@@ -1,16 +1,24 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
+import json
 import unittest
 
 from BeautifulSoup import BeautifulSoup
 import pytz
-from testtools.matchers import Equals
+import soupmatchers
+from testtools.matchers import (
+    Equals,
+    Not,
+    )
+from testtools.testcase import ExpectedException
+import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import format_link
@@ -20,7 +28,9 @@ from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -163,6 +173,85 @@ class TestSpecificationView(TestCaseWithFactory):
         self.assertThat(
             extract_text(html), DocTestMatches(
                 "... Registered by Some Person ... ago ..."))
+
+
+class TestSpecificationInformationType(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    portlet_tag = soupmatchers.Tag('info-type-portlet', True,
+                                   attrs=dict(id='information-type-summary'))
+
+    def setUp(self):
+        super(TestSpecificationInformationType, self).setUp()
+        self.useFixture(FeatureFixture({'blueprints.information_type.enabled':
+            'true'}))
+
+    def assertBrowserMatches(self, matcher):
+        browser = self.getViewBrowser(self.factory.makeSpecification())
+        self.assertThat(browser.contents, matcher)
+
+    def test_has_privacy_portlet(self):
+        self.assertBrowserMatches(soupmatchers.HTMLContains(self.portlet_tag))
+
+    def test_privacy_portlet_requires_flag(self):
+        self.useFixture(FeatureFixture({'blueprints.information_type.enabled':
+            ''}))
+        self.assertBrowserMatches(
+            Not(soupmatchers.HTMLContains(self.portlet_tag)))
+
+    def test_has_privacy_banner(self):
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        browser = self.getViewBrowser(spec, user=owner)
+        privacy_banner = soupmatchers.Tag('privacy-banner', True,
+                attrs={'class': 'banner-text'})
+        self.assertThat(browser.contents,
+                        soupmatchers.HTMLContains(privacy_banner))
+
+    def set_secrecy(self, spec, owner, information_type='PROPRIETARY'):
+        form = {
+            'field.actions.change': 'Change',
+            'field.information_type': information_type,
+            'field.validate_change': 'off',
+        }
+        with person_logged_in(owner):
+            view = create_initialized_view(
+                spec, '+secrecy', form, principal=owner,
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            body = view.render()
+        return view.request.response.getStatus(), body
+
+    def test_secrecy_change(self):
+        """Setting the value via '+secrecy' works."""
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(owner=owner)
+        self.set_secrecy(spec, owner)
+        with person_logged_in(owner):
+            self.assertEqual(InformationType.PROPRIETARY,
+                             spec.information_type)
+
+    def test_secrecy_change_nonsense(self):
+        """Invalid values produce sane errors."""
+        owner = self.factory.makePerson()
+        spec = self.factory.makeSpecification(owner=owner)
+        transaction.commit()
+        status, body = self.set_secrecy(
+            spec, owner, information_type=self.factory.getUniqueString())
+        self.assertEqual(400, status)
+        error_data = json.loads(body)
+        self.assertEqual({u'field.information_type': u'Invalid value'},
+                         error_data['errors'])
+        self.assertEqual(InformationType.PUBLIC, spec.information_type)
+
+    def test_secrecy_change_unprivileged(self):
+        """Unprivileged users cannot change information_type."""
+        spec = self.factory.makeSpecification()
+        person = self.factory.makePerson()
+        with ExpectedException(Unauthorized):
+            self.set_secrecy(spec, person)
+        self.assertEqual(InformationType.PUBLIC, spec.information_type)
 
 
 class TestSpecificationViewPrivateArtifacts(BrowserTestCase):

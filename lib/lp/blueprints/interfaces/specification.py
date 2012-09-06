@@ -565,6 +565,12 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
         :param user: The user doing the search.
         """
 
+    def getAllowedInformationTypes(who):
+        """Get a list of acceptable `InformationType`s for this spec.
+
+        The intersection of the affected pillars' allowed types is permitted.
+        """
+
 
 class ISpecificationEditRestricted(Interface):
     """Specification's attributes and methods protected with launchpad.Edit.
@@ -621,11 +627,8 @@ class ISpecificationEditRestricted(Interface):
         The new target must be an IProduct or IDistribution.
         """
 
-    def transitionToInformationType(information_type):
-        """Set the information type for this specification.
-
-        :information_type: The `InformationType` to transition to.
-        """
+    def transitionToInformationType(information_type, who):
+        """Change the information type of the Specification."""
 
 
 class ISpecification(ISpecificationPublic, ISpecificationView,
