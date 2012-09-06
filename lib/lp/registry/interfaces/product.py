@@ -799,6 +799,12 @@ class IProductPublic(
         :return: A sequence of `InformationType`s.
         """
 
+    def getAllowedInformationTypes():
+        """Get the information types that a project can have.
+
+        :return: A sequence of `InformationType`s.
+        """
+
     def getDefaultBugInformationType():
         """Get the default information type of a new bug in this project.
 
@@ -972,6 +978,12 @@ class IProductSet(Interface):
 
         If num_products is not None, then the first `num_products` are
         returned.
+        """
+
+    def getAllowedProductInformationTypes():
+        """Get the information types that a project can have.
+
+        :return: A sequence of `InformationType`s.
         """
 
     @call_with(owner=REQUEST_USER)

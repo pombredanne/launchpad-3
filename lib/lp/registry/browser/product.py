@@ -52,6 +52,8 @@ from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
+
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
@@ -156,7 +158,11 @@ from lp.registry.browser.pillar import (
     PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -1990,8 +1996,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary', 'description',
-                    'homepageurl', 'information_type', 'licenses', 'license_info',
-                    'driver', 'bug_supervisor', 'owner',
+                    'homepageurl', 'information_type', 'licenses',
+                    'license_info', 'driver', 'bug_supervisor', 'owner',
                     ]
     schema = IProduct
     step_name = 'projectaddstep2'
@@ -2018,6 +2024,24 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         required=True, show_create_team_link=True)
     custom_widget(
         'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
+
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invokved.
+        cache = IJSONRequestCache(self.request)
+        cache.objects['private_types'] = [
+            type.name for type in PRIVATE_INFORMATION_TYPES]
+        cache.objects['public_types'] = [
+                type.name for type in PUBLIC_INFORMATION_TYPES]
+        cache.objects['information_type_data'] = [
+            {'value': term.name, 'description': term.description,
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in
+                self.context.getAllowedProductInformationTypes()]
+
+        super(ProjectAddStepTwo, self).initialize()
 
     @property
     def main_action_label(self):
@@ -2104,6 +2128,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
+        self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
         # widget, so that the source package's copyright info can be
