@@ -17,7 +17,6 @@
 LPJS.use('node', 'lazr.effects', 'lp.app.choice',  function(Y) {
     Y.on('domready', function() {
         // Setup the information choice widget.
-        debugger;
         Y.lp.app.choice.addPopupChoiceForRadioButtons(
             'information_type', LP.cache.information_type_data, true);
 
