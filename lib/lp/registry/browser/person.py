@@ -124,9 +124,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.lazrjs import (
-    TextAreaEditorWidget,
-    )
+from lp.app.browser.lazrjs import TextAreaEditorWidget
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,

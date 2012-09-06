@@ -2069,7 +2069,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                           status=NewSpecificationDefinitionStatus.NEW,
                           implementation_status=None, goal=None, specurl=None,
                           assignee=None, drafter=None, approver=None,
-                          priority=None, whiteboard=None, milestone=None):
+                          priority=None, whiteboard=None, milestone=None,
+                          information_type=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -2106,7 +2107,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             approver=approver,
             product=product,
             distribution=distribution,
-            priority=priority)
+            priority=priority,
+            information_type=information_type)
         naked_spec = removeSecurityProxy(spec)
         if status.name not in status_names:
             # Set the closed status after the status has a sane initial state.

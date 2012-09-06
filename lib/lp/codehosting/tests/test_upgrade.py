@@ -28,8 +28,8 @@ from lp.code.bzr import (
     RepositoryFormat,
     )
 from lp.codehosting.bzrutils import read_locked
-from lp.codehosting.upgrade import Upgrader
 from lp.codehosting.tests.helpers import force_stacked_on_url
+from lp.codehosting.upgrade import Upgrader
 from lp.services.config import config
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
