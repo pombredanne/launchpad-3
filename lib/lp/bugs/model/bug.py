@@ -2630,6 +2630,7 @@ class BugSet:
         # non-security bugs, this test might be simplified to checking
         # params.private.
         if (IProduct.providedBy(params.target) and params.target.private_bugs
+            and params.target.bug_sharing_policy is None
             and params.information_type not in SECURITY_INFORMATION_TYPES):
             # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
