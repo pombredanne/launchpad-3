@@ -16,6 +16,7 @@ from storm.exceptions import (
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 import transaction
+from zope.app.testing import ztapi
 
 from lp.services.webapp.error import (
     DisconnectionErrorView,
@@ -126,21 +127,15 @@ class TestDatabaseErrorViews(TestCase):
         # Now break the database, and we get an exception, along with
         # our view.
         bouncer.stop()
-        for i in range(2):
-            # This should not happen ideally, but Stuart is OK with it
-            # for now.  His explanation is that the first request
-            # makes the PG recognize that the slave DB is
-            # disconnected, the second one makes PG recognize that the
-            # master DB is disconnected, and third and subsequent
-            # requests, as seen below, correctly generate a
-            # DisconnectionError.  Oddly, these are ProgrammingErrors.
-            self.getHTTPError(url)
         error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
         self.assertThat(error.read(),
                         Contains(DisconnectionErrorView.reason))
         # We keep seeing the correct exception on subsequent requests.
-        self.assertEqual(503, self.getHTTPError(url).code)
+        error = self.getHTTPError(url)
+        self.assertEqual(503, error.code)
+        self.assertThat(error.read(),
+                        Contains(DisconnectionErrorView.reason))
         # When the database is available again, requests succeed.
         bouncer.start()
         self.retryConnection(url, bouncer)
@@ -153,31 +148,18 @@ class TestDatabaseErrorViews(TestCase):
     def test_operationalerror_view_integration(self):
         # Test setup.
         self.useFixture(Urllib2Fixture())
-        bouncer = PGBouncerFixture()
-        # XXX gary bug=974617, bug=1011847, bug=504291 2011-07-03:
-        # In parallel tests, we are rarely encountering instances of
-        # bug 504291 while running this test.  These cause the tests
-        # to fail entirely (the store.rollback() described in comment
-        # 11 does not fix the insane state) despite nultiple retries.
-        # As mentioned in that bug, we are trying aborts to see if they
-        # eliminate the problem.
-        transaction.abort()
-        self.useFixture(bouncer)
-        # This is necessary to avoid confusing PG after the stopped bouncer.
-        transaction.abort()
-        # Database is down initially, causing an OperationalError.
-        bouncer.stop()
-        url = 'http://launchpad.dev/'
+
+        class BrokenView(object):
+            """A view that raises an OperationalError"""
+            def __call__(self, *args, **kw):
+                raise OperationalError()
+        ztapi.browserView(None, "error-test", BrokenView())
+
+        url = 'http://launchpad.dev/error-test'
         error = self.getHTTPError(url)
         self.assertEqual(httplib.SERVICE_UNAVAILABLE, error.code)
         self.assertThat(error.read(),
                         Contains(OperationalErrorView.reason))
-        # We keep seeing the correct exception on subsequent requests.
-        self.assertEqual(httplib.SERVICE_UNAVAILABLE,
-                         self.getHTTPError(url).code)
-        # When the database is available again, requests succeed.
-        bouncer.start()
-        self.retryConnection(url, bouncer)
 
     def test_operationalerror_view(self):
         request = LaunchpadTestRequest()

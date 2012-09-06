@@ -19,12 +19,12 @@ from datetime import (
     )
 from textwrap import dedent
 
+import psycopg2
 from storm.cache import (
     Cache,
     GenerationalCache,
     )
-from storm.database import STATE_DISCONNECTED
-from storm.exceptions import DatabaseError as StormDatabaseError
+from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -82,22 +82,28 @@ def storm_cache_factory():
         assert False, "Unknown storm_cache %s." % dbconfig.storm_cache
 
 
-def ensure_connected(store):
-    """Ensure a Store is connected to a database.
+def get_connected_store(store_name):
+    """Retrieve a store from the IZStorm Utility and ensure it is connected.
 
-    :raises storm.exceptions.DatabaseError: on failure to connect.
+    :raises storm.exceptions.DisconnectionError: On failures.
     """
-    con = store._connection
     try:
-        con._ensure_connected()
-    except StormDatabaseError:
+        store = getUtility(IZStorm).get(
+            store_name, 'launchpad:%s' % store_name)
+        store._connection._ensure_connected()
+        return store
+    except DisconnectionError:
         # If the Store is in a disconnected state, ensure it is
         # registered with the transaction manager. Otherwise, if
         # _ensure_connected() caused the disconnected state it may not
         # be put into reconnect state at the end of the transaction.
-        if con._state == STATE_DISCONNECTED:
-            con._event.emit('register-transaction')
+        store._connection._event.emit('register-transaction')
         raise
+    except psycopg2.OperationalError, exc:
+        # Per Bug #1025264, Storm emits psycopg2 errors when we
+        # want DisconnonnectionErrors, eg. attempting to open a
+        # new connection to a non-existent database.
+        raise DisconnectionError(str(exc))
 
 
 class BaseDatabasePolicy:
@@ -117,10 +123,8 @@ class BaseDatabasePolicy:
 
         store_name = '%s-%s' % (name, flavor)
         try:
-            store = getUtility(IZStorm).get(
-                store_name, 'launchpad:%s' % store_name)
-            ensure_connected(store)  # Only return a usable connection.
-        except StormDatabaseError:
+            store = get_connected_store(store_name)
+        except DisconnectionError:
 
             # A request for a master database connection was made
             # and failed. Nothing we can do so reraise the exception.
@@ -138,10 +142,8 @@ class BaseDatabasePolicy:
             try:
                 flavor = MASTER_FLAVOR
                 store_name = '%s-%s' % (name, flavor)
-                store = getUtility(IZStorm).get(
-                    store_name, 'launchpad:%s' % store_name)
-                ensure_connected(store)  # Only return a usable connection.
-            except StormDatabaseError:
+                store = get_connected_store(store_name)
+            except DisconnectionError:
                 store = None
 
             # If we still haven't connected to a suitable database,
