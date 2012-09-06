@@ -29,20 +29,20 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
-from lp.services.webapp.authorization import check_permission
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
     EditWhiteboardSpecification,
     ViewSpecification,
     )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.services.webapp.interaction import ANONYMOUS
 
 
 class SpecificationTests(TestCaseWithFactory):
@@ -159,12 +159,13 @@ class SpecificationTests(TestCaseWithFactory):
                 'date_started', 'datecreated', 'declineBy',
                 'definition_status', 'dependencies', 'direction_approved',
                 'distribution', 'distroseries', 'drafter', 'drafterID',
-                'getBranchLink', 'getDelta', 'getLinkedBugTasks',
-                'getSprintSpecification', 'getSubscriptionByName', 'goal',
-                'goal_decider', 'goal_proposer', 'goalstatus',
-                'has_accepted_goal', 'implementation_status', 'informational',
-                'isSubscribed', 'is_blocked', 'is_complete', 'is_incomplete',
-                'is_started', 'lifecycle_status', 'linkBranch', 'linkSprint',
+                'getBranchLink', 'getDelta', 'getAllowedInformationTypes',
+                'getLinkedBugTasks', 'getSprintSpecification',
+                'getSubscriptionByName', 'goal', 'goal_decider',
+                'goal_proposer', 'goalstatus', 'has_accepted_goal',
+                'implementation_status', 'informational', 'isSubscribed',
+                'is_blocked', 'is_complete', 'is_incomplete', 'is_started',
+                'lifecycle_status', 'linkBranch', 'linkSprint',
                 'linked_branches', 'man_days', 'milestone', 'name',
                 'notificationRecipientAddresses', 'owner', 'priority',
                 'product', 'productseries', 'proposeGoal', 'removeDependency',
@@ -172,10 +173,12 @@ class SpecificationTests(TestCaseWithFactory):
                 'subscribers', 'subscription', 'subscriptions', 'summary',
                 'superseded_by', 'target', 'title', 'unlinkBranch',
                 'unlinkSprint', 'unsubscribe', 'updateLifecycleStatus',
-                'validateMove', 'whiteboard', 'work_items', 'workitems_text')),
+                'validateMove', 'whiteboard', 'work_items',
+                'workitems_text')),
             'launchpad.Edit': set((
                 'newWorkItem', 'retarget', 'setDefinitionStatus',
-                'setImplementationStatus', 'setTarget', 'updateWorkItems')),
+                'setImplementationStatus', 'setTarget',
+                'transitionToInformationType', 'updateWorkItems')),
             'launchpad.AnyAllowedPerson': set((
                 'unlinkBug', 'linkBug', 'setWorkItems')),
             }

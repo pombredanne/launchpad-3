@@ -201,7 +201,8 @@ class TestSharingService(TestCaseWithFactory):
 
     def test_getBranchSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
-        self._assert_getBranchSharingPolicies(distro, [])
+        self._assert_getBranchSharingPolicies(
+            distro, [BranchSharingPolicy.PUBLIC])
 
     def _assert_getBugSharingPolicies(self, pillar, expected_policies):
         policy_data = self.service.getBugSharingPolicies(pillar)
@@ -228,7 +229,7 @@ class TestSharingService(TestCaseWithFactory):
 
     def test_getBugSharingPolicies_distro(self):
         distro = self.factory.makeDistribution()
-        self._assert_getBugSharingPolicies(distro, [])
+        self._assert_getBugSharingPolicies(distro, [BugSharingPolicy.PUBLIC])
 
     def test_jsonGranteeData_with_Some(self):
         # jsonGranteeData returns the expected data for a grantee with
@@ -1098,6 +1099,49 @@ class TestSharingService(TestCaseWithFactory):
         login_person(anyone)
         self._assert_ensureAccessGrantsUnauthorized(anyone)
 
+    def test_updatePillarBugSharingPolicy(self):
+        # updatePillarSharingPolicies works for bugs.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        login_person(owner)
+        self.service.updatePillarSharingPolicies(
+            product,
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        self.assertEqual(
+            BugSharingPolicy.PROPRIETARY, product.bug_sharing_policy)
+
+    def test_updatePillarBranchSharingPolicy(self):
+        # updatePillarSharingPolicies works for branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        login_person(owner)
+        self.service.updatePillarSharingPolicies(
+            product,
+            branch_sharing_policy=BranchSharingPolicy.PROPRIETARY)
+        self.assertEqual(
+            BranchSharingPolicy.PROPRIETARY, product.branch_sharing_policy)
+
+    def _assert_updatePillarSharingPoliciesUnauthorized(self, user):
+        # updatePillarSharingPolicies raises an Unauthorized exception if the
+        # user is not permitted to do so.
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            Unauthorized, self.service.updatePillarSharingPolicies,
+            product, BranchSharingPolicy.PUBLIC, BugSharingPolicy.PUBLIC)
+
+    def test_updatePillarSharingPoliciesAnonymous(self):
+        # Anonymous users are not allowed.
+        login(ANONYMOUS)
+        self._assert_updatePillarSharingPoliciesUnauthorized(ANONYMOUS)
+
+    def test_updatePillarSharingPoliciesAnyone(self):
+        # Unauthorized users are not allowed.
+        anyone = self.factory.makePerson()
+        login_person(anyone)
+        self._assert_updatePillarSharingPoliciesUnauthorized(anyone)
+
     def test_getSharedArtifacts(self):
         # Test the getSharedArtifacts method.
         owner = self.factory.makePerson()
@@ -1371,6 +1415,17 @@ class ApiTestMixin:
         self.grantor = self.factory.makePerson()
         self.grantee_uri = canonical_url(self.grantee, force_local_path=True)
         self.grantor_uri = canonical_url(self.grantor, force_local_path=True)
+        self.bug = self.factory.makeBug(
+            owner=self.owner, target=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
+        self.branch = self.factory.makeBranch(
+            owner=self.owner, product=self.pillar,
+            information_type=InformationType.PRIVATESECURITY)
+        login_person(self.owner)
+        self.bug.subscribe(self.grantee, self.owner)
+        self.branch.subscribe(
+            self.grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+            None, CodeReviewNotificationLevel.NOEMAIL, self.owner)
         transaction.commit()
 
     def test_getPillarGranteeData(self):
@@ -1380,7 +1435,9 @@ class ApiTestMixin:
                         if d['name'] != 'thundercat']
         self.assertEqual('grantee', grantee_data['name'])
         self.assertEqual(
-            {InformationType.USERDATA.name: SharingPermission.ALL.name},
+            {InformationType.USERDATA.name: SharingPermission.ALL.name,
+             InformationType.PRIVATESECURITY.name:
+                 SharingPermission.SOME.name},
             grantee_data['permissions'])
 
 
@@ -1451,3 +1508,29 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
             permissions={
                 InformationType.USERDATA.title: SharingPermission.ALL.title}
         )
+
+    def test_getSharedArtifacts(self):
+        # Test the exported getSharedArtifacts() method.
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        (bugtasks, branches) = self.service.getSharedArtifacts(
+            pillar=ws_pillar, person=ws_grantee)
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(1, len(branches))
+        self.assertEqual(bugtasks[0]['title'], self.bug.default_bugtask.title)
+        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)
+
+    def test_getVisibleArtifacts(self):
+        # Test the exported getVisibleArtifacts() method.
+        ws_grantee = ws_object(self.launchpad, self.grantee)
+        # Sadly lazr.restful doesn't know how to marshall lists of entities
+        # so we have to use links directly.
+        ws_bug_link = ws_object(self.launchpad, self.bug).self_link
+        ws_branch_link = ws_object(self.launchpad, self.branch).self_link
+        (bugs, branches) = self.service.getVisibleArtifacts(
+            person=ws_grantee,
+            branches=[ws_branch_link], bugs=[ws_bug_link])
+        self.assertEqual(1, len(bugs))
+        self.assertEqual(1, len(branches))
+        self.assertEqual(bugs[0]['title'], self.bug.title)
+        self.assertEqual(branches[0]['unique_name'], self.branch.unique_name)

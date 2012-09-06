@@ -850,11 +850,14 @@ class BrowserTestCase(TestCaseWithFactory):
 
     def getViewBrowser(self, context, view_name=None, no_login=False,
                        rootsite=None, user=None):
-        if user is None:
-            user = self.user
         # Make sure that there is a user interaction in order to generate the
         # canonical url for the context object.
-        login(ANONYMOUS)
+        if no_login:
+            login(ANONYMOUS)
+        else:
+            if user is None:
+                user = self.user
+            login_person(user)
         url = canonical_url(context, view_name=view_name, rootsite=rootsite)
         logout()
         if no_login:

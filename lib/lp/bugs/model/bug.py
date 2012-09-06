@@ -811,7 +811,8 @@ class Bug(SQLBase):
         # there is at least one bugtask for which access can be checked.
         if self.default_bugtask:
             service = getUtility(IService, 'sharing')
-            bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+            bugs, ignored = service.getVisibleArtifacts(
+                person, bugs=[self], ignore_permissions=True)
             if not bugs:
                 service.ensureAccessGrants(
                     [person], subscribed_by, bugs=[self],

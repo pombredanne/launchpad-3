@@ -895,7 +895,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # Grant the subscriber access if they can't see the branch.
         service = getUtility(IService, 'sharing')
         ignored, branches = service.getVisibleArtifacts(
-            person, branches=[self])
+            person, branches=[self], ignore_permissions=True)
         if not branches:
             service.ensureAccessGrants(
                 [person], subscribed_by, branches=[self],
