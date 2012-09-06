@@ -82,11 +82,12 @@ def storm_cache_factory():
         assert False, "Unknown storm_cache %s." % dbconfig.storm_cache
 
 
-def get_connected_store(store_name):
+def get_connected_store(name, flavor):
     """Retrieve a store from the IZStorm Utility and ensure it is connected.
 
     :raises storm.exceptions.DisconnectionError: On failures.
     """
+    store_name = '%s-%s' % (name, flavor)
     try:
         store = getUtility(IZStorm).get(
             store_name, 'launchpad:%s' % store_name)
@@ -121,9 +122,8 @@ class BaseDatabasePolicy:
         if flavor == DEFAULT_FLAVOR:
             flavor = self.default_flavor
 
-        store_name = '%s-%s' % (name, flavor)
         try:
-            store = get_connected_store(store_name)
+            store = get_connected_store(name, flavor)
         except DisconnectionError:
 
             # A request for a master database connection was made
@@ -141,8 +141,7 @@ class BaseDatabasePolicy:
             # updated.
             try:
                 flavor = MASTER_FLAVOR
-                store_name = '%s-%s' % (name, flavor)
-                store = get_connected_store(store_name)
+                store = get_connected_store(name, flavor)
             except DisconnectionError:
                 store = None
 
