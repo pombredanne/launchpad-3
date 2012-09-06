@@ -108,6 +108,7 @@ from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
+    SpecificationSharingPolicy,
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.commercialsubscription import (
@@ -640,6 +641,11 @@ class IProductPublic(
         description=_("Sharing policy for this project's bugs."),
         required=False, readonly=True, vocabulary=BugSharingPolicy),
         as_of='devel')
+    specification_sharing_policy = exported(Choice(
+        title=_('Specification sharing policy'),
+        description=_("Sharing policy for this project's specifications."),
+        required=False, readonly=True, vocabulary=SpecificationSharingPolicy),
+        as_of='devel')
 
     licenses = exported(
         Set(title=_('Licences'),
@@ -894,6 +900,18 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     @operation_for_version("devel")
     def setBranchSharingPolicy(branch_sharing_policy):
         """Mutator for branch_sharing_policy.
+
+        Checks authorization and entitlement.
+        """
+
+    @mutator_for(IProductPublic['specification_sharing_policy'])
+    @operation_parameters(
+        specification_sharing_policy=copy_field(
+            IProductPublic['specification_sharing_policy']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setSpecificationSharingPolicy(branch_sharing_policy):
+        """Mutator for specification_sharing_policy.
 
         Checks authorization and entitlement.
         """
