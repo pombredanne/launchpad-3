@@ -32,9 +32,7 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     WhitelistPolicy,
     )
-from lp.codehosting.tests.helpers import (
-    force_stacked_on_url,
-    )
+from lp.codehosting.tests.helpers import force_stacked_on_url
 from lp.testing import TestCase
 
 
