@@ -3,7 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-ALTER TABLE product ADD COLUMN information_type integer;
 ALTER TABLE product ADD COLUMN specification_sharing_policy integer;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 31, 1);
