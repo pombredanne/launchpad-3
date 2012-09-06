@@ -18,11 +18,10 @@ import os
 
 import bzrlib
 from bzrlib.plugin import load_plugins
-
-from lp.services.config import config
-
 # This import is needed so that bzr's logger gets registered.
 import bzrlib.trace
+
+from lp.services.config import config
 
 
 def get_bzr_path():

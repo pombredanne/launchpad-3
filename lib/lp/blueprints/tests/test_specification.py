@@ -29,20 +29,20 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
-from lp.services.webapp.authorization import check_permission
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
     EditWhiteboardSpecification,
     ViewSpecification,
     )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.services.webapp.interaction import ANONYMOUS
 
 
 class SpecificationTests(TestCaseWithFactory):
